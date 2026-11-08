@@ -9,7 +9,10 @@ aceptación. Las definiciones siguen congeladas. DEV autorizado por separado el 
 Los datos de ejecución son fixtures sintéticos; no se usan datos reales. Las decisiones M1–M6
 están aprobadas: P1-C/P4-A/P5-B, P2-A, P3-B, P6-A, P7-D y P8a-A/P8b-A (2026-11-06). Base:
 `main` `eca4e23` (2026-11-06); E4.9 `0176ffc`; E4.10 I1–I6 integrados; candidato de
-aceptación `c7a480f` (2026-11-07).
+aceptación `c7a480f` (2026-11-07). Enmienda de alcance aprobada por el usuario el
+**2026-11-08** (transmitida por el coordinador): AC08 se alinea con P3-B sin
+`FueraDePeriodo` y AC15 se acota a E4.3/E4.4 con E4.2 como cobertura pendiente. Los
+estados por AC y las definiciones congeladas no cambian; la enmienda no declara aceptación.
 
 Este testplan distingue `PASS (fixtures)` de aceptación: no declara aceptación global ni
 cierre financiero real. La política de composición queda fijada por las decisiones aprobadas;
@@ -31,14 +34,19 @@ aceptación global.
 | E4.11-AC05 | Periodo con ciclos en versiones distintas y/o un ciclo reabierto. (P1-C/P4-A/P5-B) | La respuesta declara por ciclo versión usada, inclusión/exclusión y motivo; la mezcla se permite con composición exacta; el reabierto se excluye/marca; no hay composición silenciosa. | Bun Test de composición P1-C/P4-A/P5-B | Documental; API futura | DTO con `composicion[]` completa y motivo | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC06 | Ciclo reabierto sin v2 (E4.10 I2 integrado). (P1-C/P4-A) | Excluido y marcado `PendienteReCierre`; v1 consultable pero no vigente sin advertencia; no se crea foto. | Bun Test + Playwright del estado y del badge | Documental; API/UI futura | DTO de estado, badge y ausencia de foto nueva | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC07 | Generar/consultar un agregado de trimestre/año y después re-cerrar un ciclo creando v2; volver a consultar el agregado anterior y generar uno nuevo. (P2-A/P6-A) | El agregado persistido anterior devuelve los mismos valores y versiones; no se recalcula. El nuevo declara las versiones nuevas. | Bun Test de agregado persistido P2-A + snapshot | Documental; API futura | Dos DTO de agregado y snapshot sin cambios en el primero | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
-| E4.11-AC08 | Desde una cifra de periodo, navegar a los ciclos componentes (incluidos y excluidos). | Cada incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente, fuera de periodo). | Bun Test de drill-down + Playwright | Documental; API/UI futura | DTO por ciclo y capturas 390/1440 | PARCIAL (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
+| E4.11-AC08 | Desde una cifra de periodo, navegar a los ciclos componentes (incluidos y excluidos). | Cada incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente de re-cierre). Un ciclo fuera del periodo no compone ni se enumera como contexto: P3-B lo atribuye íntegro a su propio periodo por `mes_financiado`. | Bun Test de drill-down + Playwright | Documental; API/UI futura | DTO por ciclo y capturas 390/1440 | PARCIAL (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC09 | Periodo con un ciclo sin cierre, un hueco o una fuente `No disponible`. | `Parcial`/`NoDisponible` con motivo por bloque; ningún total parcial se declara completo ni se sustituye por `0`. | Bun Test de estados de cobertura + Playwright | Documental; API/UI futura | DTO de cobertura y captura del total «parcial» | PARCIAL (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC10 | Ejercicio con solo archivo E4.5 y sin fotos. (P8b-A) | El primer desarrollo excluye el archivo E4.5: no hay ruta ni `tipoRegistro=Archivo`; no se crea foto, cierre ni plan. Consulta separada diferida. | Bun Test negativo de ausencia de ruta + snapshot | Documental; API futura | Sin ruta/tipoRegistro; snapshot sin altas | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC11 | Consultar fotos y periodos de 2026; crear el ejercicio 2027 y volver a consultar 2026. (P3-B) | Valores, versiones y cortes de 2026 se conservan; no se reetiquetan, recalculan ni borran; la transición no mezcla ejercicios sin declararlo. | Bun Test de continuidad + snapshot antes/después | Documental; API/UI futura | DTO 2026 pre/post y snapshot | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC12 | `POST`/`PATCH`/`DELETE` sobre fotos o periodos. | 405/422; no se crea, rectifica ni borra foto. Excepción única: creación del agregado P2-A, con ruta y clave propias. | Bun Test de rutas y verbos | Documental; API futura | Respuestas y snapshot sin cambios | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC13 | Intentar rectificar un ciclo antiguo o consultar una «foto corregida» por DT9. (P8a-A) | No existe ruta; rechazo con motivo; E4.11 no habilita DT9. | Bun Test negativo + revisión de rutas | Documental; API futura | 404/405 con motivo y ausencia de endpoint | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
 | E4.11-AC14 | Consultar un periodo futuro y un ciclo sin cierre. | Periodo futuro: 422 con campo/motivo. Ciclo sin cierre: `SinFoto` con motivo. Ninguno devuelve `0` ni foto vacía. | Bun Test de validación + Playwright de estados | Documental; API/UI futura | DTO de error y captura del estado vacío | PASS (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
-| E4.11-AC15 | Consultar una foto con bloques E4.3/E4.2/E4.4 `No disponible`, con motores vivos disponibles. | El bloque se muestra `No disponible` con motivo; no se completa desde el motor vivo ni se declara completo el total. | Bun Test de contrato de bloques + snapshot | Documental; API futura | DTO con `noDisponible[]` y total no certificado | PARCIAL (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
+| E4.11-AC15 | Consultar una foto con bloques E4.3/E4.4 `No disponible`, con motores vivos disponibles. | El bloque se muestra `No disponible` con motivo; no se completa desde el motor vivo ni se declara completo el total. | Bun Test de contrato de bloques + snapshot | Documental; API futura | DTO con `noDisponible[]` y total no certificado | PARCIAL (fixtures) · BLOCKED real | c7a480f · 2026-11-07 |
+
+`[APROBADO 2026-11-08]` AC15 se limita a los bloques **E4.3/E4.4** existentes en el
+contrato de foto E4.9. **E4.2** (Ventas) no tiene bloque en ese contrato: queda como
+cobertura **pendiente**, no se prueba como `No disponible`, no cuenta como PASS y no se
+presume inexistente.
 
 ## Casos obligatorios del roadmap
 
@@ -55,7 +63,7 @@ aceptación global.
 | --- | --- | --- |
 | M1 (P1-C/P4-A/P5-B) | AC03, AC04, AC05, AC06, AC07 | Composición declarada, reabierto marcado, mezcla registrada. |
 | M2 (P2-A) | AC04, AC07, AC12 | Agregado persistido, versionado e inmutable. |
-| M3 (P3-B) | AC04, AC05, AC11 | Periodos por ciclos financiados, mes financiado, sin prorrateo. |
+| M3 (P3-B) | AC04, AC05, AC08, AC11 | Periodos por ciclos financiados, mes financiado, sin prorrateo. |
 | M4 (P6-A) | AC07, AC11 | Retención permanente de fotos y agregados. |
 | M5 (P7-D) | AC01, AC03, AC08 | Consulta combinada ciclo/trimestre/año con selector explícito. |
 | M6 (P8a-A/P8b-A) | AC10, AC13 | DT9 fuera; archivo E4.5 excluido del primer desarrollo. |
