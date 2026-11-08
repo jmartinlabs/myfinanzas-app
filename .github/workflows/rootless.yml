@@ -190,8 +190,9 @@ jobs:
 
           meta="$RUNNER_TEMP/mf-test-release-meta"
           mkdir -p "$meta/frontend"
-          cp "$dest/manifest.json" "$dest/manifest.sha256" "$dest/SHA256SUMS" "$meta/"
+          cp "$dest/manifest.json" "$dest/manifest.sha256" "$meta/"
           cp -a "$dest/frontend/." "$meta/frontend/"
+          (cd "$meta" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
           cat > "$meta/Containerfile" <<EOF
           FROM scratch
           ARG RELEASE_SHA
