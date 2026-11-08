@@ -1419,7 +1419,7 @@ textarea {
 .annulled {
   background: var(--surface-2);
 }
-@media (max-width: 1120px) {
+@media (max-width: 1050px) {
   .movements-list .filters {
     grid-template-columns: 1fr 1fr;
   }
@@ -6121,7 +6121,7 @@ textarea {
   font-size: var(--text-xs);
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 1120px) {
   .movements-list .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -514,6 +514,17 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       page.locator('[role="region"][tabindex="0"]:visible'),
     ).toHaveCount(0);
     await shot("list-mobile");
+    // UI DEV-06 I2: el tramo 1051-1120 conserva dos columnas sin recortar filtros.
+    await page.setViewportSize({ width: 1100, height: 1000 });
+    const filtersLayout = await page
+      .locator(".movements-list .filters")
+      .evaluate((element) => ({
+        tracks: getComputedStyle(element).gridTemplateColumns.split(" ").length,
+        overflow: element.scrollWidth - element.clientWidth,
+      }));
+    expect(filtersLayout.tracks).toBe(2);
+    expect(filtersLayout.overflow).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 390, height: 844 });
     // UI DEV-06 I2: 6 capturas base (3 temas × 1440/390) y paridad tabla/carta.
     await expectMovementsParity(page);
     const themeSelect = page.getByLabel("Tema visual");
