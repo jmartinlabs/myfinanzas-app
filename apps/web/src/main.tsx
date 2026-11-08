@@ -28,6 +28,7 @@ import {
   navigationTitle,
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
+import { isLocalEnvironment } from "./environment";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
@@ -41,6 +42,7 @@ import {
 } from "./themes";
 import "./style.css";
 function App() {
+  const localEnvironment = isLocalEnvironment();
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
@@ -243,7 +245,8 @@ function App() {
           </div>
         </nav>
         <div className="sidebar-bottom">
-          <span className="local-dot" /> Local · Datos ficticios
+          <span className="local-dot" />{" "}
+          {localEnvironment ? "Local · Datos ficticios" : "Datos ficticios"}
           <small>Excel v5.11 sigue como maestro</small>
         </div>
       </aside>
@@ -265,7 +268,9 @@ function App() {
                 ))}
               </select>
             </label>
-            <span className="local-badge">Entorno local</span>
+            {localEnvironment && (
+              <span className="local-badge">Entorno local</span>
+            )}
             <button className="text-button" onClick={logout}>
               Cerrar sesión
             </button>
