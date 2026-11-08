@@ -868,6 +868,27 @@ select[aria-invalid="true"] {
   font-size: 12px;
   user-select: all;
 }
+/*
+ * QR del alta TOTP. El fondo blanco es fijo, no un token de tema: el contraste
+ * negro/blanco es requisito de escaneo y no debe adaptarse a dark/hybrid.
+ */
+/* Fondo blanco fijo: el QR debe escanearse igual en los tres temas;
+   no es un color de interfaz y no se sustituye por tokens. */
+.totp-qr {
+  display: block;
+  width: min(100%, 220px);
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.totp-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
 .auth-foot {
   text-align: center;
   font-size: var(--text-xs);

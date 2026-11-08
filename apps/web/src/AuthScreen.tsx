@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "./api";
+import { qrSvg } from "./qr";
 import { Alert } from "./ui";
 export function AuthScreen({ onReady }: { onReady: () => void }) {
   const [stage, setStage] = useState<
@@ -15,6 +16,12 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
     [codes, setCodes] = useState<string[]>([]);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  // Solo se calcula en el alta TOTP; al verificar o salir del alta el estado
+  // `enrollment` se limpia y el QR desaparece del DOM.
+  const qr = useMemo(
+    () => (stage === "mfa" && enrollment ? qrSvg(enrollment.uri) : ""),
+    [stage, enrollment],
+  );
   const load = () => {
     setError("");
     setStage("loading");
@@ -167,6 +174,14 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
                         Introduce esta clave como cuenta TOTP (6 dígitos, 30
                         segundos).
                       </p>
+                      {qr && (
+                        <div
+                          className="totp-qr"
+                          // Marcado generado localmente por qrSvg: sin datos del
+                          // usuario interpolados ni recursos externos.
+                          dangerouslySetInnerHTML={{ __html: qr }}
+                        />
+                      )}
                       <code className="secret">{enrollment.secret}</code>
                       <p>
                         <a href={enrollment.uri}>
