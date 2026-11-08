@@ -6,6 +6,11 @@ Approval source/date: **2026-11-06** — P1-C, P4-A, P5-B, P2-A, P3-B, P6-A, P7-
 Revisión de Álex no registrada.
 Base: `main` `eca4e23` (2026-11-06); E4.9 `0176ffc`, E4.10 I1–I6 integrados.
 Ningún AC está ejecutado y este documento no declara PASS.
+Enmienda de alcance aprobada por el usuario el **2026-11-08** (transmitida por el
+coordinador): E4.11-AC08 elimina `FueraDePeriodo` como estado de composición y se alinea
+con P3-B; E4.11-AC15 se acota a los bloques E4.3/E4.4 existentes y declara E4.2 como
+cobertura pendiente. La enmienda no reabre I1–I6, no cambia estados de AC ni declara
+aceptación.
 Contexto y fuentes: [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md),
 [roadmap E4.11](roadmap.md#e411--fotografías-de-ciclotrimestreaño-consultables),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md),
@@ -297,7 +302,10 @@ ilustrativo y no fija una versión concreta de esquema; los importes sin evidenc
 | `SinFoto` | El ciclo existe pero no tiene cierre/foto. | No se crea una foto vacía. |
 | `PendienteReCierre` | El ciclo está reabierto sin v2 (P4-A aprobada). | Se declara; v1 no se presenta como vigente sin marca. |
 | `ExcluidoSinCierre` | Ciclo del periodo sin cierre. | Aparece en `composicion` con motivo. |
-| `FueraDePeriodo` | Ciclo no atribuido a este periodo según P3-B. | Se muestra como contexto, no suma. |
+
+`[APROBADO 2026-11-08]` No existe estado `FueraDePeriodo`: un ciclo que no pertenece al
+periodo **no compone ni se enumera como contexto**. P3-B lo atribuye íntegro a su propio
+periodo por `mes_financiado`, sin prorrateo y sin duplicarlo en el periodo consultado.
 
 `[CONFIRMADO]` El archivo E4.5 conserva **su propia** terminología
 (`Completa`/`Parcial`/`NoAcreditada`/`NoDisponible`/`Solapada`); E4.11 no la redefine ni
@@ -375,8 +383,11 @@ errores `Problem`, snapshot transaccional y `no-store`. Sin servicios externos.
 - Ciclo sin cierre dentro del periodo: excluido con motivo y cobertura `Parcial`.
 - Periodo con un solo ciclo: sigue siendo agregado válido; no se presenta como foto de
   ciclo.
-- Foto con bloques `No disponible` (E4.3/E4.2/E4.4): se muestran con motivo; no se
+- Foto con bloques `No disponible` (E4.3/E4.4): se muestran con motivo; no se
   completan desde motores vivos.
+- `[APROBADO 2026-11-08]` E4.2 (Ventas) no forma parte del contrato de foto E4.9: su
+  cobertura en la foto queda **pendiente**. No se declara PASS, ni `No disponible`, ni
+  dato inexistente por ausencia; E4.11 no la reconstruye desde el motor vivo.
 - E3.5 no verificable: no existe foto (cierre bloqueado); E4.11 no la inventa.
 - Cierre fuera de orden (AC-20 de SPEC27): la foto existe con su ventana; el agregado la
   atribuye por **mes financiado** (P3-B), la incluye íntegra y declara la composición, sin
@@ -421,14 +432,18 @@ fijan los parámetros; los AC siguen `UNRUN` hasta el DEV.
 | E4.11-AC05 | Periodo con ciclos de versiones distintas y/o un ciclo reabierto. (P1-C/P4-A/P5-B) | La respuesta declara por ciclo versión usada, inclusión/exclusión y motivo; la mezcla se permite con composición exacta; el reabierto se excluye/marca; no hay composición silenciosa. |
 | E4.11-AC06 | Ciclo reabierto sin v2 (E4.10 I2 integrado). (P1-C/P4-A) | P4-A aprobada: excluido y marcado `PendienteReCierre`; v1 consultable pero no vigente sin advertencia; no se crea foto. |
 | E4.11-AC07 | Generar/consultar un agregado y después re-cerrar un ciclo creando v2. (P2-A/P6-A) | El agregado anterior devuelve los mismos valores y versiones; no se recalcula; un agregado nuevo declara las versiones nuevas. |
-| E4.11-AC08 | Navegar desde una cifra de periodo a sus ciclos componentes. (P7-D) | Cada ciclo incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente, fuera de periodo). |
+| E4.11-AC08 | Navegar desde una cifra de periodo a sus ciclos componentes. (P7-D/P3-B) | Cada ciclo incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente de re-cierre). Un ciclo fuera del periodo no compone ni se enumera como contexto: P3-B lo atribuye íntegro a su propio periodo por `mes_financiado`. |
 | E4.11-AC09 | Periodo con cobertura incompleta: ciclo sin cierre, hueco o fuente `No disponible`. | Estado `Parcial`/`NoDisponible` con motivo por bloque; ningún total parcial se declara completo ni se sustituye por `0`. |
 | E4.11-AC10 | Ejercicio con solo archivo E4.5 y sin fotos. (P8b-A) | El primer desarrollo **excluye** el archivo E4.5: no hay ruta ni `tipoRegistro=Archivo`; no se crea foto, cierre ni plan. La consulta separada queda diferida. |
 | E4.11-AC11 | Crear el ejercicio siguiente y volver a consultar el anterior. (P3-B) | Fotos y periodos del ejercicio anterior siguen consultables con valores, versiones y cortes; no se reetiquetan, recalculan ni borran; la transición no mezcla ejercicios sin declararlo. |
 | E4.11-AC12 | Intentar `POST`/`PATCH`/`DELETE` sobre fotos o periodos. | 405/422; no se crea, rectifica ni borra foto. Excepción única: creación del agregado P2-A, con su ruta y clave. |
 | E4.11-AC13 | Intentar rectificar un ciclo antiguo o consultar una «foto corregida» por DT9. (P8a-A) | No existe ruta; se rechaza con motivo; E4.11 no habilita DT9. |
 | E4.11-AC14 | Consultar un periodo futuro y un ciclo sin cierre. | Periodo futuro: 422 con campo/motivo. Ciclo sin cierre: `SinFoto` con motivo. Ninguno devuelve `0` ni una foto vacía. |
-| E4.11-AC15 | Consultar una foto cuyo bloque E4.3/E4.2/E4.4 consta `No disponible`. | El bloque se muestra `No disponible` con motivo; no se completa desde el motor vivo ni se declara completo el total. |
+| E4.11-AC15 | Consultar una foto cuyo bloque E4.3/E4.4 consta `No disponible`. | El bloque se muestra `No disponible` con motivo; no se completa desde el motor vivo ni se declara completo el total. |
+
+`[APROBADO 2026-11-08]` E4.11-AC15 se acota a los bloques **E4.3/E4.4** existentes en el
+contrato de foto E4.9. **E4.2** no tiene cobertura en ese contrato y queda como cobertura
+**pendiente**: no se declara PASS, no se presume `No disponible` ni se da por inexistente.
 
 ---
 
@@ -447,7 +462,7 @@ fijan los parámetros; los AC siguen `UNRUN` hasta el DEV.
 | P4-A (2026-11-05) | Ciclo reabierto excluido y marcado `PendienteReCierre`. | AC06, AC07 |
 | P5-B (2026-11-05) | Mezcla de versiones con composición exacta registrada. | AC05 |
 | P2-A (2026-11-06) | Agregado persistido, versionado e inmutable. | AC04, AC07, AC12 |
-| P3-B (2026-11-06) | Periodos por ciclos financiados, mes financiado, sin prorrateo. | AC04, AC05, AC11 |
+| P3-B (2026-11-06) | Periodos por ciclos financiados, mes financiado, sin prorrateo. | AC04, AC05, AC08, AC11 |
 | P6-A (2026-11-06) | Retención permanente de fotos y agregados. | AC07, AC11 |
 | P7-D (2026-11-06) | Consulta combinada ciclo/trimestre/año con selector explícito. | AC01, AC03, AC08 |
 | P8a-A / P8b-A (2026-11-06) | DT9 fuera; archivo E4.5 excluido del primer desarrollo. | AC10, AC13 |
