@@ -81,8 +81,9 @@ congelado. D11 sigue abierta: el primer tag de TEST no podrá habilitarse hasta 
 el seed correspondiente al SHA congelado, la release verificada y la evidencia de prueba.
 Este diseño no fija ese SHA ni sustituye la reconciliación.
 
-`[PENDIENTE]` A 2026-11-07, `test` no tiene ruleset de protección propio; `main` sí tiene el
-ruleset `main-required` (PR y check `required`). El gate TEST→main no se presume impuesto
+`[PENDIENTE]` A 2026-11-07, `test` no tiene ruleset de protección propio (consulta de solo
+lectura a la API de rulesets: solo `main-required`, id `25952058`, `enforcement` `active`);
+el gate TEST→main no se presume impuesto
 por GitHub hasta verificar y, en su caso, configurar la protección de `test` (D1).
 
 ## 3. Convención de tags

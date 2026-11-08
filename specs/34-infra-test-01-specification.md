@@ -43,8 +43,8 @@ Esta especificación:
 
 - define **el contrato de MyFinanzas** (imagen, runtime, estado, autenticación, copias y
   mecanismo de datos ficticios) y la **interfaz** que `vps-infra` consume;
-- **no** repite la arquitectura interna del host, que pertenece a
-  el nuevo entregable host de `vps-infra`; el PR #7 está cerrado y solo es antecedente;
+- **no** repite la arquitectura interna del host, que pertenece al entregable host de
+  `vps-infra` (PR #9, MERGED `901204c`); el PR #7 está cerrado y solo es antecedente;
 - **no** implementa nada: ni herramienta de seed, ni imagen TEST, ni cambios en el release;
 - **no** toca `vps-infra`, el VPS, DNS, Caddy, UFW ni ningún servicio remoto.
 
@@ -85,7 +85,8 @@ ninguna prueba de aplicación ni de infraestructura para esta spec.
 | `production-init`, `setup`, `backup-cli` como CLIs deliberadas | `production-init.ts`, `setup.ts`, `backup-cli.ts` | TEST los invoca como tareas efímeras, nunca como arranque normal. |
 | `release.py` construye imagen + frontend con manifiesto y `--expected-commit` | `infra/release.py` | El candidato se verifica; no se usa etiqueta móvil. |
 | `runtime.py:render` fija `18081` y `APP_ORIGIN=https://myfinanzas.pp.ua` | `infra/runtime.py` | **No** se usa sin cambios para TEST; ver D6. |
-| `vps-infra` PR #7 **CLOSED** el 2026-11-04, sin merge y con rama eliminada | API de GitHub | Solo antecedente histórico; la parte host requiere un nuevo entregable (§11). |
+| `vps-infra` PR #7 **CLOSED** el 2026-11-04, sin merge y con rama eliminada | API de GitHub | Solo antecedente histórico; sustituido por el contrato host de §11. |
+| `vps-infra` PR #9 **MERGED** `901204c` el 2026-11-05 (host TEST) | API de GitHub | Contrato host vigente; su operación y autorizaciones siguen fuera de esta spec (§11). |
 
 `[CONFIRMADO]` A 2026-11-07, `origin/test` y `origin/main` apuntan al mismo SHA. `test` es
 el origen autorizado de TEST y `main` el de PROD. La promoción `test → main` es un merge
@@ -330,6 +331,20 @@ en el VPS.
 Nunca toca una ruta fuera de `<data-root>`, nunca borra copias cifradas y nunca reutiliza
 un `state` archivado. La retirada de `reset/` requiere inventario e autorización.
 
+`[EXCEPCIÓN APROBADA 2026-11-08]` El usuario aprueba **aplazar `seed reset` para después de
+la primera activación de TEST**. Consecuencias vinculantes:
+
+- `seed reset` **no** se implementa en el primer incremento de FT-1/`I2`, y `AC07` queda
+  **`UNRUN`**, no exento ni sustituido.
+- El primer `seed apply` solo se ejecuta sobre un estado limpio, vacío y verificado; si el
+  marcador no está limpio o el estado es parcial/ajeno, el CLI **rechaza** y no repara.
+- Queda prohibido sustituir `reset` por scripts destructivos improvisados, borrado manual
+  de estado o reutilización de un `state` archivado.
+- La ausencia de `reset` impide declarar SPEC34 aceptada en su totalidad; el resto de AC
+  conserva su estado propio.
+- El reset seguro (archivado con preflight de unidad parada) se prepara como incremento
+  posterior, sin bloquear el bootstrap de TEST.
+
 ### 4.9 Verificación posterior
 
 | Nivel | Comprobación |
@@ -356,8 +371,9 @@ para saltarse servicios.
 ## 5. Contrato de despliegue con vps-infra (solo interfaz)
 
 `[CONFIRMADO]` La arquitectura del host, el usuario, las rutas, Caddy, DNS, UFW y el aprovisionamiento
-pertenecen a `vps-infra`, que debe producir un **nuevo entregable host**. El PR #7 está
-cerrado y solo se conserva como antecedente. Esta sección solo fija
+pertenecen a `vps-infra`, cuyo contrato host vigente es el PR #9 (MERGED `901204c`,
+`INFRA-TEST-01-HOST`). El PR #7 está cerrado y solo se conserva como antecedente. Esta
+sección solo fija
 la **interfaz** que MyFinanzas consume y entrega; no duplica detalles internos ni afirma
 que existan en el VPS.
 
@@ -534,15 +550,16 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 - Monitorización residente nueva, scheduler, retención 7/4/3 o SLA/RPO/RTO de producción.
 - Certificación de seguridad, WCAG, carga o alta disponibilidad.
 
-## 11. Coordinación con vps-infra y nuevo entregable host
+## 11. Coordinación con vps-infra y contrato host
 
 `[CONFIRMADO]` `vps-infra` PR #7 está **CLOSED** desde el 2026-11-04T18:20Z, sin merge y con
 la rama remota eliminada. Se conserva únicamente como **antecedente histórico cancelado**; no
 es contrato vigente, dependencia activa ni aprobación.
 
-`[PROPUESTA]` La parte host de TEST requiere un **nuevo entregable de `vps-infra`** con su
-propio ciclo SPEC → revisión → aprobación → operaciones. El usuario debe autorizarlo; este
-repositorio **no abre** esa tarea ni PR por inferencia. El nuevo entregable debe recoger:
+`[CONFIRMADO]` El contrato host de TEST es `vps-infra` PR #9 (**MERGED** `901204c`, 2026-11-05,
+`INFRA-TEST-01-HOST`). Su ciclo SPEC → revisión → aprobación → operaciones y la autorización
+de cada operación en el VPS pertenecen a `vps-infra`; este repositorio no los ejecuta ni los
+infiere. El contrato host recoge, y debe mantenerse alineado con:
 
 1. **D6 — datos ficticios reproducibles.** Artefacto test-only, dataset `FT-1`, marcador
    TEST, manifiesto/checksums, guardas, reset archivado y verificación; enlazar esta spec.
