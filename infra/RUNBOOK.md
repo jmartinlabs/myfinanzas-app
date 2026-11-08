@@ -67,32 +67,25 @@ La app no sirve `/` por sí misma: el smoke comprueba el `frontend/` verificado 
 servidor estático local, no un endpoint de la API. No sustituye CI, el gate Rootless
 ni la autorización de despliegue.
 
-## Publicación GHCR TEST
+## Despliegue directo TEST
 
-El workflow Rootless publica, tras `push` a `test` y con `required`/`qa`/Rootless en
-`SUCCESS`, tres imágenes públicas en GHCR: `myfinanzas-test-app`, `myfinanzas-test-seed` y
-`myfinanzas-test-release`. App y seed usan `sha-<SHA40>`; `myfinanzas-test-release:test` es
-el puntero mutable a la última release verificada.
+El workflow Rootless, tras `push` a `test` y con `required`/`qa`/Rootless en `SUCCESS`,
+construye una sola release (`release.py build --single-build`), la verifica y ejecuta el
+smoke. Después envía el bundle (manifiesto, checksums, frontend e imagen) al VPS por SSH
+dentro de un comando forzado; el receptor aplica imagen, unidad y frontend con smoke y
+rollback automático.
 
-El job automático exige `MYFINANZAS_TEST_AUTO_PUBLISH=true`, Rootless y el check
-`required` en `SUCCESS`. El check-run `qa` lo emite un job independiente del empaquetado
-que prueba tipos, compilación, tests web y baseline sobre el SHA exacto tras Rootless;
-no sustituye la revisión QA independiente previa al merge. Como `required` se ejecuta
-en otro workflow, la publicación espera su resultado final con timeout y no acepta
-estados pendientes/fallidos. La variable se activa solo tras la primera activación
-TEST aprobada. `workflow_dispatch` con `package_test_release` conserva solo el ZIP
-manual y su `qa_reference`; **no** publica en GHCR por defecto. Tras la primera
-activación, el operador puede usar el input independiente `publish_test_ghcr=true`
-para crear/verificar los paquetes GHCR del SHA exacto con la misma QA/Rootless/required,
-sin introducir un commit artificial. Ese input es falso por defecto. La imagen de release contiene `/manifest.json`, `/manifest.sha256`, `/SHA256SUMS` y
-`/frontend/`, y declara labels con SHA, hashes, digests y contratos. El VPS la consulta
-periódicamente, verifica el manifiesto y descarga la app por digest; no recibe credenciales
-SSH desde GitHub. Los paquetes deben ser públicos para lectura anónima; si no lo son, el
-pull periódico requiere un token y no cumple el flujo sin credenciales.
+Gates:
 
-La primera activación es manual. Las actualizaciones posteriores no ejecutan `seed` ni
-modifican el estado persistente; solo cambian imagen, unidad y frontend cuando el esquema
-declarado coincide. `seed-manifest.json` se genera en la primera activación.
+- `MYFINANZAS_TEST_DEPLOY=true` (variable de repositorio) o `workflow_dispatch` con
+  `deploy_test=true`, `release_sha` y `qa_reference` del SHA exacto;
+- entorno GitHub `test` con revisores requeridos; sin esa protección no se activa la variable;
+- el job comprueba que `origin/test` sigue en el SHA construido.
+
+No usa GHCR, temporizadores, polling ni credenciales de registro. La clave SSH vive en el
+entorno `test` (`TEST_DEPLOY_KEY`, `TEST_DEPLOY_KNOWN_HOSTS`) y el receptor corre como
+`mftest` sin sudo. La primera activación sigue siendo manual; las posteriores no ejecutan
+`seed` ni modifican el estado persistente y solo aplican releases con el mismo contrato.
 
 ## Preflight y almacenamiento
 

@@ -30,11 +30,6 @@ on:
         required: false
         default: ''
         type: string
-      package_test_release:
-        description: Package a TEST-only artifact after successful Rootless
-        required: false
-        default: false
-        type: boolean
       release_sha:
         description: Exact lowercase SHA40 of the test branch
         required: false
@@ -45,8 +40,8 @@ on:
         required: false
         default: ''
         type: string
-      publish_test_ghcr:
-        description: Explicit GHCR publication after first TEST activation
+      deploy_test:
+        description: Deploy the verified release to the TEST VPS after review
         required: false
         default: false
         type: boolean
@@ -92,7 +87,7 @@ jobs:
   qa:
     name: qa
     # Automated regression on the exact test SHA, not a substitute for independent PR review.
-    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && (inputs.package_test_release || inputs.publish_test_ghcr)) }}
+    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && inputs.deploy_test) }}
     needs: capability
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -111,23 +106,23 @@ jobs:
       - run: bun test apps/web
       - run: python3 scripts/verify baseline
 
-  publish:
-    name: Package or publish verified TEST release
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.package_test_release || inputs.publish_test_ghcr)) }}
+  deploy:
+    name: Deploy TEST to the VPS
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_DEPLOY == 'true') || (github.event_name == 'workflow_dispatch' && inputs.deploy_test) }}
     needs: [capability, qa]
     runs-on: ubuntu-24.04
+    environment: test
     timeout-minutes: 60
     permissions:
       contents: read
       checks: read
-      packages: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify SHA, CI, QA and Rootless evidence
+      - name: Verify SHA, CI and QA evidence
         shell: bash
         env:
           RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
@@ -143,30 +138,15 @@ jobs:
             [[ -n "$QA_REFERENCE" ]]
             [[ "$QA_REFERENCE" == *"$RELEASE_SHA"* ]]
           fi
-          # The required check is in another workflow. Poll its final result to
-          # avoid rejecting a valid release while the checks run concurrently.
-          required="pending"
-          for attempt in $(seq 1 120); do
-            checks="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100")"
-            required="$(jq -r '[.check_runs[] | select(.name == "required")] | sort_by(.started_at) | last | .conclusion // "pending"' <<< "$checks")"
-            if [[ "$required" == "success" ]]; then
-              break
-            fi
-            if [[ "$required" != "pending" && "$required" != "null" && "$required" != "" ]]; then
-              echo "required check failed: $required" >&2
-              exit 1
-            fi
-            sleep 10
-          done
-          [[ "$required" == "success" ]] || { echo 'required check timed out' >&2; exit 1; }
-          # qa is a dependency of this job; verify its exact-SHA conclusion.
           gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
-            | jq -e '.check_runs | any(.name == "qa" and .conclusion == "success" and .head_sha == env.RELEASE_SHA)' >/dev/null
+            | jq -e '.check_runs | any(.name == "qa" and .conclusion == "success")' >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+            | jq -e '.check_runs | any(.name == "required" and .conclusion == "success")' >/dev/null
       - name: Install rootless builder on disposable runner
         run: |
           sudo apt-get update
-          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session skopeo
-      - name: Build once, verify paired release and run synthetic smoke
+          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session
+      - name: Build once, verify and smoke
         shell: bash
         env:
           RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
@@ -179,102 +159,34 @@ jobs:
           manifest_sha="$(sha256sum "$dest/manifest.json" | cut -d' ' -f1)"
           python3 infra/release.py verify "$dest" --expected-commit "$RELEASE_SHA" --expected-manifest-sha256 "$manifest_sha"
           python3 infra/smoke.py --release "$dest" --expected-commit "$RELEASE_SHA" --expected-manifest-sha256 "$manifest_sha"
-          (cd "$dest" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          bundle="$RUNNER_TEMP/mf-test-deploy"
+          mkdir -p "$bundle/frontend"
+          cp "$dest/manifest.json" "$dest/manifest.sha256" "$dest/image.oci.tar" "$bundle/"
+          cp -a "$dest/frontend/." "$bundle/frontend/"
+          (cd "$bundle" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
           printf 'TEST release SHA: %s\nManifest SHA-256: %s\n' "$RELEASE_SHA" "$manifest_sha" >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload one unencrypted TEST artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: myfinanzas-test-${{ github.sha }}
-          path: ${{ runner.temp }}/mf-test-release/
-          if-no-files-found: error
-          include-hidden-files: false
-          compression-level: 0
-          retention-days: 7
-      - name: Log in to GHCR
-        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.publish_test_ghcr) }}
+      - name: Deploy over the forced SSH command
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          TEST_DEPLOY_KEY: ${{ secrets.TEST_DEPLOY_KEY }}
+          TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS }}
+          TEST_DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST }}
+          TEST_DEPLOY_USER: ${{ vars.TEST_DEPLOY_USER }}
+          ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-          printf '%s\n' "$GITHUB_TOKEN" | podman login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - name: Publish app, seed and release images
-        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.publish_test_ghcr) }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-        run: |
-          set -euo pipefail
-          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-          dest="$RUNNER_TEMP/mf-test-release"
-          # Never move the mutable pointer for a release that is no longer TEST HEAD.
-          current_head="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/test" --jq .object.sha)"
-          [[ "$current_head" == "$RELEASE_SHA" ]] || { echo 'test branch advanced; refusing stale publication' >&2; exit 1; }
-          owner="${GITHUB_REPOSITORY_OWNER,,}"
-          app_ref="ghcr.io/${owner}/myfinanzas-test-app"
-          seed_ref="ghcr.io/${owner}/myfinanzas-test-seed"
-          release_ref="ghcr.io/${owner}/myfinanzas-test-release"
-          manifest_sha="$(sha256sum "$dest/manifest.json" | cut -d' ' -f1)"
-          app_digest="$(jq -r '.oci_manifest_digest' "$dest/manifest.json")"
-          seed_digest="$(jq -r '.seed.oci_manifest_digest' "$dest/manifest.json")"
-          schema="$(jq -r '.inputs.contracts.schema' "$dest/manifest.json")"
-          data_contract="$(jq -r '.inputs.contracts.data' "$dest/manifest.json")"
-
-          # Copy the OCI archives verbatim: podman push rewrites layers and the
-          # registry digest would no longer match the manifest.
-          skopeo copy --preserve-digests \
-            "oci-archive:$dest/image.oci.tar" "docker://${app_ref}:sha-${RELEASE_SHA}"
-          registry_app_digest="$(skopeo inspect --format '{{.Digest}}' "docker://${app_ref}:sha-${RELEASE_SHA}")"
-          [[ "$registry_app_digest" == "$app_digest" ]] || { echo "app registry digest mismatch: $registry_app_digest != $app_digest" >&2; exit 1; }
-
-          skopeo copy --preserve-digests \
-            "oci-archive:$dest/image.seed.oci.tar" "docker://${seed_ref}:sha-${RELEASE_SHA}"
-          registry_seed_digest="$(skopeo inspect --format '{{.Digest}}' "docker://${seed_ref}:sha-${RELEASE_SHA}")"
-          [[ "$registry_seed_digest" == "$seed_digest" ]] || { echo "seed registry digest mismatch: $registry_seed_digest != $seed_digest" >&2; exit 1; }
-
-          meta="$RUNNER_TEMP/mf-test-release-meta"
-          mkdir -p "$meta/frontend"
-          cp "$dest/manifest.json" "$dest/manifest.sha256" "$meta/"
-          cp -a "$dest/frontend/." "$meta/frontend/"
-          (cd "$meta" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
-          cat > "$meta/Containerfile" <<EOF
-          FROM scratch
-          ARG RELEASE_SHA
-          ARG MANIFEST_SHA
-          ARG APP_DIGEST
-          ARG SEED_DIGEST
-          ARG SCHEMA
-          ARG DATA_CONTRACT
-          LABEL org.opencontainers.image.revision=\$RELEASE_SHA
-          LABEL io.myfinanzas.release.manifest_sha256=\$MANIFEST_SHA
-          LABEL io.myfinanzas.release.app_digest=\$APP_DIGEST
-          LABEL io.myfinanzas.release.seed_digest=\$SEED_DIGEST
-          LABEL io.myfinanzas.release.schema=\$SCHEMA
-          LABEL io.myfinanzas.release.data_contract=\$DATA_CONTRACT
-          COPY manifest.json /manifest.json
-          COPY manifest.sha256 /manifest.sha256
-          COPY SHA256SUMS /SHA256SUMS
-          COPY frontend/ /frontend/
-          CMD ["/manifest.json"]
-          EOF
-          podman build --pull=never --platform=linux/amd64 \
-            --build-arg "RELEASE_SHA=$RELEASE_SHA" \
-            --build-arg "MANIFEST_SHA=$manifest_sha" \
-            --build-arg "APP_DIGEST=$app_digest" \
-            --build-arg "SEED_DIGEST=$seed_digest" \
-            --build-arg "SCHEMA=$schema" \
-            --build-arg "DATA_CONTRACT=$data_contract" \
-            -t "${release_ref}:sha-${RELEASE_SHA}" -f "$meta/Containerfile" "$meta"
-          podman push "${release_ref}:sha-${RELEASE_SHA}"
-          # Re-check immediately before changing the mutable pointer.
-          current_head="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/test" --jq .object.sha)"
-          [[ "$current_head" == "$RELEASE_SHA" ]] || { echo "test advanced during publication; retaining immutable tag only" >&2; exit 1; }
-          podman tag "${release_ref}:sha-${RELEASE_SHA}" "${release_ref}:test"
-          podman push "${release_ref}:test"
-          printf 'App: %s@%s\nSeed: %s@%s\nRelease: %s:test\n' \
-            "$app_ref" "$app_digest" "$seed_ref" "$seed_digest" "$release_ref" >> "$GITHUB_STEP_SUMMARY"
+          [[ -n "$TEST_DEPLOY_KEY" && -n "$TEST_DEPLOY_KNOWN_HOSTS" ]]
+          [[ -n "$TEST_DEPLOY_HOST" && -n "$TEST_DEPLOY_USER" ]]
+          install -d -m 700 "$RUNNER_TEMP/ssh"
+          printf '%s\n' "$TEST_DEPLOY_KEY" > "$RUNNER_TEMP/ssh/id_ed25519"
+          printf '%s\n' "$TEST_DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/ssh/id_ed25519" "$RUNNER_TEMP/ssh/known_hosts"
+          bundle="$RUNNER_TEMP/mf-test-deploy"
+          tar -C "$bundle" -cf - manifest.json manifest.sha256 SHA256SUMS frontend image.oci.tar \
+            | ssh -i "$RUNNER_TEMP/ssh/id_ed25519" -o IdentitiesOnly=yes \
+                -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+                -o StrictHostKeyChecking=yes \
+                "$TEST_DEPLOY_USER@$TEST_DEPLOY_HOST" "deploy:$ACTOR"
+      - name: Remove the deployment key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/ssh" "$RUNNER_TEMP/mf-test-deploy"
