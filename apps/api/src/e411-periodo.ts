@@ -471,21 +471,34 @@ function fotoUltimaConsistente(db: Database, ciclo: string, ultima: number) {
   return foto;
 }
 
+/**
+ * AC09: an absent block or an absent source keeps an explicit motive. It is
+ * never dropped from `motivos` and never turned into `Completo` or `0`.
+ */
+const MOTIVO_BLOQUE_AUSENTE = "Bloque no disponible en la foto";
+const MOTIVO_COBERTURA_AUSENTE = "Cobertura no disponible en la foto";
+
 function coberturaFoto(photo: { cobertura: unknown }) {
   const raw = photo.cobertura;
   if (!raw || typeof raw !== "object")
-    return { estado: "NoDisponible", motivos: [] as string[] };
+    return { estado: "NoDisponible", motivos: [MOTIVO_COBERTURA_AUSENTE] };
   const estado =
     typeof (raw as { estado?: unknown }).estado === "string"
       ? ((raw as { estado: string }).estado as string)
       : "NoDisponible";
   const motivos: string[] = [];
   const totales = (raw as { totales?: unknown }).totales;
-  if (totales && typeof totales === "object")
+  if (!totales || typeof totales !== "object") {
+    // The source of the blocks is absent: declare it instead of losing the motive.
+    motivos.push(MOTIVO_COBERTURA_AUSENTE);
+  } else {
     for (const [bloque, value] of Object.entries(
       totales as Record<string, unknown>,
     )) {
-      if (!value || typeof value !== "object") continue;
+      if (!value || typeof value !== "object") {
+        motivos.push(`${bloque}: ${MOTIVO_BLOQUE_AUSENTE}`);
+        continue;
+      }
       const item = value as { estado?: unknown; motivo?: unknown };
       if (item.estado !== "Completo")
         motivos.push(
@@ -494,6 +507,7 @@ function coberturaFoto(photo: { cobertura: unknown }) {
             : bloque,
         );
     }
+  }
   return { estado, motivos };
 }
 
@@ -503,9 +517,20 @@ function noDisponibleDeFoto(
   value: unknown,
 ): NoDisponiblePeriodoDto[] {
   const entries: NoDisponiblePeriodoDto[] = [];
+  const entryAusente = (bloque: string): NoDisponiblePeriodoDto => ({
+    ciclo,
+    versionFoto: version,
+    bloque,
+    estado: "No disponible",
+    motivo: MOTIVO_BLOQUE_AUSENTE,
+  });
   if (Array.isArray(value)) {
     for (const [index, item] of value.entries()) {
-      if (!item || typeof item !== "object") continue;
+      if (!item || typeof item !== "object") {
+        // AC09: a null/absent entry is declared, not skipped.
+        entries.push(entryAusente(String(index)));
+        continue;
+      }
       const row = item as {
         bloque?: unknown;
         estado?: unknown;
@@ -525,7 +550,11 @@ function noDisponibleDeFoto(
     for (const [bloque, item] of Object.entries(
       value as Record<string, unknown>,
     )) {
-      if (!item || typeof item !== "object") continue;
+      if (!item || typeof item !== "object") {
+        // AC09: a null/absent block keeps its name and motive.
+        entries.push(entryAusente(bloque));
+        continue;
+      }
       const row = item as { estado?: unknown; motivo?: unknown };
       entries.push({
         ciclo,
