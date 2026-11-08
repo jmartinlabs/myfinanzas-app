@@ -1,14 +1,19 @@
 # 35 — DEPLOY-TAGS-01: despliegue mediante tags de GitHub — Specification
 
 Status: **DISEÑO APROBADO PARA DOCUMENTACIÓN 2026-11-05 — IMPLEMENTACIÓN NO AUTORIZADA.**
-No autoriza crear tags operativos, activar workflows de despliegue, configurar credenciales
-o accesos al VPS, cambiar servicios, DNS, Caddy, Podman o firewall, desplegar ni fusionar.
+Reconciliación documental de origen y SHA (2026-11-07): `test` para TEST, `main` para PROD
+futuro, gate TEST→main y SHA congelado de la base documental `0d25be9` (no candidato de
+despliegue); no cambia las decisiones D1–D11 ni el formato/inmutabilidad de tags; actualiza el origen de TEST y añade la regla de SHA congelado. No autoriza crear
+tags operativos, activar workflows de despliegue,
+configurar credenciales o accesos al VPS, cambiar servicios, DNS, Caddy, Podman o firewall,
+desplegar ni fusionar.
 Approval source/date: usuario, 2026-11-05 (diseño de despliegue mediante tags; alcance
 limitado a documentación y revisión técnica).
-Base: `main` `70fa7c054e48faf48ae545a13f1d88e06b0c9f25` (2026-11-05). El diseño se
-preparó sobre `baa673e`; `main` incorporó después E4.10 I1 (v26). Este documento no fija una
-versión de esquema ni depende de v26; la habilitación de TEST queda condicionada a la
-reconciliación de esquema/seed de D11.
+Base: `origin/test` `0d25be9a1ae97d1dc7e2d94dcf004641973b4b8c` (2026-11-07), igual que
+`origin/main`; estado verificado `schemaVersion=27`/`C27-E411-FOTOS-PERIODO`. El diseño se
+preparó sobre `baa673e`; desde entonces se integraron E4.10 (v26) y E4.11 (v27). Este
+documento no posee el contrato de esquema ni fija el SHA de despliegue: ambos se declaran
+por SHA y D11 sigue abierta para el seed y la release.
 Documentos relacionados: [SPEC34 — entorno TEST](34-infra-test-01-specification.md),
 [31 — SQLite en producción](31-sqlite-produccion-specification.md),
 [32 — ejecución rootless](32-ejecucion-rootless-specification.md),
@@ -44,7 +49,8 @@ habilitada por esta spec.
 
 - Sustituir CI, QA, Rootless, backup/restore, aceptación funcional o autorización de merge.
 - Convertir `main` en producción o declarar TEST operativo.
-- Crear la rama `test` ni adoptar ahora `feature/* → test → main`.
+- Crear u operar la rama `test` ni cambiar su protección; la rama existe y el flujo
+  adoptado se documenta en §6.
 - Diseñar el host, sus usuarios, rutas, unidades, Caddy, DNS o copias.
 - Importar datos reales, el Excel o migrar producción.
 - Publicar secretos, claves, cookies, TOTP, bases o información financiera.
@@ -60,20 +66,25 @@ habilitada por esta spec.
 | Recepción y activación en el host | `vps-infra` (contrato que mantenga su agente) | Interfaz de entrada/salida, aislamiento TEST/PROD, permisos y recuperación; esta spec no depende de una PR concreta |
 | Patrón reutilizable (opcional) | Repositorio que decida adoptarlo; no es dependencia de esta entrega | Documentación opcional; no altera la orquestación de MyFinanzas |
 
-`[CONFIRMADO]` El flujo vigente es `feature/* → main`; no hay rama `test`. La base no tiene
-MyFinanzas desplegada, no hay datos reales y el esquema vigente se declara por SHA, no se
-fija aquí. El contrato del host pertenece a `vps-infra`; esta spec define la interfaz
-esperada y no depende de una PR concreta de ese repositorio. Este diseño prepara la
-activación automática cuando se habilite expresamente: sustituirá solo el disparador, no los
-gates del host.
+`[CONFIRMADO]` El flujo adoptado es `feature/* → test → main`. `origin/test` y
+`origin/main` apuntan a `0d25be9` (2026-11-07); `test` es el origen autorizado de TEST y
+`main` el de PROD futuro. La base no tiene MyFinanzas desplegada, no hay datos reales y el
+esquema se declara por SHA. El contrato del host pertenece a `vps-infra`; esta spec define
+la interfaz esperada y no depende de una PR concreta de ese repositorio. Este diseño prepara
+la activación automática cuando se habilite expresamente: sustituirá solo el disparador, no
+los gates del host.
 
-`[PENDIENTE]` **Dependencia de TEST.** La actualización de
-[SPEC34](34-infra-test-01-specification.md) a v25/C25 está en el
-[PR #229](https://github.com/jmartinlabs/myfinanzas-app/pull/229), **cerrado sin merge**; esa
-actualización no está integrada. El seed de `FT-1` propuesto se define para v25 y rechaza
-v26, mientras `main` ya está en v26. El primer tag de TEST no podrá habilitarse hasta
-reconciliar el contrato de esquema/seed con el SHA elegido mediante una nueva propuesta o la
-reapertura autorizada del PR. Este diseño no fija esa reconciliación (D11).
+`[PENDIENTE]` **Dependencia de TEST.** [SPEC34](34-infra-test-01-specification.md) y su
+[test plan](34-infra-test-01-testplan.md) se reconcilian documentalmente a v27/C27 y a
+`origin/test` en esta misma entrega. El seed `FT-1` v27 no existe y el SHA de TEST no está
+congelado. D11 sigue abierta: el primer tag de TEST no podrá habilitarse hasta que exista
+el seed correspondiente al SHA congelado, la release verificada y la evidencia de prueba.
+Este diseño no fija ese SHA ni sustituye la reconciliación.
+
+`[PENDIENTE]` A 2026-11-07, `test` no tiene ruleset de protección propio (consulta de solo
+lectura a la API de rulesets: solo `main-required`, id `25952058`, `enforcement` `active`);
+el gate TEST→main no se presume impuesto
+por GitHub hasta verificar y, en su caso, configurar la protección de `test` (D1).
 
 ## 3. Convención de tags
 
@@ -100,8 +111,12 @@ Reglas:
 
 - **Inmutabilidad.** Un tag publicado no se mueve, no se sobrescribe, no se borra y no se
   reutiliza. La protección efectiva se verifica en GitHub; no basta con documentarla.
-- **Origen.** El tag apunta a un commit concreto de `main` (política vigente), nunca a una
-  rama móvil, un merge ref, un fork o un commit no alcanzable desde el origen autorizado.
+- **Origen.** `deploy-test-v*` apunta a un commit concreto de `test`; `deploy-prod-v*`, a un
+  commit concreto de `main` promovido desde `test`. Nunca a una rama móvil, un merge ref, un
+  fork o un commit no alcanzable desde el origen autorizado del entorno.
+- **SHA congelado.** El tag fija el SHA completo de 40 caracteres y el digest del manifiesto;
+  un rebuild o una promoción debe conservar ambos. Un SHA de `test` no promovido a `main` no
+  puede recibir un tag PROD.
 - **Autor.** Solo un publicador autorizado crea tags. La comprobación de permisos se hace en
   el workflow además de la protección de GitHub; ninguna de las dos se presume.
 - **Reintentos.** `[PROPUESTA]` Un fallo de validación antes de mutar puede reintentarse
@@ -126,8 +141,9 @@ registra al actor y la referencia, pero no puede demostrar por sí mismo la cali
 1. Publicación de un tag `deploy-test-v*` en el repositorio de la aplicación.
 2. Validar nombre, repositorio, autor autorizado, objeto del tag y commit destino. Un valor
    ausente, ambiguo o no reconocido detiene el proceso.
-3. Resolver el SHA completo de 40 caracteres y comprobar que es ancestro del origen
-   autorizado (`origin/main` hoy). No se usa `HEAD` de una rama móvil ni un merge ref.
+3. Resolver el SHA completo de 40 caracteres y comprobar que es alcanzable desde
+   `origin/test` para TEST (y desde `origin/main` para PROD). El SHA debe coincidir con el
+   declarado en el tag. No se usa `HEAD` de una rama móvil ni un merge ref.
 4. Comprobar que no existe un despliegue exitoso previo de la misma versión en TEST y que no
    hay otro despliegue activo en el entorno.
 
@@ -191,10 +207,11 @@ para corregir una validación.
 
 ### 5.1 Disparador y promoción
 
-1. Publicación de un tag `deploy-prod-v*`; mismas validaciones de nombre, autor, objeto,
-   SHA y origen que TEST.
+1. Publicación de un tag `deploy-prod-v*`; mismas validaciones de nombre, autor, objeto y
+   SHA que TEST; el origen autorizado es `main`, no `test`.
 2. Verificar que la **misma versión, SHA y digest de manifiesto** superaron TEST con smoke
-   correcto y evidencia registrada. Si el artefacto de TEST no está disponible o difiere,
+   correcto y evidencia registrada, y que el SHA está promovido a `main` desde `test` con
+   aprobación explícita de merge. Si el artefacto de TEST no está disponible o difiere,
    detener; no reconstruir en PROD.
 3. Verificar los controles específicos de producción: autorización de datos reales,
    DT6/T-BKP, copia y restauración ensayadas, migración autorizada si cambia el esquema,
@@ -221,20 +238,23 @@ autoriza merges, desarrollo nuevo, importación de datos reales ni una versión 
 
 ## 6. Estrategia de ramas
 
-`[CONFIRMADO]` Se mantiene `feature/* → main`. Los tags apuntan a commits concretos de
-`main`. **No se crea ninguna rama adicional ahora.**
+`[CONFIRMADO]` Se adopta `feature/* → test → main`. `test` es la rama de integración y el
+origen autorizado de TEST; `main` es el origen autorizado de PROD. Los tags
+`deploy-test-v*` apuntan a commits de `test`; los `deploy-prod-v*`, a commits de `main`
+promovidos desde `test`. **No se crea ninguna rama adicional.**
 
-`[PROPUESTA]` Si en el futuro se adopta `feature/* → test → main`, se actualizará únicamente
-la política de origen de los tags: TEST podrá consumir el origen de integración y PROD el
-commit promovido a `main`. La convención, la inmutabilidad y los controles de artefacto no
-cambian. Ninguna propuesta abierta en otro repositorio se interpreta como adopción vigente.
+`[CONFIRMADO]` El gate TEST→main es un merge explícito de `test` a `main`, con aprobación de
+merge separada y los checks requeridos sobre el SHA exacto; no es automático y no lo concede
+un tag, un despliegue TEST ni este documento. La protección efectiva de `test` se verifica
+antes de habilitar tags (D1). El commit promovido conserva SHA y digest; PROD no reconstruye
+otro artefacto. La convención, la inmutabilidad y los controles de artefacto no cambian.
 
 ## 7. Seguridad y controles
 
 | Requisito aprobado | Control de diseño | Evidencia esperada (UNRUN) |
 | --- | --- | --- |
 | Proteger tags y restringir creación/modificación | Ruleset/tag protection con actores autorizados, sin update/delete; comprobar la regla efectiva y los bypass | Consulta de solo lectura a GitHub y prueba negativa |
-| Verificar SHA, procedencia y artefactos inmutables | Ancestro del origen, manifiesto, checksums e ID/digest; sin etiquetas móviles | Salida de verificación y manifiesto |
+| Verificar SHA, procedencia y artefactos inmutables | Ancestro del origen autorizado (`test` o `main`), manifiesto, checksums e ID/digest; sin etiquetas móviles | Salida de verificación y manifiesto |
 | Impedir despliegues concurrentes | Un lock por entorno y `cancel-in-progress: false`; rechazo del segundo | Run bloqueado y registro |
 | Credenciales separadas y de mínimos privilegios | Principal TEST/PROD distinto, sin root, secreto en el Environment o almacén autorizado, no en Git | Configuración revisada y prueba de alcance |
 | No guardar claves ni secretos en repositorios o artefactos | Revisión de diff, manifiesto y logs; secretos efímeros; sin identidad privada `age` ni secreto TOTP en la release (el binario `age` verificado sí forma parte de la imagen) | Auditoría de contenido y permisos |
@@ -284,6 +304,12 @@ repositorios es opcional y no forma parte de esta entrega.
 | D10 | Pre-releases, metadatos de build y futura rama `test` | Solo SemVer estable ahora; la rama futura cambia únicamente el origen de tags | Futuro |
 | D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` está en v26, el seed propuesto es v25 y el PR #229 se cerró sin merge: nueva propuesta o reapertura autorizada | Fase 1 |
 
+`[CONFIRMADO]` D1–D11 conservan la redacción aprobada el 2026-11-05. D10 se redactó cuando
+`test` era futura; la rama existe y el origen vigente se define en §6, sin cambiar la
+decisión sobre pre-releases y metadatos. La referencia de D11 a v26/v25 y al PR #229 es
+histórica: el estado verificado es v27/C27, SPEC34/testplan reconciliados y seed `FT-1` v27
+no implementado; D11 sigue abierta.
+
 ## 10. Fases propuestas para implementar y habilitar
 
 | Fase | Objetivo | Evidencia de salida | Autorización |
@@ -292,9 +318,9 @@ repositorios es opcional y no forma parte de esta entrega.
 | 1 | Cerrar D1–D11 y el contrato entre repositorios | Decisiones registradas y documentos reconciliados; sin cambios operativos | Separada |
 | 2 | Configurar protección de tags y Environments | Reglas efectivas verificadas; sin tags operativos ni credenciales de despliegue | Separada |
 | 3 | Implementar el workflow en dry-run | Solo `workflow_dispatch`, sin `push` de tags y sin credenciales de VPS; casos negativos y positivos; host intacto | Separada |
-| 4 | Habilitar TEST | Primer `deploy-test-vX`; smoke, copia/restore y evidencia; PROD intacto | Separada |
-| 5 | Habilitar PROD | Backup/restore, aceptación, revisores y primer `deploy-prod-vX` aprobado y verificado | Separada |
-| 6 | Adoptar una rama de integración, si se decide | Solo cambia la política de origen de los tags | Separada |
+| 4 | Habilitar TEST | Primer `deploy-test-vX` sobre SHA congelado de `test`; smoke, copia/restore y evidencia; PROD intacto | Separada |
+| 5 | Habilitar PROD | Backup/restore, aceptación, revisores y primer `deploy-prod-vX` sobre el SHA promovido a `main` | Separada |
+| 6 | Verificar protección y promoción `test`→`main` | Reglas efectivas, gate y prueba negativa; sin tags operativos | Separada |
 
 Cada fase conserva sus propios criterios y no se deduce de la anterior. La fase 3 no usa un
 tag operativo; la fase 4 es la primera que publica un tag `deploy-test-v*`, y solo después de
@@ -320,7 +346,8 @@ su autorización. Ninguna fase se declara completada por un merge documental.
 - Cambiar servicios, DNS, Caddy, Podman, firewall, usuarios, rutas o copias del VPS.
 - Realizar despliegues, migraciones, restauraciones, rollbacks o merges.
 - Importar datos reales, el Excel o información financiera.
-- Crear la rama `test` o modificar la estrategia de ramas vigente.
+- Crear u operar la rama `test`, modificar su protección o la estrategia
+  `feature/* → test → main`; esta spec solo documenta el origen y no la ejecuta.
 
 ## 13. Referencias
 
