@@ -196,6 +196,7 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true' }}
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
         run: |
