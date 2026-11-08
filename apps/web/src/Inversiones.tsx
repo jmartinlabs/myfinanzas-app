@@ -2001,12 +2001,31 @@ function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) 
     </>
   );
 }
+export function AnnulPurchaseMotivo({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+}) {
+  return (
+    <Field id="motivo" label="Motivo *" error={error}>
+      <input value={value} onChange={onChange} required />
+    </Field>
+  );
+}
+
 function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
   const [data, setData] = useState<any>(null),
     [impact, setImpactState] = useState<Impact | null>(null),
     [motivo, setMotivo] = useState(""),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [fields, setFields] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(false),
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLElement>(null);
   useEffect(() => {
     let live = true;
     api(`/compras/${id}`)
@@ -2027,10 +2046,18 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
         }),
       );
     } catch (value) {
-      setError((value as Error).message);
+      fail(value);
     } finally {
       setBusy(false);
     }
+  }
+  function fail(value: unknown) {
+    const apiError = value as ApiError;
+    setError(apiError.message);
+    setFields(apiError.fields ?? {});
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
   }
   async function confirm() {
     if (!data || !motivo.trim()) return;
@@ -2042,7 +2069,7 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
       });
       go(`${BASE}/compras/${result.compra.id}`);
     } catch (value) {
-      setError((value as Error).message);
+      fail(value);
     } finally {
       setBusy(false);
     }
@@ -2069,20 +2096,22 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
         title="Anular compra"
         description="El registro se conserva como Anulada; no se borra"
       />
-      {error && <Alert>{error}</Alert>}
+      {error && (
+        <div ref={alert} tabIndex={-1} className="focus-alert">
+          <Alert>{error}</Alert>
+        </div>
+      )}
       {impact && <ImpactPanel impact={impact} />}
-      <section className="panel">
-        <label>
-          Motivo *
-          <input
-            value={motivo}
-            onChange={(event) => {
-              setMotivo(event.target.value);
-              setError("");
-            }}
-            required
-          />
-        </label>
+      <section className="panel" ref={formRef}>
+        <AnnulPurchaseMotivo
+          value={motivo}
+          error={fields.motivo}
+          onChange={(event) => {
+            setMotivo(event.target.value);
+            setError("");
+            setFields((current) => ({ ...current, motivo: "" }));
+          }}
+        />
         <p className="help">
           Revisión actual {data.compra.revision} → se guardará{" "}
           {data.compra.revision + 1}. La Compra anulada deja de computar en
