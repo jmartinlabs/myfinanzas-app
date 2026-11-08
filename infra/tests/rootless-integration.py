@@ -534,7 +534,7 @@ def main():
         stage = 'previous-private-release-build'
         previous_ref = resolve_previous_ref(source)
         evidence['previous-ref-selection'] = 'explicit' if os.environ.get('PREVIOUS_REF', '').strip() else 'merge-base'
-        previous = build(root / 'previous', ref=previous_ref)
+        previous = build(root / 'previous', ref=previous_ref, seed=False)
         same_contracts = previous['inputs']['contracts'] == manifest['inputs']['contracts']
         authorization = None
         if not same_contracts:

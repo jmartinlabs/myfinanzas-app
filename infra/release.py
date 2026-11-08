@@ -246,7 +246,7 @@ def verify_archive(archive, expected_sha, label):
     return oci_manifest_digest(archive)
 
 
-def verify(directory, expected_commit, expected_manifest):
+def verify(directory, expected_commit, expected_manifest, require_seed=True):
     directory = Path(directory)
     if directory.is_symlink() or directory.resolve() != directory or (directory / 'frontend').is_symlink():
         raise ReleaseError('unsafe release path')
@@ -263,6 +263,25 @@ def verify(directory, expected_commit, expected_manifest):
         if manifest['inputs'].get(key) != sha(source_bytes(expected_commit, path)):
             raise ReleaseError(f'{key} mismatch for {path} at expected commit {expected_commit}')
     seed = manifest.get('seed')
+    if not require_seed:
+        # A previous version may predate the test-only seed image. Its manifest
+        # is only used for the migration/rollback matrix, never as a current
+        # TEST package; the caller builds it with seed=False explicitly.
+        if seed is not None:
+            raise ReleaseError('previous release unexpectedly declares a seed image')
+        archive = directory / 'image.oci.tar'
+        app_digest = verify_archive(archive, manifest['oci_archive_sha256'], 'application')
+        if manifest.get('oci_manifest_digest') != app_digest:
+            raise ReleaseError('application OCI manifest digest mismatch')
+        web_root = directory / 'frontend'
+        actual = {}
+        for path in web_root.rglob('*'):
+            if path.is_symlink() or not path.is_file():
+                raise ReleaseError('frontend symlink')
+            actual[path.relative_to(web_root).as_posix()] = sha(path.read_bytes())
+        if actual != manifest['frontend_files']:
+            raise ReleaseError('frontend/backend mismatch')
+        return manifest
     if not isinstance(seed, dict):
         raise ReleaseError('seed image is missing from release manifest')
     # The app and the test-only seed must come from the same commit, lock,
@@ -343,7 +362,7 @@ def build_repeated(ctx, recipe, scratch, prefix, epoch, commit, repeat, frontend
     return results
 
 
-def build(directory, ref='HEAD', repeat=True):
+def build(directory, ref='HEAD', repeat=True, seed=True):
     directory = Path(directory)
     if directory.exists() or not directory.is_absolute() or directory.is_symlink():
         raise ReleaseError('new absolute output directory required')
@@ -362,35 +381,41 @@ def build(directory, ref='HEAD', repeat=True):
         inputs = context(commit, ctx, age_bytes)
         check_context(ctx, inputs)
         reject_context_canaries(ctx, inputs, APP_CONTEXT_FILES)
-        seed_ctx = scratch / 'seed-context'
-        seed_ctx.mkdir(mode=0o700)
-        seed_inputs = seed_context(commit, seed_ctx)
-        check_context(seed_ctx, seed_inputs, SEED_CONTEXT_FILES)
-        reject_context_canaries(seed_ctx, seed_inputs, SEED_CONTEXT_FILES)
-        if (inputs['source'] != seed_inputs['source'] or
-                inputs['contracts'] != seed_inputs['contracts'] or
-                inputs['lock_sha256'] != seed_inputs['lock_sha256']):
-            raise ReleaseError('app/seed context mismatch')
+        seed_inputs = seed_results = seed_chosen = None
+        if seed:
+            seed_ctx = scratch / 'seed-context'
+            seed_ctx.mkdir(mode=0o700)
+            seed_inputs = seed_context(commit, seed_ctx)
+            check_context(seed_ctx, seed_inputs, SEED_CONTEXT_FILES)
+            reject_context_canaries(seed_ctx, seed_inputs, SEED_CONTEXT_FILES)
+            if (inputs['source'] != seed_inputs['source'] or
+                    inputs['contracts'] != seed_inputs['contracts'] or
+                    inputs['lock_sha256'] != seed_inputs['lock_sha256']):
+                raise ReleaseError('app/seed context mismatch')
         results = build_repeated(ctx, 'Containerfile', scratch, 'image', epoch, commit, repeat,
                                  directory / 'frontend')
         chosen = results[0]
-        seed_results = build_repeated(seed_ctx, 'Containerfile.seed', scratch, 'seed-image', epoch,
-                                      commit, repeat)
-        seed_chosen = seed_results[0]
+        if seed:
+            seed_results = build_repeated(seed_ctx, 'Containerfile.seed', scratch, 'seed-image', epoch,
+                                          commit, repeat)
+            seed_chosen = seed_results[0]
         run(['podman', 'save', '--format=oci-archive', '--output', str(directory / 'image.oci.tar'), chosen['image']])
         inspect_layers(directory / 'image.oci.tar')
         oci_digest = oci_manifest_digest(directory / 'image.oci.tar')
-        run(['podman', 'save', '--format=oci-archive', '--output', str(directory / 'image.seed.oci.tar'),
-             seed_chosen['image']])
-        inspect_layers(directory / 'image.seed.oci.tar')
-        seed_digest = oci_manifest_digest(directory / 'image.seed.oci.tar')
+        if seed:
+            run(['podman', 'save', '--format=oci-archive', '--output', str(directory / 'image.seed.oci.tar'),
+                 seed_chosen['image']])
+            inspect_layers(directory / 'image.seed.oci.tar')
+            seed_digest = oci_manifest_digest(directory / 'image.seed.oci.tar')
         tool_versions = {'podman': run(['podman', '--version']).decode().strip()}
         manifest = {'oci_manifest_digest': oci_digest, 'format': 1, 'inputs': inputs, **chosen,
                     'source_date_epoch': int(epoch),
                     'oci_archive_sha256': sha((directory / 'image.oci.tar').read_bytes()),
                     'reproducibility': {'builds': results, 'payload_equal': repeat,
                        'oci_metadata': 'Only tar/image timestamps and container-generated host files are excluded from normalized payload; no unexplained content differences allowed.'},
-                    'seed': {
+                    'tool_versions': tool_versions}
+        if seed:
+            manifest['seed'] = {
                         'image': seed_chosen['image'],
                         'oci_manifest_digest': seed_digest,
                         'rootfs_payload_sha256': seed_chosen['rootfs_payload_sha256'],
@@ -403,21 +428,22 @@ def build(directory, ref='HEAD', repeat=True):
                         'reproducibility': {'builds': seed_results, 'payload_equal': repeat,
                            'oci_metadata': 'Same normalization as the application image; duplicate clean builds must match.'},
                         'tool_versions': tool_versions,
-                    },
-                    'tool_versions': tool_versions}
+                    }
         os_release = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', '--entrypoint=cat', chosen['image'], '/etc/os-release']).decode()
         manifest['runtime_os'] = dict(line.split('=', 1) for line in os_release.splitlines() if line.startswith(('ID=', 'VERSION_ID=')))
         manifest_path = directory / 'manifest.json'
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
         manifest_path.chmod(0o600)
         (directory / 'image.oci.tar').chmod(0o600)
-        (directory / 'image.seed.oci.tar').chmod(0o600)
+        if seed:
+            (directory / 'image.seed.oci.tar').chmod(0o600)
         digest = sha(manifest_path.read_bytes())
         (directory / 'manifest.sha256').write_text(digest + '\n')
-        verify(directory, commit, digest)
+        verify(directory, commit, digest, require_seed=seed)
         # Roundtrip the private archives without a registry or production credentials.
         run(['podman', 'load', '--input', str(directory / 'image.oci.tar')])
-        run(['podman', 'load', '--input', str(directory / 'image.seed.oci.tar')])
+        if seed:
+            run(['podman', 'load', '--input', str(directory / 'image.seed.oci.tar')])
         version = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges',
                        '--read-only', '--entrypoint=age', chosen['image'], '--version']).decode().strip().lstrip('v')
         if version != '1.3.2':
@@ -425,11 +451,12 @@ def build(directory, ref='HEAD', repeat=True):
         bun = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', chosen['image'], '--version']).decode().strip()
         if bun != '1.4.3':
             raise ReleaseError('Bun runtime version mismatch')
-        seed_bun = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', seed_chosen['image'], '--version']).decode().strip()
-        if seed_bun != '1.4.3':
-            raise ReleaseError('seed Bun runtime version mismatch')
-        run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges',
-             '--read-only', '--entrypoint=test', seed_chosen['image'], '-f', '/app/tools/test-seed/cli.ts'])
+        if seed:
+            seed_bun = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', seed_chosen['image'], '--version']).decode().strip()
+            if seed_bun != '1.4.3':
+                raise ReleaseError('seed Bun runtime version mismatch')
+            run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges',
+                 '--read-only', '--entrypoint=test', seed_chosen['image'], '-f', '/app/tools/test-seed/cli.ts'])
         present = subprocess.run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all',
                                   '--security-opt=no-new-privileges', '--read-only', '--entrypoint=test',
                                   chosen['image'], '-e', '/app/tools/test-seed'], capture_output=True, timeout=60)

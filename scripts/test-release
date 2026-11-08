@@ -213,6 +213,21 @@ class ReleaseContextTests(unittest.TestCase):
             release.verify(directory, self.a, digest)
         self.assertIn('seed image is missing', str(caught.exception))
 
+    def test_previous_release_verifies_without_seed(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK),
+            include_seed=False)
+        manifest = release.verify(directory, self.a, digest, require_seed=False)
+        self.assertNotIn('seed', manifest)
+
+    def test_previous_verification_rejects_an_unexpected_seed(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK),
+            include_seed=True)
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest, require_seed=False)
+        self.assertIn('unexpectedly declares a seed', str(caught.exception))
+
     def test_verify_rejects_seed_archive_and_digest_mismatch(self):
         directory, digest = self.synthetic_release(
             self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
