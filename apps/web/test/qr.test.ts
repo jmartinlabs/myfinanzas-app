@@ -7,8 +7,8 @@ import { qrSvg, TOTP_QR_LABEL } from "../src/qr";
  * falta enrolar el segundo factor (`enrollment.uri`).
  */
 const QR_URI =
-  "otpauth://totp/MyFinanzas:Usuario%20%C3%BAnico?secret=JBSWY3DPEHPK3PXP&issuer=MyFinanzas&algorithm=SHA1&digits=6&period=30";
-const SECRET = "JBSWY3DPEHPK3PXP";
+  "otpauth://totp/MyFinanzas:Usuario%20%C3%BAnico?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=MyFinanzas&algorithm=SHA1&digits=6&period=30";
+const SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
 /** Lado de cada módulo dibujado y zona de silencio, en módulos. */
 const CELL = 4;
 const QUIET_ZONE = 4;
@@ -103,8 +103,8 @@ test("qrSvg devuelve un SVG inline accesible y sin recursos externos", () => {
 test("qrSvg codifica exactamente el URI en una matriz QR válida", () => {
   const svg = qrSvg(QR_URI);
   const rendered = matrixFromSvg(svg);
-  // Tipo automático con corrección M para este URI: versión 7 (45×45).
-  expect(rendered.modules).toBe(45);
+  // Tipo automático con corrección M para el secreto real de 32 caracteres: versión 8 (49×49).
+  expect(rendered.modules).toBe(49);
   expect(rendered.darkCount).toBe(referenceMatrix(QR_URI).darkCount);
   // La geometría dibujada reproduce la matriz del generador para ese URI.
   expect(rendered.dark).toEqual(referenceMatrix(QR_URI).dark);

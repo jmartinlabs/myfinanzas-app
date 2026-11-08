@@ -39,7 +39,7 @@ export function qrSvg(value: string): string {
     }
   }
   return [
-    `<svg role="img" aria-label="${TOTP_QR_LABEL}" focusable="false"`,
+    `<svg role="img" aria-label="${TOTP_QR_LABEL}" focusable="false" shape-rendering="crispEdges"`,
     ` viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`,
     // Única pareja de colores literales: negro sobre blanco es lo que exige la
     // lectura del QR y no se adapta a los temas.

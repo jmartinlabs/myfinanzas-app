@@ -872,6 +872,8 @@ select[aria-invalid="true"] {
  * QR del alta TOTP. El fondo blanco es fijo, no un token de tema: el contraste
  * negro/blanco es requisito de escaneo y no debe adaptarse a dark/hybrid.
  */
+/* Fondo blanco fijo: el QR debe escanearse igual en los tres temas;
+   no es un color de interfaz y no se sustituye por tokens. */
 .totp-qr {
   display: block;
   width: min(100%, 220px);

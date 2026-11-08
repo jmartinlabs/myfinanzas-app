@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
@@ -15,8 +15,6 @@ import { totp } from "../../apps/api/src/auth";
 
 const PORT = 3046;
 const DIR = ".local/e2e-mfa-qr";
-const ARTIFACTS = "artifacts/mfa-qr";
-const THEMES = ["dark-s", "light-s", "hybrid-s"] as const;
 const QR_LABEL = "Código QR para configurar la aplicación autenticadora";
 let child: ReturnType<typeof spawn> | undefined;
 
@@ -48,7 +46,6 @@ test("MFA QR: aparece solo en el alta, con clave manual, y desaparece al verific
   context,
 }) => {
   test.setTimeout(180000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   const hosts = new Set<string>();
   const watch = (p: typeof page) => {
@@ -132,10 +129,6 @@ test("MFA QR: aparece solo en el alta, con clave manual, y desaparece al verific
       await expect(qr).toBeVisible();
       await expectNoOverflow(p);
       await expectQrSurface(p);
-      await p.screenshot({
-        path: `${ARTIFACTS}/alta-qr-${theme}-${width}.png`,
-        fullPage: true,
-      });
     }
   };
 
@@ -213,10 +206,6 @@ test("MFA QR: aparece solo en el alta, con clave manual, y desaparece al verific
   ).toBeVisible();
   await expect(page.locator(".totp-qr")).toHaveCount(0);
   await expect(page.getByRole("img", { name: QR_LABEL })).toHaveCount(0);
-  await page.screenshot({
-    path: `${ARTIFACTS}/login-recuperacion-sin-qr-1440.png`,
-    fullPage: true,
-  });
 
   // Solo se habló con la app local: ni imágenes ni peticiones remotas.
   expect([...hosts].filter((h) => !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(h))).toEqual([]);
