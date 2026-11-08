@@ -30,8 +30,11 @@ No equivale a prometer archivo OCI idéntico byte a byte ni disponibilidad perpe
 de descargas. No ampliar arquitectura sin nueva validación.
 
 La carpeta contiene `image.oci.tar`, `image.seed.oci.tar`, `frontend/`,
-`manifest.json` y `manifest.sha256`; permanece privada y no se publica como artifact
-de CI. `release.py build` construye la app y la imagen seed **test-only** desde el
+`manifest.json` y `manifest.sha256`. Solo para TEST se permite un artifact sin cifrar
+construido en GitHub Actions (retención 7 días y descarga manual por SSH), sin
+secretos, bases de datos ni información financiera. Requiere gate Rootless previo
+del mismo SHA y QA independiente; el empaquetado puede usar un único build por
+imagen, sin atribuirse la prueba de reproducibilidad de Rootless. `release.py build` construye la app y la imagen seed **test-only** desde el
 mismo commit, base y lock, con dos builds por imagen. El manifiesto registra el bloque
 `seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta, `source`,
 `contracts` y lock); `verify` exige que el par esté presente y emparejado.
