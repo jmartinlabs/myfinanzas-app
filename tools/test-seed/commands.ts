@@ -62,7 +62,10 @@ type ParsedArguments = {
   dataRoot: string;
   seedCommit?: string;
   expectedManifestSha256?: string;
+  seedImage?: string;
 };
+
+const SEED_IMAGE = /^sha256:[a-f0-9]{64}$/;
 
 const COMMANDS = new Set(["init", "apply", "verify", "status"]);
 
@@ -86,9 +89,9 @@ export function parseArguments(argv: readonly string[]): ParsedArguments {
   }
   const allowed =
     command === "init" || command === "apply"
-      ? ["--data-root", "--seed-commit"]
+      ? ["--data-root", "--seed-commit", "--seed-image"]
       : command === "verify"
-        ? ["--data-root", "--expected-manifest-sha256"]
+        ? ["--data-root", "--expected-manifest-sha256", "--seed-image"]
         : ["--data-root"];
   for (const name of flags.keys())
     if (!allowed.includes(name))
@@ -109,11 +112,18 @@ export function parseArguments(argv: readonly string[]): ParsedArguments {
     !/^[a-f0-9]{64}$/.test(expectedManifestSha256)
   )
     throw new SeedError(2, "--expected-manifest-sha256 debe ser SHA-256 hex.");
+  const seedImage = flags.get("--seed-image")?.toLowerCase();
+  if (seedImage !== undefined && !SEED_IMAGE.test(seedImage))
+    throw new SeedError(
+      2,
+      "--seed-image debe ser un ID inmutable sha256:<64 hex>.",
+    );
   return {
     command: command as SeedCommand,
     dataRoot,
     seedCommit,
     expectedManifestSha256,
+    seedImage,
   };
 }
 
@@ -193,8 +203,9 @@ function assertManifestStaticAndRuntime(
   db: Database,
   manifest: SeedManifest,
   commit: string,
+  seedImage: string | null,
 ) {
-  const staticProblem = validateManifestStatic(manifest, commit);
+  const staticProblem = validateManifestStatic(manifest, commit, seedImage);
   if (staticProblem)
     throw new SeedError(3, `Manifiesto de seed inválido: ${staticProblem}.`, "manifest");
   const runtimeProblem = validateManifestRuntime(db, manifest);
@@ -229,8 +240,10 @@ export function initSeed(parsed: ParsedArguments): SeedResult {
     2,
     "marcador TEST",
   );
+  const seedImage =
+    parsed.seedImage ?? existing?.value.seed_image ?? null;
   if (existing) {
-    const problem = validateMarker(existing.value, commit);
+    const problem = validateMarker(existing.value, commit, seedImage);
     if (problem)
       throw new SeedError(2, `Marcador TEST ajeno: ${problem}.`, "marker");
     if (existing.value.seed_manifest_sha256 !== null)
@@ -257,7 +270,7 @@ export function initSeed(parsed: ParsedArguments): SeedResult {
   try {
     writeNewPrivateFile(
       markerPath(root),
-      markerJson(expectedInitMarker(commit)),
+      markerJson(expectedInitMarker(commit, seedImage)),
     );
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST")
@@ -279,11 +292,17 @@ type ApplyState = {
   manifestSha256: string | null;
 };
 
-function applyState(db: Database, root: string, commit: string): ApplyState {
+function applyState(
+  db: Database,
+  root: string,
+  commit: string,
+  requestedImage?: string,
+): ApplyState {
   const marker = markerOrThrow(root);
-  const problem = validateMarker(marker, commit);
+  const problem = validateMarker(marker, commit, requestedImage);
   if (problem)
     throw new SeedError(2, `Marcador TEST ajeno: ${problem}.`, "marker");
+  const seedImage = requestedImage ?? marker.seed_image ?? null;
   assertNoFailure(root);
   const manifest = optionalPrivateJson<SeedManifest>(
     manifestPath(root),
@@ -317,7 +336,12 @@ function applyState(db: Database, root: string, commit: string): ApplyState {
       "Drift: el manifiesto no coincide con la huella del marcador.",
       "manifest",
     );
-  assertManifestStaticAndRuntime(db, manifest.value, marker.seed_commit);
+  assertManifestStaticAndRuntime(
+    db,
+    manifest.value,
+    marker.seed_commit,
+    seedImage,
+  );
   assertExpectedDatasetState(db, "verify");
   return {
     root,
@@ -336,7 +360,7 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
   let state: ApplyState;
   try {
     assertSchema27(readDb);
-    state = applyState(readDb, root, commit);
+    state = applyState(readDb, root, commit, parsed.seedImage);
   } finally {
     readDb.close();
   }
@@ -352,7 +376,7 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
   const { db } = writeConnection(config);
   try {
     assertSchema27(db);
-    const current = applyState(db, root, commit);
+    const current = applyState(db, root, commit, parsed.seedImage);
     if (current.manifestSha256 !== null)
       return {
         command: "apply",
@@ -375,7 +399,11 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
       step = "dataset";
       applyDataset(db);
       step = "manifiesto";
-      const manifest = effectiveManifest(db, commit);
+      const manifest = effectiveManifest(
+        db,
+        commit,
+        parsed.seedImage ?? state.marker.seed_image ?? null,
+      );
       step = "verificacion";
       assertExpectedDatasetState(db, "apply");
       assertIntegrity(db);
@@ -451,7 +479,34 @@ export function verifySeed(parsed: ParsedArguments): SeedResult {
         "El manifiesto no coincide con --expected-manifest-sha256.",
         "manifest",
       );
-    assertManifestStaticAndRuntime(db, manifest.value, marker.seed_commit);
+    const declaredImage = manifest.value.source.seed_image ?? null;
+    if ((marker.seed_image ?? null) !== null && marker.seed_image !== declaredImage)
+      throw new SeedError(
+        3,
+        "El marcador y el manifiesto declaran seed_image distinto.",
+        "manifest",
+      );
+    if (declaredImage !== null && parsed.seedImage === undefined)
+      throw new SeedError(
+        3,
+        "El manifiesto declara seed_image; verify exige --seed-image.",
+        "manifest",
+      );
+    if (
+      parsed.seedImage !== undefined &&
+      parsed.seedImage !== declaredImage
+    )
+      throw new SeedError(
+        3,
+        "El manifiesto no coincide con --seed-image.",
+        "manifest",
+      );
+    assertManifestStaticAndRuntime(
+      db,
+      manifest.value,
+      marker.seed_commit,
+      parsed.seedImage ?? declaredImage,
+    );
     assertExpectedDatasetState(db, "verify");
     assertIntegrity(db);
     return {
@@ -506,6 +561,7 @@ export function statusSeed(parsed: ParsedArguments): SeedResult {
       detail.seed_commit = files.marker.value.seed_commit;
       detail.seed_manifest_sha256 =
         files.marker.value.seed_manifest_sha256;
+      detail.seed_image = files.marker.value.seed_image ?? null;
     }
     if (files.manifest) {
       detail.manifest_sha256 = files.manifest.sha256;
@@ -545,6 +601,7 @@ export function statusSeed(parsed: ParsedArguments): SeedResult {
             db,
             files.manifest.value,
             files.marker.value.seed_commit,
+            files.manifest.value.source.seed_image ?? null,
           );
           assertExpectedDatasetState(db, "verify");
           assertIntegrity(db);

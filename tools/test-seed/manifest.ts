@@ -70,7 +70,10 @@ export function assertSeedRuntime() {
     );
 }
 
-export function staticManifest(commit: string): Omit<
+export function staticManifest(
+  commit: string,
+  seedImage: string | null = null,
+): Omit<
   SeedManifest,
   "ids" | "counts" | "empty_tables" | "logical_checksums"
 > {
@@ -90,8 +93,8 @@ export function staticManifest(commit: string): Omit<
       schema_contract_sha256: SEED_SCHEMA_CONTRACT_SHA256,
       data_contract: SEED_DATA_CONTRACT,
       bun: SEED_BUN,
-      // I2 (release pareado) fija aquí el ID inmutable de la imagen seed.
-      seed_image: null,
+      // I2 (release pareado) registra aquí el ID inmutable de la imagen seed.
+      seed_image: seedImage,
     },
     environment: {
       name: "test",
@@ -118,8 +121,9 @@ export function staticManifest(commit: string): Omit<
 export function effectiveManifest(
   db: Database,
   commit: string,
+  seedImage: string | null = null,
 ): SeedManifest {
-  const base = staticManifest(commit),
+  const base = staticManifest(commit, seedImage),
     counts = tableCounts(db);
   return {
     ...base,
@@ -150,8 +154,12 @@ export function assertExpectedDatasetState(
     );
 }
 
-export function validateManifestStatic(manifest: SeedManifest, commit: string) {
-  const expected = staticManifest(commit);
+export function validateManifestStatic(
+  manifest: SeedManifest,
+  commit: string,
+  seedImage: string | null = null,
+) {
+  const expected = staticManifest(commit, seedImage);
   if (canonicalJson(manifest.format) !== canonicalJson(expected.format))
     return "formato de manifiesto distinto";
   if (canonicalJson(manifest.dataset) !== canonicalJson(expected.dataset))
@@ -168,7 +176,11 @@ export function validateManifestStatic(manifest: SeedManifest, commit: string) {
 }
 
 export function validateManifestRuntime(db: Database, manifest: SeedManifest) {
-  const effective = effectiveManifest(db, manifest.source.commit);
+  const effective = effectiveManifest(
+    db,
+    manifest.source.commit,
+    manifest.source.seed_image,
+  );
   for (const field of [
     "ids",
     "counts",

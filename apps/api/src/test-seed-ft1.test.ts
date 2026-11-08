@@ -535,6 +535,52 @@ describe("FT-1 minimal v27", () => {
     expect(sha).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  test("--seed-image is recorded and verify rejects a mismatch", () => {
+    const root = fixtureRoot();
+    const image = "sha256:" + "a".repeat(64);
+    expect(
+      command(root, [
+        "init",
+        "--data-root",
+        root,
+        "--seed-commit",
+        COMMIT,
+        "--seed-image",
+        image,
+      ]).code,
+    ).toBe(0);
+    expect(readMarker(root).seed_image).toBe(image);
+    expect(
+      command(root, [
+        "apply",
+        "--data-root",
+        root,
+        "--seed-commit",
+        COMMIT,
+        "--seed-image",
+        image,
+      ]).code,
+    ).toBe(0);
+    expect(readManifest(root).source.seed_image).toBe(image);
+    expect(verify(root, ["--seed-image", image]).code).toBe(0);
+    expect(
+      verify(root, ["--seed-image", "sha256:" + "b".repeat(64)]).code,
+    ).toBe(3);
+    // El manifiesto declara una imagen seed: verify exige identificarla.
+    expect(verify(root).code).toBe(3);
+    expect(
+      command(root, [
+        "init",
+        "--data-root",
+        root,
+        "--seed-commit",
+        COMMIT,
+        "--seed-image",
+        "sha256:not-hex",
+      ]).code,
+    ).toBe(2);
+  });
+
   test("status is read-only and CLI arguments are strict", () => {
     const root = fixtureRoot();
     seed(root);
