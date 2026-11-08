@@ -289,6 +289,34 @@ class ReleaseContextTests(unittest.TestCase):
         self.assertIn('infra/healthcheck.mjs', str(caught.exception))
         self.assertIn(self.a, str(caught.exception))
 
+    def test_single_build_test_artifact_is_explicit_and_verified(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        def single(manifest):
+            for item in (manifest, manifest['seed']):
+                item['reproducibility'] = {
+                    'mode': 'single-build', 'payload_equal': None,
+                    'builds': [{'rootfs_payload_sha256': item['rootfs_payload_sha256']}],
+                }
+        digest = self.rewrite_manifest(directory, single)
+        verified = release.verify(directory, self.a, digest)
+        self.assertEqual(verified['reproducibility']['mode'], 'single-build')
+        digest = self.rewrite_manifest(
+            directory, lambda m: m['seed']['reproducibility']['builds'][0].update(
+                {'rootfs_payload_sha256': '0' * 64}))
+        with self.assertRaises(release.ReleaseError):
+            release.verify(directory, self.a, digest)
+
+    def test_single_build_cannot_claim_two_build_proof(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        digest = self.rewrite_manifest(directory, lambda m: m['seed'].update({
+            'reproducibility': {'mode': 'single-build', 'payload_equal': True,
+                                'builds': [{'rootfs_payload_sha256': '4' * 64}]}
+        }))
+        with self.assertRaises(release.ReleaseError):
+            release.verify(directory, self.a, digest)
+
     def test_verify_accepts_selected_commit_recipe_hashes(self):
         directory, digest = self.synthetic_release(
             self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
