@@ -15,6 +15,10 @@ import urllib.error
 import urllib.request
 import uuid
 
+# Import the release contract error for sanitized diagnostics only.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from release import ReleaseError  # noqa: E402
+
 # The reviewed migration dispatched through PREVIOUS_REF is 26 -> 27. Update
 # this guard together with the next authorized migration manifest.
 PREVIOUS_REF_SCHEMA = 26
@@ -673,6 +677,6 @@ if __name__ == '__main__':
         main()
     except Exception as error:
         # Fixed stage and class only: no keys, data, env or command output.
-        detail = str(error) if isinstance(error, ProbeError) else type(error).__name__
+        detail = str(error) if isinstance(error, (ProbeError, ReleaseError)) else type(error).__name__
         print('::error title=Rootless integration failed::stage=' + stage + '; reason=' + detail)
         sys.exit(1)
