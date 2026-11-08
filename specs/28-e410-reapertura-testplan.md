@@ -41,8 +41,9 @@ P2/P3/P6/P7/P8 de SPEC29 siguen abiertas.**
 - **Contrato:** DTO de estado/versión/foto; errores motivados; idempotencia y concurrencia.
 - **Seguridad:** sesión MFA completa, Origin/CSRF, límites de JSON, ausencia de rutas
   `PATCH`/`DELETE`, rechazo de payloads manipulados.
-- **UI:** Playwright cuando exista una UI autorizada; aquí solo se diseña el caso, no se
-  ejecuta. No hay capturas 390/1440.
+- **UI:** Playwright ejecutado con fixtures sobre la UI existente (`tests/e2e/cierre.spec.ts`,
+  bloque E4.10 I7, 390/1440); capturas no versionadas. Los casos concretos sin aserción
+  conservan `UNRUN`.
 - **Datos:** fixtures sintéticos exclusivamente. Un fixture de backup **no** acredita DT6.
 - **Verificación final:** cuando exista código de E4.10, el paquete DEV usará
   `python3 scripts/verify` o `python3 scripts/verify --full` según el perfil autorizado.
@@ -253,10 +254,11 @@ global ni verificación funcional con datos reales. Evidencia:
 
 ## 7. Verificación de navegador
 
-`UNRUN`. No hay UI de E4.10 ni wireframes aprobados. Cuando exista UI autorizada, se
-verificarán al menos: elegibilidad del último cierre, confirmación con motivo, estado
-reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesión expirada, en
-390 y 1440. No se declaran capturas ni PASS.
+`PARCIAL (fixtures)`. La UI de E4.10 existe y la E2E `tests/e2e/cierre.spec.ts` (bloque
+E4.10 I7) cubre elegibilidad del último cierre, confirmación con motivo, estado reabierto,
+comparación v1/v2, cierre no último y `SIN_CAMBIOS`, en 390 y 1440; capturas no versionadas.
+Los casos sin aserción propia (sesión expirada y errores de cierre posterior/versión/DT6)
+conservan `UNRUN`. No se declara PASS de aceptación ni cierre real.
 
 ---
 
@@ -266,8 +268,9 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
   forma de reapertura, la foto v2 y la auditoría están **ratificadas** (DT-A/B/C/E); la
   implementación se adapta a la superficie ratificada sin cambiar la semántica. Las
   definiciones y resultados esperados están **congelados**. La política D5-A está aprobada.
-- `[CONFIRMADO 2026-11-07]` **E4.10 completo para fixtures.** El camino de re-cierre existe y
-  F1 se ejecutó con fixtures; no acredita cierre real.
+- `[CONFIRMADO 2026-11-08]` **E4.10 ejecutado con fixtures: 23 `PASS (fixtures)` y AC15
+  `PARCIAL (fixtures) · BLOCKED real`.** El camino de re-cierre existe y F1 se ejecutó con
+  fixtures; no acredita cierre real.
 - `[APROBADO D1-A]` Reserva de «último»; v3+ secuencial sobre la última versión; no se
   registran/cierran cierres posteriores incompatibles.
 - `[APROBADO D2-B]` T1 en la ventana/ciclo para Movimientos, Compras y Ventas; AC09 tiene
@@ -325,4 +328,5 @@ Para declarar un AC `PASS` harán falta, como mínimo:
 
 **Estado global:** ejecución con fixtures registrada (23 `PASS (fixtures)`, AC15 `PARCIAL`);
 sin aceptación global ni cierre financiero real. `UNRUN` se conserva en los casos no
-ejecutados (regresión por fila y verificación de navegador de E4.10).
+ejecutados (regresión por fila y supuestos de navegador sin aserción); la verificación de
+navegador de E4.10 queda `PARCIAL (fixtures)`.
