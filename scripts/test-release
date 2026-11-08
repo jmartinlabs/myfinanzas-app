@@ -116,6 +116,13 @@ class ReleaseContextTests(unittest.TestCase):
         directory = self.home / ('release-' + uuid.uuid4().hex)
         directory.mkdir()
         (directory / 'frontend').mkdir()
+        (directory / 'frontend/assets').mkdir()
+        (directory / 'frontend/index.html').write_text('<div></div>\n')
+        (directory / 'frontend/assets/app.js').write_text('export const app = 1;\n')
+        frontend_files = {
+            'index.html': release.sha((directory / 'frontend/index.html').read_bytes()),
+            'assets/app.js': release.sha((directory / 'frontend/assets/app.js').read_bytes()),
+        }
         app_archive = directory / 'image.oci.tar'
         app_digest = self.oci_archive(app_archive, b'application')
         seed_archive = directory / 'image.seed.oci.tar'
@@ -135,7 +142,7 @@ class ReleaseContextTests(unittest.TestCase):
                 'healthcheck_sha256': healthcheck_sha,
             },
             'oci_archive_sha256': release.sha(app_archive.read_bytes()),
-            'frontend_files': {},
+            'frontend_files': frontend_files,
         }
         if include_seed:
             manifest['seed'] = {

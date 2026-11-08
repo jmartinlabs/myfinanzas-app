@@ -246,6 +246,18 @@ def verify_archive(archive, expected_sha, label):
     return oci_manifest_digest(archive)
 
 
+def validate_frontend(directory, manifest):
+    web_root = directory / 'frontend'
+    actual = {}
+    for path in web_root.rglob('*'):
+        if path.is_symlink():
+            raise ReleaseError('frontend symlink')
+        if path.is_file():
+            actual[path.relative_to(web_root).as_posix()] = sha(path.read_bytes())
+    if actual != manifest['frontend_files']:
+        raise ReleaseError('frontend/backend mismatch')
+
+
 def verify(directory, expected_commit, expected_manifest, require_seed=True):
     directory = Path(directory)
     if directory.is_symlink() or directory.resolve() != directory or (directory / 'frontend').is_symlink():
@@ -273,14 +285,7 @@ def verify(directory, expected_commit, expected_manifest, require_seed=True):
         app_digest = verify_archive(archive, manifest['oci_archive_sha256'], 'application')
         if manifest.get('oci_manifest_digest') != app_digest:
             raise ReleaseError('application OCI manifest digest mismatch')
-        web_root = directory / 'frontend'
-        actual = {}
-        for path in web_root.rglob('*'):
-            if path.is_symlink() or not path.is_file():
-                raise ReleaseError('frontend symlink')
-            actual[path.relative_to(web_root).as_posix()] = sha(path.read_bytes())
-        if actual != manifest['frontend_files']:
-            raise ReleaseError('frontend/backend mismatch')
+        validate_frontend(directory, manifest)
         return manifest
     if not isinstance(seed, dict):
         raise ReleaseError('seed image is missing from release manifest')
@@ -318,15 +323,7 @@ def verify(directory, expected_commit, expected_manifest, require_seed=True):
     seed_digest = verify_archive(seed_archive, seed['oci_archive_sha256'], 'seed')
     if seed_digest != seed['oci_manifest_digest']:
         raise ReleaseError('seed OCI manifest digest mismatch')
-    web_root = directory / 'frontend'
-    actual = {}
-    for path in web_root.rglob('*'):
-        if path.is_symlink():
-            raise ReleaseError('frontend symlink')
-        if path.is_file():
-            actual[path.relative_to(web_root).as_posix()] = sha(path.read_bytes())
-    if actual != manifest['frontend_files']:
-        raise ReleaseError('frontend/backend mismatch')
+    validate_frontend(directory, manifest)
     return manifest
 
 
