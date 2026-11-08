@@ -308,13 +308,21 @@ def verify(directory, expected_commit, expected_manifest, require_seed=True):
         raise ReleaseError('seed rootfs payload digest missing')
     if not re.fullmatch(r'[0-9a-f]{64}', str(seed.get('oci_archive_sha256', ''))):
         raise ReleaseError('seed OCI archive digest missing')
-    reproducibility = seed.get('reproducibility')
-    if reproducibility is not None:
-        builds = reproducibility.get('builds', [])
-        if reproducibility.get('payload_equal') is not True or len(builds) != 2 or \
+    # One-build TEST artifacts do not claim reproducibility: the independent
+    # Rootless gate still proves two clean builds for the exact same SHA.
+    for item, label in ((manifest, 'application'), (seed, 'seed')):
+        proof = item.get('reproducibility')
+        if proof is None:
+            continue
+        builds = proof.get('builds', [])
+        if proof.get('mode') == 'single-build':
+            if len(builds) != 1 or proof.get('payload_equal') is not None or \
+                    builds[0].get('rootfs_payload_sha256') != item.get('rootfs_payload_sha256'):
+                raise ReleaseError(label + ' single-build evidence invalid')
+        elif proof.get('payload_equal') is not True or len(builds) != 2 or \
                 builds[0].get('rootfs_payload_sha256') != builds[1].get('rootfs_payload_sha256') or \
-                builds[0].get('rootfs_payload_sha256') != seed.get('rootfs_payload_sha256'):
-            raise ReleaseError('seed clean builds are not reproducible')
+                builds[0].get('rootfs_payload_sha256') != item.get('rootfs_payload_sha256'):
+            raise ReleaseError(label + ' clean builds are not reproducible')
     archive = directory / 'image.oci.tar'
     app_digest = verify_archive(archive, manifest['oci_archive_sha256'], 'application')
     if manifest.get('oci_manifest_digest') != app_digest:
@@ -408,7 +416,8 @@ def build(directory, ref='HEAD', repeat=True, seed=True):
         manifest = {'oci_manifest_digest': oci_digest, 'format': 1, 'inputs': inputs, **chosen,
                     'source_date_epoch': int(epoch),
                     'oci_archive_sha256': sha((directory / 'image.oci.tar').read_bytes()),
-                    'reproducibility': {'builds': results, 'payload_equal': repeat,
+                    'reproducibility': {'mode': 'reproducible' if repeat else 'single-build',
+                        'builds': results, 'payload_equal': True if repeat else None,
                        'oci_metadata': 'Only tar/image timestamps and container-generated host files are excluded from normalized payload; no unexplained content differences allowed.'},
                     'tool_versions': tool_versions}
         if seed:
@@ -422,7 +431,8 @@ def build(directory, ref='HEAD', repeat=True, seed=True):
                         'lock_sha256': seed_inputs['lock_sha256'],
                         'oci_archive_sha256': sha((directory / 'image.seed.oci.tar').read_bytes()),
                         'source_date_epoch': int(epoch),
-                        'reproducibility': {'builds': seed_results, 'payload_equal': repeat,
+                        'reproducibility': {'mode': 'reproducible' if repeat else 'single-build',
+                            'builds': seed_results, 'payload_equal': True if repeat else None,
                            'oci_metadata': 'Same normalization as the application image; duplicate clean builds must match.'},
                         'tool_versions': tool_versions,
                     }
@@ -468,6 +478,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest='action', required=True)
     b = sub.add_parser('build'); b.add_argument('--output', required=True); b.add_argument('--ref', default='HEAD')
+    b.add_argument('--single-build', action='store_true', help='TEST artifact only; Rootless gate is independent')
     v = sub.add_parser('verify'); v.add_argument('directory'); v.add_argument('--expected-commit', required=True); v.add_argument('--expected-manifest-sha256', required=True)
     r = sub.add_parser('render-unit'); r.add_argument('directory'); r.add_argument('--expected-commit', required=True); r.add_argument('--expected-manifest-sha256', required=True); r.add_argument('--data', required=True)
     c = sub.add_parser('rollback-check')
@@ -479,7 +490,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     try:
         if args.action == 'build':
-            build(Path(args.output), args.ref)
+            build(Path(args.output), args.ref, repeat=not args.single_build)
         elif args.action == 'rollback-check':
             from compatibility import require_rollback
             previous = verify(Path(args.previous), args.previous_commit, args.previous_manifest_sha256)

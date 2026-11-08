@@ -21,7 +21,9 @@ materializa solo fuentes permitidas desde Git, no el directorio de trabajo.
 Bun 1.4.3/Debian se fija por digest; bun.lock congela dependencias y se deshabilitan
 scripts de instalación. age 1.3.2 linux/amd64 tiene checksum fijado. El manifiesto
 registra fuente, receta, lock, base, plataforma, OS, versiones, imagen, digest OCI,
-checksums de frontend y dos builds sin caché. `Containerfile` y `healthcheck.mjs` se
+checksums de frontend y la evidencia de builds: dos limpios en el gate Rootless
+(`reproducibility.mode=reproducible`) o uno declarado en el artifact TEST
+(`mode=single-build`, `payload_equal=null`). `Containerfile` y `healthcheck.mjs` se
 materializan y hashean desde el commit seleccionado; `builder_source` identifica el
 HEAD del checkout constructor solo como metadato, nunca como fuente de release. El
 payload normalizado excluye tiempos y archivos host generados por Podman; diferencias
@@ -30,12 +32,23 @@ No equivale a prometer archivo OCI idéntico byte a byte ni disponibilidad perpe
 de descargas. No ampliar arquitectura sin nueva validación.
 
 La carpeta contiene `image.oci.tar`, `image.seed.oci.tar`, `frontend/`,
-`manifest.json` y `manifest.sha256`; permanece privada y no se publica como artifact
-de CI. `release.py build` construye la app y la imagen seed **test-only** desde el
-mismo commit, base y lock, con dos builds por imagen. El manifiesto registra el bloque
-`seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta, `source`,
-`contracts` y lock); `verify` exige que el par esté presente y emparejado.
-Transportar solo por canal privado autorizado en una fase posterior. Obtener el
+`manifest.json`, `manifest.sha256` y `SHA256SUMS`. Solo para TEST se permite un
+artifact ZIP sin cifrar construido en GitHub Actions (retención 7 días), sin secretos,
+bases de datos ni información financiera; en un repositorio público debe tratarse como
+público. La descarga manual es por HTTPS (`gh run download` o la API de artifacts); SSH
+se usa únicamente para transferir el paquete ya verificado al host privado. Requiere
+gate Rootless previo del mismo SHA y QA independiente. El empaquetado manual
+(`workflow_dispatch` con `package_test_release=true`, `release_sha` SHA40 exacto de
+`test` y `qa_reference` que contenga ese SHA) usa un único build por imagen
+(`--single-build`, `payload_equal: null`), sin atribuirse la reproducibilidad que
+Rootless sigue validando con dos builds limpios. `release.py build` construye la app y
+la imagen seed **test-only** desde el mismo commit, base y lock; el manifiesto registra
+el bloque `seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta,
+`source`, `contracts` y lock), y `verify` exige que el par esté presente y emparejado.
+Obtener el SHA-256 del ZIP real de una fuente independiente y publicar el
+`manifest.sha256` en el step summary o el PR; `SHA256SUMS` verifica la integridad del
+transporte, no la autenticidad. Transferir al host por SSH autorizado en una fase
+posterior. Obtener el
 SHA del manifiesto y commit esperado de una fuente revisada independiente:
 `python3 infra/release.py verify /ruta/privada/release --expected-commit COMMIT --expected-manifest-sha256 SHA`.
 Un checksum recibido junto a archivos manipulados no autentica a su autor.
