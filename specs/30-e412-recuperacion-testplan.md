@@ -6,7 +6,7 @@ Status: **DRAFT — no aprobada; no autoriza DEV, ensayo, datos reales, migraci�
 merge. Todos los AC están `UNRUN`.**
 Base: `test` `7477e86` (2026-11-08); rama `docs/spec30-revision`; contrato vigente
 `schemaVersion=27`/`C27-E411-FOTOS-PERIODO`.
-No hay implementación, migración, ensayo, CI de esta entrega ni datos reales. El ensayo no
+No hay implementación, migración, ensayo ni datos reales; el CI full de esta entrega está pendiente. El ensayo no
 está autorizado y este documento no declara PASS.
 
 `[CONFIRMADO]` Este test plan describe **qué evidencia demostraría cada criterio**, no el
@@ -34,7 +34,7 @@ registrarse en la fase de preparación (F2) antes de ejecutar; no se inventan aq
 | E4.12-AC13 | Contrastar cada escenario R1–R6/P1–P7 con la matriz congelada al mismo corte y clasificar diferencias. | Resultado observado frente a esperado por caso; diferencias registradas; ningún omitido se lee como correcto. | Comparación por escenario y clasificación de diferencias. | Entorno aislado; API/UI + matriz | Ejecutor autorizado | Tabla de resultados por caso, diferencias y cobertura de escenarios | `UNRUN` | Nivel A: parcial, sin equivalencia. Nivel B: AC12 y E4.5/E4.7/E4.9–E4.11 |
 | E4.12-AC14 | Consolidar AC01–AC13 y el estado real de dependencias en un informe de brechas. | Listado con estado por elemento (`PASS`/`PARCIAL`/`UNRUN`/`BLOCKED`), causa, responsable y gate. | Consolidación y revisión QA del informe. | Documental | Coordinador + QA independiente | Informe de brechas trazable a caso/AC y decisión de gate P7 | `UNRUN` | Nivel A: informe parcial. Nivel B: cierre de F3 |
 | E4.12-AC15 | Construir la matriz de cobertura escenario→AC→evidencia. | Los cinco escenarios del roadmap están cubiertos o declarados fuera con brecha explícita. | Matriz de cobertura y revisión de exclusiones. | Documental | Coordinador + QA | Matriz de cobertura completa con exclusiones motivadas | `UNRUN` | Nivel A: cobertura declarada. Nivel B: dependencias cerradas |
-| E4.12-AC16 | Revisar candidato, versión de app/esquema, contrato y fixtures del corte; listar inclusiones/exclusiones. | Restore y oráculo usan el mismo corte; E4.5/E4.9/E4.10/E4.11 figuran integrados, parciales o excluidos explícitamente. | Revisión documental del candidato y del corte. | Documental | Coordinador | SHA del candidato, versión de esquema, contrato y lista de inclusiones/exclusiones | `UNRUN` | Nivel A/B: SHA de `test` y v27/C27; cambio de esquema reinicia |
+| E4.12-AC16 | Revisar candidato, versión de app/esquema, contrato y fixtures del corte; listar inclusiones/exclusiones. | Restore y oráculo usan el mismo corte; E4.5/E4.7/E4.9/E4.10/E4.11 figuran integrados, parciales o excluidos explícitamente. | Revisión documental del candidato y del corte. | Documental | Coordinador | SHA del candidato, versión de esquema, contrato y lista de inclusiones/exclusiones | `UNRUN` | Nivel A/B: SHA de `test` y v27/C27; cambio de esquema reinicia |
 | E4.12-AC17 | Revisar el registro de evidencia y reproducir una muestra. | Cada resultado registra acción, entorno, candidato, base, fecha y log crudo; estados honestos; restore sintético no se presenta como operativo. | Revisión QA y reproducción de muestra. | Documental; entorno de ensayo | QA independiente | Registro de evidencia, logs crudos, revisión QA y declaración de límites | `UNRUN` | Nivel A: revisable. Nivel B: F3/F4 autorizados |
 
 `[CONFIRMADO]` Ningún AC se declara PASS en este documento. Un `PARCIAL`, `UNRUN` u omitido
@@ -184,6 +184,6 @@ y error, sin factores, bases, claves ni trazas sensibles en artefactos.
 - E4.9/E4.10/E4.11 tienen código integrado pero aceptación abierta; E4.11 I1–I6 está
   integrado y el tablero debe conciliarse. E4.5 no tiene DEV y E4.7 mantiene reservas.
 - El oráculo no está congelado y el libro no ha sido inspeccionado por los agentes.
-- Próxima acción independiente: el coordinador debe obtener del usuario la aprobación de la
+- Próxima acción independiente: el coordinador debe obtener del usuario la aprobación de E4.9/E4.7 (además de E4.10/E4.11) y de la
   SPEC/testplan y decidir si autoriza un F3 de nivel A, o resolver las decisiones de §9 y
   confirmar el estado de E4.9/E4.10/E4.11 antes de proponer F2.

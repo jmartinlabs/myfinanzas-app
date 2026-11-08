@@ -178,7 +178,7 @@ Este documento no declara PASS de ningún AC.
 | **E4.12-AC13** | Cada escenario R1–R6/P1–P7 se contrasta al mismo corte; las diferencias se registran y no se fuerzan a PASS; un caso omitido no se lee como correcto. | Ejecución por escenario con resultado observado frente al esperado y clasificación de diferencias. | Tabla de resultados por caso, diferencias explicadas/no explicadas y cobertura de escenarios. | `UNRUN` |
 | **E4.12-AC14** | Existe un listado de discrepancias y brechas con estado por elemento (`PASS`/`PARCIAL`/`UNRUN`/`BLOCKED`), causa, responsable y gate que lo cierra, que permite decidir el gate P7 sin inferencias. | Consolidación del informe a partir de AC01–AC13 y del estado real de las dependencias. | Informe de brechas trazable a caso/AC y decisión de gate P7. | `UNRUN` |
 | **E4.12-AC15** | Los escenarios obligatorios del roadmap —recuperación en limpio, copia corrupta, recuperación de acceso, no publicación de datos/claves y escenarios integrados R1–R6/P1–P7— están cubiertos o declarados fuera con brecha explícita. | Matriz de cobertura escenario→AC→evidencia, sin huecos silenciosos. | Matriz de cobertura completa con exclusiones motivadas. | `UNRUN` |
-| **E4.12-AC16** | Versión de app/esquema, contrato y fixtures se fijan antes de ejecutar; restore y oráculo usan el mismo corte; E4.5/E4.9/E4.10/E4.11 figuran integrados, parciales o excluidos explícitamente. | Revisión del candidato y del corte; lista de inclusiones/exclusiones con justificación. | SHA del candidato, versión de esquema, contrato y lista de inclusiones/exclusiones. | `UNRUN` |
+| **E4.12-AC16** | Versión de app/esquema, contrato y fixtures se fijan antes de ejecutar; restore y oráculo usan el mismo corte; E4.5/E4.7/E4.9/E4.10/E4.11 figuran integrados, parciales o excluidos explícitamente. | Revisión del candidato y del corte; lista de inclusiones/exclusiones con justificación. | SHA del candidato, versión de esquema, contrato y lista de inclusiones/exclusiones. | `UNRUN` |
 | **E4.12-AC17** | Cada resultado registra acción, entorno, candidato, base, fecha y log crudo; `PARCIAL`/`UNRUN`/`BLOCKED` no se convierten en PASS; un restore sintético no se presenta como recuperación operativa. | Revisión de evidencia por QA independiente y reproducción de una muestra. | Registro de evidencia, logs crudos, revisión QA y declaración de límites. | `UNRUN` |
 
 `[PROPUESTA]` Los identificadores `E4.12-AC01…AC17` descomponen los tres AC del roadmap en
@@ -288,7 +288,7 @@ fijar como candidato un SHA congelado alcanzable desde `test`, con `schemaVersio
 `C27` verificados, y declararlo en AC16. Cualquier cambio posterior de esquema o contrato
 invalida el corte y exige re-fijarlo; no se mezclan contratos ni se hace downgrade. El
 ensayo no crea tags: la convención `deploy-test-v*`/`deploy-prod-v*` de SPEC35 sigue sin
-implementar (D11 abierta) y su activación no forma parte de E4.12. `[PROPUESTA]` Tampoco
+implementar (D11 abierta y fases 1–6 de SPEC35 no autorizadas) y su activación no forma parte de E4.12. `[PROPUESTA]` Tampoco
 hay paquete DEV de producto: si F2 necesita scripts o un harness de ensayo, son test-only,
 no tocan producción ni esquema y requieren la autorización de F2.
 
@@ -394,7 +394,7 @@ ensayar.
 | --- | --- | --- | --- | --- |
 | **F0 · SPEC** | Fijar requisitos, AC, entradas, fases, riesgos y exclusiones | Este documento y su testplan | Ninguna para redactar; aprobación del usuario para cerrar la fase | SPEC y testplan aprobados de forma explícita e identificable |
 | **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, alcance E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización específica de F1 | Decisiones §9 resueltas o declaradas fuera con brecha |
-| **F2 · Preparación de evidencias** | Construir fixtures integrales, obtener/verificar la copia ficticia coherente, congelar la matriz, acordar criterios por escenario y habilitar el entorno aislado | Expediente de preparación con manifiesto, checksum, matriz congelada y criterios | Autorización específica de F2 | Entradas §5 completas y revisadas; **no se ejecuta el ensayo integral** |
+| **F2 · Preparación de evidencias** | Construir fixtures integrales, obtener/verificar la copia ficticia coherente, congelar la matriz, acordar criterios por escenario y habilitar el entorno aislado | Expediente de preparación con manifiesto, checksum, matriz congelada y criterios | Autorización específica de F2 | Entradas §5 aplicables al nivel autorizado, completas y revisadas; **no se ejecuta el ensayo integral** |
 | **F3 · Ensayo autorizado** | Ejecutar los escenarios y recoger evidencia cruda, en el nivel A o B que declare la autorización | Evidencia por AC y por escenario | Autorización explícita e identificable del ensayo, con nivel A/B y AC incluidos | Escenarios ejecutados o `BLOCKED` con causa; sin PASS inferido; un nivel A no se presenta como integral |
 | **F4 · Informe y brechas** | Consolidar resultados, diferencias y lista de brechas para P7 | Informe E4.12 con AC01–AC17 y lista de discrepancias | Autorización de F4 para publicar/registrar el informe | Informe revisado por QA independiente y decisión de gate P7 sin inferencias |
 
@@ -472,7 +472,8 @@ preparar evidencias. No se inventan plazos, umbrales, rutas ni proveedores.
 | Corte y matriz | Fecha/corte común y revisión de la matriz v5.11 | E4.12-AC2; DT7 |
 | Datos reales | Si se autoriza contraste privado (AC-25/P3) o se declara límite | AUD-06 |
 | **Nivel de F3** | Si se autoriza solo nivel A (fixtures), solo nivel B o ambos, con AC incluidos y exclusiones | §2.5, §4.6, §6 |
-| **Aceptación E4.10/E4.11** | Si sus PASS de fixtures y reservas (`PARCIAL`/`BLOCKED real`) se aceptan como corte de E4.12 o si se espera a su cierre; conciliar el tablero con I1–I6 de E4.11 | Informes de aceptación; tablero |
+| **Aceptación E4.9/E4.10/E4.11** | Si sus PASS de fixtures y reservas (`PARCIAL`/`BLOCKED real`) se aceptan como corte de E4.12 o si se espera a su cierre; conciliar el tablero con I1–I6 de E4.11 | Informes de aceptación; tablero |
+| **Aceptación E4.7** | AC3 `PARCIAL`, AC10–15 `BLOCKED`, AC19 `UNRUN`; decidir si se acepta como corte o se excluye con brecha explícita | Informe E4.7; tablero |
 | **Candidato y tags** | SHA congelado de `test` con v27/C27; confirmar que no se crea tag ni se depende de SPEC35 para F3 | SPEC35; AC16 |
 | **Alcance E4.5/DT7** | Si E4.5 y el archivo precontrol entran en el corte o se excluyen con brecha explícita | roadmap E4.12-AC3; DT7 |
 
