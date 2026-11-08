@@ -6266,3 +6266,135 @@ textarea {
     padding-bottom: var(--space-2);
   }
 }
+
+/* UI · DEV-06 I4 — Cierre E4.9
+ * Presentación E4.9 (estado, gates, totales, cobertura, confirmación y foto).
+ * Bloque aditivo y aislado con prefijo cierre-e49-*: no redefine reglas de
+ * E4.10 (e410-*), no toca tokens cromáticos y consume solo tokens existentes.
+ */
+
+/* Una lectura principal: el estado manda sobre el resto de métricas. */
+.cierre-e49-status .cierre-e49-metrics .metric:first-child {
+  grid-column: span 2;
+  border-color: var(--accent-border);
+  background: var(--section);
+}
+.cierre-e49-status .cierre-e49-metrics .metric:first-child dd {
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: var(--leading-tight);
+  font-weight: 750;
+}
+
+/* Totales y cobertura: mismas columnas en tabla y tarjetas, importes alineados. */
+.cierre-e49-desktop {
+  min-width: 0;
+}
+.cierre-e49-table th {
+  white-space: nowrap;
+}
+.cierre-e49-table th[data-kind="status"],
+.cierre-e49-table td[data-kind="status"] {
+  width: 1%;
+  white-space: nowrap;
+}
+.cierre-e49-table .cierre-badge {
+  white-space: nowrap;
+}
+.cierre-e49-table .ui-table-amount,
+.cierre-e49-cards .ui-data-list-field[data-kind="amount"] .ui-data-list-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.cierre-e49-cards {
+  margin: var(--space-2) 0 0;
+}
+.cierre-e49-cards .ui-data-list-item {
+  background: var(--surface);
+}
+
+/* Gates: conserva .table/.shared-table-scroll y su transformación móvil. */
+.cierre-e49-gates .shared-table-scroll {
+  margin-top: var(--space-2);
+}
+.cierre-e49-gates-table td:last-child {
+  overflow-wrap: anywhere;
+}
+
+/* Confirmación: una acción primaria y el bloqueo explícito. */
+.cierre-e49-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cierre-e49-confirm h2 {
+  margin-bottom: 0;
+}
+.cierre-e49-confirm .cierre-readonly {
+  margin-bottom: 0;
+}
+.cierre-e49-confirm .actions {
+  margin-top: var(--space-2);
+}
+.cierre-e49-confirm .actions .primary {
+  min-width: 180px;
+}
+.cierre-e49-blocked {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--error);
+  border-radius: var(--radius-sm);
+  background: var(--error-soft);
+  color: var(--error);
+  overflow-wrap: anywhere;
+}
+
+/* Foto: jerarquía y espaciado sin tocar su estructura ni el bloque reopened. */
+.cierre-e49-photo .cierre-photo-head {
+  margin-bottom: var(--space-3);
+}
+.cierre-e49-photo .cierre-e49-photo-metrics {
+  margin: var(--space-3) 0 var(--space-4);
+}
+.cierre-e49-photo .cierre-e49-photo-grid {
+  margin-top: var(--space-2);
+}
+.cierre-e49-photo .cierre-e49-desktop {
+  margin: var(--space-2) 0 var(--space-3);
+}
+.cierre-e49-photo h3 {
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-2);
+}
+.cierre-e49-photo .cierre-e49-photo-backup {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 1050px) {
+  .cierre-e49-status .cierre-e49-metrics .metric:first-child {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 760px) {
+  .cierre-e49-status .cierre-e49-metrics .metric:first-child {
+    grid-column: auto;
+  }
+  .cierre-e49-desktop {
+    display: none;
+  }
+  .cierre-e49-cards {
+    display: grid;
+    margin-top: 0;
+  }
+  .cierre-e49-confirm .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cierre-e49-confirm .actions .primary {
+    min-width: 0;
+    width: 100%;
+  }
+  .cierre-e49-photo h3 {
+    margin-top: var(--space-4);
+  }
+}

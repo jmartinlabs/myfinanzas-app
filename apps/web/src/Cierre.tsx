@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, TableScroll, Tag } from "./ui";
+import {
+  Alert,
+  DataList,
+  PageHead,
+  Table,
+  TableScroll,
+  Tag,
+  type TableColumn,
+} from "./ui";
 
 /**
  * E4.9 — Cierre financiero y primera fotografía.
@@ -373,6 +381,47 @@ function IssueList({
   );
 }
 
+type TotalRow = { key: string; value: string };
+type CoverageRow = { key: string; value: TotalState };
+
+const TOTAL_COLUMNS: ReadonlyArray<TableColumn<TotalRow>> = [
+  {
+    id: "total",
+    header: "Total",
+    label: "Total",
+    cell: (row) => TOTAL_LABELS[row.key] ?? row.key,
+  },
+  {
+    id: "valor",
+    header: "Valor capturado",
+    label: "Valor capturado",
+    kind: "amount",
+    cell: (row) => amount(row.value),
+  },
+];
+
+const COVERAGE_COLUMNS: ReadonlyArray<TableColumn<CoverageRow>> = [
+  {
+    id: "metrica",
+    header: "Métrica",
+    label: "Métrica",
+    cell: (row) => TOTAL_LABELS[row.key] ?? row.key,
+  },
+  {
+    id: "cobertura",
+    header: "Cobertura",
+    label: "Cobertura",
+    kind: "status",
+    cell: (row) => <Badge estado={row.value.estado} />,
+  },
+  {
+    id: "motivo",
+    header: "Motivo",
+    label: "Motivo",
+    cell: (row) => row.value.motivo,
+  },
+];
+
 function TotalsTable({
   totals,
   label,
@@ -380,56 +429,61 @@ function TotalsTable({
   totals: Record<string, string>;
   label: string;
 }) {
+  const rows = Object.entries(totals).map(([key, value]) => ({ key, value }));
   return (
-    <TableScroll label={label}>
-      <div className="shared-table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Total</th>
-              <th>Valor capturado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(totals).map(([key, value]) => (
-              <tr key={key}>
-                <td data-label="Total">{TOTAL_LABELS[key] ?? key}</td>
-                <td data-label="Valor capturado">{amount(value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <div className="cierre-e49-desktop cierre-e49-totals-desktop">
+        <Table
+          caption={label}
+          label={label}
+          columns={TOTAL_COLUMNS}
+          rows={rows}
+          rowKey={(row) => row.key}
+          tableClassName="cierre-e49-table"
+        />
       </div>
-    </TableScroll>
+      <DataList
+        columns={TOTAL_COLUMNS}
+        rows={rows}
+        rowKey={(row) => row.key}
+        label={label}
+        className="cierre-e49-cards cierre-e49-totals-cards"
+      />
+    </>
   );
 }
 
-function CoverageTable({ cobertura }: { cobertura: Cobertura }) {
+function CoverageTable({
+  cobertura,
+  label,
+}: {
+  cobertura: Cobertura;
+  label: string;
+}) {
+  const rows = Object.entries(cobertura.totales).map(([key, value]) => ({
+    key,
+    value,
+  }));
   return (
-    <TableScroll label="Cobertura por métrica">
-      <div className="shared-table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Métrica</th>
-              <th>Cobertura</th>
-              <th>Motivo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(cobertura.totales).map(([key, value]) => (
-              <tr key={key}>
-                <td data-label="Métrica">{TOTAL_LABELS[key] ?? key}</td>
-                <td data-label="Cobertura">
-                  <Badge estado={value.estado} />
-                </td>
-                <td data-label="Motivo">{value.motivo}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <div className="cierre-e49-desktop cierre-e49-coverage-desktop">
+        <Table
+          caption={label}
+          label={label}
+          columns={COVERAGE_COLUMNS}
+          rows={rows}
+          rowKey={(row) => row.key}
+          tableClassName="cierre-e49-table"
+        />
       </div>
-    </TableScroll>
+      <DataList
+        columns={COVERAGE_COLUMNS}
+        rows={rows}
+        rowKey={(row) => row.key}
+        label={label}
+        className="cierre-e49-cards cierre-e49-coverage-cards"
+      />
+    </>
   );
 }
 
@@ -1416,8 +1470,8 @@ export function Cierre({ go }: { go: (path: string) => void }) {
 
       {preflight && (
         <>
-          <div className="panel" aria-label="Estado del cierre">
-            <dl className="shared-metrics cierre-metrics">
+          <div className="panel cierre-e49-status" aria-label="Estado del cierre">
+            <dl className="shared-metrics cierre-metrics cierre-e49-metrics">
               <div className="metric">
                 <dt>Estado</dt>
                 <dd>
@@ -1487,10 +1541,10 @@ export function Cierre({ go }: { go: (path: string) => void }) {
             </dl>
           </div>
 
-          <div className="panel" aria-label="Gates del cierre">
+          <div className="panel cierre-e49-gates" aria-label="Gates del cierre">
             <h2>Gates del cierre</h2>
             <div className="shared-table-scroll">
-              <table className="table">
+              <table className="table cierre-e49-gates-table">
                 <thead>
                   <tr>
                     <th>Gate</th>
@@ -2236,7 +2290,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
               <IssueList items={preflight.bloqueos} kind="bloqueo" />
               <IssueList items={preflight.avisos} kind="aviso" />
 
-              <div className="panel" aria-label="Hechos previstos">
+              <div className="panel cierre-e49-facts" aria-label="Hechos previstos">
                 <h2>Hechos y plan previstos</h2>
                 <p>
                   Hechos: <Badge estado={preflight.hechos.estado} /> · Plan:{" "}
@@ -2256,9 +2310,12 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                 </ul>
               </div>
 
-              <div className="panel" aria-label="Cobertura del cierre">
+              <div className="panel cierre-e49-coverage" aria-label="Cobertura del cierre">
                 <h2>Cobertura por métrica</h2>
-                <CoverageTable cobertura={preflight.cobertura} />
+                <CoverageTable
+                  cobertura={preflight.cobertura}
+                  label="Cobertura del preflight por métrica"
+                />
               </div>
 
               {Object.keys(preflight.noDisponible).length > 0 && (
@@ -2275,11 +2332,11 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                 </div>
               )}
 
-              <div className="panel cierre-form" aria-label="Confirmar cierre">
+              <div className="panel cierre-form cierre-e49-confirm" aria-label="Confirmar cierre">
                 <h2>Confirmar cierre</h2>
                 {blocked ? (
                   <>
-                    <p role="note">
+                    <p className="cierre-e49-blocked" role="note">
                       El cierre está bloqueado: no se ofrece «cerrar igualmente» ni
                       una fotografía parcial. Corrige la causa fuera de esta
                       pantalla o actualiza la revisión.
@@ -2385,7 +2442,10 @@ export function Cierre({ go }: { go: (path: string) => void }) {
             <>
               {photoLoading && <p role="status">Cargando fotografía…</p>}
               {photo ? (
-                <section className="panel cierre-photo" aria-label="Fotografía de cierre">
+                <section
+                  className="panel cierre-photo cierre-e49-photo"
+                  aria-label="Fotografía de cierre"
+                >
                   <div className="cierre-photo-head">
                     <div>
                       <p className="eyebrow">FOTOGRAFÍA INMUTABLE</p>
@@ -2442,7 +2502,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                     </label>
                   )}
 
-                  <dl className="shared-metrics cierre-metrics">
+                  <dl className="shared-metrics cierre-metrics cierre-e49-photo-metrics">
                     <div className="metric">
                       <dt>Identidad</dt>
                       <dd>Ciclo {photo.foto.ciclo} · v{photo.foto.version}</dd>
@@ -2501,7 +2561,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                     </div>
                   </dl>
 
-                  <div className="cierre-grid-2">
+                  <div className="cierre-grid-2 cierre-e49-photo-grid">
                     <div>
                       <h3>Hechos y plan</h3>
                       <p>
@@ -2535,7 +2595,10 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                         {photo.foto.inversion.motivoValoracion}
                       </p>
                       <h3>Cobertura de la fotografía</h3>
-                      <CoverageTable cobertura={photo.foto.cobertura} />
+                      <CoverageTable
+                        cobertura={photo.foto.cobertura}
+                        label="Cobertura de la fotografía por métrica"
+                      />
                     </div>
                   </div>
 
@@ -2550,7 +2613,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                   </ul>
 
                   <h3>Evidencia de backup</h3>
-                  <dl className="cierre-backup">
+                  <dl className="cierre-backup cierre-e49-photo-backup">
                     <div>
                       <dt>Manifiesto / checksum / clave</dt>
                       <dd>{photo.foto.backup.referencia ?? "No disponible"}</dd>
