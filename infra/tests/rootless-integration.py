@@ -80,13 +80,15 @@ def resolve_previous_ref(source):
     """Select the previous release without weakening the ordinary merge-base path.
 
     PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 26 -> 27
-    migration against an ancestor commit while origin/main already carries v27.
-    An explicit value must resolve to an ancestor whose source declares schema 26.
+    migration against an ancestor commit while the integration branch already
+    carries v27. The default base is CI_BASE_REF (test or main); an explicit
+    value must resolve to an ancestor whose source declares schema 26.
     """
     override = os.environ.get('PREVIOUS_REF', '').strip()
     if not override:
         return subprocess.check_output(
-            ['git', '-C', str(source), 'merge-base', 'HEAD', 'origin/main'],
+            ['git', '-C', str(source), 'merge-base', 'HEAD',
+             'origin/' + os.environ.get('CI_BASE_REF', 'main')],
             text=True).strip()
     if not re.fullmatch(r'[0-9a-f]{7,40}', override):
         raise ProbeError('previous_ref must be an unambiguous lowercase commit SHA')

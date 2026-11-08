@@ -2,7 +2,8 @@
 
 The candidate uses JSON (a YAML subset accepted by Actions). This avoids a new YAML
 dependency or pretending a regex is a general Actions expression/YAML interpreter.
-PR runs supersede older candidates; main pushes retain a fast postmerge gate.
+PR runs supersede older candidates; integration-branch pushes retain a fast
+postmerge gate. The integration branches are main and test.
 """
 import json
 from pathlib import Path
@@ -20,8 +21,11 @@ case "$profile" in docs|fast|critical|full) ;; *) echo "Invalid CI profile" >&2;
 printf 'profile=%s\\n' "$profile" >> "$GITHUB_OUTPUT"
 """
 CONCURRENCY = {
-    'group': "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
-    'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}",
+    # A surviving feature push keeps coalescing with its PR. The test
+    # postmerge gate uses its own namespace so a test -> main promotion PR
+    # can neither cancel nor be cancelled by the test push check.
+    'group': "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.event_name == 'push' && github.ref_name == 'test' && 'test push' || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
+    'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/test' && github.event_name != 'workflow_dispatch' }}",
 }
 
 
@@ -36,8 +40,8 @@ def required_workflow():
     states['CI_PROFILE'] = '${{ steps.plan.outputs.profile }}'
     return {
         'name': 'Validate project',
-        'on': {'push': {'branches': ['main']},
-               'pull_request': {'branches': ['main'], 'types': [
+        'on': {'push': {'branches': ['main', 'test']},
+               'pull_request': {'branches': ['main', 'test'], 'types': [
                    'opened', 'synchronize', 'reopened', 'ready_for_review']},
                'workflow_dispatch': {}},
         'permissions': {'contents': 'read'},

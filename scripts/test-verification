@@ -235,7 +235,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         for classification,baseline,full in (('docs','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
             result=self.run_entry('result',extra={'CI_CLASS':classification,'CI_BASELINE':baseline,'CI_FULL':full})
             self.assertEqual(result.returncode==0,(classification,baseline,full) in (('docs','success','skipped'),('full','success','success')))
-    def integration_event(self, path, text='fixture\n', branch='fixture-feature'):
+    def integration_event(self, path, text='fixture\n', branch='fixture-feature', base_ref='main'):
         self.git('switch', '-qc', branch)
         target = self.root / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(text)
         head = self.commit()
@@ -244,7 +244,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false',
                  'merge','--no-ff','-qm','integration',branch)
         event = self.home / (branch + '-event.json')
-        event.write_text(json.dumps({'pull_request': {'base': {'sha': base,'ref':'main'}, 'head': {'sha': head}}}))
+        event.write_text(json.dumps({'pull_request': {'base': {'sha': base,'ref':base_ref}, 'head': {'sha': head}}}))
         return {'GITHUB_EVENT_NAME':'pull_request','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':'refs/pull/7/merge'}
 
     def test_ci_selector_and_application_recompute_profile_without_trusting_declared_pass(self):
@@ -354,6 +354,46 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.clear(); result=self.run_entry('ci',extra={**extra,'GITHUB_EVENT_NAME':'workflow_dispatch'})
         self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),APP_NAMES)
         self.clear(); event.write_text(json.dumps({'ref':'refs/heads/feature','after':code}))
+        for mode in ('ci-plan','ci'):
+            result=self.run_entry(mode,extra=extra); self.assertNotEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),[])
+
+    def test_ci_test_integration_base_and_push_profiles(self):
+        cases = (('apps/web/src/style.css','fast',['typecheck','build']),
+                 ('specs/backlog/test-base.md','docs',[]))
+        for index,(path,profile,calls) in enumerate(cases):
+            with self.subTest(path=path):
+                extra=self.integration_event(path, branch='fixture-test-' + str(index), base_ref='test')
+                plan=self.run_entry('ci-plan',extra=extra)
+                self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),profile)
+                self.clear(); result=self.run_entry('ci',extra=extra)
+                self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),calls)
+                self.clear()
+        # An arbitrary PR base is rejected before any check runs.
+        extra=self.integration_event('specs/backlog/arbitrary-base.md', branch='fixture-arbitrary', base_ref='feature')
+        for mode in ('ci-plan','ci'):
+            result=self.run_entry(mode,extra=extra)
+            self.assertNotEqual(result.returncode,0,result.stdout)
+            self.assertIn('CI context/profile unavailable',result.stdout)
+        self.assertEqual(self.calls(),[])
+        # A push to test keeps the conservative postmerge profile.
+        self.git('reset', '--hard', self.head)
+        event=self.home/'test-push.json'
+        event.write_text(json.dumps({'ref':'refs/heads/test','before':self.base,'after':self.head}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':self.head}
+        plan=self.run_entry('ci-plan',extra=extra)
+        self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'docs')
+        self.clear(); result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),[])
+        (self.root/'apps/web/src/test-push.ts').parent.mkdir(parents=True,exist_ok=True)
+        (self.root/'apps/web/src/test-push.ts').write_text('export const total = 2;')
+        code=self.commit(); event.write_text(json.dumps({'ref':'refs/heads/test','before':self.head,'after':code}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':code}
+        self.clear(); plan=self.run_entry('ci-plan',extra=extra)
+        self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'fast')
+        result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build'])
+        self.clear(); event.write_text(json.dumps({'ref':'refs/heads/feature','before':code,'after':code}))
         for mode in ('ci-plan','ci'):
             result=self.run_entry(mode,extra=extra); self.assertNotEqual(result.returncode,0,result.stdout)
         self.assertEqual(self.calls(),[])

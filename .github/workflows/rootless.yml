@@ -1,6 +1,9 @@
 name: Rootless infrastructure 32
 on:
   pull_request:
+    branches:
+      - main
+      - test
     types:
       - opened
       - synchronize
@@ -55,6 +58,7 @@ jobs:
         shell: bash
         env:
           PREVIOUS_REF: ${{ github.event.inputs.previous_ref || '' }}
+          CI_BASE_REF: ${{ github.base_ref || (github.ref_name == 'main' && 'main' || 'test') }}
         run: |
           set -euo pipefail
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"

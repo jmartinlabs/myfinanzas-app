@@ -189,17 +189,18 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
 - CI usa un único job `required`: `ci-plan`, baseline, preparación y `ci`, más
   `ci-result` siempre. Este último rechaza fases ausentes, fallidas, canceladas o
   con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
-- Eventos: PR hacia main —incluido `ready_for_review` para que un draft que pasa a
-  listo reciba validación—, push solo main y manual completo. Los drafts conservan el
-  gate rápido; no se desactiva globalmente. PR valida el head del evento (`HEAD^2`) y
-  exige que la base probada (`HEAD^1`) no reescriba la base del evento: se acepta que
-  main haya avanzado por fast-forward y se clasifica contra esa base efectiva; una
-  base divergente o un merge ref anterior al evento fallan visiblemente. La
-  comprobación de ancestro no demuestra que el merge ref sea el tip vigente de main:
-  una main que avance después del checkout no se detecta en este proceso, el SHA
-  probado queda publicado y la protección exige base actualizada antes del merge. No
-  hay filtro de paths que omita el check. Cada nuevo candidato sustituye al PR
-  anterior por concurrencia; main y ejecuciones manuales no se cancelan mutuamente.
+- Eventos: PR hacia `main` o `test` —incluido `ready_for_review` para que un draft
+  que pasa a listo reciba validación—, push solo a `main` o `test` y manual completo.
+  Los drafts conservan el gate rápido; no se desactiva globalmente. PR valida el head
+  del evento (`HEAD^2`) y exige que la base probada (`HEAD^1`) no reescriba la base del
+  evento: se acepta que la base (`main` o `test`) haya avanzado por fast-forward y se
+  clasifica contra esa base efectiva; una base divergente o un merge ref anterior al
+  evento fallan visiblemente. La comprobación de ancestro no demuestra que el merge ref
+  sea el tip vigente de la base: un avance posterior al checkout no se detecta en este
+  proceso, el SHA probado queda publicado y la protección exige base actualizada antes
+  del merge. No hay filtro de paths que omita el check. PR y push usan espacios de
+  concurrencia distintos: cada PR sustituye a su candidato anterior; push a `main` o
+  `test` y manuales no cancelan ejecuciones activas ni son cancelados por un PR.
 - `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
   `docs` ejecuta un baseline documental: `check-repository` (historial, índice y
   seguridad), `check-project` (estructura y workflow), `validate-template`
@@ -210,15 +211,29 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   mismo `ci_profile` y el contexto verificado; sin contexto, evento inválido o
   error de clasificación ejecuta la batería completa. No hay skip de workflow ni
   estado nuevo en `ci-result`. `fast` añade tipos/build; `critical` añade **toda**
-  la suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
-  solo documentación Markdown no excluida ejecuta `docs`; cualquier otro cambio ejecuta
-  `fast`; nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo
-  el rango mediante merge-base sobre la base probada. El postmerge no repite
-  API/SQLite: la PR validó el merge ref contra la base. Si GitHub reconstruye el merge
-  ref sobre una main más nueva antes del checkout, esa misma ejecución es la repetición
-  y solo omite aplicación cuando el diff propio de la PR es documental; un merge ref
-  anterior al evento falla y debe relanzarse. Para un merge de alto riesgo
-  se usa `workflow_dispatch` full, no un `critical` automático que duplique coste.
+  la suite API/SQLite Linux; `full` añade además E2E. Push a `main` o `test` clasifica
+  `before..after`: solo documentación Markdown no excluida ejecuta `docs`; cualquier
+  otro cambio ejecuta `fast`; nunca `critical` en el postmerge. Manual selecciona
+  `full`. PR compara todo el rango mediante merge-base sobre la base probada (`main`
+  o `test`). El postmerge no repite API/SQLite: la PR validó el merge ref contra la
+  base. Si GitHub reconstruye el merge ref sobre una base más nueva antes del checkout,
+  esa misma ejecución es la repetición y solo omite aplicación cuando el diff propio de
+  la PR es documental; un merge ref anterior al evento falla y debe relanzarse. Para un
+  merge de alto riesgo se usa `workflow_dispatch` full, no un `critical` automático que
+  duplique coste.
+- **Flujo de integración `feature/* → test → main` (TEST-BOOTSTRAP-01, 2026-11-07):**
+  `test` es la base de integración: los PR de trabajo apuntan a `test` y ejecutan el
+  gate según el diff; `main` conserva su ruleset y recibe la promoción. Se promueve el
+  mismo SHA validado en `test`, sin añadir ni reescribir cambios después de la
+  validación; un PR de promoción `test → main` vuelve a ejecutar el gate contra `main` y
+  cualquier diferencia exige validación propia. No se promueven commits no validados en
+  `test`. Bases de PR distintas de `main`/`test`, pushes de ramas de trabajo o etiquetas
+  y eventos incompletos fallan visiblemente. Un push a `main`/`test` valida y fija su
+  SHA exacto; un PR valida su merge ref. La protección/ruleset de `test` y sus required
+  checks son una operación separada no aplicada por este cambio; `rootless.yml` acepta
+  PRs a `main`/`test` con los mismos paths y guardas. [SPEC35 §6](../35-deploy-tags-01-specification.md#6-estrategia-de-ramas)
+  conserva su texto aprobado (`feature/* → main`) hasta que su dueño lo actualice: este
+  apartado posee solo la mecánica de CI y no reescribe esa decisión funcional.
 - **Documentación (actualización 2026-10-28):** `docs` admite cualquier `.md` de
   documentación en cualquier directorio, sin allowlist de familias. Se excluyen siempre
   `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `instructions.md`, `NEW_PROJECT_PROMPT.md`,

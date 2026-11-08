@@ -75,10 +75,10 @@ archivos deben añadirse al índice antes de la revisión previa al push. Lee hi
 blobs, sin modificarlos. También detecta secretos borrados en commits posteriores.
 
 La configuración vigente es [local-first](../methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27):
-PR hacia main —incluido `ready_for_review`, sin desactivar el gate en drafts—, push
-solo main y manual; un job required Ubuntu24.04 con baseline, selección conservadora,
-tipos/build y API/SQLite independiente en cambios críticos. El push de main clasifica
-su rango: solo documentación ejecuta `docs`; el resto, `fast`.
+PR hacia main o test —incluido `ready_for_review`, sin desactivar el gate en drafts—,
+push solo main o test y manual; un job required Ubuntu24.04 con baseline, selección
+conservadora, tipos/build y API/SQLite independiente en cambios críticos. El push a
+main o test clasifica su rango: solo documentación ejecuta `docs`; el resto, `fast`.
 E2E/regresiones completas se ejecutan localmente con QA independiente; manual CI
 conserva la batería completa. Acciones SHA, historial completo, credenciales no
 persistidas, permisos de lectura y timeout15min permanecen. No configura protecciones.
@@ -132,12 +132,16 @@ web/API/SQLite. En esta entrega del harness no cambia código de aplicación, SQ
 sus suites no sustituyen ni prueban el nuevo grafo. Las regresiones locales prueban
 clasificación y gates sin ejecutar cargas financieras ni instalar navegadores.
 
-Para un push con PR abierta, `ci_context.py` selecciona la integración PR y verifica
-su head tras checkout. La clasificación combina el rango del evento y la PR acumulada;
-un último commit documental no oculta código anterior. Full/required usan el SHA
-fijado por baseline. Error API, lista incompleta, varias PR o referencia cambiada fallan.
-Push/PR comparten concurrencia por repositorio/rama; tags y forks se separan, main no
-cancela ejecución activa y manuales se aíslan. No elimina ejecuciones ya completadas.
+`ci_context.py` fija el contexto de integración: un PR usa su merge ref y verifica el
+head tras checkout; un push a `main` o `test` usa exactamente el SHA del evento. Una
+base de PR distinta de `main`/`test` se rechaza y un push fuera de esas dos ramas no
+supera `ci_profile`. La clasificación compara el push `before..after` y la PR completa
+mediante merge-base sobre la base probada; un último commit documental no oculta código
+anterior. Full/required usan el SHA fijado por baseline. La concurrencia agrupa cada
+PR por rama y cada push por rama, con namespace propio para el postmerge de `test`:
+las PR superadas del mismo candidato se cancelan, mientras push a `main`/`test`,
+tags, forks y manuales se separan y no se cancelan entre sí. No elimina ejecuciones
+ya completadas.
 
 Ubuntu24.04 x64: inventario dpkg de los 33 paquetes oficiales tools+chromium de Playwright
 1.64.1 más age. Versión instalada comprobada; una sola actualización/instalación APT
