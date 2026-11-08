@@ -1,5 +1,8 @@
 name: Rootless infrastructure 32
 on:
+  push:
+    branches:
+      - test
   pull_request:
     branches:
       - main
@@ -81,25 +84,26 @@ jobs:
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           python3 infra/tests/rootless-integration.py
 
-  package:
-    name: Package TEST release (manual only)
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_test_release }}
+  publish:
+    name: Publish TEST release to GHCR
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && inputs.package_test_release) }}
     needs: capability
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
       checks: read
+      packages: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify test SHA and independent CI and QA evidence
+      - name: Verify SHA, CI, QA and Rootless evidence
         shell: bash
         env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
           QA_REFERENCE: ${{ inputs.qa_reference }}
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -108,18 +112,23 @@ jobs:
           [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$(git rev-parse HEAD)" == "$RELEASE_SHA" ]]
           [[ "$(git rev-parse origin/test)" == "$RELEASE_SHA" ]]
-          [[ -n "$QA_REFERENCE" ]]
-          [[ "$QA_REFERENCE" == *"$RELEASE_SHA"* ]]
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ -n "$QA_REFERENCE" ]]
+            [[ "$QA_REFERENCE" == *"$RELEASE_SHA"* ]]
+          else
+            gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+              | jq -e '.check_runs | any(.name == "qa" and .conclusion == "success")' >/dev/null
+          fi
           gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
-            | jq -e '.check_runs | any(.name == "required" and .conclusion == "success")'
+            | jq -e '.check_runs | any(.name == "required" and .conclusion == "success")' >/dev/null
       - name: Install rootless builder on disposable runner
         run: |
           sudo apt-get update
           sudo apt-get install -y podman uidmap slirp4netns dbus-user-session
-      - name: Build once each, verify paired release and run synthetic smoke
+      - name: Build once, verify paired release and run synthetic smoke
         shell: bash
         env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
         run: |
           set -euo pipefail
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
@@ -140,3 +149,79 @@ jobs:
           include-hidden-files: false
           compression-level: 0
           retention-days: 7
+      - name: Log in to GHCR
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$GITHUB_TOKEN" | podman login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Publish app, seed and release images
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          dest="$RUNNER_TEMP/mf-test-release"
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          app_ref="ghcr.io/${owner}/myfinanzas-test-app"
+          seed_ref="ghcr.io/${owner}/myfinanzas-test-seed"
+          release_ref="ghcr.io/${owner}/myfinanzas-test-release"
+          manifest_sha="$(sha256sum "$dest/manifest.json" | cut -d' ' -f1)"
+          app_id="$(jq -r '.image' "$dest/manifest.json")"
+          app_digest="$(jq -r '.oci_manifest_digest' "$dest/manifest.json")"
+          seed_id="$(jq -r '.seed.image' "$dest/manifest.json")"
+          seed_digest="$(jq -r '.seed.oci_manifest_digest' "$dest/manifest.json")"
+          schema="$(jq -r '.inputs.contracts.schema' "$dest/manifest.json")"
+          data_contract="$(jq -r '.inputs.contracts.data' "$dest/manifest.json")"
+
+          podman load --input "$dest/image.oci.tar"
+          podman tag "$app_id" "${app_ref}:sha-${RELEASE_SHA}"
+          podman push --digestfile "$RUNNER_TEMP/app.digest" "${app_ref}:sha-${RELEASE_SHA}"
+          registry_app_digest="$(cat "$RUNNER_TEMP/app.digest")"
+          [[ "$registry_app_digest" == "$app_digest" ]] || { echo "app registry digest mismatch" >&2; exit 1; }
+
+          podman load --input "$dest/image.seed.oci.tar"
+          podman tag "$seed_id" "${seed_ref}:sha-${RELEASE_SHA}"
+          podman push --digestfile "$RUNNER_TEMP/seed.digest" "${seed_ref}:sha-${RELEASE_SHA}"
+          registry_seed_digest="$(cat "$RUNNER_TEMP/seed.digest")"
+          [[ "$registry_seed_digest" == "$seed_digest" ]] || { echo "seed registry digest mismatch" >&2; exit 1; }
+
+          meta="$RUNNER_TEMP/mf-test-release-meta"
+          mkdir -p "$meta/frontend"
+          cp "$dest/manifest.json" "$dest/manifest.sha256" "$dest/SHA256SUMS" "$meta/"
+          cp -a "$dest/frontend/." "$meta/frontend/"
+          cat > "$meta/Containerfile" <<EOF
+          FROM scratch
+          ARG RELEASE_SHA
+          ARG MANIFEST_SHA
+          ARG APP_DIGEST
+          ARG SEED_DIGEST
+          ARG SCHEMA
+          ARG DATA_CONTRACT
+          LABEL org.opencontainers.image.revision=\$RELEASE_SHA
+          LABEL io.myfinanzas.release.manifest_sha256=\$MANIFEST_SHA
+          LABEL io.myfinanzas.release.app_digest=\$APP_DIGEST
+          LABEL io.myfinanzas.release.seed_digest=\$SEED_DIGEST
+          LABEL io.myfinanzas.release.schema=\$SCHEMA
+          LABEL io.myfinanzas.release.data_contract=\$DATA_CONTRACT
+          COPY manifest.json /manifest.json
+          COPY manifest.sha256 /manifest.sha256
+          COPY SHA256SUMS /SHA256SUMS
+          COPY frontend/ /frontend/
+          CMD ["/manifest.json"]
+          EOF
+          podman build --pull=never --platform=linux/amd64 \
+            --build-arg "RELEASE_SHA=$RELEASE_SHA" \
+            --build-arg "MANIFEST_SHA=$manifest_sha" \
+            --build-arg "APP_DIGEST=$app_digest" \
+            --build-arg "SEED_DIGEST=$seed_digest" \
+            --build-arg "SCHEMA=$schema" \
+            --build-arg "DATA_CONTRACT=$data_contract" \
+            -t "${release_ref}:sha-${RELEASE_SHA}" -f "$meta/Containerfile" "$meta"
+          podman push "${release_ref}:sha-${RELEASE_SHA}"
+          podman tag "${release_ref}:sha-${RELEASE_SHA}" "${release_ref}:test"
+          podman push "${release_ref}:test"
+          printf 'App: %s@%s\nSeed: %s@%s\nRelease: %s:test\n' \
+            "$app_ref" "$app_digest" "$seed_ref" "$seed_digest" "$release_ref" >> "$GITHUB_STEP_SUMMARY"
