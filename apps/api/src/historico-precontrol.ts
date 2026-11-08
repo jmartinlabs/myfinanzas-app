@@ -80,8 +80,7 @@ export type TipoConflicto =
   | "Solapamiento"
   | "DuplicadoAmbiguo"
   | "DosFuentes"
-  | "VersionBifurcada"
-  | "FueraDeUniverso";
+  | "VersionBifurcada";
 
 export type ConflictoPrecontrol = {
   tipo: TipoConflicto;
@@ -549,6 +548,8 @@ type ResolucionVersiones = {
   absorbidos: { idArchivo: string; identidad: string }[];
   conflictos: ConflictoPrecontrol[];
   identidadesConflictuadas: Set<string>;
+  /** Partidas con un conflicto de identidad/versión; ninguna puede certificar 0. */
+  partidasConflictuadas: Set<string>;
 };
 
 /**
@@ -573,6 +574,46 @@ export function resolverVersiones(
   const absorbidosIds = new Set<string>();
   const conflictos: ConflictoPrecontrol[] = [];
   const identidadesConflictuadas = new Set<string>();
+  const partidasConflictuadas = new Set<string>();
+
+  function registrarConflicto(
+    tipo: TipoConflicto,
+    grupo: RegistroPrecontrol[],
+    motivo: string,
+  ): void {
+    const partidas = [
+      ...new Set(
+        grupo
+          .map((registro) => registro.partidaId)
+          .filter((partida): partida is string => partida !== null),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+    // El conflicto afecta a todas las Partidas de la identidad, no solo a la
+    // primera fila: una versión vigente incompatible no puede dejar otra
+    // Partida con "0.00 Verificado".
+    if (partidas.length === 0) {
+      conflictos.push({
+        tipo,
+        partidaId: null,
+        intervalo: null,
+        importe: null,
+        fuente: grupo[0]?.fuenteId ?? null,
+        motivo,
+      });
+      return;
+    }
+    for (const partidaId of partidas) {
+      partidasConflictuadas.add(partidaId);
+      conflictos.push({
+        tipo,
+        partidaId,
+        intervalo: null,
+        importe: null,
+        fuente: grupo[0]?.fuenteId ?? null,
+        motivo,
+      });
+    }
+  }
 
   for (const [identidad, grupo] of porIdentidad) {
     const porVersion = new Map<number, RegistroPrecontrol[]>();
@@ -588,14 +629,11 @@ export function resolverVersiones(
       const huellas = new Set(filas.map((fila) => fila.huellaContenido));
       if (huellas.size > 1) {
         conflictiva = true;
-        conflictos.push({
-          tipo: "DuplicadoAmbiguo",
-          partidaId: filas[0]?.partidaId ?? null,
-          intervalo: null,
-          importe: null,
-          fuente: filas[0]?.fuenteId ?? null,
-          motivo: `Huellas distintas para la identidad ${identidad} y versión ${version}.`,
-        });
+        registrarConflicto(
+          "DuplicadoAmbiguo",
+          grupo,
+          `Huellas distintas para la identidad ${identidad} y versión ${version}.`,
+        );
         continue;
       }
       const ordenadas = [...filas].sort((a, b) =>
@@ -619,17 +657,13 @@ export function resolverVersiones(
 
     if (terminales.length !== 1) {
       conflictiva = true;
-      conflictos.push({
-        tipo: "VersionBifurcada",
-        partidaId: grupo[0]?.partidaId ?? null,
-        intervalo: null,
-        importe: null,
-        fuente: grupo[0]?.fuenteId ?? null,
-        motivo:
-          terminales.length === 0
-            ? `Cadena de versiones cíclica para ${identidad}.`
-            : `Dos versiones vigentes incompatibles para ${identidad}.`,
-      });
+      registrarConflicto(
+        "VersionBifurcada",
+        grupo,
+        terminales.length === 0
+          ? `Cadena de versiones cíclica para ${identidad}.`
+          : `Dos versiones vigentes incompatibles para ${identidad}.`,
+      );
     }
 
     if (conflictiva) {
@@ -651,6 +685,7 @@ export function resolverVersiones(
     absorbidos,
     conflictos,
     identidadesConflictuadas,
+    partidasConflictuadas,
   };
 }
 
@@ -746,6 +781,7 @@ function analizarItem(
   vigentes: RegistroPrecontrol[],
   historicos: RegistroPrecontrol[],
   identidadesConflictuadas: Set<string>,
+  partidasConflictuadas: Set<string>,
   conflictosGlobales: ConflictoPrecontrol[],
 ): AnalisisItem {
   const desde = inicioEjercicio(entrada.ejercicio);
@@ -826,6 +862,7 @@ function analizarItem(
   if (solapesUnidos.length > 0) bloqueos.push("Solapamiento");
 
   // Dos fuentes/identidades con exactamente el mismo intervalo y Partida.
+  const idsDosFuentes = new Set<string>();
   const certificables = registrosItem.filter(
     (registro) =>
       registro.estadoVerificacion === "Verificado" &&
@@ -850,19 +887,17 @@ function analizarItem(
         };
         conflictos.push(conflicto);
         conflictosGlobales.push(conflicto);
+        idsDosFuentes.add(a.idArchivo);
+        idsDosFuentes.add(b.idArchivo);
       }
     }
   }
   if (conflictos.some((conflicto) => conflicto.tipo === "DosFuentes"))
     bloqueos.push("DuplicadoAmbiguo");
 
-  // Conflictos de identidad/versión ya resueltos globalmente.
-  const conflictoIdentidad = conflictosGlobales.some(
-    (conflicto) =>
-      conflicto.partidaId === partidaId &&
-      (conflicto.tipo === "DuplicadoAmbiguo" ||
-        conflicto.tipo === "VersionBifurcada"),
-  );
+  // Conflictos de identidad/versión ya resueltos globalmente: afectan a todas
+  // las Partidas de la identidad, aunque la versión vigente cambie de Partida.
+  const conflictoIdentidad = partidasConflictuadas.has(partidaId);
   if (conflictoIdentidad) bloqueos.push("DuplicadoAmbiguo");
 
   let archivo = 0n;
@@ -878,7 +913,7 @@ function analizarItem(
   let hayRegistrosArchivoExcluidos = false;
   let hayHechosCertificados = false;
   let subtotalNoSeparable =
-    solapesUnidos.length > 0 || conflictoIdentidad;
+    solapesUnidos.length > 0 || conflictoIdentidad || idsDosFuentes.size > 0;
   const agregados: AgregadoNoAtribuible[] = [];
 
   const intervalosArchivo = piezas
@@ -891,6 +926,26 @@ function analizarItem(
     const importe = centimos(registro.importeCentimos);
     if (identidadesConflictuadas.has(registro.identidad)) continue;
     if (registro.estadoVerificacion === "Rechazado") continue;
+    if (idsDosFuentes.has(registro.idArchivo)) {
+      // Procedencia ambigua: no se suma ni se elige una fuente por importe.
+      if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
+      continue;
+    }
+
+    // El corte se comprueba antes de cualquier rama de representación: un
+    // agregado fuera del corte no atribuye importe ni entra en el subtotal.
+    if (registro.intervalo.inicio < desde || registro.intervalo.fin > hasta) {
+      agregados.push({
+        idArchivo: registro.idArchivo,
+        partidaId,
+        intervalo: registro.intervalo,
+        importe: decimal(importe),
+      });
+      bloqueos.push("AgregadoNoAtribuibleAlCorte");
+      subtotalNoSeparable = true;
+      archivoConocido = false;
+      continue;
+    }
 
     if (registro.estadoVerificacion === "NoVerificado") {
       bloqueos.push("VerificacionPendiente");
@@ -926,22 +981,6 @@ function analizarItem(
       if (registro.evidenciaNoDuplicidad?.trim())
         desconocidoConEvidencia += importe;
       else if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
-      continue;
-    }
-
-    if (
-      registro.intervalo.inicio < desde ||
-      registro.intervalo.fin > hasta
-    ) {
-      agregados.push({
-        idArchivo: registro.idArchivo,
-        partidaId,
-        intervalo: registro.intervalo,
-        importe: decimal(importe),
-      });
-      bloqueos.push("AgregadoNoAtribuibleAlCorte");
-      subtotalNoSeparable = true;
-      archivoConocido = false;
       continue;
     }
 
@@ -1203,24 +1242,43 @@ export function combinarHistoricoPrecontrol(
   const partidas = universoAcreditado
     ? [...entrada.universo.partidas]
     : [...partidasDescubiertas];
-  for (const partida of partidasDescubiertas)
-    if (!partidas.includes(partida)) partidas.push(partida);
+  if (!universoAcreditado)
+    for (const partida of partidasDescubiertas)
+      if (!partidas.includes(partida)) partidas.push(partida);
   partidas.sort((a, b) => a.localeCompare(b));
+
+  // SPEC20 declara el universo como cerrado: un descubrimiento no lo amplía.
+  // Si una fuente, un Movimiento o un registro menciona una Partida no
+  // declarada, el motor no inventa un item ni un motivo nuevo. Los registros se
+  // muestran como pendientes en `sinClasificar` y el global no certifica.
+  const partidasFueraDeUniverso = universoAcreditado
+    ? [...partidasDescubiertas].filter(
+        (partida) => !entrada.universo.partidas.includes(partida),
+      )
+    : [];
+  const fueraDeUniverso = partidasFueraDeUniverso.length > 0;
+  if (universoAcreditado) {
+    for (const registro of resolucion.vigentes) {
+      if (registro.clase === "AperturaHistorica") continue;
+      if (
+        registro.partidaId === null ||
+        entrada.universo.partidas.includes(registro.partidaId)
+      )
+        continue;
+      if (sinClasificar.some((fila) => fila.idArchivo === registro.idArchivo))
+        continue;
+      sinClasificar.push({
+        idArchivo: registro.idArchivo,
+        importe: decimal(centimos(registro.importeCentimos)),
+        motivo:
+          "Partida no declarada en el universo DT7 acreditado; pendiente de decisión.",
+      });
+    }
+  }
+
   const items: ItemPrecontrol[] = [];
   const agregados: AgregadoNoAtribuible[] = [];
   for (const partidaId of partidas) {
-    if (universoAcreditado && !entrada.universo.partidas.includes(partidaId)) {
-      const conflicto: ConflictoPrecontrol = {
-        tipo: "FueraDeUniverso",
-        partidaId,
-        intervalo: null,
-        importe: null,
-        fuente: null,
-        motivo:
-          "Partida descubierta fuera del universo DT7 acreditado; no se certifica.",
-      };
-      conflictos.push(conflicto);
-    }
     const analisis = analizarItem(
       entrada,
       partidaId,
@@ -1228,10 +1286,9 @@ export function combinarHistoricoPrecontrol(
       resolucion.vigentes,
       resolucion.historicos,
       resolucion.identidadesConflictuadas,
+      resolucion.partidasConflictuadas,
       conflictos,
     );
-    if (universoAcreditado && !entrada.universo.partidas.includes(partidaId))
-      analisis.bloqueos.push("UniversoNoAcreditado");
     agregados.push(...analisis.agregados);
     items.push(construirItem(analisis, universoAcreditado));
   }
@@ -1286,11 +1343,17 @@ export function combinarHistoricoPrecontrol(
   if (fuenteEsperadaAusenteGlobal) motivosGlobales.push("FuenteAusente");
   if (huecos.length > 0) motivosGlobales.push("HuecoDemostrado");
   if (estadoCobertura === "NoDisponible") motivosGlobales.push("SinFuente");
+  if (fueraDeUniverso) motivosGlobales.push("MappingPendiente");
+  for (const item of items) {
+    if (item.motivoCodigo && item.motivoCodigo !== "AusenciaVerificadaSinHechos")
+      motivosGlobales.push(item.motivoCodigo);
+  }
 
   const globalVerificable =
     universoAcreditado &&
     estadoCobertura === "Completa" &&
     items.length > 0 &&
+    !fueraDeUniverso &&
     conflictos.length === 0 &&
     sinClasificar.length === 0 &&
     agregados.length === 0 &&

@@ -304,6 +304,44 @@ describe("F-DT7-09 · agregado que excede el corte", () => {
     ]);
     expect(resultado.totales.valor).toBeNull();
   });
+
+  test("un agregado Desconocido fuera del corte no entra en el subtotal", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-08-27")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH100", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "10000",
+            representadoEnMovimientos: "Desconocido",
+            evidenciaNoDuplicidad: "Evidencia sintética de no duplicidad.",
+          }),
+        ],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH100",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+        importe: "100.00",
+      },
+    ]);
+    expect(resultado.totales.subtotalConocido).toBeNull();
+  });
 });
 
 describe("F-DT7-15 · ausencia ≠ cero", () => {
@@ -494,6 +532,67 @@ describe("deduplicación, identidad y versiones", () => {
     expect(item(resultado).subtotalConocido).toBeNull();
     expect(resultado.conflictos).toContainEqual(
       expect.objectContaining({ tipo: "VersionBifurcada" }),
+    );
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("B1: una bifurcación que cambia de Partida bloquea todas las Partidas de la identidad", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100"),
+              archivo("2026-01-01", "2026-12-31", "PAR200"),
+            ],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            identidad: "CAMBIA-DE-PARTIDA",
+            version: 1,
+            partidaId: "PAR100",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            identidad: "CAMBIA-DE-PARTIDA",
+            version: 2,
+            reemplazaA: 1,
+            partidaId: "PAR200",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "20000",
+          }),
+          registro("AH003", {
+            identidad: "CAMBIA-DE-PARTIDA",
+            version: 3,
+            reemplazaA: 1,
+            partidaId: "PAR100",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "30000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100", "PAR200"], [
+        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
+        { fuenteId: "SRC-1", partidaId: "PAR200", estado: "Presente" },
+      ]),
+    });
+
+    for (const partidaId of ["PAR100", "PAR200"]) {
+      const actual = item(resultado, partidaId);
+      expect(actual.estadoTotal).toBe("NoVerificable");
+      expect(actual.total).toBeNull();
+      expect(actual.subtotalConocido).toBeNull();
+      expect(actual.motivoCodigo).toBe("DuplicadoAmbiguo");
+    }
+    expect(resultado.conflictos).toContainEqual(
+      expect.objectContaining({ tipo: "VersionBifurcada", partidaId: "PAR100" }),
+    );
+    expect(resultado.conflictos).toContainEqual(
+      expect.objectContaining({ tipo: "VersionBifurcada", partidaId: "PAR200" }),
     );
     expect(resultado.totales.valor).toBeNull();
   });
@@ -905,6 +1004,43 @@ describe("F-DT7-10/23/11 · universo, fuentes ausentes y D14", () => {
     expect(resultado.totales.valor).toBeNull();
     expect(resultado.totales.subtotalConocido).toBe("1200.00");
   });
+
+  test("H3: una Partida descubierta no amplía un universo acreditado ni inventa un item", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: universo(["PAR100"]),
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH100", {
+            partidaId: "PAR250",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(resultado.items.map((actual) => actual.partidaId)).toEqual(["PAR100"]);
+    expect(resultado.universo.partidas).toEqual(["PAR100"]);
+    expect(resultado.cobertura.universoPartidas).toEqual(["PAR100"]);
+    expect(resultado.sinClasificar).toEqual([
+      {
+        idArchivo: "AH100",
+        importe: "100.00",
+        motivo:
+          "Partida no declarada en el universo DT7 acreditado; pendiente de decisión.",
+      },
+    ]);
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.motivoCodigo).toBe("MappingPendiente");
+  });
 });
 
 describe("F-DT7-13 · dos fuentes solapadas", () => {
@@ -949,6 +1085,53 @@ describe("F-DT7-13 · dos fuentes solapadas", () => {
     expect(resultado.totales.valor).toBeNull();
     expect(resultado.conflictos.length).toBeGreaterThan(0);
     expect(item(resultado).total).not.toBe("800.00");
+  });
+
+  test("B2: dos fuentes con registros del mismo intervalo no son separables aunque su cobertura no se solape", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        registros: [
+          registro("AH500", {
+            fuenteId: "SRC-A",
+            identidad: "FUENTE-A",
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "50000",
+          }),
+          registro("AH300", {
+            fuenteId: "SRC-B",
+            identidad: "FUENTE-B",
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "30000",
+          }),
+        ],
+        movimientos: [],
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-A",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+          }),
+          fuente({
+            fuenteId: "SRC-B",
+            intervalosArchivo: [archivo("2026-07-01", "2026-12-31")],
+          }),
+        ],
+      }),
+      universo: universo(["PAR100"], [
+        { fuenteId: "SRC-A", partidaId: "PAR100", estado: "Presente" },
+        { fuenteId: "SRC-B", partidaId: "PAR100", estado: "Presente" },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(resultado.cobertura.estadoCobertura).toBe("Completa");
+    expect(par100.conflictos).toContainEqual(
+      expect.objectContaining({ tipo: "DosFuentes" }),
+    );
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(resultado.totales.subtotalConocido).toBeNull();
+    expect(par100.subtotalConocido).not.toBe("800.00");
   });
 });
 
@@ -1009,6 +1192,7 @@ describe("F-DT7-08 · regularización 2026", () => {
     expect(item(resultado, "PAR900").total).toBeNull();
     expect(item(resultado, "PAR900").motivoCodigo).toBe("RegularizacionPendiente");
     expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.motivoCodigo).toBe("RegularizacionPendiente");
   });
 
   test("en 2027 no se aplica ni se extrapola", () => {
