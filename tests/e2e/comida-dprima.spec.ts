@@ -30,7 +30,7 @@ async function login(page: any, request: any, origin: string, state: string) {
   });
   await page.goto("/comida");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(state + "/bootstrap.txt", "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })

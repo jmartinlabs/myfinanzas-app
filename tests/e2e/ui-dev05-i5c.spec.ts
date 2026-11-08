@@ -61,7 +61,7 @@ test("UI DEV-05 I5c: formularios, error asociado, foco y temas", async ({
   const password = "Contraseña ficticia UI DEV-05 I5c " + randomUUID();
   await page.goto("/inversiones/ventas/nueva");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();

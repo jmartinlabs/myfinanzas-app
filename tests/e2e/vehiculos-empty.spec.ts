@@ -37,7 +37,7 @@ test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios
     });
     await page.goto("/vehiculos");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-vehiculos-empty/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

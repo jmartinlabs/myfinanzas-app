@@ -83,7 +83,7 @@ async function routeApi(page: Page) {
 async function login(page: Page) {
   await page.goto("/saldos");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia navegación " + randomUUID(),

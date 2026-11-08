@@ -39,7 +39,7 @@ copias divergentes del esquema ni se habilita producción quitando un guard glob
 | Separación y ausencia de fixtures | Nunca convertir demo a productiva, ni por ruta, NODE_ENV, borrado de filas o restore | Solicitud del usuario; refuerzo simétrico D1 propuesto |
 | S000 | Único Saldo inicial, técnico, Exterior protegido; ningún hecho, apertura personal, catálogo o usuario ficticio | Invariante existente; concreción D2 propuesta |
 | Primera alta | Contador Saldo comienza en 1; primera alta S001, sin reservar los cinco fixtures | D2 propuesta; no autorización de carga/importación real |
-| Alta privada | Mismo token de un uso/10 min, contraseña 15–128, TOTP y diez códigos; entrega local privada | Seguridad existente; canal productivo D3 propuesto |
+| Alta privada | Mismo código de activación de un uso/10 min, contraseña 8–128, TOTP y diez códigos; entrega local privada | Seguridad existente; canal productivo D3 propuesto |
 | Recuperación | age, destino nuevo, integridad/FK/checksum y revocación de accesos | Contrato existente; extensión de identidad D4 propuesta |
 | Maestro y operación | Excel v5.11 maestro; no acceso al VPS, deploy ni datos reales | Solicitud confirmada |
 

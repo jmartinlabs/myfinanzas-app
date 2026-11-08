@@ -37,7 +37,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     });
     await page.goto("/vehiculos");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-vehiculos/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

@@ -10,8 +10,11 @@ referencia sanitizada y evidencias aportadas por el usuario.
 ## Acceso implementado E1.1
 - Alta única mediante token CLI local aleatorio, hash persistido, 10 min/uso único;
   el usuario activo no puede reiniciarse con setup. Sin registro público ni rescate administrativo.
-- Contraseña 15–128 caracteres, Argon2id Bun con 64 MiB/3 pasadas. No truncar ni registrar.
+- Contraseña 8–128 caracteres, Argon2id Bun con 64 MiB/3 pasadas. No truncar ni registrar.
   Calibración del equipo destino queda para su preparación.
+  Nota de decisión del usuario (2026-11-08): el mínimo de alta pasa de 15 a 8
+  caracteres y el máximo sigue en 128; MFA obligatorio, Argon2id y el resto de
+  controles permanecen intactos.
 - OTPAuth 9.5.2, TOTP SHA1/6 dígitos/30 s/ventana ±1, consumo del paso atómico y anti-replay.
   Secreto AES-256-GCM con nonce aleatorio, clave 32 bytes fuera de DB y de Git, permisos 0600.
   Se entrega secreto de enrolado solo tras token local o contraseña válida; no hace de sesión.

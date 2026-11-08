@@ -39,7 +39,7 @@ test("E2.3 plan del ciclo: MFA real, importes nullable, ejecución, copia y conf
     });
     await page.goto("/planes-ciclo");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-planes/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

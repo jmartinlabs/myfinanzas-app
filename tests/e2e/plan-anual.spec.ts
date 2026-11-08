@@ -41,7 +41,7 @@ test("E2.4 annual plan: real MFA, exact nullable manual lines, review/conflict/e
     });
     await page.goto("/plan-anual");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-annual/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

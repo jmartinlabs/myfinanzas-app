@@ -172,7 +172,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     const password = "Contraseña ficticia navegador " + randomUUID();
     await navigate("/movimientos");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-movimientos/bootstrap.txt", "utf8"));
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Continuar", exact: true }).click();

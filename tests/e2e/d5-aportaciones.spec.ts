@@ -43,7 +43,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
     });
     await page.goto("/compartidos");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-d5/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

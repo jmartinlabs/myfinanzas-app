@@ -42,7 +42,7 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     });
     await page.goto("/revision-comida");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-revision-comida/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

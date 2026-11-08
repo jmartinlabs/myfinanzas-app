@@ -21,7 +21,7 @@ let child: ChildProcess | undefined;
 async function login(page: Page) {
   await page.goto("/inversiones");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })

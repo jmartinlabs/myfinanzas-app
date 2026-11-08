@@ -43,7 +43,7 @@ test("E3.1 real MFA, explicit roles, multi-pair return, historical accreditation
     });
     await page.goto("/anticipos");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-anticipos/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
