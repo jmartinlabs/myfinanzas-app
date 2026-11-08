@@ -163,10 +163,12 @@ export type UniversoPrecontrol = {
     partidaId: string;
     estado: "Presente" | "Ausente" | "NoAplica";
     /**
-     * Intervalo esperado declarado por DT7. Opcional para no romper llamadores
-     * existentes; si falta, `Presente` solo exige cobertura de la Partida.
+     * Intervalo esperado declarado por DT7. Obligatorio: `Presente` no se
+     * acredita por cobertura no vacía de la Partida; debe cubrir este intervalo
+     * recortado al corte. Sin fallback implícito (un valor ausente en runtime
+     * se trata como no cubierto).
      */
-    intervalo?: Intervalo;
+    intervalo: Intervalo;
   }[];
 };
 
@@ -503,12 +505,25 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
     new Set(universo.partidas).size === universo.partidas.length,
     "El universo contiene Partidas duplicadas.",
   );
+  for (const partidaId of universo.partidas)
+    exigir(
+      esIdentificadorPartida(partidaId),
+      `Partida inválida en el universo: ${partidaId}.`,
+    );
   if (universo.estado === "Acreditado")
     exigir(universo.partidas.length > 0, "Universo acreditado sin Partidas.");
   for (const esperada of universo.fuentesEsperadas) {
     exigir(
       ["Presente", "Ausente", "NoAplica"].includes(esperada.estado),
       "Estado de fuente esperada inválido.",
+    );
+    exigir(
+      esIdentificadorPartida(esperada.partidaId),
+      `Partida esperada inválida: ${esperada.partidaId}.`,
+    );
+    exigir(
+      esperada.estado !== "Presente" || esperada.intervalo !== undefined,
+      "Fuente esperada Presente sin intervalo declarado.",
     );
     if (esperada.intervalo) {
       validarIntervalo(esperada.intervalo);
@@ -560,6 +575,11 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
       dentroDeEjercicio(registro.intervalo, entrada.ejercicio),
       "Intervalo de registro fuera del ejercicio.",
     );
+    if (registro.partidaId !== null)
+      exigir(
+        esIdentificadorPartida(registro.partidaId),
+        `partidaId inválido en registro ${registro.idArchivo}.`,
+      );
     const importe = centimos(registro.importeCentimos);
     exigir(
       registro.clase !== "GastoHistorico" || importe >= 0n,
@@ -581,6 +601,10 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
   for (const movimiento of entrada.movimientos) {
     fechaValida(movimiento.fecha);
     centimos(movimiento.importeCentimos);
+    exigir(
+      esIdentificadorPartida(movimiento.partidaId),
+      `partidaId inválido en Movimiento ${movimiento.idMovimiento}.`,
+    );
   }
 }
 
@@ -818,10 +842,22 @@ function movimientosElegibles(
 }
 
 /**
+ * Fin efectivo de cobertura de una fuente: su `corteArchivo` declarado no se
+ * amplía por intervalos/control posteriores, y tampoco supera el corte de la
+ * consulta.
+ */
+function finCoberturaFuente(
+  fuente: FuentePrecontrol,
+  hasta: FechaCivil,
+): FechaCivil {
+  return fuente.corteArchivo < hasta ? fuente.corteArchivo : hasta;
+}
+
+/**
  * Cobertura que una fuente concreta aporta a una Partida dentro de
- * `[inicio ejercicio, corte]`. Los tramos de archivo se asocian por
- * `partidaId`; el control solo aplica si su `alcance` es `Global` o la propia
- * Partida.
+ * `[inicio ejercicio, min(corteArchivo, corte)]`. Los tramos de archivo se
+ * asocian por `partidaId`; el control solo aplica si su `alcance` es `Global` o
+ * la propia Partida.
  */
 function coberturaFuentePartida(
   fuente: FuentePrecontrol,
@@ -829,17 +865,19 @@ function coberturaFuentePartida(
   desde: FechaCivil,
   hasta: FechaCivil,
 ): Intervalo[] {
+  const fin = finCoberturaFuente(fuente, hasta);
+  if (fin < desde) return [];
   const piezas: Intervalo[] = [];
   for (const tramo of fuente.intervalosArchivo) {
     if (tramo.partidaId !== partidaId) continue;
-    const recortado = recortar(tramo.intervalo, desde, hasta);
+    const recortado = recortar(tramo.intervalo, desde, fin);
     if (recortado) piezas.push(recortado);
   }
   if (
     fuente.controlDetalle &&
     (fuente.alcance === "Global" || fuente.alcance === partidaId)
   ) {
-    const recortado = recortar(fuente.controlDetalle, desde, hasta);
+    const recortado = recortar(fuente.controlDetalle, desde, fin);
     if (recortado) piezas.push(recortado);
   }
   return unirIntervalos(piezas);
@@ -862,7 +900,9 @@ function fuenteEsperadaCubierta(
     hasta,
   );
   if (cobertura.length === 0) return false;
-  if (!esperada.intervalo) return true;
+  // Fallback fail-closed para llamadores JS: sin intervalo declarado no se
+  // acredita `Presente`, aunque exista cobertura no vacía de la Partida.
+  if (!esperada.intervalo) return false;
   const objetivo = recortar(esperada.intervalo, desde, hasta);
   // Una expectativa fuera del alcance consultado (p. ej. posterior al corte) no
   // se convierte en ausencia: no hay nada que verificar en este corte.
@@ -939,9 +979,11 @@ function analizarItem(
 
   const piezas: PiezaCobertura[] = [];
   for (const fuente of entrada.fuentes) {
+    const finFuente = finCoberturaFuente(fuente, hasta);
+    if (finFuente < desde) continue;
     for (const tramo of fuente.intervalosArchivo) {
       if (tramo.partidaId !== partidaId) continue;
-      const recortado = recortar(tramo.intervalo, desde, hasta);
+      const recortado = recortar(tramo.intervalo, desde, finFuente);
       if (recortado)
         piezas.push({
           intervalo: recortado,
@@ -950,7 +992,7 @@ function analizarItem(
         });
     }
     if (fuente.controlDetalle && (fuente.alcance === "Global" || fuente.alcance === partidaId)) {
-      const recortado = recortar(fuente.controlDetalle, desde, hasta);
+      const recortado = recortar(fuente.controlDetalle, desde, finFuente);
       if (recortado)
         piezas.push({
           intervalo: recortado,
@@ -1397,16 +1439,22 @@ export function combinarHistoricoPrecontrol(
   const partidasDescubiertas = new Set<string>();
   for (const registro of resolucion.vigentes) {
     if (registro.clase === "AperturaHistorica") continue;
-    if (registro.partidaId) partidasDescubiertas.add(registro.partidaId);
+    if (registro.partidaId && esIdentificadorPartida(registro.partidaId))
+      partidasDescubiertas.add(registro.partidaId);
   }
   for (const movimiento of entrada.movimientos)
-    if (movimiento.tipo === "Gasto" && !movimiento.anulado)
+    if (
+      movimiento.tipo === "Gasto" &&
+      !movimiento.anulado &&
+      esIdentificadorPartida(movimiento.partidaId)
+    )
       partidasDescubiertas.add(movimiento.partidaId);
   for (const fuente of entrada.fuentes)
     if (fuente.alcance !== "Global" && esIdentificadorPartida(fuente.alcance))
       partidasDescubiertas.add(fuente.alcance);
   for (const esperada of entrada.universo.fuentesEsperadas)
-    partidasDescubiertas.add(esperada.partidaId);
+    if (esIdentificadorPartida(esperada.partidaId))
+      partidasDescubiertas.add(esperada.partidaId);
 
   const partidas = universoAcreditado
     ? [...entrada.universo.partidas]
@@ -1448,6 +1496,10 @@ export function combinarHistoricoPrecontrol(
   const items: ItemPrecontrol[] = [];
   const agregados: AgregadoNoAtribuible[] = [];
   for (const partidaId of partidas) {
+    exigir(
+      esIdentificadorPartida(partidaId),
+      `Partida inválida en la creación de items: ${partidaId}.`,
+    );
     const analisis = analizarItem(
       entrada,
       partidaId,

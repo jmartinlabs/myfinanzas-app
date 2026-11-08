@@ -89,6 +89,7 @@ function universo(
       fuenteId: "SRC-1",
       partidaId,
       estado: "Presente" as const,
+      intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
     }),
   ),
 ): UniversoPrecontrol {
@@ -576,8 +577,18 @@ describe("deduplicación, identidad y versiones", () => {
         movimientos: [],
       }),
       universo: universo(["PAR100", "PAR200"], [
-        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
-        { fuenteId: "SRC-1", partidaId: "PAR200", estado: "Presente" },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR200",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
       ]),
     });
 
@@ -896,8 +907,18 @@ describe("F-DT7-10/23/11 · universo, fuentes ausentes y D14", () => {
         movimientos: [],
       }),
       universo: universo(["PAR100", "PAR300"], [
-        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
-        { fuenteId: "SRC-3", partidaId: "PAR300", estado: "Ausente" },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+        {
+          fuenteId: "SRC-3",
+          partidaId: "PAR300",
+          estado: "Ausente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
       ]),
     });
 
@@ -956,8 +977,18 @@ describe("F-DT7-10/23/11 · universo, fuentes ausentes y D14", () => {
         movimientos: [],
       }),
       universo: universo(["PAR100", "PAR205"], [
-        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
-        { fuenteId: "SRC-2", partidaId: "PAR205", estado: "Presente" },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+        {
+          fuenteId: "SRC-2",
+          partidaId: "PAR205",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
       ]),
     });
 
@@ -1074,8 +1105,18 @@ describe("F-DT7-13 · dos fuentes solapadas", () => {
         ],
       }),
       universo: universo(["PAR100"], [
-        { fuenteId: "SRC-A", partidaId: "PAR100", estado: "Presente" },
-        { fuenteId: "SRC-B", partidaId: "PAR100", estado: "Presente" },
+        {
+          fuenteId: "SRC-A",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-08-31" },
+        },
+        {
+          fuenteId: "SRC-B",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-03-01", fin: "2026-06-30" },
+        },
       ]),
     });
 
@@ -1117,8 +1158,18 @@ describe("F-DT7-13 · dos fuentes solapadas", () => {
         ],
       }),
       universo: universo(["PAR100"], [
-        { fuenteId: "SRC-A", partidaId: "PAR100", estado: "Presente" },
-        { fuenteId: "SRC-B", partidaId: "PAR100", estado: "Presente" },
+        {
+          fuenteId: "SRC-A",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+        },
+        {
+          fuenteId: "SRC-B",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+        },
       ]),
     });
     const par100 = item(resultado);
@@ -1200,7 +1251,14 @@ describe("F-DT7-08 · regularización 2026", () => {
       ejercicio: 2027,
       corte: "2027-12-31",
       hoy: "2028-01-15",
-      universo: universo(["PAR900"]),
+      universo: universo(["PAR900"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR900",
+          estado: "Presente",
+          intervalo: { inicio: "2027-01-01", fin: "2027-12-31" },
+        },
+      ]),
       fuentes: [
         fuente({
           intervalosArchivo: [
@@ -1233,7 +1291,14 @@ describe("F-DT7-16 · transición de ejercicio", () => {
       ejercicio: 2027,
       corte: "2027-12-31",
       hoy: "2028-01-15",
-      universo: universo(["PAR100"]),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2027-01-01", fin: "2027-12-31" },
+        },
+      ]),
       fuentes: [],
       registros: [],
       movimientos: [],
@@ -1262,6 +1327,14 @@ describe("F-DT7-16 · transición de ejercicio", () => {
         ejercicio: 2028,
         corte: "2028-12-31",
         hoy: "2029-01-15",
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-1",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2028-01-01", fin: "2028-12-31" },
+          },
+        ]),
         fuentes: [],
         registros: [],
         movimientos: [],
@@ -1624,7 +1697,12 @@ describe("H4 · cobertura por fuente, Partida, alcance, intervalo y corte", () =
         movimientos: [],
       }),
       universo: universo(["PAR100"], [
-        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
       ]),
     });
     const par100 = item(resultado);
@@ -1666,7 +1744,12 @@ describe("H4 · cobertura por fuente, Partida, alcance, intervalo y corte", () =
         movimientos: [],
       }),
       universo: universo(["PAR100"], [
-        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
       ]),
     });
     const par100 = item(resultado);
@@ -1788,5 +1871,144 @@ describe("H4 · cobertura por fuente, Partida, alcance, intervalo y corte", () =
     expect(item(resultado).estadoCobertura).toBe("Completa");
     expect(item(resultado).total).toBe("100.00");
     expect(item(resultado).motivoCodigo).toBeNull();
+  });
+
+  test("corteArchivo limita intervalos y control posteriores", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-06-30",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: { inicio: "2026-07-01", fin: "2026-12-31" },
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+        },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.cobertura.intervalos).toEqual([
+      { inicio: "2026-01-01", fin: "2026-06-30" },
+    ]);
+    expect(par100.estadoCobertura).toBe("Parcial");
+    expect(par100.total).toBeNull();
+    expect(par100.motivoCodigo).toBe("HuecoDemostrado");
+    expect(resultado.cobertura.huecos).toEqual([
+      { inicio: "2026-07-01", fin: "2026-12-31", partidaId: "PAR100" },
+    ]);
+  });
+
+  test("corteArchivo limita la fuente esperada aunque otra fuente complete el hueco", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-1",
+            corteArchivo: "2026-06-30",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: { inicio: "2026-07-01", fin: "2026-12-31" },
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            corteArchivo: "2026-12-31",
+            intervalosArchivo: [archivo("2026-07-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            fuenteId: "SRC-1",
+            identidad: "TRAMO-UNO",
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            fuenteId: "SRC-2",
+            identidad: "TRAMO-DOS",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.cobertura.intervalos).toEqual([
+      { inicio: "2026-01-01", fin: "2026-12-31" },
+    ]);
+    expect(par100.estadoCobertura).toBe("Parcial");
+    expect(par100.total).toBeNull();
+    expect(par100.motivoCodigo).toBe("FuenteAusente");
+  });
+
+  test("una expectativa Presente sin intervalo se rechaza explícitamente", () => {
+    const sinIntervalo = {
+      fuenteId: "SRC-1",
+      partidaId: "PAR100",
+      estado: "Presente",
+    } as unknown as UniversoPrecontrol["fuentesEsperadas"][number];
+
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({ universo: universo(["PAR100"], [sinIntervalo]) }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+  });
+});
+
+describe("IDs PAR en la creación de items", () => {
+  test("un universo con Partida no-PAR se rechaza explícitamente", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({
+          universo: {
+            estado: "Acreditado",
+            partidas: ["S001"],
+            fuentesEsperadas: [],
+          },
+        }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+  });
+
+  test("un partidaId no-PAR en registro o Movimiento se rechaza", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({
+          registros: [registro("AH001", { partidaId: "S001" })],
+        }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({
+          movimientos: [movimiento("MV001", { partidaId: "S001" })],
+        }),
+      ),
+    ).toThrow(ErrorPrecontrol);
   });
 });
