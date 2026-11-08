@@ -117,6 +117,21 @@ no borrar uno previo para que funcione. La publicación conjunta DB/clave es la 
 CLI `setup.ts` con archivo privado 0600, nunca mostrar token en stdout/env/argv.
 Custodiar su archivo y seguir el procedimiento de alta HTTPS en la fase A.
 
+### Obtención y renovación del código de activación
+
+Mientras el propietario no esté configurado, generar un código con la misma imagen y
+los flags endurecidos de la tarea deliberada, ejecutando `apps/api/src/setup.ts` con un
+archivo nuevo dentro de `state`, por ejemplo
+`/var/lib/myfinanzas/state/alta-20261108.txt`. El CLI crea el archivo en modo 0600; el
+código caduca en 10 minutos y admite un solo uso. Entregarlo al usuario por un canal
+privado, nunca por stdout, ENV, argv, chat compartido o Git.
+
+Si caduca sin usarse o se pierde, repetir el comando con otro nombre de archivo nuevo:
+cada ejecución invalida el código anterior y no requiere parar ni reiniciar
+`myfinanzas-api.service`. No reutilizar el archivo entregado. Si el propietario ya está
+configurado, el CLI se niega por diseño (no hay reinicio administrativo automático);
+usar el procedimiento de recuperación con contraseña y código de recuperación.
+
 ## Unidad y salud
 
 `infra/runtime.py:render` genera texto revisable, no instala ni arranca unidades.

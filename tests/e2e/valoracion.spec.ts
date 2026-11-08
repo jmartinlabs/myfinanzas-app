@@ -51,7 +51,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     });
     await page.goto("/inversiones");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-valoracion/bootstrap.txt", "utf8"));
     const password = "Clave ficticia valoración " + randomUUID();
     await page

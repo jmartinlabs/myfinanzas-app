@@ -57,7 +57,7 @@ async function login(
   });
   await page.goto(target);
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(bootstrap, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })

@@ -102,7 +102,7 @@ async function routeApi(page: Page, port: number) {
 async function login(page: Page, dir: string, path = "/fotos") {
   await page.goto(path);
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(dir + "/bootstrap.txt", "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })

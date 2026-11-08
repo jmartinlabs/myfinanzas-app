@@ -51,7 +51,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   expect((await request.get("/api/saldos")).status()).toBe(401);
   await page.goto("/saldos");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(".local/e2e/bootstrap.txt", "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();

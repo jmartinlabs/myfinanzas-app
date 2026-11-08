@@ -41,7 +41,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
     });
     await page.goto("/flujo-mensual?ciclo=1");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-monthly/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

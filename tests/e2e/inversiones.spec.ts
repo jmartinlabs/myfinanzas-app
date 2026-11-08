@@ -42,7 +42,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     });
     await page.goto("/inversiones");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-inversiones/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

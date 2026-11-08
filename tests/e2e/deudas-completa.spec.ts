@@ -113,7 +113,7 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
     await page.goto("/deudas");
     await expect(page.getByLabel("Contraseña", { exact: true })).toBeVisible();
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(state + "/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

@@ -72,10 +72,10 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
         <small>GESTIÓN FINANCIERA PERSONAL</small>
       </div>
       <section className="auth-panel">
-        <p className="eyebrow">ENTORNO LOCAL · DATOS FICTICIOS</p>
+        <p className="eyebrow">ENTORNO TEST · DATOS FICTICIOS</p>
         <h1>
           {stage === "enroll"
-            ? "Configura tu acceso"
+            ? "Crea tu cuenta"
             : stage === "mfa"
               ? "Segundo factor"
               : stage === "codes"
@@ -118,12 +118,12 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
               {stage === "enroll" && (
                 <>
                   <p>
-                    Ejecuta <code>bun run setup</code> en el equipo local. El
-                    token permite configurar un único usuario y caduca en 10
-                    minutos.
+                    Pide el código de activación al administrador de TEST.
+                    Caduca en 10 minutos y puedes solicitar uno nuevo si
+                    expira. Úsalo una sola vez para crear tu cuenta.
                   </p>
                   <label>
-                    Token de configuración local
+                    Código de activación
                     <input
                       required
                       autoComplete="off"
@@ -140,7 +140,7 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
                     aria-label="Contraseña"
                     type="password"
                     required
-                    minLength={stage === "enroll" ? 15 : undefined}
+                    minLength={stage === "enroll" ? 8 : undefined}
                     maxLength={128}
                     autoComplete={
                       stage === "enroll" ? "new-password" : "current-password"
@@ -150,8 +150,8 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
                   />
                   {stage === "enroll" && (
                     <small>
-                      Entre 15 y 128 caracteres. Utiliza una frase larga y
-                      única.
+                      Entre 8 y 128 caracteres. Usa una frase que puedas
+                      recordar.
                     </small>
                   )}
                 </label>
@@ -248,7 +248,7 @@ export function AuthScreen({ onReady }: { onReady: () => void }) {
         )}
       </section>
       <p className="auth-foot">
-        Acceso privado · Sin registro público · Solo en este equipo
+        Acceso privado · Sin registro público
       </p>
     </main>
   );

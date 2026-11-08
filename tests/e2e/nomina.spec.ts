@@ -41,7 +41,7 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
     });
     await page.goto("/nomina");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-payroll/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })

@@ -105,7 +105,7 @@ async function login(page: Page, dir: string) {
   const password = "Clave ficticia inicio " + randomUUID();
   await page.goto("/inicio");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();

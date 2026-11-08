@@ -246,13 +246,13 @@ export class Auth {
     if (
       typeof bootstrapToken !== "string" ||
       typeof password !== "string" ||
-      password.length < 15 ||
+      password.length < 8 ||
       password.length > 128
     )
       throw new Problem(
         422,
         "VALIDATION",
-        "Contraseña entre 15 y 128 caracteres y token local obligatorios.",
+        "Contraseña entre 8 y 128 caracteres y código de activación obligatorios.",
       );
     const valid = this.db
       .query("SELECT hash FROM bootstrap WHERE hash=? AND expires>?")

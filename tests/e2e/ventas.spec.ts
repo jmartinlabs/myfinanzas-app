@@ -70,7 +70,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     });
     await page.goto("/inversiones");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-ventas/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
