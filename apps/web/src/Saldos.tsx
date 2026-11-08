@@ -373,6 +373,32 @@ export function SaldoDetail({
       )}
       {error && <Alert>{error}</Alert>}
       <FormGrid className="detail-grid saldo-detail-grid">
+        <section className="panel position-panel">
+          <p className="eyebrow">POSICIÓN ACTUAL</p>
+          <h2>
+            {s.posicion.importe !== null
+              ? "Saldo actual"
+              : s.posicion.condicion === "pendiente_motor"
+                ? "Pendiente de motor"
+                : "No aplicable"}
+          </h2>
+          <p>{s.posicion.motivo}</p>
+          <div
+            className={
+              "position-placeholder" +
+              (s.posicion.importe !== null ? " calculated" : "")
+            }
+          >
+            {s.posicion.importe !== null ? eur(s.posicion.importe) : "—"}
+          </div>
+          <p className="muted">
+            {s.posicion.importe !== null
+              ? "Resultado económico vigente, independiente de los filtros de consulta."
+              : s.posicion.condicion === "pendiente_motor"
+                ? "No se presenta un importe hasta disponer del motor correspondiente."
+                : "Este control no presenta un saldo actual convencional."}
+          </p>
+        </section>
         <FormSection title="Identificación">
           <dl>
             {row("Identificador", <code>{s.id}</code>)}
@@ -411,32 +437,6 @@ export function SaldoDetail({
             ))}
           </dl>
         </FormSection>
-        <section className="panel position-panel">
-          <p className="eyebrow">POSICIÓN ACTUAL</p>
-          <h2>
-            {s.posicion.importe !== null
-              ? "Saldo actual"
-              : s.posicion.condicion === "pendiente_motor"
-                ? "Pendiente de motor"
-                : "No aplicable"}
-          </h2>
-          <p>{s.posicion.motivo}</p>
-          <div
-            className={
-              "position-placeholder" +
-              (s.posicion.importe !== null ? " calculated" : "")
-            }
-          >
-            {s.posicion.importe !== null ? eur(s.posicion.importe) : "—"}
-          </div>
-          <p className="muted">
-            {s.posicion.importe !== null
-              ? "Resultado económico vigente, independiente de los filtros de consulta."
-              : s.posicion.condicion === "pendiente_motor"
-                ? "No se presenta un importe hasta disponer del motor correspondiente."
-                : "Este control no presenta un saldo actual convencional."}
-          </p>
-        </section>
       </FormGrid>
       {s.id !== "S000" && (
         <section className="panel lifecycle">
