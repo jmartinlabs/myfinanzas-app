@@ -96,10 +96,11 @@ bun run setup
 bun run dev
 ```
 
-Abre `http://127.0.0.1:5173`. Introduce el token local mostrado por setup (caduca en
-10 minutos), una contraseña de 15–128 caracteres y configura tu aplicación autenticadora.
-Completa TOTP y guarda los diez códigos de recuperación fuera del repositorio.
-El token y los factores son privados: no compartirlos en capturas, logs o chat.
+Abre `http://127.0.0.1:5173`. Introduce el código de activación mostrado por setup
+(caduca en 10 minutos), una contraseña de 8–128 caracteres y configura tu aplicación
+autenticadora. Completa TOTP y guarda los diez códigos de recuperación fuera del
+repositorio. El código de activación y los factores son privados: no compartirlos en
+capturas, logs o chat.
 `setup` no reinicia un usuario ya activo ni ofrece recuperación administrativa.
 
 API en 127.0.0.1:3001; Vite en 127.0.0.1:5173, proxy `/api`. Solo loopback y datos
