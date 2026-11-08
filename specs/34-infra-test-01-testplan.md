@@ -42,6 +42,13 @@ Documentos de referencia: [RUNBOOK](../infra/RUNBOOK.md),
 
 ## 3. Matriz de criterios de aceptación
 
+> **Excepción aprobada 2026-11-08 (H11):** `seed reset` se aplaza a después de la primera
+> activación de TEST. `AC07` sigue **`UNRUN`**, no exento ni sustituido; el primer seed solo
+> se aplica sobre estado limpio, vacío y verificado, y no se admite ningún script destructivo
+> sustitutivo ni borrado manual de estado. SPEC34 **no** se declara aceptada por esta
+> reconciliación.
+
+
 Todos los estados son `UNRUN`.
 
 | ID | Método | Entorno | Evidencia | Owner | Fase | Estado |

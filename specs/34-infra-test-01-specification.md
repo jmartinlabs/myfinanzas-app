@@ -96,7 +96,7 @@ protección efectiva de `test` se verifica antes de habilitar tags; esta spec no
 
 `[CONFIRMADO]` El antecedente cerrado usaba `origin/main` `0b8aade` y proponía
 `D6: estado productivo limpio; datos ficticios manuales`. Esa formulación **no** cumple el
-requisito de reproducibilidad de esta entrega; se recoge en §11 para el nuevo entregable host,
+requisito de reproducibilidad de esta entrega; se recoge en §11 para el contrato host,
 sin editar el repositorio ajeno.
 
 `[CONFIRMADO]` El runbook de MyFinanzas mantiene el despliegue como **NOT deployable** y
@@ -127,7 +127,7 @@ en la base declarada. TEST añade restricciones, no relaja ninguna existente.
 | Proceso | Bun 1.4.3, `apps/api/src/main.ts` | `Containerfile`, `main.ts` |
 | Puerto interno | `3001` | `main.ts` |
 | Bind interno | `API_BIND_HOST=0.0.0.0` solo dentro del namespace | `server-config.ts` |
-| Publicación host | `127.0.0.1:18082:3001` | Propuesta del packet y §5; pendiente de la nueva spec host |
+| Publicación host | `127.0.0.1:18082:3001` | Propuesta del packet y §5; a fijar en el contrato host §11 |
 | UID/GID interno | `10001:10001` con `keep-id:uid=10001,gid=10001` | `Containerfile`, `runtime.py`, RUNBOOK |
 | Rootfs | solo lectura, `TMPDIR=/tmp/private`, tmpfs 64 MiB noexec | `Containerfile`, RUNBOOK |
 | Límites | 1 GiB RAM, 1 CPU, 128 pids | RUNBOOK, plantilla Quadlet |
@@ -381,7 +381,7 @@ que existan en el VPS.
 | --- | --- | --- |
 | `public_origin` | `https://test.myfinanzas.pp.ua` | Contrato del packet |
 | `public_host` | `test.myfinanzas.pp.ua` | Contrato del packet |
-| `caddy_upstream` | `127.0.0.1:18082` | Propuesta del packet; pendiente de la nueva spec host |
+| `caddy_upstream` | `127.0.0.1:18082` | Propuesta del packet; a fijar en el contrato host §11 |
 | `api_container_port` | `3001` | `main.ts` |
 | `api_bind_host` | `0.0.0.0` solo dentro del namespace | `server-config.ts` |
 | `static_root` | `frontend/` del paquete verificado | `release.py` |
@@ -399,9 +399,10 @@ que existan en el VPS.
 | `rollback` | Solo al par exacto con prueba; si no, bloqueo y preservación | RUNBOOK, `compatibility.py` |
 
 `[CONFIRMADO]` `infra/runtime.py:render` **no** es reutilizable tal cual para TEST: fija
-`18081` y `APP_ORIGIN=https://myfinanzas.pp.ua`. La unidad TEST debe definirla el nuevo
-entregable host de `vps-infra` (la §6.3 del antecedente cerrado es solo referencia) o una CLI
-parametrizada que aún no existe. D6 lo decide.
+`18081` y `APP_ORIGIN=https://myfinanzas.pp.ua`. La unidad TEST pertenece al contrato host
+`vps-infra` PR #9 (MERGED `901204c`); la §6.3 del antecedente cerrado es solo referencia. Si
+el contrato host requiere una CLI parametrizada, se aborda en su propio ciclo, no en esta
+spec.
 
 Obligaciones de MyFinanzas en la interfaz:
 
@@ -532,7 +533,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | D3 | Orden seed/alta: seed antes de `setup` vs después | Antes del alta, para exigir ausencia de propietario | `[APROBADA 2026-11-04]` |
 | D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[APROBADA 2026-11-04]` |
 | D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[APROBADA 2026-11-04]` |
-| D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[APROBADA 2026-11-04]` |
+| D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081; cubierto hoy por el contrato host PR #9 (`901204c`) | `[APROBADA 2026-11-04]` |
 | D7 | Cobertura de E4.9: `FT-1` sin cierres/fotos vs `FT-2` | Mantener `FT-1 v1` sin cierres ni fotografías; tablas C25–C27 vacías; compatibilidad con v27 a verificar por AC08/AC09; `FT-2` reservado a una ampliación independiente con E3.5/FIN_NETA y DT6/backup resueltos | `[APROBADA 2026-11-05; PR #229 CLOSED]` |
 
 ## 10. Fuera de alcance
@@ -574,7 +575,7 @@ infiere. El contrato host recoge, y debe mantenerse alineado con:
 7. **AC nuevos.** Guardas, determinismo, idempotencia y reset sin tocar PROD, mapeados a
    `INFRA-TEST-01-AC04…AC09`.
 8. **`render-unit`.** No usar la CLI de la app para TEST mientras fije `18081` y el origen de
-   PROD; D6 decide si se parametriza en un trabajo posterior.
+   PROD; la parametrización, si procede, es trabajo posterior del contrato host.
 9. **Test plan host.** El suyo propio, con autorizaciones por fase; no sustituye este test
    plan documental.
 
