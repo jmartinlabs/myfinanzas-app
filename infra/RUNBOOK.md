@@ -81,7 +81,10 @@ no sustituye la revisión QA independiente previa al merge. Como `required` se e
 en otro workflow, la publicación espera su resultado final con timeout y no acepta
 estados pendientes/fallidos. La variable se activa solo tras la primera activación
 TEST aprobada. `workflow_dispatch` con `package_test_release` conserva solo el ZIP
-manual y su `qa_reference`; no publica en GHCR por esta ruta. La imagen de release contiene `/manifest.json`, `/manifest.sha256`, `/SHA256SUMS` y
+manual y su `qa_reference`; **no** publica en GHCR por defecto. Tras la primera
+activación, el operador puede usar el input independiente `publish_test_ghcr=true`
+para crear/verificar los paquetes GHCR del SHA exacto con la misma QA/Rootless/required,
+sin introducir un commit artificial. Ese input es falso por defecto. La imagen de release contiene `/manifest.json`, `/manifest.sha256`, `/SHA256SUMS` y
 `/frontend/`, y declara labels con SHA, hashes, digests y contratos. El VPS la consulta
 periódicamente, verifica el manifiesto y descarga la app por digest; no recibe credenciales
 SSH desde GitHub. Los paquetes deben ser públicos para lectura anónima; si no lo son, el
