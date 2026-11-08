@@ -494,6 +494,116 @@ test("E4.11 I3: NoDisponible por bloque se declara y no se convierte en 0", () =
   });
 });
 
+test("E4.11 AC15: E4.3/E4.4 No disponible se declaran y no completan el total", () => {
+  const db = openDatabase(":memory:");
+  // AC15 se acota a los bloques E4.3/E4.4 existentes en el contrato de foto.
+  // E4.2 no tiene cobertura en ese contrato y no se simula como bloque.
+  const noDisponible = {
+    valoracion: {
+      estado: "No disponible",
+      motivo: "E4.3 valoración/patrimonio no implementado.",
+    },
+    conciliaciones: {
+      estado: "No disponible",
+      motivo: "E4.4 conciliaciones de Deuda fuera de la foto.",
+    },
+  };
+  const cobertura = {
+    estado: "Parcial",
+    totales: {
+      valoracion: {
+        estado: "No disponible",
+        motivo: "E4.3 valoración/patrimonio no implementado.",
+      },
+      conciliaciones: {
+        estado: "No disponible",
+        motivo: "E4.4 conciliaciones de Deuda fuera de la foto.",
+      },
+    },
+  };
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC15",
+    noDisponible,
+    cobertura,
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac15-e43-e44"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "valoracion",
+      estado: "No disponible",
+      motivo: "E4.3 valoración/patrimonio no implementado.",
+    },
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "conciliaciones",
+      estado: "No disponible",
+      motivo: "E4.4 conciliaciones de Deuda fuera de la foto.",
+    },
+  ]);
+  // Neither E4.2 nor any other block is synthesized as context.
+  expect(periodo.noDisponible.map((item) => item.bloque)).toEqual([
+    "valoracion",
+    "conciliaciones",
+  ]);
+  expect(periodo.cobertura).toMatchObject({
+    estado: "Parcial",
+    motivos: expect.arrayContaining(["SIN_REGLA_ADITIVA"]),
+    totalPeriodo: null,
+  });
+  expect(periodo.cobertura.bloques).toEqual([
+    expect.objectContaining({
+      ciclo: "1",
+      versionFoto: 1,
+      estado: "Parcial",
+      motivos: [
+        "valoracion: E4.3 valoración/patrimonio no implementado.",
+        "conciliaciones: E4.4 conciliaciones de Deuda fuera de la foto.",
+      ],
+    }),
+  ]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+  expect(periodo.valores.totalPeriodo).toBeNull();
+  expect(periodo.valores.motivoTotal).toBe("SIN_REGLA_ADITIVA");
+  expect(periodo.valores.porCiclo[0].noDisponible).toEqual(noDisponible);
+  expect(JSON.stringify(periodo.cobertura)).not.toContain('"totalPeriodo":0');
+  expect(JSON.stringify(periodo.valores)).not.toContain('"totalPeriodo":0');
+  expect(JSON.stringify(periodo)).not.toContain("CalculoVivo");
+
+  // The persisted aggregate replays the same declaration, not a live reread.
+  const { replayed: _replayed, ...persistido } = periodo;
+  expect(periodo.replayed).toBe(false);
+  expect(getFotoPeriodoPorId(db, periodo.id)).toEqual(persistido);
+  expect(
+    getFotoPeriodo(
+      db,
+      new URLSearchParams({
+        tipo: "Trimestre",
+        ejercicio: "2026",
+        trimestre: "1",
+      }),
+      now,
+    ),
+  ).toEqual(persistido);
+});
+
 test("E4.11 I3 AC09: bloque null en totales conserva motivo y no sintetiza 0", () => {
   const db = openDatabase(":memory:");
   seedCycle(db, "1", "2025-12-01");

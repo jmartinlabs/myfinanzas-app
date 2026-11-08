@@ -725,6 +725,15 @@ test("E4.11 UI/API: composición de trimestre/año, cobertura, drill-down y cont
       .toEqual(["0", "1", "2", "3"]);
     expect(year2027.composicion.map((item: { ciclo: string }) => item.ciclo))
       .toEqual(["4", "5", "6"]);
+    // AC08/P3-B: el ciclo 4 (inicio 2026-12-01, mes financiado 2027-01-01)
+    // no compone 2026 y sí compone 2027. Un ciclo fuera del periodo no se
+    // enumera como contexto ni recibe un estado `FueraDePeriodo`.
+    expect(year2026.composicion.map((item: { ciclo: string }) => item.ciclo))
+      .not.toContain("4");
+    expect(year2027.composicion.map((item: { ciclo: string }) => item.ciclo))
+      .toContain("4");
+    expect(JSON.stringify(year2026)).not.toContain("FueraDePeriodo");
+    expect(JSON.stringify(year2027)).not.toContain("FueraDePeriodo");
     expect(year2027.composicion[0]).toMatchObject({
       ciclo: "4",
       mesFinanciado: "2027-01-01",
