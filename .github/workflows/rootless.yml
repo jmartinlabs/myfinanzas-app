@@ -165,7 +165,7 @@ jobs:
       - name: Install rootless builder on disposable runner
         run: |
           sudo apt-get update
-          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session
+          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session skopeo
       - name: Build once, verify paired release and run synthetic smoke
         shell: bash
         env:
@@ -220,24 +220,22 @@ jobs:
           seed_ref="ghcr.io/${owner}/myfinanzas-test-seed"
           release_ref="ghcr.io/${owner}/myfinanzas-test-release"
           manifest_sha="$(sha256sum "$dest/manifest.json" | cut -d' ' -f1)"
-          app_id="$(jq -r '.image' "$dest/manifest.json")"
           app_digest="$(jq -r '.oci_manifest_digest' "$dest/manifest.json")"
-          seed_id="$(jq -r '.seed.image' "$dest/manifest.json")"
           seed_digest="$(jq -r '.seed.oci_manifest_digest' "$dest/manifest.json")"
           schema="$(jq -r '.inputs.contracts.schema' "$dest/manifest.json")"
           data_contract="$(jq -r '.inputs.contracts.data' "$dest/manifest.json")"
 
-          podman load --input "$dest/image.oci.tar"
-          podman tag "$app_id" "${app_ref}:sha-${RELEASE_SHA}"
-          podman push --digestfile "$RUNNER_TEMP/app.digest" "${app_ref}:sha-${RELEASE_SHA}"
-          registry_app_digest="$(cat "$RUNNER_TEMP/app.digest")"
-          [[ "$registry_app_digest" == "$app_digest" ]] || { echo "app registry digest mismatch" >&2; exit 1; }
+          # Copy the OCI archives verbatim: podman push rewrites layers and the
+          # registry digest would no longer match the manifest.
+          skopeo copy --preserve-digests \
+            "oci-archive:$dest/image.oci.tar" "docker://${app_ref}:sha-${RELEASE_SHA}"
+          registry_app_digest="$(skopeo inspect --format '{{.Digest}}' "docker://${app_ref}:sha-${RELEASE_SHA}")"
+          [[ "$registry_app_digest" == "$app_digest" ]] || { echo "app registry digest mismatch: $registry_app_digest != $app_digest" >&2; exit 1; }
 
-          podman load --input "$dest/image.seed.oci.tar"
-          podman tag "$seed_id" "${seed_ref}:sha-${RELEASE_SHA}"
-          podman push --digestfile "$RUNNER_TEMP/seed.digest" "${seed_ref}:sha-${RELEASE_SHA}"
-          registry_seed_digest="$(cat "$RUNNER_TEMP/seed.digest")"
-          [[ "$registry_seed_digest" == "$seed_digest" ]] || { echo "seed registry digest mismatch" >&2; exit 1; }
+          skopeo copy --preserve-digests \
+            "oci-archive:$dest/image.seed.oci.tar" "docker://${seed_ref}:sha-${RELEASE_SHA}"
+          registry_seed_digest="$(skopeo inspect --format '{{.Digest}}' "docker://${seed_ref}:sha-${RELEASE_SHA}")"
+          [[ "$registry_seed_digest" == "$seed_digest" ]] || { echo "seed registry digest mismatch: $registry_seed_digest != $seed_digest" >&2; exit 1; }
 
           meta="$RUNNER_TEMP/mf-test-release-meta"
           mkdir -p "$meta/frontend"
