@@ -57,7 +57,7 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
   });
   await page.goto("/saldos");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
