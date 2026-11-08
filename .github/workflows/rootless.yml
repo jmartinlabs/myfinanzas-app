@@ -109,7 +109,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
           persist-credentials: false
       - name: Validate tag, actor, origin and evidence
@@ -122,15 +122,22 @@ jobs:
           set -euo pipefail
           [[ "$GITHUB_REF_TYPE" == 'tag' ]]
           [[ "$GITHUB_REF_NAME" =~ ^deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
-          [[ "$(git cat-file -t "$GITHUB_REF_NAME")" == 'tag' ]]
-          TAG_SHA="$(git rev-list -n1 "$GITHUB_REF_NAME")"
-          [[ "$TAG_SHA" == "$GITHUB_SHA" ]]
+          [[ "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" == 'tag' ]]
+          TAG_OBJECT="$(git rev-parse "refs/tags/$GITHUB_REF_NAME")"
+          TAG_SHA="$(git rev-parse "refs/tags/$GITHUB_REF_NAME^{commit}")"
+          [[ "$TAG_SHA" =~ ^[0-9a-f]{40}$ ]]
+          # github.sha is the tag object for an annotated tag on some events and
+          # the commit on others; accept both and always ship the commit.
+          [[ "$GITHUB_SHA" == "$TAG_OBJECT" || "$GITHUB_SHA" == "$TAG_SHA" ]]
+          [[ "$(git rev-parse HEAD)" == "$TAG_SHA" ]]
           ANNOTATION="$(git for-each-ref --format='%(contents)' "refs/tags/$GITHUB_REF_NAME")"
           SHA_LINE="$(printf '%s\n' "$ANNOTATION" | sed -n 's/^sha=//p' | head -1)"
           QA_REFERENCE="$(printf '%s\n' "$ANNOTATION" | sed -n 's/^qa_reference=//p' | head -1)"
           [[ "$SHA_LINE" == "$TAG_SHA" ]]
           [[ -n "$QA_REFERENCE" && "$QA_REFERENCE" == *"$TAG_SHA"* ]]
           echo "QA_REFERENCE=$QA_REFERENCE" >> "$GITHUB_ENV"
+          echo "RELEASE_SHA=$TAG_SHA" >> "$GITHUB_ENV"
+          echo "TAG_OBJECT=$TAG_OBJECT" >> "$GITHUB_ENV"
           git fetch --no-tags origin +refs/heads/test:refs/remotes/origin/test
           git merge-base --is-ancestor "$TAG_SHA" origin/test
           [[ -n "$ALLOWED_ACTORS" ]]
@@ -152,7 +159,7 @@ jobs:
       - name: Build once, verify and smoke
         shell: bash
         env:
-          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_SHA: ${{ env.RELEASE_SHA }}
         run: |
           set -euo pipefail
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
