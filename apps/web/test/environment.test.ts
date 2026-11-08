@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { isLocalEnvironment } from "../src/environment";
+import { environmentLabel, isLocalEnvironment } from "../src/environment";
 
 test("loopback hosts are local", () => {
   for (const host of [
@@ -11,17 +11,23 @@ test("loopback hosts are local", () => {
     "[::1]",
   ]) {
     expect(isLocalEnvironment(host)).toBe(true);
+    expect(environmentLabel(host)).toBe("Entorno local");
   }
 });
 
-test("remote or empty hosts are not local", () => {
+test("TEST shows its environment label", () => {
+  expect(isLocalEnvironment("test.myfinanzas.pp.ua")).toBe(false);
+  expect(environmentLabel("test.myfinanzas.pp.ua")).toBe("Entorno TEST");
+});
+
+test("unknown or production hosts have no local label", () => {
   for (const host of [
-    "test.myfinanzas.pp.ua",
     "myfinanzas.pp.ua",
     "192.168.1.10",
     "0.0.0.0",
     "",
   ]) {
     expect(isLocalEnvironment(host)).toBe(false);
+    expect(environmentLabel(host)).toBeNull();
   }
 });

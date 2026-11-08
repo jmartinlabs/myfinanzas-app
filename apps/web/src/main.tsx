@@ -28,7 +28,7 @@ import {
   navigationTitle,
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
-import { isLocalEnvironment } from "./environment";
+import { environmentLabel } from "./environment";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
@@ -42,7 +42,8 @@ import {
 } from "./themes";
 import "./style.css";
 function App() {
-  const localEnvironment = isLocalEnvironment();
+  const environment = environmentLabel();
+  const localEnvironment = environment === "Entorno local";
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
@@ -268,8 +269,8 @@ function App() {
                 ))}
               </select>
             </label>
-            {localEnvironment && (
-              <span className="local-badge">Entorno local</span>
+            {environment && (
+              <span className="local-badge">{environment}</span>
             )}
             <button className="text-button" onClick={logout}>
               Cerrar sesión
