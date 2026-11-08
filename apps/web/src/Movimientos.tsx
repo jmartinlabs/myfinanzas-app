@@ -384,7 +384,7 @@ function MovementList({
     },
   ];
   return (
-    <>
+    <div className="movements-page">
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Movimientos"
@@ -404,7 +404,7 @@ function MovementList({
         aria-label="Registro de Movimientos"
       >
         <div className="filters">
-          <label>
+          <label className="search">
             Buscar Concepto, Nota o ID
             <input
               type="search"
@@ -568,7 +568,9 @@ function MovementList({
               columns={columns}
               rows={data.movimientos}
               rowKey={(m) => m.id}
-              className="mobile-list"
+              rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
+              label="Tarjetas de Movimientos"
+              className="mobile-list movements-cards"
             />
           </>
         )}
@@ -596,7 +598,7 @@ function MovementList({
         Los anulados se conservan para consulta y no computan. Los filtros no
         modifican la posición general de Saldos.
       </p>
-    </>
+    </div>
   );
 }
 function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
