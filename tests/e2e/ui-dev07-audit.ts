@@ -42,6 +42,8 @@ export type ContrastFinding = {
 export type ContrastReport = {
   checked: number;
   min: number | null;
+  minNormal: number | null;
+  minLarge: number | null;
   minEntry: ContrastFinding | null;
   failures: ContrastFinding[];
   unresolved: ContrastFinding[];
@@ -269,9 +271,13 @@ export async function measureContrast(
     }
     const resolved = entries.filter((entry) => !entry.unresolved);
     const sorted = [...resolved].sort((a, b) => a.ratio - b.ratio);
+    const normal = sorted.filter((entry) => !entry.large);
+    const large = sorted.filter((entry) => entry.large);
     return {
       checked: entries.length,
       min: sorted.length > 0 ? sorted[0].ratio : null,
+      minNormal: normal.length > 0 ? normal[0].ratio : null,
+      minLarge: large.length > 0 ? large[0].ratio : null,
       minEntry: sorted[0] ?? null,
       failures: resolved.filter((entry) => entry.ratio < entry.required),
       unresolved: entries.filter((entry) => entry.unresolved),
@@ -337,6 +343,7 @@ export async function measureSmallText(
       const decorative =
         ariaHidden ||
         !letters ||
+        Boolean(element.closest(".brand, .auth-brand")) ||
         /(?:^|\.)(?:nav-icon|nav-chevron|empty-symbol|local-dot)$/.test(
           Array.from(element.classList).join("."),
         );

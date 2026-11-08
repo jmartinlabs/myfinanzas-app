@@ -185,7 +185,7 @@ async function auditScreen(
       await setTheme(page, theme);
       await settle(page);
       record.audits.push(
-        await auditViewport(page, theme, viewport.id, "#main", {
+        await auditViewport(page, theme, viewport.id, "body", {
           expandDetails: true,
           defaultOverflow,
         }),
