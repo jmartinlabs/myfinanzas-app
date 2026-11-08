@@ -197,6 +197,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           printf '%s\n' "$GITHUB_TOKEN" | podman login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Publish app, seed and release images
         if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.publish_test_ghcr) }}
@@ -207,6 +209,8 @@ jobs:
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           dest="$RUNNER_TEMP/mf-test-release"
           # Never move the mutable pointer for a release that is no longer TEST HEAD.
           current_head="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/test" --jq .object.sha)"
