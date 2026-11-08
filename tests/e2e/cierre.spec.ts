@@ -35,7 +35,7 @@ const PORTS = {
   "e410-sin-cambios": 3044,
 } as const;
 
-const ARTIFACTS = "artifacts/e4-9";
+const ARTIFACTS = "artifacts/dev-06-i4";
 const dirFor = (scenario: string) => `.local/e2e-cierre-${scenario}`;
 
 async function startServer(
@@ -161,10 +161,40 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
 
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(page.getByText("Listo", { exact: true }).first()).toBeVisible();
+
+    // Presentación E4.9: región rotulada y columnas compartidas tabla/tarjetas.
+    const preflightTotals = page.getByRole("region", {
+      name: "Totales de hechos previstos",
+    });
+    const preflightCoverage = page.getByRole("region", {
+      name: "Cobertura del preflight por métrica",
+    });
+    await expect(preflightTotals).toBeVisible();
+    await expect(preflightCoverage).toBeVisible();
+    await expect(
+      preflightTotals.getByRole("columnheader", { name: "Valor capturado" }),
+    ).toBeVisible();
+    await expect(
+      preflightCoverage.getByRole("columnheader", { name: "Cobertura" }),
+    ).toBeVisible();
+    await expect(page.locator(".cierre-e49-gates-table")).toBeVisible();
+    await expect(page.locator(".cierre-e49-confirm")).toBeVisible();
+    await expect(page.locator(".cierre-e49-confirm .primary")).toHaveCount(1);
+    const statusValues = page.locator(
+      ".cierre-e49-status .cierre-e49-metrics .metric dd",
+    );
+    const estadoFont = await statusValues
+      .first()
+      .locator(".cierre-badge")
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const versionFont = await statusValues
+      .nth(1)
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(estadoFont).toBeGreaterThan(versionFont);
     await expect(
       page.getByText("01/01/2026 → 31/01/2026", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("1.000,00 €", { exact: true })).toBeVisible();
+    await expect(page.getByText("1.000,00 €", { exact: true }).first()).toBeVisible();
     const fingerprint = page.locator(".cierre-fingerprint").first();
     await expect(fingerprint).toHaveText(/^[a-f0-9]{64}$/);
     await expect(page.getByText("SinPlan", { exact: true }).first()).toBeVisible();
@@ -174,10 +204,10 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     await expect(
       page.getByText("Sin hechos", { exact: true }).first(),
     ).toBeVisible();
-    await expect(page.getByText("Verificable", { exact: true })).toBeVisible();
+    await expect(page.getByText("Verificable", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Acreditado", { exact: true }).first()).toBeVisible();
     await expect(
-      page.getByText("Referencia documental", { exact: true }),
+      page.getByText("Referencia documental", { exact: true }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Confirmar cierre", exact: true }),
@@ -196,6 +226,11 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
       });
       await page.setViewportSize({ width: 390, height: 844 });
       await expectNoOverflow(page);
+      await expect(preflightTotals).toBeHidden();
+      await expect(page.locator(".cierre-e49-totals-cards")).toBeVisible();
+      await expect(page.locator(".cierre-e49-coverage-cards")).toBeVisible();
+      await expect(page.locator(".cierre-e49-gates-table")).toBeVisible();
+      await expect(page.locator(".cierre-e49-gates-table thead")).toBeHidden();
       await page.screenshot({
         path: `${ARTIFACTS}/preflight-${id}-390.png`,
         fullPage: true,
@@ -222,6 +257,17 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     const photoRegion = page.getByRole("region", {
       name: "Fotografía de cierre",
     });
+    const photoTotals = photoRegion.getByRole("region", {
+      name: "Totales capturados en la fotografía",
+    });
+    const photoCoverage = photoRegion.getByRole("region", {
+      name: "Cobertura de la fotografía por métrica",
+    });
+    await expect(photoTotals).toBeVisible();
+    await expect(photoCoverage).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Totales de hechos previstos" }),
+    ).toHaveCount(0);
     await expect(
       photoRegion.getByText(/App 0\.0\.0-e2e · esquema \d+/),
     ).toBeVisible();
@@ -284,21 +330,32 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     await expect(page.getByText("Partida ficticia E4.9")).toHaveCount(0);
     await expect(page.getByText("Partida renombrada E4.9")).toHaveCount(0);
 
-    // Foto: 1440/390 y tres temas.
+    // Foto: recorte de cierre-photo a 1440/390 y tres temas; no incluye E4.10.
     for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await theme.selectOption(id);
       await expect(page.locator("html")).toHaveAttribute("data-theme", id);
       await expectNoOverflow(page);
-      await page.screenshot({
+      await expect(photoTotals).toBeVisible();
+      await expect(photoCoverage).toBeVisible();
+      await photoRegion.screenshot({
         path: `${ARTIFACTS}/foto-${id}-1440.png`,
-        fullPage: true,
       });
       await page.setViewportSize({ width: 390, height: 844 });
       await expectNoOverflow(page);
-      await page.screenshot({
+      await expect(photoTotals).toBeHidden();
+      await expect(
+        photoRegion.getByRole("list", {
+          name: "Totales capturados en la fotografía",
+        }),
+      ).toBeVisible();
+      await expect(
+        photoRegion.getByRole("list", {
+          name: "Cobertura de la fotografía por métrica",
+        }),
+      ).toBeVisible();
+      await photoRegion.screenshot({
         path: `${ARTIFACTS}/foto-${id}-390.png`,
-        fullPage: true,
       });
     }
     expect(errors).toEqual([]);
@@ -474,6 +531,11 @@ test("E4.9 UI: preflight bloqueado por E3.5 y backup, sin foto parcial", async (
     await expect(
       page.getByRole("button", { name: "Confirmar cierre", exact: true }),
     ).toBeDisabled();
+    await expect(page.locator(".cierre-e49-blocked")).toBeVisible();
+    await expect(page.locator(".cierre-e49-confirm .primary")).toHaveCount(1);
+    await expect(
+      page.locator(".cierre-e49-confirm .primary"),
+    ).toBeDisabled();
     await expect(
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
@@ -482,12 +544,18 @@ test("E4.9 UI: preflight bloqueado por E3.5 y backup, sin foto parcial", async (
         .status(),
     ).toBe(404);
 
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expectNoOverflow(page);
-    await page.screenshot({
-      path: `${ARTIFACTS}/bloqueado-390.png`,
-      fullPage: true,
-    });
+    // Estado crítico bloqueado: una captura por tema a 390.
+    const theme = page.getByLabel("Tema visual");
+    for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await theme.selectOption(id);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", id);
+      await expectNoOverflow(page);
+      await page.screenshot({
+        path: `${ARTIFACTS}/bloqueado-${id}-390.png`,
+        fullPage: true,
+      });
+    }
     expect(errors).toEqual([]);
   } finally {
     child.kill();
@@ -583,7 +651,7 @@ test("E4.9 UI: «Sin hechos» no acreditado por fuente ilegible bloquea", async 
     await expect(
       page.getByText(/no se acredita ausencia|no se acreditó la ausencia/i).first(),
     ).toBeVisible();
-    await expect(page.getByText("Con hechos", { exact: true })).toBeVisible();
+    await expect(page.getByText("Con hechos", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Sin hechos", { exact: true })).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Confirmar cierre", exact: true }),
@@ -760,6 +828,15 @@ test("E4.10 UI: reabrir v1, ver el impacto y re-cerrar v2 con comparación", asy
     await routeApi(page, port);
     await login(page, dir);
     await page.getByLabel("Ciclo").selectOption("1");
+
+    // Regresión E4.10: su panel conserva su propio marcado, sin clases E4.9.
+    const reaperturaPanel = page.locator(
+      '[aria-label="Reapertura y re-cierre del último cierre"]',
+    );
+    await expect(reaperturaPanel).toBeVisible();
+    await expect(
+      reaperturaPanel.locator("[class*='cierre-e49-']"),
+    ).toHaveCount(0);
 
     // Elegibilidad: el último cierre ofrece reabrir y explica qué no cambia.
     await expect(
