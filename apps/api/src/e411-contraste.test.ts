@@ -290,6 +290,7 @@ test("E4.11 I4: T2 real por API (plan vivo) deja la foto intacta y cambia solo e
     noEsHistorico: true,
   });
   expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
   expect(vivoDespues.noEsHistorico).toBe(true);
   expect(JSON.stringify(fotoDespues)).not.toContain("1500.00");
   expect(JSON.stringify(vivoDespues)).not.toContain(noDisponibleMotivo);
@@ -333,6 +334,7 @@ test("E4.11 I4: T3 real por API (renombrado) deja la foto y los valores vivos in
     vivoAntes.metricas.gasto.subtotal,
   );
   expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
   expect(vivoDespues.noEsHistorico).toBe(true);
   expect(snapshotE411(f.db)).toEqual(beforeE411);
 });
@@ -452,6 +454,7 @@ test("E4.11 I4: T2 real por API (clasificación/referencias) deja foto y versió
   expect(vivoDespues.revision).not.toBe(vivoAntes.revision);
   expect(vivoDespues.metricas).toEqual(vivoAntes.metricas);
   expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
   expect(vivoDespues.noEsHistorico).toBe(true);
 
   // Photo, version metadata and raw persisted JSON stay byte-identical: no
@@ -541,6 +544,7 @@ test("E4.11 I4: T2 real por API (referencias) deja foto y versión intactas y ca
   expect(vivoDespues.revision).not.toBe(vivoAntes.revision);
   expect(vivoDespues.metricas).toEqual(vivoAntes.metricas);
   expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
 
   expect(getFotoCiclo(f.db, "1")).toEqual(fotoAntes);
   expect(getFotoCiclo(f.db, "1").foto?.clasificacion).toEqual(
