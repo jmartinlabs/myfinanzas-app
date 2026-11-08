@@ -6283,7 +6283,7 @@ textarea {
   font-size: clamp(20px, 2.2vw, 28px);
 }
 .cierre-e49-status .cierre-e49-metrics .metric:first-child .cierre-badge {
-  font-size: var(--text-sm);
+  font-size: clamp(20px, 2.2vw, 28px);
   line-height: var(--leading-tight);
   font-weight: 750;
 }
