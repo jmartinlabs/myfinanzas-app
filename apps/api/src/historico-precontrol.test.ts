@@ -1326,3 +1326,467 @@ describe("validación estructural", () => {
     ).toThrow(ErrorPrecontrol);
   });
 });
+
+describe("H2 · trazabilidad de estados que no suman", () => {
+  test("un Excluido con Partida se conserva con motivo y no suma", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", { importeCentimos: "10000" }),
+          registro("AH002", {
+            estadoMapeo: "Excluido",
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBe("100.00");
+    expect(par100.subtotalConocido).toBe("100.00");
+    expect(par100.registros).toEqual(["AH001", "AH002"]);
+    expect(par100.registrosNoComputados).toEqual([
+      {
+        idArchivo: "AH002",
+        importe: "50.00",
+        estadoVerificacion: "Verificado",
+        estadoMapeo: "Excluido",
+        motivo: "Mapping de Partida excluido; no se suma.",
+      },
+    ]);
+  });
+
+  test("un Rechazado se conserva con motivo y no suma", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", { importeCentimos: "10000" }),
+          registro("AH002", {
+            estadoVerificacion: "Rechazado",
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBe("100.00");
+    expect(par100.registros).toEqual(["AH001", "AH002"]);
+    expect(par100.registrosNoComputados).toEqual([
+      {
+        idArchivo: "AH002",
+        importe: "50.00",
+        estadoVerificacion: "Rechazado",
+        estadoMapeo: "Mapeado",
+        motivo: "Registro rechazado; no se suma.",
+      },
+    ]);
+  });
+
+  test("un NoVerificado se conserva con motivo, no suma y bloquea el total", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", { importeCentimos: "10000" }),
+          registro("AH002", {
+            estadoVerificacion: "NoVerificado",
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBe("100.00");
+    expect(par100.motivoCodigo).toBe("VerificacionPendiente");
+    expect(par100.registros).toEqual(["AH001", "AH002"]);
+    expect(par100.registrosNoComputados).toEqual([
+      {
+        idArchivo: "AH002",
+        importe: "50.00",
+        estadoVerificacion: "NoVerificado",
+        estadoMapeo: "Mapeado",
+        motivo: "Registro pendiente de verificación; no se suma.",
+      },
+    ]);
+  });
+
+  test("Pendiente y Ambigua con Partida permanecen visibles sin sumar", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", { importeCentimos: "10000" }),
+          registro("AH002", {
+            estadoMapeo: "Pendiente",
+            importeCentimos: "5000",
+          }),
+          registro("AH003", {
+            estadoMapeo: "Ambigua",
+            importeCentimos: "3000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBe("100.00");
+    expect(par100.registros).toEqual(["AH001", "AH002", "AH003"]);
+    expect(par100.registrosNoComputados).toEqual([
+      {
+        idArchivo: "AH002",
+        importe: "50.00",
+        estadoVerificacion: "Verificado",
+        estadoMapeo: "Pendiente",
+        motivo: "Mapping de Partida pendiente; no se suma.",
+      },
+      {
+        idArchivo: "AH003",
+        importe: "30.00",
+        estadoVerificacion: "Verificado",
+        estadoMapeo: "Ambigua",
+        motivo: "Mapping de Partida ambiguo; no se suma.",
+      },
+    ]);
+    expect(resultado.sinClasificar.map((fila) => fila.idArchivo)).toEqual([
+      "AH002",
+      "AH003",
+    ]);
+  });
+
+  test("aperturas NoVerificado y Rechazado se conservan aparte sin sumar", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: universo(["PAR100"]),
+        fuentes: [],
+        registros: [
+          registro("AH500", {
+            clase: "AperturaHistorica",
+            saldoId: "S001",
+            partidaId: null,
+            estadoMapeo: "Excluido",
+            estadoVerificacion: "NoVerificado",
+            importeCentimos: "50000",
+            fecha: "2026-01-01",
+          }),
+          registro("AH501", {
+            clase: "AperturaHistorica",
+            saldoId: "S001",
+            partidaId: null,
+            estadoMapeo: "Excluido",
+            estadoVerificacion: "Rechazado",
+            importeCentimos: "20000",
+            fecha: "2026-01-01",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(resultado.aperturas).toBeNull();
+    expect(resultado.aperturasNoVerificadas).toEqual([
+      {
+        idArchivo: "AH500",
+        saldoId: "S001",
+        importe: "500.00",
+        fecha: "2026-01-01",
+        estadoVerificacion: "NoVerificado",
+        motivo:
+          "Apertura pendiente de verificación; no se presenta como posición verificada ni se suma a Gastos.",
+      },
+      {
+        idArchivo: "AH501",
+        saldoId: "S001",
+        importe: "200.00",
+        fecha: "2026-01-01",
+        estadoVerificacion: "Rechazado",
+        motivo:
+          "Apertura rechazada; no se presenta como posición verificada ni se suma a Gastos.",
+      },
+    ]);
+    expect(item(resultado).total).toBeNull();
+    expect(resultado.totales.valor).toBeNull();
+  });
+});
+
+describe("H4 · cobertura por fuente, Partida, alcance, intervalo y corte", () => {
+  test("un alcance que no es PARxxx no inventa un item ni amplía el universo", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: { estado: "NoAcreditado", partidas: [], fuentesEsperadas: [] },
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-SALDO",
+            alcance: "S001",
+            intervalosArchivo: [],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [],
+        movimientos: [],
+      }),
+    );
+
+    expect(resultado.items).toEqual([]);
+    expect(resultado.cobertura.universoPartidas).toEqual([]);
+    expect(resultado.universo.partidas).toEqual([]);
+  });
+
+  test("un alcance PARxxx válido sí descubre una Partida sin universo acreditado", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: { estado: "NoAcreditado", partidas: [], fuentesEsperadas: [] },
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-SALDO",
+            alcance: "S001",
+            intervalosArchivo: [],
+            controlDetalle: null,
+          }),
+          fuente({
+            fuenteId: "SRC-1",
+            alcance: "PAR100",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [],
+        movimientos: [],
+      }),
+    );
+
+    expect(resultado.items.map((actual) => actual.partidaId)).toEqual(["PAR100"]);
+    expect(resultado.items.map((actual) => actual.partidaId)).not.toContain(
+      "S001",
+    );
+  });
+
+  test("un fuenteId presente no basta si la fuente no cubre la Partida", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-1",
+            alcance: "PAR200",
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR200"),
+            ],
+            controlDetalle: null,
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            alcance: "Global",
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100"),
+            ],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH100", {
+            fuenteId: "SRC-2",
+            identidad: "OTRA-FUENTE",
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100"], [
+        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.estadoCobertura).toBe("Parcial");
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.total).toBeNull();
+    expect(par100.motivoCodigo).toBe("FuenteAusente");
+    expect(par100.cobertura.fuentes).toEqual(["SRC-2"]);
+    expect(resultado.cobertura.estadoCobertura).toBe("Parcial");
+  });
+
+  test("un controlDetalle de otra Partida no acredita la fuente esperada", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-1",
+            alcance: "PAR200",
+            intervalosArchivo: [],
+            controlDetalle: { inicio: "2026-01-01", fin: "2026-12-31" },
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            alcance: "Global",
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100"),
+            ],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH100", {
+            fuenteId: "SRC-2",
+            identidad: "OTRA-FUENTE",
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100"], [
+        { fuenteId: "SRC-1", partidaId: "PAR100", estado: "Presente" },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.estadoCobertura).toBe("Parcial");
+    expect(par100.total).toBeNull();
+    expect(par100.motivoCodigo).toBe("FuenteAusente");
+  });
+
+  test("el intervalo esperado debe quedar cubierto aunque el total de la Partida lo esté", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-1",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            intervalosArchivo: [archivo("2026-07-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            fuenteId: "SRC-1",
+            identidad: "TRAMO-UNO",
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            fuenteId: "SRC-2",
+            identidad: "TRAMO-DOS",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.cobertura.huecos).toEqual([]);
+    expect(par100.estadoCobertura).toBe("Parcial");
+    expect(par100.total).toBeNull();
+    expect(par100.motivoCodigo).toBe("FuenteAusente");
+  });
+
+  test("el intervalo esperado se recorta al corte consultado", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+        ],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+
+    expect(resultado.alcanceTotal).toBe("HastaCorte");
+    expect(item(resultado).estadoCobertura).toBe("Completa");
+    expect(item(resultado).total).toBe("100.00");
+  });
+
+  test("una expectativa posterior al corte no se declara ausente", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+        ],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+
+    expect(item(resultado).estadoCobertura).toBe("Completa");
+    expect(item(resultado).total).toBe("100.00");
+    expect(item(resultado).motivoCodigo).toBeNull();
+  });
+});

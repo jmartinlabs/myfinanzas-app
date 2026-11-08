@@ -162,6 +162,11 @@ export type UniversoPrecontrol = {
     fuenteId: string;
     partidaId: string;
     estado: "Presente" | "Ausente" | "NoAplica";
+    /**
+     * Intervalo esperado declarado por DT7. Opcional para no romper llamadores
+     * existentes; si falta, `Presente` solo exige cobertura de la Partida.
+     */
+    intervalo?: Intervalo;
   }[];
 };
 
@@ -197,6 +202,25 @@ export type AperturaPrecontrol = {
   motivo: string | null;
 };
 
+/** Apertura conservada como contexto, nunca como posición verificada. */
+export type AperturaNoVerificada = {
+  idArchivo: string;
+  saldoId: string | null;
+  importe: string;
+  fecha: FechaCivil | null;
+  estadoVerificacion: Exclude<EstadoVerificacion, "Verificado">;
+  motivo: string;
+};
+
+/** Registro visible de la Partida que no contribuye a total/subtotal. */
+export type RegistroNoComputado = {
+  idArchivo: string;
+  importe: string;
+  estadoVerificacion: EstadoVerificacion;
+  estadoMapeo: EstadoMapeoPartida;
+  motivo: string;
+};
+
 export type FuenteResumen = {
   fuenteId: string;
   etiqueta: string;
@@ -224,6 +248,8 @@ export type ItemPrecontrol = {
   };
   /** `idArchivo` vigentes de la Partida, sumen o no. */
   registros: string[];
+  /** Registros visibles que no suman, con el motivo de su exclusión. */
+  registrosNoComputados: RegistroNoComputado[];
   /** Versiones anteriores conservadas como historia; nunca suman. */
   historicos: string[];
   conflictos: ConflictoPrecontrol[];
@@ -262,6 +288,8 @@ export type ResultadoPrecontrol = {
   agregadoNoAtribuible: AgregadoNoAtribuible[];
   /** `null` = sin evidencia de apertura; una apertura cero verificada es `"0.00"`. */
   aperturas: AperturaPrecontrol[] | null;
+  /** Aperturas presentes pero no verificadas; nunca se presentan como posición. */
+  aperturasNoVerificadas: AperturaNoVerificada[];
   duplicadosAbsorbidos: { idArchivo: string; identidad: string }[];
   versionesHistoricas: { idArchivo: string; identidad: string; version: number }[];
 };
@@ -442,6 +470,13 @@ function contiene(intervalo: Intervalo, fecha: FechaCivil): boolean {
   return fecha >= intervalo.inicio && fecha <= intervalo.fin;
 }
 
+/** Una Partida DT7 se identifica como `PARxxx`; otro alcance no crea un item. */
+const IDENTIFICADOR_PARTIDA = /^PAR\d+$/;
+
+function esIdentificadorPartida(valor: string): boolean {
+  return IDENTIFICADOR_PARTIDA.test(valor);
+}
+
 function validarEntrada(entrada: EntradaPrecontrol): void {
   exigir(
     Number.isSafeInteger(entrada.ejercicio) &&
@@ -475,6 +510,13 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
       ["Presente", "Ausente", "NoAplica"].includes(esperada.estado),
       "Estado de fuente esperada inválido.",
     );
+    if (esperada.intervalo) {
+      validarIntervalo(esperada.intervalo);
+      exigir(
+        dentroDeEjercicio(esperada.intervalo, entrada.ejercicio),
+        "Intervalo esperado fuera del ejercicio.",
+      );
+    }
   }
 
   const fuentes = new Set<string>();
@@ -698,6 +740,7 @@ type PiezaCobertura = {
 type AnalisisItem = {
   partidaId: string;
   vigentes: RegistroPrecontrol[];
+  registrosPartida: RegistroPrecontrol[];
   historicos: RegistroPrecontrol[];
   conflictos: ConflictoPrecontrol[];
   piezas: PiezaCobertura[];
@@ -774,6 +817,94 @@ function movimientosElegibles(
   return elegibles;
 }
 
+/**
+ * Cobertura que una fuente concreta aporta a una Partida dentro de
+ * `[inicio ejercicio, corte]`. Los tramos de archivo se asocian por
+ * `partidaId`; el control solo aplica si su `alcance` es `Global` o la propia
+ * Partida.
+ */
+function coberturaFuentePartida(
+  fuente: FuentePrecontrol,
+  partidaId: string,
+  desde: FechaCivil,
+  hasta: FechaCivil,
+): Intervalo[] {
+  const piezas: Intervalo[] = [];
+  for (const tramo of fuente.intervalosArchivo) {
+    if (tramo.partidaId !== partidaId) continue;
+    const recortado = recortar(tramo.intervalo, desde, hasta);
+    if (recortado) piezas.push(recortado);
+  }
+  if (
+    fuente.controlDetalle &&
+    (fuente.alcance === "Global" || fuente.alcance === partidaId)
+  ) {
+    const recortado = recortar(fuente.controlDetalle, desde, hasta);
+    if (recortado) piezas.push(recortado);
+  }
+  return unirIntervalos(piezas);
+}
+
+/**
+ * `Presente` exige que la fuente cubra la Partida; si DT7 declaró un intervalo
+ * esperado, ese intervalo (recortado al corte consultado) debe quedar cubierto.
+ */
+function fuenteEsperadaCubierta(
+  fuente: FuentePrecontrol,
+  esperada: UniversoPrecontrol["fuentesEsperadas"][number],
+  desde: FechaCivil,
+  hasta: FechaCivil,
+): boolean {
+  const cobertura = coberturaFuentePartida(
+    fuente,
+    esperada.partidaId,
+    desde,
+    hasta,
+  );
+  if (cobertura.length === 0) return false;
+  if (!esperada.intervalo) return true;
+  const objetivo = recortar(esperada.intervalo, desde, hasta);
+  // Una expectativa fuera del alcance consultado (p. ej. posterior al corte) no
+  // se convierte en ausencia: no hay nada que verificar en este corte.
+  if (!objetivo) return true;
+  return cobertura.some(
+    (intervalo) =>
+      intervalo.inicio <= objetivo.inicio && intervalo.fin >= objetivo.fin,
+  );
+}
+
+function fuenteEsperadaAusente(
+  entrada: EntradaPrecontrol,
+  esperadas: UniversoPrecontrol["fuentesEsperadas"],
+  desde: FechaCivil,
+  hasta: FechaCivil,
+): boolean {
+  return esperadas.some((esperada) => {
+    if (esperada.estado === "NoAplica") return false;
+    if (esperada.estado === "Ausente") return true;
+    const fuente = entrada.fuentes.find(
+      (actual) => actual.fuenteId === esperada.fuenteId,
+    );
+    if (!fuente) return true;
+    return !fuenteEsperadaCubierta(fuente, esperada, desde, hasta);
+  });
+}
+
+function motivoRegistroNoComputado(registro: RegistroPrecontrol): string {
+  const motivos: string[] = [];
+  if (registro.estadoVerificacion === "NoVerificado")
+    motivos.push("Registro pendiente de verificación; no se suma.");
+  if (registro.estadoVerificacion === "Rechazado")
+    motivos.push("Registro rechazado; no se suma.");
+  if (registro.estadoMapeo === "Pendiente")
+    motivos.push("Mapping de Partida pendiente; no se suma.");
+  if (registro.estadoMapeo === "Ambigua")
+    motivos.push("Mapping de Partida ambiguo; no se suma.");
+  if (registro.estadoMapeo === "Excluido")
+    motivos.push("Mapping de Partida excluido; no se suma.");
+  return motivos.join(" ") || "Registro no computado; no se suma.";
+}
+
 function analizarItem(
   entrada: EntradaPrecontrol,
   partidaId: string,
@@ -794,6 +925,13 @@ function analizarItem(
       registro.partidaId === partidaId &&
       registro.clase !== "AperturaHistorica" &&
       registro.estadoMapeo === "Mapeado",
+  );
+  // Trazabilidad: todo registro vigente de la Partida, sume o no. Las aperturas
+  // se conservan fuera de `items` (ver `aperturas`/`aperturasNoVerificadas`).
+  const registrosPartida = vigentes.filter(
+    (registro) =>
+      registro.partidaId === partidaId &&
+      registro.clase !== "AperturaHistorica",
   );
   const historicosItem = historicos.filter(
     (registro) => registro.partidaId === partidaId,
@@ -828,11 +966,12 @@ function analizarItem(
   const fuentesEsperadasItem = entrada.universo.fuentesEsperadas.filter(
     (esperada) => esperada.partidaId === partidaId,
   );
-  const fuenteEsperadaAusente = fuentesEsperadasItem.some((esperada) => {
-    if (esperada.estado === "NoAplica") return false;
-    if (esperada.estado === "Ausente") return true;
-    return !entrada.fuentes.some((fuente) => fuente.fuenteId === esperada.fuenteId);
-  });
+  const fuenteEsperadaAusenteItem = fuenteEsperadaAusente(
+    entrada,
+    fuentesEsperadasItem,
+    desde,
+    hasta,
+  );
 
   // Solapes: cualquier par de piezas de cobertura que comparta al menos un día.
   const solapes: Intervalo[] = [];
@@ -1056,18 +1195,20 @@ function analizarItem(
   if (!universoAcreditado) estadoCobertura = "NoAcreditada";
   else if (bloqueos.includes("Solapamiento")) estadoCobertura = "Solapada";
   else if (intervalos.length === 0) estadoCobertura = "NoDisponible";
-  else if (huecos.length > 0 || fuenteEsperadaAusente) estadoCobertura = "Parcial";
+  else if (huecos.length > 0 || fuenteEsperadaAusenteItem)
+    estadoCobertura = "Parcial";
   else estadoCobertura = "Completa";
 
   if (estadoCobertura === "Parcial" && huecos.length > 0)
     bloqueos.push("HuecoDemostrado");
   if (estadoCobertura === "NoDisponible") bloqueos.push("SinFuente");
-  if (fuenteEsperadaAusente && intervalos.length > 0)
+  if (fuenteEsperadaAusenteItem && intervalos.length > 0)
     bloqueos.push("FuenteAusente");
 
   return {
     partidaId,
     vigentes: registrosItem,
+    registrosPartida,
     historicos: historicosItem,
     conflictos,
     piezas,
@@ -1165,7 +1306,20 @@ function construirItem(
       huecos: analisis.huecos,
       fuentes: analisis.fuentes,
     },
-    registros: analisis.vigentes.map((registro) => registro.idArchivo),
+    registros: analisis.registrosPartida.map((registro) => registro.idArchivo),
+    registrosNoComputados: analisis.registrosPartida
+      .filter(
+        (registro) =>
+          registro.estadoVerificacion !== "Verificado" ||
+          registro.estadoMapeo !== "Mapeado",
+      )
+      .map((registro) => ({
+        idArchivo: registro.idArchivo,
+        importe: decimal(centimos(registro.importeCentimos)),
+        estadoVerificacion: registro.estadoVerificacion,
+        estadoMapeo: registro.estadoMapeo,
+        motivo: motivoRegistroNoComputado(registro),
+      })),
     historicos: analisis.historicos.map((registro) => registro.idArchivo),
     conflictos: analisis.conflictos,
   };
@@ -1192,10 +1346,24 @@ export function combinarHistoricoPrecontrol(
 
   const sinClasificar: SinClasificar[] = [];
   const aperturasVerificadas: AperturaPrecontrol[] = [];
+  const aperturasNoVerificadas: AperturaNoVerificada[] = [];
 
   for (const registro of resolucion.vigentes) {
     if (registro.clase === "AperturaHistorica") {
-      if (registro.estadoVerificacion !== "Verificado") continue;
+      if (registro.estadoVerificacion !== "Verificado") {
+        aperturasNoVerificadas.push({
+          idArchivo: registro.idArchivo,
+          saldoId: registro.saldoId,
+          importe: decimal(centimos(registro.importeCentimos)),
+          fecha: registro.fecha,
+          estadoVerificacion: registro.estadoVerificacion,
+          motivo:
+            registro.estadoVerificacion === "Rechazado"
+              ? "Apertura rechazada; no se presenta como posición verificada ni se suma a Gastos."
+              : "Apertura pendiente de verificación; no se presenta como posición verificada ni se suma a Gastos.",
+        });
+        continue;
+      }
       aperturasVerificadas.push({
         idArchivo: registro.idArchivo,
         saldoId: registro.saldoId,
@@ -1235,7 +1403,8 @@ export function combinarHistoricoPrecontrol(
     if (movimiento.tipo === "Gasto" && !movimiento.anulado)
       partidasDescubiertas.add(movimiento.partidaId);
   for (const fuente of entrada.fuentes)
-    if (fuente.alcance !== "Global") partidasDescubiertas.add(fuente.alcance);
+    if (fuente.alcance !== "Global" && esIdentificadorPartida(fuente.alcance))
+      partidasDescubiertas.add(fuente.alcance);
   for (const esperada of entrada.universo.fuentesEsperadas)
     partidasDescubiertas.add(esperada.partidaId);
 
@@ -1294,13 +1463,12 @@ export function combinarHistoricoPrecontrol(
   }
 
   const fuentesEsperadas = entrada.universo.fuentesEsperadas;
-  const fuenteEsperadaAusenteGlobal = fuentesEsperadas.some((esperada) => {
-    if (esperada.estado === "NoAplica") return false;
-    if (esperada.estado === "Ausente") return true;
-    return !entrada.fuentes.some(
-      (fuente) => fuente.fuenteId === esperada.fuenteId,
-    );
-  });
+  const fuenteEsperadaAusenteGlobal = fuenteEsperadaAusente(
+    entrada,
+    fuentesEsperadas,
+    desde,
+    hasta,
+  );
 
   let estadoCobertura: EstadoCobertura;
   if (!universoAcreditado) estadoCobertura = "NoAcreditada";
@@ -1438,6 +1606,7 @@ export function combinarHistoricoPrecontrol(
     conflictos,
     agregadoNoAtribuible: agregados,
     aperturas: aperturasVerificadas.length > 0 ? aperturasVerificadas : null,
+    aperturasNoVerificadas,
     duplicadosAbsorbidos: resolucion.absorbidos,
     versionesHistoricas: resolucion.historicos.map((registro) => ({
       idArchivo: registro.idArchivo,
