@@ -86,7 +86,7 @@ jobs:
 
   publish:
     name: Publish TEST release to GHCR
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && inputs.package_test_release) }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.package_test_release) }}
     needs: capability
     runs-on: ubuntu-24.04
     timeout-minutes: 60
