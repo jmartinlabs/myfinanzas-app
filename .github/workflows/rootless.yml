@@ -268,6 +268,9 @@ jobs:
             --build-arg "DATA_CONTRACT=$data_contract" \
             -t "${release_ref}:sha-${RELEASE_SHA}" -f "$meta/Containerfile" "$meta"
           podman push "${release_ref}:sha-${RELEASE_SHA}"
+          # Re-check immediately before changing the mutable pointer.
+          current_head="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/test" --jq .object.sha)"
+          [[ "$current_head" == "$RELEASE_SHA" ]] || { echo "test advanced during publication; retaining immutable tag only" >&2; exit 1; }
           podman tag "${release_ref}:sha-${RELEASE_SHA}" "${release_ref}:test"
           podman push "${release_ref}:test"
           printf 'App: %s@%s\nSeed: %s@%s\nRelease: %s:test\n' \
