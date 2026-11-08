@@ -21,7 +21,8 @@
     "schema_contract": "C27-E411-FOTOS-PERIODO",
     "schema_contract_sha256": "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23",
     "data_contract": "e4.11-v27",
-    "bun": "1.4.3"
+    "bun": "1.4.3",
+    "seed_image": null
   },
   "environment": {
     "name": "test",
@@ -30,11 +31,31 @@
     "key": "state/auth.key"
   },
   "ids": {
-    "saldos": ["S001", "S002", "S003", "S004", "S005"],
-    "movimientos": ["1", "2", "3", "4", "5", "6"],
-    "referencias": ["REF001", "REF002"],
-    "instrumentos": ["I1001"],
-    "operaciones_inversion": ["1"],
+    "saldos": [
+      "S001",
+      "S002",
+      "S003",
+      "S004",
+      "S005"
+    ],
+    "movimientos": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "referencias": [
+      "REF001",
+      "REF002"
+    ],
+    "instrumentos": [
+      "I1001"
+    ],
+    "operaciones_inversion": [
+      "1"
+    ],
     "payroll": [],
     "fichas_compartidos": []
   },
@@ -75,7 +96,9 @@
       "recovery",
       "sessions"
     ],
-    "table_patterns": ["*_attempts"],
+    "table_patterns": [
+      "*_attempts"
+    ],
     "columns": [
       "actualizado",
       "actualizado_en",

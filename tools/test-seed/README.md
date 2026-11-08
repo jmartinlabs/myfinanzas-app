@@ -130,11 +130,14 @@ bajo `PAR003`. Consecuencia de IDs: al no crearse la ficha compartida, las refer
 generadas son `REF001` (Anticipo) y `REF002` (Vehículo); el slug «REF001 compartido» del
 paquete anterior no existe.
 
-### H11 — sin `reset`
+### H11 — `reset` aplazado (excepción aprobada 2026-11-08)
 
-No se implementa `reset` en este incremento. El CLI solo expone `init`, `apply`, `verify` y
-`status`; no se inventan health checks ni se consulta `127.0.0.1:18082`. Un fallo deja
-`seed-failure.json` y exige una decisión operativa posterior.
+`seed reset` se aplaza a después de la primera activación de TEST (ver SPEC34 §4.8). El CLI
+solo expone `init`, `apply`, `verify` y `status`; no se inventan health checks ni se consulta
+`127.0.0.1:18082`. El primer seed solo se aplica sobre un estado limpio, vacío y verificado;
+un estado parcial, ajeno o con marcador inválido se rechaza sin reparar. Un fallo deja
+`seed-failure.json` y exige una decisión operativa posterior; no se sustituye por scripts
+destructivos ni por borrado manual del estado.
 
 ### v27
 
@@ -165,7 +168,9 @@ efectivo. `apply` lo actualiza después de publicar el manifiesto; `init` lo cre
 Los checksums excluyen `owner`, autenticación, sesiones, desafíos, `idempotency`, todas las
 `*_attempts`, `database_origin.key_hash`, marcas de tiempo (`instante`, `creado`,
 `actualizado`, `creado_en`, `actualizado_en`) y los payloads de auditoría `anterior`/`posterior`.
-Incluyen contadores, versión de esquema, origen de base y auditoría proyectada sin instantes.
+Incluyen contadores, versión de esquema, origen de base y auditoría proyectada sin instantes,
+incluido `audit.campos` (array de campos auditados): manipular la auditoría cambia la huella
+y `verify` falla con `Drift`.
 No se promete igualdad byte a byte de SQLite.
 
 ## Qué falta para release

@@ -362,66 +362,54 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
         message: "FT-1 ya sembrado; no se escribió nada.",
       };
     db.exec(APPLY_PRAGMAS);
-    let appliedStep = "inicio";
+    let step = "inicio";
+    let failureWritten = false;
+    const recordFailure = (at: string, cause: unknown) => {
+      if (failureWritten) return;
+      try {
+        writeFailure(root, config, at, cause);
+        failureWritten = true;
+      } catch {}
+    };
     try {
-      appliedStep = applyDataset(db);
+      step = "dataset";
+      applyDataset(db);
+      step = "manifiesto";
+      const manifest = effectiveManifest(db, commit);
+      step = "verificacion";
+      assertExpectedDatasetState(db, "apply");
+      assertIntegrity(db);
+      const text = JSON.stringify(manifest, null, 2) + "\n";
+      step = "manifiesto";
+      writeNewPrivateFile(manifestPath(root), text);
+      const manifestSha256 = sha256Hex(text);
+      step = "marcador";
+      replacePrivateFile(
+        markerPath(root),
+        markerJson({ ...state.marker, seed_manifest_sha256: manifestSha256 }),
+      );
+      try {
+        db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+      } catch {}
+      return {
+        command: "apply",
+        code: 0,
+        noop: false,
+        manifestSha256,
+        message: "FT-1 aplicado y manifiesto publicado.",
+      };
     } catch (error) {
       const failure =
-        error instanceof ApplyFailure ? error : new ApplyFailure(appliedStep, error);
-      try {
-        writeFailure(root, config, failure.step, failure.cause);
-      } catch {}
+        error instanceof ApplyFailure
+          ? error
+          : new ApplyFailure(step, error);
+      recordFailure(failure.step, failure.cause);
       throw new SeedError(
         1,
         `Aplicación fallida en ${failure.step}; no se declara éxito parcial.`,
         failure.step,
       );
     }
-    let manifest: ReturnType<typeof effectiveManifest>;
-    let manifestSha256: string;
-    try {
-      manifest = effectiveManifest(db, commit);
-      assertExpectedDatasetState(db, "apply");
-      assertIntegrity(db);
-      const text = JSON.stringify(manifest, null, 2) + "\n";
-      try {
-        writeNewPrivateFile(manifestPath(root), text);
-      } catch (error) {
-        try {
-          writeFailure(root, config, "manifest", error);
-        } catch {}
-        throw error;
-      }
-      manifestSha256 = sha256Hex(text);
-      try {
-        replacePrivateFile(
-          markerPath(root),
-          markerJson({ ...state.marker, seed_manifest_sha256: manifestSha256 }),
-        );
-      } catch (error) {
-        try {
-          writeFailure(root, config, "marker", error);
-        } catch {}
-        throw error;
-      }
-    } catch (error) {
-      if (!(error instanceof SeedError)) {
-        try {
-          writeFailure(root, config, "post-apply", error);
-        } catch {}
-      }
-      throw error;
-    }
-    try {
-      db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-    } catch {}
-    return {
-      command: "apply",
-      code: 0,
-      noop: false,
-      manifestSha256,
-      message: "FT-1 aplicado y manifiesto publicado.",
-    };
   } finally {
     db.close();
   }

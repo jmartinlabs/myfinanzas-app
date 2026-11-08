@@ -423,7 +423,7 @@ describe("FT-1 minimal v27", () => {
       readFileSync(join(root, "seed-failure.json"), "utf8"),
     ) as Record<string, any>;
     expect(failure.environment).toBe("test");
-    expect(failure.step).toBe("marker");
+    expect(failure.step).toBe("marcador");
     expect(failure.message).not.toContain(root);
     // El manifiesto se publicó, pero el marcador no apunta al seed: no hay éxito.
     expect(existsSync(join(root, "seed-manifest.json"))).toBe(true);
@@ -458,6 +458,19 @@ describe("FT-1 minimal v27", () => {
       COMMIT,
     ]);
     expect(result.code).toBe(2);
+  });
+
+  test("verify detecta manipulacion de audit.campos", () => {
+    const root = fixtureRoot();
+    expect(init(root).code).toBe(0);
+    expect(apply(root).code).toBe(0);
+    expect(verify(root).code).toBe(0);
+    const db = openFixtureDb(root);
+    db.run("UPDATE audit SET campos = '[\"tipo\"]' WHERE rowid = (SELECT min(rowid) FROM audit)");
+    db.close();
+    const result = verify(root);
+    expect(result.code).toBe(3);
+    expect(result.message).toContain("Drift");
   });
 
   test("verify honours --expected-manifest-sha256 and rejects a mismatch", () => {
