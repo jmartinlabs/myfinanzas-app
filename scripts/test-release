@@ -70,6 +70,9 @@ class ReleaseContextTests(unittest.TestCase):
                    'export const contract = "e4.1-v18";\n')
         self.write('apps/api/src/contracts.json', '{}\n')
         self.write('apps/web/src/main.ts', 'export const amount = 1;\n')
+        self.write('apps/web/public/themes.css', ':root { --bg: #141414; }\n')
+        self.write('apps/web/public/theme-boot.js',
+                   'document.documentElement.dataset.theme = "dark-s";\n')
         self.write('infra/Containerfile', containerfile)
         self.write('infra/healthcheck.mjs', healthcheck)
         self.write('infra/Containerfile.seed', SEED_CONTAINERFILE)
@@ -178,6 +181,27 @@ class ReleaseContextTests(unittest.TestCase):
         self.assertNotEqual(inputs['healthcheck_sha256'], release.sha(NEW_HEALTHCHECK))
         self.assertNotEqual(inputs['recipe_sha256'],
                             release.sha(release.source_bytes('HEAD', 'infra/Containerfile')))
+
+    def test_context_carries_vite_public_assets(self):
+        target = self.home / 'context-public'
+        target.mkdir()
+        release.context(self.a, target, self.age)
+        self.assertTrue((target / 'apps/web/public/themes.css').is_file())
+        self.assertTrue((target / 'apps/web/public/theme-boot.js').is_file())
+
+    def test_release_rejects_referenced_asset_outside_frontend(self):
+        # Regression: index.html referenced /themes.css and /theme-boot.js while
+        # the release shipped only index.html and assets/.
+        html = (b'<script src="/theme-boot.js"></script>'
+                b'<link rel="stylesheet" href="/themes.css" />'
+                b'<script type="module" src="/assets/app.js"></script>')
+        self.assertEqual(
+            release.missing_frontend_assets(html, {'index.html': 'x', 'assets/app.js': 'y'}),
+            ['theme-boot.js', 'themes.css'])
+        self.assertEqual(release.missing_frontend_assets(
+            html, {'theme-boot.js': 'x', 'themes.css': 'y', 'assets/app.js': 'z'}), [])
+        self.assertEqual(release.missing_frontend_assets(
+            b'<link href="//cdn.example/x.css"><script src="https://e/x.js"></script>', {}), [])
 
     def test_seed_context_uses_same_commit_base_and_lock(self):
         target = self.home / 'seed-context-a'

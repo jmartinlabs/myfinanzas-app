@@ -82,6 +82,9 @@ def runtime_sources(commit):
               if (p.endswith('.ts') or p.endswith('.json'))
               and not p.endswith('.test.ts')]
     paths += [p for p in files(commit, 'apps/web/src') if Path(p).suffix in ('.ts', '.tsx', '.css')]
+    # Vite copies public/ verbatim; it is not under src/. Without it the build
+    # keeps referencing files that only the SPA fallback can answer.
+    paths += [p for p in files(commit, 'apps/web/public') if Path(p).suffix in ('.css', '.js')]
     return paths
 
 
@@ -183,13 +186,21 @@ def inspect_layers(archive):
                         raise ReleaseError('unsafe application layer payload')
 
 
+def missing_frontend_assets(html, web):
+    """Root-relative files index.html references but the frontend does not ship."""
+    referenced = {match.group(1).decode().lstrip('/')
+                  for match in re.finditer(rb'(?:src|href)="(/[^"?#]+)"', html)
+                  if not match.group(1).startswith(b'//')}
+    return sorted(referenced - set(web))
+
+
 def inventory(image, root, frontend=None, require_frontend=True):
     name = 'mf32-export-' + uuid.uuid4().hex
     archive_path = root / (name + '.tar')
     run(['podman', 'create', '--http-proxy=false', '--name', name, '--pull=never', image])
     try:
         run(['podman', 'export', '--output', str(archive_path), name])
-        entries, web = {}, {}
+        entries, web, index_html = {}, {}, b''
         generated = {'etc/hosts', 'etc/hostname', 'etc/resolv.conf', 'run/.containerenv'}
         with tarfile.open(archive_path) as archive:
             for entry in archive:
@@ -207,12 +218,17 @@ def inventory(image, root, frontend=None, require_frontend=True):
                 if path.startswith('release/frontend/') and entry.isfile():
                     relative = path.removeprefix('release/frontend/')
                     web[relative] = sha(data)
+                    if relative == 'index.html':
+                        index_html = data
                     if frontend:
                         destination = frontend / relative
                         destination.parent.mkdir(parents=True, exist_ok=True)
                         destination.write_bytes(data)
         if require_frontend and 'index.html' not in web:
             raise ReleaseError('frontend missing')
+        missing = missing_frontend_assets(index_html, web)
+        if missing:
+            raise ReleaseError('frontend asset missing: ' + ', '.join(missing))
         return sha(json.dumps(entries, sort_keys=True).encode()), web
     finally:
         run(['podman', 'rm', name])
