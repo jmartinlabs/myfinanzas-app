@@ -169,8 +169,11 @@ Los checksums excluyen `owner`, autenticación, sesiones, desafíos, `idempotenc
 `*_attempts`, `database_origin.key_hash`, marcas de tiempo (`instante`, `creado`,
 `actualizado`, `creado_en`, `actualizado_en`) y los payloads de auditoría `anterior`/`posterior`.
 Incluyen contadores, versión de esquema, origen de base y auditoría proyectada sin instantes,
-incluido `audit.campos` (array de campos auditados): manipular la auditoría cambia la huella
-y `verify` falla con `Drift`.
+incluido `audit.campos`: los arrays de campos auditados entran completos y los payloads de
+presupuesto/deuda se normalizan eliminando recursivamente `creado`/`actualizado`, para que la
+huella no dependa de marcas de tiempo. Manipular la auditoría cambia la huella y `verify`
+falla con `Drift`. El manifiesto declara además las exclusiones de `audit.id`, `*_audit.id` y
+los payloads `anterior`/`posterior`.
 No se promete igualdad byte a byte de SQLite.
 
 ## Qué falta para release

@@ -473,6 +473,54 @@ describe("FT-1 minimal v27", () => {
     expect(result.message).toContain("Drift");
   });
 
+  test("la huella normaliza timestamps del payload de auditoria y detecta el resto", () => {
+    const root = fixtureRoot();
+    expect(init(root).code).toBe(0);
+    expect(apply(root).code).toBe(0);
+    const db = openFixtureDb(root);
+    const row = db
+      .query(
+        "SELECT rowid AS rid, campos FROM audit WHERE campos LIKE '{%' ORDER BY rowid LIMIT 1",
+      )
+      .get() as { rid: number; campos: string } | null;
+    expect(row).not.toBeNull();
+    const parsed = JSON.parse(row!.campos) as Record<string, any>;
+    // Cambia solo una marca temporal anidada: la huella no debe moverse.
+    const strip = (value: any): any => {
+      if (Array.isArray(value)) return value.map(strip);
+      if (value && typeof value === "object") {
+        const out: Record<string, any> = {};
+        for (const [key, nested] of Object.entries(value))
+          out[key] = ["creado", "actualizado"].includes(key)
+            ? "2099-01-01T00:00:00.000Z"
+            : strip(nested);
+        return out;
+      }
+      return value;
+    };
+    db.run("UPDATE audit SET campos = ? WHERE rowid = ?", [
+      JSON.stringify(strip(parsed)),
+      row!.rid,
+    ]);
+    db.close();
+    expect(verify(root).code).toBe(0);
+    // Cambia un campo no temporal: la huella debe cambiar.
+    const db2 = openFixtureDb(root);
+    const again = db2
+      .query(
+        "SELECT rowid AS rid, campos FROM audit WHERE campos LIKE '{%' ORDER BY rowid LIMIT 1",
+      )
+      .get() as { rid: number; campos: string };
+    const value = JSON.parse(again.campos) as Record<string, any>;
+    value.manipulado = true;
+    db2.run("UPDATE audit SET campos = ? WHERE rowid = ?", [
+      JSON.stringify(value),
+      again.rid,
+    ]);
+    db2.close();
+    expect(verify(root).code).toBe(3);
+  });
+
   test("verify honours --expected-manifest-sha256 and rejects a mismatch", () => {
     const root = fixtureRoot();
     seed(root);

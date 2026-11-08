@@ -83,6 +83,35 @@ function order(table: string, all: Column[], selected: string[]) {
   return ` ORDER BY ${orderColumns.map(quote).join(",")}`;
 }
 
+/**
+ * Normaliza el payload de `audit.campos` para que la huella no dependa de
+ * marcas de tiempo. Presupuestos y deudas guardan un objeto con `creado`/
+ * `actualizado`; el resto guarda el array de campos. Cualquier clave temporal
+ * se elimina recursivamente. Un valor no JSON se conserva tal cual.
+ */
+function normalizeAuditPayload(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return value;
+  }
+  const strip = (input: unknown): unknown => {
+    if (Array.isArray(input)) return input.map(strip);
+    if (input && typeof input === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [key, nested] of Object.entries(
+        input as Record<string, unknown>,
+      ))
+        if (!EXCLUDED_COLUMNS.has(key)) out[key] = strip(nested);
+      return out;
+    }
+    return input;
+  };
+  return strip(parsed);
+}
+
 /** Proyección estable y de solo lectura; nunca escribe ni usa rowid físico. */
 export function logicalChecksums(db: Database) {
   const result: Record<string, string> = {};
@@ -95,7 +124,13 @@ export function logicalChecksums(db: Database) {
           `SELECT ${selected.map(quote).join(",")} FROM ${quote(table)}${order(table, all, selected)}`,
         )
         .all() as Record<string, unknown>[]
-    ).map((row) => selected.map((name) => row[name] ?? null));
+    ).map((row) =>
+      selected.map((name) =>
+        table === "audit" && name === "campos"
+          ? normalizeAuditPayload(row[name] ?? null)
+          : (row[name] ?? null),
+      ),
+    );
     result[table] = sha256Hex(
       canonicalJson({ table, columns: selected, rows }),
     );

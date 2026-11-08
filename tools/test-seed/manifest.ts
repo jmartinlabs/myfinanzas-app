@@ -102,7 +102,14 @@ export function staticManifest(commit: string): Omit<
     excluded_from_hash: {
       tables: [...EXCLUDED_TABLES].sort(),
       table_patterns: ["*_attempts"],
-      columns: [...EXCLUDED_COLUMNS].sort(),
+      columns: [
+        ...EXCLUDED_COLUMNS,
+        "audit.id",
+        "audit.campos.*.<columna temporal>",
+        "*_audit.id",
+        "*_audit.anterior",
+        "*_audit.posterior",
+      ].sort(),
     },
     created_at: dataset.anchor,
   };
