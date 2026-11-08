@@ -4,9 +4,10 @@ import {
   type APIRequestContext,
   type Page,
 } from "@playwright/test";
-import { spawn, type ChildProcess } from "node:child_process";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { release as osRelease } from "node:os";
 import { totp } from "../../apps/api/src/auth";
 import {
   DEV07_THEMES,
@@ -50,23 +51,84 @@ type ScreenRecord = {
   path: string;
   audits: ScreenViewportAudit[];
   keyboard: { viewport: string; report: KeyboardReport }[];
-  focusRings: { theme: Dev07Theme; report: FocusRingReport[] }[];
+  focusRings: {
+    viewport: string;
+    theme: Dev07Theme;
+    report: FocusRingReport[];
+  }[];
   motion: MotionReport | null;
 };
 
+const playwrightVersion = (
+  JSON.parse(
+    readFileSync("node_modules/@playwright/test/package.json", "utf8"),
+  ) as { version: string }
+).version;
+
 const report: {
   generatedAt: string;
+  updatedAt: string;
+  head: string;
   base: string;
+  platform: { os: string; arch: string; release: string };
+  runtime: { bun: string; playwright: string; chromium: string };
+  command: string;
+  jsonPath: string;
   pageErrors: string[];
+  limitations: string[];
+  exceptions: string[];
+  verification: {
+    baseline: string;
+    linuxFull: string;
+    macosFull: string;
+  };
   screens: Record<string, ScreenRecord>;
 } = {
   generatedAt: new Date().toISOString(),
+  updatedAt: "",
+  head: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   base: "e221e51",
+  platform: {
+    os: process.platform,
+    arch: process.arch,
+    release: osRelease(),
+  },
+  runtime: {
+    bun: readFileSync(".bun-version", "utf8").trim(),
+    playwright: playwrightVersion,
+    chromium: "",
+  },
+  command:
+    "UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts",
+  jsonPath: "artifacts/ui-dev07-baseline/report.json",
   pageErrors: [],
+  limitations: [
+    "Linux full verification not executed on this host.",
+    "macOS: scripts/verify API backup/production suites blocked by the /var symlink in safeAncestors and by libc.so.6; two E2E specs blocked because age-keygen is not installed.",
+    "States covered: Inicio base only; Movimientos E4.6 C007; Saldos ficha S001; Saldos alta /saldos/nuevo; Cierre E4.9 preflight listo with cycle 1.",
+    "Zoom measured as a 720x500 viewport equivalence (200% over 1440x1000), not native browser zoom.",
+    "Chromium only; no Firefox/WebKit and no screen reader.",
+    "Contrast covers visible text nodes only: no control borders, icons/SVG, placeholders, input values or pseudo-elements.",
+  ],
+  exceptions: [
+    "Inline prose links in Inicio (S001-S005, Comida) and table-cell links in Movimientos are treated as inline target-size exceptions; manual QA must confirm.",
+    "a.brand is 40 px high at 720/390 and a.back is 101x18 px; these are real target-size findings.",
+    "Inicio list links at 1440 are 202/220x18 px; real target-size findings.",
+    "One internal segment of input#fechaApertura shows no outline in Chromium's native date control.",
+    "cierre-fingerprint is 11.52 px (functional-meta); brand tagline is 7-8 px (decorative).",
+    "hybrid-s sidebar focus ring is 2.83:1; real failure, not an exception.",
+  ],
+  verification: {
+    baseline: "PASS (python3.12 scripts/verify baseline)",
+    linuxFull: "not executed",
+    macosFull:
+      "blocked: apps/api backup/private-state (macOS /var symlink, libc.so.6) and age-keygen missing in restore-server E2E",
+  },
   screens: {},
 };
 
 function writeReport() {
+  report.updatedAt = new Date().toISOString();
   mkdirSync(OUT, { recursive: true });
   writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 2));
 }
@@ -138,16 +200,67 @@ async function login(page: Page, dir: string, path: string) {
     .click();
 }
 
+/**
+ * Espera web-first: no hay timeout fijo. Deja que arranquen las transiciones
+ * de tema y espera a que terminen las animaciones finitas.
+ */
 async function settle(page: Page) {
-  // `button { transition: background-color 0.12s }` deja el fondo a medio
-  // camino justo tras cambiar de tema; se espera a que termine antes de medir.
-  await page.waitForTimeout(220);
-  await page.evaluate(
-    () =>
+  await page.evaluate(async () => {
+    const frame = () =>
       new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
-  );
+        requestAnimationFrame(() => resolve()),
+      );
+    await frame();
+    await frame();
+    for (let round = 0; round < 3; round += 1) {
+      const running = document.getAnimations().filter((animation) => {
+        if (animation.playState !== "running") return false;
+        const timing = animation.effect?.getComputedTiming();
+        return timing?.iterations !== Infinity;
+      });
+      if (running.length === 0) break;
+      await Promise.all(
+        running.map((animation) =>
+          animation.finished.catch(() => undefined),
+        ),
+      );
+      await frame();
+    }
+  });
+}
+
+/** Contenido real por pantalla; nunca un sleep. */
+async function waitForScreenReady(page: Page, screen: string) {
+  await expect(
+    page
+      .locator('#main [role="status"]')
+      .filter({ hasText: /Cargando/i }),
+  ).toHaveCount(0);
+  if (screen === "inicio") {
+    await expect(page.locator(".inicio-context")).toBeVisible();
+    await expect(page.locator(".inicio-metric").first()).toBeVisible();
+  } else if (screen === "movimientos") {
+    await expect(page.locator(".movements-list")).toBeVisible();
+    await expect(
+      page.locator(".movements-list .list-toolbar [role='status']"),
+    ).toContainText(/\d+ movimientos/);
+    await expect
+      .poll(
+        async () =>
+          (await page.locator(".desktop-list tbody tr").count()) +
+          (await page.locator(".movements-cards > li").count()),
+      )
+      .toBeGreaterThan(0);
+  } else if (screen === "saldo-ficha") {
+    await expect(page.locator(".position-panel")).toBeVisible();
+  } else if (screen === "saldo-form") {
+    await expect(page.locator("form.saldo-form")).toBeVisible();
+    await expect(page.locator("#nombre")).toBeVisible();
+  } else if (screen === "cierre") {
+    await expect(page.locator(".cierre-e49-status")).toBeVisible();
+    await expect(page.getByLabel("Ciclo")).toHaveValue("1");
+    await expect(page.getByText("Listo", { exact: true }).first()).toBeVisible();
+  }
 }
 
 async function auditScreen(
@@ -156,12 +269,14 @@ async function auditScreen(
   fixture: string,
   path: string,
   heading: string,
+  options: { navigate?: boolean } = {},
 ): Promise<ScreenRecord> {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto(path);
+  if (options.navigate !== false) await page.goto(path);
   await expect(
     page.getByRole("heading", { name: heading, exact: true }).first(),
   ).toBeVisible();
+  await waitForScreenReady(page, screen);
   await settle(page);
   const record: ScreenRecord = {
     screen,
@@ -177,6 +292,7 @@ async function auditScreen(
       width: viewport.width,
       height: viewport.height,
     });
+    await waitForScreenReady(page, screen);
     // Overflow en el estado por defecto (details cerrados) y contraste/texto
     // con los details abiertos para no perder contenido plegado.
     await setDetailsOpen(page, false);
@@ -208,26 +324,35 @@ async function auditScreen(
       report: await auditKeyboard(page, 90),
     });
   }
-  // Anillo de foco por tema a 1440.
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const theme of DEV07_THEMES) {
-    await setTheme(page, theme);
-    await settle(page);
-    record.focusRings.push({
-      theme,
-      report: await sampleFocusRing(page, [
-        ".skip-link",
-        ".nav-link",
-        ".nav-active",
-        ".menu-toggle",
-        "#main a",
-        "#main button",
-        "#main select",
-        ".theme-picker select",
-      ]),
+  // Anillo de foco por tema a 1440 y 390; los selectores ocultos se omiten.
+  for (const viewport of DEV07_VIEWPORTS.filter(
+    (item) => item.id !== "720",
+  )) {
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
     });
+    for (const theme of DEV07_THEMES) {
+      await setTheme(page, theme);
+      await settle(page);
+      record.focusRings.push({
+        viewport: viewport.id,
+        theme,
+        report: await sampleFocusRing(page, [
+          ".skip-link",
+          ".nav-link",
+          ".nav-active",
+          ".menu-toggle",
+          "#main a",
+          "#main button",
+          "#main select",
+          ".theme-picker select",
+        ]),
+      });
+    }
   }
   // Movimiento reducido en dark-s a 1440.
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await setTheme(page, "dark-s");
   record.motion = await auditReducedMotion(page);
   report.screens[screen] = record;
@@ -256,12 +381,15 @@ function printSummary(record: ScreenRecord) {
     console.log(
       JSON.stringify({
         screen: record.screen,
+        viewport: focus.viewport,
         theme: focus.theme,
-        rings: focus.report.map((item) => ({
-          selector: item.selector,
-          ratio: item.ratio,
-          visible: item.visible,
-        })),
+        rings: focus.report
+          .filter((item) => item.matched)
+          .map((item) => ({
+            selector: item.selector,
+            ratio: item.ratio,
+            visible: item.visible,
+          })),
       }),
     );
   }
@@ -289,6 +417,8 @@ if (ENABLED) {
     request,
   }) => {
     test.setTimeout(600000);
+    report.runtime.chromium =
+      page.context().browser()?.version() ?? "unknown";
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const child = await startServer(
@@ -349,6 +479,7 @@ if (ENABLED) {
         "cierre-server · escenario listo",
         "/cierre",
         "Cierre financiero",
+        { navigate: false },
       );
       printSummary(record);
       report.pageErrors.push(...errors);

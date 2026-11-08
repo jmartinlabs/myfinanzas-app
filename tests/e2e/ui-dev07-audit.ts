@@ -57,6 +57,7 @@ export type SmallTextFinding = {
   tag: string;
   classification: "functional" | "decorative";
   insideInteractive: boolean;
+  scope: "main" | "shell";
 };
 
 export type TargetFinding = {
@@ -66,6 +67,7 @@ export type TargetFinding = {
   width: number;
   height: number;
   inlineProse: boolean;
+  scope: "main" | "shell";
 };
 
 export type OverflowReport = {
@@ -105,6 +107,8 @@ export type MotionReport = {
 
 export type FocusRingReport = {
   selector: string;
+  matched: boolean;
+  reason?: string;
   outlineStyle: string;
   outlineWidth: number;
   outlineColor: string;
@@ -326,9 +330,11 @@ export async function measureSmallText(
       tag: string;
       classification: "functional" | "decorative";
       insideInteractive: boolean;
+      scope: "main" | "shell";
     }[] = [];
     for (const element of Array.from(root.querySelectorAll("*"))) {
       if (!visible(element)) continue;
+      if (element.closest('.sr-only,[hidden],[aria-hidden="true"]')) continue;
       const direct = Array.from(element.childNodes)
         .filter((child) => child.nodeType === Node.TEXT_NODE)
         .map((child) => (child.textContent ?? "").replace(/\s+/g, " ").trim())
@@ -358,6 +364,7 @@ export async function measureSmallText(
             'a,button,input,select,textarea,summary,[role="button"],[role="switch"]',
           ),
         ),
+        scope: element.closest("#main") ? "main" : "shell",
       });
     }
     return findings;
@@ -400,6 +407,7 @@ export async function measureTargets(page: Page): Promise<TargetFinding[]> {
       width: number;
       height: number;
       inlineProse: boolean;
+      scope: "main" | "shell";
     }[] = [];
     const candidates = Array.from(
       document.querySelectorAll(
@@ -408,6 +416,7 @@ export async function measureTargets(page: Page): Promise<TargetFinding[]> {
     );
     for (const element of candidates) {
       if (!visible(element)) continue;
+      if (element.closest('.sr-only,[hidden],[aria-hidden="true"]')) continue;
       if (
         element.closest(
           "button:disabled,input:disabled,select:disabled,textarea:disabled",
@@ -437,6 +446,7 @@ export async function measureTargets(page: Page): Promise<TargetFinding[]> {
         inlineProse:
           style.display.startsWith("inline") &&
           Boolean(element.closest("p,li,dd,dt,small,summary,td,th")),
+        scope: element.closest("#main") ? "main" : "shell",
       });
     }
     return findings;
@@ -654,10 +664,47 @@ export async function sampleFocusRing(
 ): Promise<FocusRingReport[]> {
   const report: FocusRingReport[] = [];
   for (const selector of selectors) {
-    const locator = page.locator(selector).first();
-    if ((await locator.count()) === 0) continue;
+    const matches = page.locator(selector);
+    const total = await matches.count();
+    let locator = null as ReturnType<typeof page.locator> | null;
+    for (let index = 0; index < total; index += 1) {
+      const candidate = matches.nth(index);
+      if (await candidate.isVisible()) {
+        locator = candidate;
+        break;
+      }
+    }
+    if (!locator) {
+      report.push({
+        selector,
+        matched: false,
+        reason: total === 0 ? "absent" : "hidden",
+        outlineStyle: "",
+        outlineWidth: 0,
+        outlineColor: "",
+        ratio: null,
+        visible: false,
+      });
+      continue;
+    }
     await page.keyboard.press("Tab");
     await locator.focus();
+    const matched = await locator.evaluate(
+      (element) => document.activeElement === element,
+    );
+    if (!matched) {
+      report.push({
+        selector,
+        matched: false,
+        reason: "not-focused",
+        outlineStyle: "",
+        outlineWidth: 0,
+        outlineColor: "",
+        ratio: null,
+        visible: false,
+      });
+      continue;
+    }
     const item = await page.evaluate(() => {
       const parse = (value: string) => {
         const match = value.match(/rgba?\(([^)]+)\)/);
@@ -748,7 +795,7 @@ export async function sampleFocusRing(
       };
     });
     if (!item) continue;
-    report.push({ selector, ...item });
+    report.push({ selector, matched: true, ...item });
   }
   return report;
 }
@@ -854,20 +901,33 @@ export async function auditViewport(
 }
 
 export function summarise(audit: ScreenViewportAudit) {
-  const functional = audit.smallText.filter(
-    (item) => item.classification === "functional",
-  );
+  const count = (
+    scope: "main" | "shell",
+    classification: "functional" | "decorative",
+  ) =>
+    audit.smallText.filter(
+      (item) =>
+        item.scope === scope && item.classification === classification,
+    ).length;
   const inlineTargets = audit.targets.filter((item) => item.inlineProse);
+  const nonInline = audit.targets.filter((item) => !item.inlineProse);
   return {
     theme: audit.theme,
     viewport: audit.viewport,
     contrastMin: audit.contrast.min,
+    contrastMinNormal: audit.contrast.minNormal,
+    contrastMinLarge: audit.contrast.minLarge,
     contrastChecked: audit.contrast.checked,
     contrastFailures: audit.contrast.failures.length,
     unresolved: audit.contrast.unresolved.length,
-    smallFunctional: functional.length,
-    smallDecorative: audit.smallText.length - functional.length,
-    targetsUnder44: audit.targets.length - inlineTargets.length,
+    smallMainFunctional: count("main", "functional"),
+    smallMainDecorative: count("main", "decorative"),
+    smallShellFunctional: count("shell", "functional"),
+    smallShellDecorative: count("shell", "decorative"),
+    targetsMainUnder44: nonInline.filter((item) => item.scope === "main")
+      .length,
+    targetsShellUnder44: nonInline.filter((item) => item.scope === "shell")
+      .length,
     inlineTargets: inlineTargets.length,
     overflow: audit.overflow.pageOverflow,
   };
