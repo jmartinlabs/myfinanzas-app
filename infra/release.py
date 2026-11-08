@@ -22,6 +22,9 @@ SEED_INPUTS = 'release-seed-inputs.json'
 APP_CONTEXT_FILES = frozenset({'tools/age', 'tools/age-keygen', 'release-inputs.json',
                                'Containerfile', 'healthcheck.mjs'})
 SEED_CONTEXT_FILES = frozenset({SEED_INPUTS, 'Containerfile.seed'})
+PUBLIC_FORBIDDEN_SUFFIXES = frozenset({'.map', '.sqlite', '.sqlite-wal', '.sqlite-shm',
+                                       '.xlsx', '.env', '.pem', '.key', '.p12', '.pfx'})
+REFERENCE = re.compile(r'''(?:src|href)\s*=\s*["'](/[^"']+)["']''', re.I)
 SOURCE = Path(__file__).resolve().parents[1]
 
 
@@ -82,6 +85,12 @@ def runtime_sources(commit):
               if (p.endswith('.ts') or p.endswith('.json'))
               and not p.endswith('.test.ts')]
     paths += [p for p in files(commit, 'apps/web/src') if Path(p).suffix in ('.ts', '.tsx', '.css')]
+    # Vite copies public/ verbatim; it is not under src/. Ship every regular
+    # file except dotfiles and material that must never become public, then
+    # check that index.html only references files that exist.
+    paths += [p for p in files(commit, 'apps/web/public')
+              if not any(part.startswith('.') for part in Path(p).parts)
+              and Path(p).suffix not in PUBLIC_FORBIDDEN_SUFFIXES]
     return paths
 
 
@@ -183,13 +192,27 @@ def inspect_layers(archive):
                         raise ReleaseError('unsafe application layer payload')
 
 
+def missing_frontend_assets(html, web):
+    """Root-relative files index.html references but the frontend does not ship."""
+    text = html.decode('utf-8', errors='replace') if isinstance(html, bytes) else html
+    referenced = set()
+    for match in REFERENCE.finditer(text):
+        path = match.group(1).split('?', 1)[0].split('#', 1)[0]
+        if path.startswith('//'):
+            continue
+        relative = path.lstrip('/')
+        if relative:
+            referenced.add(relative)
+    return sorted(referenced - set(web))
+
+
 def inventory(image, root, frontend=None, require_frontend=True):
     name = 'mf32-export-' + uuid.uuid4().hex
     archive_path = root / (name + '.tar')
     run(['podman', 'create', '--http-proxy=false', '--name', name, '--pull=never', image])
     try:
         run(['podman', 'export', '--output', str(archive_path), name])
-        entries, web = {}, {}
+        entries, web, index_html, pending = {}, {}, b'', {}
         generated = {'etc/hosts', 'etc/hostname', 'etc/resolv.conf', 'run/.containerenv'}
         with tarfile.open(archive_path) as archive:
             for entry in archive:
@@ -207,12 +230,19 @@ def inventory(image, root, frontend=None, require_frontend=True):
                 if path.startswith('release/frontend/') and entry.isfile():
                     relative = path.removeprefix('release/frontend/')
                     web[relative] = sha(data)
+                    if relative == 'index.html':
+                        index_html = data
                     if frontend:
-                        destination = frontend / relative
-                        destination.parent.mkdir(parents=True, exist_ok=True)
-                        destination.write_bytes(data)
+                        pending[relative] = data
         if require_frontend and 'index.html' not in web:
             raise ReleaseError('frontend missing')
+        missing = missing_frontend_assets(index_html, web)
+        if missing:
+            raise ReleaseError('frontend asset missing: ' + ', '.join(missing))
+        for relative, data in pending.items():
+            destination = frontend / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(data)
         return sha(json.dumps(entries, sort_keys=True).encode()), web
     finally:
         run(['podman', 'rm', name])
