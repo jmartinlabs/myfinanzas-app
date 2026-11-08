@@ -45,6 +45,11 @@ on:
         required: false
         default: ''
         type: string
+      publish_test_ghcr:
+        description: Explicit GHCR publication after first TEST activation
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
   checks: read
@@ -87,7 +92,7 @@ jobs:
   qa:
     name: qa
     # Automated regression on the exact test SHA, not a substitute for independent PR review.
-    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && inputs.package_test_release) }}
+    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && (inputs.package_test_release || inputs.publish_test_ghcr)) }}
     needs: capability
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -107,7 +112,7 @@ jobs:
 
   publish:
     name: Package or publish verified TEST release
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.package_test_release) }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && (inputs.package_test_release || inputs.publish_test_ghcr)) }}
     needs: [capability, qa]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -185,7 +190,7 @@ jobs:
           compression-level: 0
           retention-days: 7
       - name: Log in to GHCR
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true' }}
+        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.publish_test_ghcr) }}
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -193,7 +198,7 @@ jobs:
           set -euo pipefail
           printf '%s\n' "$GITHUB_TOKEN" | podman login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Publish app, seed and release images
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true' }}
+        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_AUTO_PUBLISH == 'true') || (github.event_name == 'workflow_dispatch' && inputs.publish_test_ghcr) }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
