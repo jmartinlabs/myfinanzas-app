@@ -185,6 +185,7 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     );
     const estadoFont = await statusValues
       .first()
+      .locator(".cierre-badge")
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
     const versionFont = await statusValues
       .nth(1)
