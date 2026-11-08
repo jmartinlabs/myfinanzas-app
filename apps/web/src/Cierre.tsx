@@ -388,7 +388,7 @@ const TOTAL_COLUMNS: ReadonlyArray<TableColumn<TotalRow>> = [
   {
     id: "total",
     header: "Total",
-    label: "Total",
+    label: "Métrica",
     cell: (row) => TOTAL_LABELS[row.key] ?? row.key,
   },
   {
