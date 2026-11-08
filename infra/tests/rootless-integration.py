@@ -197,6 +197,19 @@ def main():
             raise ProbeError('wrong manifest trust pin was accepted')
         verify(output, manifest['inputs']['source'], digest)
         evidence['frontend-backend-integrity-and-negative'] = True
+        stage = 'synthetic-seed-release-smoke'
+        smoke_evidence = root / 'smoke-evidence.json'
+        smoke = subprocess.run(
+            [sys.executable, str(source / 'infra/smoke.py'),
+             '--release', str(output),
+             '--expected-commit', manifest['inputs']['source'],
+             '--expected-manifest-sha256', digest,
+             '--evidence', str(smoke_evidence)],
+            capture_output=True, text=True, timeout=600)
+        if smoke.returncode or not smoke_evidence.is_file():
+            # Never publish raw output: it may contain synthetic factors.
+            raise ProbeError('synthetic release+seed smoke failed')
+        evidence['synthetic-seed-release-smoke'] = True
         data = root / 'data'
         data.mkdir(mode=0o700)
         env = ['--env=NODE_ENV=production', '--env=APP_ORIGIN=https://myfinanzas.pp.ua',
