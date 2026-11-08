@@ -2,8 +2,9 @@
 
 Status: **DISEÑO ACTUALIZADO 2026-11-08 — IMPLEMENTACIÓN NO AUTORIZADA.**
 Decisión definitiva 2026-11-08: la creación de un tag `deploy-test-v*` o `deploy-prod-v*`
-por un actor autorizado **es la orden de despliegue**. No hay GitHub Environments ni segunda
-aprobación, tampoco en PROD. Los merges a `test` o `main` no despliegan. Se mantienen
+por un actor autorizado **es la orden de despliegue**. No hay aprobación por GitHub
+Environments ni segunda aprobación, tampoco en PROD. Un Environment sin Required reviewers
+puede usarse solo como frontera de secretos y reglas de tags. Los merges a `test` o `main` no despliegan. Se mantienen
 protección e inmutabilidad de tags, restricción de actores, validación estricta de formato,
 origen, commit y SHA, CI/QA/Rootless, compatibilidad de contratos, copias y smoke/rollback.
 Reconciliación documental de origen y SHA (2026-11-07): `test` para TEST, `main` para PROD
@@ -126,8 +127,8 @@ Reglas:
 - **Autor.** Solo un publicador autorizado crea tags. La protección de GitHub y la allowlist
   del workflow (`MYFINANZAS_DEPLOY_ACTORS`) se comprueban; ninguna de las dos se presume.
 - **Sin aprobación duplicada.** La creación del tag por un actor autorizado es la
-  autorización operativa. No se usan GitHub Environments ni Required reviewers; el workflow
-  no solicita una segunda aprobación.
+  autorización operativa. No se usan Required reviewers; un Environment `test` sin revisores
+  puede aislar secretos y restringir el despliegue a tags autorizados.
 - **Reintentos.** `[PROPUESTA]` Un fallo de validación antes de mutar puede reintentarse
   sobre el mismo tag, SHA y artefacto, aumentando el intento. Un artefacto distinto, un
   commit distinto o un cambio de gates exige un nuevo tag de versión, normalmente un patch.
@@ -161,7 +162,7 @@ registra al actor y la referencia, pero no puede demostrar por sí mismo la cali
 | Gate | Comprobación | Si falta |
 | --- | --- | --- |
 | CI | Check requerido `SUCCESS` sobre el SHA exacto; no se hereda de otro commit | Detener; ejecutar la CI sobre ese SHA y reanudar el mismo run |
-| QA | Referencia de QA independiente del SHA, revisable y sin secretos | Detener; no convertir un archivo autoemitido en PASS |
+| QA | `qa_reference` en la anotación del tag, que contiene el SHA exacto y es distinta del check automático `qa` | Detener; no convertir un archivo autoemitido en PASS |
 | Rootless | Run `SUCCESS` del gate Rootless sobre el SHA exacto y coincidencia con la release | Detener; lanzar `Rootless infrastructure 32` sobre el SHA y reanudar |
 | Release | Manifiesto verificado con `--expected-commit` y `--expected-manifest-sha256`; ID/digest inmutable; frontend del mismo paquete | Detener; no reconstruir silenciosamente otro artefacto |
 | Esquema y seed | Contrato declarado por el manifiesto compatible con el estado TEST; manifiesto de seed y marcador TEST verificados (ver D11) | Detener antes de abrir la base |
@@ -232,8 +233,9 @@ para corregir una validación.
 
 ### 5.2 Ejecución automática
 
-5. No hay GitHub Environment ni segundo paso de aprobación. La creación del tag por un actor
-   autorizado, con protección e inmutabilidad verificadas, es la orden de despliegue.
+5. No hay aprobación por Environment. La creación del tag por un actor autorizado, con
+   protección e inmutabilidad verificadas, es la orden de despliegue. Un Environment `test`
+   sin Required reviewers solo aísla secretos y restringe el ref a los tags autorizados.
 6. Antes de liberar credenciales de PROD se validan tag, actor, SHA, promoción, artefacto
    idéntico a TEST, backup/restore y contrato. Cualquier fallo detiene sin mutar.
 7. Las credenciales PROD son distintas de TEST y se leen del almacén autorizado solo en la
@@ -279,7 +281,7 @@ otro artefacto. La convención, la inmutabilidad y los controles de artefacto no
 | Verificar SHA, procedencia y artefactos inmutables | Ancestro del origen autorizado (`test` o `main`), manifiesto, checksums e ID/digest; sin etiquetas móviles | Salida de verificación y manifiesto |
 | Impedir despliegues concurrentes | Un lock por entorno y `cancel-in-progress: false`; rechazo del segundo | Run bloqueado y registro |
 | Credenciales separadas y de mínimos privilegios | Principal TEST/PROD distinto, sin root, secreto en el almacén autorizado, no en Git | Configuración revisada y prueba de alcance |
-| Sin aprobaciones duplicadas | Tag protegido e inmutable + allowlist de actores + validación estricta; sin GitHub Environments | Reglas efectivas y prueba negativa con actor no autorizado |
+| Sin aprobaciones duplicadas | Tag protegido e inmutable + allowlist de actores + validación estricta; Environment solo como frontera de secretos, sin revisores | Reglas efectivas y prueba negativa con actor no autorizado |
 | No guardar claves ni secretos en repositorios o artefactos | Revisión de diff, manifiesto y logs; secretos efímeros; sin identidad privada `age` ni secreto TOTP en la release (el binario `age` verificado sí forma parte de la imagen) | Auditoría de contenido y permisos |
 | No desplegar sin backup y recuperación validados | Precondición bloqueante; copia y restauración ensayadas; PROD con datos reales sujeto a DT6/T-BKP | Copia, restore y plan revisados |
 | No reconstruir en PROD un artefacto distinto | Promoción por SHA y digest; si no coincide, se detiene | Comparación TEST/PROD |
@@ -320,15 +322,15 @@ repositorios es opcional y no forma parte de esta entrega.
 | D3 | Formato de la referencia QA y de la anotación del tag | Bloque estructurado y validado; la QA se revisa fuera del workflow y el actor queda registrado | Fase 3 |
 | D4 | Lugar de ejecución y credenciales (runner dedicado, SSH restringido u OIDC) | Mínimos privilegios, sin root, sin comandos arbitrarios; evaluar el modelo de amenaza del host | Fase 2 |
 | D5 | Interruptor de TEST y primera versión | Estado inicial desactivado; habilitar solo con contrato host y copia/restore ensayados | Fase 4 |
-| D6 | Actores autorizados y separación de funciones | Ruleset de tags con allowlist + comprobación `MYFINANZAS_DEPLOY_ACTORS`; sin Required reviewers ni Environments (decisión 2026-11-08) | Fase 2 |
+| D6 | Actores autorizados y separación de funciones | Ruleset de tags con allowlist + comprobación `MYFINANZAS_DEPLOY_ACTORS`; sin Required reviewers; Environment opcional solo para secretos (decisión 2026-11-08) | Fase 2 |
 | D7 | Identidad de promoción y retención de la evidencia TEST | Mismo SHA y digest; si la evidencia o el artefacto caducan, bloquear hasta nuevo TEST | Fases 4–5 |
 | D8 | Autorización de migración y prueba de backup/restore | Reutilizar `compatibility.py` y el RUNBOOK; una autorización por par de esquema y datos | Fase 5 |
 | D9 | Perfil de smoke y comportamiento ante fallo posterior | Perfil fijo y mínimo; recuperación manual con estado preservado, sin rollback automático | Fases 4–5 |
 | D10 | Pre-releases, metadatos de build y futura rama `test` | Solo SemVer estable ahora; la rama futura cambia únicamente el origen de tags | Futuro |
 | D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` está en v26, el seed propuesto es v25 y el PR #229 se cerró sin merge: nueva propuesta o reapertura autorizada | Fase 1 |
 
-`[CONFIRMADO]` D6 se actualiza el 2026-11-08: no hay revisores ni Environments; la
-autorización es el tag creado por un actor permitido. El resto de D1–D11 conserva su
+`[CONFIRMADO]` D6 se actualiza el 2026-11-08: no hay revisores; la autorización es el tag
+creado por un actor permitido. Un Environment sin revisores puede aislar secretos. El resto de D1–D11 conserva su
 redacción. D10 se redactó cuando
 `test` era futura; la rama existe y el origen vigente se define en §6, sin cambiar la
 decisión sobre pre-releases y metadatos. La referencia de D11 a v26/v25 y al PR #229 es
@@ -341,7 +343,7 @@ no implementado; D11 sigue abierta.
 | --- | --- | --- | --- |
 | 0 | Documentar el diseño y revisarlo | Esta spec; QA y CI documentales | **Actual; sin implementación** |
 | 1 | Cerrar D1–D11 y el contrato entre repositorios | Decisiones registradas y documentos reconciliados; sin cambios operativos | Separada |
-| 2 | Configurar protección de tags y allowlist de actores | Reglas efectivas verificadas; sin Environments; sin tags operativos ni credenciales | Separada |
+| 2 | Configurar protección de tags, allowlist y Environment de secretos | Reglas efectivas verificadas; sin Required reviewers; sin tags operativos ni credenciales | Separada |
 | 3 | Implementar el workflow en dry-run | Solo `workflow_dispatch`, sin `push` de tags y sin credenciales de VPS; casos negativos y positivos; host intacto | Separada |
 | 4 | Habilitar TEST | Primer `deploy-test-vX` sobre SHA congelado de `test`; smoke, copia/restore y evidencia; PROD intacto | Separada |
 | 5 | Habilitar PROD | Backup/restore, aceptación y primer `deploy-prod-vX` sobre el SHA promovido a `main` | Separada |
@@ -367,8 +369,8 @@ su autorización. Ninguna fase se declara completada por un merge documental.
 
 - Crear tags operativos, moverlos, borrarlos o reutilizarlos.
 - Activar workflows de despliegue o publicar la primera release.
-- Configurar credenciales, accesos al VPS, runners o secretos. No se usan GitHub
-  Environments para este flujo.
+- Configurar credenciales, accesos al VPS, runners o secretos. El Environment `test`, si se
+  usa, no lleva Required reviewers ni aprobación.
 - Cambiar servicios, DNS, Caddy, Podman, firewall, usuarios, rutas o copias del VPS.
 - Realizar despliegues, migraciones, restauraciones, rollbacks o merges.
 - Importar datos reales, el Excel o información financiera.

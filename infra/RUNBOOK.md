@@ -78,14 +78,17 @@ unidad y frontend con smoke y rollback automático.
 Gates:
 
 - tag anotado e inmutable, formato SemVer, commit igual al SHA y ancestro de `origin/test`;
-- actor en `MYFINANZAS_DEPLOY_ACTORS`, además de la protección de tags de GitHub;
+- anotación con `sha=<SHA40>` y `qa_reference=<referencia que contiene el SHA>`; es la
+  evidencia de revisión independiente, distinta del check automático `qa`;
+- actor en `MYFINANZAS_DEPLOY_ACTORS`, además del ruleset inmutable de tags;
 - `required`, `qa` y Rootless en `SUCCESS` sobre el SHA exacto;
-- interruptor de entorno `MYFINANZAS_TEST_DEPLOY=true`; desactivado, el tag no despliega;
-- sin GitHub Environments ni segunda aprobación.
+- interruptor `MYFINANZAS_TEST_DEPLOY=true`; desactivado, el tag no despliega;
+- Environment `test` solo como frontera de secretos y regla de tags, sin Required reviewers
+  ni segunda aprobación.
 
 No usa GHCR, temporizadores, polling ni credenciales de registro. La clave SSH vive en los
-secretos `TEST_DEPLOY_KEY`/`TEST_DEPLOY_KNOWN_HOSTS` y el receptor corre como `mftest` sin
-sudo. La primera activación sigue siendo manual; las posteriores no ejecutan `seed` ni
+secretos del Environment `test`, `TEST_DEPLOY_KEY`/`TEST_DEPLOY_KNOWN_HOSTS`, y el receptor
+corre como `mftest` sin sudo. La primera activación sigue siendo manual; las posteriores no ejecutan `seed` ni
 modifican el estado persistente y solo aplican releases con el mismo contrato.
 
 ## Preflight y almacenamiento

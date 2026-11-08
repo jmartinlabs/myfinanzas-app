@@ -98,6 +98,7 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/tags/deploy-test-v') && vars.MYFINANZAS_TEST_DEPLOY == 'true' }}
     needs: [capability, qa]
     runs-on: ubuntu-24.04
+    environment: test
     concurrency:
       group: myfinanzas-test-deploy
       cancel-in-progress: false
@@ -124,6 +125,12 @@ jobs:
           [[ "$(git cat-file -t "$GITHUB_REF_NAME")" == 'tag' ]]
           TAG_SHA="$(git rev-list -n1 "$GITHUB_REF_NAME")"
           [[ "$TAG_SHA" == "$GITHUB_SHA" ]]
+          ANNOTATION="$(git for-each-ref --format='%(contents)' "refs/tags/$GITHUB_REF_NAME")"
+          SHA_LINE="$(printf '%s\n' "$ANNOTATION" | sed -n 's/^sha=//p' | head -1)"
+          QA_REFERENCE="$(printf '%s\n' "$ANNOTATION" | sed -n 's/^qa_reference=//p' | head -1)"
+          [[ "$SHA_LINE" == "$TAG_SHA" ]]
+          [[ -n "$QA_REFERENCE" && "$QA_REFERENCE" == *"$TAG_SHA"* ]]
+          echo "QA_REFERENCE=$QA_REFERENCE" >> "$GITHUB_ENV"
           git fetch --no-tags origin +refs/heads/test:refs/remotes/origin/test
           git merge-base --is-ancestor "$TAG_SHA" origin/test
           [[ -n "$ALLOWED_ACTORS" ]]
@@ -165,7 +172,7 @@ jobs:
             --arg tag "$GITHUB_REF_NAME" \
             --arg release_sha "$RELEASE_SHA" \
             --arg manifest_sha256 "$manifest_sha" \
-            --arg qa_reference "https://github.com/$GITHUB_REPOSITORY/commit/$RELEASE_SHA/checks" \
+            --arg qa_reference "$QA_REFERENCE" \
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             '{environment:$environment, version:$version, tag:$tag, release_sha:$release_sha, manifest_sha256:$manifest_sha256, qa_reference:$qa_reference, workflow_run_id:$workflow_run_id}' \
             > "$bundle/deploy.json"
