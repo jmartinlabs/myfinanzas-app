@@ -1,0 +1,112 @@
+{
+  "format": 1,
+  "dataset": {
+    "id": "FT-1",
+    "version": 1,
+    "file_sha256": "<sha256 del fichero dataset/ft1.json>",
+    "logical_sha256": "<sha256 canónico del dataset>",
+    "coverage": {
+      "covered": [
+        "E1.1 Saldos: cinco altas ficticias, incluido Efectivo/Inversiones (H1)."
+      ],
+      "partial": [
+        "E3.1 Nómina omitida (H2).",
+        "E1.5/E3.2 Gasto compartido omitido (H6)."
+      ]
+    }
+  },
+  "source": {
+    "commit": "<SHA-40 del commit del artefacto>",
+    "schema": 27,
+    "schema_contract": "C27-E411-FOTOS-PERIODO",
+    "schema_contract_sha256": "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23",
+    "data_contract": "e4.11-v27",
+    "bun": "1.4.3",
+    "seed_image": null
+  },
+  "environment": {
+    "name": "test",
+    "public_origin": "https://test.myfinanzas.pp.ua",
+    "database": "state/database.sqlite",
+    "key": "state/auth.key"
+  },
+  "ids": {
+    "saldos": [
+      "S001",
+      "S002",
+      "S003",
+      "S004",
+      "S005"
+    ],
+    "movimientos": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "referencias": [
+      "REF001",
+      "REF002"
+    ],
+    "instrumentos": [
+      "I1001"
+    ],
+    "operaciones_inversion": [
+      "1"
+    ],
+    "payroll": [],
+    "fichas_compartidos": []
+  },
+  "counts": {
+    "saldos": 6,
+    "movimientos": 6,
+    "ciclos": 1,
+    "deudas": 1,
+    "presupuestos": 1,
+    "referencias": 2,
+    "instrumentos": 1,
+    "operaciones_inversion": 1,
+    "payroll": 0,
+    "fichas_compartidos": 0
+  },
+  "empty_tables": [
+    "cierres",
+    "fotos_periodo",
+    "fotos_cierre",
+    "payroll",
+    "participantes_compartido"
+  ],
+  "logical_checksums": {
+    "saldos": "<sha256 de la proyección estable de saldos>",
+    "movimientos": "<sha256 de la proyección estable de movimientos>",
+    "referencias": "<sha256 de la proyección estable de referencias>",
+    "counters": "<sha256 de los contadores>",
+    "schema_version": "<sha256 de la versión>"
+  },
+  "excluded_from_hash": {
+    "tables": [
+      "auth_events",
+      "auth_limits",
+      "bootstrap",
+      "challenges",
+      "idempotency",
+      "owner",
+      "recovery",
+      "sessions"
+    ],
+    "table_patterns": [
+      "*_attempts"
+    ],
+    "columns": [
+      "actualizado",
+      "actualizado_en",
+      "creado",
+      "creado_en",
+      "instante",
+      "key_hash"
+    ]
+  },
+  "created_at": "2025-12-31T12:00:00.000Z"
+}
