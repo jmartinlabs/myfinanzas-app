@@ -1068,13 +1068,32 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
   );
 }
 
+export function AnnulSaleMotivo({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+}) {
+  return (
+    <Field id="motivo" label="Motivo *" className="ui-form-span" error={error}>
+      <input value={value} onChange={onChange} required />
+    </Field>
+  );
+}
+
 export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }) {
   const [data, setData] = useState<any>(null),
     [impact, setImpactState] = useState<Impact | null>(null),
     [motivo, setMotivo] = useState(""),
     [error, setError] = useState(""),
     [details, setDetails] = useState<Record<string, unknown> | null>(null),
-    [busy, setBusy] = useState(false);
+    [fields, setFields] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(false),
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true;
     api(`/ventas/${id}`)
@@ -1096,12 +1115,19 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
         }),
       );
     } catch (value) {
-      const apiError = value as ApiError;
-      setError(apiError.message);
-      setDetails(apiError.data ?? null);
+      fail(value);
     } finally {
       setBusy(false);
     }
+  }
+  function fail(value: unknown) {
+    const apiError = value as ApiError;
+    setError(apiError.message);
+    setDetails(apiError.data ?? null);
+    setFields(apiError.fields ?? {});
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
   }
   async function confirm() {
     if (!data || !motivo.trim()) return;
@@ -1113,9 +1139,7 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
       });
       go(`${BASE}/ventas/${result.venta.id}`);
     } catch (value) {
-      const apiError = value as ApiError;
-      setError(apiError.message);
-      setDetails(apiError.data ?? null);
+      fail(value);
     } finally {
       setBusy(false);
     }
@@ -1143,52 +1167,55 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
         description="El registro se conserva como Anulada; no se borra"
       />
       {error && (
-        <Alert>
-          {error}
-          {details && details.minimo ? (
-            <p className="help">
-              Disponible {String(details.disponible)} · necesario{" "}
-              {String(details.necesario)} · mínimo {String(details.minimo)} ·{" "}
-              {String(details.fecha)}. El borrador se conserva; no hay override.
-            </p>
-          ) : null}
-        </Alert>
+        <div ref={alert} tabIndex={-1} className="focus-alert">
+          <Alert>
+            {error}
+            {details && details.minimo ? (
+              <p className="help">
+                Disponible {String(details.disponible)} · necesario{" "}
+                {String(details.necesario)} · mínimo {String(details.minimo)} ·{" "}
+                {String(details.fecha)}. El borrador se conserva; no hay override.
+              </p>
+            ) : null}
+          </Alert>
+        </div>
       )}
       {impact && <ImpactPanel impact={impact} />}
-      <FormSection title="Anulación">
-        <FormGrid>
-          <Field id="motivo" label="Motivo *" className="ui-form-span">
-            <input
+      <div ref={formRef}>
+        <FormSection title="Anulación">
+          <FormGrid>
+            <AnnulSaleMotivo
               value={motivo}
+              error={fields.motivo}
               onChange={(event) => {
                 setMotivo(event.target.value);
                 setError("");
+                setFields((current) => ({ ...current, motivo: "" }));
               }}
-              required
             />
-          </Field>
-        </FormGrid>
-        <p className="help">
-          Revisión actual {data.venta.revision} → se guardará{" "}
-          {data.venta.revision + 1}. La Venta anulada deja de computar en efectivo,
-          cantidad y referencia temporal.
-        </p>
-        <div className="form-footer">
-          {!impact ? (
-            <button className="primary" onClick={review} disabled={busy}>
-              {busy ? "Calculando…" : "Ver impacto de anulación"}
-            </button>
-          ) : (
-            <button
-              className="primary"
-              onClick={confirm}
-              disabled={busy || !motivo.trim()}
-            >
-              {busy ? "Anulando…" : "Anular venta"}
-            </button>
-          )}
-        </div>
-      </FormSection>
+          </FormGrid>
+          <p className="help">
+            Revisión actual {data.venta.revision} → se guardará{" "}
+            {data.venta.revision + 1}. La Venta anulada deja de computar en
+            efectivo, cantidad y referencia temporal.
+          </p>
+          <div className="form-footer">
+            {!impact ? (
+              <button className="primary" onClick={review} disabled={busy}>
+                {busy ? "Calculando…" : "Ver impacto de anulación"}
+              </button>
+            ) : (
+              <button
+                className="primary"
+                onClick={confirm}
+                disabled={busy || !motivo.trim()}
+              >
+                {busy ? "Anulando…" : "Anular venta"}
+              </button>
+            )}
+          </div>
+        </FormSection>
+      </div>
     </>
   );
 }
