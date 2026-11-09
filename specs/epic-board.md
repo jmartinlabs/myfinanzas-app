@@ -2042,8 +2042,9 @@ instrucción del usuario, sin auto-resume.
 - **E4.9 `50265bb` (#331):** AC-07/12/13/15/16/18/21 con evidencia de fixtures API;
   testplan reconciliado; sin defectos de producto; AC-09 parcial y DT6 abierto.
 - **E4.10 `c335ad0` (#333):** regresión cruzada cierre→reapertura→rectificación T1→v2,
-  idempotencia y rollback; 23 PASS (fixtures) y AC15 PARCIAL, sin aceptación global.
-- **CI:** full PASS final en `#331` (`42695177366`), `#332` (`42673170435`), `#333`
+  idempotencia y rollback; 23 PASS (fixtures, desde #291) y AC15 PARCIAL, sin aceptación
+  global.
+- **CI:** full PASS final en `#331` (`42695177366`), `#332` (`42679709188`), `#333`
   (`42680773106`) y `#334` (`42690200042`); hicieron falta reruns por flakes E2E ajenos.
 - **Defectos de producto:** solo la falta de trazabilidad visual de cifras en E4.7,
   corregida; el resto son huecos de prueba, no defectos.
