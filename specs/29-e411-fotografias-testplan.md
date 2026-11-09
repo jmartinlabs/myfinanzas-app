@@ -137,8 +137,9 @@ Los fixtures no acreditan DT6 ni DT7.
 ## Enmienda AC09 — claves obligatorias y ausencias `[PROPUESTA]`
 
 `[PROPUESTA]` Enmienda documental que desarrolla
-[SPEC29 §18](29-e411-fotografias-specification.md). No está aprobada, no cambia los
-estados de la matriz, no declara aceptación y no autoriza DEV. Mantiene AC09 en
+[SPEC29 §18](29-e411-fotografias-specification.md) y corrige las reservas QA de #315
+(F1–F8). Base: `test` `17b14bf`. No está aprobada, no cambia los estados de la matriz,
+no declara aceptación y no autoriza DEV. Mantiene AC09 en
 `PARCIAL (fixtures) · BLOCKED real`; no toca AC07 ni E4.2.
 
 ### Casos propuestos (`UNRUN`)
@@ -147,10 +148,37 @@ estados de la matriz, no declara aceptación y no autoriza DEV. Mantiene AC09 en
 | --- | --- | --- | --- |
 | AC09-A | Foto con un bloque `null` en `cobertura.totales` y una entrada `null` en `noDisponible`; generar agregado y consultar. | Cobertura: `"<bloque>: Bloque no disponible en la foto"`; `noDisponible[]` con `codigoAusencia:"NULO_EXPLICITO"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; la parte de cobertura ya tiene evidencia con fixtures, pero no es PASS de aceptación. |
 | AC09-B | Foto sin una clave canónica de `cobertura.totales`; generar agregado y consultar. | Motivo `"<bloque>: Bloque ausente en la foto"`; sin entrada propia en `noDisponible[]`; `totalPeriodo:null`; sin `0`. | `UNRUN`; requiere cambio de producto. |
-| AC09-C | Foto con objeto de `noDisponible` no `Completo` sin `motivo`; generar agregado. | Motivo `"Motivo no informado en la foto"`; `noDisponible[]` con `codigoAusencia:"MOTIVO_AUSENTE"`; `totalPeriodo:null`. | `UNRUN`; requiere cambio de producto. |
-| AC09-D | Foto o agregado sin `noDisponible`/`no_disponible`; consultar. | Entrada centinela `bloque:"no_disponible"` con `codigoAusencia:"NO_DISPONIBLE_AUSENTE"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; requiere cambio de producto. |
+| AC09-C | Foto con objeto `No disponible`/`NoDisponible` de `noDisponible` sin `motivo`; generar agregado. | Motivo `"Motivo no informado en la foto"`; `noDisponible[]` con `codigoAusencia:"MOTIVO_AUSENTE"`; `totalPeriodo:null`. | `UNRUN`; requiere cambio de producto. |
+| AC09-C2 | Foto con objeto `Parcial` sin `motivo` en `cobertura.totales` o en `noDisponible`; generar agregado. | Se declara en `cobertura.bloques[].motivos`; no se emite en `noDisponible[]` ni se convierte en `No disponible`; `totalPeriodo:null`. | `UNRUN`; requiere cambio de producto. |
+| AC09-D1 | Foto sin `noDisponible` al crear un agregado nuevo. | Entrada centinela `bloque:"no_disponible"` con `codigoAusencia:"NO_DISPONIBLE_AUSENTE"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; requiere cambio de producto. |
+| AC09-D2 | Foto con `noDisponible:null` al crear un agregado nuevo. | Entrada centinela `bloque:"no_disponible"` con `codigoAusencia:"NULO_EXPLICITO"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; requiere cambio de producto. |
 | AC09-E | Foto con todos los bloques `Completo`, sin regla aditiva aprobada. | `cobertura.totalPeriodo:null`, `valores.totalPeriodo:null` y `motivoTotal:"SIN_REGLA_ADITIVA"`; no se certifica total. | `UNRUN`; no introduce una regla financiera. |
 | AC09-F | Cambiar T2/T3 o un motor vivo después de la foto; consultar el agregado anterior. | El agregado no cambia; ningún bloque ausente se completa desde el motor vivo. | `UNRUN`; refuerza AC01/AC09 sin reutilizar su evidencia. |
+| AC09-G | Foto E4.10 v2 con `auxiliares.anticipos`, `auxiliares.compartidos`, `auxiliares.nomina`, `auxiliares.revisionComida` o `auxiliares.deuda` en `noDisponible`; generar agregado. | Las claves no canónicas se conservan con su `bloque`, `estado` y `motivo`; no se descartan al iterar el conjunto canónico. | `UNRUN`; F1. |
+| AC09-H | Leer un agregado persistido con `no_disponible` SQL `NULL` o JSON `null`. | El DTO devuelve `noDisponible:[]`; no se inyecta centinela, no se reescribe la fila, no se recalcula y el total sigue `null`. | `UNRUN`; F3; no confundir con un agregado nuevo. |
+| AC09-I | Periodo con un ciclo incluido y dos excluidos (sin cierre y pendiente de re-cierre). | `cobertura.bloques[]` tiene tres entradas, una por ciclo, con estado/motivo de cada uno; no solo el incluido. | `UNRUN`; F4; coherente con AC08. |
+| AC09-J | `noDisponible` con una entrada con motivo persistido y otra sintética. | La persistida conserva motivo/estado sin `codigoAusencia`; la sintética lleva el código que corresponda; no se mezclan. | `UNRUN`; F5. |
+
+### Impacto en pruebas existentes de #300 (F2)
+
+`[PROPUESTA]` La regla «`noDisponible` ausente/null → entrada centinela» cambia la
+expectativa de #300. No se editan pruebas aquí; se enumeran para el cambio de
+producto/QA:
+
+- `apps/api/src/e411-periodo.test.ts`, prueba
+  `E4.11 I3 AC09: bloque null en totales conserva motivo y no sintetiza 0`: la afirmación
+  `expect(periodo.noDisponible).toEqual([])` (QA #315 cita línea 533; en el árbol actual es
+  la línea 655) pasa a esperar la entrada centinela `bloque:"no_disponible"` con
+  `codigoAusencia:"NULO_EXPLICITO"` en un agregado nuevo.
+- `apps/api/src/e411-periodo.test.ts`, prueba
+  `E4.11 I3 AC09: cobertura y no_disponible null declaran el bloque NoDisponible con motivo`:
+  la misma afirmación `noDisponible:[]` (QA #315 cita línea 573; actual línea 695) cambia
+  igual.
+- El ejemplo mínimo de §6.2 (`"noDisponible": []`) no es el contrato completo de AC09; §18
+  prevalece (F8).
+- Cualquier fixture o aserción de un **agregado nuevo** que espere `noDisponible:[]` debe
+  revisarse. La lectura de un **agregado persistido antiguo** con `no_disponible NULL`
+  sigue devolviendo `[]` (AC09-H).
 
 ### Límite de la enmienda
 
@@ -159,6 +187,6 @@ estados de la matriz, no declara aceptación y no autoriza DEV. Mantiene AC09 en
 - La corrección de producto se aplicaría **solo a agregados nuevos**; no se reescriben
   fotos E4.9/E4.10 ni `fotos_periodo` existentes.
 - Los agregados antiguos que no distingan los casos conservan su JSON y siguen `Parcial`
-  sin certificar total.
-- AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; los casos A–F quedan `UNRUN` hasta que
+  sin certificar total; `no_disponible NULL` se normaliza a `[]` solo en lectura.
+- AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; los casos A–J quedan `UNRUN` hasta que
   exista producto autorizado y QA independiente.
