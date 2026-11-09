@@ -2021,13 +2021,20 @@ describe("IDs PAR en la creación de items", () => {
 /**
  * Conformidad E4.5 — pruebas P-01…P-14 de la revisión estática motor↔SPEC20.
  *
- * Fase diagnóstica: las 14 familias reprodujeron el defecto con fixtures
- * sintéticos. Se activan las correcciones ya acreditadas
- * (H-01/H-02/H-03/H-04/H-05/H-06/H-07/H-08/H-10/H-11/H-12/H-14a/b).
- * H-09 (conflictos globales copiados a `item.conflictos`), H-13 (ejercicios
- * 1–99) y el residual de `fuenteId` en aperturas quedan documentados para
- * decisión, sin `skip` ni relajación de aserciones existentes. El caso mixto
- * de filas fuera de `intervalosArchivo` queda fijado por F2e.
+ * Correcciones acreditadas: H-01/H-02/H-03/H-04/H-05/H-06/H-07/H-08/H-10/H-11/
+ * H-12/H-13/H-14a/b, ampliación de H-01 a registros de archivo (H-01c) y
+ * comportamiento de atribución fuera de `intervalosArchivo` (P-01a/P-01b).
+ *
+ * Diagnóstico sin contradicción demostrada con SPEC20 (no se cambia producto):
+ * - H-09: SPEC20 solo contrata `conflictos[]` global y cada conflicto incluye
+ *   `partidaId`; no exige copiar conflictos de identidad/versión a
+ *   `items[].conflictos`, y la Partida afectada sigue siendo identificable.
+ * - `fuenteId` en `AperturaHistorica`: SPEC20 excluye las aperturas de la
+ *   cobertura/corte de Gastos y no exige que su fuente esté en `fuentes[]`;
+ *   la exención no omite ningún límite duro de atribución.
+ *
+ * Sin `skip` ni relajación de aserciones existentes. El caso mixto de filas
+ * fuera de `intervalosArchivo` queda fijado por F2e.
  */
 describe("Conformidad E4.5 · P-01…P-14", () => {
   test("P-02: un registro fuera del corteArchivo de su fuente no se suma sin atribución", () => {
@@ -2623,5 +2630,181 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
         importe: "50.00",
       }),
     );
+  });
+
+  test("P-01a: sin intervalosArchivo declarados, un registro dentro del corte no inventa cobertura", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    // Sin `intervalosArchivo` no hay tramo que excluya la fila, pero la
+    // presencia de una fila tampoco inventa cobertura ni un total certificado.
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.estadoCobertura).toBe("NoDisponible");
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBe("100.00");
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("P-01b: con intervalosArchivo declarados, un registro dentro del corte pero fuera de los tramos no se atribuye", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(resultado.agregadoNoAtribuible).toContainEqual(
+      expect.objectContaining({
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        importe: "100.00",
+      }),
+    );
+  });
+
+  test("H-13: un ejercicio 1–99 usa fechas civiles reales, sin la coerción a 1900+", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ejercicio: 50,
+      corte: "0050-12-31",
+      hoy: "0051-01-15",
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "0050-01-01", fin: "0050-12-31" },
+        },
+      ]),
+      fuentes: [
+        fuente({
+          corteArchivo: "0050-12-31",
+          intervalosArchivo: [archivo("0050-01-01", "0050-12-31")],
+          controlDetalle: null,
+        }),
+      ],
+      registros: [
+        registro("AH001", {
+          ejercicio: 50,
+          intervalo: { inicio: "0050-01-01", fin: "0050-12-31" },
+          importeCentimos: "10000",
+        }),
+      ],
+      movimientos: [],
+    });
+
+    expect(resultado.ejercicio).toBe(50);
+    expect(item(resultado).archivo).toBe("100.00");
+    expect(item(resultado).total).toBe("100.00");
+    expect(resultado.totales.valor).toBe("100.00");
+    expect(
+      huecosDeCobertura(
+        [{ inicio: "0050-01-01", fin: "0050-01-30" }],
+        "0050-01-01",
+        "0050-02-28",
+      ),
+    ).toEqual([{ inicio: "0050-01-31", fin: "0050-02-28" }]);
+  });
+
+  test("H-13b: el año 0000 se rechaza y los límites 1 y 99 son fechas civiles", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({ corte: "0000-12-31", hoy: "0001-01-15" }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+    for (const anio of [1, 99]) {
+      const y = String(anio).padStart(4, "0");
+      const resultado = combinarHistoricoPrecontrol({
+        ejercicio: anio,
+        corte: `${y}-12-31`,
+        hoy: `${y}-12-31`,
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-1",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: `${y}-01-01`, fin: `${y}-12-31` },
+          },
+        ]),
+        fuentes: [
+          fuente({
+            corteArchivo: `${y}-12-31`,
+            intervalosArchivo: [archivo(`${y}-01-01`, `${y}-12-31`)],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            ejercicio: anio,
+            intervalo: { inicio: `${y}-01-01`, fin: `${y}-12-31` },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      });
+      expect(resultado.ejercicio).toBe(anio);
+      expect(item(resultado).total).toBe("100.00");
+    }
+  });
+
+  // Alcance: Partida fuera del universo. Un registro posterior al corte de una Partida
+  // ya declarada sigue siendo agregado no atribuible y bloquea su total (SPEC20).
+  test("H-01c: un registro de archivo posterior al corte no contamina el universo del corte", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH999", {
+            partidaId: "PAR999",
+            intervalo: { inicio: "2026-12-01", fin: "2026-12-31" },
+            importeCentimos: "9999",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(resultado.items.map((actual) => actual.partidaId)).toEqual(["PAR100"]);
+    expect(resultado.sinClasificar).toEqual([]);
+    expect(resultado.totales.valor).toBe("0.00");
+    expect(resultado.totales.estadoTotal).toBe("Verificado");
+    expect(resultado.totales.motivoCodigo).not.toBe("MappingPendiente");
   });
 });
