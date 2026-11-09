@@ -87,6 +87,18 @@ export type KeyboardStop = {
   boxShadow: string;
   ringVisible: boolean;
   ringRatio: number | null;
+  focus: boolean;
+  focusVisible: boolean;
+  inputType: string | null;
+  /**
+   * Chromium dirige el foco al segmento interno del control nativo
+   * `input[type=date]`: `document.activeElement` sigue siendo el input, pero
+   * ni `:focus` ni `:focus-visible` coinciden y el anillo del host no se
+   * aplica. No es corregible desde CSS del documento; I4 lo aísla como
+   * excepción explícita y verifica aparte que el host sí dibuja anillo al
+   * enfocarse de forma normal.
+   */
+  nativeDateShadowFocus: boolean;
 };
 
 export type KeyboardReport = {
@@ -622,6 +634,13 @@ export async function auditKeyboard(
             parseFloat(style.outlineWidth) > 0) ||
           style.boxShadow !== "none",
         ringRatio,
+        focus: el.matches(":focus"),
+        focusVisible: el.matches(":focus-visible"),
+        inputType: el instanceof HTMLInputElement ? el.type : null,
+        nativeDateShadowFocus:
+          el instanceof HTMLInputElement &&
+          el.type === "date" &&
+          !el.matches(":focus"),
       } as const;
     });
     if ("done" in stop && stop.done) break;
@@ -642,6 +661,10 @@ export async function auditKeyboard(
       boxShadow: stop.boxShadow,
       ringVisible: stop.ringVisible,
       ringRatio: stop.ringRatio,
+      focus: stop.focus,
+      focusVisible: stop.focusVisible,
+      inputType: stop.inputType,
+      nativeDateShadowFocus: stop.nativeDateShadowFocus,
     });
   }
   if (stops.length >= max) trapped = true;
