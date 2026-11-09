@@ -133,3 +133,32 @@ Los fixtures no acreditan DT6 ni DT7.
   cobertura pendiente de AC15; capturas 390/1440 no versionadas; y la validación con datos
   reales. AC01/AC02/AC08/AC15 ya no tienen reserva funcional con fixtures. El veredicto de
   aceptación corresponde al usuario/QA.
+
+## Enmienda AC09 — claves obligatorias y ausencias `[PROPUESTA]`
+
+`[PROPUESTA]` Enmienda documental que desarrolla
+[SPEC29 §18](29-e411-fotografias-specification.md). No está aprobada, no cambia los
+estados de la matriz, no declara aceptación y no autoriza DEV. Mantiene AC09 en
+`PARCIAL (fixtures) · BLOCKED real`; no toca AC07 ni E4.2.
+
+### Casos propuestos (`UNRUN`)
+
+| Caso | Precondición y acción | Resultado esperado | Límite |
+| --- | --- | --- | --- |
+| AC09-A | Foto con un bloque `null` en `cobertura.totales` y una entrada `null` en `noDisponible`; generar agregado y consultar. | Cobertura: `"<bloque>: Bloque no disponible en la foto"`; `noDisponible[]` con `codigoAusencia:"NULO_EXPLICITO"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; la parte de cobertura ya tiene evidencia con fixtures, pero no es PASS de aceptación. |
+| AC09-B | Foto sin una clave canónica de `cobertura.totales`; generar agregado y consultar. | Motivo `"<bloque>: Bloque ausente en la foto"`; sin entrada propia en `noDisponible[]`; `totalPeriodo:null`; sin `0`. | `UNRUN`; requiere cambio de producto. |
+| AC09-C | Foto con objeto de `noDisponible` no `Completo` sin `motivo`; generar agregado. | Motivo `"Motivo no informado en la foto"`; `noDisponible[]` con `codigoAusencia:"MOTIVO_AUSENTE"`; `totalPeriodo:null`. | `UNRUN`; requiere cambio de producto. |
+| AC09-D | Foto o agregado sin `noDisponible`/`no_disponible`; consultar. | Entrada centinela `bloque:"no_disponible"` con `codigoAusencia:"NO_DISPONIBLE_AUSENTE"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; requiere cambio de producto. |
+| AC09-E | Foto con todos los bloques `Completo`, sin regla aditiva aprobada. | `cobertura.totalPeriodo:null`, `valores.totalPeriodo:null` y `motivoTotal:"SIN_REGLA_ADITIVA"`; no se certifica total. | `UNRUN`; no introduce una regla financiera. |
+| AC09-F | Cambiar T2/T3 o un motor vivo después de la foto; consultar el agregado anterior. | El agregado no cambia; ningún bloque ausente se completa desde el motor vivo. | `UNRUN`; refuerza AC01/AC09 sin reutilizar su evidencia. |
+
+### Límite de la enmienda
+
+- La enmienda es **documental**: no implementa la iteración del conjunto canónico, el campo
+  `codigoAusencia` ni los cambios de UI/tests.
+- La corrección de producto se aplicaría **solo a agregados nuevos**; no se reescriben
+  fotos E4.9/E4.10 ni `fotos_periodo` existentes.
+- Los agregados antiguos que no distingan los casos conservan su JSON y siguen `Parcial`
+  sin certificar total.
+- AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; los casos A–F quedan `UNRUN` hasta que
+  exista producto autorizado y QA independiente.

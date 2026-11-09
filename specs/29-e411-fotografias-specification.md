@@ -496,3 +496,238 @@ contrato de foto E4.9. **E4.2** no tiene cobertura en ese contrato y queda como 
 | Pérdida de trazabilidad de versión | Exigir versión, corte, fingerprint y referencia a la foto de ciclo; selector visible. |
 | Confusión con E4.7 | Frontera documental: E4.11 aporta evidencia; E4.7 decide métricas y comparación. |
 | DT9 por la puerta trasera | Solo lectura; DT9 en SPEC aparte y aprobación explícita. |
+
+---
+
+## 18. Enmienda propuesta — claves obligatorias y ausencias de AC09 (2026-11-09)
+
+`[PROPUESTA]` Enmienda mínima de AC09 para fijar el conjunto canónico de bloques de la
+foto E4.9 y la semántica de sus ausencias en el agregado E4.11. **No está aprobada**, no
+modifica el estado `APROBADA` de esta SPEC, no reabre M1–M6, no toca AC07 ni E4.2 y no
+autoriza DEV, migración, commit de producto ni merge. Base: `test` `ba24c29`; la reserva
+vigente de AC09 es «clave ausente» (`PARCIAL (fixtures)`).
+
+### 18.1 Motivo y límites
+
+- `[CONFIRMADO]` AC09 exige `Parcial`/`NoDisponible` con motivo por bloque y que ningún
+  total parcial se declare completo ni se sustituya por `0` (SPEC29 §14).
+- `[CONFIRMADO]` La foto E4.9 se lee sin transformar; E4.11 no rellena sus bloques desde
+  motores vivos (SPEC27; SPEC29 §2).
+- `[PROPUESTA]` La ejecución actual distingue `null` dentro de un bloque, pero no una
+  **clave ausente** del conjunto canónico ni un bloque objeto sin `motivo`; si falta
+  `noDisponible`, el agregado puede devolver `[]` sin declarar la ausencia. Esta enmienda
+  fija esos cuatro casos.
+
+No se define aquí ninguna regla financiera, total de periodo, prorrateo, versión o
+composición nueva. Tampoco se añade E4.2: sigue como cobertura pendiente en los términos
+aprobados el 2026-11-08.
+
+### 18.2 Conjunto canónico de bloques
+
+`[PROPUESTA]` El conjunto canónico de AC09 es el que la foto E4.9 emite en
+`cobertura.totales` y `noDisponible`. Los demás bloques de la foto (identidad, ventana,
+hechos, plan, clasificación/referencias, inversión, auxiliares y backup) se rigen por
+SPEC27 y no se reinterpretan aquí. `[CONFIRMADO]` Los bloques de nivel foto —identidad,
+ventana, hechos, plan, clasificación/referencias, inversión, auxiliares, cobertura, backup
+y no disponible— son obligatorios para que exista una foto según SPEC27; esta enmienda no
+los redefine y solo detalla los dos mapas que AC09 evalúa.
+
+**Bloques de cobertura** (`cobertura.totales`; ocho claves obligatorias en fotos nuevas):
+
+| Clave | Contenido | Obligatorio |
+| --- | --- | --- |
+| `movimientos` | Hechos/Movimientos y totales | Sí |
+| `efectivo` | Inversión E4.1: efectivo a `Fin` | Sí |
+| `posiciones` | Inversión E4.1: posiciones a `Fin` | Sí |
+| `plan` | Plan final o `SinPlan` | Sí |
+| `e35` | E3.5/FIN_NETA verificable | Sí |
+| `deuda` | Deuda E1.6 (auxiliar) | Sí |
+| `valoracion` | E4.3 valoración/patrimonio | Sí |
+| `anticipos` | Anticipos (auxiliar) | Sí |
+
+**Bloques no disponibles** (`noDisponible`; claves canónicas que deben declararse cuando
+el bloque no está capturado):
+
+| Clave | Ámbito | Obligatorio |
+| --- | --- | --- |
+| `valoracion` | E4.3 | Sí, cuando el bloque no está disponible |
+| `deudaCompleta` | E4.4 conciliaciones de Deuda | Sí, cuando el bloque no está disponible |
+| `conciliaciones` | E4.4 conciliaciones | Sí, cuando el bloque no está disponible |
+
+`[PROPUESTA]` Reglas del conjunto:
+
+1. En una foto **nueva**, `cobertura` y `cobertura.totales` son objetos obligatorios y
+   las ocho claves anteriores existen con valor objeto `{ estado, motivo }`; `noDisponible`
+   es un objeto obligatorio (puede ser `{}` si no hay bloques no disponibles).
+2. `deuda` y `deudaCompleta` son claves distintas: no se igualan, no se suman y no se
+   sustituyen entre sí.
+3. Una clave adicional encontrada en una foto histórica (por ejemplo `hechos`) no es
+   canónica, pero si está presente y no es `Completo` se declara con motivo; no se ignora
+   ni se convierte en `0`.
+4. E4.2 no forma parte de este conjunto: no se crea una clave de Ventas ni se presume su
+   ausencia. La cobertura pendiente de E4.2 se mantiene fuera de AC09.
+
+### 18.3 Semántica de los cuatro casos de ausencia
+
+`[PROPUESTA]` La foto tiene dos mapas distintos y no se confunden: `cobertura.totales`
+(las ocho claves siempre presentes en fotos nuevas) y `noDisponible` (claves que solo
+aparecen cuando el bloque no está capturado). El agregado los proyecta a
+`cobertura.bloques[].motivos` y `noDisponible[]`, respectivamente.
+
+**A. `cobertura.totales` — claves obligatorias**
+
+| Caso | Detección en la foto | `cobertura.bloques[].motivos` | `noDisponible[]` |
+| --- | --- | --- | --- |
+| **Null explícito** | La clave existe con valor `null` (o no objeto) | `"<bloque>: Bloque no disponible en la foto"` | Sin entrada propia; si la foto también lo declara en `noDisponible`, se rige por B. |
+| **Clave ausente** | La clave canónica no existe | `"<bloque>: Bloque ausente en la foto"` | Sin entrada propia. |
+| **Objeto sin `motivo`** | Existe objeto, `estado !== "Completo"` y `motivo` ausente, `null` o no textual | `"<bloque>: Motivo no informado en la foto"` | Sin entrada propia. |
+| **Completo** | `estado === "Completo"` | Sin motivo. | Sin entrada. |
+
+**B. `noDisponible` — bloques no capturados**
+
+| Caso | Detección en la foto | `noDisponible[]` | `codigoAusencia` |
+| --- | --- | --- | --- |
+| **Null explícito** | La clave existe con valor `null` (o no objeto) | Entrada `{bloque, estado:"No disponible", motivo:"Bloque no disponible en la foto"}` | `NULO_EXPLICITO` |
+| **Objeto sin `motivo`** | Existe objeto y `motivo` ausente, `null` o no textual | Entrada `{bloque, estado, motivo:"Motivo no informado en la foto"}` | `MOTIVO_AUSENTE` |
+| **`noDisponible` ausente** | La foto (o el agregado persistido) no tiene la clave `noDisponible`/`no_disponible` | Entrada centinela `bloque:"no_disponible"`, `estado:"No disponible"`, motivo `"No disponible ausente en la foto"` | `NO_DISPONIBLE_AUSENTE` |
+| **`noDisponible: null`** | La clave existe con `null` | Entrada centinela `bloque:"no_disponible"`, `estado:"No disponible"`, motivo `"No disponible nulo en la foto"` | `NULO_EXPLICITO` |
+| **Entrada con motivo** | Objeto con `motivo` textual no vacío | Entrada que conserva ese motivo. | Opcional/`null`. |
+| **Contenedor vacío** | `noDisponible: {}` | Sin entradas. | — |
+
+Notas:
+
+- Una clave canónica **ausente** de `noDisponible` no es un error por sí misma: ese mapa
+  solo enumera bloques no capturados. No se sintetiza `No disponible` por su ausencia.
+- Una clave ausente de `cobertura.totales` sí es un error de evidencia, porque en fotos
+  nuevas las ocho claves son obligatorias; se declara con `"Bloque ausente en la foto"`.
+- Si falta `cobertura` o `cobertura.totales`, el ciclo se declara en
+  `cobertura.bloques[]` con el estado que declare la foto (o `"NoDisponible"` si no puede
+  leerse) y motivo `"Cobertura no disponible en la foto"`; no se inventan claves ni
+  motivos por bloque que la foto no permita identificar.
+- Un objeto con `motivo` textual no vacío conserva ese motivo; no se sustituye por los
+  textos anteriores.
+
+### 18.4 Representación esperada en el DTO
+
+`[PROPUESTA]` El agregado nuevo (P2-A) expone:
+
+```json
+{
+  "cobertura": {
+    "estado": "Parcial",
+    "motivos": ["SIN_REGLA_ADITIVA"],
+    "totalPeriodo": null,
+    "bloques": [
+      {
+        "ciclo": "C-2026-10",
+        "versionFoto": 1,
+        "estado": "Parcial",
+        "motivos": [
+          "plan: Motivo no informado en la foto",
+          "posiciones: Bloque ausente en la foto"
+        ]
+      }
+    ]
+  },
+  "valores": {
+    "totalPeriodo": null,
+    "motivoTotal": "SIN_REGLA_ADITIVA",
+    "porCiclo": []
+  },
+  "noDisponible": [
+    {
+      "ciclo": "C-2026-10",
+      "versionFoto": 1,
+      "bloque": "valoracion",
+      "estado": "No disponible",
+      "motivo": "Bloque no disponible en la foto",
+      "codigoAusencia": "NULO_EXPLICITO"
+    },
+    {
+      "ciclo": "C-2026-10",
+      "versionFoto": 1,
+      "bloque": "conciliaciones",
+      "estado": "No disponible",
+      "motivo": "Motivo no informado en la foto",
+      "codigoAusencia": "MOTIVO_AUSENTE"
+    }
+  ]
+}
+```
+
+Reglas:
+
+1. `noDisponible` es siempre un array en el DTO (nunca `null` ni ausente).
+2. `cobertura.bloques[]` conserva una entrada por ciclo incluido, no una por bloque; sus
+   `motivos[]` enumeran los bloques canónicos no completos o ambiguos.
+3. `codigoAusencia` pertenece a las entradas de `noDisponible[]`: es opcional cuando la
+   entrada conserva un motivo persistido y es obligatorio en las filas de §18.3.B. Valores
+   propuestos: `NULO_EXPLICITO`, `MOTIVO_AUSENTE` y `NO_DISPONIBLE_AUSENTE`. El caso de
+   clave ausente se distingue en `cobertura.bloques[].motivos` por el texto
+   `"Bloque ausente en la foto"` y no produce `codigoAusencia`, porque el bloque no existe
+   en el mapa `noDisponible`. No es un estado financiero.
+4. `motivo` es texto no vacío en agregados nuevos. `null` solo puede aparecer al leer datos
+   históricos persistidos; la UI lo rotula como motivo no informado y no lo interpreta
+   como completo ni como `0`.
+5. `valores.motivoTotal` es `"SIN_REGLA_ADITIVA"` siempre que `valores.totalPeriodo` sea
+   `null`. No se autoriza otro valor en esta enmienda.
+
+### 18.5 Invariantes
+
+`[PROPUESTA]` Para todo agregado nuevo:
+
+1. **Total no certificado.** `cobertura.totalPeriodo` y `valores.totalPeriodo` son `null`
+   si la cobertura no es completa. Mientras no exista una regla aditiva aprobada, también
+   son `null` con cobertura completa; esta enmienda no crea esa regla.
+2. **Estado.** El agregado conserva el mapeo actual de §7: `Parcial` con al menos un ciclo
+   incluido y `NoDisponible` sin evidencia. Esta enmienda no introduce `Completo` ni una
+   regla aditiva; si en el futuro se emite `Completo`, el total seguirá `null` hasta que
+   una enmienda apruebe la regla aditiva.
+3. **Motivo por bloque.** Todo bloque canónico no `Completo`, nulo, ausente o sin motivo
+   produce al menos un motivo en su mapa correspondiente: `cobertura.bloques[].motivos` o
+   `noDisponible[]`. Un estado `Parcial` sin motivo identificable se declara con
+   `"Estado de cobertura no completo sin motivo"`.
+4. **Ausencia ≠ 0.** Ningún importe, total, contador o estado ausente se representa como
+   `0`, `"0"`, array vacío o `{}` para simular evidencia. `noDisponible:[]` solo es válido
+   en un agregado nuevo si la foto declara `noDisponible:{}` y todos los bloques canónicos
+   son `Completo`.
+5. **Sin motor vivo.** El agregado no consulta motores vivos, precierre ni archivo para
+   completar un bloque ausente; si un motor vivo cambia después de la foto, el agregado no
+   cambia.
+6. **Sin recálculo de fotos.** La enmienda no modifica `fotos_cierre` ni fotos E4.9/E4.10.
+
+### 18.6 Alcance de la corrección
+
+`[PROPUESTA]`
+
+| Parte | Tipo | Alcance |
+| --- | --- | --- |
+| Conjunto canónico, semántica, DTO e invariantes | Documental | Esta sección; no cambia la SPEC27 ni el contrato de foto E4.9. |
+| Composición del agregado (`e411-periodo.ts`) | Producto | Debe iterar el conjunto canónico y emitir los cuatro casos; **no implementado**. |
+| Tipos/UI de `/fotos` | Producto | Debe mostrar `codigoAusencia` y motivos; **no implementado**. |
+| Pruebas AC09 de los cuatro casos | Producto/QA | Nuevas, `UNRUN`; **no implementadas**. |
+| Fotos y agregados ya persistidos | Excluido | No se reescriben, recalculan ni migran; se leen tal cual. |
+| Esquema/DDL | No previsto | JSON del agregado; confirmar en el paquete DEV. |
+
+`[PROPUESTA]` La corrección se aplica **solo a agregados nuevos** creados después de la
+autorización de producto. Un agregado antiguo que no distinga estos casos conserva su JSON,
+sigue `Parcial` y no certifica total; no se rellena desde la foto ni desde un motor vivo.
+No se reescriben fotos E4.9/E4.10 ni `fotos_periodo` existentes.
+
+### 18.7 Casos propuestos para AC09
+
+`[PROPUESTA]` Estos casos amplían AC09 y quedan `UNRUN`; no cambian el estado
+`PARCIAL (fixtures)` ni declaran aceptación.
+
+| Caso | Precondición | Resultado esperado |
+| --- | --- | --- |
+| AC09-A | `cobertura.totales` con un bloque `null`; y `noDisponible` con una entrada `null`. | Cobertura: motivo `"<bloque>: Bloque no disponible en la foto"`; `noDisponible`: motivo y `codigoAusencia:"NULO_EXPLICITO"`; total `null`; sin `0`. |
+| AC09-B | Clave canónica ausente de `cobertura.totales`. | Motivo `"<bloque>: Bloque ausente en la foto"`; sin entrada propia en `noDisponible[]`; total `null`; sin `0`. |
+| AC09-C | Objeto no `Completo` de `noDisponible` sin `motivo`. | Motivo `"Motivo no informado en la foto"`; `codigoAusencia:"MOTIVO_AUSENTE"`; total `null`; sin `0`. |
+| AC09-D | `noDisponible` ausente (o `null`). | Entrada centinela `bloque:"no_disponible"`; `codigoAusencia:"NO_DISPONIBLE_AUSENTE"` (`"NULO_EXPLICITO"` si el contenedor es `null`); total `null`; sin `0`. |
+| AC09-E | Cobertura completa sin regla aditiva | `totalPeriodo:null` y `motivoTotal:"SIN_REGLA_ADITIVA"`; no se certifica total. |
+| AC09-F | Motor vivo cambiado tras la foto | El agregado no cambia; ningún bloque se completa desde el motor vivo. |
+
+`[PROPUESTA]` AC09-A conserva la parte ya cubierta para `cobertura.totales` y añade la
+entrada de `noDisponible`; AC09-B/C/D son la reserva pendiente; AC09-E/F protegen la
+ausencia de regla aditiva y la separación foto/vivo.
