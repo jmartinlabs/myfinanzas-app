@@ -2166,6 +2166,7 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     for (const partidaId of ["PAR100", "PAR200"]) {
       const actual = item(resultado, partidaId);
       expect(actual.estadoTotal).toBe("NoVerificable");
+      expect(actual.archivo).toBeNull();
       expect(actual.total).toBeNull();
       expect(actual.subtotalConocido).toBeNull();
       expect(actual.motivoCodigo).toBe("DuplicadoAmbiguo");
@@ -2177,10 +2178,84 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     expect(resultado.totales.valor).toBeNull();
   });
 
+  test("F2a: un fuenteId desconocido no puede omitir el límite duro", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({
+          registros: [registro("AH001", { fuenteId: "NO-EXISTE" })],
+        }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+  });
+
+  test("F2b: un registro fuera de los intervalosArchivo declarados no suma", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-12-31",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(item(resultado).archivo).toBeNull();
+    expect(item(resultado).total).toBeNull();
+    expect(item(resultado).subtotalConocido).toBeNull();
+    expect(resultado.agregadoNoAtribuible).toContainEqual(
+      expect.objectContaining({
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        importe: "100.00",
+      }),
+    );
+  });
+
+  test("F2c: un registro contenido en intervalosArchivo declarados sí suma", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-12-31",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(item(resultado).archivo).toBe("100.00");
+    expect(item(resultado).total).toBe("100.00");
+    expect(resultado.totales.valor).toBe("100.00");
+  });
+
   test("P-05: un Rechazado único sin cobertura no produce archivo/subtotal 0,00", () => {
     const resultado = combinarHistoricoPrecontrol(
       entrada({
-        fuentes: [],
+        // La fuente existe y está declarada, pero no aporta cobertura: el
+        // `fuenteId` no puede ser inventado y el cero no se acredita.
+        fuentes: [
+          fuente({
+            intervalosArchivo: [],
+            controlDetalle: null,
+          }),
+        ],
         registros: [
           registro("AH001", {
             estadoVerificacion: "Rechazado",

@@ -566,6 +566,13 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
   for (const registro of entrada.registros) {
     exigir(!ids.has(registro.idArchivo), "idArchivo duplicado.");
     ids.add(registro.idArchivo);
+    // Un registro de archivo no puede atribuirse sin una fuente declarada: el
+    // límite duro de esa fuente tampoco puede omitirse por `fuenteId` inventado.
+    if (registro.clase !== "AperturaHistorica")
+      exigir(
+        fuentes.has(registro.fuenteId),
+        `fuenteId no declarado en fuentes[] para ${registro.idArchivo}.`,
+      );
     exigir(
       registro.ejercicio === entrada.ejercicio,
       "Registro de otro ejercicio en la consulta.",
@@ -1154,6 +1161,7 @@ function analizarItem(
 
   let archivo = 0n;
   let archivoConocido = false;
+  let archivoSumado = false;
   let control = 0n;
   let controlConocido = false;
   let precontrolVinculado = 0n;
@@ -1215,6 +1223,38 @@ function analizarItem(
       continue;
     }
 
+    // Si la fuente declara intervalos, el registro debe quedar contenido en
+    // los aplicables a su Partida; si no hay tramo que lo contenga, no acredita
+    // cobertura ni suma. Sin intervalos declarados no hay límite adicional que
+    // imponer aquí. Un `fuenteId` desconocido ya se rechazó en la validación.
+    if (fuenteRegistro && fuenteRegistro.intervalosArchivo.length > 0) {
+      const tramosAplicables = fuenteRegistro.intervalosArchivo
+        .filter((tramo) => tramo.partidaId === partidaId)
+        .filter(
+          (tramo) =>
+            tramo.clase !== "Regularizacion2026" ||
+            entrada.ejercicio === 2026,
+        )
+        .map((tramo) => tramo.intervalo);
+      const contenido = unirIntervalos(tramosAplicables).some(
+        (intervalo) =>
+          intervalo.inicio <= registro.intervalo.inicio &&
+          intervalo.fin >= registro.intervalo.fin,
+      );
+      if (!contenido) {
+        agregados.push({
+          idArchivo: registro.idArchivo,
+          partidaId,
+          intervalo: registro.intervalo,
+          importe: decimal(importe),
+        });
+        bloqueos.push("AgregadoNoAtribuibleAlCorte");
+        subtotalNoSeparable = true;
+        archivoConocido = false;
+        continue;
+      }
+    }
+
     // El corte se comprueba antes de cualquier rama de representación: un
     // agregado fuera del corte no atribuye importe ni entra en el subtotal.
     if (registro.intervalo.inicio < desde || registro.intervalo.fin > hasta) {
@@ -1269,10 +1309,14 @@ function analizarItem(
 
     archivo += importe;
     archivoConocido = true;
+    archivoSumado = true;
     hayHechosCertificados = true;
   }
 
   if (archivo === 0n && hayRegistrosArchivoExcluidos) archivoConocido = false;
+  // Un conflicto de identidad/versión no acredita por sí mismo un cero: sin
+  // ninguna fila sumable, `archivo` queda `null` como `total`/`subtotal`.
+  if (conflictoIdentidad && !archivoSumado) archivoConocido = false;
 
   // Detalle de control y precontrol por fecha y alcance de cada fuente.
   const controles = piezas
