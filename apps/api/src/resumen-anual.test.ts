@@ -9,7 +9,7 @@ import { monthlyFlow } from "./flujo-mensual";
 import { getAnnualPlan, previewAnnualPlan, confirmAnnualPlan, type AnnualProvider } from "./plan-anual";
 import { getDeudaCompleta } from "./deuda-completa";
 import { createDebt } from "./deudas";
-import { resumenAnual } from "./resumen-anual";
+import { resumenAnual, type Metrica } from "./resumen-anual";
 import {
   seedResumenAnualFixture,
   SEED_NOW,
@@ -151,6 +151,55 @@ function addZeroPlanLine(db: Database, partida: string) {
     randomUUID(),
     NOW,
   );
+}
+
+function metricasDelDto(dto: ReturnType<typeof resumenAnual>) {
+  const metricas: { ruta: string; metrica: Metrica }[] = [];
+  dto.carriles.plan.items.forEach((item, index) => {
+    metricas.push({
+      ruta: `plan.items[${index}].ejecutado`,
+      metrica: item.ejecutado,
+    });
+    if (item.diferencia !== null)
+      metricas.push({
+        ruta: `plan.items[${index}].diferencia`,
+        metrica: item.diferencia,
+      });
+  });
+  for (const ciclo of dto.carriles.realidad.ciclos)
+    for (const clave of [
+      "ingresos",
+      "gasto",
+      "extraordinaria",
+      "nomina",
+      "operativo",
+      "margenReal",
+      "margenEstructural",
+    ] as const)
+      metricas.push({
+        ruta: `realidad.${ciclo.cicloId}.${clave}`,
+        metrica: ciclo[clave],
+      });
+  if (dto.carriles.prevision.simulacion !== null)
+    metricas.push({
+      ruta: "prevision.simulacion",
+      metrica: dto.carriles.prevision.simulacion,
+    });
+  return metricas;
+}
+
+function clavesDe(value: unknown, claves = new Set<string>()) {
+  if (Array.isArray(value)) {
+    for (const item of value) clavesDe(item, claves);
+    return claves;
+  }
+  if (value !== null && typeof value === "object") {
+    for (const [clave, item] of Object.entries(value)) {
+      claves.add(clave);
+      clavesDe(item, claves);
+    }
+  }
+  return claves;
 }
 
 test("AC02/03/05/06/17/18: composición exacta contra los motores propietarios", () => {
@@ -566,6 +615,173 @@ test("B2: deuda E4.4 al corte y solo no hipotecaria activa", () => {
     excluidos: 1,
   });
   expect(dto.patrimonio!.deuda.cobertura.motivos.join(" ")).toContain("D005");
+});
+
+test("AC02: cada cifra expone motor, IDs, contexto, estado y cobertura", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  const metricas = metricasDelDto(dto);
+  expect(metricas.length).toBeGreaterThan(0);
+  for (const { ruta, metrica } of metricas) {
+    expect(metrica.fuente, ruta).toBeDefined();
+    expect(metrica.fuente.motor, ruta).toBeTruthy();
+    expect(Array.isArray(metrica.fuente.ids), ruta).toBe(true);
+    expect(metrica.contexto, ruta).toBeDefined();
+    expect(["ciclo", "ejercicio", "corte"], ruta).toContain(
+      metrica.contexto.tipo,
+    );
+    expect(
+      [
+        "Verificado",
+        "Cero verificado",
+        "Parcial",
+        "No disponible",
+        "No aplica",
+        "Sin datos",
+      ],
+      ruta,
+    ).toContain(metrica.estado);
+    expect(metrica.cobertura, ruta).toBeDefined();
+    expect(metrica.cobertura.fuente, ruta).toBeTruthy();
+    expect(metrica.motivo.length, ruta).toBeGreaterThan(0);
+  }
+
+  const pGeneric = dto.carriles.plan.items.find(
+    (item) => item.partidaId === fixture.partidas.pGeneric,
+  )!;
+  expect(pGeneric.ejecutado.fuente.ids.length).toBeGreaterThan(0);
+  expect(pGeneric.ejecutado.contexto).toMatchObject({
+    tipo: "ejercicio",
+    ejercicio: 2026,
+  });
+
+  const c007 = dto.carriles.realidad.ciclos.find((c) => c.cicloId === "7")!;
+  expect(c007.ingresos.fuente.ids.length).toBeGreaterThan(0);
+  expect(c007.ingresos.contexto).toMatchObject({
+    tipo: "ciclo",
+    cicloId: "7",
+  });
+
+  for (const margen of dto.margenes.publicados) {
+    expect(margen.fuente.motor).toBe("E2.6 monthlyFlow");
+    expect(Array.isArray(margen.fuente.ids)).toBe(true);
+    expect(["margenEstructural", "margenReal"]).toContain(margen.clave);
+    expect(margen.cicloId).toBeTruthy();
+    expect(margen.cobertura.fuente).toBeTruthy();
+  }
+});
+
+test("AC20: patrimonio opcional separado, al mismo corte y sin suma publicada", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  const corte = dto.patrimonio!.corte.fecha;
+  expect(corte).toBe("2027-01-15");
+  expect(dto.patrimonio!.corte.estado).toBe("Parcial");
+  expect(dto.patrimonio!.valoracion.corte).toBe(corte);
+  expect(dto.patrimonio!.deuda.corte).toBe(corte);
+  expect(dto.patrimonio!.valoracion.valorEur).toBe("877.50");
+  expect(dto.patrimonio!.deuda.subtotal).toBe("1020.00");
+  expect(dto.patrimonio!.nota).toContain("sin patrimonio neto");
+  expect(dto.patrimonio!.nota).toContain("sin suma");
+  expect(dto.patrimonio).not.toHaveProperty("total");
+  const claves = clavesDe(dto.patrimonio);
+  for (const prohibida of [
+    "patrimonioNeto",
+    "totalGeneral",
+    "totalPatrimonio",
+    "flujoCompleto",
+  ])
+    expect(claves.has(prohibida)).toBe(false);
+});
+
+test("AC21: enlaces de trazabilidad sin importes y con contexto por ID", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  const enlaces: { ruta: string; ids: string[] }[] = [...dto.enlaces];
+  for (const item of dto.carriles.plan.items) {
+    enlaces.push(item.ejecutado.enlace!);
+    if (item.diferencia?.enlace) enlaces.push(item.diferencia.enlace);
+  }
+  for (const ciclo of dto.carriles.realidad.ciclos)
+    if (ciclo.ingresos.enlace) enlaces.push(ciclo.ingresos.enlace);
+  enlaces.push(dto.patrimonio!.valoracion.enlace, dto.patrimonio!.deuda.enlace);
+
+  for (const enlace of enlaces) {
+    expect(enlace.ruta.startsWith("/")).toBe(true);
+    expect(enlace.ruta).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
+    expect(Array.isArray(enlace.ids)).toBe(true);
+  }
+  const rutas = enlaces.map((enlace) => enlace.ruta);
+  expect(rutas).toEqual(
+    expect.arrayContaining([
+      "/plan-anual",
+      "/nomina",
+      "/flujo-mensual",
+      "/flujo-mensual?ciclo=7",
+      "/flujo-mensual?ciclo=8",
+      "/movimientos",
+      "/inversiones",
+      "/deudas",
+    ]),
+  );
+});
+
+test("AC23: un fallo de E2.4 degrada solo el carril plan", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+    {
+      annualProvider: () => {
+        throw new Error("E2.4 caído en prueba");
+      },
+    },
+  );
+  expect(dto.carriles.plan.estado).toBe("No disponible");
+  expect(dto.carriles.plan.items).toEqual([]);
+  expect(dto.carriles.plan.cobertura.estado).toBe("NoDisponible");
+  expect(dto.carriles.plan.motivo).toContain("E2.4 no disponible");
+  expect(dto.carriles.realidad.estado).toBe("Parcial");
+  expect(dto.carriles.realidad.ciclos).toHaveLength(2);
+  const c007 = dto.carriles.realidad.ciclos.find((c) => c.cicloId === "7")!;
+  expect(c007.ingresos.subtotal).toBe("2250.00");
+  expect(dto.carriles.prevision.estado).toBe("No disponible");
+  expect(dto.carriles.archivo.estado).toBe("No disponible");
+  expect(dto.carriles.archivo.gate).toBe("BLOCKED");
+  expect(dto.carriles.archivo.cobertura.estado).toBe("NoAcreditada");
+});
+
+test("AC19: no publica mesesCubiertos ni cociente anual; No aplica con motivo", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  const claves = clavesDe(dto);
+  for (const prohibida of [
+    "mesesCubiertos",
+    "costeEsencial",
+    "ratioAnual",
+    "cocienteAnual",
+    "margenMedioAnual",
+  ])
+    expect(claves.has(prohibida)).toBe(false);
+  for (const item of dto.carriles.plan.items)
+    expect(["Sí", "No", "Pendiente", null]).toContain(item.esencial);
 });
 
 test("M2: la revisión cambia al cambiar la deuda del patrimonio", () => {
