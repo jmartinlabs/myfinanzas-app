@@ -4,10 +4,11 @@ Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04
 Diseño de pruebas con **ejecución local DEV25 el 2026-11-04** (ver §Ejecución local DEV25) y
 **revisión QA-01 local el 2026-11-09** (ver §Revisión QA-01). E4.7-AC3 sigue en cumplimiento
 parcial; AC18 sigue PARCIAL; AC10–AC15 siguen BLOCKED por E4.5/DT7; AC19 se documenta **N/A**
-porque E4.7 no publica el cociente de meses; AC25 queda verificado en local. Existe un
-candidato publicado en PR #210 (rama `feat/e47-resumen-anual`); el merge requiere autorización
-separada. No hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este
-documento no autoriza datos reales, migración, snapshots ni merge.
+porque E4.7 no publica el cociente de meses; AC25 queda verificado en local. El candidato de
+DEV25 se integró en `test` y la consolidación QA-01 se cerró con reservas en `317bb0c` (#334);
+la referencia a PR #210 pertenece al historial DEV y no está pendiente. No hay tablas, DDL ni
+migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no autoriza datos
+reales, migración, snapshots ni merge.
 
 Specification: [25-e47-resumen-anual-specification.md](25-e47-resumen-anual-specification.md)
 Dictamen funcional de Álex: relay 0142 (2026-11-04), favorable a M-A / Z-A / F-A / N-A;
@@ -86,9 +87,10 @@ El dictamen de Álex recomienda, **sin sustituir la aprobación del usuario**:
 | Fixtures | Bases ficticias, MFA real local, sin datos personales | Nunca Excel, DB real, claves o VPS |
 | Documental actual | `python3 scripts/validate-template`, `check-project`, `test-validator`, `git diff --check` | Solo estructura; no valida E4.7 |
 
-## Ejecución local DEV25 (2026-11-04)
+## Ejecución local DEV25 (2026-11-04) — histórico
 
-**Candidato:** rama `feat/e47-resumen-anual`, publicada en PR #210, base `main` `90cd5dc`; commits DEV-01
+**Candidato histórico:** rama `feat/e47-resumen-anual`, publicada entonces en PR #210 (ya
+integrada), base `main` `90cd5dc`; commits DEV-01
 `293ef16`, DEV-02 `d0c5401`, DEV-03 `130b27f`, QA `60f18f8` y corrección final QA (este
 commit). Commit local, sin datos reales y sin migración. La publicación y el merge requieren
 autorización separada.
@@ -125,8 +127,9 @@ aparecer como `Completa` aunque no tenga línea de presupuesto (`sinLinea`); en 
 Partidas. No se oculta la Partida ni se inventa un presupuesto.
 
 **Evidencia sintética.** La fixture `apps/api/test-support/resumen-anual-fixture.ts` usa solo IDs
-e importes ficticios ya documentados (C007/C008, F-ARCHIVO y F-MARGEN no se conectan porque E4.5
-no existe). No se usan Excel, bases reales, credenciales ni datos personales. Las capturas se
+e importes ficticios ya documentados (C007/C008; F-ARCHIVO y F-MARGEN no se conectan porque
+E4.5 no expone API ni importación, aunque su motor puro esté integrado). No se usan Excel,
+bases reales, credenciales ni datos personales. Las capturas se
 guardan en `artifacts/e4-7/`, ignorado por Git.
 
 ## Corrección QA (2026-11-04)
