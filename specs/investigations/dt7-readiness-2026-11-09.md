@@ -11,9 +11,9 @@ despliegue, push, PR ni merge. Los 59 AC de SPEC20 siguen `UNRUN`.
   falta y dos checklists accionables —mapping y corte— para que el usuario y Álex puedan
   revisarlos cuando se autorice el acceso a la evidencia privada.
 - **Regla de contenido:** no se inventan mappings, campos, IDs, intervalos, cortes ni
-  importes. Todo hueco de evidencia queda como `[RELLENAR]` o `[PENDIENTE]`. Los únicos
-  valores numéricos citados son ficticios y pertenecen a `F-DT7-01…25`; se identifican
-  como ficción.
+  importes. Todo hueco de evidencia queda como `[RELLENAR]` o `[PENDIENTE]`. No se citan
+  importes, intervalos ni identificadores reales; las cifras de conteo y los criterios
+  son del contrato.
 - **No altera:** decisiones M1–M16, estados del [tablero](../epic-board.md), gates,
   reservas de E4.5 ni los 59 AC. Los criterios `DT7-R-MAP-*` y `DT7-R-CORTE-*` son de
   este expediente: **no son AC, ni gates, ni PASS**.
@@ -119,7 +119,7 @@ necesaria para DT7 y no se hace aquí.
 
 | Evidencia | Dónde está | Qué acredita | Límite |
 | --- | --- | --- | --- |
-| Motor puro E4.5 | `apps/api/src/historico-precontrol.ts`; commits `da93897`, `9c793d3`, `642f0c0` (PR #329) | Contrato del combinador, cobertura, corte, estados, `sinClasificar`, aperturas no verificadas y transición | No es API, SQL, persistencia, importador ni UI; no es PASS de los AC |
+| Motor puro E4.5 | `apps/api/src/historico-precontrol.ts`; commits `da93897`, `9c793d3`, `642f0c0` (#321, #324 y #329, respectivamente) | Contrato del combinador, cobertura, corte, estados, `sinClasificar`, aperturas no verificadas y transición | No es API, SQL, persistencia, importador ni UI; no es PASS de los AC |
 | Suite sintética | `apps/api/src/historico-precontrol.test.ts`; el tablero registra **81 pruebas** | Comportamiento del motor con entradas ficticias | Sin datos reales; el tablero registra APTO CON RESERVAS por incremento y **sin informe QA versionado** |
 | Contrato del motor `R-01…R-08` | [testplan 20](../20-historico-precontrol-testplan.md#contrato-del-motor-puro-reconciliación-2026-11-09) | Trazabilidad de registros no computados, aperturas no verificadas, corte duro, validación `PAR`, `sinClasificar` y límites de entrega | Prueba sintética; los 59 AC siguen `UNRUN` |
 | Catálogo `F-DT7-01…25` | [preparación §4](dt7-preparation-2026-11-05.md#4-catálogo-de-fixtures-f-dt7-0125) | Casos ficticios con resultado esperado y valores prohibidos para cobertura, deduplicación, mapping, representación, aperturas, regularización, fecha y proyección | Ficticios y **no ejecutados como catálogo**; no usan datos reales; no validan un mapping real |
