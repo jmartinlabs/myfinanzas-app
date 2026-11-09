@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-09c
+## Identificadores canónicos y etapas — reconciliado 2026-11-09d
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,13 +8,13 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` (#321) + H-01/06/07/08/11/14 `9c793d3` (#324) | APTO CON RESERVAS (#321 y #324, revisión independiente); 76 pruebas | merged | pending | H-09, H-13, aperturas y atribución para decisión; DT7 abierto; sin API/SQL/importación; 59 AC UNRUN |
+| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` (#329) | APTO CON RESERVAS (revisión independiente por incremento; sin informe versionado); 81 pruebas | merged | pending | H-09, fuenteId en aperturas y mapping post-corte documentados sin cambio de producto; enmienda de SPEC20 solo si se quiere otro comportamiento; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
 | E4.10 | approved (SPEC28 ratificada 2026-11-05) | verified I1–I8 merged | APTO CON RESERVAS (I8) | merged I7 `81c8960`, I8 `5ea79b9` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI y I8 regresión/AC22 integrados; 24 AC UNRUN (23+AC22 con evidencia de prueba, ninguno PASS) |
-| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado 2026-11-09; DEV AC09 `9c857b6` (#325) | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | codigoAusencia, guardas UI y A–J/D3; 103 web; sin esquema/migraciones; datos reales BLOCKED |
-| E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (#323 `4347ec4`) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | Nueve propuestas F1 y seis decisiones adicionales pendientes; AC01–17 UNRUN; restore Linux y DT6/DT7 bloquean B |
+| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado 2026-11-09; DEV AC09 `9c857b6` (#325); defensiva #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | #327 fija el descarte de estado no canónico y requiere decisión sobre la lectura de §18.3.B; 103 web; datos reales BLOCKED |
+| E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (#323, expediente `cb1bc8a` #328) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | 15 decisiones en el expediente, todas `[PENDIENTE]`; AC01–17 UNRUN; restore Linux y DT6/DT7 bloquean B |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
 | DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag correcto en `960c151`; fallo de reinicio SSH con rollback correcto; sin recrear/mover; sin GHCR |
 | UI | draft (SPEC sin ratificar) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera |
@@ -1955,12 +1955,13 @@ instrucción del usuario, sin auto-resume.
   contraste de componentes limitado a campos y glifos; DEV-07 no constituye aceptación
   financiera ni cierra E4.6/E4.9/E4.10/E4.11.
 
-## E4.12 — F0/F1 (2026-11-09)
+## E4.12 — F0/F1 (histórico 2026-11-09, superado por la aprobación F0)
 
 - SPEC30/testplan integrados (#297); AC en `UNRUN`; niveles A/B separados.
-- **F0** sigue **pendiente**: SPEC30/testplan están en DRAFT y no hay aprobación
-  identificable; **F1** mantiene pendientes destino/custodia DT6, entorno Linux x86_64,
-  corte/matriz y aceptación de reservas E4.7/E4.9/E4.10/E4.11.
+- **F0** quedó aprobada el 2026-11-09 como marco documental; el estado vigente está en la
+  tabla superior y en el cierre de esta página.
+- **F1** mantiene pendientes destino/custodia DT6, entorno Linux x86_64, corte/matriz y
+  aceptación de reservas E4.7/E4.9/E4.10/E4.11.
 - **F2** no autorizado ni ejecutado; no hay restore, migración ni equivalencia con Excel.
 
 
@@ -2005,3 +2006,25 @@ instrucción del usuario, sin auto-resume.
   siguen requiriendo decisión; DT7 abierto.
 - **E4.12**: F0 aprobada como marco documental; F1 `IN_PROGRESS` con nueve propuestas y
   seis decisiones adicionales en §9.10; F2/F3/F4 y AC01–17 `UNRUN`.
+
+
+## Cierre 2026-11-09 (residual E4.5 y expediente F1)
+
+- **E4.5 `642f0c0` (#329):** H-13 corrige la coerción de `Date.UTC` para años 1–99 y rechaza
+  `0000`. H-01c impide que un registro íntegramente posterior al corte descubra una Partida
+  fuera del universo y bloquee el total global; si la Partida ya está declarada, ese
+  registro sigue siendo agregado no atribuible y bloquea su total, y el mapping
+  `Pendiente`/`Ambigua` posterior al corte sigue en `sinClasificar` (SPEC20). P-01a/b fijan
+  la atribución dentro del corte pero fuera de `intervalosArchivo`. 81 pruebas, QA APTO
+  CON RESERVAS por incremento.
+- **Decisiones documentadas sin cambio de producto**: H-09 mantiene `conflictos[]` global
+  (cada conflicto lleva `partidaId`); la exención de `fuenteId` en `AperturaHistorica` no
+  omite límites de Gastos; el mapping `Pendiente`/`Ambigua` posterior al corte sigue en
+  `sinClasificar` porque SPEC20 lo ampara. Si se quiere otro comportamiento, requiere
+  enmienda de SPEC20.
+- **AC09**: la prueba defensiva #327 (`a1fd546`) demuestra que el contrato de foto no
+  produce `estado` no canónico; fija el descarte actual y deja abierta la lectura literal
+  de §18.3.B. No se mergea ni se cambia producto hasta decisión.
+- **E4.12 `cb1bc8a` (#328):** expediente con las 15 decisiones, agrupadas G1–G5, con
+  recomendación, alternativa, riesgos, dependencias, evidencia y autorización; ninguna
+  aprobada por inferencia.
