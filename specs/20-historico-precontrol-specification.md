@@ -10,6 +10,13 @@ Approval source/date: **Q1–Q10 y precisiones Q5 confirmadas por el usuario el
 funcionalmente el 2026-10-28** tras revisión con Álex; **SPEC20 completa y testplan
 aprobados por el usuario el 2026-10-28**. PR87 integrada en `main` `3d70fd6`.
 
+**Nota de reconciliación (2026-11-09):** el motor puro E4.5 está integrado en
+`apps/api/src/historico-precontrol.ts` sobre la base `test` `ba24c29` (commits `#302` y
+`#309`). Esta spec se reconcilia con su contrato implementado sin reabrir Q1–Q10,
+D4/D14, estados aprobados ni AC. El motor no acredita DT7, no certifica totales reales
+ni equivalencia con el Excel y sus fixtures son sintéticos; no hay API, SQL,
+persistencia, importación ni UI de E4.5.
+
 Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-historico-precontrol-brainstorming.md),
 [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
 [P6/DT7](roadmap.md#decisiones-abiertas-y-puntos-de-autorización),
@@ -91,6 +98,8 @@ consume como consumidores previstos y define sus invariantes mínimos.
 | Registro representado | Registro de archivo ya incluido en un hecho detallado, con vínculo verificable | Vínculo de origen + mapping | Coincidencia de importe o de nombre |
 | Total verificado | Suma de archivo y detalle elegible con cobertura continua hasta el corte | Combinador E4.5 | Suma de subtotales con huecos, overlap o registros sin mapping |
 | Subtotal conocido | Suma de los registros no conflictivos, aunque no cubra todo el intervalo | Combinador E4.5 | Total anual completo |
+| Registro no computado | Registro vigente de una Partida que no contribuye al total/subtotal por verificación o mapping | Salida `items[].registrosNoComputados` | Registro histórico, absorbido, apertura o importe sumado |
+| Apertura no verificada | Apertura histórica presente pero `NoVerificado` o `Rechazado` | Salida `aperturasNoVerificadas` | Posición verificada, Gasto, Movimiento o Saldo escrito |
 | Regularización 2026 | Registro explícito, fechado y acotado al ejercicio 2026 | Registro de archivo + mapping aprobado | Regla general, campo del plan o inferencia por nombre |
 | Transición de ejercicio | Consulta separada de dos ejercicios naturales contiguos | Vista de transición | Migración o copia de datos |
 
@@ -256,9 +265,9 @@ Reglas de mapping:
 | `universo` | `{inicio: YYYY-01-01, fin: YYYY-12-31}` del ejercicio consultado |
 | `universoPartidas` | Declaración cerrada de `PARxxx` del ejercicio, acreditada en DT7; E2.4/archivo/Movimientos solo descubren candidatos | DT7/E1.2/E2.4 | No es exhaustivo por inferencia ni “todo el catálogo” |
 | `estadoUniverso` | `Acreditado` / `NoAcreditado` | DT7 | No se deduce de las fuentes |
-| `fuentesEsperadas[]` | Por `PARxxx` y `fuenteId`: intervalo esperado, estado `Presente`/`Ausente`/`NoAplica` y evidencia DT7 | DT7/inventario | Una fuente `Ausente` no es cobertura por omisión |
+| `fuentesEsperadas[]` | Por `PARxxx` y `fuenteId`: `intervalo` esperado **obligatorio**, estado `Presente`/`Ausente`/`NoAplica` y evidencia DT7 | DT7/inventario | `Presente` exige cubrir la Partida y el intervalo esperado recortado al corte; una fuente `Ausente` no es cobertura por omisión |
 | `corteConsulta` | Fecha civil inclusiva solicitada; dentro del ejercicio y no posterior a hoy (Europe/Madrid) |
-| `fuentes[]` | Cada fuente: `fuenteId` lógico estable del inventario DT7, `etiqueta`, `alcance` (`Global` o `PARxxx`), `huella`, `versionFuente`, `hojaTabla`, `corteArchivo`, `intervalosArchivo[]` (con `partida`), `controlDetalle{inicio,fin}`, `versionMapping`, `claseCobertura` |
+| `fuentes[]` | Cada fuente: `fuenteId` lógico estable del inventario DT7, `etiqueta`, `alcance` (`Global` o `PARxxx`), `huella`, `versionFuente`, `hojaTabla`, `corteArchivo` (límite duro de su cobertura), `intervalosArchivo[]` (con `partida`), `controlDetalle{inicio,fin}`, `versionMapping`, `claseCobertura` |
 | `ultimoDatoVerificado` | Último día con dato verificado de las fuentes; informativo, no sustituye `corteConsulta` ni el corte de cada fuente |
 | `intervalosArchivo` | Intervalos verificados de Gastos históricos/regularización; no incluye aperturas |
 | `detalleControl` | Gastos dentro de los `controlDetalle` de las fuentes; no incluye el tramo precontrol |
@@ -274,11 +283,17 @@ Reglas de mapping:
 Reglas de cobertura:
 
 - Cada fuente declara su propio `corteArchivo`, `versionFuente` y `controlDetalle`.
-  Un corte de una fuente no completa otra; no se sintetiza un corte global. Cada
-  `controlDetalle` se aplica solo a las Partidas de su `alcance` (`Global` o `PARxxx`):
-  un Gasto de PAR100 no se considera control por el tramo de una fuente cuyo alcance
-  es PAR205. El control y el precontrol se clasifican por `(Partida, fuente)` y se
-  deduplican por ID de Movimiento.
+  Un corte de una fuente no completa otra; no se sintetiza un corte global. El
+  `corteArchivo` es un **límite duro** de la cobertura de esa fuente: no se amplía por
+  intervalos ni `controlDetalle` posteriores, y la cobertura se recorta a
+  `min(corteArchivo, corteConsulta)`. Cada `controlDetalle` se aplica solo a las
+  Partidas de su `alcance` (`Global` o `PARxxx`): un Gasto de PAR100 no se considera
+  control por el tramo de una fuente cuyo alcance es PAR205. El control y el precontrol
+  se clasifican por `(Partida, fuente)` y se deduplican por ID de Movimiento.
+- **Identificadores de Partida.** El universo acreditado, `fuentesEsperadas.partidaId`,
+  los registros y los Movimientos usan `PARxxx` (`^PAR\d+$`). Un universo con una
+  Partida no `PAR` se rechaza; un `alcance` de fuente que no sea `Global` ni `PARxxx`
+  (por ejemplo, un `Sxxx`) no crea un item ni amplía el universo.
 - **Identidad de fuente:** `fuenteId` es un identificador lógico estable asignado en el
   inventario DT7 (por rol/alcance), no un hash ni un nombre. `documentoHash`, `version`,
   `hojaTabla`, `fila` y `etiqueta` se conservan como procedencia. Una nueva versión del
@@ -431,6 +446,76 @@ Reglas adicionales:
 - **Un año futuro** no tiene cobertura; no se presenta 0 anual.
 - **Un ejercicio pasado con corte 31/12** y cobertura completa puede dar 0 verificado
   si no hay hechos; ese 0 es un resultado, no una ausencia.
+
+### Contrato del motor puro integrado (reconciliación 2026-11-09)
+
+El módulo `apps/api/src/historico-precontrol.ts` implementa el combinador de lectura
+como función pura y determinista. No hay base de datos, SQL, persistencia, migración,
+importación, API, UI ni lectura de ficheros; los fixtures que lo ejercitan son
+sintéticos y no acreditan DT7, no certifican equivalencia con el Excel y no convierten
+ningún AC en PASS. Sus tipos de entrada y salida son el contrato documental mínimo que
+la futura API deberá proyectar, no una ruta ni una tabla.
+
+| Salida | Forma | Regla |
+| --- | --- | --- |
+| `items[].registros` | `idArchivo[]` | Todos los registros **vigentes** de la Partida (excluye aperturas, históricos y duplicados absorbidos), sumen o no. |
+| `items[].registrosNoComputados` | `{idArchivo, importe, estadoVerificacion, estadoMapeo, motivo}[]` | Subconjunto de `registros` con `estadoVerificacion != Verificado` o `estadoMapeo != Mapeado`; se muestra con motivo y **nunca** suma a `archivo`, `subtotalConocido` ni `total`. |
+| `aperturas` | `{idArchivo, saldoId, importe, fecha, motivo}[]` o `null` | Solo aperturas `Verificado`; `null` = sin evidencia de apertura; una apertura cero verificada es `"0.00"`. No suma a Gastos. |
+| `aperturasNoVerificadas` | `{idArchivo, saldoId, importe, fecha, estadoVerificacion: NoVerificado\|Rechazado, motivo}[]` | Aperturas presentes pero no verificadas o rechazadas; se muestran aparte, nunca como posición verificada ni suman a Gastos. |
+| `sinClasificar` | `{idArchivo, importe, motivo}[]` | Registros sin Partida, con mapping de Partida `Pendiente`/`Ambigua`, o de una Partida no declarada en un universo acreditado. No suman. |
+| `duplicadosAbsorbidos` / `versionesHistoricas` | `{idArchivo, identidad}` / `{idArchivo, identidad, version}[]` | Trazabilidad de duplicados absorbidos y versiones no vigentes; **nunca** suman. |
+
+Reglas del contrato implementado:
+
+- **No sumar es una garantía de salida, no una omisión.** Un registro incluido en
+  `registrosNoComputados`, `aperturasNoVerificadas` o `sinClasificar` no entra en
+  `archivo`, `detalleControl`, `detallePrecontrolVinculado`, `subtotalConocido` ni
+  `total`; su importe se expone solo como contexto.
+- **Efecto en totales según el estado.** `NoVerificado` añade `VerificacionPendiente` y
+  deja el total de la Partida `NoVerificable`; `Excluido` y `Rechazado` no suman y no
+  bloquean por sí solos un total de Partida ya certificable; `Pendiente` y `Ambigua` no
+  suman y, al ir a `sinClasificar`, dejan el total global `NoVerificable` aunque la
+  Partida no afectada conserve su estado. Un registro sin Partida nunca crea un item.
+- **`null` no es `0`.** `importe`, `total` y `subtotalConocido` son strings decimales
+  exactos o `null`; `"0.00"` solo aparece con cobertura y registro verificados.
+- **Cobertura por fuente, Partida, alcance, intervalo y corte.** La cobertura de una
+  fuente para una Partida es la unión de sus `intervalosArchivo` cuyo `partidaId`
+  coincide y, solo si `alcance` es `Global` o la propia Partida, su `controlDetalle`;
+  todo se recorta a `[inicio del ejercicio, min(corteArchivo, corte)]`.
+- **`corteArchivo` es un límite duro.** No se amplía por intervalos ni `controlDetalle`
+  posteriores de la misma fuente; una fuente con `corteArchivo` anterior al corte de la
+  consulta no cubre el tramo posterior aunque otra fuente lo complete. Un
+  `corteArchivo` fuera del ejercicio es entrada inválida.
+- **`fuentesEsperadas[].intervalo` es obligatorio.** `Presente` exige que la fuente
+  cubra la Partida y que el intervalo esperado, recortado al corte, quede cubierto; no
+  basta con que exista `fuenteId` ni con una cobertura no vacía de la Partida. Un
+  `Presente` sin intervalo se rechaza; un fallback de runtime sin intervalo se trata
+  como no cubierto (fail-closed). Una expectativa posterior al corte no se declara
+  ausente: no hay nada que verificar en ese corte.
+- **Validación `PAR`.** Las Partidas del universo, de `fuentesEsperadas`, de los
+  registros y de los Movimientos deben cumplir `^PAR\d+$`; un universo acreditado con
+  una Partida no `PAR` se rechaza. Un `alcance` de fuente que no sea `Global` ni
+  `PARxxx` no crea un item ni amplía el universo; solo los identificadores `PARxxx`
+  descubiertos pueden crear items cuando el universo no está acreditado.
+- **Registros sin Partida.** Cualquier registro vigente no-apertura con `partidaId=null`
+  se muestra en `sinClasificar` con importe y motivo, con independencia de
+  `estadoVerificacion` o `estadoMapeo`; no se le asigna Partida por nombre ni por
+  importe. Si tiene Partida pero está `Excluido`, `Rechazado`, `NoVerificado`,
+  `Pendiente` o `Ambigua`, se muestra en `registrosNoComputados` de esa Partida;
+  `Pendiente`/`Ambigua` también en `sinClasificar` conforme a D4.5. Ninguno de estos
+  registros suma ni acredita cobertura; la cobertura global puede seguir siendo
+  `Completa` por las fuentes, pero el total global no se certifica.
+- **`FueraDeUniverso` es diagnóstico, no estado.** Cuando el universo está acreditado
+  y una Partida descubierta no está en `universo.partidas`, el motor no crea un item,
+  no amplía el universo y no introduce un `EstadoCobertura`/`EstadoTotal` nuevo: expone
+  los registros no-apertura de esa Partida en `sinClasificar` con motivo «Partida no
+  declarada en el universo DT7 acreditado; pendiente de decisión», añade
+  `MappingPendiente` al motivo global y deja el total global `NoVerificable`. No se
+  inventa semántica financiera ni un estado `FueraDeUniverso`.
+- **Aperturas.** Toda apertura no verificada o rechazada va a
+  `aperturasNoVerificadas`; una apertura verificada va a `aperturas` y se muestra
+  aparte. Ninguna apertura acredita cobertura de Gastos, se escribe en Saldos/Deudas
+  ni se convierte en Movimiento.
 
 ### Transición de ejercicio
 
@@ -802,7 +887,8 @@ DTO mínimo propuesto:
     "estadoTotal": "Verificado",
     "motivoCodigo": null,
     "motivo": null,
-    "registros": ["AH001", "AH002"]
+    "registros": ["AH001", "AH002"],
+    "registrosNoComputados": []
   }, {
     "partida": {"id": "PAR205", "nombre": "Viajes", "estado": "Activa"},
     "archivo": "800.00",
@@ -816,11 +902,13 @@ DTO mínimo propuesto:
     "estadoTotal": "NoVerificable",
     "motivoCodigo": "HuecoDemostrado",
     "motivo": "Falta 01/07–31/07",
-    "registros": ["AH004"]
+    "registros": ["AH004"],
+    "registrosNoComputados": []
   }],
   "sinClasificar": [{"idArchivo": "AH003", "importe": "150.00", "motivo": "Mapping ambiguo"}],
   "conflictos": [],
   "agregadoNoAtribuible": [],
+  "aperturasNoVerificadas": [],
   "totales": {
     "valor": null,
     "subtotalConocido": "2300.00",
@@ -831,6 +919,12 @@ DTO mínimo propuesto:
   }
 }
 ```
+
+El motor puro implementado devuelve `items[].registrosNoComputados` y
+`aperturasNoVerificadas` con la forma descrita en «Contrato del motor puro integrado
+(reconciliación 2026-11-09)». El DTO de API futuro deberá conservarlos sin aplanarlos
+ni convertirlos en importes sumados; este ejemplo es conceptual y no una ruta
+implementada.
 
 Ejemplo separado de conflicto F2 (consulta distinta; no se mezcla con el DTO anterior):
 
@@ -1263,7 +1357,8 @@ EJECUTADOS**; una prueba diseñada no es PASS. Los IDs `AC-01…AC-59` son
 `E4.5-AC-01…E4.5-AC-59`. La correspondencia con el roadmap es:
 E4.5-AC1 → AC-02/05/06/12/13/14/15/31/40/41/45/47; E4.5-AC2 →
 AC-16/17/18/24/34/37/39/42/43/44/46; E4.5-AC3 → AC-20/21/22. D4 → AC-48…52/57/59;
-D14 → AC-53…58.
+D14 → AC-53…58. El motor puro integrado no altera ese estado: sus pruebas sintéticas
+no son PASS de ningún AC ni acreditan DT7.
 
 | ID | Clase | Acción / precondiciones | Resultado esperado |
 | --- | --- | --- | --- |
@@ -1326,3 +1421,24 @@ D14 → AC-53…58.
 | AC-57 | I (D4/D14) | Total por Partida verificado con desglose por Referencia `Incompleto` | El total por Partida se certifica; el desglose por Referencia no; no se presenta como completo |
 | AC-58 | C (E2.4) | Sobre `AnnualSources`/`AnnualHistory` reales: (a) universo DT7 acreditado y `estadoCobertura=Completa`; registro con `estadoVerificacion=Verificado`, `estadoMapeo=Mapeado`, `estadoMapeoReferencia=Pendiente`, `representado=No` acreditado, `clase=GastoHistorico`, importe/intervalo/`AnnualProvenance` acreditados (identidad + huella + versiones), sin `idOrigen`, control por Partida/fuente en `controles[]` sin solape; (b) misma identidad con ambigüedad de atribución; (c) corte abierto 30/06; (d) `representado=Desconocido` | (a) `ejecutado` incluye el importe; `diferencia` calculable si hay presupuesto; `desgloseReferencia=Incompleto` no impide el total por Partida; `annualExecution` devuelve el estado y las cuantías **por Partida**; `read()`/`getAnnualPlan` proyectan con el adaptador propuesto `items[].estadoTotal`/`items[].estadoCobertura` y `totales.estadoTotal`/`totales.estadoCobertura` globales, no calculados por `annualExecution`, si no hay `sinClasificar`, conflicto ni `detallePrecontrolNoVinculado`, la cobertura global es `Completa` y todos los registros elegibles están verificados/mapeados en el destino requerido, de modo que todas las Partidas con registros elegibles quedan `items[].estadoTotal=Verificado`; (b) `ejecutado=null`, `diferencia=null`; la Partida afectada proyecta `items[].estadoTotal=NoVerificable`; las Partidas no afectadas conservan su estado y `totales.estadoTotal=NoVerificable`, con motivo; (c) `total` hasta corte con `alcanceTotal=HastaCorte`, nunca anual; (d) `estadoTotal=NoVerificable`, `subtotalConocido=null` sin evidencia de no duplicidad; `null` no se muestra como `0`; ningún caso usa `verificado:false` como sustituto de estados |
 | AC-59 | I (D4) | Fuente sin Referencia declarada vs fuente que la declara sin destino; registro con Partida pendiente | `NoAplica` solo con evidencia de ausencia; si declara, `Pendiente/Ambigua`; Partida pendiente visible en `sinClasificar` con importe/motivo y total `NoVerificable` |
+
+### Reconciliación del motor puro (documental, no AC nuevos)
+
+Estas comprobaciones describen el contrato implementado y **no** son AC aprobados ni
+PASS funcional. Se mantienen separadas de `AC-01…AC-59`, que siguen UNRUN. La evidencia
+actual es la prueba sintética del motor (`apps/api/src/historico-precontrol.test.ts`) y
+no acredita DT7, datos reales ni equivalencia con el Excel.
+
+| ID | Acción / precondiciones | Resultado esperado | Trazabilidad |
+| --- | --- | --- | --- |
+| R-01 | Registro vigente de una Partida con `Excluido`, `Rechazado`, `NoVerificado`, `Pendiente` o `Ambigua` | Aparece en `items[].registros` y en `registrosNoComputados` con importe, estado y motivo; no suma. `NoVerificado` bloquea el total de la Partida; `Excluido`/`Rechazado` no bloquean por sí solos un total de Partida ya certificable; `Pendiente`/`Ambigua` dejan el global `NoVerificable` | AC-04, AC-36, AC-52 |
+| R-02 | Apertura `NoVerificado` o `Rechazado` | `aperturas=null` o sin esa apertura; `aperturasNoVerificadas[]` con importe, fecha y motivo; no suma a Gastos ni se presenta como posición verificada | AC-16, AC-17, AC-37 |
+| R-03 | Fuente con intervalos o `controlDetalle` posteriores a su `corteArchivo` | La cobertura se recorta a `min(corteArchivo, corte)`; el tramo posterior queda fuera y puede producir hueco/`Parcial`; no se completa la expectativa de esa fuente con otra | AC-08, AC-38, AC-46 |
+| R-04 | `fuentesEsperadas` con `Presente` sin `intervalo`, aunque exista cobertura no vacía de la Partida | Entrada inválida; no se acredita `Presente` por la sola presencia de `fuenteId` ni por cobertura no vacía; fallback de runtime tratado como no cubierto | AC-46 |
+| R-05 | Universo, registro o Movimiento con Partida no `PARxxx`; fuente con `alcance` no `PARxxx` | Se rechaza la Partida no `PAR` del universo/registro/Movimiento; un `alcance` no `PAR` no crea item ni amplía el universo | AC-38, AC-46 |
+| R-06 | Registro `Excluido`/`Rechazado`/`NoVerificado`/`Pendiente`/`Ambigua` con `partidaId=null` | Visible en `sinClasificar` con importe y motivo; fuera de totales y de cobertura; el total global no se certifica; la cobertura de fuentes puede seguir `Completa` | AC-04, AC-46, AC-59 |
+| R-07 | Universo acreditado con una Partida descubierta no declarada | `FueraDeUniverso` solo como diagnóstico: sin item nuevo, registros en `sinClasificar`, `MappingPendiente` y total global `NoVerificable`; ningún estado financiero nuevo | AC-46, AC-59 |
+| R-08 | Consultar el motor, la transición y los límites de entrega | No crea planes, Movimientos, aperturas, fotos ni cierres; no hay API, SQL, persistencia ni importador; la transición no suma ejercicios | AC-18, AC-23, AC-25, AC-29, AC-30 |
+
+Resultado actual: **contrato implementado y cubierto por pruebas sintéticas del motor;
+AC-01…AC-59 permanecen UNRUN; DT7 abierto; sin PASS funcional.**

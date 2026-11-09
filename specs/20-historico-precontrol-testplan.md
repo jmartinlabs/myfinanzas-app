@@ -3,12 +3,17 @@
 Specification: [20-historico-precontrol-specification.md](20-historico-precontrol-specification.md)
 
 Status: **APPROVED — DISEÑO DOCUMENTAL, NO EJECUTADO.** SPEC20 completa y este testplan
-fueron aprobados por el usuario el 2026-10-28. No hay implementación, código, SQL,
+fueron aprobados por el usuario el 2026-10-28. No hay implementación de API/SQL,
 migración, importador, Excel, datos reales ni despliegue. Los 59 AC siguen `UNRUN`; la
 aprobación del testplan no es PASS funcional.
 **D4/D14 aplicadas:** 59 AC documentales (`AC-01…AC-59`); el
 [progress](20-historico-precontrol-progress.md) conserva el hito histórico de 47 AC y
 registra la enmienda.
+
+**Nota de reconciliación (2026-11-09):** el motor puro E4.5 está integrado en
+`apps/api/src/historico-precontrol.ts` sobre `test` `ba24c29` (commits `#302` y `#309`).
+Sus pruebas sintéticas cubren el contrato del combinador, pero **no** son PASS de los
+AC, no acreditan DT7, no usan datos reales y no sustituyen API, SQL, importación ni UI.
 
 Base: `main` `3d70fd6` (2026-10-28); PR87 integrada. La base histórica de preparación
 fue `1d539a8`; la rama se reconcilió con `main` `7073864` antes de integrar.
@@ -79,6 +84,25 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | AC-58 | C (E2.4) | Sobre `AnnualSources`/`AnnualHistory` reales: (a) universo DT7 acreditado y `estadoCobertura=Completa`; `Verificado`+`Mapeado`+`estadoMapeoReferencia=Pendiente`+`representado=No` acreditado+`clase=GastoHistorico`, `AnnualProvenance` completa, sin `idOrigen`, `controles[]` sin solape; (b) ambigüedad de atribución; (c) corte 30/06; (d) `representado=Desconocido` | (a) `ejecutado` incluye el importe; `diferencia` calculable si hay presupuesto; desglose `Incompleto` no bloquea el total por Partida; `annualExecution` devuelve estado y cuantías por Partida; `read()`/`getAnnualPlan`, con el adaptador propuesto, proyectan `items[].estadoTotal=Verificado` en todas las Partidas con registros elegibles, con todos los registros elegibles verificados/mapeados en el destino requerido y sin `detallePrecontrolNoVinculado`, y `totales.estadoTotal=Verificado`; (b) `ejecutado=null`, `diferencia=null`; la Partida afectada proyecta `items[].estadoTotal=NoVerificable`; las no afectadas conservan su estado y `totales.estadoTotal=NoVerificable`, motivo; (c) `alcanceTotal=HastaCorte`, no anual; (d) `estadoTotal=NoVerificable`, `subtotalConocido=null` sin evidencia de no duplicidad, no `0` | Bun Test de contrato E2.4 con `AnnualSources`/`AnnualHistory` inyectados en `annualExecution` y `getAnnualPlan`, reloj `2027-01-15` | Documental ahora; API futura | `annualExecution`: estado y cuantías por Partida; `read()`/`getAnnualPlan`: `items[].estadoTotal`/`items[].estadoCobertura` y `totales.estadoTotal`/`totales.estadoCobertura` globales derivados por el adaptador propuesto; `diferencia` de `getAnnualPlan` | UNRUN — diseño |
 | AC-59 | I (D4) | Fuente sin Referencia declarada vs fuente que la declara sin destino; registro con Partida pendiente | `NoAplica` solo con evidencia de ausencia; si declara, `Pendiente/Ambigua`; Partida pendiente visible en `sinClasificar` con importe/motivo y total `NoVerificable` | Bun Test de mapping | Documental ahora; API futuro | DTO con `sinClasificar` | UNRUN — diseño |
 
+## Contrato del motor puro (reconciliación 2026-11-09)
+
+Estas comprobaciones documentan el contrato implementado en
+`apps/api/src/historico-precontrol.ts`. **No son AC nuevos ni PASS funcional**: los 59
+AC aprobados siguen `UNRUN`, DT7 sigue abierto y la prueba del motor es sintética. La
+evidencia existente es la suite `apps/api/src/historico-precontrol.test.ts`, que no se
+declara ejecutada en esta reconciliación documental.
+
+| ID | Clase/condición | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Evidencia esperada | Resultado actual |
+| --- | --- | --- | --- | --- | --- | --- |
+| R-01 | I | Registro vigente de una Partida con `Excluido`, `Rechazado`, `NoVerificado`, `Pendiente` o `Ambigua` | `items[].registros` contiene todos los vigentes; `registrosNoComputados` separa los que no computan con importe, estado y motivo; no suman. `NoVerificado` deja la Partida `NoVerificable`; `Excluido`/`Rechazado` no bloquean por sí solos; `Pendiente`/`Ambigua` dejan el global `NoVerificable` | Bun Test del combinador | DTO con `registros` y `registrosNoComputados` | Cubierto por prueba sintética; AC UNRUN |
+| R-02 | I | Apertura histórica `NoVerificado` o `Rechazado` | `aperturas` no la presenta como verificada; `aperturasNoVerificadas[]` la conserva con importe, fecha y motivo; no suma a Gastos | Bun Test de aperturas | DTO con `aperturas`/`aperturasNoVerificadas` | Cubierto por prueba sintética; AC UNRUN |
+| R-03 | I | Fuente con `intervalosArchivo` o `controlDetalle` posteriores a su `corteArchivo`; otra fuente cubre el tramo posterior | La cobertura de la fuente se recorta a `min(corteArchivo, corte)`; el tramo posterior no se acredita por esa fuente; puede quedar hueco/`Parcial` o `FuenteAusente` | Bun Test de cobertura | DTO con `cobertura.intervalos`, `huecos` y `fuentes[].corteArchivo` | Cubierto por prueba sintética; AC UNRUN |
+| R-04 | I | `fuentesEsperadas` `Presente` sin `intervalo`, con cobertura no vacía de la Partida | Entrada inválida; no se acredita `Presente` por presencia de `fuenteId` ni por cobertura no vacía; fallback de runtime no cubierto | Bun Test de validación | Error de entrada / `FuenteAusente` | Cubierto por prueba sintética; AC UNRUN |
+| R-05 | I | Universo, registro o Movimiento con Partida no `PARxxx`; fuente con `alcance` no `PARxxx` | Se rechaza la Partida no `PAR`; un alcance no `PAR` no crea item ni amplía el universo | Bun Test de validación `PAR` | Error de entrada / `items[]` sin item inventado | Cubierto por prueba sintética; AC UNRUN |
+| R-06 | I | Registro `Excluido`/`Rechazado`/`NoVerificado`/`Pendiente`/`Ambigua` con `partidaId=null` | Visible en `sinClasificar` con importe/motivo; fuera de totales y de cobertura; el total global no se certifica; la cobertura de fuentes puede seguir `Completa` | Bun Test de `sinClasificar` | DTO con `sinClasificar` y `totales.estadoTotal` | Cubierto por prueba sintética; AC UNRUN |
+| R-07 | I | Universo acreditado con una Partida descubierta no declarada | `FueraDeUniverso` solo como diagnóstico: sin item nuevo ni estado financiero nuevo; registros en `sinClasificar`, `MappingPendiente` y total global `NoVerificable` | Bun Test de universo | DTO con `sinClasificar`/`motivoCodigo` | Cubierto por prueba sintética; AC UNRUN |
+| R-08 | I/C | Consultar el motor, la transición y los límites de entrega | No crea planes, Movimientos, aperturas, fotos ni cierres; no hay API, SQL, persistencia, importador ni UI de E4.5; la transición no suma ejercicios | Revisión de contrato + Bun Test de transición | Código del motor y DTO de transición | Cubierto por prueba sintética; AC UNRUN |
+
 ## Casos solicitados y trazabilidad
 
 | Caso solicitado | AC | Fixture ficticio |
@@ -109,6 +133,9 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | Renombrado vs reclasificación | AC-41 | F21 |
 | Fecha ejecutada de E2.4 sin fecha inventada | AC-42 | F22 |
 | Apertura de Deuda fuera de E4.5 | AC-43 | F23 |
+| Trazabilidad de registros que no suman y aperturas no verificadas | R-01, R-02 (AC-04/16/17/36/37/52) | Motor sintético |
+| Cobertura por `corteArchivo`, intervalo obligatorio y validación `PAR` | R-03…R-05 (AC-08/38/46) | Motor sintético |
+| Registros sin Partida y diagnóstico fuera de universo | R-06, R-07 (AC-46/59) | Motor sintético |
 
 ## Regression checks (previstos, no ejecutados)
 
@@ -128,8 +155,10 @@ distinguir PASS/FAIL/UNRUN y no atribuir PASS por diseño.
 
 ## Functional verification
 
-No ejecutada. No hay candidato funcional. La única verificación de esta fase es
-documental: estructura, enlaces, consistencia de AC/wireframes y QA independiente.
+No ejecutada como verificación funcional de API/UI. Existe el motor puro E4.5 con
+pruebas sintéticas, que no sustituyen la verificación de los 59 AC ni acreditan DT7. La
+verificación de esta fase es documental: estructura, enlaces, consistencia de
+AC/wireframes y QA independiente.
 
 ## Browser verification (web only)
 
@@ -148,12 +177,15 @@ ni equivalencia visual por estos wireframes.
 
 ## Limitations and next action
 
-Limitaciones: Q1–Q10 confirmadas; DT7 no aprobado; mapping/corte/regularización reales no demostrados; no
-hay implementación, fixtures ejecutables, navegador ni CI funcional en esta fase. No se
-ha abierto Excel ni datos reales. La spec, los wireframes y este testplan fueron aprobados
-por el usuario el 2026-10-28 (PR87, `3d70fd6`); DT7, mapping/corte/regularización reales y
-los 59 AC siguen pendientes/UNRUN.
+Limitaciones: Q1–Q10 confirmadas; DT7 no aprobado; mapping/corte/regularización reales no
+demostrados; el motor puro y sus pruebas sintéticas existen, pero no hay API, SQL,
+persistencia, importación, navegador ni CI funcional de E4.5 en esta fase. Esos fixtures
+no acreditan los AC ni equivalencia con el Excel. No se ha abierto Excel ni datos reales.
+La spec, los wireframes y este testplan fueron aprobados por el usuario el 2026-10-28
+(PR87, `3d70fd6`); DT7, mapping/corte/regularización reales y los 59 AC siguen
+pendientes/UNRUN.
 
-Próxima acción segura: la spec, los wireframes y este testplan ya fueron aprobados por
-el usuario el 2026-10-28 (PR87, `3d70fd6`); DT7 sigue como gate independiente y el
-desarrollo de E4.5 requiere autorización separada.
+Próxima acción segura: la reconciliación documental con el motor puro está hecha; DT7
+sigue como gate independiente, la promoción de R-01…R-08 a AC (si se desea) requiere
+decisión del usuario y el desarrollo de API/SQL/importación/UI de E4.5 requiere
+autorización separada.
