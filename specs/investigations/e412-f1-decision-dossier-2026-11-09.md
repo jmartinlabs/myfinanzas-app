@@ -361,8 +361,9 @@ nivel B**. Ninguna aprobación de G1–G5 cierra DT6, DT7, E4.12 ni P7.
 #### F1-D13 — Aceptación E4.7
 
 - **Recomendación `[PROPUESTA]`:** aceptar E4.7 como corte parcial con brecha explícita:
-  AC3 `PARCIAL`, AC10–AC15 `BLOCKED` por E4.5/DT7 y AC19 `UNRUN`; no declarar AC13/AC15
-  completos ni un total anual. Para nivel A, usar solo lo que no dependa de E4.5/DT7.
+  AC3 `PARCIAL`, AC10–AC15 `BLOCKED` por E4.5/DT7 y AC19 `UNRUN` en el expediente original;
+  ratificado `N/A` el 2026-11-09; no declarar AC13/AC15 completos ni un total anual. Para
+  nivel A, usar solo lo que no dependa de E4.5/DT7.
 - **Alternativa principal y descarte:** esperar al cierre completo de E4.7 o presentarlo como
   cerrado. No se recomienda: lo primero bloquea sin necesidad el nivel A; lo segundo oculta
   las reservas y produce una equivalencia falsa.
@@ -371,7 +372,8 @@ nivel B**. Ninguna aprobación de G1–G5 cierra DT6, DT7, E4.12 ni P7.
 - **Dependencias:** E4.7; E4.5/DT7; AC13/AC15 en nivel B; gate de §5.
 - **Evidencia hoy / falta:** [SPEC25](../25-e47-resumen-anual-specification.md) y su
   [testplan](../25-e47-resumen-anual-testplan.md); E4.7 integrada `0e89562`, con AC3
-  `PARCIAL`, AC10–AC15 `BLOCKED` y AC19 `UNRUN`. Falta la aceptación de E4.7 y E4.5/DT7.
+  `PARCIAL`, AC10–AC15 `BLOCKED` y AC19 `UNRUN` en el expediente original; ratificado `N/A`
+  el 2026-11-09. Falta la aceptación de E4.7 y E4.5/DT7.
 - **Autorización, gate y AC:** decisión del usuario. Desbloquea un corte parcial explícito;
   no completa AC13/AC15.
 - **¿Decidible ya?:** sí, aceptando la brecha; el cierre completo requiere E4.5/DT7.
