@@ -51,9 +51,10 @@ plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
 #### Contrato AA vigente
 
 - **Contraste:** texto normal ≥ 4.5:1 y texto grande ≥ 3:1 (`≥ 24 px`, o `≥ 18.66 px` en negrita)
-  en `light-s`, `dark-s` y `hybrid-s`; bordes de control, iconos de estado y anillo de foco
-  ≥ 3:1. La medición compone fondos con alfa; un fondo con imagen/gradiente queda sin resolver y
-  **falla de forma explícita**, no se ignora.
+  en `light-s`, `dark-s` y `hybrid-s`; el anillo de foco se muestrea y exige ≥ 3:1. Los bordes
+  de control e iconos de estado son requisito AA, pero **esta matriz no los mide** (solo nodos
+  de texto y anillo de foco). La medición compone fondos con alfa; un fondo con
+  imagen/gradiente queda sin resolver y **falla de forma explícita**, no se ignora.
 - **Foco:** cada parada de teclado tiene foco visible; el `outline`/`box-shadow` muestreado
   mantiene ≥ 3:1 contra el fondo adyacente en los tres temas. El sidebar de `hybrid-s` usa
   `--sidebar-focus` (6,66:1), no el anillo global (2,83:1 sobre ese fondo).
@@ -66,7 +67,8 @@ plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
 - **Overflow:** sin scroll horizontal de página a 390×844, 1440×1000 y 720×500, con `<details>`
   cerrados y abiertos.
 - **Movimiento reducido:** con `prefers-reduced-motion: reduce`, `transition-duration: 0s` y
-  `animation-name: none`; no hay movimiento dependiente de JS.
+  `animation-name: none`; la matriz comprueba estilos computados, no movimiento producido por
+  JavaScript.
 - **Zoom:** 720×500 es la **equivalencia de viewport** a 200 % sobre 1440×1000, no zoom nativo del
   navegador; se declara así.
 - **Sin cambio financiero:** la matriz no altera cifras, estados, motivos ni contratos; `null ≠ 0`
@@ -79,12 +81,12 @@ auditoría WCAG completa.
 
 #### Procedimiento de medición reproducible
 
-Requisitos: Bun 1.4.3 y `bun install --frozen-lockfile`. Los comandos se ejecutan desde la raíz
+Requisitos: Bun 1.4.3, `bun install --frozen-lockfile`, `git`, `age` y Chromium de Playwright; `python3.12 scripts/verify --full` falla si faltan prerrequisitos. Los comandos se ejecutan desde la raíz
 del repositorio; `tests/e2e/ui-dev07.spec.ts` forma parte del E2E normal (`bun run test:e2e`).
 
 | Paso | Comando | Salida |
 | --- | --- | --- |
-| Línea base diagnóstica | `UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts` | `artifacts/ui-dev07-baseline/report.json` y capturas; sin aserciones duras |
+| Línea base diagnóstica | `UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts` | `artifacts/ui-dev07-baseline/report.json`; sin capturas ni aserciones duras |
 | Matriz AA | `bunx playwright test tests/e2e/ui-dev07.spec.ts` | 30 capturas base en `artifacts/ui-dev07/base/` y 15 críticas en `artifacts/ui-dev07/critical/`; aserciones duras |
 | Verificación completa | `python3.12 scripts/verify --full` | candidato de cierre; **Linux**; incluye los E2E |
 
@@ -132,7 +134,7 @@ ejecución concreta; la aceptación exige QA independiente y aprobación explíc
 Trazabilidad de los incrementos:
 
 - [#308](https://github.com/jmartinlabs/myfinanzas-app/pull/308) — I1, línea base diagnóstica
-  (`e93dccc`): informe y capturas, sin aserciones duras.
+  (`e93dccc`): informe JSON, sin capturas ni aserciones duras.
 - [#312](https://github.com/jmartinlabs/myfinanzas-app/pull/312) — I2, tokens y AA (`ba24c29`):
   foco del sidebar, texto funcional y objetivos táctiles.
 - [#316](https://github.com/jmartinlabs/myfinanzas-app/pull/316) — I4, matriz AA (`b3571aa`):
