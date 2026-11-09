@@ -153,6 +153,59 @@ async function login(page: Page, dir: string) {
   return { secret, password };
 }
 
+async function readKeyboardFocus(page: Page) {
+  return page.evaluate(() => {
+    const element = document.activeElement as HTMLElement | null;
+    if (!element || element === document.body) return null;
+    const style = getComputedStyle(element);
+    return {
+      element: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}`,
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+    };
+  });
+}
+
+/**
+ * Comprueba el anillo de foco tras pulsar Tab desde un estado conocido.
+ *
+ * El navegador puede completar el cambio de foco o su recálculo de estilo en
+ * un ciclo posterior a la pulsación, así que la lectura se reintenta con
+ * `toPass` en lugar de evaluar `document.activeElement` de inmediato. `Tab` se
+ * pulsa una única vez: si el foco sigue en `<body>` o no hay elemento enfocado
+ * al agotar el timeout, el test falla en lugar de saltarse el primer focusable.
+ * En ningún caso se acepta un elemento sin outline visible de al menos 1px.
+ */
+async function expectVisibleKeyboardFocus(page: Page) {
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+  });
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement === document.body), {
+      message: "El foco debe partir de <body> antes de pulsar Tab",
+      timeout: 5000,
+    })
+    .toBe(true);
+
+  await page.keyboard.press("Tab");
+
+  await expect(async () => {
+    const focus = await readKeyboardFocus(page);
+    expect(
+      focus,
+      "Tab debe mover el foco fuera de <body> a un elemento de la página",
+    ).not.toBeNull();
+    if (!focus) return;
+    expect(focus.outlineStyle, `outlineStyle de <${focus.element}>`).not.toBe(
+      "none",
+    );
+    expect(
+      focus.outlineWidth,
+      `outlineWidth de <${focus.element}>`,
+    ).toBeGreaterThanOrEqual(1);
+  }).toPass({ timeout: 10000 });
+}
+
 async function resetScroll(page: Page) {
   await page.evaluate(async () => {
     window.scrollTo(0, 0);
@@ -365,18 +418,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   ).toBeVisible();
 
   // Foco visible.
-  await page.evaluate(() =>
-    (document.activeElement as HTMLElement | null)?.blur(),
-  );
-  await page.keyboard.press("Tab");
-  expect(
-    await page.evaluate(() => {
-      const element = document.activeElement as HTMLElement | null;
-      if (!element) return false;
-      const style = getComputedStyle(element);
-      return style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 1;
-    }),
-  ).toBe(true);
+  await expectVisibleKeyboardFocus(page);
 
   const select = page.getByLabel("Tema visual");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
@@ -421,18 +463,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
 
   // Foco visible también en 390.
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() =>
-    (document.activeElement as HTMLElement | null)?.blur(),
-  );
-  await page.keyboard.press("Tab");
-  expect(
-    await page.evaluate(() => {
-      const element = document.activeElement as HTMLElement | null;
-      if (!element) return false;
-      const style = getComputedStyle(element);
-      return style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 1;
-    }),
-  ).toBe(true);
+  await expectVisibleKeyboardFocus(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   // N1: si la lectura de deuda falla, no se muestra «Corte aplicado».
