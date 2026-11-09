@@ -268,6 +268,14 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await expect(plan).toContainText("E2.4 annualExecution");
   await expect(plan).toContainText("Diferencia");
   await expect(plan).not.toContainText("Total anual");
+  // AC02: la tabla no oculta IDs, contexto ni fuente de la cifra.
+  const planGenericRow = plan
+    .locator("tbody tr")
+    .filter({ hasText: "18.000,00" })
+    .first();
+  await expect(planGenericRow).toContainText("E2.4 annualExecution");
+  await expect(planGenericRow).toContainText("IDs:");
+  await expect(planGenericRow).toContainText("contexto ejercicio 2026");
 
   // Realidad: C007 con el contrato real de E2.6 y C008 cruzando año.
   const realidad = page.locator("section[aria-labelledby='e47-realidad']");
@@ -282,6 +290,14 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await expect(realidad).toContainText("350,00 €");
   await expect(realidad).toContainText("NO DISPONIBLE");
   await expect(realidad).not.toContainText("100,00 € como margen real");
+  // AC02: cada fila de realidad declara motor, IDs y contexto del Ciclo.
+  const ingresosC007 = realidad
+    .locator("tbody tr")
+    .filter({ hasText: "Ingresos" })
+    .first();
+  await expect(ingresosC007).toContainText("E2.6 monthlyFlow");
+  await expect(ingresosC007).toContainText("IDs:");
+  await expect(ingresosC007).toContainText("contexto ciclo 7");
 
   // Márgenes del plan y ND de DT8.
   const margenes = page.locator("section[aria-labelledby='e47-margenes']");
@@ -392,6 +408,33 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
 
+  // AC22: ningún estado depende solo del color; icono y texto coexisten.
+  const badges = page.locator(".e47-page .ui-badge[data-tipo='estado']");
+  const badgeCount = await badges.count();
+  expect(badgeCount).toBeGreaterThan(0);
+  for (let index = 0; index < badgeCount; index += 1) {
+    const badge = badges.nth(index);
+    await expect(badge.locator(".ui-badge-icon")).toHaveCount(1);
+    expect(await badge.getAttribute("data-estado")).toBeTruthy();
+    expect((await badge.innerText()).trim().length).toBeGreaterThan(1);
+  }
+
+  // Foco visible también en 390.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() =>
+    (document.activeElement as HTMLElement | null)?.blur(),
+  );
+  await page.keyboard.press("Tab");
+  expect(
+    await page.evaluate(() => {
+      const element = document.activeElement as HTMLElement | null;
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      return style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 1;
+    }),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
   // N1: si la lectura de deuda falla, no se muestra «Corte aplicado».
   await page.route("**/api/resumen-anual*", async (route) => {
     const url = new URL(route.request().url());
@@ -430,6 +473,34 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await expect(deudaFallida).not.toContainText("Corte aplicado");
   await expect(deudaFallida).not.toContainText("1.020,00 €");
 
+  // AC20: si el alcance no incluye patrimonio, el bloque está ausente y el
+  // resto del resumen conserva su lectura (sin inventar una cifra global).
+  await page.unroute("**/api/resumen-anual*");
+  await page.route("**/api/resumen-anual*", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(BASE_PORT);
+    const response = await route.fetch({ url: url.toString() });
+    const json: any = await response.json();
+    json.patrimonio = null;
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json,
+    });
+  });
+  await page.reload();
+  await expect(
+    page.locator("section[aria-labelledby='e47-patrimonio']"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("section[aria-labelledby='e47-realidad']"),
+  ).toContainText("2.250,00 €");
+  await expect(page.locator(".e47-page")).not.toContainText("patrimonio neto");
+  // AC19: el alcance Z-A declara visiblemente que el cociente no aplica.
+  await expect(page.locator("#e47-pendientes")).toContainText(
+    "No aplica mesesCubiertos",
+  );
+
   expect(errors).toEqual([]);
 });
 
@@ -454,6 +525,13 @@ test("AC23: sin datos no se convierte en 0,00 ni en filas inventadas", async ({
     page.locator("section[aria-labelledby='e47-archivo']"),
   ).toContainText("Gate BLOQUEADO");
   await expect(page.locator(".e47-page")).not.toContainText("0,00 €");
+  // AC20: sin corte comparable el patrimonio no fabrica cifras ni «Corte aplicado».
+  const patrimonioVacio = page.locator(
+    "section[aria-labelledby='e47-patrimonio']",
+  );
+  await expect(patrimonioVacio).toContainText(/no disponible/i);
+  await expect(patrimonioVacio).not.toContainText("Corte aplicado");
+  await expect(patrimonioVacio).not.toContainText("€");
 
   await resetScroll(page);
   await page.screenshot({
@@ -503,6 +581,44 @@ test("AC23/24: error de fuente y sesión expirada sin cifras ni fugas", async ({
   await expect(page.locator("section[aria-labelledby='e47-plan']")).toContainText(
     "1.620,00 €",
   );
+
+  // AC23: solo el carril afectado degrada; el resto conserva su lectura.
+  await page.route("**/api/resumen-anual*", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(ERROR_PORT);
+    const response = await route.fetch({ url: url.toString() });
+    const json: any = await response.json();
+    json.carriles.plan = {
+      ...json.carriles.plan,
+      estado: "No disponible",
+      motivo: "E2.4 no disponible: prueba de degradación por carril.",
+      items: [],
+      cobertura: {
+        ...json.carriles.plan.cobertura,
+        estado: "NoDisponible",
+        motivos: ["E2.4 no disponible: prueba de degradación por carril."],
+      },
+    };
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json,
+    });
+  });
+  await page.reload();
+  await expect(
+    page.locator("section[aria-labelledby='e47-plan']"),
+  ).toContainText("E2.4 no disponible");
+  await expect(
+    page.locator("section[aria-labelledby='e47-realidad']"),
+  ).toContainText("2.250,00 €");
+  await expect(
+    page.locator("section[aria-labelledby='e47-realidad']"),
+  ).toContainText("Ciclo 7");
+  await expect(page.locator(".e47-page")).not.toContainText(
+    /(?:^|\s)0,00 €/,
+  );
+  await page.unroute("**/api/resumen-anual*");
 
   await page.route("**/api/resumen-anual*", (route) =>
     route.fulfill({
@@ -577,6 +693,43 @@ test("AC21: filtros funcionales y conservación al volver de un enlace", async (
   await expect(
     page.getByRole("heading", { name: "Resumen anual", exact: true }),
   ).toBeVisible();
+
+  // AC21: activar el resto de enlaces y volver conservando la selección.
+  const volverConFiltros = async () => {
+    await expect(page).toHaveURL(/\/resumen-anual\?ejercicio=2026/);
+    await expect(page).toHaveURL(/ciclo=8/);
+    await expect(page).toHaveURL(/cobertura=Parcial/);
+    await expect(ciclo).toHaveValue("8");
+    await expect(cobertura).toHaveValue("Parcial");
+    await expect(partida).toHaveValue(partidaValue!);
+    await expect(
+      page.getByRole("heading", { name: "Resumen anual", exact: true }),
+    ).toBeVisible();
+  };
+  for (const target of [
+    { section: "e47-prevision", name: "Ver Nómina", ruta: /\/nomina$/ },
+    {
+      section: "e47-realidad",
+      name: "Ver flujo mensual del ciclo 8",
+      ruta: /\/flujo-mensual\?ciclo=8$/,
+    },
+    { section: "e47-archivo", name: "Ver movimientos", ruta: /\/movimientos$/ },
+    {
+      section: "e47-patrimonio",
+      name: "Ver inversiones",
+      ruta: /\/inversiones$/,
+    },
+    { section: "e47-patrimonio", name: "Ver deudas", ruta: /\/deudas$/ },
+  ]) {
+    await page
+      .locator(`section[aria-labelledby='${target.section}']`)
+      .getByRole("link", { name: target.name, exact: true })
+      .first()
+      .click();
+    await expect(page).toHaveURL(target.ruta);
+    await page.goBack();
+    await volverConFiltros();
+  }
 });
 
 test("AC25: descarta la respuesta antigua de una consulta retenida", async ({
