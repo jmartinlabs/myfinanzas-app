@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-09d
+## Identificadores canónicos y etapas — reconciliado 2026-11-09e
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -7,12 +7,12 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | Funcional | SPEC | DEV | QA | MERGE | Aceptación | Evidencia / siguiente |
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
-| E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
+| E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) | APTO CON RESERVAS (QA-01) | merged | pending | 26 CUBIERTO + 5 CUBIERTO local (AC19/21/23/25/30) + 2 PARCIAL (AC29/AC31); 0 UNRUN; sin PASS funcional |
 | E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` (#329) | APTO CON RESERVAS (revisión independiente por incremento; sin informe versionado); 81 pruebas | merged | pending | H-09, fuenteId en aperturas y mapping post-corte documentados sin cambio de producto; enmienda de SPEC20 solo si se quiere otro comportamiento; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
-| E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
-| E4.10 | approved (SPEC28 ratificada 2026-11-05) | verified I1–I8 merged | APTO CON RESERVAS (I8) | merged I7 `81c8960`, I8 `5ea79b9` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI y I8 regresión/AC22 integrados; 24 AC UNRUN (23+AC22 con evidencia de prueba, ninguno PASS) |
+| E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` (#334) | APTO CON RESERVAS (QA-01) | merged | pending | AC02/20/21/22/23 PASS local; AC3/AC18 PARCIAL (DT8); AC10–15 BLOCKED (E4.5/DT7); AC19 N/A documentado |
+| E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA-01) | merged | pending | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
+| E4.10 | approved | verified I1–I8 + QA-01 `c335ad0` (#333) | APTO CON RESERVAS (QA-01) | merged | pending | 23 PASS (fixtures) + AC15 PARCIAL; regresión cierre→reapertura→T1→re-cierre; sin aceptación global; DT6/E3.5 abiertos |
 | E4.11 | approved | I1–I6; AC07 #313; §18 aprobado 2026-11-09; DEV AC09 `9c857b6` (#325); defensiva #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | #327 fija el descarte de estado no canónico y requiere decisión sobre la lectura de §18.3.B; 103 web; datos reales BLOCKED |
 | E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (#323, expediente `cb1bc8a` #328) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | 15 decisiones en el expediente, todas `[PENDIENTE]`; AC01–17 UNRUN; restore Linux y DT6/DT7 bloquean B |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
@@ -2028,3 +2028,26 @@ instrucción del usuario, sin auto-resume.
 - **E4.12 `cb1bc8a` (#328):** expediente con las 15 decisiones, agrupadas G1–G5, con
   recomendación, alternativa, riesgos, dependencias, evidencia y autorización; ninguna
   aprobada por inferencia.
+
+
+## QA-01 — consolidación funcional (2026-11-09)
+
+- **E4.4 `0473a71` (#332):** AC25/AC30 con prueba específica; AC19/AC21/AC23/AC25/AC30
+  CUBIERTO local; AC29/AC31 siguen PARCIAL. Deudas separadas de Saldos y efectos de
+  cuotas/amortizaciones/conciliaciones verificados. Sin cambios de producto.
+- **E4.7 `317bb0c` (#334):** AC02/AC20/AC21/AC22/AC23 PASS local; AC19 documentado como
+  N/A con guarda y motivo visible; AC3/AC18 PARCIAL por DT8; AC10–AC15 BLOCKED. Corrección
+  mínima de UI (`sourceSummary` y nota AC19), sin fórmulas ni métricas nuevas.
+- **E4.9 `50265bb` (#331):** AC-07/12/13/15/16/18/21 con evidencia de fixtures API;
+  testplan reconciliado; sin defectos de producto; AC-09 parcial y DT6 abierto.
+- **E4.10 `c335ad0` (#333):** regresión cruzada cierre→reapertura→rectificación T1→v2,
+  idempotencia y rollback; 23 PASS (fixtures) y AC15 PARCIAL, sin aceptación global.
+- **CI:** full PASS en `#331`, `#332`, `#333` y `#334`; reruns necesarios por flakes E2E
+  ajenos (`anticipos`, `flujo-mensual`, `ui-dev05-i4`, `E4.1-AC-33`).
+- **Defectos de producto:** solo la falta de trazabilidad visual de cifras en E4.7,
+  corregida; el resto son huecos de prueba, no defectos.
+- **Decisiones abiertas:** AC29/AC31 requieren aceptación visual y suite E1.1–E1.6;
+  AC19 de E4.7 como N/A requiere ratificación funcional; AC3/AC18 siguen DT8; DT6/DT7
+  mantienen bloqueado el nivel real.
+- **Recomendación:** aceptación con reservas por módulo; sin aceptación global ni
+  equivalencia con Excel.
