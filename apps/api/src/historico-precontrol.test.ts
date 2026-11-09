@@ -1174,7 +1174,9 @@ describe("F-DT7-13 · dos fuentes solapadas", () => {
     });
     const par100 = item(resultado);
 
-    expect(resultado.cobertura.estadoCobertura).toBe("Completa");
+    // SPEC20 exige `Solapada` en cuanto hay un conflicto no resuelto (D14,
+    // paso 2). La expectativa anterior (`Completa`) contradecía la SPEC.
+    expect(resultado.cobertura.estadoCobertura).toBe("Solapada");
     expect(par100.conflictos).toContainEqual(
       expect.objectContaining({ tipo: "DosFuentes" }),
     );
@@ -1196,6 +1198,8 @@ describe("F-DT7-08 · regularización 2026", () => {
       fecha: "2026-06-15",
       evidenciaRegularizacion:
         "Q5=A: naturaleza, signo e inclusión acreditados en fixture sintético.",
+      motivo:
+        "Regularización 2026 aprobada en fixture sintético; Q5=A documentado.",
       estadoMapeoReferencia: "Pendiente",
       ...cambios,
     });
@@ -2018,11 +2022,12 @@ describe("IDs PAR en la creación de items", () => {
  * Conformidad E4.5 — pruebas P-01…P-14 de la revisión estática motor↔SPEC20.
  *
  * Fase diagnóstica: las 14 familias reprodujeron el defecto con fixtures
- * sintéticos. Solo se activan las pruebas de las correcciones autorizadas
- * (H-02/H-03/H-04/H-05/H-10/H-12). Las familias H-01/H-06/H-07/H-08/H-09/
- * H-11/H-13/H-14 se retiraron del runner porque su corrección exige una
- * decisión de SPEC; su reproducción queda documentada en el retorno del
- * paquete, sin fijar el defecto ni relajar aserciones existentes.
+ * sintéticos. Se activan las correcciones ya acreditadas
+ * (H-01/H-02/H-03/H-04/H-05/H-06/H-07/H-08/H-10/H-11/H-12/H-14a/b).
+ * H-09 (conflictos globales copiados a `item.conflictos`), H-13 (ejercicios
+ * 1–99) y el residual de `fuenteId` en aperturas quedan documentados para
+ * decisión, sin `skip` ni relajación de aserciones existentes. El caso mixto
+ * de filas fuera de `intervalosArchivo` queda fijado por F2e.
  */
 describe("Conformidad E4.5 · P-01…P-14", () => {
   test("P-02: un registro fuera del corteArchivo de su fuente no se suma sin atribución", () => {
@@ -2345,5 +2350,218 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     expect(item(resultado, "PAR900").total).not.toBe("0.00");
     expect(resultado.totales.valor).toBeNull();
     expect(resultado.cobertura.estadoCobertura).not.toBe("Completa");
+  });
+
+  test("H-01a: un Gasto de otro ejercicio no contamina el universo del corte", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [],
+        movimientos: [
+          movimiento("MV-2027", {
+            partidaId: "PAR999",
+            fecha: "2027-01-15",
+            importeCentimos: "9999",
+          }),
+        ],
+      }),
+    );
+
+    expect(resultado.sinClasificar).toEqual([]);
+    expect(resultado.totales.valor).toBe("0.00");
+    expect(resultado.totales.estadoTotal).toBe("Verificado");
+    expect(resultado.totales.motivoCodigo).not.toBe("MappingPendiente");
+  });
+
+  test("H-01b: un Gasto posterior al corte no contamina el universo del corte", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [],
+        movimientos: [
+          movimiento("MV-CORTE", {
+            partidaId: "PAR999",
+            fecha: "2026-12-01",
+            importeCentimos: "9999",
+          }),
+        ],
+      }),
+    );
+
+    expect(resultado.sinClasificar).toEqual([]);
+    expect(resultado.totales.valor).toBe("0.00");
+    expect(resultado.totales.estadoTotal).toBe("Verificado");
+    expect(resultado.totales.motivoCodigo).not.toBe("MappingPendiente");
+  });
+
+  test("H-06: una fuente esperada Ausente sin intervalo se rechaza", () => {
+    const sinIntervalo = {
+      fuenteId: "SRC-1",
+      partidaId: "PAR100",
+      estado: "Ausente",
+    } as unknown as UniversoPrecontrol["fuentesEsperadas"][number];
+
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({ universo: universo(["PAR100"], [sinIntervalo]) }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+  });
+
+  test("H-07: una Partida no declarada con mapping Pendiente conserva el motivo de universo", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH250", {
+            partidaId: "PAR250",
+            estadoMapeo: "Pendiente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(resultado.sinClasificar).toHaveLength(1);
+    expect(resultado.sinClasificar[0]!.motivo).toContain(
+      "no declarada en el universo",
+    );
+  });
+
+  test("H-11: una regularización sin motivo no suma aunque tenga evidencia Q5=A", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31", "PAR900")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH50", {
+            clase: "Regularizacion2026",
+            partidaId: "PAR900",
+            intervalo: { inicio: "2026-06-15", fin: "2026-06-15" },
+            importeCentimos: "5000",
+            fecha: "2026-06-15",
+            evidenciaRegularizacion:
+              "Q5=A: naturaleza, signo e inclusión acreditados en fixture sintético.",
+            motivo: null,
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR900"]),
+    });
+
+    expect(item(resultado, "PAR900").total).toBeNull();
+    expect(item(resultado, "PAR900").motivoCodigo).toBe(
+      "RegularizacionPendiente",
+    );
+  });
+
+  test("H-14a: rechaza una fecha de registro inválida", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({
+          registros: [registro("AH001", { fecha: "2026-02-30" })],
+        }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+  });
+
+  test("H-14b: rechaza un estado de verificación inválido", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({
+          registros: [
+            registro("AH001", {
+              estadoVerificacion:
+                "Foo" as unknown as RegistroPrecontrol["estadoVerificacion"],
+            }),
+          ],
+        }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+  });
+
+  test("F2d: una fuente con intervalosArchivo vacío no impide sumar un registro válido", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [],
+            controlDetalle: { inicio: "2026-01-01", fin: "2026-12-31" },
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(item(resultado).archivo).toBe("100.00");
+    expect(item(resultado).total).toBe("100.00");
+    expect(resultado.totales.valor).toBe("100.00");
+  });
+
+  test("F2e: el caso mixto conserva la exclusión conservadora del componente completo", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            identidad: "FUERA-DE-INTERVALO",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(resultado.agregadoNoAtribuible).toContainEqual(
+      expect.objectContaining({
+        idArchivo: "AH002",
+        partidaId: "PAR100",
+        importe: "50.00",
+      }),
+    );
   });
 });

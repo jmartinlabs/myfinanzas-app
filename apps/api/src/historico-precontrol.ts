@@ -326,6 +326,36 @@ const FECHA = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ENTERO = /^-?(0|[1-9]\d*)$/;
 const DIA_MS = 86_400_000;
 
+const CLASES_GASTO: readonly ClaseGasto[] = [
+  "GastoHistorico",
+  "Regularizacion2026",
+  "AperturaHistorica",
+];
+const ESTADOS_VERIFICACION: readonly EstadoVerificacion[] = [
+  "Verificado",
+  "NoVerificado",
+  "Rechazado",
+];
+const ESTADOS_MAPEO_PARTIDA: readonly EstadoMapeoPartida[] = [
+  "Mapeado",
+  "Pendiente",
+  "Ambigua",
+  "Excluido",
+];
+const ESTADOS_MAPEO_REFERENCIA: readonly EstadoMapeoReferencia[] = [
+  "NoAplica",
+  "Pendiente",
+  "Ambigua",
+  "Mapeado",
+];
+const REPRESENTACIONES: readonly Representacion[] = ["Si", "No", "Desconocido"];
+const TIPOS_MOVIMIENTO: readonly TipoMovimiento[] = [
+  "Gasto",
+  "Ingreso",
+  "Transferencia",
+  "Amortizacion",
+];
+
 function exigir(condicion: unknown, mensaje: string): void {
   if (!condicion) throw new ErrorPrecontrol(mensaje);
 }
@@ -521,9 +551,11 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
       esIdentificadorPartida(esperada.partidaId),
       `Partida esperada inválida: ${esperada.partidaId}.`,
     );
+    // SPEC20 §Cobertura: `fuentesEsperadas[].intervalo` es obligatorio para
+    // todos los estados, no solo para `Presente`.
     exigir(
-      esperada.estado !== "Presente" || esperada.intervalo !== undefined,
-      "Fuente esperada Presente sin intervalo declarado.",
+      esperada.intervalo !== undefined,
+      "Fuente esperada sin intervalo declarado.",
     );
     if (esperada.intervalo) {
       validarIntervalo(esperada.intervalo);
@@ -566,6 +598,27 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
   for (const registro of entrada.registros) {
     exigir(!ids.has(registro.idArchivo), "idArchivo duplicado.");
     ids.add(registro.idArchivo);
+    exigir(
+      CLASES_GASTO.includes(registro.clase),
+      `clase inválida en registro ${registro.idArchivo}.`,
+    );
+    exigir(
+      ESTADOS_VERIFICACION.includes(registro.estadoVerificacion),
+      `estadoVerificacion inválido en registro ${registro.idArchivo}.`,
+    );
+    exigir(
+      ESTADOS_MAPEO_PARTIDA.includes(registro.estadoMapeo),
+      `estadoMapeo inválido en registro ${registro.idArchivo}.`,
+    );
+    exigir(
+      ESTADOS_MAPEO_REFERENCIA.includes(registro.estadoMapeoReferencia),
+      `estadoMapeoReferencia inválido en registro ${registro.idArchivo}.`,
+    );
+    exigir(
+      REPRESENTACIONES.includes(registro.representadoEnMovimientos),
+      `representadoEnMovimientos inválido en registro ${registro.idArchivo}.`,
+    );
+    if (registro.fecha !== null) fechaValida(registro.fecha);
     // Un registro de archivo no puede atribuirse sin una fuente declarada: el
     // límite duro de esa fuente tampoco puede omitirse por `fuenteId` inventado.
     if (registro.clase !== "AperturaHistorica")
@@ -608,6 +661,10 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
   for (const movimiento of entrada.movimientos) {
     fechaValida(movimiento.fecha);
     centimos(movimiento.importeCentimos);
+    exigir(
+      TIPOS_MOVIMIENTO.includes(movimiento.tipo),
+      `tipo inválido en Movimiento ${movimiento.idMovimiento}.`,
+    );
     exigir(
       esIdentificadorPartida(movimiento.partidaId),
       `partidaId inválido en Movimiento ${movimiento.idMovimiento}.`,
@@ -1278,7 +1335,10 @@ function analizarItem(
 
     if (registro.clase === "Regularizacion2026") {
       const evidencia = registro.evidenciaRegularizacion?.trim();
-      if (entrada.ejercicio !== 2026 || !evidencia) {
+      const motivo = registro.motivo?.trim();
+      // SPEC20 §Regularización válida de 2026: exige motivo explícito además
+      // de la evidencia Q5=A; no se infiere por nombre, año ni importe.
+      if (entrada.ejercicio !== 2026 || !evidencia || !motivo) {
         bloqueos.push("RegularizacionPendiente");
         if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
         continue;
@@ -1569,7 +1629,14 @@ export function combinarHistoricoPrecontrol(
       registro.partidaId === null ||
       registro.estadoMapeo === "Pendiente" ||
       registro.estadoMapeo === "Ambigua";
-    if (mappingPendiente) {
+    // SPEC20 §FueraDeUniverso: una Partida no declarada conserva el motivo de
+    // universo aunque su mapping también esté Pendiente/Ambigua. El motivo
+    // específico se añade en el bloque de `partidasFueraDeUniverso`.
+    const partidaFueraDeUniverso =
+      universoAcreditado &&
+      registro.partidaId !== null &&
+      !entrada.universo.partidas.includes(registro.partidaId);
+    if (mappingPendiente && !partidaFueraDeUniverso) {
       sinClasificar.push({
         idArchivo: registro.idArchivo,
         importe: decimal(centimos(registro.importeCentimos)),
@@ -1590,9 +1657,14 @@ export function combinarHistoricoPrecontrol(
       partidasDescubiertas.add(registro.partidaId);
   }
   for (const movimiento of entrada.movimientos)
+    // El descubrimiento usa el mismo alcance que el combinador: un Gasto de
+    // otro ejercicio o posterior al corte no es un hecho de esta consulta y no
+    // puede contaminar `FueraDeUniverso`.
     if (
       movimiento.tipo === "Gasto" &&
       !movimiento.anulado &&
+      movimiento.fecha >= desde &&
+      movimiento.fecha <= hasta &&
       esIdentificadorPartida(movimiento.partidaId)
     )
       partidasDescubiertas.add(movimiento.partidaId);
@@ -1671,7 +1743,13 @@ export function combinarHistoricoPrecontrol(
 
   let estadoCobertura: EstadoCobertura;
   if (!universoAcreditado) estadoCobertura = "NoAcreditada";
-  else if (items.some((item) => item.estadoCobertura === "Solapada"))
+  else if (
+    items.some((item) => item.estadoCobertura === "Solapada") ||
+    // SPEC20 D14, paso 2: cualquier conflicto no resuelto (incluido
+    // `DosFuentes`, `DuplicadoAmbiguo` y `VersionBifurcada`) eleva la
+    // cobertura global a `Solapada`; no se certifica `Completa`.
+    conflictos.length > 0
+  )
     estadoCobertura = "Solapada";
   else if (
     items.every((item) => item.estadoCobertura === "NoDisponible") &&
