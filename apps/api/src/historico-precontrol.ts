@@ -360,13 +360,26 @@ function exigir(condicion: unknown, mensaje: string): void {
   if (!condicion) throw new ErrorPrecontrol(mensaje);
 }
 
+/**
+ * Construye una fecha UTC civil sin la coerción de `Date.UTC` para años 0–99,
+ * que los interpreta como 1900–1999. SPEC20 declara el ejercicio 1–9999.
+ */
+function fechaUtc(anio: number, mes: number, dia: number): Date {
+  const fecha = new Date(0);
+  fecha.setUTCHours(0, 0, 0, 0);
+  fecha.setUTCFullYear(anio, mes - 1, dia);
+  return fecha;
+}
+
 function fechaValida(valor: string): FechaCivil {
   const partes = FECHA.exec(valor);
   if (!partes) throw new ErrorPrecontrol("Fecha civil inválida.");
   const anio = Number(partes[1]);
   const mes = Number(partes[2]);
   const dia = Number(partes[3]);
-  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  if (anio < 1 || anio > 9999)
+    throw new ErrorPrecontrol("Fecha civil inválida.");
+  const fecha = fechaUtc(anio, mes, dia);
   if (
     fecha.getUTCFullYear() !== anio ||
     fecha.getUTCMonth() + 1 !== mes ||
@@ -378,7 +391,7 @@ function fechaValida(valor: string): FechaCivil {
 
 function sumarDias(valor: FechaCivil, dias: number): FechaCivil {
   const [anio, mes, dia] = valor.split("-").map(Number);
-  return new Date(Date.UTC(anio, mes - 1, dia) + dias * DIA_MS)
+  return new Date(fechaUtc(anio!, mes!, dia!).getTime() + dias * DIA_MS)
     .toISOString()
     .slice(0, 10);
 }
@@ -502,6 +515,20 @@ function contiene(intervalo: Intervalo, fecha: FechaCivil): boolean {
   return fecha >= intervalo.inicio && fecha <= intervalo.fin;
 }
 
+/**
+ * Un registro de archivo pertenece a la consulta si su intervalo solapa
+ * `[desde, hasta]`. Un registro íntegramente posterior al corte no descubre
+ * Partidas ni contamina `sinClasificar`, igual que un Movimiento fuera de rango
+ * (H-01); el registro sigue visible en su Partida si esta ya existe.
+ */
+function registroEnAlcance(
+  registro: RegistroPrecontrol,
+  desde: FechaCivil,
+  hasta: FechaCivil,
+): boolean {
+  return registro.intervalo.inicio <= hasta && registro.intervalo.fin >= desde;
+}
+
 /** Una Partida DT7 se identifica como `PARxxx`; otro alcance no crea un item. */
 const IDENTIFICADOR_PARTIDA = /^PAR\d+$/;
 
@@ -619,8 +646,10 @@ function validarEntrada(entrada: EntradaPrecontrol): void {
       `representadoEnMovimientos inválido en registro ${registro.idArchivo}.`,
     );
     if (registro.fecha !== null) fechaValida(registro.fecha);
-    // Un registro de archivo no puede atribuirse sin una fuente declarada: el
+    // Un registro de Gasto no puede atribuirse sin una fuente declarada: el
     // límite duro de esa fuente tampoco puede omitirse por `fuenteId` inventado.
+    // SPEC20 excluye `AperturaHistorica` de la cobertura/corte de Gastos y la
+    // muestra aparte, por lo que su `fuenteId` no exige un tramo en `fuentes[]`.
     if (registro.clase !== "AperturaHistorica")
       exigir(
         fuentes.has(registro.fuenteId),
@@ -1653,6 +1682,7 @@ export function combinarHistoricoPrecontrol(
   const partidasDescubiertas = new Set<string>();
   for (const registro of resolucion.vigentes) {
     if (registro.clase === "AperturaHistorica") continue;
+    if (!registroEnAlcance(registro, desde, hasta)) continue;
     if (registro.partidaId && esIdentificadorPartida(registro.partidaId))
       partidasDescubiertas.add(registro.partidaId);
   }
@@ -1696,6 +1726,7 @@ export function combinarHistoricoPrecontrol(
   if (universoAcreditado) {
     for (const registro of resolucion.vigentes) {
       if (registro.clase === "AperturaHistorica") continue;
+      if (!registroEnAlcance(registro, desde, hasta)) continue;
       if (
         registro.partidaId === null ||
         entrada.universo.partidas.includes(registro.partidaId)
