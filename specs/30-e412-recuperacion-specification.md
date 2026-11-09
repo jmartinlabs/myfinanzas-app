@@ -1,11 +1,18 @@
 # 30 — E4.12 Ensayo integral de recuperación y equivalencia: Specification
 
-Status: **DRAFT — no aprobada; no autoriza DEV, ensayo, datos reales, migración, VPS ni merge.**
-Approval source/date: **PENDING** — no existe aprobación funcional ni revisión de Álex
-registrada para E4.12.
-Base: `test` `7477e86` (2026-11-08); rama `docs/spec30-revision`. Sin cambios de aplicación,
-esquema, infraestructura, datos ni tablero.
-Ningún AC está ejecutado: este documento **no declara PASS** y **no cierra E4.12**.
+Status: **F0 APROBADA — 2026-11-09. F1 IN_PROGRESS (preparación documental).** Aprobación
+explícita e identificable del usuario al marco documental de E4.12 —esta SPEC, su testplan,
+los 17 AC, los niveles A/B y los gates independientes—, transmitida por el coordinador. El
+`PASS` de F0 es de fase documental: **no es PASS de ningún AC ni de E4.12**. No autoriza DEV,
+ensayo, datos reales, migración, VPS ni merge; F2/F3/F4 siguen `UNRUN`.
+Approval source/date: **2026-11-09 — usuario**, aprobación del marco documental F0
+(SPEC30/testplan, AC01–AC17, niveles A/B y gates de §5/§6); revisión de Álex no registrada.
+F1: **IN_PROGRESS y PENDIENTE de decisiones** — §9 contiene propuestas documentales, no
+decisiones tomadas.
+Base del borrador: `test` `7477e86` (2026-11-08); revisión F0/F1: `test` `2e5de7c`
+(2026-11-09), rama `docs/e412-f1`. Sin cambios de aplicación, esquema, infraestructura, datos
+ni tablero; los estados de dependencias de §4/§7 no se reauditan en F1.
+Ningún AC está ejecutado: este documento **no declara PASS de AC** y **no cierra E4.12**.
 
 Contexto y fuentes: [requisitos E4.12](investigations/e412-recovery-requirements-2026-11-04.md),
 [roadmap E4.12](roadmap.md#e412--ensayo-integral-de-recuperación-y-preparación-de-equivalencia)
@@ -40,6 +47,14 @@ aceptación de E4.10 (2026-11-06/07) y E4.11 (2026-11-07). Las diferencias mater
 registran en §3.2, §4.1 y §7 y no reabren decisiones aprobadas. El tablero sigue siendo la
 referencia de seguimiento, pero no es autorización y puede ir por detrás de la evidencia
 registrada.
+
+**Registro de aprobación F0 (2026-11-09).** `[CONFIRMADO]` El usuario aprobó de forma
+explícita e identificable el **marco documental** de E4.12 —esta SPEC, su testplan, los 17
+AC, los niveles A/B y los gates independientes—, transmitida por el coordinador. La
+aprobación no incluye ninguna decisión de §9 ni autoriza DEV, ensayo, datos reales,
+migración, VPS o merge. `[CONFIRMADO]` F0 queda **`PASS`/`DONE`** como gate
+documental; `[CONFIRMADO]` F1 queda **`IN_PROGRESS`**, con propuestas `[PROPUESTA]` en §9, y
+F2/F3/F4 **`UNRUN`**. Una fase cerrada no convierte ningún AC en PASS.
 
 ---
 
@@ -242,8 +257,9 @@ reproducción en macOS (sqlite-b3-short-read).
 
 `[CONFIRMADO]` Las dependencias se leen en su estado real; el tablero **no es autorización**.
 Los estados de E1–E3 y E4.1/E4.2 proceden del inventario de requisitos, del tablero y de los
-informes de aceptación citados; **no se reauditan en esta rama**. El estado vigente se fija
-a `test` `7477e86` (2026-11-08), no a la base histórica del borrador.
+informes de aceptación citados; **no se reauditan en esta rama**. El estado vigente se fijó
+a `test` `7477e86` (2026-11-08), no a la base histórica del borrador; la revisión F0/F1 de
+2026-11-09 no lo reaudita.
 
 ### 4.1 Estado real por entrega
 
@@ -392,11 +408,15 @@ ensayar.
 
 | Fase | Objetivo | Entregable | Autorización requerida | Criterio de salida |
 | --- | --- | --- | --- | --- |
-| **F0 · SPEC** | Fijar requisitos, AC, entradas, fases, riesgos y exclusiones | Este documento y su testplan | Ninguna para redactar; aprobación del usuario para cerrar la fase | SPEC y testplan aprobados de forma explícita e identificable |
-| **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, alcance E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización específica de F1 | Decisiones §9 resueltas o declaradas fuera con brecha |
+| **F0 · SPEC** | Fijar requisitos, AC, entradas, fases, riesgos y exclusiones | Este documento y su testplan | Ninguna para redactar; aprobación del usuario para cerrar la fase | **Cumplido 2026-11-09:** marco documental aprobado de forma explícita e identificable; `PASS`/`DONE` |
+| **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, alcance E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización de preparación documental; la resolución de §9 exige decisión expresa del usuario | **`IN_PROGRESS`:** propuestas en §9; ninguna decisión tomada ni declarada fuera |
 | **F2 · Preparación de evidencias** | Construir fixtures integrales, obtener/verificar la copia ficticia coherente, congelar la matriz, acordar criterios por escenario y habilitar el entorno aislado | Expediente de preparación con manifiesto, checksum, matriz congelada y criterios | Autorización específica de F2 | Entradas §5 aplicables al nivel autorizado, completas y revisadas; **no se ejecuta el ensayo integral** |
 | **F3 · Ensayo autorizado** | Ejecutar los escenarios y recoger evidencia cruda, en el nivel A o B que declare la autorización | Evidencia por AC y por escenario | Autorización explícita e identificable del ensayo, con nivel A/B y AC incluidos | Escenarios ejecutados o `BLOCKED` con causa; sin PASS inferido; un nivel A no se presenta como integral |
 | **F4 · Informe y brechas** | Consolidar resultados, diferencias y lista de brechas para P7 | Informe E4.12 con AC01–AC17 y lista de discrepancias | Autorización de F4 para publicar/registrar el informe | Informe revisado por QA independiente y decisión de gate P7 sin inferencias |
+
+`[CONFIRMADO]` **F0 = `PASS`/`DONE`** (2026-11-09, gate documental). **F1 = `IN_PROGRESS`**
+(preparación documental); su cierre exige decisiones de §9 identificables. **F2/F3/F4 =
+`UNRUN`.**
 
 `[CONFIRMADO]` La autorización de publicación de rama/PR no sustituye la autorización del
 ensayo ni la del merge (approvals). `[PROPUESTA]` La autorización de F3 debe indicar
@@ -454,22 +474,146 @@ identificable y, cuando corresponda, su propia especificación y autorización.
 
 ---
 
-## 9. Decisiones que la aprobación debe resolver
+## 9. Decisiones F1
 
-`[PENDIENTE]` Esta SPEC no fija estos valores; la fase F1 debe registrarlos antes de
-preparar evidencias. No se inventan plazos, umbrales, rutas ni proveedores.
+`[PENDIENTE]` **F1 está `IN_PROGRESS`**: esta sección contiene **propuestas documentales**
+para las nueve decisiones de preparación. Ninguna se considera tomada y ninguna fija
+destino, custodio, retención, claves ni configuración operativa; el usuario debe resolverlas
+de forma explícita e identificable antes de F2. Cada propuesta indica la opción recomendada,
+las alternativas, los criterios y riesgos, la evidencia o autorización que falta y el AC/gate
+que desbloquearía. No se inventan plazos, umbrales, rutas ni proveedores. DT6 y DT7 siguen
+abiertos y estas propuestas no los cierran; tampoco alteran AC, niveles, gates ni las
+reservas de E4.5/E4.7/E4.9/E4.10/E4.11.
+
+### 9.1 Destino y segunda copia
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — dos soportes físicos existentes en ubicaciones distintas:** copia primaria en un disco privado distinto del sistema/VPS y segunda copia en otro soporte guardado en un lugar diferente; volumen cifrado y permisos `0700`/`0600`; sin compras ni nube por defecto. `[PROPUESTA]` | Independencia ante fallo de hardware, robo o ransomware; coste nulo; verificable por el usuario; no depende del VPS. | El traslado manual puede retrasarse u olvidarse; capacidad y estado de los discos sin verificar; dos ubicaciones en la misma vivienda no cubren todos los riesgos. |
+| Alternativa — una copia externa más una local | Menor coste operativo; cubre el fallo del VPS si la local está en otro dispositivo. | No cubre pérdida o robo del equipo local; no alcanza la independencia recomendada por DT6. |
+| Alternativa — almacenamiento remoto cifrado | Independencia geográfica y posibilidad de automatizar. | Introduce tercero, coste y decisión DT10; claves y acceso remoto amplían la superficie. |
+| Alternativa — solo el disco del VPS o el mismo equipo | Ninguna operación adicional. | No cubre fallo del VPS o del disco; no es copia externa; rechazada para nivel B. |
+
+`[PENDIENTE]` Falta: inventario real de discos/soportes, rutas privadas, capacidad y
+frecuencia de traslado, confirmados por el usuario; autorización DT6. No se fijan aquí
+identificadores ni rutas. Desbloquea AC01/AC11 en nivel B y los gates DT6 y Entorno; no
+desbloquea AC12/AC13 (DT7) ni la equivalencia.
+
+### 9.2 Canal de exportación
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — exportación manual controlada** desde un staging privado a cada soporte, copiando solo `database.age` y `access-key.age`, con SHA-256 origen/destino, nombre/tamaño/recuento y registro de llegada confirmado por el operador autorizado; sin asumir montaje remoto ni sincronización. `[PROPUESTA]` | Verificación extremo a extremo; operable por el usuario; no depende del VPS; minimiza terceros y credenciales. | Error humano en la comprobación; copia parcial o de versión equivocada; soporte no cifrado a nivel de volumen. |
+| Alternativa — medio extraíble con la misma verificación | Compatible con la recomendada; puede ser el canal concreto. | Pérdida o contagio del medio; requiere control de acceso físico. |
+| Alternativa — montaje o sincronización automática | Comodidad y menor intervención. | Más superficie, credenciales y dependencia de red; no disponible hoy; puede asumir un montaje inexistente. |
+| Alternativa — publicación en almacenamiento remoto | Llegada desatendida. | Tercero, coste y decisión DT10; el paquete cifrado sigue expuesto a metadatos y borrado remoto. |
+
+`[PENDIENTE]` Falta: soporte/canal y operador designado, evidencia de llegada real y
+autorización DT6 junto con la decisión F1. Desbloquea AC01/AC10/AC11 en nivel B y los gates
+DT6/Evidencia.
+
+### 9.3 Custodia de la identidad `age`
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — custodia separada y offline:** identidad `age` y clave de aplicación de 32 bytes fuera del VPS y del disco de copias, en soporte físico protegido; copia de recuperación en ubicación distinta; acceso de emergencia documentado sin revelar el secreto; rotación solo con re-cifrado y verificación. `[PROPUESTA]` | Separa el secreto de las copias; recuperable sin depender de un servicio; no publica claves; rotación controlada. | Pérdida de la identidad deja las copias irrecuperables; un único custodio es punto de fallo; rotar sin re-cifrar inutiliza copias antiguas. |
+| Alternativa — gestor de secretos local/offline | Forma concreta de la recomendada si ya existe; sin tercero. | Dependencia de la disponibilidad y del mantenimiento del equipo. |
+| Alternativa — gestor o almacenamiento en nube | Recuperación remota y copia geográfica. | Tercero y decisión DT10; superficie de acceso y dependencia de credenciales. |
+| Alternativa — custodia por un tercero de confianza | Delegación operativa. | Dependencia humana y de disponibilidad; el ensayo no puede verificar su control. |
+| Alternativa — clave en el mismo equipo o disco que las copias | Ninguna operación adicional. | Un único fallo o robo compromete copia y clave; rechazada. |
+
+`[PENDIENTE]` Falta: ubicación, custodio, copia de recuperación, política de rotación y
+prueba de descifrado; autorización DT6. Desbloquea AC01/AC08/AC09 en nivel B y el gate
+DT6/custodia; no sustituye AC12/AC13.
+
+### 9.4 Retención y poda
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — calendario aprobado con poda manual reversible:** mantener el objetivo ya aceptado de 7 diarias / 4 semanales / 3 mensuales sin reabrirlo; iniciar el calendario en la fecha que fije el usuario tras la primera copia verificada; poda manual, con cuarentena antes de borrar, documentada y ejecutada por un responsable designado con registro; automatizar solo cuando procedimiento, rotación y restore estén estables y autorizados. `[PROPUESTA]` | Cumple el objetivo de retención; evita borrado prematuro; trazable y reversible. | La poda manual puede olvidarse y agotar capacidad; la fecha de inicio mal fijada crea una retención ficticia; automatizar antes de estabilizar el restore puede perder copias. |
+| Alternativa — automatizar la poda desde el inicio | Menor intervención. | Riesgo de borrar antes de verificar; el procedimiento aún no es estable. |
+| Alternativa — retención indefinida | No pierde copias por poda. | Crecimiento sin control y mayor exposición; no cumple una política de retención. |
+| Alternativa — solo copias diarias | Operación simple. | No cumple 7/4/3 ni cubre recuperación a más largo plazo. |
+| Alternativa — GFS ampliado | Mayor profundidad histórica. | Capacidad no demostrada; más superficie de poda y verificación. |
+
+`[PENDIENTE]` Falta: fecha de inicio, capacidad, responsable y registro de poda;
+autorización del usuario/DT6. Desbloquea la evidencia de retención para AC11 en nivel B y el
+gate DT6; no declara RPO/RTO cumplidos.
+
+### 9.5 `--allow-older`
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — deshabilitado por defecto y excepcional por copia:** uso solo para una copia histórica concreta de la retención, con motivo, riesgo aceptado, alcance y aprobación identificable registrados antes, y verificación completa de manifiesto/checksum y resultado; nunca para evitar una copia reciente ni como bypass general. `[PROPUESTA]` | Mínimo privilegio; trazabilidad por caso; mantiene recuperable la retención. | Copia obsoleta tomada como vigente; restauración sobre el destino equivocado; normalización del bypass. |
+| Alternativa — autorización permanente por política | Menos fricción operativa. | Convierte la excepción en rutina y difumina el control; rechazada por defecto. |
+| Alternativa — prohibición total | Elimina el riesgo de uso indebido. | Deja la retención 7/4/3 no recuperable y contradice el objetivo de recuperación. |
+| Alternativa — umbral configurable | Flexibilidad. | Más superficie de configuración y de decisión; no sustituye la aprobación por caso. |
+
+`[PENDIENTE]` Falta: política y aprobación por caso, evidencia en carpeta privada;
+decisión F1 y autorización DT6. Desbloquea AC09 (antigüedad no aceptada) y la recuperación
+de la retención para AC11/AC13 en nivel B; gate DT6.
+
+### 9.6 Equipo de ensayo Linux x86_64
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — equipo Linux x86_64 físico y aislado**, existente o autorizado por el usuario, sin acceso a PROD; para nivel A sin datos reales y para nivel B con la configuración productiva declarada. Si no está disponible, el nivel B queda `BLOCKED` por plataforma y no se sustituye por macOS/arm64 ni por un runner compartido. `[PROPUESTA]` | Arquitectura real; aislamiento; repetibilidad; no expone datos reales a CI. | Disponibilidad y características por confirmar; el hardware del usuario puede no cumplir aislamiento; sin equipo no hay nivel B. |
+| Alternativa — runner CI `ubuntu-24.04` | Linux x86_64 ya disponible. | Solo admite fixtures sintéticas; un runner compartido no acredita el ensayo real ni admite datos reales. |
+| Alternativa — VM Linux x86_64 emulada sobre el Mac arm64 | No requiere hardware adicional. | No acredita hardware real; válida solo para fixtures y con limitación declarada. |
+| Alternativa — hardware x86_64 del usuario si cumple aislamiento | Sin compras y con control físico. | Hay que verificar arquitectura, sistema, red y ausencia de la base en servicio. |
+| Alternativa — diferir el nivel B | No bloquea la preparación A. | Brecha explícita de plataforma para P7. |
+
+`[PENDIENTE]` Falta: disponibilidad, características y fecha del equipo, y autorización de
+uso. Desbloquea AC01/AC08/AC16 en nivel B y el gate Entorno; el nivel A puede usar el
+entorno aislado disponible.
+
+### 9.7 Configuración productiva
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — preflight declarado y revisado:** `NODE_ENV`, `DATABASE_PATH`, `AUTH_KEY_PATH` y `APP_ORIGIN` coherentes con el despliegue; identidad de origen y `database_origin`/`key_hash` compatibles; rutas nuevas con `0700`/`0600`; loopback/red aislada y sin acceso a la base en servicio. Valores concretos en la carpeta privada, nunca en Git. Nivel A declara configuración de fixture; nivel B, configuración productiva declarada y revisada. `[PROPUESTA]` | Fidelidad al despliegue; aislamiento; secretos fuera de Git; reproducible por revisión. | Abrir una base `production` como demo; mezclar identidades productiva y de fixture; `APP_ORIGIN` incorrecto invalida el acceso/TOTP; fuga de rutas o claves. |
+| Alternativa — configuración de demo | Sencilla. | Rechazada para nivel B: no acredita el comportamiento productivo. |
+| Alternativa — valores por defecto del repositorio | Sin preparación adicional. | Insuficiente; no declara aislamiento ni identidad compatible. |
+| Alternativa — archivo local versionado | Portable entre equipos. | Riesgo de fuga en Git o en artefactos; rechazado frente a variables del entorno del ensayo. |
+
+`[PENDIENTE]` Falta: declaración y revisión de los valores, autorización del entorno y
+evidencia del preflight; DT6/Entorno. Desbloquea AC01/AC08/AC10/AC16 en nivel B. No fija
+valores operativos ni sustituye la configuración del despliegue.
+
+### 9.8 Carpeta de evidencias
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — carpeta privada fuera de Git y del VPS:** permisos `0700`, estructura por fase/AC, registro con acción, entorno, candidato, base, fecha, operador y log crudo; sin datos personales, rutas sensibles ni secretos; acceso restringido y sin sincronización pública. `[PROPUESTA]` | Privacidad; trazabilidad por AC; revisión QA y reproducción; no publica datos. | Fuga por sincronización o copia de seguridad; pérdida de evidencia; logs que arrastran secretos. |
+| Alternativa — artefactos de CI | Automático y accesible al equipo. | Runner compartido y riesgo de publicación; rechazado para evidencia real. |
+| Alternativa — carpeta del repositorio con `.gitignore` | Cómoda para el ejecutor. | Riesgo de publicación, historial y revisión; rechazada. |
+| Alternativa — almacenamiento cifrado en nube | Disponibilidad y copia remota. | Tercero y decisión DT10; claves y acceso remoto añaden superficie. |
+| Alternativa — disco local cifrado | Control físico y sin tercero. | Debe garantizar separación del VPS, permisos y copia de la propia evidencia. |
+
+`[PENDIENTE]` Falta: ruta, responsable, formato y política de conservación de la evidencia;
+decisión F1. Desbloquea AC10/AC17 y la revisión QA de AC14/AC15; gate Evidencia.
+
+### 9.9 Corte y matriz
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — corte común congelado antes de F2:** fecha civil y SHA de `test` con v27/C27; matriz v5.11 congelada por hash/fecha con identificador, procedencia, escenario R/P, valor esperado, unidad/precisión y regla, revisada por usuario/asesor y no derivada del motor. Nivel A admite matriz sanitizada congelada; nivel B exige matriz revisada y contraste privado autorizado si se declara. `[PROPUESTA]` | Oráculo independiente; restore y contraste al mismo corte; reproducible; separa ficticio de real. | Sesgo si se calcula con el motor; comparar cortes distintos; usar datos reales sin autorización (AC-25/P3); un cambio de esquema invalida AC16. |
+| Alternativa — matriz generada por el motor | Esfuerzo mínimo. | Rechazada: no es independiente y no demuestra equivalencia. |
+| Alternativa — matriz sin congelar, actualizada durante el ensayo | Se adapta a hallazgos. | Rompe el oráculo y permite ajustar el esperado al resultado. |
+| Alternativa — corte móvil | Evita re-fijar el SHA. | Invalida AC16 y mezcla versiones de app/esquema. |
+| Alternativa — solo referencia sanitizada | No exige datos privados. | Limita AC12/AC13 a un alcance ficticio; no acredita equivalencia real. |
+
+`[PENDIENTE]` Falta: fecha/corte, revisión del mapping DT7 por el usuario, registro de
+congelación y autorización de datos reales si aplica; AUD-06. Desbloquea
+AC12/AC13/AC14/AC16 y los gates Oráculo/DT7; no desbloquea por sí solo AC-25/P3.
+
+### 9.10 Decisiones restantes
+
+`[PENDIENTE]` Estas decisiones no tienen propuesta cerrada en F1 y siguen sujetas a los
+informes de aceptación y al tablero:
 
 | Decisión | Qué debe fijar | Fuente |
 | --- | --- | --- |
-| Destino y segunda copia | Discos/rutas privadas existentes, capacidad y frecuencia de traslado | DT6 §6 |
-| Canal de exportación | Cómo llega la copia al soporte externo y quién lo verifica | DT6 §6 |
-| Custodia de identidad `age` | Ubicación, custodio, copia de recuperación y rotación | DT6 §6 |
-| Retención y poda | Inicio del calendario, responsable y registro | DT6 §6 |
-| `--allow-older` | Autorización, motivo, riesgo y alcance para copias >24 h | DT6 §3.5.1 |
-| Equipo de ensayo | Linux x86_64 aislado disponible o alcance alternativo declarado | DT6 §4/§6 |
-| Configuración productiva | `NODE_ENV`, `DATABASE_PATH`, `AUTH_KEY_PATH`, `APP_ORIGIN` y aislamiento | DT6 §3.1.1 |
-| Carpeta de evidencias | Ruta privada fuera de Git y formato | DT6 §6 |
-| Corte y matriz | Fecha/corte común y revisión de la matriz v5.11 | E4.12-AC2; DT7 |
 | Datos reales | Si se autoriza contraste privado (AC-25/P3) o se declara límite | AUD-06 |
 | **Nivel de F3** | Si se autoriza solo nivel A (fixtures), solo nivel B o ambos, con AC incluidos y exclusiones | §2.5, §4.6, §6 |
 | **Aceptación E4.9/E4.10/E4.11** | Si sus PASS de fixtures y reservas (`PARCIAL`/`BLOCKED real`) se aceptan como corte de E4.12 o si se espera a su cierre; conciliar el tablero con I1–I6 de E4.11 | Informes de aceptación; tablero |
@@ -477,10 +621,17 @@ preparar evidencias. No se inventan plazos, umbrales, rutas ni proveedores.
 | **Candidato y tags** | SHA congelado de `test` con v27/C27; confirmar que no se crea tag ni se depende de SPEC35 para F3 | SPEC35; AC16 |
 | **Alcance E4.5/DT7** | Si E4.5 y el archivo precontrol entran en el corte o se excluyen con brecha explícita | roadmap E4.12-AC3; DT7 |
 
+`[PENDIENTE]` F1 no se cierra hasta que el usuario resuelva de forma explícita e
+identificable las nueve propuestas anteriores y estas decisiones restantes. Ninguna
+propuesta es una decisión y el silencio no la convierte en aprobada.
+
 ---
 
 ## 10. Cierre de esta SPEC
 
-`[PENDIENTE]` La SPEC solo queda aprobada con una aprobación explícita e identificable del
-usuario. Esa aprobación no autoriza DEV, ensayo, datos reales, migración, VPS ni merge, y
-no cierra ningún AC. La ejecución del ensayo requiere las autorizaciones separadas de §6.
+`[CONFIRMADO]` El usuario aprobó el **marco documental de F0** el 2026-11-09 (SPEC,
+testplan, 17 AC, niveles A/B y gates independientes). Esa aprobación no autoriza DEV,
+ensayo, datos reales, migración, VPS ni merge, y no cierra ningún AC.
+
+`[PENDIENTE]` F1 sigue **`IN_PROGRESS`**: las decisiones de §9 no están tomadas. F2/F3/F4
+permanecen `UNRUN`. La ejecución del ensayo requiere las autorizaciones separadas de §6.
