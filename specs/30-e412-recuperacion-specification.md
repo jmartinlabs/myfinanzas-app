@@ -488,6 +488,11 @@ que desbloquearía. No se inventan plazos, umbrales, rutas ni proveedores. DT6 y
 abiertos y estas propuestas no los cierran; tampoco alteran AC, niveles, gates ni las
 reservas de E4.5/E4.7/E4.9/E4.10/E4.11.
 
+El [expediente consolidado de decisiones F1](investigations/e412-f1-decision-dossier-2026-11-09.md)
+reúne las quince decisiones —§9.1–§9.9 y §9.10— con recomendación, alternativa, riesgos,
+dependencias, evidencia disponible, autorización y gate. Es apoyo documental: no aprueba
+ninguna decisión ni altera esta sección.
+
 ### 9.1 Destino y segunda copia
 
 | Opción | Criterios | Riesgos |
