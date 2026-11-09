@@ -27,9 +27,10 @@ historia de E1.1–E1.5 y no reabren decisiones.
 
 - **Objetivo de los bloques UI** (no una declaración de cumplimiento actual): texto normal
   ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas; foco visible; objetivos ≥ 44 px; zoom
-  200 %; `prefers-reduced-motion`; sin scroll horizontal de página a 390 px. El CSS actual aún
-  contiene controles y textos por debajo de esos umbrales; se corrigen en `DEV-01`, `DEV-04` y
-  `DEV-05`.
+  200 %; `prefers-reduced-motion`; sin scroll horizontal de página a 390 px. Fuera de la matriz
+  el CSS conserva controles y textos por debajo de esos umbrales; `DEV-01`–`DEV-05` corrigieron
+  la base y `DEV-07` mide la matriz y declara la deuda residual (véase «Evidencia AA, medición y
+  catálogo de primitivas (DEV-07)»).
 - La excepción de contraste de #7 se conserva como registro histórico; los temas actuales deben
   cumplir AA con sus propios tokens.
 
@@ -38,6 +39,137 @@ historia de E1.1–E1.5 y no reabren decisiones.
 - Se conservan las reglas vigentes de formularios, foco, errores, borrador, IDs inmutables y
   distinción entre ausencia, cero, `ND`, `No aplica` y `Sin datos`. No se convierten ausencias en
   cero ni se inventan importes.
+
+### Evidencia AA, medición y catálogo de primitivas (DEV-07)
+
+Estado: **evidencia medida, no aprobación ni cierre**. Esta sección recoge el contrato AA que
+aplican las pruebas de `DEV-07`, el procedimiento reproducible, el catálogo de primitivas y la
+deuda residual. No declara PASS, no cierra `DEV-07` ni E4.6/E4.9/E4.10/E4.11 y no sustituye la
+QA independiente. La autoridad funcional sigue en la [spec UI](../ui-specification.md) §4 y el
+plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
+
+#### Contrato AA vigente
+
+- **Contraste:** texto normal ≥ 4.5:1 y texto grande ≥ 3:1 (`≥ 24 px`, o `≥ 18.66 px` en negrita)
+  en `light-s`, `dark-s` y `hybrid-s`; bordes de control, iconos de estado y anillo de foco
+  ≥ 3:1. La medición compone fondos con alfa; un fondo con imagen/gradiente queda sin resolver y
+  **falla de forma explícita**, no se ignora.
+- **Foco:** cada parada de teclado tiene foco visible; el `outline`/`box-shadow` muestreado
+  mantiene ≥ 3:1 contra el fondo adyacente en los tres temas. El sidebar de `hybrid-s` usa
+  `--sidebar-focus` (6,66:1), no el anillo global (2,83:1 sobre ese fondo).
+- **Texto funcional ≥ 12 px** en las cinco pantallas; la tagline de marca de 7–8 px se clasifica
+  como decorativa y no cuenta como texto funcional.
+- **Objetivos ≥ 44×44 px** para todo control visible. Allowlist explícita: solo enlaces `a` con
+  `display: inline*` dentro de prosa/celda (`p`, `li`, `dd`, `dt`, `small`, `summary`, `td`,
+  `th`) y en `#main` pueden medir menos; cualquier otro objetivo < 44 px falla. Es una excepción
+  de tamaño pendiente de revisión manual, no un AA declarado.
+- **Overflow:** sin scroll horizontal de página a 390×844, 1440×1000 y 720×500, con `<details>`
+  cerrados y abiertos.
+- **Movimiento reducido:** con `prefers-reduced-motion: reduce`, `transition-duration: 0s` y
+  `animation-name: none`; no hay movimiento dependiente de JS.
+- **Zoom:** 720×500 es la **equivalencia de viewport** a 200 % sobre 1440×1000, no zoom nativo del
+  navegador; se declara así.
+- **Sin cambio financiero:** la matriz no altera cifras, estados, motivos ni contratos; `null ≠ 0`
+  y `ND`, `0,00 €`, `No aplica` y `Sin datos` siguen siendo distinguibles.
+
+**Alcance medido:** cinco pantallas (`inicio`, `movimientos`, `saldo-ficha`, `saldo-form`,
+`cierre`) × tres temas × 1440×1000 y 390×844, más 720×500 para la equivalencia de zoom.
+**Solo Chromium**, fixtures ficticios, sin lector de pantalla, sin Firefox/WebKit y sin
+auditoría WCAG completa.
+
+#### Procedimiento de medición reproducible
+
+Requisitos: Bun 1.4.3 y `bun install --frozen-lockfile`. Los comandos se ejecutan desde la raíz
+del repositorio; `tests/e2e/ui-dev07.spec.ts` forma parte del E2E normal (`bun run test:e2e`).
+
+| Paso | Comando | Salida |
+| --- | --- | --- |
+| Línea base diagnóstica | `UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts` | `artifacts/ui-dev07-baseline/report.json` y capturas; sin aserciones duras |
+| Matriz AA | `bunx playwright test tests/e2e/ui-dev07.spec.ts` | 30 capturas base en `artifacts/ui-dev07/base/` y 15 críticas en `artifacts/ui-dev07/critical/`; aserciones duras |
+| Verificación completa | `python3.12 scripts/verify --full` | candidato de cierre; **Linux**; incluye los E2E |
+
+- La línea base es **opt-in**: sin `UI_DEV07_AUDIT=1` no registra pruebas y es solo diagnóstica.
+  La matriz es la que convierte contraste, overflow (con `details` cerrados y abiertos),
+  objetivos, texto funcional, teclado, anillo de foco y movimiento reducido en aserciones duras.
+  El teclado se recorre a 1440 y 390; a 720 se comprueban contraste, overflow, objetivos y que
+  el menú móvil sigue operativo.
+- `python3.12 scripts/verify --full` es el comando del candidato de cierre y se ejecuta en Linux.
+  El perfil `critical` no ejecuta E2E y no sirve como evidencia de la matriz; para un PR
+  documental o de test puede usarse `--base <sha> --head <sha>`.
+- `artifacts/` está ignorado por `.gitignore`: capturas y `report.json` no se versionan. Se
+  adjuntan al PR o al registro QA; la matriz no se convierte en aprobación por ejecutarse.
+
+#### Catálogo de primitivas
+
+Las quince primitivas de `apps/web/src/ui.tsx` y el helper de foco. La tercera columna describe
+el contrato accesible y lo que la matriz mide cuando la primitiva aparece en las cinco
+pantallas; una primitiva no instanciada allí conserva su contrato de marcado, pero no tiene
+medición DOM propia en esta matriz.
+
+| Primitiva | Contrato accesible | Garantía medida / límite |
+| --- | --- | --- |
+| `Alert` | `role="alert"`; botón «Reintentar» real cuando hay `retry` | Superficie y texto por tokens de error; botón `secondary` ≥ 44 px; contraste medido donde aparece |
+| `Switch` | `button role="switch"`, `aria-label` con el atributo y `aria-checked`; Sí/No visible; ausencia como «Sin informar» + «Informar No» | 68×44 px; estado no depende solo del color; foco visible; no simula un tercer estado |
+| `PageHead` | `h1` con `tabIndex={-1}` como destino de foco tras navegar; descripción secundaria | Título y descripción con contraste medido; no dibuja anillo por foco programático |
+| `Tag` | Texto de estado/atributo, también cuando está inactivo | Texto a 12 px; `nowrap` contenido sin generar overflow de página; contraste medido |
+| `TableScroll` | `role="region"`, `aria-label` obligatorio y `tabIndex={0}` | Región enfocable con anillo ≥ 3:1; el scroll horizontal queda contenido en la región, no en la página |
+| `Table` | `caption` visible u `sr-only`; `th scope="col"`; importes a la derecha y tabulares; fila vacía «Sin datos» | Cabecera a 12 px y celdas a 13 px; `overflow-wrap`; paridad de columnas con `DataList`; sin cero inventado |
+| `DataList` | `ul role="list"` con etiqueta visible por campo (`data-label`) y `aria-label` opcional | Misma definición de columnas que `Table`; etiqueta 12 px y valor 13 px; importes alineados; sin overflow de página a 390 |
+| `Amount` | Estado explícito (`Verificado`, `Cero verificado`, `Parcial`, `No disponible`, `No aplica`, `Sin datos`); `null` nunca se convierte en cero | Icono decorativo `aria-hidden`; importe negativo con `--negative`; nota base a 11 px (deuda residual) |
+| `Badge` | Color + icono + texto; el icono es decorativo y el texto comunica el estado | Tonos por tokens con contraste medido; base a 10 px (deuda residual); «Inicio» lo eleva a 12 px |
+| `Metric` | `article` con título en `h2`/`h3`/`h4` y `aria-label` opcional | Título a 13 px; importe y badge con contraste medido; clase base a 9 px (deuda residual) |
+| `EmptyState` | `role="status"`, `note` o `alert`; icono decorativo | Texto a 12 px; representa vacío/sin datos, nunca un cero o una fila inventada |
+| `Skeleton` | `role="status"`, `aria-live="polite"`, `aria-busy="true"` y `aria-label` | Anuncia carga sin contenido falso; sin animación dependiente de JS |
+| `Field` | `label htmlFor` al control; `aria-describedby` con ayuda y error; `aria-invalid`; `required` | Etiqueta, ayuda y error a 12 px; hueco de error reservado; exige un único control etiquetable e ids únicos; no sustituye la semántica de `role="switch"` o `fieldset` |
+| `FormSection` | `section` con `aria-labelledby` al `h2`; paso decorativo `aria-hidden` | Título a 16 px y descripción a 12 px; conserva jerarquía y contraste |
+| `FormGrid` | Rejilla de campos de dos columnas que pasa a una a 760 px | Campos con `min-width: 0`; sin overflow de página a 390 |
+| `focusFirstInvalidField` | Helper, no componente: enfoca el primer `[aria-invalid="true"]:not([disabled])` del contenedor | Devuelve el control enfocado o `null`; no valida ni desplaza por sí mismo |
+
+#### Evidencia, excepciones y deuda residual
+
+**«Medido» no es «aprobado»:** la matriz registra lo que las aserciones comprobaron en una
+ejecución concreta; la aceptación exige QA independiente y aprobación explícita del usuario.
+Trazabilidad de los incrementos:
+
+- [#308](https://github.com/jmartinlabs/myfinanzas-app/pull/308) — I1, línea base diagnóstica
+  (`e93dccc`): informe y capturas, sin aserciones duras.
+- [#312](https://github.com/jmartinlabs/myfinanzas-app/pull/312) — I2, tokens y AA (`ba24c29`):
+  foco del sidebar, texto funcional y objetivos táctiles.
+- [#316](https://github.com/jmartinlabs/myfinanzas-app/pull/316) — I4, matriz AA (`b3571aa`):
+  30 capturas base, 15 críticas y las aserciones duras.
+- I3 no abrió PR: el paquete preveía reducir I3 a evidencia si no había residuo propio; la
+  cabecera de I4 registra que la auditoría sobre `ba24c29` no encontró residuo de producto.
+
+Las capturas viven en `artifacts/ui-dev07/base/` y `artifacts/ui-dev07/critical/`, y el informe
+de línea base en `artifacts/ui-dev07-baseline/report.json`. Todo `artifacts/` está ignorado y no
+se versiona; es evidencia adjunta al PR o al registro QA, no un documento de Git.
+
+Excepciones y deuda que la matriz **no** convierte en cumplimiento:
+
+- **Fecha nativa:** Chromium dirige el foco al segmento interno del `input[type=date]`; el
+  `document.activeElement` sigue siendo el input, pero `:focus`/`:focus-visible` no coinciden y
+  el anillo del host no se aplica. No es corregible desde CSS del documento: `nativeDateShadowFocus`
+  lo aísla, la aserción lo restringe al `input[type=date]` de `saldo-form` y comprueba aparte que
+  el host sí dibuja un anillo ≥ 3:1 al enfocarse.
+- **Tagline 7–8 px:** «CONTROL FINANCIERO PERSONAL» se clasifica decorativa; no es texto
+  funcional y no se corrige con un tamaño mínimo.
+- **Primitivas base por debajo de 12 px:** `.ui-badge` (10 px), `.ui-amount-note` (11 px) y
+  `.ui-metric-class` (9 px) siguen así en el CSS base. «Inicio» los eleva a 12 px; fuera de la
+  matriz no se garantiza y quedan como deuda residual.
+- **Enlaces inline:** los enlaces en prosa/celda por debajo de 44 px son una allowlist de tamaño
+  pendiente de revisión manual; no son un AA de objetivo táctil.
+- **Estados no cubiertos:** solo se mide un estado crítico por pantalla y tema. Las rutas fuera
+  de las cinco pantallas, los estados no críticos, los datos reales y E4.10/E4.11 quedan fuera.
+- **Límites de medición:** solo Chromium; sin Firefox/WebKit; sin lector de pantalla; sin
+  auditoría WCAG completa; zoom emulado por viewport; el contraste cubre nodos de texto visibles
+  y no bordes, iconos/SVG, placeholders, valores de input ni pseudo-elementos; el anillo de foco
+  se muestrea en los tres temas.
+- **Foco de `hybrid-s`:** el anillo global sobre el sidebar quedó corregido en I2 con
+  `--sidebar-focus`; no es deuda residual. El resto de usos de `--focus` se mantiene medido, no
+  aprobado por esta sección.
+
+Esta sección no declara PASS ni cierra `DEV-07`; la verificación completa del candidato sigue
+pendiente de su ejecución en Linux y de la QA independiente.
 
 **Historial:** las secciones siguientes documentan decisiones e implementaciones E1.1–E1.5. Sus
 menciones a «tema claro exclusivamente», a la paleta verde `#8DBB2E`/`#EEF7E8` y a capturas de
