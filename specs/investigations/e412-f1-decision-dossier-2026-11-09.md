@@ -287,7 +287,7 @@ nivel B**. Ninguna aprobación de G1–G5 cierra DT6, DT7, E4.12 ni P7.
   si el usuario quisiera revertir la recomendación.
 - **Autorización, gate y AC:** decisión F1 explícita. Desbloquea el límite declarado de
   AC12/AC13; no cierra AC-25/P3. Revertirla exige una autorización nueva y específica.
-- **¿Decidible ya?:** sí, mantener AC-25/P3 cerrado puede decidirse con la documentación
+- **¿Decidible ya?:** sí, mantener AC-25/P3 **abierto** puede decidirse con la documentación
   actual; autorizar datos reales no.
 
 #### F1-D11 — Nivel de F3
@@ -338,8 +338,9 @@ nivel B**. Ninguna aprobación de G1–G5 cierra DT6, DT7, E4.12 ni P7.
 
 - **Recomendación `[PROPUESTA]`:** aceptar E4.9/E4.10/E4.11 como **corte documental con
   reservas** para el nivel A: E4.9 integrada y con QA `APTO CON RESERVAS` pero aceptación
-  pendiente; E4.10 con 23 PASS (fixtures)/1 PARCIAL; E4.11 con 14 PASS (fixtures)/1 PARCIAL y
-  15 `BLOCKED real` según la nota de 2026-11-09. No declarar aceptación global. Para nivel B,
+  pendiente; E4.10 con 23 PASS (fixtures)/1 PARCIAL; E4.11 con 10 PASS/5 PARCIAL/15
+  `BLOCKED real` como estado vigente y una revisión `[PROPUESTA]` de 14/1/15 (2026-11-09)
+  pendiente de aprobación. No declarar aceptación global. Para nivel B,
   exigir una decisión específica sobre cada reserva o su cierre.
 - **Alternativa principal y descarte:** esperar al cierre completo antes de preparar F2, o
   tratar los PASS de fixtures como aceptación global. Ninguna se recomienda: la primera
@@ -420,7 +421,7 @@ requiere dato operativo, DT6/DT7 o datos reales.
 | F1-D12 | Aceptación E4.9/E4.10/E4.11 | Corte con reservas para A; B decide cada reserva | Informes E4.10/E4.11; SPEC30 §4.1 | Aceptación global y reservas | §5; AC05/AC07/AC13 B | Sí, documental | `[PENDIENTE]` |
 | F1-D13 | Aceptación E4.7 | Corte parcial con brecha R3/R6 | SPEC25/testplan; AC3/AC10–15/AC19 | Aceptación E4.7; E4.5/DT7 | §5; AC13/AC15 B | Sí, con brecha | `[PENDIENTE]` |
 | F1-D14 | Candidato y tags | SHA de `test` v27/C27, sin tag | `test` `93f1e1e`; SPEC35 D11 abierta | SHA definitivo en F2 | AC16 | Política sí; SHA en F2 | `[PENDIENTE]` |
-| F1-D15 | Alcance E4.5/DT7 | Excluir de A con brecha; B exige mapping | E4.5 sin DEV; DT7 M1/M2/M5/M8 | DEV E4.5, mapping/corte | DT7; AC04/AC06/AC12/AC13/AC14 | Exclusión sí; inclusión no | `[PENDIENTE]` |
+| F1-D15 | Alcance E4.5/DT7 | Excluir de A con brecha; B exige mapping | E4.5 motor puro; sin API/SQL/importación; 59 AC UNRUN; DT7 M1/M2/M5/M8 | Resto del DEV E4.5, mapping/corte | DT7; AC04/AC06/AC12/AC13/AC14 | Exclusión sí; inclusión no | `[PENDIENTE]` |
 
 ---
 
