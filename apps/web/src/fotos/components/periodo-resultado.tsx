@@ -38,6 +38,7 @@ export function PeriodoResultado({
   const composicion = data.composicion;
   const cobertura = data.cobertura;
   const valores = data.valores.porCiclo;
+  const noDisponibleInformado = Array.isArray(data.noDisponible);
   const noDisponible = periodNoDisponibleRows(data.noDisponible);
   const titulo =
     data.tipo === "Anio"
@@ -462,7 +463,11 @@ export function PeriodoResultado({
 
       <section className="panel" aria-label="Bloques no disponibles del periodo">
         <h2>No disponible</h2>
-        {noDisponible.length ? (
+        {!noDisponibleInformado ? (
+          <p className="muted">
+            No informado. El total sigue sin certificarse.
+          </p>
+        ) : noDisponible.length ? (
           <NoDisponibleList rows={noDisponible} />
         ) : (
           <p className="muted">

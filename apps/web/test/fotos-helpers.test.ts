@@ -399,4 +399,46 @@ describe("lectura defensiva de datos", () => {
     ]);
     expect(periodNoDisponibleRows([])).toEqual([]);
   });
+
+  test("periodNoDisponibleRows(null) no recorre ni inventa filas", () => {
+    expect(periodNoDisponibleRows(null)).toEqual([]);
+  });
+
+  test("periodNoDisponibleRows conserva codigoAusencia solo cuando existe", () => {
+    expect(
+      periodNoDisponibleRows([
+        {
+          ciclo: "1",
+          versionFoto: 2,
+          bloque: "valoracion",
+          estado: "No disponible",
+          motivo: "Bloque no disponible en la foto",
+          codigoAusencia: "NULO_EXPLICITO",
+        },
+        {
+          ciclo: "1",
+          versionFoto: 2,
+          bloque: "conciliaciones",
+          estado: "No disponible",
+          motivo: "Motivo persistido.",
+        },
+      ]),
+    ).toEqual([
+      {
+        bloque: "valoracion",
+        estado: "No disponible",
+        motivo: "Bloque no disponible en la foto",
+        codigoAusencia: "NULO_EXPLICITO",
+        ciclo: "1",
+        version: 2,
+      },
+      {
+        bloque: "conciliaciones",
+        estado: "No disponible",
+        motivo: "Motivo persistido.",
+        ciclo: "1",
+        version: 2,
+      },
+    ]);
+  });
 });

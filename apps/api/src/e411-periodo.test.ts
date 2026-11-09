@@ -12,6 +12,7 @@ import {
   crearFotoPeriodo,
   getFotoPeriodo,
   getFotoPeriodoPorId,
+  noDisponibleDeFoto,
   periodoNatural,
 } from "./e411-periodo";
 
@@ -151,6 +152,84 @@ function problemOf(fn: () => unknown): Problem {
 }
 
 const key = (suffix: string) => `periodo-intento-${suffix}`.padEnd(24, "0");
+
+const BLOQUES_TOTALES = [
+  "movimientos",
+  "efectivo",
+  "posiciones",
+  "plan",
+  "e35",
+  "deuda",
+  "valoracion",
+  "anticipos",
+] as const;
+
+function coberturaCompleta(omitir?: string) {
+  return {
+    estado: "Completo",
+    totales: Object.fromEntries(
+      BLOQUES_TOTALES.filter((bloque) => bloque !== omitir).map((bloque) => [
+        bloque,
+        { estado: "Completo" },
+      ]),
+    ),
+  };
+}
+
+/**
+ * Persisted-aggregate fixture for read-only cases (AC09-H). It writes a valid
+ * `fotos_periodo` row directly because `crearFotoPeriodo` always persists an
+ * array and cannot reproduce a legacy JSON `null`.
+ */
+function seedPeriodoPersistido(
+  db: Database,
+  version: string,
+  noDisponible: string,
+) {
+  db.run(
+    `INSERT INTO fotos_periodo(tipo,ejercicio,trimestre,inicio,fin,version,
+      creado_utc,actor,motivo,fingerprint,app_version,schema_version,
+      regla_composicion,seleccion_aplicada,cobertura,valores,no_disponible)
+     VALUES(?,?,?,?,?,?,?,?,NULL,?,?,?,?,?,?,?,?)`,
+    [
+      "Trimestre",
+      2026,
+      1,
+      "2026-01-01",
+      "2026-03-31",
+      version,
+      "2026-04-01T12:00:00.000Z",
+      "usuario-unico",
+      "c".repeat(64),
+      "0.0.0-fixture",
+      27,
+      "P1-C/P4-A/P5-B",
+      JSON.stringify({
+        regla: "P1-C/P4-A/P5-B",
+        reglaPeriodo: "P3-B",
+        porDefecto: true,
+        solicitada: {},
+        seleccion: {},
+        porCiclo: [],
+      }),
+      JSON.stringify({
+        estado: "Parcial",
+        motivos: ["SIN_REGLA_ADITIVA"],
+        totalPeriodo: null,
+        bloques: [],
+      }),
+      JSON.stringify({
+        totalPeriodo: null,
+        motivoTotal: "SIN_REGLA_ADITIVA",
+        porCiclo: [],
+      }),
+      noDisponible,
+    ],
+  );
+  return (
+    db.query("SELECT last_insert_rowid() AS id").get() as { id: number }
+  ).id;
+}
 
 function fourClosedCycles(db: Database) {
   seedCycle(db, "1", "2026-09-01");
@@ -484,6 +563,14 @@ test("E4.11 I3: NoDisponible por bloque se declara y no se convierte en 0", () =
     estado: "Parcial",
   });
   expect(periodo.cobertura.bloques[0].motivos).toEqual([
+    "movimientos: Bloque ausente en la foto",
+    "efectivo: Bloque ausente en la foto",
+    "posiciones: Bloque ausente en la foto",
+    "plan: Bloque ausente en la foto",
+    "e35: Bloque ausente en la foto",
+    "deuda: Bloque ausente en la foto",
+    "valoracion: Bloque ausente en la foto",
+    "anticipos: Bloque ausente en la foto",
     "hechos: Fuente no acreditada.",
   ]);
   expect(periodo.noDisponible).toEqual([
@@ -569,7 +656,7 @@ test("E4.11 AC15: E4.3/E4.4 No disponible se declaran y no completan el total", 
     },
   ]);
   // Neither E4.2 nor any other block is synthesized as context.
-  expect(periodo.noDisponible.map((item) => item.bloque)).toEqual([
+  expect(periodo.noDisponible?.map((item) => item.bloque)).toEqual([
     "valoracion",
     "conciliaciones",
   ]);
@@ -584,7 +671,14 @@ test("E4.11 AC15: E4.3/E4.4 No disponible se declaran y no completan el total", 
       versionFoto: 1,
       estado: "Parcial",
       motivos: [
+        "movimientos: Bloque ausente en la foto",
+        "efectivo: Bloque ausente en la foto",
+        "posiciones: Bloque ausente en la foto",
+        "plan: Bloque ausente en la foto",
+        "e35: Bloque ausente en la foto",
+        "deuda: Bloque ausente en la foto",
         "valoracion: E4.3 valoración/patrimonio no implementado.",
+        "anticipos: Bloque ausente en la foto",
         "conciliaciones: E4.4 conciliaciones de Deuda fuera de la foto.",
       ],
     }),
@@ -647,12 +741,28 @@ test("E4.11 I3 AC09: bloque null en totales conserva motivo y no sintetiza 0", (
       versionFoto: 1,
       estado: "Parcial",
       motivos: [
-        "hechos: Bloque no disponible en la foto",
+        "movimientos: Bloque ausente en la foto",
+        "efectivo: Bloque ausente en la foto",
+        "posiciones: Bloque ausente en la foto",
         "plan: Bloque no disponible en la foto",
+        "e35: Bloque ausente en la foto",
+        "deuda: Bloque ausente en la foto",
+        "valoracion: Bloque ausente en la foto",
+        "anticipos: Bloque ausente en la foto",
+        "hechos: Bloque no disponible en la foto",
       ],
     }),
   ]);
-  expect(periodo.noDisponible).toEqual([]);
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "no_disponible",
+      estado: "No disponible",
+      motivo: "No disponible nulo en la foto",
+      codigoAusencia: "NULO_EXPLICITO",
+    },
+  ]);
   expect(periodo.valores.totalPeriodo).toBeNull();
   expect(JSON.stringify(periodo)).not.toContain('"totalPeriodo":0');
 });
@@ -692,7 +802,16 @@ test("E4.11 I3 AC09: cobertura y no_disponible null declaran el bloque NoDisponi
       motivos: ["Cobertura no disponible en la foto"],
     }),
   ]);
-  expect(periodo.noDisponible).toEqual([]);
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "no_disponible",
+      estado: "No disponible",
+      motivo: "No disponible nulo en la foto",
+      codigoAusencia: "NULO_EXPLICITO",
+    },
+  ]);
   expect(periodo.valores.totalPeriodo).toBeNull();
   expect(JSON.stringify(periodo)).not.toContain('"totalPeriodo":0');
 });
@@ -732,6 +851,7 @@ test("E4.11 I3 AC09: no_disponible con bloque null conserva el motivo del bloque
       bloque: "valoracion",
       estado: "No disponible",
       motivo: "Bloque no disponible en la foto",
+      codigoAusencia: "NULO_EXPLICITO",
     },
     {
       ciclo: "1",
@@ -743,6 +863,461 @@ test("E4.11 I3 AC09: no_disponible con bloque null conserva el motivo del bloque
   ]);
   expect(periodo.cobertura.totalPeriodo).toBeNull();
   expect(periodo.valores.totalPeriodo).toBeNull();
+});
+
+test("E4.11 I3 AC09-A: bloque null en totales y entrada null en noDisponible se declaran", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-A",
+    { valoracion: null },
+    { estado: "Parcial", totales: { plan: null } },
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-a"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.cobertura.bloques[0].motivos).toEqual(
+    expect.arrayContaining(["plan: Bloque no disponible en la foto"]),
+  );
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "valoracion",
+      estado: "No disponible",
+      motivo: "Bloque no disponible en la foto",
+      codigoAusencia: "NULO_EXPLICITO",
+    },
+  ]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+  expect(periodo.valores.totalPeriodo).toBeNull();
+  expect(JSON.stringify(periodo)).not.toContain('"totalPeriodo":0');
+});
+
+test("E4.11 I3 AC09-B: clave canónica ausente de totales se declara como ausente", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-B",
+    {},
+    coberturaCompleta("posiciones"),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-b"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.cobertura.bloques[0].motivos).toEqual(
+    expect.arrayContaining(["posiciones: Bloque ausente en la foto"]),
+  );
+  expect(
+    periodo.cobertura.bloques[0].motivos.some((motivo) =>
+      motivo.startsWith("posiciones: "),
+    ),
+  ).toBe(true);
+  // A missing coverage key does not become a `noDisponible` row.
+  expect(periodo.noDisponible).toEqual([]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+});
+
+test("E4.11 I3 AC09-C: objeto No disponible sin motivo lleva MOTIVO_AUSENTE", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-C",
+    { valoracion: { estado: "No disponible" } },
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-c"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "valoracion",
+      estado: "No disponible",
+      motivo: "Motivo no informado en la foto",
+      codigoAusencia: "MOTIVO_AUSENTE",
+    },
+  ]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+  expect(periodo.valores.totalPeriodo).toBeNull();
+});
+
+test("E4.11 I3 AC09-C2: objeto Parcial en noDisponible se declara en cobertura", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-C2",
+    { valoracion: { estado: "Parcial" } },
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-c2"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.cobertura.bloques[0].motivos).toEqual(
+    expect.arrayContaining(["valoracion: Motivo no informado en la foto"]),
+  );
+  // A `Parcial` entry is not a `No disponible` row.
+  expect(periodo.noDisponible).toEqual([]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+});
+
+test("E4.11 I3 AC09-D1: contenedor ausente en fixture produce centinela defensivo", () => {
+  const compuesto = noDisponibleDeFoto("1", 1, undefined);
+
+  expect(compuesto.entries).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "no_disponible",
+      estado: "No disponible",
+      motivo: "No disponible ausente en la foto",
+      codigoAusencia: "NO_DISPONIBLE_AUSENTE",
+    },
+  ]);
+  expect(compuesto.parciales).toEqual([]);
+});
+
+test("E4.11 I3 AC09-D2: contenedor null difiere de [] y no se normaliza", () => {
+  expect(noDisponibleDeFoto("1", 1, null).entries).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "no_disponible",
+      estado: "No disponible",
+      motivo: "No disponible nulo en la foto",
+      codigoAusencia: "NULO_EXPLICITO",
+    },
+  ]);
+  expect(noDisponibleDeFoto("1", 1, []).entries).toEqual([]);
+});
+
+test("E4.11 I3 AC09-D3: {} y [] con cobertura Parcial no inventan entradas", () => {
+  for (const valor of [{}, []]) {
+    const db = openDatabase(":memory:");
+    seedCycle(db, "1", "2025-12-01");
+    seedClosure(
+      db,
+      "1",
+      1,
+      "2025-12-01",
+      "2025-12-31",
+      "Cierre ficticio AC09-D3",
+      valor,
+      {
+        estado: "Parcial",
+        totales: { plan: { estado: "Parcial", motivo: "Fuente parcial." } },
+      },
+    );
+    const now = Date.parse("2026-02-15T12:00:00Z");
+
+    const periodo = crearFotoPeriodo(
+      db,
+      { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+      key(`ac09-d3-${Array.isArray(valor) ? "array" : "objeto"}`),
+      { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+      now,
+    );
+
+    expect(periodo.noDisponible).toEqual([]);
+    expect(periodo.cobertura.motivos).toEqual(
+      expect.arrayContaining(["SIN_REGLA_ADITIVA"]),
+    );
+    expect(periodo.cobertura.bloques[0].motivos).toEqual(
+      expect.arrayContaining(["plan: Fuente parcial."]),
+    );
+    expect(periodo.cobertura.totalPeriodo).toBeNull();
+    expect(periodo.valores.totalPeriodo).toBeNull();
+    expect(JSON.stringify(periodo)).not.toContain('"totalPeriodo":0');
+  }
+});
+
+test("E4.11 I3 AC09-E: cobertura completa sin regla aditiva no certifica total", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-E",
+    {},
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-e"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+  expect(periodo.valores.totalPeriodo).toBeNull();
+  expect(periodo.valores.motivoTotal).toBe("SIN_REGLA_ADITIVA");
+  expect(periodo.noDisponible).toEqual([]);
+});
+
+test("E4.11 I3 AC09-F: cambio de motor vivo no altera el agregado persistido", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(db, "1", 1, "2025-12-01", "2025-12-31");
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-f"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+  const { replayed: _replayed, ...persistido } = periodo;
+
+  // Live input changes after the photo. The persisted aggregate is not
+  // recomposed and no block is completed from the live engine.
+  db.run(
+    `INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
+     VALUES('S999','Saldo ficticio AC09-F','Efectivo','Movimientos','Activa',1,?,?)`,
+    ["2026-04-02T00:00:00.000Z", "2026-04-02T00:00:00.000Z"],
+  );
+
+  expect(getFotoPeriodoPorId(db, periodo.id)).toEqual(
+    conConsultaPorId(persistido),
+  );
+});
+
+test("E4.11 I3 AC09-G: claves auxiliares no canónicas conservan motivo sin código", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  const auxiliares = {
+    "auxiliares.anticipos": {
+      estado: "No disponible",
+      motivo: "E4.10 v2 anticipos.",
+    },
+    "auxiliares.compartidos": {
+      estado: "NoDisponible",
+      motivo: "E4.10 v2 compartidos.",
+    },
+    "auxiliares.nomina": {
+      estado: "No disponible",
+      motivo: "E4.10 v2 nómina.",
+    },
+    "auxiliares.revisionComida": {
+      estado: "No disponible",
+      motivo: "E4.10 v2 revisión comida.",
+    },
+    "auxiliares.deuda": {
+      estado: "No disponible",
+      motivo: "E4.10 v2 deuda.",
+    },
+  };
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-G",
+    auxiliares,
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-g"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.noDisponible).toEqual(
+    Object.entries(auxiliares).map(([bloque, value]) => ({
+      ciclo: "1",
+      versionFoto: 1,
+      bloque,
+      estado: value.estado,
+      motivo: value.motivo,
+    })),
+  );
+});
+
+test("E4.11 I3 AC09-H: lectura conserva null y [] sin centinelas ni reescritura", () => {
+  const db = openDatabase(":memory:");
+  const idNulo = seedPeriodoPersistido(db, "A1", "null");
+  const idVacio = seedPeriodoPersistido(db, "A2", "[]");
+  const entrada = {
+    ciclo: "1",
+    versionFoto: 1,
+    bloque: "valoracion",
+    estado: "No disponible",
+    motivo: "Motivo persistido.",
+  };
+  const idEntradas = seedPeriodoPersistido(
+    db,
+    "A3",
+    JSON.stringify([entrada]),
+  );
+  const before = db
+    .query("SELECT id,no_disponible FROM fotos_periodo ORDER BY id")
+    .all();
+
+  const nulo = getFotoPeriodoPorId(db, idNulo);
+  expect(nulo.noDisponible).toBeNull();
+  expect(nulo.cobertura.totalPeriodo).toBeNull();
+  expect(nulo.valores.totalPeriodo).toBeNull();
+
+  const vacio = getFotoPeriodoPorId(db, idVacio);
+  expect(vacio.noDisponible).toEqual([]);
+  expect(vacio.cobertura.totalPeriodo).toBeNull();
+
+  const entradas = getFotoPeriodoPorId(db, idEntradas);
+  expect(entradas.noDisponible).toEqual([entrada]);
+
+  // Read-only: the stored JSON is not rewritten or normalised.
+  expect(
+    db.query("SELECT id,no_disponible FROM fotos_periodo ORDER BY id").all(),
+  ).toEqual(before);
+});
+
+test("E4.11 I3 AC09-I: cobertura.bloques enumera incluidos y excluidos", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedCycle(db, "2", "2026-01-01");
+  seedCycle(db, "3", "2026-02-01");
+  seedClosure(db, "1", 1, "2025-12-01", "2025-12-31");
+  seedClosure(db, "3", 1, "2026-02-01", "2026-02-28");
+  const now = Date.parse("2026-04-01T12:00:00Z");
+  reabrirCierre(
+    db,
+    "3",
+    { versionEsperada: 1, motivo: "Reapertura ficticia AC09-I" },
+    "reapertura-e411-ac09-i-0001",
+    { actor: "usuario-unico" },
+    now,
+  );
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-i"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.cobertura.bloques.map((bloque) => bloque.ciclo)).toEqual([
+    "1",
+    "2",
+    "3",
+  ]);
+  expect(periodo.cobertura.bloques.map((bloque) => bloque.estado)).toEqual([
+    "Completo",
+    "ExcluidoSinCierre",
+    "PendienteReCierre",
+  ]);
+  expect(periodo.cobertura.bloques[1].motivos).toEqual(["SIN_CIERRE"]);
+  expect(periodo.cobertura.bloques[2].motivos).toEqual([
+    "PENDIENTE_RE_CIERRE",
+  ]);
+});
+
+test("E4.11 I3 AC09-J: fila persistida y fila sintética no se mezclan", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-J",
+    {
+      conciliaciones: {
+        estado: "No disponible",
+        motivo: "E4.4 conciliaciones persistido.",
+      },
+      valoracion: { estado: "No disponible" },
+    },
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-j"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "valoracion",
+      estado: "No disponible",
+      motivo: "Motivo no informado en la foto",
+      codigoAusencia: "MOTIVO_AUSENTE",
+    },
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "conciliaciones",
+      estado: "No disponible",
+      motivo: "E4.4 conciliaciones persistido.",
+    },
+  ]);
 });
 
 test("E4.11 I3 AC09: ausencia no se sintetiza como 0 ni como total", () => {
