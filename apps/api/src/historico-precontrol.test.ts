@@ -2737,6 +2737,49 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     ).toEqual([{ inicio: "0050-01-31", fin: "0050-02-28" }]);
   });
 
+  test("H-13b: el año 0000 se rechaza y los límites 1 y 99 son fechas civiles", () => {
+    expect(() =>
+      combinarHistoricoPrecontrol(
+        entrada({ corte: "0000-12-31", hoy: "0001-01-15" }),
+      ),
+    ).toThrow(ErrorPrecontrol);
+    for (const anio of [1, 99]) {
+      const y = String(anio).padStart(4, "0");
+      const resultado = combinarHistoricoPrecontrol({
+        ejercicio: anio,
+        corte: `${y}-12-31`,
+        hoy: `${y}-12-31`,
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-1",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: `${y}-01-01`, fin: `${y}-12-31` },
+          },
+        ]),
+        fuentes: [
+          fuente({
+            corteArchivo: `${y}-12-31`,
+            intervalosArchivo: [archivo(`${y}-01-01`, `${y}-12-31`)],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            ejercicio: anio,
+            intervalo: { inicio: `${y}-01-01`, fin: `${y}-12-31` },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      });
+      expect(resultado.ejercicio).toBe(anio);
+      expect(item(resultado).total).toBe("100.00");
+    }
+  });
+
+  // Alcance: Partida fuera del universo. Un registro posterior al corte de una Partida
+  // ya declarada sigue siendo agregado no atribuible y bloquea su total (SPEC20).
   test("H-01c: un registro de archivo posterior al corte no contamina el universo del corte", () => {
     const resultado = combinarHistoricoPrecontrol(
       entrada({
