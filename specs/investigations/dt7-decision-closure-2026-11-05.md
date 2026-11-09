@@ -12,6 +12,11 @@ M1/M2/M5/M8 pendientes de evidencia privada real.
 **Integración:** PR #218 mergeada en `main` `c4706a6` (2026-11-05); este documento conserva
 el contenido revisado y registra la ratificación posterior.
 
+**Preparación de la revisión (2026-11-09):** el expediente
+[dt7-readiness-2026-11-09](dt7-readiness-2026-11-09.md) reúne el estado, la evidencia
+sintética disponible y los checklists de mapping/corte para la revisión del usuario. No
+modifica ninguna decisión de este documento ni cambia estados; DT7 sigue abierto.
+
 - **Base:** `main` **`136713b`** (squash de #217; documento DT7 preparatorio integrado).
 - **Entrada:** `specs/investigations/dt7-preparation-2026-11-05.md`, SPEC20/testplan,
   roadmap DT7 y la guía del usuario del 2026-11-05.
