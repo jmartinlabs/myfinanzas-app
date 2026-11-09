@@ -2185,7 +2185,7 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
           registros: [registro("AH001", { fuenteId: "NO-EXISTE" })],
         }),
       ),
-    ).toThrow(ErrorPrecontrol);
+    ).toThrow(/fuenteId no declarado/);
   });
 
   test("F2b: un registro fuera de los intervalosArchivo declarados no suma", () => {
