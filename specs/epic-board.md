@@ -7,12 +7,12 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | Funcional | SPEC | DEV | QA | MERGE | Aceptación | Evidencia / siguiente |
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
-| E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | pending | 26 CUBIERTO + 5 CUBIERTO local (AC19/21/23/25/30) + 2 PARCIAL (AC29/AC31); 0 UNRUN; sin PASS funcional |
+| E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional y visual pendientes | 26 CUBIERTO + 5 CUBIERTO local (AC19/21/23/25/30) + 2 PARCIAL (AC29/AC31); 0 UNRUN; sin PASS funcional |
 | E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` (#329) | APTO CON RESERVAS (revisión independiente por incremento; sin informe versionado); 81 pruebas | merged | pending | H-09, fuenteId en aperturas y mapping post-corte documentados sin cambio de producto; enmienda de SPEC20 solo si se quiere otro comportamiento; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` (#334) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | pending | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL (F-MARGEN sin valor numérico); AC10–15 BLOCKED; AC19 N/A |
-| E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | pending | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
-| E4.10 | approved | verified I1–I8; QA-01 `c335ad0` (#333) añade regresión cruzada | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | pending | 23 PASS (fixtures, desde #291) + AC15 PARCIAL; sin aceptación global; DT6/E3.5 abiertos |
+| E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` (#334) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional pendiente | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL (F-MARGEN sin valor numérico); AC10–15 BLOCKED; AC19 N/A |
+| E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin cierre real ni DT6 | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
+| E4.10 | approved | verified I1–I8; QA-01 `c335ad0` (#333) añade regresión cruzada | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin aceptación financiera real | 23 PASS (fixtures, desde #291) + AC15 PARCIAL; sin aceptación global; DT6/E3.5 abiertos |
 | E4.11 | approved | I1–I6; AC07 #313; §18 aprobado 2026-11-09; DEV AC09 `9c857b6` (#325); defensiva #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | #327 fija el descarte de estado no canónico y requiere decisión sobre la lectura de §18.3.B; 103 web; datos reales BLOCKED |
 | E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (#323, expediente `cb1bc8a` #328) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | 15 decisiones en el expediente, todas `[PENDIENTE]`; AC01–17 UNRUN; restore Linux y DT6/DT7 bloquean B |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
@@ -2029,6 +2029,21 @@ instrucción del usuario, sin auto-resume.
   recomendación, alternativa, riesgos, dependencias, evidencia y autorización; ninguna
   aprobada por inferencia.
 
+
+## QA-01 — CERRADO · APTO CON RESERVAS (2026-11-09)
+
+**Estado administrativo:** cerrado por decisión del usuario. Es consolidación técnica, de
+pruebas y documental; no es aceptación financiera, no acredita P7 ni equivalencia con Excel.
+
+**Decisiones ratificadas:**
+- **E4.4:** AC29 y AC31 permanecen PARCIAL (validación visual y suite E1.1–E1.6); los
+  `CUBIERTO` no se convierten en PASS funcional; aceptación visual pendiente.
+- **E4.7:** AC19 ratificado como N/A; AC3 PARCIAL por DT8; AC18 PARCIAL sin exigir nueva
+  fixture numérica; AC22 PASS local del alcance probado, no WCAG; AC10–AC15 BLOCKED.
+- **E4.9:** AC-09 PARCIAL; DT6/T-BKP sigue siendo gate obligatorio; sin cierre real.
+- **E4.10:** AC15 ratificado PARCIAL; los 23 PASS de fixtures no acreditan aceptación real;
+  DT6/E3.5 se mantienen.
+- No se abre otra ronda general de QA-01; las reservas no bloqueantes no generan tareas.
 
 ## QA-01 — consolidación funcional (2026-11-09)
 
