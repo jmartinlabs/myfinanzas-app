@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-09
+## Identificadores canónicos y etapas — reconciliado 2026-11-09b
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,13 +8,13 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | motor puro integrado (#302 `aeecdf4`, #309 `b14902d`) | revisión de conformidad 2026-11-09: defectos en identidad/corte/cero en corrección; DT7 abierto | merged | pending | SPEC20 #314; rama `fix/e45-conformidad` con P-01…P-14; sin API/SQL/importación; 59 AC UNRUN |
+| E4.5 | approved | motor puro + correcciones H-02/03/04/05/10/12 merged `da93897` (#321) | APTO CON RESERVAS (F1/F2); 17/17 diagnósticos reproducen | merged | pending | H-01/06/07/08/09/11/13/14 y residual de cobertura para decisión; DT7 abierto; sin API/SQL/importación; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
 | E4.10 | approved (SPEC28 ratificada 2026-11-05) | verified I1–I8 merged | APTO CON RESERVAS (I8) | merged I7 `81c8960`, I8 `5ea79b9` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI y I8 regresión/AC22 integrados; 24 AC UNRUN (23+AC22 con evidencia de prueba, ninguno PASS) |
-| E4.11 | approved | I1–I6 integrados; AC07 #313; AC09 §18 propuesta #315 | APTO CON RESERVAS; revisión `[PROPUESTA]` 14 PASS fixtures / 1 PARCIAL / 15 BLOCKED real | merged | pending | AC01/02/08/15 PASS (fixtures); AC09 PARCIAL; E4.2 cobertura pendiente; datos reales BLOCKED |
-| E4.12 | SPEC30/testplan integrados #297 (DRAFT) | nivel A preparado; F2 sin ejecutar | planned | n/a | pending | F0/F1 documentales pendientes; restore Linux y DT6/DT7 bloquean B |
+| E4.11 | approved | I1–I6; AC07 #313; AC09 §18 corregido `8774cd8` (#320) | APTO documental (contrato §18); revisión `[PROPUESTA]` 14 PASS fixtures / 1 PARCIAL / 15 BLOCKED real | merged | pending | §18 sigue PROPUESTA; paquete de producto AC09 no autorizado; AC09 PARCIAL; datos reales BLOCKED |
+| E4.12 | SPEC30/testplan #297 (DRAFT, F0 no aprobada) | nivel A preparado; F2 sin ejecutar | planned | n/a | pending | F1 pendiente de decisiones; restore Linux y DT6/DT7 bloquean B |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa; artefacto verificado | n/a | operativa | MFA/FT-1 activos; `deploy-test-v0.1.0` existe anotado `sha=960c151…` pero resuelve a `c0341d7`; run `42579540547` FAILED, pendiente decisión |
 | DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag `deploy-test-v0.1.0` creado y run `42579540547` FAILED; `sha=960c151…` no coincide con commit `c0341d7`; sin GHCR |
 | UI | draft (SPEC sin ratificar) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera |
@@ -1970,3 +1970,21 @@ instrucción del usuario, sin auto-resume.
   pero el commit del tag es `c0341d7`; `960c151` no es un commit.
 - Run de despliegue `42579540547` sobre el tag: **FAILED**. No se ha recreado ni movido el tag;
   requiere decisión operativa/Infra. La release inicial `5d2bb47` no se ve afectada.
+
+
+## Correcciones integradas 2026-11-09 (cierre de turno)
+
+- **E4.5** `da93897` (#321): H-02 (corte duro, `fuenteId` desconocido falla cerrado,
+  contención en `intervalosArchivo`), H-03 (solape parcial), H-04 (conflicto de
+  identidad/huella sin `0,00`), H-05 (cero acreditado), H-10 y H-12. 9 pruebas nuevas,
+  66 pass; CI `required` y full `42615103642` PASS; QA independiente APTO CON RESERVAS.
+- **Reservas E4.5**: sin prueba positiva de fuente con `intervalosArchivo: []`; excepción
+  `AperturaHistorica` a la validación de `fuenteId`; una fila fuera de intervalos anula
+  todo el componente; H-08 contradice la prueba B2 (`Completa` con `DosFuentes`).
+- **E4.11** `8774cd8` (#320): §18 con D1 (fixture vs alcanzable), SQL `NULL` inválido,
+  JSON `null`/clave ausente/`[]` diferenciados, D3 (`{}`/`[]` + `Parcial` sin entradas
+  ficticias), legacy inmutable y tres expectativas de #300 ancladas por nombre. QA
+  documental APTO; §18 sigue `[PROPUESTA]` y no se autoriza producto.
+- **DEV-07** sin cambios tras el cierre con reservas; no hay UI adicional.
+- **TEST**: sin cambios; tag `deploy-test-v0.1.0` y run fallido siguen pendientes de
+  decisión operativa/Infra; release `5d2bb47` intacta.
