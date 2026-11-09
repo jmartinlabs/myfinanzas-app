@@ -615,6 +615,12 @@ el bloque no está capturado):
 
 ### 18.3 Semántica de los cuatro casos de ausencia
 
+> **Nota de seguimiento (2026-11-09, no normativa).** El texto de §18.3.B es el contrato
+> vigente. La diferencia entre su lectura literal y el descarte actual de estados no
+> canónicos en `noDisponible` se documenta, sin resolverla aquí, en el
+> [expediente AC09 §18.3.B](investigations/e411-ac09-18-3-b-decision-2026-11-09.md).
+> AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; #327 no se mergea hasta la decisión.
+
 `[PROPUESTA]` La foto tiene dos mapas distintos y no se confunden: `cobertura.totales`
 (las ocho claves siempre presentes en fotos nuevas) y `noDisponible` (claves que solo
 aparecen cuando el bloque no está capturado). El agregado los proyecta a
