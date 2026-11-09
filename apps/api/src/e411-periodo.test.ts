@@ -1320,6 +1320,69 @@ test("E4.11 I3 AC09-J: fila persistida y fila sintética no se mezclan", () => {
   ]);
 });
 
+test("E4.11 I3 AC09 (defensiva): estado no canónico con motivo persistido se descarta del agregado", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  // Synthetic persisted row: `fotos_cierre.no_disponible` only enforces
+  // `json_valid`, so an anomalous/legacy row can store any `estado`. The
+  // current photo contract (`e49.ts`) always emits `No disponible`, and both
+  // photo writers persist that payload; this is not reachable through the
+  // product write paths and is exercised here as a defensive fixture only.
+  const valoracion = {
+    estado: "EstadoInesperado",
+    motivo: "E4.3 valoración persistida con estado no canónico.",
+  };
+  const deudaCompleta = {
+    estado: "No disponible",
+    motivo: "E4.4 conciliaciones persistido canónico.",
+  };
+  const noDisponible = { valoracion, deudaCompleta };
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09 defensiva",
+    noDisponible,
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-estado-no-canonico"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  // Current behavior: the non-canonical entry is dropped with its motive, so
+  // no row and no synthetic coverage motive are emitted. The canonical entry
+  // is preserved verbatim and without `codigoAusencia`.
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "deudaCompleta",
+      estado: "No disponible",
+      motivo: deudaCompleta.motivo,
+    },
+  ]);
+  expect(periodo.cobertura.bloques[0].motivos).toEqual([]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+  // The frozen photo keeps the persisted entry untouched; only the aggregate
+  // projection drops it.
+  expect(periodo.valores.porCiclo[0].noDisponible).toEqual(noDisponible);
+  expect(
+    db
+      .query(
+        "SELECT no_disponible FROM fotos_cierre WHERE ciclo='1' AND version=1",
+      )
+      .get(),
+  ).toEqual({ no_disponible: JSON.stringify(noDisponible) });
+});
+
 test("E4.11 I3 AC09: ausencia no se sintetiza como 0 ni como total", () => {
   const db = openDatabase(":memory:");
   seedCycle(db, "1", "2025-12-01");
