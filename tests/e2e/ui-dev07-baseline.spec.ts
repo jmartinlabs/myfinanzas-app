@@ -49,6 +49,7 @@ type ScreenRecord = {
   screen: string;
   fixture: string;
   path: string;
+  navigated: boolean;
   audits: ScreenViewportAudit[];
   keyboard: { viewport: string; report: KeyboardReport }[];
   focusRings: {
@@ -115,7 +116,8 @@ const report: {
     "a.brand is 40 px high at 720/390 and a.back is 101x18 px; these are real target-size findings.",
     "Inicio list links at 1440 are 202/220x18 px; real target-size findings.",
     "One internal segment of input#fechaApertura shows no outline in Chromium's native date control.",
-    "cierre-fingerprint is 11.52 px (functional-meta); brand tagline is 7-8 px (decorative).",
+    "Cierre has 20 functional items below 12 px: 17 cierre-badge at 11 px and 3 cierre-fingerprint at 11.52 px (two closure hashes, one idempotency UUID); all functional-meta.",
+    "Brand tagline is 7-8 px and decorative.",
     "hybrid-s sidebar focus ring is 2.83:1; real failure, not an exception.",
   ],
   verification: {
@@ -282,6 +284,7 @@ async function auditScreen(
     screen,
     fixture,
     path,
+    navigated: options.navigate !== false,
     audits: [],
     keyboard: [],
     focusRings: [],
