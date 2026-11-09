@@ -17,6 +17,12 @@ implementado sin reabrir Q1–Q10, D4/D14, estados aprobados ni AC. El motor no 
 DT7, no certifica totales reales ni equivalencia con el Excel y sus fixtures son
 sintéticos; no hay API, SQL, persistencia, importación ni UI de E4.5.
 
+**Propuestas abiertas (2026-11-09):** H-09, la exención de `fuenteId` en
+`AperturaHistorica`, la atribución fuera de `intervalosArchivo` y el mapping
+`Pendiente`/`Ambigua` posterior al corte se analizan en
+[e45-contract-proposals-2026-11-09.md](investigations/e45-contract-proposals-2026-11-09.md).
+Ninguna opción está aprobada; este contrato y los AC-01…AC-59 no cambian.
+
 Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-historico-precontrol-brainstorming.md),
 [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
 [P6/DT7](roadmap.md#decisiones-abiertas-y-puntos-de-autorización),
