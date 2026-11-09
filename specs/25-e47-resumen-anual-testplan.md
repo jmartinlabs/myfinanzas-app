@@ -474,15 +474,19 @@ manual de subtotales.
 
 ## Limitaciones y siguiente acción
 
-Existe un candidato corregido de DEV25 publicado en PR #210 (rama `feat/e47-resumen-anual`,
-commits DEV-01/DEV-02/DEV-03 más las correcciones QA) y una revisión local QA-01 posterior
-(rama `qa01/e47-anual`, base `test` `dbfe507`, 2026-11-09) con 13 pruebas API de E4.7, 5 E2E y
-las regresiones de motores en PASS local. Ninguno se ha fusionado. E4.5 sigue sin DEV y DT7
-abierto; E4.9 está en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido.
+El candidato DEV25 de PR #210 quedó integrado (`0e89562`) y la revisión QA-01 posterior
+(rama `qa01/e47-anual`, base `test` `dbfe507`, 2026-11-09) se integró en `317bb0c` (#334),
+con 13 pruebas API de E4.7, 5 E2E y las regresiones de motores en PASS local. QA-01 quedó
+**CERRADO · APTO CON RESERVAS** como consolidación técnica, no como aceptación funcional.
+
+Estado vigente de las dependencias: E4.5 tiene motor puro integrado, sin API, SQL ni
+importación, y DT7 sigue abierto; E4.9 está integrada (`0176ffc`) con AC-09 `PARCIAL` y DT6
+abierto; E4.11 tiene I1–I6 y AC09 (`9c857b6`) integrados. Ninguna de esas integraciones
+acredita cierre real ni equivalencia con Excel.
+
 Las seis decisiones D8-M/Z/F/N, patrimonio y gate E4.5/DT7 están aprobadas por el usuario el
 2026-11-04; D8-M mantiene E4.7-AC3 en `PARCIAL`. AC18 sigue `PARCIAL` (F-MARGEN numérico no
-ejecutado); AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 queda `N/A` porque no se publica el
-cociente de meses; AC02, AC20, AC21, AC22, AC23 y AC25 quedan `PASS (local)` tras QA-01. La QA
-independiente ya emitió **APTO CON RESERVAS** sobre `05aee71`/`25c2cd5`; QA-01 no la sustituye.
-La autorización de merge sigue siendo separada. Ningún AC bloqueado se declara PASS ni se
-presenta E4.7 como completa.
+ejecutado); AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 queda `N/A` ratificado porque no se
+publica el cociente de meses; AC02, AC20, AC21, AC22, AC23 y AC25 quedan `PASS (local)` tras
+QA-01. AC22 es PASS local del alcance probado, no una auditoría WCAG. La autorización de merge
+sigue siendo separada. Ningún AC bloqueado se declara PASS ni se presenta E4.7 como completa.
