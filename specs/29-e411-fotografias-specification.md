@@ -509,7 +509,8 @@ contrato de foto E4.9. **E4.2** no tiene cobertura en ese contrato y queda como 
 
 `[APROBADA 2026-11-09]` Enmienda mínima de AC09 para fijar el conjunto canónico de bloques
 de la foto E4.9 y la semántica de sus ausencias en el agregado E4.11. Aprobación formal
-del usuario el 2026-11-09 (corrección documental #320 `8774cd8`); autoriza únicamente el
+del usuario el 2026-11-09; `#320` (`8774cd8`) es la corrección documental que fijó el
+texto y mantuvo el estado `[PROPUESTA]` hasta esta aprobación. Autoriza únicamente el
 paquete DEV de AC09 descrito en §18.6. No reabre M1–M6, no toca AC07 ni E4.2 y no cambia
 el estado `PARCIAL (fixtures) · BLOCKED real` de AC09 ni declara aceptación. Los
 marcadores `[PROPUESTA]` internos de §18 quedan ratificados por esta aprobación. Base:
