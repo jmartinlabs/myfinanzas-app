@@ -252,11 +252,11 @@ export function PeriodoResultado({
             <Badge tone="info" icon="▣" label="Foto" />
             <Badge tone="info" label={data.identidad.versionAgregado} />
             <Badge
-              tone={data.seleccionVersion.porDefecto ? "nd" : "ok"}
+              tone={data.seleccionVersion.porDefecto === true ? "nd" : "ok"}
               label={
-                data.seleccionVersion.porDefecto
+                data.seleccionVersion.porDefecto === true
                   ? "Última automática"
-                  : "Versión solicitada"
+                  : "Consulta explícita"
               }
             />
             <Badge

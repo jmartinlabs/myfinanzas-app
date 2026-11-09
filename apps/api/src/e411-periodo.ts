@@ -1229,7 +1229,11 @@ export function getFotoPeriodo(
   return filaADto(db, row, version === null);
 }
 
-/** Reads one persisted aggregate by identity. Never recomputes composition. */
+/**
+ * Reads one persisted aggregate by identity. Never recomputes composition.
+ * The identity is an explicit reference to a persisted aggregate, so it is not
+ * an automatic "latest" selection even when it points to the newest version.
+ */
 export function getFotoPeriodoPorId(
   db: Database,
   id: number,
@@ -1241,5 +1245,5 @@ export function getFotoPeriodoPorId(
     .get(id) as PeriodoRow | null;
   if (!row)
     throw new Problem(404, "NOT_FOUND", "Agregado de periodo no encontrado.");
-  return filaADto(db, row, true);
+  return filaADto(db, row, false);
 }
