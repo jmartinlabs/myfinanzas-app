@@ -2503,6 +2503,66 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     ).toThrow(ErrorPrecontrol);
   });
 
+  test("H-14c: rechaza el resto de enums inválidos de registro y Movimiento", () => {
+    const casos: Array<() => void> = [
+      () =>
+        combinarHistoricoPrecontrol(
+          entrada({
+            registros: [
+              registro("AH001", {
+                clase: "Foo" as unknown as RegistroPrecontrol["clase"],
+              }),
+            ],
+          }),
+        ),
+      () =>
+        combinarHistoricoPrecontrol(
+          entrada({
+            registros: [
+              registro("AH001", {
+                estadoMapeo: "Foo" as unknown as RegistroPrecontrol["estadoMapeo"],
+              }),
+            ],
+          }),
+        ),
+      () =>
+        combinarHistoricoPrecontrol(
+          entrada({
+            registros: [
+              registro("AH001", {
+                estadoMapeoReferencia:
+                  "Foo" as unknown as RegistroPrecontrol["estadoMapeoReferencia"],
+              }),
+            ],
+          }),
+        ),
+      () =>
+        combinarHistoricoPrecontrol(
+          entrada({
+            registros: [
+              registro("AH001", {
+                representadoEnMovimientos:
+                  "Foo" as unknown as RegistroPrecontrol["representadoEnMovimientos"],
+              }),
+            ],
+          }),
+        ),
+      () =>
+        combinarHistoricoPrecontrol(
+          entrada({
+            movimientos: [
+              movimiento("MV001", {
+                tipo: "Foo" as unknown as MovimientoPrecontrol["tipo"],
+              }),
+            ],
+          }),
+        ),
+    ];
+    for (const caso of casos) {
+      expect(caso).toThrow(ErrorPrecontrol);
+    }
+  });
+
   test("F2d: una fuente con intervalosArchivo vacío no impide sumar un registro válido", () => {
     const resultado = combinarHistoricoPrecontrol(
       entrada({
