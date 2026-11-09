@@ -382,15 +382,17 @@ nivel B**. Ninguna aprobación de G1–G5 cierra DT6, DT7, E4.12 ni P7.
   usuario o declarar que no se acredita equivalencia real. No inventar correspondencias
   campo→caso ni cifras.
 - **Alternativa principal y descarte:** incluir E4.5/DT7 sin mapping aprobado. No se
-  recomienda: E4.5 no tiene DEV (59 AC `UNRUN`) y DT7 mantiene M1/M2/M5/M8 pendientes; sin
+  recomienda: E4.5 solo tiene motor puro (59 AC `UNRUN`, sin API/SQL/importación) y DT7
+  mantiene M1/M2/M5/M8 pendientes; sin
   mapping, AC12 no tiene correspondencia y AC14 no distingue una brecha de una omisión.
 - **Riesgos:** financiero, universo histórico incompleto o total inventado; seguridad, baja;
   operación, R4/R5 sin cobertura verificable; trazabilidad, no poder explicar qué falta para
   P7.
 - **Dependencias:** E4.5; DT7; AC04/AC06/AC12/AC13/AC14; R4/R5; gate DT7.
 - **Evidencia hoy / falta:** [SPEC20/E4.5](../20-historico-precontrol-specification.md)
-  aprobada y sin DEV; [DT7](dt7-decision-closure-2026-11-05.md) con M1/M2/M5/M8 pendientes;
-  E4.7 AC10–AC15 bloqueados por E4.5/DT7. Falta DEV E4.5, mapping y corte revisados.
+  aprobada con motor puro integrado (59 AC `UNRUN`); [DT7](dt7-decision-closure-2026-11-05.md)
+  con M1/M2/M5/M8 pendientes; E4.7 AC10–AC15 bloqueados por E4.5/DT7. Falta el resto del
+  DEV E4.5 (API/SQL/importación), mapping y corte revisados.
 - **Autorización, gate y AC:** decisión del usuario. Excluir del nivel A puede decidirse ya
   con brecha explícita; incluir en nivel B exige DT7/E4.5.
 - **¿Decidible ya?:** la exclusión del nivel A sí; la inclusión real no.
