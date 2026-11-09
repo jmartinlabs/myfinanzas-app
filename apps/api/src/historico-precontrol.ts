@@ -691,14 +691,30 @@ export function resolverVersiones(
 
     const representantes = new Map<number, RegistroPrecontrol>();
     let conflictiva = false;
+    let conflictoEnVersion = false;
     for (const [version, filas] of porVersion) {
       const huellas = new Set(filas.map((fila) => fila.huellaContenido));
       if (huellas.size > 1) {
         conflictiva = true;
+        conflictoEnVersion = true;
         registrarConflicto(
           "DuplicadoAmbiguo",
           grupo,
           `Huellas distintas para la identidad ${identidad} y versión ${version}.`,
+        );
+        continue;
+      }
+      // La misma identidad/huella no puede absorber una fila que declara otra
+      // Partida: dos destinos compiten por el mismo origen y el mapping es
+      // ambiguo. Ninguna de las Partidas afectadas puede certificar 0,00.
+      const destinos = new Set(filas.map((fila) => fila.partidaId));
+      if (destinos.size > 1) {
+        conflictiva = true;
+        conflictoEnVersion = true;
+        registrarConflicto(
+          "DuplicadoAmbiguo",
+          grupo,
+          `Misma identidad y huella declaran Partidas distintas para ${identidad} y versión ${version}.`,
         );
         continue;
       }
@@ -721,7 +737,7 @@ export function resolverVersiones(
       (registro) => !reemplazadas.has(registro.version),
     );
 
-    if (terminales.length !== 1) {
+    if (!conflictoEnVersion && terminales.length !== 1) {
       conflictiva = true;
       registrarConflicto(
         "VersionBifurcada",
@@ -864,12 +880,16 @@ function coberturaFuentePartida(
   partidaId: string,
   desde: FechaCivil,
   hasta: FechaCivil,
+  ejercicio: number,
 ): Intervalo[] {
   const fin = finCoberturaFuente(fuente, hasta);
   if (fin < desde) return [];
   const piezas: Intervalo[] = [];
   for (const tramo of fuente.intervalosArchivo) {
     if (tramo.partidaId !== partidaId) continue;
+    // La regularización de 2026 es una excepción documentada: su clase no
+    // acredita cobertura en 2025, 2027 ni en otro ejercicio.
+    if (tramo.clase === "Regularizacion2026" && ejercicio !== 2026) continue;
     const recortado = recortar(tramo.intervalo, desde, fin);
     if (recortado) piezas.push(recortado);
   }
@@ -892,21 +912,24 @@ function fuenteEsperadaCubierta(
   esperada: UniversoPrecontrol["fuentesEsperadas"][number],
   desde: FechaCivil,
   hasta: FechaCivil,
+  ejercicio: number,
 ): boolean {
-  const cobertura = coberturaFuentePartida(
-    fuente,
-    esperada.partidaId,
-    desde,
-    hasta,
-  );
-  if (cobertura.length === 0) return false;
   // Fallback fail-closed para llamadores JS: sin intervalo declarado no se
   // acredita `Presente`, aunque exista cobertura no vacía de la Partida.
   if (!esperada.intervalo) return false;
   const objetivo = recortar(esperada.intervalo, desde, hasta);
   // Una expectativa fuera del alcance consultado (p. ej. posterior al corte) no
-  // se convierte en ausencia: no hay nada que verificar en este corte.
+  // se convierte en ausencia: no hay nada que verificar en este corte, aunque
+  // la fuente no aporte cobertura en la ventana consultada.
   if (!objetivo) return true;
+  const cobertura = coberturaFuentePartida(
+    fuente,
+    esperada.partidaId,
+    desde,
+    hasta,
+    ejercicio,
+  );
+  if (cobertura.length === 0) return false;
   return cobertura.some(
     (intervalo) =>
       intervalo.inicio <= objetivo.inicio && intervalo.fin >= objetivo.fin,
@@ -926,7 +949,13 @@ function fuenteEsperadaAusente(
       (actual) => actual.fuenteId === esperada.fuenteId,
     );
     if (!fuente) return true;
-    return !fuenteEsperadaCubierta(fuente, esperada, desde, hasta);
+    return !fuenteEsperadaCubierta(
+      fuente,
+      esperada,
+      desde,
+      hasta,
+      entrada.ejercicio,
+    );
   });
 }
 
@@ -983,6 +1012,8 @@ function analizarItem(
     if (finFuente < desde) continue;
     for (const tramo of fuente.intervalosArchivo) {
       if (tramo.partidaId !== partidaId) continue;
+      if (tramo.clase === "Regularizacion2026" && entrada.ejercicio !== 2026)
+        continue;
       const recortado = recortar(tramo.intervalo, desde, finFuente);
       if (recortado)
         piezas.push({
@@ -1076,6 +1107,46 @@ function analizarItem(
   if (conflictos.some((conflicto) => conflicto.tipo === "DosFuentes"))
     bloqueos.push("DuplicadoAmbiguo");
 
+  // Solapamiento parcial archivo–archivo: dos registros certificables que
+  // comparten días pero no son el mismo intervalo exacto no permiten atribuir
+  // el importe. No se suman ambos ni se prorratea; el caso exacto ya se trata
+  // como `DosFuentes`.
+  const idsRegistrosSolapados = new Set<string>();
+  for (let i = 0; i < certificables.length; i += 1) {
+    for (let j = i + 1; j < certificables.length; j += 1) {
+      const a = certificables[i]!;
+      const b = certificables[j]!;
+      // Un mismo origen puede contener un agregado y su detalle (relación de
+      // contención); eso no es el solapamiento parcial que se busca aquí.
+      const contieneA =
+        a.intervalo.inicio <= b.intervalo.inicio &&
+        a.intervalo.fin >= b.intervalo.fin;
+      const contieneB =
+        b.intervalo.inicio <= a.intervalo.inicio &&
+        b.intervalo.fin >= a.intervalo.fin;
+      if (a.fuenteId === b.fuenteId && (contieneA || contieneB)) continue;
+      const exacto =
+        a.intervalo.inicio === b.intervalo.inicio &&
+        a.intervalo.fin === b.intervalo.fin;
+      if (exacto) continue;
+      const cruce = interseccion(a.intervalo, b.intervalo);
+      if (!cruce) continue;
+      const conflicto: ConflictoPrecontrol = {
+        tipo: "Solapamiento",
+        partidaId,
+        intervalo: cruce,
+        importe: null,
+        fuente: a.fuenteId,
+        motivo: `Registros de archivo parcialmente solapados entre ${a.fuenteId} y ${b.fuenteId}; no se suman ambos.`,
+      };
+      conflictos.push(conflicto);
+      conflictosGlobales.push(conflicto);
+      idsRegistrosSolapados.add(a.idArchivo);
+      idsRegistrosSolapados.add(b.idArchivo);
+    }
+  }
+  if (idsRegistrosSolapados.size > 0) bloqueos.push("Solapamiento");
+
   // Conflictos de identidad/versión ya resueltos globalmente: afectan a todas
   // las Partidas de la identidad, aunque la versión vigente cambie de Partida.
   const conflictoIdentidad = partidasConflictuadas.has(partidaId);
@@ -1094,14 +1165,18 @@ function analizarItem(
   let hayRegistrosArchivoExcluidos = false;
   let hayHechosCertificados = false;
   let subtotalNoSeparable =
-    solapesUnidos.length > 0 || conflictoIdentidad || idsDosFuentes.size > 0;
+    solapesUnidos.length > 0 ||
+    conflictoIdentidad ||
+    idsDosFuentes.size > 0 ||
+    idsRegistrosSolapados.size > 0;
   const agregados: AgregadoNoAtribuible[] = [];
 
   const intervalosArchivo = piezas
     .filter((pieza) => pieza.tipo === "archivo")
     .map((pieza) => pieza.intervalo);
-  archivoConocido =
-    intervalosArchivo.length > 0 || registrosItem.length > 0;
+  // Sin cobertura, la mera presencia de filas no acredita un cero: solo el
+  // componente efectivamente sumado (incluido un cero verificado) lo hace.
+  archivoConocido = intervalosArchivo.length > 0;
 
   for (const registro of registrosItem) {
     const importe = centimos(registro.importeCentimos);
@@ -1110,6 +1185,33 @@ function analizarItem(
     if (idsDosFuentes.has(registro.idArchivo)) {
       // Procedencia ambigua: no se suma ni se elige una fuente por importe.
       if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
+      continue;
+    }
+    if (idsRegistrosSolapados.has(registro.idArchivo)) {
+      // Solapamiento parcial: no se atribuye el importe a ninguna de las filas.
+      if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
+      continue;
+    }
+
+    // `corteArchivo` es un límite duro también para el registro, no solo para
+    // la cobertura. Un agregado que excede el corte de su fuente no se recorta
+    // ni se prorratea: se expone y queda fuera de archivo/subtotal.
+    const fuenteRegistro = entrada.fuentes.find(
+      (fuente) => fuente.fuenteId === registro.fuenteId,
+    );
+    if (
+      fuenteRegistro &&
+      registro.intervalo.fin > fuenteRegistro.corteArchivo
+    ) {
+      agregados.push({
+        idArchivo: registro.idArchivo,
+        partidaId,
+        intervalo: registro.intervalo,
+        importe: decimal(importe),
+      });
+      bloqueos.push("AgregadoNoAtribuibleAlCorte");
+      subtotalNoSeparable = true;
+      archivoConocido = false;
       continue;
     }
 
@@ -1166,6 +1268,7 @@ function analizarItem(
     }
 
     archivo += importe;
+    archivoConocido = true;
     hayHechosCertificados = true;
   }
 

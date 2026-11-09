@@ -2012,3 +2012,263 @@ describe("IDs PAR en la creación de items", () => {
     ).toThrow(ErrorPrecontrol);
   });
 });
+
+
+/**
+ * Conformidad E4.5 — pruebas P-01…P-14 de la revisión estática motor↔SPEC20.
+ *
+ * Fase diagnóstica: las 14 familias reprodujeron el defecto con fixtures
+ * sintéticos. Solo se activan las pruebas de las correcciones autorizadas
+ * (H-02/H-03/H-04/H-05/H-10/H-12). Las familias H-01/H-06/H-07/H-08/H-09/
+ * H-11/H-13/H-14 se retiraron del runner porque su corrección exige una
+ * decisión de SPEC; su reproducción queda documentada en el retorno del
+ * paquete, sin fijar el defecto ni relajar aserciones existentes.
+ */
+describe("Conformidad E4.5 · P-01…P-14", () => {
+  test("P-02: un registro fuera del corteArchivo de su fuente no se suma sin atribución", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-06-30",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(item(resultado).archivo).toBeNull();
+    expect(item(resultado).total).toBeNull();
+    expect(item(resultado).subtotalConocido).toBeNull();
+    expect(resultado.agregadoNoAtribuible).toContainEqual(
+      expect.objectContaining({
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        importe: "100.00",
+      }),
+    );
+    expect(item(resultado).motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+  });
+
+  test("P-03: dos registros parcialmente solapados no certifican total", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        registros: [
+          registro("AH-A", {
+            fuenteId: "SRC-A",
+            identidad: "REGISTRO-A",
+            intervalo: { inicio: "2026-01-01", fin: "2026-07-31" },
+            importeCentimos: "10000",
+          }),
+          registro("AH-B", {
+            fuenteId: "SRC-B",
+            identidad: "REGISTRO-B",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-A",
+            intervalosArchivo: [archivo("2026-01-01", "2026-07-31")],
+            controlDetalle: null,
+          }),
+          fuente({
+            fuenteId: "SRC-B",
+            intervalosArchivo: [archivo("2026-08-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-A",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-07-31" },
+        },
+        {
+          fuenteId: "SRC-B",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-08-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.estadoCobertura).toBe("Solapada");
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.conflictos).toContainEqual(
+      expect.objectContaining({
+        tipo: "Solapamiento",
+        intervalo: { inicio: "2026-07-01", fin: "2026-07-31" },
+      }),
+    );
+    expect(par100.total).not.toBe("200.00");
+  });
+
+  test("P-04: misma identidad/huella en dos Partidas es conflicto, no absorción", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100"),
+              archivo("2026-01-01", "2026-12-31", "PAR200"),
+            ],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            identidad: "COMPARTIDA",
+            huellaContenido: "MISMA-HUELLA",
+            partidaId: "PAR100",
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            identidad: "COMPARTIDA",
+            huellaContenido: "MISMA-HUELLA",
+            partidaId: "PAR200",
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100", "PAR200"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR200",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+
+    for (const partidaId of ["PAR100", "PAR200"]) {
+      const actual = item(resultado, partidaId);
+      expect(actual.estadoTotal).toBe("NoVerificable");
+      expect(actual.total).toBeNull();
+      expect(actual.subtotalConocido).toBeNull();
+      expect(actual.motivoCodigo).toBe("DuplicadoAmbiguo");
+    }
+    for (const partidaId of ["PAR100", "PAR200"])
+      expect(resultado.conflictos).toContainEqual(
+        expect.objectContaining({ tipo: "DuplicadoAmbiguo", partidaId }),
+      );
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("P-05: un Rechazado único sin cobertura no produce archivo/subtotal 0,00", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [],
+        registros: [
+          registro("AH001", {
+            estadoVerificacion: "Rechazado",
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    expect(item(resultado).archivo).toBeNull();
+    expect(item(resultado).subtotalConocido).toBeNull();
+    expect(resultado.totales.subtotalConocido).toBeNull();
+  });
+
+  test("P-10: una expectativa posterior al corte no se declara ausente sin cobertura de esa fuente", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-1",
+            intervalosArchivo: [],
+            controlDetalle: null,
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [],
+      }),
+      universo: universo(["PAR100"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+        },
+        {
+          fuenteId: "SRC-2",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+        },
+      ]),
+    });
+    const par100 = item(resultado);
+
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.estadoTotal).toBe("Verificado");
+    expect(par100.total).toBe("0.00");
+    expect(par100.motivoCodigo).toBe("AusenciaVerificadaSinHechos");
+    expect(resultado.totales.valor).toBe("0.00");
+    expect(resultado.cobertura.estadoCobertura).toBe("Completa");
+  });
+
+  test("P-12: una cobertura Regularizacion2026 en 2027 no acredita 0,00", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ejercicio: 2027,
+      corte: "2027-12-31",
+      hoy: "2028-01-15",
+      universo: universo(["PAR900"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR900",
+          estado: "Presente",
+          intervalo: { inicio: "2027-01-01", fin: "2027-12-31" },
+        },
+      ]),
+      fuentes: [
+        fuente({
+          corteArchivo: "2027-12-31",
+          intervalosArchivo: [
+            archivo("2027-01-01", "2027-12-31", "PAR900", "Regularizacion2026"),
+          ],
+          controlDetalle: null,
+        }),
+      ],
+      registros: [],
+      movimientos: [],
+    });
+
+    expect(item(resultado, "PAR900").total).toBeNull();
+    expect(item(resultado, "PAR900").total).not.toBe("0.00");
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.cobertura.estadoCobertura).not.toBe("Completa");
+  });
+});
