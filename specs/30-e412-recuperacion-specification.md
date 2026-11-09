@@ -263,6 +263,9 @@ a `test` `7477e86` (2026-11-08), no a la base histórica del borrador; la revisi
 
 ### 4.1 Estado real por entrega
 
+> **Nota (2026-11-09):** la fila E4.12 refleja F0 aprobada; el resto de la tabla se
+> mantiene fechado a 2026-11-08 y no se reaudita aquí.
+>
 > **Nota (2026-11-08):** esta tabla sustituye la foto histórica a `90cd5dc`. E4.9, E4.10 y
 > E4.11 ya tienen código integrado; E4.7 también. Sus aceptaciones siguen abiertas. Donde
 > el tablero y el informe/testplan discrepan, se indica y no se resuelve por inferencia.
@@ -283,7 +286,7 @@ a `test` `7477e86` (2026-11-08), no a la base histórica del borrador; la revisi
 | **E4.9** | **Merged `0176ffc`** (#200); QA APTO CON RESERVAS; aceptación pendiente; AC-09 y cierre real sujetos a DT6 | **Integrado; aceptación abierta** | Cierre manual, foto inmutable y preflight de backup verificables; DT6 bloquea el cierre real, no el código |
 | **E4.10** | SPEC28 aprobada; DEV I1–I8 merged (I1 `70fa7c0`…I7 `81c8960`, I8 `5ea79b9`); **23 PASS (fixtures) / 1 PARCIAL**; aceptación global no declarada | **Integrado; aceptación abierta** | Reapertura, re-cierre, v1/v2 y cancelación disponibles; AC15 real sigue `BLOCKED` por DT6/E3.5 |
 | **E4.11** | SPEC29 aprobada (`6fe91d7`); DEV I1–I6 merged (I1 `a658803`, I2 `ef7bb00`, I3 `a3c616d`, I4 `f41f6c7`, I5 `024527c`, I6 `4da1516`); aceptación con fixtures **10 PASS / 5 PARCIAL / 15 `BLOCKED real`**; aceptación global no declarada | **Integrado; aceptación abierta** | Consulta por ciclo/versión y agregado v27 disponibles para fixtures. El tablero conserva «I4–I6 pendientes» y está desactualizado frente al historial; no se edita aquí |
-| **E4.12** | SPEC30 = este documento | **Borrador** | Aprobación propia y autorización separada del ensayo |
+| **E4.12** | SPEC30 = este documento | **F0 aprobada 2026-11-09**; F1 `IN_PROGRESS` | F1 resuelta y autorización separada de F2/F3 |
 
 `[CONFIRMADO]` E4.10 y E4.11 **no están funcionalmente aceptadas**: sus PASS son de
 fixtures y sus reservas/`BLOCKED real` siguen abiertos. `[PROPUESTA]` E4.12 puede usar su
@@ -409,7 +412,7 @@ ensayar.
 | Fase | Objetivo | Entregable | Autorización requerida | Criterio de salida |
 | --- | --- | --- | --- | --- |
 | **F0 · SPEC** | Fijar requisitos, AC, entradas, fases, riesgos y exclusiones | Este documento y su testplan | Ninguna para redactar; aprobación del usuario para cerrar la fase | **Cumplido 2026-11-09:** marco documental aprobado de forma explícita e identificable; `PASS`/`DONE` |
-| **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, alcance E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización de preparación documental; la resolución de §9 exige decisión expresa del usuario | **`IN_PROGRESS`:** propuestas en §9; ninguna decisión tomada ni declarada fuera |
+| **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, aceptaciones E4.7/E4.9/E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización de preparación documental; la resolución de §9 exige decisión expresa del usuario | **`IN_PROGRESS`:** propuestas en §9; ninguna decisión tomada ni declarada fuera |
 | **F2 · Preparación de evidencias** | Construir fixtures integrales, obtener/verificar la copia ficticia coherente, congelar la matriz, acordar criterios por escenario y habilitar el entorno aislado | Expediente de preparación con manifiesto, checksum, matriz congelada y criterios | Autorización específica de F2 | Entradas §5 aplicables al nivel autorizado, completas y revisadas; **no se ejecuta el ensayo integral** |
 | **F3 · Ensayo autorizado** | Ejecutar los escenarios y recoger evidencia cruda, en el nivel A o B que declare la autorización | Evidencia por AC y por escenario | Autorización explícita e identificable del ensayo, con nivel A/B y AC incluidos | Escenarios ejecutados o `BLOCKED` con causa; sin PASS inferido; un nivel A no se presenta como integral |
 | **F4 · Informe y brechas** | Consolidar resultados, diferencias y lista de brechas para P7 | Informe E4.12 con AC01–AC17 y lista de discrepancias | Autorización de F4 para publicar/registrar el informe | Informe revisado por QA independiente y decisión de gate P7 sin inferencias |
