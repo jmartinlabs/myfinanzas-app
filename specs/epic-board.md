@@ -8,7 +8,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | motor puro integrado (#302 `aeecdf4`, #309 `b14902d`) | revisión de conformidad 2026-11-09: defectos en identidad/corte/cero en corrección; DT7 abierto | merged | pending | SPEC20 #314; corrección DEV en curso con pruebas P-01…P-14; sin API/SQL/importación; 59 AC UNRUN |
+| E4.5 | approved | motor puro integrado (#302 `aeecdf4`, #309 `b14902d`) | revisión de conformidad 2026-11-09: defectos en identidad/corte/cero en corrección; DT7 abierto | merged | pending | SPEC20 #314; rama `fix/e45-conformidad` con P-01…P-14; sin API/SQL/importación; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
@@ -33,7 +33,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
 
-Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+Esta sección es histórica; el estado vigente está en la tabla superior y en la sección 2026-11-09. Sustituye como referencia cualquier alusión anterior que
 presente E4.9 sin DEV autorizado o con el candidato `85b4102`. Las secciones históricas
 conservan su fecha y no deben leerse como estado actual.
 
@@ -54,9 +54,9 @@ conservan su fecha y no deben leerse como estado actual.
   fixtures.
 - **Main posterior:** `a806fd9` (#216, documentación de E4.5) no modifica el estado de E4.9.
 
-## E4.5 — estado vigente reconciliado (2026-11-05)
+## E4.5 — estado histórico reconciliado (2026-11-05)
 
-Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+Esta sección es histórica; el estado vigente está en la tabla superior y en la sección 2026-11-09. Sustituye como referencia cualquier alusión anterior que
 presente E4.5 con C3/AC-56 abiertos, con #216 en `5d3ad0b` o con las precisiones sin
 aplicar. Las secciones históricas conservan su fecha y no deben leerse como estado actual.
 
@@ -887,9 +887,9 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
 | SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |
 | SPEC27 | E4.9 | Cierre y primera fotografía | Aprobada documentalmente; **DEV autorizado 2026-11-03 y ejecutado** | Integrado `0176ffc` (#200); CI PASS; QA APTO CON RESERVAS; aceptación y operación real pendientes; DT6 abierto |
-| SPEC28 | E4.10 | Reapertura y nuevo cierre | Número asignado; no iniciada | No iniciado |
-| SPEC29 | E4.11 | Fotografías consultables | Número asignado; no iniciada | No iniciado |
-| SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
+| SPEC28 | E4.10 | Reapertura y nuevo cierre | Aprobada e implementada | I1–I8 integrados; 24 AC UNRUN; aceptación pendiente |
+| SPEC29 | E4.11 | Fotografías consultables | Aprobada; I1–I6 integrados | AC07 #313; AC09 §18 #315; 14/1/15 `[PROPUESTA]` |
+| SPEC30 | E4.12 | Recuperación integral | SPEC/testplan #297 (DRAFT) | Nivel A preparado; F0/F1 pendientes; F2 no ejecutado |
 
 Técnicas: **SPEC31 SQLite producción**, contrato aprobado e implementación/enmienda
 presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless** #30
