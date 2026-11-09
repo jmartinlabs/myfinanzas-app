@@ -92,8 +92,8 @@ El dictamen de Álex recomienda, **sin sustituir la aprobación del usuario**:
 **Candidato histórico:** rama `feat/e47-resumen-anual`, publicada entonces en PR #210 (ya
 integrada), base `main` `90cd5dc`; commits DEV-01
 `293ef16`, DEV-02 `d0c5401`, DEV-03 `130b27f`, QA `60f18f8` y corrección final QA (este
-commit). Commit local, sin datos reales y sin migración. La publicación y el merge requieren
-autorización separada.
+commit). Commit local, sin datos reales y sin migración. La publicación y el merge
+requirieron autorización separada.
 
 **Entorno:** macOS local; Bun 1.4.3; TypeScript 7.0.2; Chromium/Playwright 1.64.1; 2026-11-04.
 No sustituye la CI Linux ni la revisión independiente de QA.
