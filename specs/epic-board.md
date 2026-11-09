@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-06
+## Identificadores canónicos y etapas — reconciliado 2026-11-09
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,16 +8,16 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | not-ready (DT7; DEV no autorizado) | APTO (focal; 59 AC UNRUN) | merged `a806fd9` (#216) | pending | C1–C8 y R1–R4 integrados; QA focal APTO; DT7 abierto; DEV E4.5 no autorizado; 59 AC UNRUN |
+| E4.5 | approved | motor puro integrado (#302 `aeecdf4`, #309 `b14902d`) | revisión de conformidad 2026-11-09: defectos en identidad/corte/cero en corrección; DT7 abierto | merged | pending | SPEC20 #314; rama `fix/e45-conformidad` con P-01…P-14; sin API/SQL/importación; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
 | E4.10 | approved (SPEC28 ratificada 2026-11-05) | verified I1–I8 merged | APTO CON RESERVAS (I8) | merged I7 `81c8960`, I8 `5ea79b9` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI y I8 regresión/AC22 integrados; 24 AC UNRUN (23+AC22 con evidencia de prueba, ninguno PASS) |
-| E4.11 | approved (SPEC29 merged `6fe91d7`, 2026-11-06) | verified I1–I3 merged | APTO CON RESERVAS (I1–I3) | merged `a658803`, `ef7bb00`, `a3c616d` | pending | I1 lectura/versiones; I2 v27 inmutable; I3 composición/agregado; 15 AC UNRUN; I4–I6 pendientes; rootless 26→27 integrado `1fa0ecc` |
-| E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
-| INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
-| DEPLOY-TAGS-01 | design approved for documentation (SPEC35, PR #233, 2026-11-05) | not-ready | passed (docs) | PR-open | pending | QA APTO; CI `required` PASS en PR #233; sin tags, workflows, credenciales ni despliegue; D1–D11 y fases 1–6 sin autorizar |
-| UI | draft (análisis #205; SPEC sin ratificar) | DEV-01/02/03/04 I1–I3 merged | APTO CON RESERVAS (DEV-04 I1–I3) | merged `b1bbe3c`, `3a5bed4`, `1f9c84a` | pending | DEV-03 navegación; DEV-04 Table/DataList, Saldos/Movimientos, patrimonio y tablas anchas; I4 pendiente |
+| E4.11 | approved | I1–I6 integrados; AC07 #313; AC09 §18 propuesta #315 | APTO CON RESERVAS; revisión `[PROPUESTA]` 14 PASS fixtures / 1 PARCIAL / 15 BLOCKED real | merged | pending | AC01/02/08/15 PASS (fixtures); AC09 PARCIAL; E4.2 cobertura pendiente; datos reales BLOCKED |
+| E4.12 | SPEC30/testplan integrados #297 (DRAFT) | nivel A preparado; F2 sin ejecutar | planned | n/a | pending | F0/F1 documentales pendientes; restore Linux y DT6/DT7 bloquean B |
+| INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa; artefacto verificado | n/a | operativa | MFA/FT-1 activos; `deploy-test-v0.1.0` existe anotado `sha=960c151…` pero resuelve a `c0341d7`; run `42579540547` FAILED, pendiente decisión |
+| DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag `deploy-test-v0.1.0` creado y run `42579540547` FAILED; `sha=960c151…` no coincide con commit `c0341d7`; sin GHCR |
+| UI | draft (SPEC sin ratificar) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera |
 
 ## Infraestructura rootless 25→27 — estado vigente (2026-11-06)
 
@@ -33,7 +33,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
 
-Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+Esta sección es histórica; el estado vigente está en la tabla superior y en la sección 2026-11-09. Sustituye como referencia cualquier alusión anterior que
 presente E4.9 sin DEV autorizado o con el candidato `85b4102`. Las secciones históricas
 conservan su fecha y no deben leerse como estado actual.
 
@@ -54,9 +54,9 @@ conservan su fecha y no deben leerse como estado actual.
   fixtures.
 - **Main posterior:** `a806fd9` (#216, documentación de E4.5) no modifica el estado de E4.9.
 
-## E4.5 — estado vigente reconciliado (2026-11-05)
+## E4.5 — estado histórico reconciliado (2026-11-05)
 
-Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+Esta sección es histórica; el estado vigente está en la tabla superior y en la sección 2026-11-09. Sustituye como referencia cualquier alusión anterior que
 presente E4.5 con C3/AC-56 abiertos, con #216 en `5d3ad0b` o con las precisiones sin
 aplicar. Las secciones históricas conservan su fecha y no deben leerse como estado actual.
 
@@ -887,9 +887,9 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
 | SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |
 | SPEC27 | E4.9 | Cierre y primera fotografía | Aprobada documentalmente; **DEV autorizado 2026-11-03 y ejecutado** | Integrado `0176ffc` (#200); CI PASS; QA APTO CON RESERVAS; aceptación y operación real pendientes; DT6 abierto |
-| SPEC28 | E4.10 | Reapertura y nuevo cierre | Número asignado; no iniciada | No iniciado |
-| SPEC29 | E4.11 | Fotografías consultables | Número asignado; no iniciada | No iniciado |
-| SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
+| SPEC28 | E4.10 | Reapertura y nuevo cierre | Aprobada e implementada | I1–I8 integrados; 24 AC UNRUN; aceptación pendiente |
+| SPEC29 | E4.11 | Fotografías consultables | Aprobada; I1–I6 integrados | AC07 #313; AC09 §18 #315; 14/1/15 `[PROPUESTA]` |
+| SPEC30 | E4.12 | Recuperación integral | SPEC/testplan #297 (DRAFT) | Nivel A preparado; F0/F1 pendientes; F2 no ejecutado |
 
 Técnicas: **SPEC31 SQLite producción**, contrato aprobado e implementación/enmienda
 presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless** #30
@@ -1937,3 +1937,36 @@ Runtime sin trabajadores visibles; controles dev07/qa07 not_found, terminación
 de proceso no confirmable. Dev32/PR30/AC22 continúa pausado. Próxima sesión:
 leer checkpoint y verificar estado antes de proponer continuación; requiere nueva
 instrucción del usuario, sin auto-resume.
+
+
+## Estado vigente UI / DEV-07 — 2026-11-09
+
+- **Cierre DEV-07 con reservas aprobado por el usuario (2026-11-09)** dentro del alcance
+  auditado: I1 línea base,
+  I2 tokens/AA, I3 sin residuo propio (sin PR), I4 matriz 30+15 y aserciones duras, I5
+  documentación. Integrados en `test` `0406e5d`; QA y CI posteriores a #318 satisfactorios
+  (`42600383366` required y `42600383295` Rootless+qa con 99 tests web).
+- **Evidencia**: 45 combinaciones con 0 fallos AA de texto/componentes, 0 objetivos
+  no-inline <44 y 0 overflow; matriz `artifacts/ui-dev07/base|critical` (no versionada).
+- **Excepciones vigentes (4)**: enlaces inline, segmento `input[type=date]` nativo,
+  tagline decorativa y primitivas base `.ui-badge`/`.ui-amount-note`/`.ui-metric-class`
+  fuera de la matriz.
+- **Límites**: Chromium; sin lector de pantalla ni WCAG universal; capturas fuera de Git;
+  contraste de componentes limitado a campos y glifos; DEV-07 no constituye aceptación
+  financiera ni cierra E4.6/E4.9/E4.10/E4.11.
+
+## E4.12 — F0/F1 (2026-11-09)
+
+- SPEC30/testplan integrados (#297); AC en `UNRUN`; niveles A/B separados.
+- **F0** sigue **pendiente**: SPEC30/testplan están en DRAFT y no hay aprobación
+  identificable; **F1** mantiene pendientes destino/custodia DT6, entorno Linux x86_64,
+  corte/matriz y aceptación de reservas E4.7/E4.9/E4.10/E4.11.
+- **F2** no autorizado ni ejecutado; no hay restore, migración ni equivalencia con Excel.
+
+
+## Corrección de estado TEST — 2026-11-09
+
+- `deploy-test-v0.1.0` **existe** como tag anotado: `sha=960c1519c65f7cd9540465a7fd69f7ce73cfeff3`,
+  pero el commit del tag es `c0341d7`; `960c151` no es un commit.
+- Run de despliegue `42579540547` sobre el tag: **FAILED**. No se ha recreado ni movido el tag;
+  requiere decisión operativa/Infra. La release inicial `5d2bb47` no se ve afectada.

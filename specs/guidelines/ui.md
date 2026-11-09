@@ -198,8 +198,10 @@ Excepciones y deuda que la matriz **no** convierte en cumplimiento:
   `--border` (1,38–1,50:1); se unificó su `border-color` con `--control-border` en la sección
   aditiva de DEV-07, sin cambiar relleno, tamaño, fondo ni texto. No queda como excepción.
 
-Esta sección no declara PASS ni cierra `DEV-07`; la verificación completa del candidato sigue
-pendiente de su ejecución en Linux y de la QA independiente.
+El usuario aprobó el cierre de `DEV-07` con reservas el 2026-11-09 dentro del alcance
+auditado; no es una auditoría WCAG universal ni una aceptación financiera. El CI completo y
+el job `qa` post-merge de #318 (`0406e5d`) validaron la matriz y los 99 tests web. Las
+capturas siguen fuera de Git y las cuatro excepciones vigentes se mantienen.
 
 **Historial:** las secciones siguientes documentan decisiones e implementaciones E1.1–E1.5. Sus
 menciones a «tema claro exclusivamente», a la paleta verde `#8DBB2E`/`#EEF7E8` y a capturas de
