@@ -23,6 +23,16 @@ const fpV1 = "a".repeat(64);
 const fpV2 = "b".repeat(64);
 const fpFor = (version: number) => (version === 1 ? fpV1 : fpV2);
 
+/** By-id reads are explicit: they never declare the automatic latest marker. */
+function conConsultaPorId<T extends { seleccionVersion: { porDefecto: boolean } }>(
+  dto: T,
+): T {
+  return {
+    ...dto,
+    seleccionVersion: { ...dto.seleccionVersion, porDefecto: false },
+  };
+}
+
 function seedCycle(db: Database, id: string, inicio: string) {
   db.run("INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES(?,?,?,?)", [
     id,
@@ -590,7 +600,9 @@ test("E4.11 AC15: E4.3/E4.4 No disponible se declaran y no completan el total", 
   // The persisted aggregate replays the same declaration, not a live reread.
   const { replayed: _replayed, ...persistido } = periodo;
   expect(periodo.replayed).toBe(false);
-  expect(getFotoPeriodoPorId(db, periodo.id)).toEqual(persistido);
+  expect(getFotoPeriodoPorId(db, periodo.id)).toEqual(
+    conConsultaPorId(persistido),
+  );
   expect(
     getFotoPeriodo(
       db,
@@ -1134,13 +1146,32 @@ test("E4.11 I3: re-cierre posterior no altera el agregado anterior", () => {
     now,
   );
   const { replayed: _created, ...a1Dto } = a1;
-  const dtoFrozen = getFotoPeriodoPorId(db, a1.id);
+  const query = new URLSearchParams({
+    tipo: "Trimestre",
+    ejercicio: "2026",
+    trimestre: "1",
+  });
+  const latestA1 = getFotoPeriodo(db, query, now);
+  expect(latestA1.seleccionVersion).toEqual({
+    version: "A1",
+    porDefecto: true,
+    regla: "P7-D",
+  });
+  const a1PorId = getFotoPeriodoPorId(db, a1.id);
+  expect(a1PorId.seleccionVersion).toEqual({
+    version: "A1",
+    porDefecto: false,
+    regla: "P7-D",
+  });
+  expect(a1PorId).toEqual(conConsultaPorId(a1Dto));
+  expect(a1PorId.seleccionAplicada).toEqual(a1Dto.seleccionAplicada);
+  const dtoFrozen = a1PorId;
 
   seedClosure(db, "2", 2, "2026-02-01", "2026-02-28", "Re-cierre posterior");
 
   // The old aggregate keeps its values, versions and fingerprint byte-identical.
   expect(getFotoPeriodoPorId(db, a1.id)).toEqual(dtoFrozen);
-  expect(getFotoPeriodoPorId(db, a1.id)).toEqual(a1Dto);
+  expect(getFotoPeriodoPorId(db, a1.id)).toEqual(conConsultaPorId(a1Dto));
   expect(
     db
       .query("SELECT COUNT(*) AS n FROM fotos_cierre WHERE ciclo='2'")
@@ -1159,7 +1190,21 @@ test("E4.11 I3: re-cierre posterior no altera el agregado anterior", () => {
     expect.objectContaining({ ciclo: "1", versionFoto: 1, fingerprint: fpV1 }),
     expect.objectContaining({ ciclo: "2", versionFoto: 2, fingerprint: fpV2 }),
   ]);
-  expect(getFotoPeriodoPorId(db, a1.id)).toEqual(a1Dto);
+
+  // A2 is now the automatic latest; A1 remains an explicit by-id read.
+  const latestA2 = getFotoPeriodo(db, query, now);
+  expect(latestA2.identidad.versionAgregado).toBe("A2");
+  expect(latestA2.seleccionVersion).toMatchObject({
+    version: "A2",
+    porDefecto: true,
+  });
+  const a1DespuesA2 = getFotoPeriodoPorId(db, a1.id);
+  expect(a1DespuesA2).toEqual(conConsultaPorId(a1Dto));
+  expect(a1DespuesA2.seleccionVersion).toMatchObject({
+    version: "A1",
+    porDefecto: false,
+  });
+  expect(a1DespuesA2.seleccionAplicada).toEqual(a1Dto.seleccionAplicada);
 });
 
 test("E4.11 I3: POST idempotente, conflicto de payload y clave obligatoria", () => {
@@ -1449,7 +1494,12 @@ test("E4.11 I3: rutas GET/POST, 405 y snapshot sin escrituras colaterales", asyn
 
   const byId = await f.request("/api/fotos/periodos/1");
   expect(byId.status).toBe(200);
-  expect(byId.data).toEqual(latest.data);
+  expect(byId.data.seleccionVersion).toEqual({
+    version: "A1",
+    porDefecto: false,
+    regla: "P7-D",
+  });
+  expect(byId.data).toEqual(conConsultaPorId(latest.data));
 
   expect(
     (await f.request("/api/fotos/periodos/999")).status,

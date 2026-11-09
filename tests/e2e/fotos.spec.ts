@@ -44,6 +44,16 @@ type ApiResult = {
   data: any;
 };
 
+/** By-id reads are explicit and never carry the automatic latest marker. */
+function conConsultaPorId<T extends { seleccionVersion: { porDefecto: boolean } }>(
+  dto: T,
+): T {
+  return {
+    ...dto,
+    seleccionVersion: { ...dto.seleccionVersion, porDefecto: false },
+  };
+}
+
 function apiUrl(port: number, path: string) {
   return `http://127.0.0.1:${port}/api${path}`;
 }
@@ -819,7 +829,7 @@ test("E4.11 UI/API: composición de trimestre/año, cobertura, drill-down y cont
       page
         .getByRole("region", { name: "Identidad del agregado" })
         .locator(".ui-badge")
-        .filter({ hasText: "Versión solicitada" })
+        .filter({ hasText: "Consulta explícita" })
         .first(),
     ).toBeVisible();
     await page.getByLabel("Versión del agregado").fill("A9");
@@ -1032,7 +1042,11 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
     ).toBe(snapshotBefore.tables.fotos_cierre.count + 1);
 
     const a1After = (await api(page, `/fotos/periodos/${a1.id}`)).data;
-    expect(a1After).toEqual(a1);
+    expect(a1After).toEqual(conConsultaPorId(a1));
+    expect(a1After.seleccionVersion).toMatchObject({
+      version: "A1",
+      porDefecto: false,
+    });
     const v1 = (await api(page, "/fotos/ciclos/2?version=1")).data;
     const v2 = (await api(page, "/fotos/ciclos/2?version=2")).data;
     expect(v1).toMatchObject({
@@ -1067,7 +1081,23 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
       versionFoto: 2,
       fingerprint: v2.foto.fingerprint,
     });
-    expect((await api(page, `/fotos/periodos/${a1.id}`)).data).toEqual(a1);
+    const a1AfterA2 = (await api(page, `/fotos/periodos/${a1.id}`)).data;
+    expect(a1AfterA2).toEqual(conConsultaPorId(a1));
+    expect(a1AfterA2.seleccionVersion).toMatchObject({
+      version: "A1",
+      porDefecto: false,
+    });
+    const latest = (
+      await api(
+        page,
+        "/fotos/periodos?tipo=Trimestre&ejercicio=2026&trimestre=1",
+      )
+    ).data;
+    expect(latest.identidad.versionAgregado).toBe("A2");
+    expect(latest.seleccionVersion).toMatchObject({
+      version: "A2",
+      porDefecto: true,
+    });
     const snapshotAfterA2 = await snapshot(request, port);
     expect(
       snapshotAfterA2.periodos.find(
@@ -1086,6 +1116,20 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
     await expect(
       page.getByRole("heading", { name: "T1 · 2026 · A1", exact: true }),
     ).toBeVisible();
+    const identidadPorId = page.getByRole("region", {
+      name: "Identidad del agregado",
+    });
+    await expect(
+      identidadPorId
+        .locator(".ui-badge")
+        .filter({ hasText: "Consulta explícita" })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      identidadPorId
+        .locator(".ui-badge")
+        .filter({ hasText: "Última automática" }),
+    ).toHaveCount(0);
     await expect(
       page
         .getByRole("region", { name: "Tabla de composición del periodo" })
@@ -1100,6 +1144,20 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
     await expect(
       page.getByRole("heading", { name: "T1 · 2026 · A2", exact: true }),
     ).toBeVisible();
+    const identidadUltima = page.getByRole("region", {
+      name: "Identidad del agregado",
+    });
+    await expect(
+      identidadUltima
+        .locator(".ui-badge")
+        .filter({ hasText: "Última automática" })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      identidadUltima
+        .locator(".ui-badge")
+        .filter({ hasText: "Consulta explícita" }),
+    ).toHaveCount(0);
     await expect(
       page
         .getByRole("region", { name: "Tabla de composición del periodo" })
