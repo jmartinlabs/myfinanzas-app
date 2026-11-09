@@ -78,6 +78,7 @@ const report: {
   pageErrors: string[];
   limitations: string[];
   exceptions: string[];
+  resolved: string[];
   verification: {
     baseline: string;
     linuxFull: string;
@@ -88,7 +89,7 @@ const report: {
   generatedAt: new Date().toISOString(),
   updatedAt: "",
   head: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-  base: "e221e51",
+  base: "5c6e762",
   platform: {
     os: process.platform,
     arch: process.arch,
@@ -106,19 +107,21 @@ const report: {
   limitations: [
     "Linux full verification not executed on this host.",
     "macOS: scripts/verify API backup/production suites blocked by the /var symlink in safeAncestors and by libc.so.6; two E2E specs blocked because age-keygen is not installed.",
-    "States covered: Inicio base only; Movimientos E4.6 C007; Saldos ficha S001; Saldos alta /saldos/nuevo; Cierre E4.9 preflight listo with cycle 1.",
+    "Screens: Inicio base, Movimientos E4.6 C007, Saldos ficha S001, Saldos alta /saldos/nuevo and Cierre E4.9 preflight listo with cycle 1. Critical states are covered by the I4 matrix, not this baseline.",
     "Zoom measured as a 720x500 viewport equivalence (200% over 1440x1000), not native browser zoom.",
     "Chromium only; no Firefox/WebKit and no screen reader.",
-    "Contrast covers visible text nodes only: no control borders, icons/SVG, placeholders, input values or pseudo-elements.",
+    "Contrast covers visible text, form-control borders and status glyphs; it does not cover placeholders, input values, pseudo-elements or SVG.",
   ],
   exceptions: [
     "Inline prose links in Inicio (S001-S005, Comida) and table-cell links in Movimientos are treated as inline target-size exceptions; manual QA must confirm.",
-    "a.brand is 40 px high at 720/390 and a.back is 101x18 px; these are real target-size findings.",
-    "Inicio list links at 1440 are 202/220x18 px; real target-size findings.",
     "One internal segment of input#fechaApertura shows no outline in Chromium's native date control.",
-    "Cierre has 20 functional items below 12 px: 17 cierre-badge at 11 px and 3 cierre-fingerprint at 11.52 px (two closure hashes, one idempotency UUID); all functional-meta.",
     "Brand tagline is 7-8 px and decorative.",
-    "hybrid-s sidebar focus ring is 2.83:1; real failure, not an exception.",
+    "Primitives outside the matrix keep their base sizes: .ui-badge 10 px, .ui-amount-note 11 px and .ui-metric-class 9 px.",
+  ],
+  resolved: [
+    "hybrid-s sidebar focus ring was 2.83:1; I2 applies --sidebar-focus (6.66:1). No longer an exception.",
+    "Cierre badges at 11 px and fingerprints at 11.52 px; I2 raises them to --text-xs (12 px).",
+    "Target size findings: a.brand 40 px, a.back 101x18 px and Inicio list links 202/220x18 px; I2 sets --touch-min (44 px).",
   ],
   verification: {
     baseline: "PASS (python3.12 scripts/verify baseline)",

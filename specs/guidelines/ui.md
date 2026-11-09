@@ -51,10 +51,13 @@ plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
 #### Contrato AA vigente
 
 - **Contraste:** texto normal ≥ 4.5:1 y texto grande ≥ 3:1 (`≥ 24 px`, o `≥ 18.66 px` en negrita)
-  en `light-s`, `dark-s` y `hybrid-s`; el anillo de foco se muestrea y exige ≥ 3:1. Los bordes
-  de control e iconos de estado son requisito AA, pero **esta matriz no los mide** (solo nodos
-  de texto y anillo de foco). La medición compone fondos con alfa; un fondo con
-  imagen/gradiente queda sin resolver y **falla de forma explícita**, no se ignora.
+  en `light-s`, `dark-s` y `hybrid-s`; el anillo de foco se muestrea y exige ≥ 3:1. Los bordes de
+  los campos de formulario visibles (`input`, `select`, `textarea`) y los glifos de estado
+  (`aria-hidden` de `Badge`, `Amount` y `EmptyState`) también se miden y exigen ≥ 3:1; se
+  comparan contra el fondo exterior y el relleno interior y se toma el menor ratio. Los botones,
+  enlaces y el `Switch` se identifican por su texto visible y quedan cubiertos por el contraste
+  de texto y el anillo de foco, no por un borde ornamental. La medición compone fondos con alfa;
+  un fondo con imagen/gradiente queda sin resolver y **falla de forma explícita**, no se ignora.
 - **Foco:** cada parada de teclado tiene foco visible; el `outline`/`box-shadow` muestreado
   mantiene ≥ 3:1 contra el fondo adyacente en los tres temas. El sidebar de `hybrid-s` usa
   `--sidebar-focus` (6,66:1), no el anillo global (2,83:1 sobre ese fondo).
@@ -91,10 +94,14 @@ del repositorio; `tests/e2e/ui-dev07.spec.ts` forma parte del E2E normal (`bun r
 | Verificación completa | `python3.12 scripts/verify --full` | candidato de cierre; **Linux**; incluye los E2E |
 
 - La línea base es **opt-in**: sin `UI_DEV07_AUDIT=1` no registra pruebas y es solo diagnóstica.
-  La matriz es la que convierte contraste, overflow (con `details` cerrados y abiertos),
-  objetivos, texto funcional, teclado, anillo de foco y movimiento reducido en aserciones duras.
-  El teclado se recorre a 1440 y 390; a 720 se comprueban contraste, overflow, objetivos y que
-  el menú móvil sigue operativo.
+  La matriz es la que convierte contraste de texto, bordes de campo, glifos de estado, overflow
+  (con `details` cerrados y abiertos), objetivos, texto funcional, teclado, anillo de foco y
+  movimiento reducido en aserciones duras. El teclado se recorre a 1440 y 390; a 720 se comprueban
+  contraste, overflow, objetivos y que el menú móvil sigue operativo.
+- `tests/e2e/ui-dev07.spec.ts` incluye además pruebas focales de activación: `Enter` y `Space`
+  abren/cierran `<details>`, activan el `Switch`, el botón de envío y el de actualización del
+  cierre, y abren/cierran el menú móvil sin perder el foco (el envío lo mueve al primer campo
+  inválido, según su contrato de errores).
 - `python3.12 scripts/verify --full` es el comando del candidato de cierre y se ejecuta en Linux.
   El perfil `critical` no ejecuta E2E y no sirve como evidencia de la matriz; para un PR
   documental o de test puede usarse `--base <sha> --head <sha>`.
@@ -141,10 +148,28 @@ Trazabilidad de los incrementos:
   30 capturas base, 15 críticas y las aserciones duras.
 - I3 no abrió PR: el paquete preveía reducir I3 a evidencia si no había residuo propio; la
   cabecera de I4 registra que la auditoría sobre `ba24c29` no encontró residuo de producto.
+- Cierre AA posterior a I5: la matriz mide bordes de campo y glifos de estado, añade la guarda
+  estática de tokens, pruebas focales de `Enter`/`Space` y deja solo las excepciones vigentes.
+  No crea un incremento nuevo ni reabre I2/I3.
 
-Las capturas viven en `artifacts/ui-dev07/base/` y `artifacts/ui-dev07/critical/`, y el informe
-de línea base en `artifacts/ui-dev07-baseline/report.json`. Todo `artifacts/` está ignorado y no
-se versiona; es evidencia adjunta al PR o al registro QA, no un documento de Git.
+##### Convención y trazabilidad de capturas
+
+- **Base (30):** `artifacts/ui-dev07/base/{pantalla}-{tema}-{ancho}.png`, con pantallas
+  `inicio`, `movimientos`, `saldo-ficha`, `saldo-form` y `cierre`; temas `light-s`, `dark-s` y
+  `hybrid-s`; anchos `1440x1000` y `390x844`.
+- **Críticas (15):** `artifacts/ui-dev07/critical/{pantalla}-{estado}-{tema}.png`, un estado por
+  pantalla y tema: Inicio `zero`, Movimientos `sin-coincidencias`, ficha `s000`, formulario
+  `validacion` y Cierre `bloqueado`. El paquete DEV-07 propuso la carpeta `estados/`; la matriz
+  implementada usa `critical/` y **no se renombra la evidencia existente**. `critical/` es la ruta
+  vigente; `estados/` queda como nombre superado del documento de planificación.
+- **Verificación:** `tests/e2e/ui-dev07.spec.ts` genera cada archivo con `shot()`, que falla si la
+  página tiene scroll horizontal, después de `prepareShot()` (scroll al inicio, `<details>`
+  cerrados salvo que el estado los requiera y animaciones finitas asentadas). Antes de cada
+  captura crítica se ejecuta la misma auditoría AA que la matriz; una captura no sustituye una
+  aserción. `artifacts/` está ignorado y no se versiona: se adjunta al PR o al registro QA.
+
+El informe de línea base se escribe en `artifacts/ui-dev07-baseline/report.json`; también está
+ignorado y no se versiona.
 
 Excepciones y deuda que la matriz **no** convierte en cumplimiento:
 
@@ -163,12 +188,15 @@ Excepciones y deuda que la matriz **no** convierte en cumplimiento:
 - **Estados no cubiertos:** solo se mide un estado crítico por pantalla y tema. Las rutas fuera
   de las cinco pantallas, los estados no críticos, los datos reales y E4.10/E4.11 quedan fuera.
 - **Límites de medición:** solo Chromium; sin Firefox/WebKit; sin lector de pantalla; sin
-  auditoría WCAG completa; zoom emulado por viewport; el contraste cubre nodos de texto visibles
-  y no bordes, iconos/SVG, placeholders, valores de input ni pseudo-elementos; el anillo de foco
-  se muestrea en los tres temas.
+  auditoría WCAG completa; zoom emulado por viewport; el contraste cubre nodos de texto visibles,
+  bordes de campo y glifos de estado, pero no placeholders, valores de input, pseudo-elementos ni
+  SVG; el anillo de foco se muestrea en los tres temas.
 - **Foco de `hybrid-s`:** el anillo global sobre el sidebar quedó corregido en I2 con
   `--sidebar-focus`; no es deuda residual. El resto de usos de `--focus` se mantiene medido, no
   aprobado por esta sección.
+- **Bordes de campo:** la matriz mide los campos visibles y exige ≥ 3:1. `textarea` conservaba
+  `--border` (1,38–1,50:1); se unificó su `border-color` con `--control-border` en la sección
+  aditiva de DEV-07, sin cambiar relleno, tamaño, fondo ni texto. No queda como excepción.
 
 Esta sección no declara PASS ni cierra `DEV-07`; la verificación completa del candidato sigue
 pendiente de su ejecución en Linux y de la QA independiente.

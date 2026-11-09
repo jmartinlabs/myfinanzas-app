@@ -51,7 +51,9 @@ const CRITICAL_OUT = "artifacts/ui-dev07/critical";
 const INICIO_PORT = 3014;
 const ZERO_PORT = 3015;
 const THEME_PORT = 3013;
+const INICIO_AUTH_PORT = 3017;
 const CIERRE_LISTO_PORT = 3031;
+const CIERRE_TECLADO_PORT = 3032;
 const CIERRE_BLOQUEADO_PORT = 3034;
 
 type ServerSpec = {
@@ -79,10 +81,26 @@ const SERVERS: readonly ServerSpec[] = [
     env: { E46_SCENARIO: "zero" },
   },
   {
+    // Fixture independiente para las pruebas de activación por teclado: la
+    // matriz ya enrola `.local/e2e-inicio` en este mismo worker.
+    id: "inicio-auth",
+    script: "apps/api/test-support/inicio-server.ts",
+    port: INICIO_AUTH_PORT,
+    env: { E46_SCENARIO: "auth" },
+  },
+  {
     id: "cierre-listo",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_LISTO_PORT,
     env: { E49_SCENARIO: "listo", E49_PORT: String(CIERRE_LISTO_PORT) },
+  },
+  {
+    // Fixture independiente para la activación por teclado del cierre; la
+    // matriz ya enrola `.local/e2e-cierre-listo` en este mismo worker.
+    id: "cierre-teclado",
+    script: "apps/api/test-support/cierre-server.ts",
+    port: CIERRE_TECLADO_PORT,
+    env: { E49_SCENARIO: "replay", E49_PORT: String(CIERRE_TECLADO_PORT) },
   },
   {
     id: "cierre-bloqueado",
@@ -254,6 +272,36 @@ function assertViewportAudit(screen: string, audit: ScreenViewportAudit) {
     audit.contrast.unresolved,
     `${label}: fondos no resueltos`,
   ).toEqual([]);
+
+  // Componentes no textuales: borde de campo y glifo de estado ≥ 3:1.
+  expect(
+    audit.components.checked,
+    `${label}: sin componentes medidos`,
+  ).toBeGreaterThan(0);
+  expect(
+    audit.components.failures,
+    `${label}: fallos de contraste de componentes ${JSON.stringify(
+      audit.components.failures,
+    )}`,
+  ).toEqual([]);
+  if (audit.components.min !== null) {
+    expect(
+      audit.components.min,
+      `${label}: mínimo de componente ${audit.components.minEntry?.selector} ${audit.components.minEntry?.ratio}`,
+    ).toBeGreaterThanOrEqual(3);
+  }
+  if (audit.components.minControlBorder !== null) {
+    expect(
+      audit.components.minControlBorder,
+      `${label}: borde de campo < 3`,
+    ).toBeGreaterThanOrEqual(3);
+  }
+  if (audit.components.minStatusIcon !== null) {
+    expect(
+      audit.components.minStatusIcon,
+      `${label}: icono de estado < 3`,
+    ).toBeGreaterThanOrEqual(3);
+  }
 
   // Details cerrados (estado por defecto) y abiertos (contenido plegado).
   expect(
@@ -721,5 +769,130 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
     await captureCritical(page, "cierre", "bloqueado", 1440, 1000);
+  });
+});
+
+test.describe("UI DEV-07 · activación por teclado", () => {
+  test("detalles, menú, switch y envío con la misma sesión", async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    await routeApi(page, INICIO_AUTH_PORT);
+    await login(page, ".local/e2e-inicio-auth", "/inicio");
+    await expect(
+      page.getByRole("heading", { name: "Inicio", exact: true }),
+    ).toBeVisible();
+    await page.goto("/movimientos");
+    await waitForScreenReady(page, "movimientos");
+
+    const details = page.locator("details.movement-filters");
+    const summary = details.locator("summary");
+    await summary.focus();
+    await expect(summary, "resumen sin foco").toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(details, "Enter no abre detalles").toHaveJSProperty(
+      "open",
+      true,
+    );
+    await expect(summary, "el foco se perdió al abrir").toBeFocused();
+    await page.keyboard.press(" ");
+    await expect(details, "Space no cierra detalles").toHaveJSProperty(
+      "open",
+      false,
+    );
+    await expect(summary, "el foco se perdió al cerrar").toBeFocused();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const toggle = page.locator(".menu-toggle");
+    await expect(toggle).toBeVisible();
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(toggle, "Enter no abre el menú").toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    // Al abrir, el shell mueve el foco al primer enlace del menú: no se
+    // pierde, entra en la región que se acaba de mostrar.
+    await expect(
+      page.locator("#main-nav a").first(),
+      "el foco no entró en el menú",
+    ).toBeFocused();
+    await toggle.focus();
+    await page.keyboard.press(" ");
+    await expect(toggle, "Space no cierra el menú").toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await expect(toggle, "el foco se perdió al cerrar el menú").toBeFocused();
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/saldos/nuevo");
+    await waitForScreenReady(page, "saldo-form");
+
+    const control = page.locator('[role="switch"]').first();
+    const initial = await control.getAttribute("aria-checked");
+    await control.focus();
+    await expect(control, "switch sin foco").toBeFocused();
+    await page.keyboard.press(" ");
+    await expect(control, "Space no activa el switch").toHaveAttribute(
+      "aria-checked",
+      initial === "true" ? "false" : "true",
+    );
+    await expect(control, "el foco se perdió tras Space").toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(control, "Enter no activa el switch").toHaveAttribute(
+      "aria-checked",
+      initial ?? "false",
+    );
+    await expect(control, "el foco se perdió tras Enter").toBeFocused();
+
+    const submit = page.getByRole("button", {
+      name: "Crear Saldo",
+      exact: true,
+    });
+    const nombre = page.getByLabel("Nombre *", { exact: true });
+    for (const key of ["Enter", " "]) {
+      await submit.focus();
+      await page.keyboard.press(key);
+      await expect(
+        page.getByText("Indica un nombre sin caracteres de control."),
+        `${key} no activa el envío`,
+      ).toBeVisible();
+      // El formulario mueve el foco al primer campo inválido: no se pierde,
+      // cambia al destino que ya define el contrato de errores.
+      await expect(
+        nombre,
+        `el foco no volvió al campo tras ${key}`,
+      ).toBeFocused();
+    }
+  });
+
+  test("botón de actualización del cierre", async ({ page }) => {
+    test.setTimeout(180000);
+    await routeApi(page, CIERRE_TECLADO_PORT);
+    await login(page, ".local/e2e-cierre-replay", "/cierre");
+    await page.getByLabel("Ciclo").selectOption("1");
+    await expect(
+      page.getByText("Listo", { exact: true }).first(),
+    ).toBeVisible();
+
+    const refresh = page.getByRole("button", {
+      name: "Actualizar revisión",
+      exact: true,
+    });
+    for (const key of ["Enter", " "]) {
+      await refresh.focus();
+      const response = page.waitForResponse(
+        (item) =>
+          item.request().method() === "GET" &&
+          /\/cierres\/[^/]+\/preflight/.test(item.url()),
+      );
+      await page.keyboard.press(key);
+      await response;
+      await expect(
+        refresh,
+        `${key} no activa la actualización o pierde el foco`,
+      ).toBeFocused();
+    }
   });
 });

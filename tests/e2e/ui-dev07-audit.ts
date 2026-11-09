@@ -50,6 +50,36 @@ export type ContrastReport = {
   lowest: ContrastFinding[];
 };
 
+/**
+ * Contraste de componentes no textuales: límite de los campos de formulario
+ * y glifos de estado `aria-hidden` que el medidor de texto excluye.
+ *
+ * Solo se miden los controles cuyo límite depende del borde (`input`,
+ * `select`, `textarea`): los botones, enlaces y el switch se identifican por
+ * su texto visible y ya quedan cubiertos por contraste de texto/foco. El
+ * borde se compara contra el fondo exterior y el relleno interior y se exige
+ * el menor de ambos ratios.
+ */
+export type ComponentContrastFinding = {
+  selector: string;
+  kind: "control-border" | "status-icon";
+  detail: string;
+  ratio: number | null;
+  required: 3;
+  reason?: string;
+};
+
+export type ComponentContrastReport = {
+  checked: number;
+  controlBorders: number;
+  statusIcons: number;
+  min: number | null;
+  minControlBorder: number | null;
+  minStatusIcon: number | null;
+  minEntry: ComponentContrastFinding | null;
+  failures: ComponentContrastFinding[];
+};
+
 export type SmallTextFinding = {
   selector: string;
   text: string;
@@ -132,6 +162,7 @@ export type ScreenViewportAudit = {
   theme: Dev07Theme;
   viewport: string;
   contrast: ContrastReport;
+  components: ComponentContrastReport;
   smallText: SmallTextFinding[];
   targets: TargetFinding[];
   overflow: OverflowReport;
@@ -301,6 +332,235 @@ export async function measureContrast(
     };
   }, rootSelector);
   return result;
+}
+
+/**
+ * Contraste computado de bordes de campo y glifos de estado.
+ *
+ * Excluye texto (lo cubre `measureContrast`), controles deshabilitados y
+ * elementos ocultos. Un borde transparente o inexistente no se ignora: se
+ * registra como fallo explícito porque el límite del campo no sería visible.
+ */
+export async function measureComponentContrast(
+  page: Page,
+  rootSelector = "#main",
+): Promise<ComponentContrastReport> {
+  return page.evaluate((rootSelector) => {
+    const root = document.querySelector(rootSelector) ?? document.body;
+    const parse = (value: string) => {
+      const match = value.match(/rgba?\(([^)]+)\)/);
+      if (!match) return null;
+      const parts = match[1]
+        .split(/[,\s/]+/)
+        .filter(Boolean)
+        .map(Number);
+      if (parts.length < 3) return null;
+      return {
+        r: parts[0],
+        g: parts[1],
+        b: parts[2],
+        a: parts.length > 3 ? parts[3] : 1,
+      };
+    };
+    const over = (
+      top: { r: number; g: number; b: number; a: number },
+      bottom: { r: number; g: number; b: number; a: number },
+    ) => {
+      const a = top.a + bottom.a * (1 - top.a);
+      if (a === 0) return { r: 0, g: 0, b: 0, a: 0 };
+      return {
+        r: (top.r * top.a + bottom.r * bottom.a * (1 - top.a)) / a,
+        g: (top.g * top.a + bottom.g * bottom.a * (1 - top.a)) / a,
+        b: (top.b * top.a + bottom.b * bottom.a * (1 - top.a)) / a,
+        a,
+      };
+    };
+    const channel = (value: number) => {
+      const c = value / 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const luminance = (color: { r: number; g: number; b: number }) =>
+      0.2126 * channel(color.r) +
+      0.7152 * channel(color.g) +
+      0.0722 * channel(color.b);
+    const contrast = (
+      a: { r: number; g: number; b: number },
+      b: { r: number; g: number; b: number },
+    ) => {
+      const l1 = luminance(a);
+      const l2 = luminance(b);
+      return Math.round(
+        ((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)) * 100,
+      ) / 100;
+    };
+    const visible = (el: Element) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return false;
+      let node: HTMLElement | null = el;
+      while (node && node !== document.documentElement) {
+        const style = getComputedStyle(node);
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          Number(style.opacity) === 0
+        )
+          return false;
+        node = node.parentElement;
+      }
+      return true;
+    };
+    const selectorOf = (el: Element) => {
+      const tag = el.tagName.toLowerCase();
+      const id = el.id ? "#" + el.id : "";
+      const cls = Array.from(el.classList)
+        .slice(0, 3)
+        .map((c) => "." + c)
+        .join("");
+      return tag + id + cls;
+    };
+    const background = (el: HTMLElement, includeSelf: boolean) => {
+      const chain: HTMLElement[] = [];
+      let node: HTMLElement | null = includeSelf ? el : el.parentElement;
+      while (node) {
+        chain.push(node);
+        node = node.parentElement;
+      }
+      let base = { r: 255, g: 255, b: 255, a: 1 };
+      for (const ancestor of chain.reverse()) {
+        const parsed = parse(getComputedStyle(ancestor).backgroundColor);
+        if (parsed && parsed.a > 0) base = over(parsed, base);
+      }
+      return base;
+    };
+
+    const findings: {
+      selector: string;
+      kind: "control-border" | "status-icon";
+      detail: string;
+      ratio: number | null;
+      required: 3;
+      reason?: string;
+    }[] = [];
+
+    const controls = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea',
+      ),
+    );
+    for (const control of controls) {
+      if (!visible(control)) continue;
+      if (control.closest('.sr-only,[hidden],[aria-hidden="true"]')) continue;
+      if (
+        control.closest(
+          "button:disabled,input:disabled,select:disabled,textarea:disabled",
+        )
+      )
+        continue;
+      const style = getComputedStyle(control);
+      const width = Number.parseFloat(style.borderTopWidth);
+      if (style.borderTopStyle === "none" || width === 0) {
+        findings.push({
+          selector: selectorOf(control),
+          kind: "control-border",
+          detail: "sin borde visible",
+          ratio: null,
+          required: 3,
+          reason: "no-visible-border",
+        });
+        continue;
+      }
+      const border = parse(style.borderTopColor);
+      if (!border || border.a === 0) {
+        findings.push({
+          selector: selectorOf(control),
+          kind: "control-border",
+          detail: "borde transparente",
+          ratio: null,
+          required: 3,
+          reason: "transparent-border",
+        });
+        continue;
+      }
+      const outside = background(control, false);
+      const inside = background(control, true);
+      const outsideRatio = contrast(
+        border.a < 1 ? over(border, outside) : border,
+        outside,
+      );
+      const insideRatio = contrast(
+        border.a < 1 ? over(border, inside) : border,
+        inside,
+      );
+      const ratio = Math.min(outsideRatio, insideRatio);
+      findings.push({
+        selector: selectorOf(control),
+        kind: "control-border",
+        detail: `${style.borderTopColor} vs fondo ${outsideRatio}/${insideRatio}`,
+        ratio,
+        required: 3,
+      });
+    }
+
+    const icons = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        ".ui-badge-icon, .ui-amount-icon, .ui-empty-icon, .empty-symbol",
+      ),
+    );
+    for (const icon of icons) {
+      if (!visible(icon)) continue;
+      // El propio glifo es `aria-hidden` (decorativo); se ignora solo si lo
+      // oculta un ancestro, no su propia semántica.
+      if (
+        icon.closest("[hidden],.sr-only") ||
+        icon.parentElement?.closest('[hidden],.sr-only,[aria-hidden="true"]')
+      )
+        continue;
+      const color = parse(getComputedStyle(icon).color);
+      if (!color || color.a === 0) {
+        findings.push({
+          selector: selectorOf(icon),
+          kind: "status-icon",
+          detail: "color transparente",
+          ratio: null,
+          required: 3,
+          reason: "transparent-icon",
+        });
+        continue;
+      }
+      const backdrop = background(icon, true);
+      findings.push({
+        selector: selectorOf(icon),
+        kind: "status-icon",
+        detail: getComputedStyle(icon).color,
+        ratio: contrast(
+          color.a < 1 ? over(color, backdrop) : color,
+          backdrop,
+        ),
+        required: 3,
+      });
+    }
+
+    const measured = findings.filter((entry) => entry.ratio !== null);
+    const sorted = [...measured].sort((a, b) => a.ratio! - b.ratio!);
+    const byKind = (kind: "control-border" | "status-icon") =>
+      sorted.find((entry) => entry.kind === kind)?.ratio ?? null;
+    return {
+      checked: findings.length,
+      controlBorders: findings.filter(
+        (entry) => entry.kind === "control-border",
+      ).length,
+      statusIcons: findings.filter((entry) => entry.kind === "status-icon")
+        .length,
+      min: sorted.length > 0 ? sorted[0].ratio : null,
+      minControlBorder: byKind("control-border"),
+      minStatusIcon: byKind("status-icon"),
+      minEntry: sorted[0] ?? null,
+      failures: findings.filter(
+        (entry) => entry.ratio === null || entry.ratio < entry.required,
+      ),
+    };
+  }, rootSelector);
 }
 
 /** Texto renderizado < 12 px con una clasificación heurística. */
@@ -906,16 +1166,19 @@ export async function auditViewport(
   options: { expandDetails?: boolean; defaultOverflow?: OverflowReport } = {},
 ): Promise<ScreenViewportAudit> {
   if (options.expandDetails) await setDetailsOpen(page, true);
-  const [contrast, smallText, targets, overflow] = await Promise.all([
-    measureContrast(page, rootSelector),
-    measureSmallText(page, rootSelector),
-    measureTargets(page),
-    measureOverflow(page),
-  ]);
+  const [contrast, components, smallText, targets, overflow] =
+    await Promise.all([
+      measureContrast(page, rootSelector),
+      measureComponentContrast(page, rootSelector),
+      measureSmallText(page, rootSelector),
+      measureTargets(page),
+      measureOverflow(page),
+    ]);
   return {
     theme,
     viewport,
     contrast,
+    components,
     smallText,
     targets,
     overflow: options.defaultOverflow ?? overflow,
@@ -943,6 +1206,13 @@ export function summarise(audit: ScreenViewportAudit) {
     contrastChecked: audit.contrast.checked,
     contrastFailures: audit.contrast.failures.length,
     unresolved: audit.contrast.unresolved.length,
+    componentChecked: audit.components.checked,
+    componentBorders: audit.components.controlBorders,
+    componentIcons: audit.components.statusIcons,
+    componentMin: audit.components.min,
+    componentMinBorder: audit.components.minControlBorder,
+    componentMinIcon: audit.components.minStatusIcon,
+    componentFailures: audit.components.failures.length,
     smallMainFunctional: count("main", "functional"),
     smallMainDecorative: count("main", "decorative"),
     smallShellFunctional: count("shell", "functional"),
