@@ -146,11 +146,13 @@ en `PARCIAL (fixtures) · BLOCKED real`; no toca AC07 ni E4.2.
 `TEXT NOT NULL CHECK(json_valid(no_disponible))` en `fotos_cierre` y `fotos_periodo`; SQL
 `NULL` no es un escenario válido. El contrato de foto vigente emite `noDisponible` como
 objeto, por lo que una clave ausente o `null` solo se representa en un fixture unitario o
-en una fila histórica anómala, no creando una foto con el producto. `{}` y `[]` son
-contenedores vacíos declarados: con cobertura `Parcial` producen `noDisponible:[]` sin
-entradas ficticias y no sustituyen el motivo de la cobertura. La lectura de agregados
-históricos conserva JSON `null` como `noDisponible:null` y JSON `[]` como `[]`; no
-normaliza ni reescribe.
+en una fila histórica anómala, no creando una foto con el producto. `{}` es un vacío
+válido por contrato/fixture, pero no es el caso de la captura actual de `e49.ts` (emite un
+objeto con tres claves); `[]` es un array vacío legítimo. Con cobertura `Parcial` ambos
+producen `noDisponible:[]` sin entradas ficticias y no sustituyen el motivo de la
+cobertura. La lectura de agregados históricos conserva JSON `null` como
+`noDisponible:null` y JSON `[]` como `[]`; no normaliza ni reescribe, y la UI debe tener
+una guarda explícita para `null` (no recorrerlo como array).
 
 ### Casos propuestos (`UNRUN`)
 
@@ -162,7 +164,7 @@ normaliza ni reescribe.
 | AC09-C2 | Foto con objeto `Parcial` sin `motivo` en `cobertura.totales` o en `noDisponible`; generar agregado. | Se declara en `cobertura.bloques[].motivos`; no se emite en `noDisponible[]` ni se convierte en `No disponible`; `totalPeriodo:null`. | `UNRUN`; requiere cambio de producto. |
 | AC09-D1 | Fixture unitario del compositor sin la clave `noDisponible`; **no construible** por `fotos_cierre`/`fotos_periodo` (`TEXT NOT NULL`) ni por el contrato de foto. | Entrada centinela `bloque:"no_disponible"` con `codigoAusencia:"NO_DISPONIBLE_AUSENTE"`; `totalPeriodo:null`; sin `0`. | `UNRUN`; caso defensivo, no estado de producto ni aceptación. |
 | AC09-D2 | Foto/fixture con `noDisponible:null` (fila histórica anómala; no contrato vigente) al crear un agregado nuevo. | Entrada centinela `bloque:"no_disponible"` con `codigoAusencia:"NULO_EXPLICITO"`; `totalPeriodo:null`; sin `0`. Distinto de `[]` (no genera centinela) y de la clave ausente. | `UNRUN`; fixture/legacy, no contrato. |
-| AC09-D3 | `noDisponible:{}` y, por separado, `noDisponible:[]`, ambos con `cobertura`/`cobertura.totales` en `Parcial`; generar agregado. | `noDisponible:[]` sin entradas ficticias; la parcialidad se declara en `cobertura.motivos`/`cobertura.bloques[].motivos`; `totalPeriodo:null`; sin `0`. `{}` es vacío canónico y `[]` array vacío legítimo. | `UNRUN`; precisión D1/H; no introduce una regla financiera. |
+| AC09-D3 | `noDisponible:{}` y, por separado, `noDisponible:[]`, ambos con `cobertura`/`cobertura.totales` en `Parcial`; generar agregado. | `noDisponible:[]` sin entradas ficticias; la parcialidad se declara en `cobertura.motivos`/`cobertura.bloques[].motivos`; `totalPeriodo:null`; sin `0`. `{}` es vacío válido por contrato/fixture (no captura actual) y `[]` array vacío legítimo. | `UNRUN`; precisión D1/H; no introduce una regla financiera. |
 | AC09-E | Foto con todos los bloques `Completo`, sin regla aditiva aprobada. | `cobertura.totalPeriodo:null`, `valores.totalPeriodo:null` y `motivoTotal:"SIN_REGLA_ADITIVA"`; no se certifica total. | `UNRUN`; no introduce una regla financiera. |
 | AC09-F | Cambiar T2/T3 o un motor vivo después de la foto; consultar el agregado anterior. | El agregado no cambia; ningún bloque ausente se completa desde el motor vivo. | `UNRUN`; refuerza AC01/AC09 sin reutilizar su evidencia. |
 | AC09-G | Foto E4.10 v2 con `auxiliares.anticipos`, `auxiliares.compartidos`, `auxiliares.nomina`, `auxiliares.revisionComida` o `auxiliares.deuda` en `noDisponible`; generar agregado. | Las claves no canónicas se conservan con su `bloque`, `estado` y `motivo`, sin `codigoAusencia` sintético; no se descartan al iterar el conjunto canónico. | `UNRUN`; F1. |
@@ -172,16 +174,16 @@ normaliza ni reescribe.
 
 ### Impacto en pruebas existentes de #300 (F2)
 
-`[PROPUESTA]` La precisión D1/H **no cambia las pruebas de #300 que usan `{}`** y solo
-cambia la expectativa de la prueba que usa un `noDisponible:null` de fixture. No se editan
-pruebas aquí; se enumeran para el cambio de producto/QA:
+`[PROPUESTA]` La precisión D1/H **cambia tres expectativas de #300**. Se anclan por nombre
+de prueba; las líneas son solo referencia secundaria. No se editan pruebas aquí; se
+enumeran para el cambio de producto/QA:
 
 | Prueba / expectativa | Cambia | Motivo |
 | --- | --- | --- |
-| `E4.11 I3 AC09: bloque null en totales conserva motivo y no sintetiza 0` (línea 655), `expect(periodo.noDisponible).toEqual([])` | **No** | `seedClosure` usa `noDisponible:{}`; `{}` con cobertura `Parcial` produce `[]` sin entradas ficticias (AC09-D3). |
-| `E4.11 I3 AC09: cobertura y no_disponible null declaran el bloque NoDisponible con motivo` (línea 695), `expect(periodo.noDisponible).toEqual([])` | **Sí, solo como fixture/legacy** | `noDisponible:null` produce el centinela `bloque:"no_disponible"` con `codigoAusencia:"NULO_EXPLICITO"` al crear un agregado nuevo; no es un estado alcanzable por el contrato. |
-| `E4.11 I3 AC09: no_disponible con bloque null...` (línea 728) | **No** | Entrada `null` con clave: conserva el centinela de bloque y el motivo persistido; no cambia la forma del contenedor. |
-| Fixtures/asserts con `{}` o arrays con entradas (`e411-periodo.test.ts` línea 272, `e411-contraste.test.ts`) | **No** | `{}` y los arrays con entradas no son ausencia; se conserva la salida actual. |
+| `E4.11 I3 AC09: bloque null en totales conserva motivo y no sintetiza 0` (línea 655), `expect(periodo.noDisponible).toEqual([])` | **Sí** | La prueba pasa `noDisponible:null` como 7.º argumento de `seedClosure` (no `{}`). El agregado nuevo incluye el centinela `bloque:"no_disponible"` con `codigoAusencia:"NULO_EXPLICITO"`; la cobertura `Parcial` por `hechos`/`plan` no cambia. |
+| `E4.11 I3 AC09: cobertura y no_disponible null declaran el bloque NoDisponible con motivo` (línea 695), `expect(periodo.noDisponible).toEqual([])` | **Sí, fixture/legacy** | `noDisponible:null` produce el centinela `bloque:"no_disponible"` con `codigoAusencia:"NULO_EXPLICITO"`; no es un estado alcanzable por el contrato. |
+| `E4.11 I3 AC09: no_disponible con bloque null conserva el motivo del bloque` (línea 728) | **Sí** | `valoracion:null` (entrada `null` dentro de objeto) recibe `codigoAusencia:"NULO_EXPLICITO"`; `conciliaciones` conserva `estado`/motivo persistido y **no** recibe código sintético. |
+| Fixtures/asserts con `{}` o arrays con entradas (`e411-periodo.test.ts`, `e411-contraste.test.ts`), incluida `E4.11 I3 AC09: ausencia no se sintetiza como 0 ni como total` (afirma sobre `valores.porCiclo[0].noDisponible`, no sobre el agregado) | **No** | `{}` y los arrays con entradas no son ausencia; se conserva la salida actual. `{}` es válido por contrato/fixture, no captura actual. |
 | Lectura de agregado persistido con JSON `null` | **No cambia `filaADto`**: devuelve `null` | AC09-H lo fija como `noDisponible:null`; no se normaliza a `[]` ni se inyecta centinela. No hay prueba existente que lo cubra. |
 | Lectura con JSON `[]` | **No** | Se conserva `[]` como vacío declarado. |
 | SQL `NULL` | **No aplica** | `no_disponible` es `TEXT NOT NULL`; no se prueba ni se representa. |
@@ -193,7 +195,9 @@ sin `codigoAusencia` sintético (AC09-G/J).
 ### Límite de la enmienda
 
 - La enmienda es **documental**: no implementa la iteración del conjunto canónico, el campo
-  `codigoAusencia` ni los cambios de UI/tests.
+  `codigoAusencia` ni los cambios de UI/tests. El paquete de producto debe incluir una
+  guarda de UI para lectura `noDisponible:null` (no recorrerlo como array; rotular «no
+  informado»).
 - La corrección de producto se aplicaría **solo a agregados nuevos**; no se reescriben
   fotos E4.9/E4.10 ni `fotos_periodo` existentes.
 - Los agregados antiguos que no distingan los casos conservan su JSON y siguen `Parcial`
