@@ -171,9 +171,10 @@ async function readKeyboardFocus(page: Page) {
  *
  * El navegador puede completar el cambio de foco o su recálculo de estilo en
  * un ciclo posterior a la pulsación, así que la lectura se reintenta con
- * `toPass` en lugar de evaluar `document.activeElement` de inmediato. Solo se
- * repite `Tab` si el foco volvió a `<body>` (p. ej. por una navegación); en
- * ningún caso se acepta un elemento sin outline visible de al menos 1px.
+ * `toPass` en lugar de evaluar `document.activeElement` de inmediato. `Tab` se
+ * pulsa una única vez: si el foco sigue en `<body>` o no hay elemento enfocado
+ * al agotar el timeout, el test falla en lugar de saltarse el primer focusable.
+ * En ningún caso se acepta un elemento sin outline visible de al menos 1px.
  */
 async function expectVisibleKeyboardFocus(page: Page) {
   await page.evaluate(() => {
@@ -189,13 +190,10 @@ async function expectVisibleKeyboardFocus(page: Page) {
   await page.keyboard.press("Tab");
 
   await expect(async () => {
-    if ((await readKeyboardFocus(page)) === null) {
-      await page.keyboard.press("Tab");
-    }
     const focus = await readKeyboardFocus(page);
     expect(
       focus,
-      "Tab debe mover el foco a un elemento de la página",
+      "Tab debe mover el foco fuera de <body> a un elemento de la página",
     ).not.toBeNull();
     if (!focus) return;
     expect(focus.outlineStyle, `outlineStyle de <${focus.element}>`).not.toBe(
