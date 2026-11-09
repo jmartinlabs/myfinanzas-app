@@ -64,6 +64,7 @@ export function noDisponibleRows(value: unknown): NoDisponibleRow[] {
         bloque?: unknown;
         estado?: unknown;
         motivo?: unknown;
+        codigoAusencia?: unknown;
       };
       return [
         {
@@ -72,6 +73,9 @@ export function noDisponibleRows(value: unknown): NoDisponibleRow[] {
           estado:
             typeof row.estado === "string" ? row.estado : "No disponible",
           motivo: typeof row.motivo === "string" ? row.motivo : null,
+          ...(typeof row.codigoAusencia === "string"
+            ? { codigoAusencia: row.codigoAusencia }
+            : {}),
         },
       ];
     });
@@ -85,23 +89,34 @@ export function noDisponibleRows(value: unknown): NoDisponibleRow[] {
       rows.push({ bloque, estado: "No disponible", motivo: null });
       continue;
     }
-    const row = item as { estado?: unknown; motivo?: unknown };
+    const row = item as {
+      estado?: unknown;
+      motivo?: unknown;
+      codigoAusencia?: unknown;
+    };
     rows.push({
       bloque,
       estado: typeof row.estado === "string" ? row.estado : "No disponible",
       motivo: typeof row.motivo === "string" ? row.motivo : null,
+      ...(typeof row.codigoAusencia === "string"
+        ? { codigoAusencia: row.codigoAusencia }
+        : {}),
     });
   }
   return rows;
 }
 
 export function periodNoDisponibleRows(
-  rows: NoDisponiblePeriodoDto[],
+  rows: NoDisponiblePeriodoDto[] | null,
 ): NoDisponibleRow[] {
+  // AC09-H: a persisted `null` is an uncertified absence, not `[]`. Never
+  // traverse it as an array and never invent rows.
+  if (!Array.isArray(rows)) return [];
   return rows.map((row) => ({
     bloque: row.bloque,
     estado: row.estado,
     motivo: row.motivo,
+    ...(row.codigoAusencia ? { codigoAusencia: row.codigoAusencia } : {}),
     ciclo: row.ciclo,
     version: row.versionFoto,
   }));

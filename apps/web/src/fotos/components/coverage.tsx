@@ -68,7 +68,13 @@ export function NoDisponibleList({ rows }: { rows: NoDisponibleRow[] }) {
             {row.version !== undefined ? ` · v${row.version}` : ""}
           </strong>{" "}
           <Badge tone={estadoTone(row.estado)} label={row.estado} />{" "}
-          <span>{row.motivo ?? "Sin motivo declarado"}</span>
+          <span>{row.motivo ?? "Motivo no informado"}</span>
+          {row.codigoAusencia ? (
+            <>
+              {" "}
+              <small className="fotos-code">{row.codigoAusencia}</small>
+            </>
+          ) : null}
         </li>
       ))}
     </ul>

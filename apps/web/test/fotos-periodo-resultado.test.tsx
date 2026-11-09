@@ -60,6 +60,18 @@ function render(porDefecto: boolean) {
   );
 }
 
+function renderData(data: FotoPeriodoDto) {
+  return renderToStaticMarkup(
+    <PeriodoResultado
+      data={data}
+      hrefCiclo={(ciclo) => `/fotos?ciclo=${ciclo}`}
+      onAbrirCiclo={() => {}}
+      hrefPeriodoId={(id) => `/fotos?id=${id}`}
+      onAbrirId={() => {}}
+    />,
+  );
+}
+
 test("una consulta por identidad no se etiqueta como última automática", () => {
   const html = render(false);
   expect(html).toContain("Consulta explícita");
@@ -70,4 +82,28 @@ test("solo la consulta automática de la última versión usa su etiqueta", () =
   const html = render(true);
   expect(html).toContain("Última automática");
   expect(html).not.toContain("Consulta explícita");
+});
+
+test("noDisponible null se rotula no informado sin recorrerlo ni inventar filas", () => {
+  const html = renderData({ ...periodo(true), noDisponible: null });
+  expect(html).toContain("No informado");
+  expect(html).not.toContain("Sin bloques No disponible declarados");
+});
+
+test("una fila sintética muestra codigoAusencia sin ocultar el motivo", () => {
+  const html = renderData({
+    ...periodo(true),
+    noDisponible: [
+      {
+        ciclo: "1",
+        versionFoto: 1,
+        bloque: "valoracion",
+        estado: "No disponible",
+        motivo: "Bloque no disponible en la foto",
+        codigoAusencia: "NULO_EXPLICITO",
+      },
+    ],
+  });
+  expect(html).toContain("NULO_EXPLICITO");
+  expect(html).toContain("Bloque no disponible en la foto");
 });

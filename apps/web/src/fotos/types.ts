@@ -137,12 +137,19 @@ export type ValorCicloDto = {
   noDisponible: unknown;
 };
 
+export type CodigoAusencia =
+  | "NULO_EXPLICITO"
+  | "MOTIVO_AUSENTE"
+  | "NO_DISPONIBLE_AUSENTE";
+
 export type NoDisponiblePeriodoDto = {
   ciclo: string;
   versionFoto: number;
   bloque: string;
   estado: string;
   motivo: string | null;
+  /** Only synthetic rows (defensive/legacy) carry a code. */
+  codigoAusencia?: CodigoAusencia;
 };
 
 export type FotoPeriodoDto = {
@@ -184,7 +191,12 @@ export type FotoPeriodoDto = {
     motivoTotal: string;
     porCiclo: ValorCicloDto[];
   };
-  noDisponible: NoDisponiblePeriodoDto[];
+  /**
+   * New aggregates expose an array. A persisted legacy aggregate whose
+   * `no_disponible` JSON is `null` reads as `null` (uncertified absence) and
+   * must not be traversed as an array nor rendered as invented rows.
+   */
+  noDisponible: NoDisponiblePeriodoDto[] | null;
 };
 
 export type ContrasteMetricaDto = {
@@ -238,6 +250,7 @@ export type NoDisponibleRow = {
   bloque: string;
   estado: string;
   motivo: string | null;
+  codigoAusencia?: string;
   ciclo?: string;
   version?: number;
 };
