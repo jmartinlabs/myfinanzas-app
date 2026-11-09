@@ -491,7 +491,10 @@ reservas de E4.5/E4.7/E4.9/E4.10/E4.11.
 El [expediente consolidado de decisiones F1](investigations/e412-f1-decision-dossier-2026-11-09.md)
 reúne las quince decisiones —§9.1–§9.9 y §9.10— con recomendación, alternativa, riesgos,
 dependencias, evidencia disponible, autorización y gate. Es apoyo documental: no aprueba
-ninguna decisión ni altera esta sección.
+ninguna decisión ni altera esta sección. El
+[paquete de decisiones resolubles](investigations/e412-f1-package-2026-11-09.md) clasifica qué
+puede aprobarse ahora, qué exige evidencia externa/DT6/DT7 y qué no es aprobable aún, e
+incluye formulario y preparación documental de D08/D09. Tampoco aprueba nada.
 
 ### 9.1 Destino y segunda copia
 
