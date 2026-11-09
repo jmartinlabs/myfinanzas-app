@@ -11,11 +11,11 @@ funcionalmente el 2026-10-28** tras revisión con Álex; **SPEC20 completa y tes
 aprobados por el usuario el 2026-10-28**. PR87 integrada en `main` `3d70fd6`.
 
 **Nota de reconciliación (2026-11-09):** el motor puro E4.5 está integrado en
-`apps/api/src/historico-precontrol.ts` sobre la base `test` `ba24c29` (commits `#302` y
-`#309`). Esta spec se reconcilia con su contrato implementado sin reabrir Q1–Q10,
-D4/D14, estados aprobados ni AC. El motor no acredita DT7, no certifica totales reales
-ni equivalencia con el Excel y sus fixtures son sintéticos; no hay API, SQL,
-persistencia, importación ni UI de E4.5.
+`apps/api/src/historico-precontrol.ts` sobre el snapshot `ba24c29`; la base del PR es
+`17b14bf` (commits `#302` y `#309`). Esta spec se reconcilia con su contrato
+implementado sin reabrir Q1–Q10, D4/D14, estados aprobados ni AC. El motor no acredita
+DT7, no certifica totales reales ni equivalencia con el Excel y sus fixtures son
+sintéticos; no hay API, SQL, persistencia, importación ni UI de E4.5.
 
 Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-historico-precontrol-brainstorming.md),
 [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
@@ -99,7 +99,7 @@ consume como consumidores previstos y define sus invariantes mínimos.
 | Total verificado | Suma de archivo y detalle elegible con cobertura continua hasta el corte | Combinador E4.5 | Suma de subtotales con huecos, overlap o registros sin mapping |
 | Subtotal conocido | Suma de los registros no conflictivos, aunque no cubra todo el intervalo | Combinador E4.5 | Total anual completo |
 | Registro no computado | Registro vigente de una Partida que no contribuye al total/subtotal por verificación o mapping | Salida `items[].registrosNoComputados` | Registro histórico, absorbido, apertura o importe sumado |
-| Apertura no verificada | Apertura histórica presente pero `NoVerificado` o `Rechazado` | Salida `aperturasNoVerificadas` | Posición verificada, Gasto, Movimiento o Saldo escrito |
+| Apertura no verificada | Registro `AperturaHistorica` **vigente** presente pero `NoVerificado` o `Rechazado` | Salida `aperturasNoVerificadas` | Posición verificada, Gasto, Movimiento, Saldo escrito o apertura no vigente |
 | Regularización 2026 | Registro explícito, fechado y acotado al ejercicio 2026 | Registro de archivo + mapping aprobado | Regla general, campo del plan o inferencia por nombre |
 | Transición de ejercicio | Consulta separada de dos ejercicios naturales contiguos | Vista de transición | Migración o copia de datos |
 
@@ -460,10 +460,10 @@ la futura API deberá proyectar, no una ruta ni una tabla.
 | --- | --- | --- |
 | `items[].registros` | `idArchivo[]` | Todos los registros **vigentes** de la Partida (excluye aperturas, históricos y duplicados absorbidos), sumen o no. |
 | `items[].registrosNoComputados` | `{idArchivo, importe, estadoVerificacion, estadoMapeo, motivo}[]` | Subconjunto de `registros` con `estadoVerificacion != Verificado` o `estadoMapeo != Mapeado`; se muestra con motivo y **nunca** suma a `archivo`, `subtotalConocido` ni `total`. |
-| `aperturas` | `{idArchivo, saldoId, importe, fecha, motivo}[]` o `null` | Solo aperturas `Verificado`; `null` = sin evidencia de apertura; una apertura cero verificada es `"0.00"`. No suma a Gastos. |
-| `aperturasNoVerificadas` | `{idArchivo, saldoId, importe, fecha, estadoVerificacion: NoVerificado\|Rechazado, motivo}[]` | Aperturas presentes pero no verificadas o rechazadas; se muestran aparte, nunca como posición verificada ni suman a Gastos. |
+| `aperturas` | `{idArchivo, saldoId, importe, fecha, motivo}[]` o `null` | Solo aperturas **vigentes** `Verificado` de clase `AperturaHistorica`; una apertura no vigente (versión anterior/histórica) no aparece aquí, sino en `versionesHistoricas`. `null` = sin evidencia de apertura; una apertura cero verificada es `"0.00"`. No suma a Gastos. |
+| `aperturasNoVerificadas` | `{idArchivo, saldoId, importe, fecha, estadoVerificacion: NoVerificado\|Rechazado, motivo}[]` | Aperturas **vigentes** de clase `AperturaHistorica` presentes pero no verificadas o rechazadas; una apertura no vigente (versión anterior/histórica) va a `versionesHistoricas`. Se muestran aparte, nunca como posición verificada ni suman a Gastos. |
 | `sinClasificar` | `{idArchivo, importe, motivo}[]` | Registros sin Partida, con mapping de Partida `Pendiente`/`Ambigua`, o de una Partida no declarada en un universo acreditado. No suman. |
-| `duplicadosAbsorbidos` / `versionesHistoricas` | `{idArchivo, identidad}` / `{idArchivo, identidad, version}[]` | Trazabilidad de duplicados absorbidos y versiones no vigentes; **nunca** suman. |
+| `duplicadosAbsorbidos` / `versionesHistoricas` | `{idArchivo, identidad}` / `{idArchivo, identidad, version}[]` | Trazabilidad de duplicados absorbidos y versiones no vigentes (incluidas aperturas no vigentes); **nunca** suman. |
 
 Reglas del contrato implementado:
 
@@ -472,10 +472,12 @@ Reglas del contrato implementado:
   `archivo`, `detalleControl`, `detallePrecontrolVinculado`, `subtotalConocido` ni
   `total`; su importe se expone solo como contexto.
 - **Efecto en totales según el estado.** `NoVerificado` añade `VerificacionPendiente` y
-  deja el total de la Partida `NoVerificable`; `Excluido` y `Rechazado` no suman y no
-  bloquean por sí solos un total de Partida ya certificable; `Pendiente` y `Ambigua` no
-  suman y, al ir a `sinClasificar`, dejan el total global `NoVerificable` aunque la
-  Partida no afectada conserve su estado. Un registro sin Partida nunca crea un item.
+  deja el total de la Partida `NoVerificable` (y, por tanto, el global); `Excluido` y
+  `Rechazado` no suman pero, si tienen Partida y no hay otro motivo, **no bloquean por
+  sí solos** el total de la Partida ni el global; `Pendiente` y `Ambigua` no suman y, al
+  ir a `sinClasificar`, dejan el total global `NoVerificable` aunque la Partida no
+  afectada conserve su estado. Un registro sin Partida va a `sinClasificar` y nunca crea
+  un item; el global no se certifica.
 - **`null` no es `0`.** `importe`, `total` y `subtotalConocido` son strings decimales
   exactos o `null`; `"0.00"` solo aparece con cobertura y registro verificados.
 - **Cobertura por fuente, Partida, alcance, intervalo y corte.** La cobertura de una
@@ -500,11 +502,15 @@ Reglas del contrato implementado:
 - **Registros sin Partida.** Cualquier registro vigente no-apertura con `partidaId=null`
   se muestra en `sinClasificar` con importe y motivo, con independencia de
   `estadoVerificacion` o `estadoMapeo`; no se le asigna Partida por nombre ni por
-  importe. Si tiene Partida pero está `Excluido`, `Rechazado`, `NoVerificado`,
-  `Pendiente` o `Ambigua`, se muestra en `registrosNoComputados` de esa Partida;
-  `Pendiente`/`Ambigua` también en `sinClasificar` conforme a D4.5. Ninguno de estos
-  registros suma ni acredita cobertura; la cobertura global puede seguir siendo
-  `Completa` por las fuentes, pero el total global no se certifica.
+  importe y deja el total global `NoVerificable`. Si tiene Partida, el estado se separa
+  así: `NoVerificado` va a `registrosNoComputados`, deja la Partida `NoVerificable` y,
+  al no quedar todas las Partidas verificadas, el global también queda `NoVerificable`;
+  `Pendiente`/`Ambigua` van a `registrosNoComputados` y a `sinClasificar` (D4.5), por lo
+  que dejan el global `NoVerificable`; `Excluido` y `Rechazado` van solo a
+  `registrosNoComputados` y **no bloquean por sí solos** el total de la Partida ni el
+  global si no concurre otro motivo, conforme al motor y a las pruebas H2. Ninguno de
+  estos registros suma ni acredita cobertura; la cobertura de fuentes puede seguir
+  siendo `Completa`.
 - **`FueraDeUniverso` es diagnóstico, no estado.** Cuando el universo está acreditado
   y una Partida descubierta no está en `universo.partidas`, el motor no crea un item,
   no amplía el universo y no introduce un `EstadoCobertura`/`EstadoTotal` nuevo: expone
@@ -512,10 +518,12 @@ Reglas del contrato implementado:
   declarada en el universo DT7 acreditado; pendiente de decisión», añade
   `MappingPendiente` al motivo global y deja el total global `NoVerificable`. No se
   inventa semántica financiera ni un estado `FueraDeUniverso`.
-- **Aperturas.** Toda apertura no verificada o rechazada va a
-  `aperturasNoVerificadas`; una apertura verificada va a `aperturas` y se muestra
-  aparte. Ninguna apertura acredita cobertura de Gastos, se escribe en Saldos/Deudas
-  ni se convierte en Movimiento.
+- **Aperturas.** Toda apertura **vigente** no verificada o rechazada va a
+  `aperturasNoVerificadas`; una apertura **vigente** verificada va a `aperturas` y se
+  muestra aparte. Una apertura no vigente (versión anterior/histórica) no va a
+  `aperturas` ni a `aperturasNoVerificadas`: se conserva en `versionesHistoricas` y
+  nunca suma. Ninguna apertura acredita cobertura de Gastos, se escribe en
+  Saldos/Deudas ni se convierte en Movimiento.
 
 ### Transición de ejercicio
 
@@ -1431,8 +1439,8 @@ no acredita DT7, datos reales ni equivalencia con el Excel.
 
 | ID | Acción / precondiciones | Resultado esperado | Trazabilidad |
 | --- | --- | --- | --- |
-| R-01 | Registro vigente de una Partida con `Excluido`, `Rechazado`, `NoVerificado`, `Pendiente` o `Ambigua` | Aparece en `items[].registros` y en `registrosNoComputados` con importe, estado y motivo; no suma. `NoVerificado` bloquea el total de la Partida; `Excluido`/`Rechazado` no bloquean por sí solos un total de Partida ya certificable; `Pendiente`/`Ambigua` dejan el global `NoVerificable` | AC-04, AC-36, AC-52 |
-| R-02 | Apertura `NoVerificado` o `Rechazado` | `aperturas=null` o sin esa apertura; `aperturasNoVerificadas[]` con importe, fecha y motivo; no suma a Gastos ni se presenta como posición verificada | AC-16, AC-17, AC-37 |
+| R-01 | Registro vigente de una Partida con `Excluido`, `Rechazado`, `NoVerificado`, `Pendiente` o `Ambigua` | Aparece en `items[].registros` y en `registrosNoComputados` con importe, estado y motivo; no suma. `NoVerificado` bloquea el total de la Partida; `Excluido`/`Rechazado` no bloquean por sí solos el total de la Partida ni el global si no hay otro motivo; `Pendiente`/`Ambigua` dejan el global `NoVerificable` | AC-04, AC-36, AC-52 |
+| R-02 | Apertura `AperturaHistorica` **vigente** `NoVerificado` o `Rechazado` | `aperturas=null` o sin esa apertura; `aperturasNoVerificadas[]` con importe, fecha y motivo; una apertura no vigente (versión anterior/histórica) va a `versionesHistoricas`; no suma a Gastos ni se presenta como posición verificada | AC-16, AC-17, AC-37 |
 | R-03 | Fuente con intervalos o `controlDetalle` posteriores a su `corteArchivo` | La cobertura se recorta a `min(corteArchivo, corte)`; el tramo posterior queda fuera y puede producir hueco/`Parcial`; no se completa la expectativa de esa fuente con otra | AC-08, AC-38, AC-46 |
 | R-04 | `fuentesEsperadas` con `Presente` sin `intervalo`, aunque exista cobertura no vacía de la Partida | Entrada inválida; no se acredita `Presente` por la sola presencia de `fuenteId` ni por cobertura no vacía; fallback de runtime tratado como no cubierto | AC-46 |
 | R-05 | Universo, registro o Movimiento con Partida no `PARxxx`; fuente con `alcance` no `PARxxx` | Se rechaza la Partida no `PAR` del universo/registro/Movimiento; un `alcance` no `PAR` no crea item ni amplía el universo | AC-38, AC-46 |

@@ -11,12 +11,15 @@ aprobación del testplan no es PASS funcional.
 registra la enmienda.
 
 **Nota de reconciliación (2026-11-09):** el motor puro E4.5 está integrado en
-`apps/api/src/historico-precontrol.ts` sobre `test` `ba24c29` (commits `#302` y `#309`).
-Sus pruebas sintéticas cubren el contrato del combinador, pero **no** son PASS de los
-AC, no acreditan DT7, no usan datos reales y no sustituyen API, SQL, importación ni UI.
+`apps/api/src/historico-precontrol.ts` sobre el snapshot `ba24c29`; la base del PR es
+`17b14bf` (commits `#302` y `#309`). Sus pruebas sintéticas cubren el contrato del
+combinador, pero **no** son PASS de los AC, no acreditan DT7, no usan datos reales y no
+sustituyen API, SQL, importación ni UI.
 
-Base: `main` `3d70fd6` (2026-10-28); PR87 integrada. La base histórica de preparación
-fue `1d539a8`; la rama se reconcilió con `main` `7073864` antes de integrar.
+Base actual de la reconciliación: `17b14bf`; snapshot del motor: `ba24c29`. Base
+histórica de la spec: `main` `3d70fd6` (2026-10-28), PR87 integrada. La base histórica
+de preparación fue `1d539a8`; la rama se reconcilió con `main` `7073864` antes de
+integrar.
 Los comandos de implementación se proponen para el futuro desarrollo autorizado; no se
 ejecutan aquí. Cualquier fixture con importes es ficticio.
 
@@ -94,8 +97,8 @@ declara ejecutada en esta reconciliación documental.
 
 | ID | Clase/condición | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Evidencia esperada | Resultado actual |
 | --- | --- | --- | --- | --- | --- | --- |
-| R-01 | I | Registro vigente de una Partida con `Excluido`, `Rechazado`, `NoVerificado`, `Pendiente` o `Ambigua` | `items[].registros` contiene todos los vigentes; `registrosNoComputados` separa los que no computan con importe, estado y motivo; no suman. `NoVerificado` deja la Partida `NoVerificable`; `Excluido`/`Rechazado` no bloquean por sí solos; `Pendiente`/`Ambigua` dejan el global `NoVerificable` | Bun Test del combinador | DTO con `registros` y `registrosNoComputados` | Cubierto por prueba sintética; AC UNRUN |
-| R-02 | I | Apertura histórica `NoVerificado` o `Rechazado` | `aperturas` no la presenta como verificada; `aperturasNoVerificadas[]` la conserva con importe, fecha y motivo; no suma a Gastos | Bun Test de aperturas | DTO con `aperturas`/`aperturasNoVerificadas` | Cubierto por prueba sintética; AC UNRUN |
+| R-01 | I | Registro vigente de una Partida con `Excluido`, `Rechazado`, `NoVerificado`, `Pendiente` o `Ambigua` | `items[].registros` contiene todos los vigentes; `registrosNoComputados` separa los que no computan con importe, estado y motivo; no suman. `NoVerificado` deja la Partida `NoVerificable` y, con ello, el global; `Excluido`/`Rechazado` no bloquean por sí solos la Partida ni el global si no hay otro motivo; `Pendiente`/`Ambigua` dejan el global `NoVerificable` | Bun Test del combinador | DTO con `registros` y `registrosNoComputados` | Cubierto por prueba sintética; AC UNRUN |
+| R-02 | I | Apertura `AperturaHistorica` **vigente** `NoVerificado` o `Rechazado` | `aperturas` no la presenta como verificada; `aperturasNoVerificadas[]` la conserva con importe, fecha y motivo; una apertura no vigente (versión anterior/histórica) va a `versionesHistoricas`; no suma a Gastos | Bun Test de aperturas | DTO con `aperturas`/`aperturasNoVerificadas`/`versionesHistoricas` | Cubierto por prueba sintética; AC UNRUN |
 | R-03 | I | Fuente con `intervalosArchivo` o `controlDetalle` posteriores a su `corteArchivo`; otra fuente cubre el tramo posterior | La cobertura de la fuente se recorta a `min(corteArchivo, corte)`; el tramo posterior no se acredita por esa fuente; puede quedar hueco/`Parcial` o `FuenteAusente` | Bun Test de cobertura | DTO con `cobertura.intervalos`, `huecos` y `fuentes[].corteArchivo` | Cubierto por prueba sintética; AC UNRUN |
 | R-04 | I | `fuentesEsperadas` `Presente` sin `intervalo`, con cobertura no vacía de la Partida | Entrada inválida; no se acredita `Presente` por presencia de `fuenteId` ni por cobertura no vacía; fallback de runtime no cubierto | Bun Test de validación | Error de entrada / `FuenteAusente` | Cubierto por prueba sintética; AC UNRUN |
 | R-05 | I | Universo, registro o Movimiento con Partida no `PARxxx`; fuente con `alcance` no `PARxxx` | Se rechaza la Partida no `PAR`; un alcance no `PAR` no crea item ni amplía el universo | Bun Test de validación `PAR` | Error de entrada / `items[]` sin item inventado | Cubierto por prueba sintética; AC UNRUN |
