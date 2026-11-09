@@ -6474,3 +6474,12 @@ a.back {
 /* 4. El movimiento reducido se mantiene como guarda: la única transición
  * sigue dentro de @media (prefers-reduced-motion: no-preference) y el
  * despliegue de filtros ya se anula con reduce. No se añaden animaciones. */
+
+/* 5. Límite de los campos de formulario. `textarea` conservaba `--border`
+ * (1,38–1,50:1), un separador decorativo que no identifica el control; el
+ * resto de campos ya usa `--control-border` (3,24–3,65:1). Se unifica el
+ * borde con el token existente, sin cambiar relleno, tamaño, fondo ni texto.
+ * Este override deja intactas las reglas base y las variantes de E4.4. */
+textarea {
+  border-color: var(--control-border);
+}
