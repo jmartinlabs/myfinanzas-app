@@ -6422,3 +6422,55 @@ textarea {
     margin-top: var(--space-4);
   }
 }
+
+/* UI · DEV-07 — temas y AA
+ * Sección aditiva del incremento I2: corrige el foco del sidebar, el tamaño
+ * del texto funcional y los objetivos táctiles sin reescribir reglas previas.
+ * Solo consume tokens existentes (--sidebar-focus, --text-xs, --touch-min);
+ * no define colores ni tokens, no toca temas, marcado, textos, cifras,
+ * estados, contratos ni lógica.
+ */
+
+/* 1. Foco del sidebar y del menú móvil. En hybrid-s el anillo global
+ * (--focus) queda en 2,83:1 sobre el sidebar; --sidebar-focus ya está
+ * definido para ese fondo y alcanza 6,66:1. En light-s y dark-s ambos
+ * tokens coinciden, por lo que su aspecto no cambia. */
+.sidebar :focus-visible {
+  outline-color: var(--sidebar-focus);
+}
+
+/* 2. Texto funcional a 12 px. Los badges de estado (11 px) y las huellas
+ * (11,52 px) del cierre crecen manteniendo la envoltura ya declarada y una
+ * altura de línea explícita, para no recortar ni desbordar a 390. Los
+ * overrides de mayor especificidad (badge principal del estado y nowrap de
+ * la tabla de escritorio) se conservan. */
+.cierre-badge {
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+.cierre-fingerprint {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+/* 3. Objetivos táctiles ≥ 44 px. Solo amplía el área interactiva; no
+ * cambia textos, orden, rejilla ni cifras. La marca gana altura en móvil
+ * (40 → 44) y «Volver» y los enlaces de las listas de Inicio pasan de una
+ * línea de 18 px a una caja de 44 px. */
+.brand {
+  min-height: var(--touch-min);
+}
+a.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+.inicio-item-list li > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+/* 4. El movimiento reducido se mantiene como guarda: la única transición
+ * sigue dentro de @media (prefers-reduced-motion: no-preference) y el
+ * despliegue de filtros ya se anula con reduce. No se añaden animaciones. */
