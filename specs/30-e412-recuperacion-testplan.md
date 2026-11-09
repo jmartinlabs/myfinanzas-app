@@ -2,16 +2,26 @@
 
 Specification: [30-e412-recuperacion-specification.md](30-e412-recuperacion-specification.md)
 
-Status: **DRAFT — no aprobada; no autoriza DEV, ensayo, datos reales, migración, VPS ni
-merge. Todos los AC están `UNRUN`.**
-Base: `test` `7477e86` (2026-11-08); rama `docs/spec30-revision`; contrato vigente
+Status: **F0 APROBADA — 2026-11-09. F1 IN_PROGRESS (documental).** Aprobación explícita e
+identificable del usuario al marco documental —este testplan, la specification, los 17 AC,
+los niveles A/B y los gates independientes—, registrada el 2026-11-09. F0 = `PASS`/`DONE`
+(gate documental); no es PASS de ningún AC ni aceptación de E4.12. F1 = `IN_PROGRESS`;
+F2/F3/F4 = `UNRUN`.
+Approval source/date: **2026-11-09 — usuario**; revisión de Álex no registrada.
+Base del borrador: `test` `7477e86` (2026-11-08); revisión F0/F1: `test` `2e5de7c`
+(2026-11-09), rama `docs/e412-f1`; contrato vigente
 `schemaVersion=27`/`C27-E411-FOTOS-PERIODO`.
 No hay implementación, migración, ensayo ni datos reales; el CI full de esta entrega está pendiente. El ensayo no
-está autorizado y este documento no declara PASS.
+está autorizado y este documento no declara PASS de AC.
 
 `[CONFIRMADO]` Este test plan describe **qué evidencia demostraría cada criterio**, no el
 procedimiento operativo. Los comandos, rutas, plazos y umbrales concretos deben acordarse y
 registrarse en la fase de preparación (F2) antes de ejecutar; no se inventan aquí.
+
+`[CONFIRMADO]` La aprobación F0 fija el marco y los 17 AC como criterios; no ejecuta
+ninguno. `[PROPUESTA]` Las propuestas de F1 para las nueve decisiones viven en la
+specification §9 y **no son decisiones**; este testplan no las duplica ni las convierte en
+autorización.
 
 ---
 
@@ -59,22 +69,25 @@ con fixtures (A) y qué exige el ensayo integral (B); no autoriza ninguno de los
 
 | Fase | Qué produce | Estado | Autorización |
 | --- | --- | --- | --- |
-| F0 · SPEC | Este testplan y la specification | `UNRUN` (documental) | Aprobación del usuario |
-| F1 · Decisiones | Registro de destino, custodia, entorno, corte, matriz, evidencias, nivel A/B y alcance E4.10/E4.11 | `UNRUN` | Separada de F0 |
+| F0 · SPEC | Este testplan y la specification | **`PASS`/`DONE` (documental, 2026-11-09)** | Aprobación del usuario (cumplida) |
+| F1 · Decisiones | Registro de destino, custodia, entorno, corte, matriz, evidencias, nivel A/B y alcance E4.10/E4.11 | **`IN_PROGRESS`** — propuestas en specification §9; ninguna decisión tomada | Separada de F0; cierre sujeto a decisión expresa del usuario |
 | F2 · Preparación de evidencias | Fixtures integrales, copia ficticia coherente, matriz congelada, criterios por escenario, entorno aislado y SHA v27/C27 fijado | `UNRUN` | Separada de F0/F1 |
 | F3 · Ensayo autorizado | Evidencia cruda por AC y escenario; la autorización declara nivel A (fixtures) o B (integral) | `UNRUN` | Explícita e identificable, con nivel y AC incluidos |
 | F4 · Informe | Informe E4.12 y lista de brechas para P7; en nivel A es parcial | `UNRUN` | Separada de F3 |
 
-`[CONFIRMADO]` Aprobar la SPEC o este testplan no autoriza F1–F4, DEV, datos reales,
-migración, VPS ni merge. `[PROPUESTA]` Un F3 de nivel A no cierra E4.12, no sustituye al
-nivel B y no se presenta como recuperación operativa ni equivalencia.
+`[CONFIRMADO]` La aprobación F0 (2026-11-09) no autoriza F2–F4 ni la ejecución del ensayo:
+F1 queda limitada a preparar propuestas; F2/F3/F4 siguen `UNRUN` y requieren autorización
+separada. Tampoco autoriza DEV, datos reales, migración, VPS ni merge. `[PROPUESTA]` Un F3
+de nivel A no cierra E4.12, no sustituye al nivel B y no se presenta como recuperación
+operativa ni equivalencia.
 
 ---
 
 ## Dependencias que bloquean la ejecución
 
-`[CONFIRMADO]` El estado se lee a `test` `7477e86` y en los informes de aceptación; el
-tablero no es autorización. Ninguno de los AC está ejecutado: `UNRUN` no equivale a PASS.
+`[CONFIRMADO]` El estado se leyó a `test` `7477e86` y en los informes de aceptación; no se
+reaudita en F1 y el tablero no es autorización. Ninguno de los AC está ejecutado: `UNRUN`
+no equivale a PASS.
 
 | Dependencia | Estado vigente (2026-11-08) | Nivel A — fixtures | Nivel B — integral |
 | --- | --- | --- | --- |
@@ -176,7 +189,8 @@ y error, sin factores, bases, claves ni trazas sensibles en artefactos.
 
 ## Limitations and next action
 
-- Ningún AC aprobado, ejecutado ni en PASS; este documento es diseño provisional.
+- F0 aprobado el 2026-11-09 como gate documental; F1 sigue `IN_PROGRESS` y ningún AC está
+  aprobado, ejecutado ni en PASS. Este documento es diseño provisional.
 - El ensayo integral (nivel B) **no está autorizado** y no puede ejecutarse sin DT6, DT7,
   las decisiones §9 de la specification y la autorización específica de F3.
 - El nivel A (fixtures) tampoco está autorizado: requiere F2, fixture integral, entorno
@@ -184,6 +198,7 @@ y error, sin factores, bases, claves ni trazas sensibles en artefactos.
 - E4.9/E4.10/E4.11 tienen código integrado pero aceptación abierta; E4.11 I1–I6 está
   integrado y el tablero debe conciliarse. E4.5 no tiene DEV y E4.7 mantiene reservas.
 - El oráculo no está congelado y el libro no ha sido inspeccionado por los agentes.
-- Próxima acción independiente: el coordinador debe obtener del usuario la aprobación de E4.9/E4.7 (además de E4.10/E4.11) y de la
-  SPEC/testplan y decidir si autoriza un F3 de nivel A, o resolver las decisiones de §9 y
-  confirmar el estado de E4.9/E4.10/E4.11 antes de proponer F2.
+- Próxima acción independiente: el coordinador debe obtener del usuario la resolución
+  explícita de las nueve propuestas de §9 y de las decisiones restantes, y la aceptación de
+  E4.7/E4.9/E4.10/E4.11 como corte (o su exclusión con brecha), antes de proponer F2. La
+  autorización de F3 sigue siendo un gate separado y debe declarar nivel y AC incluidos.
