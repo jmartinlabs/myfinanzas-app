@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es" data-theme="graphite-lime" data-default-theme="graphite-lime">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||document.documentElement.dataset.defaultTheme||"graphite-lime";</script>
+<title>MyFinanzas · Estados de interfaz · Candidatos</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../icons.css">
+<link rel="stylesheet" href="../base.css">
+<link rel="stylesheet" href="../movimientos.css">
+<link rel="stylesheet" href="../estados.css">
+<link rel="stylesheet" href="candidates.css">
+<link rel="stylesheet" href="candidates-movimientos.css">
+<link rel="stylesheet" href="candidates-a11y.css">
+<link rel="stylesheet" href="candidates-estados.css">
+</head>
+<body data-page="movimientos">
+  <div class="app">
+    <div class="sidebar-backdrop" data-menu-close aria-hidden="true"></div>
+    <aside class="sidebar" aria-label="Navegación principal">
+      <button class="sidebar-close" type="button" data-menu-close aria-label="Cerrar menú">
+        <span class="icon i-x" aria-hidden="true"></span>
+      </button>
+      <a class="brand" href="#" aria-label="MyFinanzas, ir a Inicio">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-copy">
+          <span class="brand-word">My<span>Finanzas</span></span>
+          <span class="brand-sub">CONTROL FINANCIERO PERSONAL</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="main-nav" aria-label="Secciones">
+        <p class="nav-group">Mi espacio <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item" href="#" title="Inicio" aria-label="Inicio"><span class="icon nav-icon i-home" aria-hidden="true"></span><span class="nav-label">Inicio</span></a>
+        <a class="nav-item" href="#" title="Flujo mensual" aria-label="Flujo mensual"><span class="icon nav-icon i-flow" aria-hidden="true"></span><span class="nav-label">Flujo mensual</span></a>
+        <a class="nav-item" href="#" title="Pendientes y conciliación" aria-label="Pendientes y conciliación"><span class="icon nav-icon i-pending" aria-hidden="true"></span><span class="nav-label">Pendientes y conciliación</span><span class="nav-count">3</span></a>
+        <a class="nav-item" href="#" title="Anticipos" aria-label="Anticipos"><span class="icon nav-icon i-rotate" aria-hidden="true"></span><span class="nav-label">Anticipos</span></a>
+        <a class="nav-item" href="#" title="Compartidos" aria-label="Compartidos"><span class="icon nav-icon i-users" aria-hidden="true"></span><span class="nav-label">Compartidos</span></a>
+
+        <p class="nav-group">Patrimonio <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item" href="#" title="Saldos" aria-label="Saldos"><span class="icon nav-icon i-wallet" aria-hidden="true"></span><span class="nav-label">Saldos</span></a>
+        <a class="nav-item" href="#" title="Clasificación" aria-label="Clasificación"><span class="icon nav-icon i-layers" aria-hidden="true"></span><span class="nav-label">Clasificación</span></a>
+        <a class="nav-item" href="#" title="Inversiones" aria-label="Inversiones"><span class="icon nav-icon i-trend" aria-hidden="true"></span><span class="nav-label">Inversiones</span></a>
+        <a class="nav-item" href="#" title="Deudas" aria-label="Deudas"><span class="icon nav-icon i-card" aria-hidden="true"></span><span class="nav-label">Deudas</span></a>
+        <a class="nav-item" href="#" title="Vehículos" aria-label="Vehículos"><span class="icon nav-icon i-car" aria-hidden="true"></span><span class="nav-label">Vehículos</span></a>
+        <a class="nav-item" href="#" title="Referencias" aria-label="Referencias"><span class="icon nav-icon i-hash" aria-hidden="true"></span><span class="nav-label">Referencias</span></a>
+
+        <p class="nav-group">Operación <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item active" href="#" title="Movimientos" aria-label="Movimientos" aria-current="page"><span class="icon nav-icon i-move" aria-hidden="true"></span><span class="nav-label">Movimientos</span></a>
+        <a class="nav-item" href="#" title="Ciclos" aria-label="Ciclos"><span class="icon nav-icon i-calendar" aria-hidden="true"></span><span class="nav-label">Ciclos</span></a>
+        <a class="nav-item" href="#" title="Precierre" aria-label="Precierre"><span class="icon nav-icon i-clock" aria-hidden="true"></span><span class="nav-label">Precierre</span></a>
+        <a class="nav-item" href="#" title="Cierre" aria-label="Cierre"><span class="icon nav-icon i-check-circle" aria-hidden="true"></span><span class="nav-label">Cierre</span></a>
+        <a class="nav-item" href="#" title="Fotos" aria-label="Fotos"><span class="icon nav-icon i-image" aria-hidden="true"></span><span class="nav-label">Fotos</span></a>
+
+        <button class="nav-group nav-group--toggle" type="button" data-group-toggle aria-expanded="false">Planificación <span class="icon i-chevron-right" aria-hidden="true"></span></button>
+        <a class="nav-item" href="#" title="D′ · Partidas" aria-label="D′ · Partidas"><span class="icon nav-icon i-pie" aria-hidden="true"></span><span class="nav-label">D′ · Partidas</span></a>
+        <a class="nav-item" href="#" title="Comida · hechos" aria-label="Comida · hechos"><span class="icon nav-icon i-food" aria-hidden="true"></span><span class="nav-label">Comida · hechos</span></a>
+        <a class="nav-item" href="#" title="Revisión Comida" aria-label="Revisión Comida"><span class="icon nav-icon i-clipboard" aria-hidden="true"></span><span class="nav-label">Revisión Comida</span></a>
+        <a class="nav-item" href="#" title="Plan del ciclo" aria-label="Plan del ciclo"><span class="icon nav-icon i-range" aria-hidden="true"></span><span class="nav-label">Plan del ciclo</span></a>
+        <a class="nav-item" href="#" title="Nómina" aria-label="Nómina"><span class="icon nav-icon i-euro" aria-hidden="true"></span><span class="nav-label">Nómina</span></a>
+        <a class="nav-item" href="#" title="Plan anual" aria-label="Plan anual"><span class="icon nav-icon i-bars" aria-hidden="true"></span><span class="nav-label">Plan anual</span></a>
+        <a class="nav-item" href="#" title="Resumen anual" aria-label="Resumen anual"><span class="icon nav-icon i-file" aria-hidden="true"></span><span class="nav-label">Resumen anual</span></a>
+        <a class="nav-item" href="#" title="Presupuestos" aria-label="Presupuestos"><span class="icon nav-icon i-calc" aria-hidden="true"></span><span class="nav-label">Presupuestos</span></a>
+      </nav>
+
+
+      <div class="side-cycle">
+        <div class="side-cycle-head"><span>Ciclo 11</span><span class="badge badge--info">89%</span></div>
+        <strong>Noviembre 2026</strong>
+        <div class="side-cycle-meta"><span>Plan ejecutado</span><b>1.742 / 1.950 €</b></div>
+        <div class="mini-track"><span style="width:89%"></span></div>
+        <div class="side-cycle-meta" style="margin-top:6px"><span>21 días restantes</span><span>Abierto</span></div>
+      </div>
+
+      <div class="side-coverage">
+        <div class="side-cycle-head"><span>Cobertura</span><span class="badge badge--partial">Parcial</span></div>
+        <div class="side-cov-row"><span>Movimientos</span><b>09/11</b></div>
+        <div class="side-cov-row"><span>Saldos</span><b>08/11</b></div>
+        <div class="side-cov-row"><span>Inversión</span><b>05/11</b></div>
+      </div>
+
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>Ciclo 11 · 89% plan
+        <small>21 días restantes · corte 09/11</small>
+        <small>Datos ficticios · Excel v5.11 maestro</small>
+      </div>
+
+      <svg class="sidebar-wave" viewBox="0 0 248 220" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="bSideWave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2be4de" stop-opacity="0"/>
+            <stop offset="0.45" stop-color="#2be4de" stop-opacity="0.26"/>
+            <stop offset="1" stop-color="#1e6f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M-20 170C28 140 66 210 118 180s78-58 138-26 44 26 96 8" fill="none" stroke="url(#bSideWave)" stroke-width="0.9"/>
+        <path d="M-24 198C34 166 74 230 134 198s82-46 142-18 40 18 84 0" fill="none" stroke="url(#bSideWave)" stroke-width="0.75" opacity="0.6"/>
+      </svg>
+    </aside>
+
+    <div class="workspace">
+      <div class="mobile-bar">
+        <a class="mobile-brand" href="#" aria-label="MyFinanzas, ir a Inicio">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span class="brand-word">My<span>Finanzas</span></span>
+        </a>
+        <button class="menu-btn" type="button" data-menu-toggle aria-expanded="false" aria-controls="main-nav" aria-label="Abrir menú">
+          <span class="icon i-menu" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="mobile-context">
+        <span class="mobile-cycle"><span class="status-dot" aria-hidden="true"></span><strong>Ciclo 11 · Noviembre 2026</strong><span>· Abierto</span></span>
+        <label class="mobile-theme"><span class="icon i-moon" aria-hidden="true"></span>
+          <select class="theme-select" data-theme-select aria-label="Tema candidato">
+            <option value="graphite-lime">Graphite Lime</option>
+            <option value="color-finance">Color Finance</option>
+            <option value="pastel-editorial">Pastel Editorial</option>
+          </select>
+        </label>
+      </div>
+      <div class="ambient" aria-hidden="true"></div>
+      <svg class="c-top-wave" viewBox="0 0 900 340" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="cTopWave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2be4de" stop-opacity="0"/>
+            <stop offset="0.46" stop-color="#2be4de" stop-opacity="0.28"/>
+            <stop offset="1" stop-color="#1e6f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M-40 246C150 104 316 274 516 166S820 36 980 102" fill="none" stroke="url(#cTopWave)" stroke-width="1.05"/>
+        <path d="M-40 276C174 138 338 302 560 194S846 68 1000 138" fill="none" stroke="url(#cTopWave)" stroke-width="0.8" opacity="0.6"/>
+      </svg>
+
+      <header class="topbar">
+        <div class="cycle">
+          <span class="cycle-mark" aria-hidden="true"><span class="icon i-calendar"></span></span>
+          <span class="cycle-copy">
+            <span class="cycle-label">Ciclo financiado</span>
+            <span class="cycle-title">Ciclo 11 <span>·</span> Noviembre 2026</span>
+            <span class="cycle-sub">Abierto · corte disponible 09/11/2026</span>
+          </span>
+        </div>
+        <div class="top-actions">
+          <label class="theme-control"><span class="icon i-moon" aria-hidden="true"></span>
+            <select class="theme-select" data-theme-select aria-label="Tema candidato">
+              <option value="graphite-lime">Graphite Lime</option>
+              <option value="color-finance">Color Finance</option>
+              <option value="pastel-editorial">Pastel Editorial</option>
+            </select>
+          </label>
+          <span class="env-pill"><span class="env-dot" aria-hidden="true"></span>Candidato visual</span>
+          <span class="top-divider" aria-hidden="true"></span>
+          <button class="logout" type="button">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">QA visual · Fase C</p>
+            <h1>Estados de interfaz</h1>
+            <p class="page-desc">Los mismos componentes de Movimientos en carga, vacío, error, parcial, selección, formulario, validación y guardado. Tres temas comparten estructura y tokens.</p>
+          </div>
+          <div class="head-right">
+            <div class="head-meta"><span class="status-dot" aria-hidden="true"></span>Datos sintéticos<span class="readonly"><span class="icon i-shield" aria-hidden="true"></span>Solo lectura</span></div>
+            <div class="page-actions"><button class="btn btn-secondary" type="button">Volver a Movimientos</button></div>
+          </div>
+        </div>
+
+        <p class="page-note"><span class="icon i-info" aria-hidden="true"></span>Cada estado explica qué ocurre y qué puede hacer el usuario. El color no es el único canal: hay texto, icono y forma.</p>
+
+        <div class="states-grid">
+          <section class="state-card" aria-labelledby="state-loading">
+            <div class="state-head"><div><p class="state-kicker">01 · Cargando</p><h2 id="state-loading">Consultando el registro</h2></div><span class="badge badge--info">Cargando</span></div>
+            <div class="state-body">
+              <div class="skeleton" role="status" aria-label="Cargando movimientos"><span class="skeleton-line short"></span><span class="skeleton-line"></span><span class="skeleton-line"></span><span class="skeleton-line"></span><span class="skeleton-line tiny"></span><span class="skeleton-line short"></span></div>
+              <p class="meta">La tabla mantiene su espacio para evitar saltos cuando llegan los datos.</p>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-empty">
+            <div class="state-head"><div><p class="state-kicker">02 · Vacío verificado</p><h2 id="state-empty">Sin movimientos</h2></div><span class="badge badge--muted">Sin datos</span></div>
+            <div class="state-body">
+              <div class="empty"><span class="empty-icon"><span class="icon i-move" aria-hidden="true"></span></span><h2>Todavía no hay movimientos</h2><p>Registra un hecho ejecutado con datos ficticios para empezar.</p><button class="btn btn-primary" type="button"><span class="icon i-plus" aria-hidden="true"></span>Nuevo movimiento</button></div>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-noresults">
+            <div class="state-head"><div><p class="state-kicker">03 · Sin coincidencias</p><h2 id="state-noresults">Filtros sin resultados</h2></div><span class="badge badge--partial">0 coincidencias</span></div>
+            <div class="state-body">
+              <div class="filter-chips state-chips"><span class="chip">Tipo: Gasto</span><span class="chip">Ciclo 11 · Noviembre 2026</span></div>
+              <div class="empty"><span class="empty-icon"><span class="icon i-search" aria-hidden="true"></span></span><h2>Sin coincidencias</h2><p>Ajusta los filtros o limpia la búsqueda.</p><button class="btn btn-secondary" type="button">Limpiar filtros</button></div>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-error">
+            <div class="state-head"><div><p class="state-kicker">04 · Error de carga</p><h2 id="state-error">Consulta no disponible</h2></div><span class="badge badge--error">Error</span></div>
+            <div class="state-body">
+              <div class="alert" role="alert"><div><strong>No se pudo cargar el registro.</strong><p>Comprueba la conexión con la API. Los filtros y el contexto se conservan.</p></div><button class="btn btn-secondary" type="button">Reintentar</button></div>
+              <p class="meta">Un error de fuente no se presenta como un vacío real ni como un cero.</p>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-partial">
+            <div class="state-head"><div><p class="state-kicker">05 · Datos parciales</p><h2 id="state-partial">Cobertura incompleta</h2></div><span class="badge badge--partial">Parcial 2/3</span></div>
+            <div class="state-body">
+              <div class="partial-row"><div><span class="meta">Inversión valorada</span><strong class="amount">17.250,00 €</strong></div><span class="badge badge--partial">2 de 3 valoradas</span></div>
+              <div class="partial-row"><div><span class="meta">Posición sin valorar</span><strong class="amount amount-muted">ND</strong></div><span class="tag">No disponible</span></div>
+              <p class="meta">El total parcial no se convierte en total definitivo. La cobertura se mantiene visible.</p>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-selected">
+            <div class="state-head"><div><p class="state-kicker">06 · Selección</p><h2 id="state-selected">Operación seleccionada</h2></div><span class="badge badge--info">Seleccionado</span></div>
+            <div class="state-body">
+              <div class="state-selected-row"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><div><strong>Compra semanal</strong><span>07/11/2026 · Gasto · Alimentación</span></div><strong class="amount amount-negative">-86,40 €</strong></div>
+              <div class="state-selected-detail"><span class="meta">Saldo</span><strong>Cuenta principal</strong><span class="meta">Referencia</span><strong>REF-012 · Comida</strong></div>
+              <p class="meta">La selección se comunica con barra, fondo, texto y foco; no solo con color.</p>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-validation">
+            <div class="state-head"><div><p class="state-kicker">07 · Validación</p><h2 id="state-validation">Formulario incompleto</h2></div><span class="badge badge--error">2 errores</span></div>
+            <div class="state-body">
+              <div class="state-form">
+                <div class="field"><label for="st-fecha">Fecha</label><input class="input" id="st-fecha" type="date" value="" aria-invalid="true" aria-describedby="st-fecha-error"><p class="field-error" id="st-fecha-error">Indica una fecha válida.</p></div>
+                <div class="field"><label for="st-importe">Importe</label><input class="input" id="st-importe" type="text" value="-0,00" aria-invalid="true" aria-describedby="st-importe-error"><p class="field-error" id="st-importe-error">El importe debe ser distinto de cero.</p></div>
+                <div class="field"><label for="st-tipo">Tipo</label><select class="select" id="st-tipo"><option>Gasto</option><option>Ingreso</option><option>Transferencia</option></select></div>
+                <div class="state-form-actions"><button class="btn btn-secondary" type="button">Cancelar</button><button class="btn btn-primary" type="button" disabled>Guardar</button></div>
+              </div>
+              <p class="meta">El foco iría al primer campo inválido; el borrador no se pierde al corregir.</p>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-disabled">
+            <div class="state-head"><div><p class="state-kicker">08 · Deshabilitado</p><h2 id="state-disabled">Acción no disponible</h2></div><span class="badge badge--muted">Bloqueado</span></div>
+            <div class="state-body">
+              <div class="state-disabled"><div class="field"><label for="st-ciclo">Ciclo</label><select class="select" id="st-ciclo" disabled><option>Sin ciclo seleccionado</option></select></div><button class="btn btn-secondary" type="button" disabled>Consultar movimientos</button></div>
+              <p class="meta">El estado deshabilitado explica el motivo; no se oculta la acción ni se inventa un ciclo.</p>
+            </div>
+          </section>
+
+          <section class="state-card state-card--wide" aria-labelledby="state-form">
+            <div class="state-head"><div><p class="state-kicker">09 · Formulario completo</p><h2 id="state-form">Nuevo movimiento</h2></div><span class="badge badge--info">Borrador</span></div>
+            <div class="state-body">
+              <form class="state-form state-form--movement" onsubmit="return false">
+                <div class="field"><label for="form-fecha">Fecha</label><input class="input" id="form-fecha" type="date" value="2026-11-10"></div>
+                <div class="field"><label for="form-tipo">Tipo</label><select class="select" id="form-tipo"><option>Gasto</option><option>Ingreso</option><option>Transferencia</option><option>Amortización deuda</option></select></div>
+                <div class="field"><label for="form-concepto">Concepto</label><input class="input" id="form-concepto" type="text" value="Compra semanal"></div>
+                <div class="field"><label for="form-importe">Importe</label><input class="input" id="form-importe" type="text" value="-86,40 €"></div>
+                <div class="field"><label for="form-saldo">Saldo</label><select class="select" id="form-saldo"><option>Cuenta principal</option><option>Cuenta secundaria</option><option>Tarjeta secundaria</option></select></div>
+                <div class="field"><label for="form-partida">Partida</label><select class="select" id="form-partida"><option>Alimentación</option><option>Servicios</option><option>Salud</option><option>No aplica</option></select></div>
+                <div class="field"><label for="form-referencia">Referencia</label><input class="input" id="form-referencia" type="text" value="REF-012 · Comida"></div>
+                <div class="field"><label for="form-estado">Estado</label><select class="select" id="form-estado"><option>Vigente</option><option>Anulado</option></select></div>
+                <div class="field field--note"><label for="form-nota">Nota</label><textarea class="textarea" id="form-nota" rows="2">Compra ordinaria de alimentación. Hecho sintético de demostración.</textarea></div>
+                <div class="state-form-actions"><button class="btn btn-secondary" type="button">Cancelar</button><button class="btn btn-primary" type="button">Guardar movimiento</button></div>
+              </form>
+              <p class="meta">Formulario de demostración. No guarda datos ni ejecuta lógica financiera.</p>
+            </div>
+          </section>
+
+          <section class="state-card" aria-labelledby="state-saved">
+            <div class="state-head"><div><p class="state-kicker">10 · Guardado</p><h2 id="state-saved">Movimiento registrado</h2></div><span class="badge badge--ok">Guardado</span></div>
+            <div class="state-body">
+              <div class="state-success">
+                <span class="icon-box icon-box--green"><span class="icon i-check" aria-hidden="true"></span></span>
+                <div><strong>Compra semanal</strong><span>10/11/2026 · Gasto · Alimentación</span></div>
+                <strong class="amount amount-negative">-86,40 €</strong>
+              </div>
+              <p class="meta">El registro se actualizaría y la cobertura se mantendría. No se envía nada a producción.</p>
+              <div class="state-form-actions"><button class="btn btn-secondary" type="button">Ver movimiento</button><button class="btn btn-primary" type="button">Nuevo movimiento</button></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="site-foot">
+          <p class="synthetic-note"><span class="icon i-info" aria-hidden="true"></span>Estados visuales de prototipo. No hay lógica financiera ni datos reales; las acciones son demostrativas.</p>
+          <p class="right">Estados · Candidatos visuales · Prototipo aislado</p>
+        </div>
+
+      </main>
+
+      <footer class="app-footer">
+        <span>MyFinanzas App</span>
+        <span class="mock-badge">Candidatos visuales · Datos sintéticos · No producción</span>
+      </footer>
+    </div>
+  </div>
+  <script src="../app.js"></script>
+</body>
+</html>

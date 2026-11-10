@@ -1,0 +1,154 @@
+/* ==========================================================================
+   MyFinanzas · Fase 2 · Estados de candidatos
+   Formulario completo y confirmación de guardado sobre los componentes
+   existentes. Solo capa visual; no hay lógica financiera.
+   ========================================================================== */
+
+.state-card--wide {
+  grid-column: 1 / -1;
+}
+
+.state-form--movement {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.state-form--movement .field:nth-child(3) {
+  grid-column: auto;
+}
+
+.state-form--movement .field--note {
+  grid-column: 1 / -1;
+}
+
+.state-form--movement .textarea {
+  min-height: 70px;
+}
+
+.state-success {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--positive-border);
+  border-radius: var(--radius-sm);
+  background: var(--positive-soft);
+  box-shadow: inset 3px 0 0 var(--positive);
+}
+
+.state-success strong {
+  display: block;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.state-success span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.state-success > .amount {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* Graphite: el formulario conserva la superficie carbón y el foco lima. */
+html[data-theme="graphite-lime"] .state-card--wide {
+  border-top: 2px solid rgba(215, 255, 94, 0.4);
+}
+
+html[data-theme="graphite-lime"] .state-form--movement .input,
+html[data-theme="graphite-lime"] .state-form--movement .select,
+html[data-theme="graphite-lime"] .state-form--movement .textarea {
+  border-color: #4a5346;
+  background: #0c0e0c;
+}
+
+html[data-theme="graphite-lime"] .state-success {
+  border-color: rgba(127, 224, 168, 0.28);
+  background: #1d2720;
+  box-shadow: inset 3px 0 0 #7fe0a8;
+}
+
+html[data-theme="graphite-lime"] .state-success > .amount {
+  color: #ff9a8c;
+}
+
+/* Color Finance: el formulario gana un marco lavanda sin teñir los campos. */
+html[data-theme="color-finance"] .state-card--wide {
+  border-top: 3px solid #c9bdf0;
+}
+
+html[data-theme="color-finance"] .state-form--movement .input,
+html[data-theme="color-finance"] .state-form--movement .select,
+html[data-theme="color-finance"] .state-form--movement .textarea {
+  border-color: #c9bdf0;
+  background: #fffdf9;
+}
+
+html[data-theme="color-finance"] .state-success {
+  border-color: #b9d9c9;
+  background: #e5f1ea;
+  box-shadow: inset 3px 0 0 #256b4c;
+}
+
+/* Pastel: tinta, serif editorial y sombra dura. */
+html[data-theme="pastel-editorial"] .state-card {
+  border-color: #1b181e;
+  border-radius: 4px;
+  background: #fffdf8;
+  box-shadow: 4px 4px 0 rgba(27, 24, 30, 0.08);
+}
+
+html[data-theme="pastel-editorial"] .state-head h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.35px;
+}
+
+html[data-theme="pastel-editorial"] .state-form--movement .input,
+html[data-theme="pastel-editorial"] .state-form--movement .select,
+html[data-theme="pastel-editorial"] .state-form--movement .textarea {
+  border-color: #1b181e;
+  border-radius: 3px;
+  background: #fffdf8;
+}
+
+html[data-theme="pastel-editorial"] .state-card--wide {
+  border-top: 4px solid #1b181e;
+}
+
+html[data-theme="pastel-editorial"] .state-success {
+  border-color: #2e6b4f;
+  background: #e2efe6;
+  box-shadow: inset 3px 0 0 #2e6b4f;
+}
+
+@media (max-width: 900px) {
+  .state-form--movement {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .state-form--movement {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .state-form--movement .field--note {
+    grid-column: auto;
+  }
+
+  .state-success {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .state-success > .amount {
+    grid-column: 2;
+    text-align: left;
+  }
+}

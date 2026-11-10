@@ -1,0 +1,40 @@
+from pathlib import Path
+base=Path(__file__).resolve().parent
+style='''
+* { box-sizing:border-box; }
+body { margin:0; background:#0b0f10; color:#f4f1ea; font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.board { padding:28px 30px 34px; }
+.head { display:flex; align-items:flex-end; justify-content:space-between; gap:28px; margin-bottom:18px; }
+.eyebrow { margin:0 0 7px; color:#c8e88b; font-size:10px; font-weight:750; letter-spacing:1.7px; text-transform:uppercase; }
+h1 { margin:0 0 6px; font-size:31px; font-weight:700; letter-spacing:-1.2px; line-height:1.05; }
+.sub { margin:0; color:#cbc5ba; font-size:12.5px; }
+.note { max-width:540px; margin:0; color:#939e9b; font-size:10.5px; line-height:1.55; text-align:right; }
+.grid { display:grid; grid-template-columns:1440px 1440px 390px; gap:14px; align-items:start; }
+figure { margin:0; overflow:hidden; border:1px solid #354340; border-radius:14px; background:#131b1a; box-shadow:0 20px 44px rgba(0,0,0,.28); }
+figcaption { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 13px; border-bottom:1px solid rgba(200,210,205,.17); background:rgba(7,12,10,.5); }
+figcaption strong { color:#f4f1ea; font-size:12px; font-weight:650; }
+.pill { display:inline-flex; align-items:center; min-height:20px; padding:2px 8px; border:1px solid rgba(200,232,139,.34); border-radius:999px; color:#c8e88b; font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; white-space:nowrap; }
+img { display:block; width:100%; height:auto; }
+.reading { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; margin-top:18px; overflow:hidden; border:1px solid #354340; border-radius:12px; background:#131b1a; }
+.reading div { padding:14px 16px; border-left:1px solid rgba(200,210,205,.15); }
+.reading div:first-child { border-left:0; }
+.reading h2 { margin:0 0 4px; color:#f4f1ea; font-size:11.5px; }
+.reading p { margin:0; color:#aeb8b4; font-size:10px; line-height:1.55; }
+.foot { margin:16px 0 0; color:#89938f; font-size:10px; line-height:1.5; }
+.foot b { color:#c8e88b; font-weight:650; }
+@media (max-width:1000px){ .head{display:block} .note{margin-top:10px;text-align:left} .grid,.reading{grid-template-columns:1fr} }
+'''
+def fig(src,label,pill):
+    return f'<figure><figcaption><strong>{label}</strong><span class="pill">{pill}</span></figcaption><img src="{src}" alt="{label}"></figure>'
+html=f'''<!doctype html><html lang="es"><head><meta charset="utf-8"><title>MyFinanzas · Formularios Graphite</title><style>{style}</style></head><body><main class="board">
+<header class="head"><div><p class="eyebrow">MyFinanzas · Graphite Lime · Formularios</p><h1>Compra de inversión y Amortización de deuda</h1><p class="sub">Campos completos del modelo vigente, cambio condicional por divisa y derivados de solo lectura.</p></div><p class="note">Prototipo aislado. No guarda datos ni conecta con API o SQLite. Las fechas nativas se muestran en formato español en la captura; el formulario conserva el control de fecha del producto.</p></header>
+<div class="grid">
+{fig("shots-formularios/graphite-lime-1440.png","Compra USD · cambio visible","USD")}
+{fig("shots-formularios/graphite-lime-1440-eur.png","Compra EUR · cambio oculto","EUR")}
+{fig("shots-formularios/graphite-lime-390-fold.png","Formulario móvil · 390","MÓVIL")}
+</div>
+<section class="reading"><div><h2>Campos condicionales</h2><p>USD muestra «Cambio histórico» y lo marca obligatorio. EUR lo oculta, lo desactiva y explica que se trata como 1; el foco salta directamente a «Importe EUR cargado».</p></div><div><h2>Compra de inversión</h2><p>Fecha, instrumento, saldo de efectivo con cifra, saldo de inversión, cantidad, precio, divisa, cambio condicional, EUR cargado, comisión incluida, concepto y nota. Sin Partida, Referencia, Ciclo ni Deuda.</p></div><div><h2>Amortización de deuda</h2><p>Tipo, fecha, importe, concepto, origen, destino Exterior, partida, deuda derivada, referencia y nota. Capital = importe, intereses = 0 y sin Gasto. Los campos y derivados conservan el modelo.</p></div></section>
+<p class="foot"><b>Validación visual.</b> Los formularios son demostrativos; no hay lógica financiera. Las compras no son Movimientos; las amortizaciones sí.</p>
+</main></body></html>'''
+(base/'comparativa-formularios-graphite.html').write_text(html)
+print('form board html')

@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="es" data-theme="graphite-lime" data-default-theme="graphite-lime">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||document.documentElement.dataset.defaultTheme||"graphite-lime";</script>
+<title>MyFinanzas · Inicio · Temas candidatos</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../icons.css">
+<link rel="stylesheet" href="../base.css">
+<link rel="stylesheet" href="../inicio.css">
+<link rel="stylesheet" href="candidates.css">
+</head>
+<body data-page="inicio">
+  <div class="app">
+    <div class="sidebar-backdrop" data-menu-close aria-hidden="true"></div>
+    <aside class="sidebar" aria-label="Navegación principal">
+      <button class="sidebar-close" type="button" data-menu-close aria-label="Cerrar menú">
+        <span class="icon i-x" aria-hidden="true"></span>
+      </button>
+      <a class="brand" href="#" aria-label="MyFinanzas, ir a Inicio">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-copy">
+          <span class="brand-word">My<span>Finanzas</span></span>
+          <span class="brand-sub">CONTROL FINANCIERO PERSONAL</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="main-nav" aria-label="Secciones">
+        <p class="nav-group">Mi espacio <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item active" href="#" title="Inicio" aria-label="Inicio" aria-current="page"><span class="icon nav-icon i-home" aria-hidden="true"></span><span class="nav-label">Inicio</span></a>
+        <a class="nav-item" href="#" title="Flujo mensual" aria-label="Flujo mensual"><span class="icon nav-icon i-flow" aria-hidden="true"></span><span class="nav-label">Flujo mensual</span></a>
+        <a class="nav-item" href="#" title="Pendientes y conciliación" aria-label="Pendientes y conciliación"><span class="icon nav-icon i-pending" aria-hidden="true"></span><span class="nav-label">Pendientes y conciliación</span><span class="nav-count">3</span></a>
+        <a class="nav-item" href="#" title="Anticipos" aria-label="Anticipos"><span class="icon nav-icon i-rotate" aria-hidden="true"></span><span class="nav-label">Anticipos</span></a>
+        <a class="nav-item" href="#" title="Compartidos" aria-label="Compartidos"><span class="icon nav-icon i-users" aria-hidden="true"></span><span class="nav-label">Compartidos</span></a>
+
+        <p class="nav-group">Patrimonio <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item" href="#" title="Saldos" aria-label="Saldos"><span class="icon nav-icon i-wallet" aria-hidden="true"></span><span class="nav-label">Saldos</span></a>
+        <a class="nav-item" href="#" title="Clasificación" aria-label="Clasificación"><span class="icon nav-icon i-layers" aria-hidden="true"></span><span class="nav-label">Clasificación</span></a>
+        <a class="nav-item" href="#" title="Inversiones" aria-label="Inversiones"><span class="icon nav-icon i-trend" aria-hidden="true"></span><span class="nav-label">Inversiones</span></a>
+        <a class="nav-item" href="#" title="Deudas" aria-label="Deudas"><span class="icon nav-icon i-card" aria-hidden="true"></span><span class="nav-label">Deudas</span></a>
+        <a class="nav-item" href="#" title="Vehículos" aria-label="Vehículos"><span class="icon nav-icon i-car" aria-hidden="true"></span><span class="nav-label">Vehículos</span></a>
+        <a class="nav-item" href="#" title="Referencias" aria-label="Referencias"><span class="icon nav-icon i-hash" aria-hidden="true"></span><span class="nav-label">Referencias</span></a>
+
+        <p class="nav-group">Operación <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item" href="#" title="Movimientos" aria-label="Movimientos"><span class="icon nav-icon i-move" aria-hidden="true"></span><span class="nav-label">Movimientos</span></a>
+        <a class="nav-item" href="#" title="Ciclos" aria-label="Ciclos"><span class="icon nav-icon i-calendar" aria-hidden="true"></span><span class="nav-label">Ciclos</span></a>
+        <a class="nav-item" href="#" title="Precierre" aria-label="Precierre"><span class="icon nav-icon i-clock" aria-hidden="true"></span><span class="nav-label">Precierre</span></a>
+        <a class="nav-item" href="#" title="Cierre" aria-label="Cierre"><span class="icon nav-icon i-check-circle" aria-hidden="true"></span><span class="nav-label">Cierre</span></a>
+        <a class="nav-item" href="#" title="Fotos" aria-label="Fotos"><span class="icon nav-icon i-image" aria-hidden="true"></span><span class="nav-label">Fotos</span></a>
+
+        <button class="nav-group nav-group--toggle" type="button" data-group-toggle aria-expanded="false">Planificación <span class="icon i-chevron-right" aria-hidden="true"></span></button>
+        <a class="nav-item" href="#" title="D′ · Partidas" aria-label="D′ · Partidas"><span class="icon nav-icon i-pie" aria-hidden="true"></span><span class="nav-label">D′ · Partidas</span></a>
+        <a class="nav-item" href="#" title="Comida · hechos" aria-label="Comida · hechos"><span class="icon nav-icon i-food" aria-hidden="true"></span><span class="nav-label">Comida · hechos</span></a>
+        <a class="nav-item" href="#" title="Revisión Comida" aria-label="Revisión Comida"><span class="icon nav-icon i-clipboard" aria-hidden="true"></span><span class="nav-label">Revisión Comida</span></a>
+        <a class="nav-item" href="#" title="Plan del ciclo" aria-label="Plan del ciclo"><span class="icon nav-icon i-range" aria-hidden="true"></span><span class="nav-label">Plan del ciclo</span></a>
+        <a class="nav-item" href="#" title="Nómina" aria-label="Nómina"><span class="icon nav-icon i-euro" aria-hidden="true"></span><span class="nav-label">Nómina</span></a>
+        <a class="nav-item" href="#" title="Plan anual" aria-label="Plan anual"><span class="icon nav-icon i-bars" aria-hidden="true"></span><span class="nav-label">Plan anual</span></a>
+        <a class="nav-item" href="#" title="Resumen anual" aria-label="Resumen anual"><span class="icon nav-icon i-file" aria-hidden="true"></span><span class="nav-label">Resumen anual</span></a>
+        <a class="nav-item" href="#" title="Presupuestos" aria-label="Presupuestos"><span class="icon nav-icon i-calc" aria-hidden="true"></span><span class="nav-label">Presupuestos</span></a>
+      </nav>
+
+
+      <div class="side-cycle">
+        <div class="side-cycle-head"><span>Ciclo 11</span><span class="badge badge--info">89%</span></div>
+        <strong>Noviembre 2026</strong>
+        <div class="side-cycle-meta"><span>Plan ejecutado</span><b>1.742 / 1.950 €</b></div>
+        <div class="mini-track"><span style="width:89%"></span></div>
+        <div class="side-cycle-meta" style="margin-top:6px"><span>21 días restantes</span><span>Abierto</span></div>
+      </div>
+
+      <div class="side-coverage">
+        <div class="side-cycle-head"><span>Cobertura</span><span class="badge badge--partial">Parcial</span></div>
+        <div class="side-cov-row"><span>Movimientos</span><b>09/11</b></div>
+        <div class="side-cov-row"><span>Saldos</span><b>08/11</b></div>
+        <div class="side-cov-row"><span>Inversión</span><b>05/11</b></div>
+      </div>
+
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>Ciclo 11 · 89% plan
+        <small>21 días restantes · corte 09/11</small>
+        <small>Datos ficticios · Excel v5.11 maestro</small>
+      </div>
+
+      <svg class="sidebar-wave" viewBox="0 0 248 220" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="bSideWave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2be4de" stop-opacity="0"/>
+            <stop offset="0.45" stop-color="#2be4de" stop-opacity="0.26"/>
+            <stop offset="1" stop-color="#1e6f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M-20 170C28 140 66 210 118 180s78-58 138-26 44 26 96 8" fill="none" stroke="url(#bSideWave)" stroke-width="0.9"/>
+        <path d="M-24 198C34 166 74 230 134 198s82-46 142-18 40 18 84 0" fill="none" stroke="url(#bSideWave)" stroke-width="0.75" opacity="0.6"/>
+      </svg>
+    </aside>
+
+    <div class="workspace">
+      <div class="mobile-bar">
+        <a class="mobile-brand" href="#" aria-label="MyFinanzas, ir a Inicio">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span class="brand-word">My<span>Finanzas</span></span>
+        </a>
+        <button class="menu-btn" type="button" data-menu-toggle aria-expanded="false" aria-controls="main-nav" aria-label="Abrir menú">
+          <span class="icon i-menu" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="mobile-context">
+        <span class="mobile-cycle"><span class="status-dot" aria-hidden="true"></span><strong>Ciclo 11 · Noviembre 2026</strong><span>· Abierto</span></span>
+        <label class="mobile-theme"><span class="icon i-moon" aria-hidden="true"></span>
+          <select class="theme-select" data-theme-select aria-label="Tema candidato">
+            <option value="graphite-lime">Graphite Lime</option>
+            <option value="color-finance">Color Finance</option>
+            <option value="pastel-editorial">Pastel Editorial</option>
+          </select>
+        </label>
+      </div>
+      <div class="ambient" aria-hidden="true"></div>
+      <svg class="c-top-wave" viewBox="0 0 900 340" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="cTopWave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2be4de" stop-opacity="0"/>
+            <stop offset="0.46" stop-color="#2be4de" stop-opacity="0.28"/>
+            <stop offset="1" stop-color="#1e6f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M-40 246C150 104 316 274 516 166S820 36 980 102" fill="none" stroke="url(#cTopWave)" stroke-width="1.05"/>
+        <path d="M-40 276C174 138 338 302 560 194S846 68 1000 138" fill="none" stroke="url(#cTopWave)" stroke-width="0.8" opacity="0.6"/>
+      </svg>
+
+      <header class="topbar">
+        <div class="cycle">
+          <span class="cycle-mark" aria-hidden="true"><span class="icon i-calendar"></span></span>
+          <span class="cycle-copy">
+            <span class="cycle-label">Ciclo financiado</span>
+            <span class="cycle-title">Ciclo 11 <span>·</span> Noviembre 2026</span>
+            <span class="cycle-sub">Abierto · corte disponible 09/11/2026</span>
+          </span>
+        </div>
+        <div class="top-actions">
+          <label class="theme-control"><span class="icon i-moon" aria-hidden="true"></span>
+            <select class="theme-select" data-theme-select aria-label="Tema candidato">
+              <option value="graphite-lime">Graphite Lime</option>
+              <option value="color-finance">Color Finance</option>
+              <option value="pastel-editorial">Pastel Editorial</option>
+            </select>
+          </label>
+          <span class="env-pill"><span class="env-dot" aria-hidden="true"></span>Candidato visual</span>
+          <span class="top-divider" aria-hidden="true"></span>
+          <button class="logout" type="button">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="page-head b-page-head">
+          <div>
+            <p class="eyebrow">Resumen financiero · Ciclo 11</p>
+            <h1>Inicio</h1>
+            <p class="page-desc">Control del ciclo, liquidez y posición. Las cifras se leen con su contexto y su cobertura; el plan no se reconstruye en el navegador.</p>
+          </div>
+          <div class="b-head-right">
+            <div class="b-updated"><span class="status-dot" aria-hidden="true"></span>Actualizado 08/11 · 19:42 · Solo lectura</div>
+            <div class="b-head-actions">
+              <button class="btn btn-secondary" type="button">Cómo se calcula</button>
+              <button class="btn btn-primary" type="button"><span class="icon i-plus" aria-hidden="true"></span>Nuevo movimiento</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-12">
+          <section class="card b-control c-control" aria-label="Control del ciclo">
+            <div class="b-control-cell c-liquidity">
+              <p class="b-kicker"><span class="icon i-wallet" aria-hidden="true"></span>Liquidez disponible</p>
+              <div class="b-main-value"><strong>12.480,00</strong><span>€</span></div>
+              <div class="b-main-sub">
+                <span class="badge badge--ok"><span class="icon i-check" aria-hidden="true"></span>Completo</span>
+                <span class="dot" aria-hidden="true"></span>4 cuentas incluidas
+                <span class="dot" aria-hidden="true"></span>2 excluidas
+              </div>
+              <svg class="c-spark" viewBox="0 0 300 64" preserveAspectRatio="none" aria-label="Evolución sintética de la liquidez en los últimos seis ciclos" role="img">
+                <defs>
+                  <linearGradient id="cSparkArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#2be4de" stop-opacity="0.2"/>
+                    <stop offset="1" stop-color="#2be4de" stop-opacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="cSparkLine" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="#1e6f7a"/>
+                    <stop offset="0.6" stop-color="#2be4de"/>
+                    <stop offset="1" stop-color="#73d7d4"/>
+                  </linearGradient>
+                </defs>
+                <line class="c-spark-goal" x1="0" y1="36" x2="300" y2="36"/>
+                <path class="c-spark-area" d="M0 45 C30 42 46 36 70 38 C96 40 112 30 140 32 C168 34 186 24 214 26 C242 28 262 16 300 10 L300 64 L0 64 Z"/>
+                <path class="c-spark-line" d="M0 45 C30 42 46 36 70 38 C96 40 112 30 140 32 C168 34 186 24 214 26 C242 28 262 16 300 10"/>
+              </svg>
+              <div class="c-chart-meta"><span>6 ciclos · serie sintética</span><span>Mín. 7.400 €</span></div>
+            </div>
+
+            <div class="b-control-cell c-plan-cell">
+              <p class="b-kicker"><span class="icon i-target" aria-hidden="true"></span>Ejecución del plan</p>
+              <div class="c-plan-top">
+                <div class="c-plan-ring">
+                  <svg viewBox="0 0 90 90" role="img" aria-label="89 por ciento del plan ejecutado">
+                    <defs>
+                      <linearGradient id="cRing" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#1e6f7a"/>
+                        <stop offset="0.55" stop-color="#2be4de"/>
+                        <stop offset="1" stop-color="#73d7d4"/>
+                      </linearGradient>
+                    </defs>
+                    <circle class="c-ring-track" cx="45" cy="45" r="36"/>
+                    <circle class="c-ring-fill" cx="45" cy="45" r="36"/>
+                  </svg>
+                  <div class="c-plan-center"><strong>89%</strong><span>del plan</span></div>
+                </div>
+                <div class="c-plan-copy">
+                  <div class="c-plan-amount"><strong>1.742,00 €</strong><span>ejecutado</span></div>
+                  <div class="c-plan-amount"><strong>1.950,00 €</strong><span>plan</span></div>
+                </div>
+              </div>
+              <div class="b-control-facts">
+                <div class="b-control-fact"><span>Días restantes</span><strong>21</strong></div>
+                <div class="b-control-fact"><span>Estado</span><strong>Abierto</strong></div>
+              </div>
+            </div>
+
+            <div class="b-control-cell c-margin-cell">
+              <p class="b-kicker"><span class="icon i-trend" aria-hidden="true"></span>Margen frente a nómina</p>
+              <div class="b-plan-value"><strong>1.300,00</strong><span>€ · Plan</span></div>
+              <div class="b-main-sub">
+                <span class="badge badge--plan">Plan</span>
+                No es ahorro ejecutado ni margen estructural
+              </div>
+              <div class="b-control-facts">
+                <div class="b-control-fact"><span>Ingresos del ciclo</span><strong>3.250,00 €</strong></div>
+                <div class="b-control-fact"><span>Gasto bruto</span><strong>1.742,00 €</strong></div>
+              </div>
+              <div class="b-control-foot">
+                <span class="meta">Nómina 2.450,00 €</span>
+                <a class="link-arrow" href="#">Ver flujo <span class="icon i-chevron-right" aria-hidden="true"></span></a>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="grid-12" style="margin-top:18px">
+          <section class="card b-kpis" aria-label="Indicadores del ciclo">
+            <div class="b-kpi">
+              <span class="b-kpi-label"><span class="icon i-arrow-down-left" aria-hidden="true"></span>Ingresos del ciclo</span>
+              <span class="b-kpi-value b-kpi-value--positive">3.250,00 €</span>
+              <span class="b-kpi-meta">2 entradas · nómina incluida</span>
+            </div>
+            <div class="b-kpi">
+              <span class="b-kpi-label"><span class="icon i-arrow-up-right" aria-hidden="true"></span>Gasto bruto</span>
+              <span class="b-kpi-value b-kpi-value--negative">1.742,00 €</span>
+              <span class="b-kpi-meta">89% de 1.950,00 € plan</span>
+            </div>
+            <div class="b-kpi">
+              <span class="b-kpi-label"><span class="icon i-trend" aria-hidden="true"></span>Inversión valorada</span>
+              <span class="b-kpi-value">17.250,00 €</span>
+              <span class="b-kpi-meta"><span class="badge badge--partial">Parcial 2/3</span> 2 valoradas</span>
+            </div>
+            <div class="b-kpi">
+              <span class="b-kpi-label"><span class="icon i-card" aria-hidden="true"></span>Deuda no hipotecaria</span>
+              <span class="b-kpi-value">4.800,00 €</span>
+              <span class="b-kpi-meta">2 deudas · hipotecaria aparte</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="grid-12" style="margin-top:18px">
+          <section class="card b-cycle" aria-labelledby="b-ciclo">
+            <div class="b-cycle-head">
+              <div>
+                <h2 id="b-ciclo">Ciclo 11 · real vs plan</h2>
+                <p>7 métricas publicadas · sin reconstruir el plan por línea</p>
+              </div>
+              <span class="badge badge--info">En curso</span>
+            </div>
+
+            <table class="b-cycle-table">
+              <caption class="sr-only">Métricas del ciclo 8, valores reales y de plan</caption>
+              <thead>
+                <tr><th scope="col">Métrica</th><th scope="col" class="num">Real</th><th scope="col" class="num">Plan</th><th scope="col">Estado</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-arrow-down-left" aria-hidden="true"></span>Ingresos</span></td>
+                  <td class="b-cycle-num">3.250,00 €</td>
+                  <td class="b-cycle-num b-cycle-dash">—</td>
+                  <td class="b-cycle-badge"><span class="badge badge--ok">Completo</span></td>
+                </tr>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-arrow-up-right" aria-hidden="true"></span>Gasto bruto</span></td>
+                  <td class="b-cycle-num">1.742,00 €</td>
+                  <td class="b-cycle-num b-cycle-plan">1.950,00 €</td>
+                  <td class="b-cycle-badge"><span class="badge badge--info">89% plan</span></td>
+                </tr>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-credit" aria-hidden="true"></span>Amortización extraordinaria</span></td>
+                  <td class="b-cycle-num">0,00 €</td>
+                  <td class="b-cycle-num b-cycle-dash">—</td>
+                  <td class="b-cycle-badge"><span class="badge badge--muted">Cero verificado</span></td>
+                </tr>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-euro" aria-hidden="true"></span>Nómina</span></td>
+                  <td class="b-cycle-num">2.450,00 €</td>
+                  <td class="b-cycle-num b-cycle-dash">—</td>
+                  <td class="b-cycle-badge"><span class="badge badge--ok">Completo</span></td>
+                </tr>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-trend" aria-hidden="true"></span>Margen frente a nómina</span></td>
+                  <td class="b-cycle-num b-cycle-dash">—</td>
+                  <td class="b-cycle-num b-cycle-plan">1.300,00 €</td>
+                  <td class="b-cycle-badge"><span class="badge badge--plan">Plan</span></td>
+                </tr>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-bars" aria-hidden="true"></span>Base planificada</span></td>
+                  <td class="b-cycle-num b-cycle-dash">—</td>
+                  <td class="b-cycle-num b-cycle-plan">2.100,00 €</td>
+                  <td class="b-cycle-badge"><span class="badge badge--plan">Plan</span></td>
+                </tr>
+                <tr>
+                  <td><span class="b-cycle-name"><span class="icon i-range" aria-hidden="true"></span>Del mes planificado</span></td>
+                  <td class="b-cycle-num b-cycle-dash">—</td>
+                  <td class="b-cycle-num b-cycle-plan">1.950,00 €</td>
+                  <td class="b-cycle-badge"><span class="badge badge--plan">Plan</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+
+            <div class="mobile-cycle-list" aria-label="Métricas del ciclo">
+              <div class="m-cycle"><span class="m-cycle-name">Ingresos</span><strong class="m-cycle-value">3.250,00 €</strong><span class="badge badge--ok">Completo</span></div>
+              <div class="m-cycle"><span class="m-cycle-name">Gasto bruto</span><strong class="m-cycle-value">1.742,00 €</strong><span class="badge badge--info">89% plan</span><span class="m-cycle-note">Plan 1.950,00 €</span></div>
+              <div class="m-cycle"><span class="m-cycle-name">Amortización extraordinaria</span><strong class="m-cycle-value">0,00 €</strong><span class="badge badge--muted">Cero verificado</span></div>
+              <div class="m-cycle"><span class="m-cycle-name">Nómina</span><strong class="m-cycle-value">2.450,00 €</strong><span class="badge badge--ok">Completo</span></div>
+              <div class="m-cycle"><span class="m-cycle-name">Margen frente a nómina</span><strong class="m-cycle-value m-cycle-value--plan">1.300,00 €</strong><span class="badge badge--plan">Plan</span></div>
+              <div class="m-cycle"><span class="m-cycle-name">Base planificada</span><strong class="m-cycle-value m-cycle-value--plan">2.100,00 €</strong><span class="badge badge--plan">Plan</span></div>
+              <div class="m-cycle"><span class="m-cycle-name">Del mes planificado</span><strong class="m-cycle-value m-cycle-value--plan">1.950,00 €</strong><span class="badge badge--plan">Plan</span></div>
+            </div>
+
+            <div class="b-cycle-coverage">
+              <span class="b-cov"><i class="ok" aria-hidden="true"></i>Movimientos <b>09/11</b></span>
+              <span class="b-cov"><i class="ok" aria-hidden="true"></i>Saldos <b>08/11</b></span>
+              <span class="b-cov"><i class="ok" aria-hidden="true"></i>Nómina <b>08/11</b></span>
+              <span class="b-cov"><i class="partial" aria-hidden="true"></i>Inversión <b>05/11</b></span>
+            </div>
+
+            <div class="b-cycle-foot">
+              <span>El plan no se reconstruye por línea. Un guion no es un cero.</span>
+              <a class="link-arrow" href="#">Ver flujo mensual <span class="icon i-chevron-right" aria-hidden="true"></span></a>
+            </div>
+          </section>
+
+          <aside class="b-rail">
+            <section class="card b-attention" aria-labelledby="b-atencion">
+              <div class="b-attention-head">
+                <div>
+                  <h2 id="b-atencion">Atención</h2>
+                  <p>3 pendientes · 1 aviso</p>
+                </div>
+                <span class="badge badge--partial">1 aviso</span>
+              </div>
+              <div class="b-attention-list">
+                <div class="b-attn-row">
+                  <span class="icon-box icon-box--amber"><span class="icon i-alert" aria-hidden="true"></span></span>
+                  <div class="b-attn-copy">
+                    <span class="b-attn-title">Comida · 2 partidas sin conciliar</span>
+                    <span class="b-attn-meta">Desde 02/11</span>
+                  </div>
+                  <span class="badge badge--partial">Aviso</span>
+                </div>
+                <div class="b-attn-row">
+                  <span class="icon-box icon-box--cyan"><span class="icon i-calendar" aria-hidden="true"></span></span>
+                  <div class="b-attn-copy">
+                    <span class="b-attn-title">Cierre · programado 30/11</span>
+                    <span class="b-attn-meta">21 días restantes</span>
+                  </div>
+                  <span class="badge badge--info">Info</span>
+                </div>
+                <div class="b-attn-row">
+                  <span class="icon-box icon-box--cyan"><span class="icon i-trend" aria-hidden="true"></span></span>
+                  <div class="b-attn-copy">
+                    <span class="b-attn-title">Inversión · 1 sin valorar</span>
+                    <span class="b-attn-meta">2 de 3 valoradas</span>
+                  </div>
+                  <span class="badge badge--info">Pendiente</span>
+                </div>
+              </div>
+              <div class="b-attention-foot">
+                <span class="meta">Sin acciones automáticas</span>
+                <a class="link-arrow" href="#">Ver pendientes <span class="icon i-chevron-right" aria-hidden="true"></span></a>
+              </div>
+            </section>
+
+            <section class="card b-objective" aria-labelledby="b-objetivo">
+              <div class="b-objective-head">
+                <div>
+                  <h2 id="b-objetivo">Objetivo R6</h2>
+                  <p class="meta-sm">Meses cubiertos</p>
+                </div>
+                <span class="badge badge--ok">Completo</span>
+              </div>
+              <div class="b-objective-value"><strong>6,7</strong><span>meses</span></div>
+              <div class="track b-objective-track"><span style="width:100%"></span></div>
+              <div class="b-objective-meta"><span>4 meses objetivo</span><span>6,7 actual</span></div>
+              <div class="b-objective-facts">
+                <div class="b-objective-fact"><span>Coste esencial</span><strong>1.850,00 €/mes</strong></div>
+                <div class="b-objective-fact"><span>Mínimo objetivo</span><strong>7.400,00 €</strong></div>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <div class="grid-12" style="margin-top:18px">
+          <section class="card b-movements" aria-labelledby="b-ultimos">
+            <div class="b-movements-head">
+              <div>
+                <h2 id="b-ultimos">Últimos movimientos</h2>
+                <p>Ciclo 11 · 5 de 128</p>
+              </div>
+              <a class="link-arrow" href="#">Ver todos <span class="icon i-chevron-right" aria-hidden="true"></span></a>
+            </div>
+
+            <table class="b-mov-table">
+              <caption class="sr-only">Últimos movimientos del ciclo 8</caption>
+              <thead>
+                <tr><th scope="col">Fecha</th><th scope="col">Concepto</th><th scope="col">Tipo</th><th scope="col">Importe</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="b-mov-date">08/11</td><td><span class="b-mov-concept">Nómina noviembre</span></td><td><span class="b-mov-type b-mov-type--income"><span class="icon i-arrow-down-left" aria-hidden="true"></span>Ingreso</span></td><td class="b-mov-amount b-mov-amount--positive">+2.450,00 €</td></tr>
+                <tr><td class="b-mov-date">07/11</td><td><span class="b-mov-concept">Compra semanal</span></td><td><span class="b-mov-type b-mov-type--expense"><span class="icon i-arrow-up-right" aria-hidden="true"></span>Gasto</span></td><td class="b-mov-amount b-mov-amount--negative">-86,40 €</td></tr>
+                <tr><td class="b-mov-date">06/11</td><td><span class="b-mov-concept">Traspaso a Fondo objetivo</span></td><td><span class="b-mov-type b-mov-type--transfer"><span class="icon i-transfer" aria-hidden="true"></span>Transferencia</span></td><td class="b-mov-amount">600,00 €</td></tr>
+                <tr><td class="b-mov-date">05/11</td><td><span class="b-mov-concept">Cuota préstamo vivienda</span></td><td><span class="b-mov-type b-mov-type--expense"><span class="icon i-arrow-up-right" aria-hidden="true"></span>Gasto</span></td><td class="b-mov-amount b-mov-amount--negative">-742,18 €</td></tr>
+                <tr><td class="b-mov-date">04/11</td><td><span class="b-mov-concept">Intereses cuenta</span></td><td><span class="b-mov-type b-mov-type--income"><span class="icon i-arrow-down-left" aria-hidden="true"></span>Ingreso</span></td><td class="b-mov-amount b-mov-amount--positive">+48,50 €</td></tr>
+              </tbody>
+            </table>
+
+
+            <div class="mobile-mov-list" aria-label="Últimos movimientos">
+              <article class="m-mov"><span class="icon-box icon-box--green"><span class="icon i-arrow-down-left" aria-hidden="true"></span></span><div class="m-mov-copy"><strong>Nómina noviembre</strong><span>08/11 · Ingreso · Cuenta principal</span></div><span class="m-mov-amount amount-positive">+2.450,00 €</span></article>
+              <article class="m-mov"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><div class="m-mov-copy"><strong>Compra semanal</strong><span>07/11 · Gasto · Alimentación</span></div><span class="m-mov-amount amount-negative">-86,40 €</span></article>
+              <article class="m-mov"><span class="icon-box icon-box--cyan"><span class="icon i-transfer" aria-hidden="true"></span></span><div class="m-mov-copy"><strong>Traspaso a Fondo objetivo</strong><span>06/11 · Transferencia · Cuenta principal → Fondo</span></div><span class="m-mov-amount">600,00 €</span></article>
+              <article class="m-mov"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><div class="m-mov-copy"><strong>Cuota préstamo vivienda</strong><span>05/11 · Gasto · Préstamo vivienda</span></div><span class="m-mov-amount amount-negative">-742,18 €</span></article>
+              <article class="m-mov"><span class="icon-box icon-box--green"><span class="icon i-arrow-down-left" aria-hidden="true"></span></span><div class="m-mov-copy"><strong>Intereses cuenta</strong><span>04/11 · Ingreso · Intereses</span></div><span class="m-mov-amount amount-positive">+48,50 €</span></article>
+            </div>
+
+            <div class="b-mov-foot">
+              <span class="meta">Los anulados se conservan y no computan.</span>
+              <span class="meta">Actualizado 09/11</span>
+            </div>
+          </section>
+
+          <section class="card b-budget" aria-labelledby="b-presupuesto">
+            <div class="b-budget-head">
+              <div>
+                <h2 id="b-presupuesto">Presupuesto del ciclo</h2>
+                <p>Ejecución por categoría</p>
+              </div>
+              <div class="b-budget-sum">
+                <strong>1.742,00 €</strong>
+                <span>de 1.950,00 € · 89%</span>
+              </div>
+            </div>
+
+            <div class="b-budget-list">
+              <div class="b-budget-row"><span class="b-budget-name">Vivienda</span><div class="track b-budget-track"><span style="width:100%"></span></div><span class="b-budget-values"><strong>650</strong> / 650 €</span></div>
+              <div class="b-budget-row"><span class="b-budget-name">Alimentación</span><div class="track b-budget-track"><span style="width:92%"></span></div><span class="b-budget-values"><strong>388</strong> / 420 €</span></div>
+              <div class="b-budget-row"><span class="b-budget-name">Transporte</span><div class="track b-budget-track"><span style="width:81%"></span></div><span class="b-budget-values"><strong>146</strong> / 180 €</span></div>
+              <div class="b-budget-row"><span class="b-budget-name">Servicios</span><div class="track b-budget-track"><span style="width:88%"></span></div><span class="b-budget-values"><strong>210</strong> / 240 €</span></div>
+              <div class="b-budget-row"><span class="b-budget-name">Ocio</span><div class="track b-budget-track"><span style="width:61%"></span></div><span class="b-budget-values"><strong>98</strong> / 160 €</span></div>
+              <div class="b-budget-row"><span class="b-budget-name">Otros</span><div class="track b-budget-track"><span style="width:100%"></span></div><span class="b-budget-values"><strong>200</strong> / 200 €</span></div>
+            </div>
+
+            <div class="b-budget-foot">
+              <span class="meta">Las cuotas compartidas no se suman dos veces.</span>
+              <a class="link-arrow" href="#">Ver presupuesto <span class="icon i-chevron-right" aria-hidden="true"></span></a>
+            </div>
+          </section>
+        </div>
+
+        <section class="card b-position" aria-label="Posición y cobertura">
+          <div class="b-pos-item"><span class="b-pos-label">Saldos</span><span class="b-pos-value">6</span><span class="b-pos-meta">4 liquidez · 1 ahorro · 1 bolsa</span></div>
+          <div class="b-pos-item"><span class="b-pos-label">Ahorro</span><span class="b-pos-value">7.400,00 €</span><span class="b-pos-meta">Fondo objetivo</span></div>
+          <div class="b-pos-item"><span class="b-pos-label">Inversión valorada</span><span class="b-pos-value">17.250,00 €</span><span class="b-pos-meta">Parcial 2/3</span></div>
+          <div class="b-pos-item"><span class="b-pos-label">Deuda no hipotecaria</span><span class="b-pos-value">4.800,00 €</span><span class="b-pos-meta">2 deudas · hipotecaria aparte</span></div>
+          <div class="b-pos-item"><span class="b-pos-label">Cobertura</span><span class="b-pos-value">Parcial</span><span class="b-pos-meta">Inversión 2 de 3</span></div>
+        </section>
+
+        <div class="b-page-foot">
+          <p class="synthetic-note"><span class="icon i-info" aria-hidden="true"></span>Datos sintéticos de prototipo. Las cifras y series son recursos de diseño; no son datos reales ni autorizan métricas nuevas en producción.</p>
+          <p class="right">Candidatos visuales · Inicio · Prototipo aislado</p>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <span>MyFinanzas App</span>
+        <span class="mock-badge">Candidatos visuales · Datos sintéticos · No producción</span>
+      </footer>
+    </div>
+  </div>
+  <script src="../app.js"></script>
+</body>
+</html>

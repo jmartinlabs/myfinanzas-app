@@ -1,0 +1,12 @@
+import { chromium } from "@playwright/test";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+const here = dirname(fileURLToPath(import.meta.url));
+const browser = await chromium.launch({ args: ["--lang=es-ES"] });
+const page = await browser.newPage({ viewport: { width: 3340, height: 1200 }, deviceScaleFactor: 1 });
+await page.goto("file://" + join(here, "comparativa-formularios-graphite.html"), { waitUntil: "load" });
+await page.evaluate(async () => { await document.fonts.ready; await Promise.all([...document.images].map((img) => img.complete ? Promise.resolve() : new Promise((r) => { img.onload = r; img.onerror = r; }))); });
+await page.waitForTimeout(200);
+console.log(await page.evaluate(() => ({ w: document.querySelector(".board").scrollWidth, h: document.querySelector(".board").scrollHeight })));
+await page.locator(".board").screenshot({ path: join(here, "comparativa-formularios-graphite.png") });
+await browser.close();
