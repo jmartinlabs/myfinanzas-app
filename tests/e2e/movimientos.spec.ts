@@ -123,6 +123,22 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       fullPage: true,
     });
   };
+  const graphiteEvidence = async (
+    name: string,
+    verify?: () => Promise<void>,
+  ) => {
+    const picker = page.getByLabel("Apariencia");
+    await picker.selectOption("graphite-lime");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    if (verify) await verify();
+    await evidence(`${name}-1440`);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await evidence(`${name}-820`);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence(`${name}-390`);
+    await picker.selectOption("dark-s");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  };
   const navigate = async (path: string) => {
     await page.goto(path);
   };
@@ -322,6 +338,11 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await expect(type).toBeFocused();
     await shot("validation-mobile");
+    await graphiteEvidence("g4-formulario-error", async () => {
+      await expect(
+        page.locator(".movement-form-page .field-error").first(),
+      ).toBeVisible();
+    });
     const fill = async (
       kind: string,
       name: string,
@@ -375,6 +396,18 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await shot("form-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await shot("form-desktop");
+    await graphiteEvidence("g4-formulario-graphite", async () => {
+      const head = page
+        .locator(".movement-form-page .ui-form-section-head")
+        .first();
+      await expect(head).toBeVisible();
+      const step = await head.evaluate((element) => {
+        const style = getComputedStyle(element, "::before");
+        return { content: style.content, width: parseFloat(style.width) };
+      });
+      expect(step.content).not.toBe("none");
+      expect(step.width).toBeGreaterThanOrEqual(24);
+    });
     await page
       .getByRole("button", { name: "Registrar movimiento", exact: true })
       .click();
@@ -389,6 +422,21 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       "octubre de 2026",
     );
     await shot("detail-desktop");
+    await graphiteEvidence("g4-detalle-graphite", async () => {
+      await expect(page.locator(".movement-detail")).toHaveAttribute(
+        "data-flow",
+        "inflow",
+      );
+      const importe = page.locator(
+        '.movement-detail [data-label="Importe"] dd',
+      );
+      await expect(importe).toHaveText("50,00 €");
+      expect(
+        await importe.evaluate((element) =>
+          Number.parseFloat(getComputedStyle(element).fontSize),
+        ),
+      ).toBeGreaterThanOrEqual(28);
+    });
     await page.setViewportSize({ width: 390, height: 844 });
     await shot("detail-mobile");
     expect((await get("/saldos/" + saldo.id)).saldo.posicion.importe).toBe(
@@ -647,6 +695,13 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await shot("rectification-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await shot("rectification-desktop");
+    await graphiteEvidence("g4-rectificacion-graphite", async () => {
+      const impact = page.locator(".movement-impact h2");
+      await expect(impact).toBeVisible();
+      expect(
+        await impact.evaluate((element) => getComputedStyle(element).color),
+      ).toBe("rgb(215, 255, 94)");
+    });
     await page
       .getByRole("button", { name: "Confirmar rectificación", exact: true })
       .click();
@@ -694,6 +749,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         .click();
       if (id === duplicate) {
         await shot("annulment-desktop");
+        await graphiteEvidence("g4-anulacion-graphite");
         await page.setViewportSize({ width: 390, height: 844 });
         await shot("annulment-mobile");
       }
@@ -708,6 +764,18 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       "120.00",
     );
     expect((await get("/ciclos/contexto")).referencia.fecha).toBe("2026-10-13");
+    await navigate(`/movimientos/${duplicate}`);
+    await graphiteEvidence("g4-detalle-anulado", async () => {
+      await expect(page.locator(".movement-detail")).toHaveAttribute(
+        "data-anulado",
+        "true",
+      );
+      expect(
+        await page
+          .locator('.movement-detail [data-label="Importe"] dd')
+          .evaluate((element) => getComputedStyle(element).textDecorationLine),
+      ).toContain("line-through");
+    });
     await navigate("/movimientos");
     await page
       .getByLabel("Estado de Movimiento", { exact: true })
