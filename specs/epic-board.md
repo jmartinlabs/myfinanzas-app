@@ -4,6 +4,10 @@ Convención: [identifier-convention](methodology/identifier-convention.md); equi
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
 funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como historia.
 
+Estados de relay vigentes: PENDIENTE, ENVIADO, RECIBIDO, VERIFICADO y BLOQUEADO
+([coordinator communication](methodology/coordinator-communication.md)). Las entradas históricas
+conservan las etiquetas con las que se escribieron; no se reescriben.
+
 | Funcional | SPEC | DEV | QA | MERGE | Aceptación | Evidencia / siguiente |
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |

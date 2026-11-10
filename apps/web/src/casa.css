@@ -1362,3 +1362,271 @@
     gap: 10px;
   }
 }
+
+/* ============================================================
+   Casa de cuentas · 1E
+   Saldos · catálogo y ficha sobre Table/DataList existentes.
+   Solo estilos y wrappers semánticos; sin cambios de datos.
+   ============================================================ */
+
+:root[data-theme="casa"] .saldos-page,
+:root[data-theme="casa"] .saldo-detail-page {
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+:root[data-theme="casa"] .saldos-page > .page-head,
+:root[data-theme="casa"] .saldo-detail-page > .page-head {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .saldos-page > .page-head h1,
+:root[data-theme="casa"] .saldo-detail-page > .page-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 4.4vw, 58px);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="casa"] .saldos-page > .context-note {
+  margin: 0;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .saldos-page > .catalog-panel {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+:root[data-theme="casa"] .saldos-page .filters {
+  grid-template-columns: minmax(250px, 2fr) repeat(3, minmax(130px, 1fr));
+  gap: 14px 22px;
+  padding: 20px 0 18px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .saldos-page .filters label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .saldos-page .filters input,
+:root[data-theme="casa"] .saldos-page .filters select {
+  margin-top: 5px;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+:root[data-theme="casa"] .saldos-page .list-toolbar {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .saldos-page .list-toolbar p,
+:root[data-theme="casa"] .saldos-page .list-footer > span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="casa"] .saldos-page .ui-table th {
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .saldos-page .ui-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-size: 13px;
+}
+
+:root[data-theme="casa"] .saldos-page .ui-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+:root[data-theme="casa"] .saldos-page .position-label {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+:root[data-theme="casa"] .saldos-page .table-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .saldos-page .list-footer {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .saldos-page .mobile-list > li {
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="casa"] .saldo-detail-page > .back {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .saldo-detail-page > .back:hover {
+  color: var(--action);
+}
+
+:root[data-theme="casa"] .saldo-detail-page .saldo-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 42px;
+  margin-top: 8px;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .position-panel {
+  grid-column: 1 / -1;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 22px 0;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .position-panel .eyebrow {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .position-panel h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .position-placeholder {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(54px, 6vw, 82px);
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .ui-form-section,
+:root[data-theme="casa"] .saldo-detail-page .lifecycle {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 22px 0;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .ui-form-section-title,
+:root[data-theme="casa"] .saldo-detail-page .lifecycle h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .ui-form-section > dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin: 0;
+}
+
+:root[data-theme="casa"] .saldo-detail-page .ui-form-section > dl > div {
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px dotted var(--border);
+}
+
+:root[data-theme="casa"] .saldo-detail-page dt {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .saldo-detail-page dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  :root[data-theme="casa"] .saldos-page .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :root[data-theme="casa"] .saldos-page .filters .search {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme="casa"] .saldo-detail-page .saldo-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme="casa"] .saldo-detail-page .ui-form-section > dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  :root[data-theme="casa"] .saldos-page > .page-head h1,
+  :root[data-theme="casa"] .saldo-detail-page > .page-head h1 {
+    font-size: 36px;
+  }
+
+  :root[data-theme="casa"] .saldos-page .filters {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px 0;
+  }
+
+  :root[data-theme="casa"] .saldo-detail-page .position-placeholder {
+    font-size: 54px;
+  }
+}

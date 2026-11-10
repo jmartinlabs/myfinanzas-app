@@ -66,7 +66,7 @@ After a significant delivery, recommend a new chat only when accumulated context
 - Every correction/query repeats the complete-return instruction; include the actual needed decision or content, not an absent attachment. Received reports are not verified results.
 - State whether the user must trigger an Agent Relay read/response and the exact human next action. Attribute each return only to its identified task/session; ask if ambiguous.
 - Use the existing current summary and milestone events. No per-message Git/worker polling, document writes or second board. A full-state request is read-only; show provenance, recorded candidate, blockers, gates and next action for every open task, declaring what was not refreshed.
-- When work/actions remain, end with 2–4 compact status lines, using relay states from the communication contract. A delivered packet is PENDIENTE DE ENVIAR until user confirmation; native agents retain runtime states only.
+- When work/actions remain, end with 2–4 compact status lines, using relay states from the communication contract. A delivered packet stays PENDIENTE until the user confirms publication; native agents retain runtime states only.
 - Every final or stopped reply states the responsible party, the exact human action (or "ninguna"), and the state plus reason for waiting. "Continúo" is followed by execution, never by another closing promise. Apply the [closure contract](../../../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping) rather than repeating it here.
 - No received handoff grants merge, scope or resumption authorization. Keep all MyFinanzas financial, independent-QA, model/quota and separate development gates.
 
