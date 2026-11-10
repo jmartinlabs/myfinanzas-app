@@ -2088,4 +2088,4 @@ pruebas y documental; no es aceptación financiera, no acredita P7 ni equivalenc
   y dos agotaron el timeout de 15 min del job; la causa E2E concreta no está verificada en
   los logs disponibles. #341 es un cambio solo documental; no altera código ni aceptación.
 - **Decisiones materiales abiertas:** AC09 §18.3.B (A/B/C/D); cuatro puntos de contrato
-  E4.5; D08–D15 de F1; evidencia real DT7 (M1/M2/M5/M8).
+  E4.5; D04 y D08–D15 de F1; evidencia real DT7 (M1/M2/M5/M8).
