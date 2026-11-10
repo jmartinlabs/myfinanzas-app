@@ -1,0 +1,414 @@
+/* Graphite Lime · G1 · fundamento visual
+ *
+ * Capa aislada de la identidad Graphite Lime. Se importa desde `style.css`
+ * antes de las reglas base y todo selector queda bajo
+ * `html[data-theme="graphite-lime"]`; no define tokens de otros temas.
+ * No altera estructura, rutas, datos ni comportamiento.
+ */
+
+html[data-theme="graphite-lime"] {
+  --graphite-card-bg: linear-gradient(160deg, #171a16 0%, #111311 100%);
+  --graphite-card-border: #2a2f28;
+  --graphite-card-shadow: 0 12px 30px rgb(0 0 0 / 0.24);
+  --graphite-topbar-bg: rgb(9 10 9 / 0.78);
+  --graphite-input-bg: #0c0e0c;
+}
+
+html[data-theme="graphite-lime"] body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      ellipse 860px 500px at 88% -12%,
+      rgb(215 255 94 / 0.055),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 620px 420px at 0% 108%,
+      rgb(111 224 168 / 0.035),
+      transparent 64%
+    ),
+    linear-gradient(145deg, #0d0f0d 0%, #0a0b0a 55%, #080908 100%);
+}
+
+/* Shell ------------------------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .sidebar {
+  background-color: var(--sidebar);
+  background-image: linear-gradient(180deg, #080908 0%, #060706 100%);
+  border-right-color: var(--sidebar-border);
+  box-shadow: inset -1px 0 0 rgb(215 255 94 / 0.035);
+}
+
+html[data-theme="graphite-lime"] .brand {
+  letter-spacing: -1.3px;
+}
+
+html[data-theme="graphite-lime"] .brand small {
+  color: var(--sidebar-muted);
+  letter-spacing: 1.55px;
+}
+
+html[data-theme="graphite-lime"] .nav-group {
+  color: var(--sidebar-muted);
+  letter-spacing: 1.7px;
+}
+
+html[data-theme="graphite-lime"] .nav-link,
+html[data-theme="graphite-lime"] .nav-active {
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+html[data-theme="graphite-lime"] .nav-link:hover {
+  border-color: var(--sidebar-border);
+  background: var(--sidebar-hover);
+}
+
+html[data-theme="graphite-lime"] .nav-active {
+  border-color: var(--sidebar-active-bg);
+  box-shadow: 0 0 22px rgb(215 255 94 / 0.12);
+}
+
+html[data-theme="graphite-lime"] .nav-icon {
+  width: 20px;
+  text-align: center;
+  color: var(--sidebar-muted);
+}
+
+html[data-theme="graphite-lime"] .nav-active .nav-icon {
+  color: currentColor;
+}
+
+html[data-theme="graphite-lime"] .sidebar-bottom {
+  border-top-color: var(--sidebar-border);
+}
+
+html[data-theme="graphite-lime"] .menu-toggle {
+  border: 1px solid var(--sidebar-border);
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text);
+}
+
+html[data-theme="graphite-lime"] .menu-toggle:hover {
+  border-color: var(--sidebar-active-bg);
+}
+
+html[data-theme="graphite-lime"] .global-header {
+  background: var(--graphite-topbar-bg);
+  border-bottom-color: var(--border);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.025);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+html[data-theme="graphite-lime"] .global-header strong {
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .header-label {
+  color: var(--muted);
+  letter-spacing: 1.35px;
+}
+
+html[data-theme="graphite-lime"] .theme-picker select {
+  border-color: var(--control-border);
+  border-radius: 7px;
+  background: var(--graphite-input-bg);
+}
+
+html[data-theme="graphite-lime"] .local-badge {
+  border-color: var(--border);
+  background: var(--graphite-input-bg);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .global-footer {
+  border-top-color: var(--border);
+  background: #080908;
+}
+
+/* Page language ---------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .page-head h1 {
+  font-size: clamp(28px, 2.4vw, 34px);
+  letter-spacing: -1.2px;
+  font-weight: 720;
+}
+
+html[data-theme="graphite-lime"] .page-head .eyebrow {
+  color: var(--accent);
+  letter-spacing: 1.9px;
+}
+
+html[data-theme="graphite-lime"] .page-head .muted {
+  max-width: 72ch;
+}
+
+html[data-theme="graphite-lime"] .page-foot {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* Surfaces and panels ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .panel,
+html[data-theme="graphite-lime"] .catalog-panel {
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .inicio-metric {
+  border-color: var(--graphite-card-border);
+  border-radius: 10px;
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .inicio-metric[data-clase="plan"],
+html[data-theme="graphite-lime"] .inicio-metric[data-clase="objetivo"] {
+  background-color: var(--surface-3);
+  background-image: linear-gradient(160deg, #1a1e18 0%, #111411 100%);
+}
+
+html[data-theme="graphite-lime"] .alert {
+  border-radius: 10px;
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .notice {
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+
+html[data-theme="graphite-lime"] .empty {
+  border: 1px dashed var(--graphite-card-border);
+  border-radius: 10px;
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+}
+
+html[data-theme="graphite-lime"] .ui-empty {
+  border-color: var(--graphite-card-border);
+  background-color: var(--surface-2);
+  background-image: var(--graphite-card-bg);
+}
+
+/* Controls --------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .primary {
+  border-color: var(--action);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+html[data-theme="graphite-lime"] .primary:hover {
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.26);
+}
+
+html[data-theme="graphite-lime"] .secondary {
+  border-color: var(--control-border);
+  border-radius: 8px;
+  background-color: var(--surface);
+  background-image: linear-gradient(180deg, #171a16 0%, #111311 100%);
+}
+
+html[data-theme="graphite-lime"] .secondary:hover {
+  border-color: #5b6655;
+  background: #1b1f1a;
+}
+
+html[data-theme="graphite-lime"] .text-button {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+}
+
+html[data-theme="graphite-lime"] input,
+html[data-theme="graphite-lime"] select,
+html[data-theme="graphite-lime"] textarea {
+  border-color: var(--control-border);
+  border-radius: 8px;
+  background: var(--graphite-input-bg);
+}
+
+html[data-theme="graphite-lime"] input:focus-visible,
+html[data-theme="graphite-lime"] select:focus-visible,
+html[data-theme="graphite-lime"] textarea:focus-visible {
+  border-color: var(--focus);
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+html[data-theme="graphite-lime"] input[aria-invalid="true"],
+html[data-theme="graphite-lime"] select[aria-invalid="true"],
+html[data-theme="graphite-lime"] textarea[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+html[data-theme="graphite-lime"] .switch {
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+}
+
+html[data-theme="graphite-lime"] .switch.on {
+  border-color: var(--action);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Badges and tags -------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .ui-badge {
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--graphite-input-bg);
+  font-size: var(--text-xs);
+  letter-spacing: 0.75px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .ui-badge-ok {
+  background: var(--positive-soft);
+}
+
+html[data-theme="graphite-lime"] .ui-badge-partial {
+  background: var(--warning-soft);
+}
+
+html[data-theme="graphite-lime"] .ui-badge-info {
+  background: var(--accent-soft);
+}
+
+html[data-theme="graphite-lime"] .tag {
+  padding: 3px 9px;
+  border-color: var(--graphite-card-border);
+  border-radius: var(--radius-pill);
+  background: var(--graphite-input-bg);
+  font-size: var(--text-xs);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .tag.inactive {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* Tables and mobile cards ------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .ui-table-wrap {
+  border-radius: 10px;
+}
+
+html[data-theme="graphite-lime"] .ui-table th,
+html[data-theme="graphite-lime"] .desktop-list th {
+  background: var(--table-head);
+  border-bottom-color: var(--border);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .ui-table td,
+html[data-theme="graphite-lime"] .desktop-list td {
+  border-top-color: #1e221d;
+}
+
+html[data-theme="graphite-lime"] .ui-table tbody tr:hover,
+html[data-theme="graphite-lime"] .desktop-list tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .ui-table tbody tr:focus-within,
+html[data-theme="graphite-lime"] .desktop-list tbody tr:focus-within {
+  background: var(--selected);
+}
+
+html[data-theme="graphite-lime"] .desktop-list td a,
+html[data-theme="graphite-lime"] .ui-table a {
+  color: var(--text);
+  text-decoration-color: var(--accent-border);
+}
+
+html[data-theme="graphite-lime"] .desktop-list td a:hover,
+html[data-theme="graphite-lime"] .ui-table a:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .table-id {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .ui-data-list-item {
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .ui-data-list-label {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .ui-data-list-field {
+  border-top-color: #1e221d;
+}
+
+html[data-theme="graphite-lime"] .table-scroll:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* Numbers and states ----------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .ui-amount-value,
+html[data-theme="graphite-lime"] .inicio-value,
+html[data-theme="graphite-lime"] .money {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .ui-metric-title {
+  letter-spacing: -0.1px;
+}
+
+html[data-theme="graphite-lime"] .ui-metric-class,
+html[data-theme="graphite-lime"] .inicio-clase {
+  color: var(--muted);
+  letter-spacing: 1.1px;
+}
+
+html[data-theme="graphite-lime"] .inicio-estado-ok,
+html[data-theme="graphite-lime"] .ui-badge-ok {
+  color: var(--positive);
+}
+
+html[data-theme="graphite-lime"] .inicio-estado-partial {
+  color: var(--warning);
+}
+
+/* Small screens: preserve the existing shell and touch targets. */
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .page-head h1 {
+    font-size: 28px;
+  }
+
+  html[data-theme="graphite-lime"] .global-header {
+    background: var(--bg);
+  }
+
+  html[data-theme="graphite-lime"] .panel,
+  html[data-theme="graphite-lime"] .catalog-panel {
+    border-radius: 10px;
+  }
+}

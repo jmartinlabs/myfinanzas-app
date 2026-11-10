@@ -174,6 +174,58 @@ Límites:
 Esta enmienda sustituye únicamente la cláusula de «no otros candidatos» en lo que respecta a
 Casa 1A; el resto de la especificación y las decisiones de Graphite Lime se conservan.
 
+### 2.4 Enmienda UI-G2 · Integración visual completa de Graphite Lime (2026-11-10)
+
+Ratificada por el usuario el 2026-11-10 como dirección de integración visual. Autoriza
+**G1 · Fundamento y shell**; G2a/G2b (Inicio), G3 (Movimientos lista) y G4 (detalle/formularios)
+quedan planificados y requieren autorización individual. G1b, G2c, G3b y G4b son opcionales y
+se difieren. Casa UI-P1 (#363), 1A (#364), 1B (#370) y 1C (#371) están integradas en `test`
+(`076288e`); esta sección mantiene la numeración 2.4.
+
+**Alcance autorizado para G1:**
+
+- CSS aislado en `apps/web/src/graphite.css`, importado de forma aditiva y limitado a
+  `html[data-theme="graphite-lime"]`.
+- Superficies, elevación, tipografía, botones, inputs, badges, tablas, tarjetas, foco y shell
+  (sidebar, header, footer) con la identidad del prototipo, sin cambiar rutas, permisos, orden
+  de navegación ni breakpoints globales.
+- Conservar la sidebar en 236 px y el contenido en `--content-max`; la diferencia con el
+  prototipo es una desviación consciente.
+- Pruebas unitarias/E2E, capturas 1440/820/390, contraste, foco, teclado, zoom y regresión de
+  Dark, Light, Hybrid y Casa.
+
+**Planificación posterior, no autorizada en esta enmienda:**
+
+- G2a/G2b: composición de Inicio con los datos publicados por `/api/resumen-inicio`; sin
+  métricas nuevas ni cálculos en el navegador.
+- G3/G4: composición de Movimientos lista, detalle y formularios existentes; sin cambiar
+  filtros, contratos, validaciones ni payloads. G3 conserva la paridad exacta tabla/tarjeta.
+- G2c (recientes/presupuesto), G3b (tarjetas compactas), G4b (detalle inline) y G1b (sidebar
+  ciclo/cobertura) requieren decisión separada.
+- G5a/G5b son programas de PRs por módulo y se autorizan por módulo tras la primera ola.
+
+**Invariantes y límites:**
+
+- Dark, Light, Hybrid y Casa conservan su identidad; Casa 1A/1B/1C están integradas y el
+  catálogo mantiene cinco apariencias. No se modifica `themes.ts`, `theme-boot.js`, los tokens de Casa
+  ni el mecanismo `mf-theme`/`dark-s`.
+- G1 solo toca `style.css` para el import aditivo de `graphite.css`; no toca `Inicio.tsx`,
+  `Movimientos.tsx` ni `ui.tsx`. Cualquier cambio compartido posterior en componentes o
+  composición se coordina antes de ejecutarse.
+- El DOM compartido de Inicio (G2a) usará secciones semánticas estables `data-inicio-section`
+  (`hero`, `kpis`, `cycle`, `rail`, `position`, `coverage`; `recent`/`budget` solo si se
+  autoriza G2c) en las secciones compartidas que correspondan. Casa 1B ya implementa una
+  portada editorial dentro de `Inicio.tsx`; G2a debe componer Graphite sin duplicar lógica, sin
+  romper la rama Casa y sin imponer una reescritura rígida.
+- No se modifican API, DTO, SQLite, Excel, contratos financieros, datos reales ni motores.
+- No se inventan métricas, totales, series, porcentajes ni movimientos. Si falta un dato
+  publicado, se omite o se difiere.
+- 1B (`prefers-reduced-motion`) sigue fuera de alcance; G1 no añade movimiento nuevo.
+- G1 requiere PR, QA independiente y evidencia visual; no autoriza merge ni despliegue.
+
+El análisis y el plan detallado se conservan en la
+[PR #365](https://github.com/jmartinlabs/myfinanzas-app/pull/365).
+
 ## 3. Dependencias
 
 | Dependencia | Estado | Qué aporta | Límite para `UI` |
@@ -182,7 +234,7 @@ Casa 1A; el resto de la especificación y las decisiones de Graphite Lime se con
 | E4.9 / cierre y foto | Integrada `0176ffc` (#200), QA APTO CON RESERVAS | Patrones de operación irreversible y bloqueo | No reabrir rutas, contratos ni estados |
 | E4.10 / reapertura | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1`, no fusionado; 24 AC `UNRUN` | Patrón futuro de reapertura/reapertura cancelada | No anticipar pantallas, clases ni rutas de E4.10 hasta su UI |
 | E4.11 / fotos periodo | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV | Contexto de consulta | No fijar pantallas antes de su SPEC |
-| Temas #198 | Tres temas cerrados `0b8aade`; Graphite 1A integrado `bff714e` (#356); enmienda UI-P1 2026-11-10 | Tokens, selector y ampliación Casa 1A | No cambiar los cuatro temas existentes; Casa solo en 1A |
+| Temas #198 | Tres temas cerrados `0b8aade`; Graphite 1A integrado `bff714e` (#356); UI-P1 Casa 2026-11-10; UI-G2 2026-11-10 con G1 autorizado | Tokens, selector, ampliación Casa 1A y fundamento visual Graphite G1 | No cambiar los temas existentes; Casa solo en 1A; Graphite G1 solo shell/componentes |
 
 ## 4. Bloques `UI · DEV-01…07`
 
