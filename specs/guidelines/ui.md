@@ -98,7 +98,8 @@ plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
   y `ND`, `0,00 €`, `No aplica` y `Sin datos` siguen siendo distinguibles.
 
 **Alcance medido:** cinco pantallas (`inicio`, `movimientos`, `saldo-ficha`, `saldo-form`,
-`cierre`) × tres temas × 1440×1000 y 390×844, más 720×500 para la equivalencia de zoom.
+`cierre`) × cuatro apariencias (`light-s`, `dark-s`, `hybrid-s`, `casa`) × 1440×1000 y 390×844,
+más 720×500 para la equivalencia de zoom. Graphite Lime conserva su QA específico.
 **Solo Chromium**, fixtures ficticios, sin lector de pantalla, sin Firefox/WebKit y sin
 auditoría WCAG completa.
 
@@ -110,7 +111,7 @@ del repositorio; `tests/e2e/ui-dev07.spec.ts` forma parte del E2E normal (`bun r
 | Paso | Comando | Salida |
 | --- | --- | --- |
 | Línea base diagnóstica | `UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts` | `artifacts/ui-dev07-baseline/report.json`; sin capturas ni aserciones duras |
-| Matriz AA | `bunx playwright test tests/e2e/ui-dev07.spec.ts` | 30 capturas base en `artifacts/ui-dev07/base/` y 15 críticas en `artifacts/ui-dev07/critical/`; aserciones duras |
+| Matriz AA | `bunx playwright test tests/e2e/ui-dev07.spec.ts` | 40 capturas base en `artifacts/ui-dev07/base/` y 20 críticas en `artifacts/ui-dev07/critical/`; aserciones duras |
 | Verificación completa | `python3.12 scripts/verify --full` | candidato de cierre; **Linux**; incluye los E2E |
 
 - La línea base es **opt-in**: sin `UI_DEV07_AUDIT=1` no registra pruebas y es solo diagnóstica.
@@ -165,7 +166,7 @@ Trazabilidad de los incrementos:
 - [#312](https://github.com/jmartinlabs/myfinanzas-app/pull/312) — I2, tokens y AA (`ba24c29`):
   foco del sidebar, texto funcional y objetivos táctiles.
 - [#316](https://github.com/jmartinlabs/myfinanzas-app/pull/316) — I4, matriz AA (`b3571aa`):
-  30 capturas base, 15 críticas y las aserciones duras.
+  40 capturas base, 20 críticas y las aserciones duras.
 - I3 no abrió PR: el paquete preveía reducir I3 a evidencia si no había residuo propio; la
   cabecera de I4 registra que la auditoría sobre `ba24c29` no encontró residuo de producto.
 - Cierre AA posterior a I5: la matriz mide bordes de campo y glifos de estado, añade la guarda
