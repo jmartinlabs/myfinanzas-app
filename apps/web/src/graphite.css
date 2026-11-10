@@ -1067,6 +1067,11 @@ html[data-theme="graphite-lime"] .movements-page .page-head .primary {
   white-space: nowrap;
 }
 
+html[data-theme="graphite-lime"] .movement-new-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
 html[data-theme="graphite-lime"] .movement-new-icon::before {
   content: "+";
   font-size: 16px;

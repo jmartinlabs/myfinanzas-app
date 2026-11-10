@@ -535,6 +535,8 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await expect(page.locator(".desktop-list")).toBeVisible();
       await expect(page.locator(".movements-cards")).toBeHidden();
       await evidence(`movimientos-${theme}-1440`);
+      if (theme !== "graphite-lime")
+        await expect(page.locator(".list-footer-total")).toBeHidden();
       if (theme === "graphite-lime") {
         const tracks = await page
           .locator(".movements-list .filters")
@@ -792,6 +794,11 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     for (const theme of THEMES) {
       await themeSelect.selectOption(theme);
       await expect(page.getByRole("alert")).toContainText("Consulta de prueba");
+      if (theme === "graphite-lime")
+        await expect(page.locator(".movement-status-dot")).toHaveAttribute(
+          "data-state",
+          "error",
+        );
       await expectNoOverflow();
       await evidence(`movimientos-error-${theme}-390`);
     }
@@ -818,6 +825,11 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     for (const theme of THEMES) {
       await themeSelect.selectOption(theme);
       await expect(page.getByRole("status")).toHaveText("Cargando Movimientos…");
+      if (theme === "graphite-lime")
+        await expect(page.locator(".movement-status-dot")).toHaveAttribute(
+          "data-state",
+          "loading",
+        );
       await expectNoOverflow();
       await evidence(`movimientos-carga-${theme}-390`);
     }
@@ -866,6 +878,10 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await themeSelect.selectOption(theme);
       await expect(page.getByText("Página 2", { exact: true })).toBeVisible();
       await expectNoOverflow();
+      if (theme === "graphite-lime")
+        await expect(page.locator(".list-footer-total")).toContainText(
+          "de 3 · 100 por página",
+        );
       await evidence(`movimientos-paginacion-${theme}-390`);
     }
     await themeSelect.selectOption("hybrid-s");

@@ -600,10 +600,11 @@ function MovementList({
         <div className="list-footer">
           <span className="list-footer-pages">
             <span>Página {page}</span>
-            <span className="list-footer-total">
-              de {Math.max(1, Math.ceil((data?.total ?? 0) / 100))} · 100 por
-              página
-            </span>
+            {data && (
+              <span className="list-footer-total">
+                de {Math.max(1, Math.ceil(data.total / 100))} · 100 por página
+              </span>
+            )}
           </span>
           <div className="actions">
             <button
