@@ -15,8 +15,9 @@ IMPLEMENTADA** y requiere un paquete DEV independiente.
 
 ## 1. Resumen ejecutivo
 
-**Defecto: sí.** Cuando una fuente declarada tiene `intervalosArchivo: []`, el
-motor omite por completo la comprobación de contención de E45-A3:
+**Defecto: sí (lógica; incidencia real no medida).** Cuando una fuente declarada
+tiene `intervalosArchivo: []`, el motor omite por completo la comprobación de
+contención de E45-A3:
 
 ```ts
 // apps/api/src/historico-precontrol.ts:1345 (estado investigado)
@@ -33,10 +34,14 @@ propia fuente no acredite ningún intervalo de archivo. Si otra fuente (o un
 `controlDetalle`) completa la cobertura global, el total puede quedar
 `Verificado` e incluir ese importe.
 
-**Certificable: sí, en las condiciones exactas del §3.** No hace falta que la
-fuente sin intervalos esté ausente del inventario; basta con que no bloquee por
-`FuenteAusente`. Los casos 2a, 2c, 3a y 3b observan `estadoTotal=Verificado` y
-`total` no nulo con un importe de una fuente que no aporta cobertura propia.
+**Certificable: sí, en las condiciones exactas del §3.** El caso 2a deja
+deliberadamente SRC-1 fuera de `fuentesEsperadas` **como condición del fixture**
+para evitar `FuenteAusente` y aislar la contención; no es una segunda
+contradicción independiente ni un inventario que se proponga como válido. El
+mismo defecto se observa con la fuente esperada en 2c (expectativa fuera del
+corte), 3a (control cubre la expectativa) y 3b (control cubre la expectativa de
+SRC-1): en los cuatro casos `estadoTotal=Verificado` y `total` no nulo incluyen
+un importe de una fuente que no aporta cobertura propia.
 
 **Contradicción con SPEC20/E45-A3: sí.** La cobertura global puede ser
 `Completa` por la unión de otras fuentes/controles, pero E45-A3 exige además que
@@ -52,13 +57,15 @@ registro. Lo que hace es atribuir el importe a `archivo` sin la comprobación de
 contención; no amplía `cobertura.intervalos`. Es una atribución por omisión, no
 una cobertura inferida.
 
-**Riesgo financiero real:** un total marcado `Verificado` puede incluir importes
-de una fuente cuya cobertura no está acreditada (fuente obsoleta, parcial, mal
-declarada o no inventariada). El consumidor no puede distinguir ese importe de
-uno respaldado por cobertura. El caso 2a lo demuestra con un total `100.00`
-`Verificado` sostenido solo por SRC-2, incluyendo los `100.00` de SRC-1, que no
-tiene intervalos y ni siquiera aparece en `fuentesEsperadas`. El caso 3b lo
-demuestra incluso con la fuente esperada: el registro de SRC-1 cae fuera de su
+**Riesgo material (frecuencia no medida):** si el dato ocurre, un total marcado
+`Verificado` puede incluir importes de una fuente cuya cobertura no está
+acreditada (fuente obsoleta, parcial, mal declarada o no inventariada). El
+consumidor no puede distinguir ese importe de uno respaldado por cobertura. No
+se ha medido la frecuencia en datos reales ni se afirma que ocurra; los fixtures
+sintéticos muestran que el motor lo permite. El caso 2a lo muestra con un total
+`100.00` `Verificado` sostenido solo por SRC-2, incluyendo los `100.00` de SRC-1,
+que no tiene intervalos y ni siquiera aparece en `fuentesEsperadas`. El caso 3b
+lo muestra incluso con la fuente esperada: el registro de SRC-1 cae fuera de su
 propio `controlDetalle` y aun así se certifica.
 
 ## 2. Matriz de casos
@@ -72,7 +79,7 @@ Salvo que se indique, el registro `AH001` está `Verificado`, `Mapeado`,
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | SRC-1 `[]`, sin control; esperada `Presente` todo 2026; sin otras fuentes | `01/01–12/31` | `100.00` | `100.00` | `NoDisponible` / `NoDisponible` | `NoDisponible` | `null` | `SinFuente` / `FuenteAusente` | `[]` | No |
 | 1b | Igual que 1 pero sin `fuentesEsperadas` | `01/01–12/31` | `100.00` | `100.00` | `NoDisponible` / `NoDisponible` | `NoDisponible` | `null` | `SinFuente` / `SinFuente` | `[]` | No |
-| 2a | SRC-1 `[]`, sin control, **no esperada**; SRC-2 `01/01–12/31`; solo SRC-2 esperada | `01/01–12/31` | `100.00` | `100.00` | `Completa` / `Completa` | `Verificado` | `100.00` | `null` / `null` | `[]` | **Sí** |
+| 2a | SRC-1 `[]`, sin control, **fuera de `fuentesEsperadas`** (montaje para evitar `FuenteAusente`); SRC-2 `01/01–12/31`; solo SRC-2 esperada | `01/01–12/31` | `100.00` | `100.00` | `Completa` / `Completa` | `Verificado` | `100.00` | `null` / `null` | `[]` | **Sí** |
 | 2b | SRC-1 `[]`, sin control, esperada `Presente` todo 2026; SRC-2 cubre todo 2026 | `01/01–12/31` | `100.00` | `100.00` | `Parcial` / `Parcial` | `NoVerificable` | `null` | `FuenteAusente` / `FuenteAusente` | `[]` | No |
 | 2c | SRC-1 `[]`, sin control, esperada `Presente` **07/01–12/31** (fuera del corte); SRC-2 cubre `01/01–06/30`; corte `06/30` | `02/01–05/31` | `100.00` | `100.00` | `Completa` / `Completa` | `Verificado` | `100.00` | `null` / `null` | `[]` | **Sí** |
 | 3a | SRC-1 `[]`, `controlDetalle 01/01–12/31`; esperada todo 2026 | `01/01–12/31` | `100.00` | `100.00` | `Completa` / `Completa` | `Verificado` | `100.00` | `null` / `null` | `[]` | **Sí** |
@@ -82,12 +89,15 @@ Salvo que se indique, el registro `AH001` está `Verificado`, `Mapeado`,
 
 Notas de la matriz:
 
-- En 2a la fuente sin intervalos **no** está en `fuentesEsperadas`. El motor no
-  rechaza esa inconsistencia: el universo solo declara SRC-2 y la cobertura
-  global queda `Completa`.
+- En 2a SRC-1 se deja fuera de `fuentesEsperadas` **como condición del
+  fixture** para evitar `FuenteAusente` y aislar la contención. No es una
+  segunda contradicción independiente ni implica que un inventario DT7 pueda
+  omitir una fuente con registros; el motor no valida esa omisión, pero el
+  defecto principal se observa igualmente con la fuente esperada en 2c/3a/3b.
 - En 2b el importe sigue en `archivo` y `subtotalConocido`; lo único que impide
-  el total es `FuenteAusente`. Es decir, el defecto de contención no desaparece:
-  solo queda enmascarado por otro bloqueo.
+  el **total** es `FuenteAusente`. Es decir, el defecto de contención no
+  desaparece: solo queda enmascarado por otro bloqueo. El bloqueo es del total,
+  no del importe ya sumado a `archivo`/`subtotalConocido`.
 - En 2c la expectativa de SRC-1 cae fuera de `[inicio, corte]`; el motor la
   considera fuera de alcance y no la declara ausente (mismo criterio que P-10).
   El registro de SRC-1 dentro del corte suma y el total se certifica con la
@@ -127,8 +137,10 @@ Para que el **total** sea `Verificado` hace falta además:
 7. Universo acreditado y cobertura global `Completa` por la unión de
    `intervalosArchivo` + `controlDetalle` de las fuentes declaradas.
 8. Ninguna fuente esperada queda ausente en la ventana consultada. La fuente
-   sin intervalos puede no bloquear si:
-   - no figura en `fuentesEsperadas` (2a), o
+   sin intervalos puede no bloquear el total si:
+   - SRC-1 no figura en `fuentesEsperadas` (solo como montaje de 2a para evitar
+     `FuenteAusente`; no es una condición que se proponga para un inventario
+     real), o
    - su intervalo esperado no solapa `[inicio, corte]` (2c; mismo criterio que
      P-10), o
    - su estado esperado es `NoAplica`, o
@@ -136,6 +148,12 @@ Para que el **total** sea `Verificado` hace falta además:
 9. No hay huecos, conflictos, `sinClasificar`, agregados no atribuibles ni
    Partidas fuera del universo; todos los items con registros elegibles quedan
    `Verificado`.
+
+`HuecoDemostrado` y `FuenteAusente` bloquean el **total** (`valor=null`,
+`estadoTotal` no verificado), pero no retiran el importe ya sumado de
+`archivo`/`subtotalConocido`. La única exclusión del importe es la elegibilidad
+de E45-A3 (o los filtros de verificación, representación o conflicto); por eso
+2b conserva el importe aunque el total no se certifique.
 
 En 2b la fuente sí es esperada `Presente` y su intervalo esperado no está
 cubierto por nada de esa fuente: `fuenteEsperadaCubierta` devuelve `false`,
@@ -566,6 +584,18 @@ otros motivos; siguen siendo contrarios a E45-A3, que exige
   problema es que la ausencia de cobertura propia no impide la suma cuando otra
   fuente completa la cobertura global.
 
+### 5.4 ¿Hace falta una enmienda de SPEC20?
+
+Para el núcleo, **no**: E45-A3 ya exige que un registro no contenido en ningún
+`intervalosArchivo` aplicable no sume y quede como `FueraDeIntervalosArchivo`.
+La corrección es implementar la enmienda vigente, no cambiarla; solo requiere
+autorización DEV y actualización del testplan.
+
+Una enmienda de SPEC20 solo sería necesaria si se quisiera **mantener F2d**, es
+decir, permitir que una fuente con `intervalosArchivo: []` (o solo con
+`controlDetalle`) sume registros de archivo. Eso revertiría E45-A3 y exigiría una
+decisión explícita; no se propone aquí.
+
 ## 6. Propuesta de corrección mínima — **NO IMPLEMENTADA**
 
 > **Estado:** propuesta documental. No se ha modificado el motor, el DTO, la
@@ -574,27 +604,48 @@ otros motivos; siguen siendo contrarios a E45-A3, que exige
 
 ### 6.1 Cambio propuesto
 
-En `analizarItem` (`apps/api/src/historico-precontrol.ts`), sustituir el guard
-que omite la comprobación cuando la lista está vacía:
+En `analizarItem` (`apps/api/src/historico-precontrol.ts`) la comprobación debe
+ejecutarse siempre, incluso con lista vacía, pero **solo para el registro que,
+tras los filtros existentes, llegaría a `archivo`**. No basta con quitar el
+guard: hay que mover la comprobación justo antes de `archivo += importe` y
+respetar esta precedencia.
+
+**Precedencia propuesta (para no sobre-bloquear):**
+
+1. `Rechazado`, conflictos de identidad/versión, `DosFuentes` y solapes ya
+   resueltos se `continue` antes; no cambian y no se convierten en
+   `FueraDeIntervalosArchivo`.
+2. `corteArchivo` o corte de consulta excedido se mantiene como `CorteExcedido`
+   antes de la contención (4b).
+3. `NoVerificado`: conserva `VerificacionPendiente`; no se evalúa A3.
+4. Regularización 2026 sin evidencia/motivo Q5=A: conserva
+   `RegularizacionPendiente`; no se evalúa A3.
+5. `representadoEnMovimientos=Si` con vínculo y evidencia: se excluye y el
+   Movimiento cuenta una vez; no se evalúa A3.
+6. `representadoEnMovimientos=Desconocido`, o `No` sin evidencia, conserva
+   `DuplicadoAmbiguo`; no se evalúa A3.
+7. Solo el registro que, tras esos filtros, va a sumarse a `archivo` se somete a
+   la contención de A3.
+8. **Cero:** si el registro llega a `archivo` con `importe=0`, la contención se
+   evalúa igual y, si queda fuera, se expone y bloquea como cualquier otro
+   registro. No se propone excepción: A3 no la contempla y un cero fuera de
+   tramo no puede acreditar un `0,00` verificado ni cobertura. La precedencia
+   anterior solo evita que un cero ya filtrado (`NoVerificado`, vinculado o
+   `Desconocido`) se convierta en `FueraDeIntervalosArchivo`. Si el producto
+   quisiera que un cero fuera de tramo no bloqueara un total positivo, sería una
+   regla nueva y requeriría decisión expresa.
+
+La contención usa **misma Partida y misma clase** que el registro, además de la
+regla de ejercicio de la regularización:
 
 ```ts
-// Actual (investigado)
-if (fuenteRegistro && fuenteRegistro.intervalosArchivo.length > 0) {
-  const tramosAplicables = fuenteRegistro.intervalosArchivo
-    .filter(...)
-    .map(...);
-  const contenido = unirIntervalos(tramosAplicables).some(...);
-  if (!contenido) { /* agregado FueraDeIntervalosArchivo */ }
-}
-```
-
-por una comprobación que también se ejecute con lista vacía:
-
-```ts
-// Propuesto (NO implementado)
+// Propuesto (NO implementado): ubicado justo antes de `archivo += importe`
 if (fuenteRegistro) {
   const tramosAplicables = fuenteRegistro.intervalosArchivo
-    .filter((tramo) => tramo.partidaId === partidaId)
+    .filter(
+      (tramo) =>
+        tramo.partidaId === partidaId && tramo.clase === registro.clase,
+    )
     .filter(
       (tramo) =>
         tramo.clase !== "Regularizacion2026" || entrada.ejercicio === 2026,
@@ -626,6 +677,13 @@ No se propone añadir `controlDetalle` a la contención: E45-A3 habla solo de
 fuera de los tramos. Si el producto quisiera que el control contuviera registros
 de archivo, sería una regla nueva y requeriría una enmienda de SPEC20, no un
 arreglo mínimo.
+
+**Impacto en fuentes que solo tienen `controlDetalle`:** siguen siendo válidas
+para acreditar cobertura y para `fuentesEsperadas`, y sus Movimientos siguen
+yendo a `detalleControl`; pero **no pueden aportar registros de archivo** sin
+`intervalosArchivo`. Si una fuente mezcla control y registros de archivo, debe
+declarar intervalos para esos registros. F2d es el único fixture que hoy afirma
+lo contrario.
 
 ### 6.2 Impacto en motor, DTO y fórmulas
 
@@ -666,22 +724,55 @@ defecto:
   actual (casos 1, 1b, 2a, 2b, 2c, 3a, 3b) tendrían que actualizarse a la
   conducta corregida; se conservan ahora como caracterización, no como
   expectativa deseada.
-- `P-05` (registro `Rechazado` con fuente sin intervalos) mantiene
-  `archivo=null`/`subtotal=null`, pero pasaría a exponer también
-  `FueraDeIntervalosArchivo`; revisar si el nuevo motivo es el prioritario.
+- **`P-05` no cambia:** el registro es `Rechazado` y su `continue` ocurre antes
+  de la comprobación de contención, por lo que sigue sin sumar y sin exponerse
+  como `FueraDeIntervalosArchivo`. No debe añadirse a la lista de regresiones
+  afectadas.
+- **`NoVerificado`:** añadir/actualizar una regresión con `intervalosArchivo: []`
+  y registro fuera de tramo; debe conservar `VerificacionPendiente` y no
+  convertirse en `FueraDeIntervalosArchivo`.
+- **Vinculado:** añadir/actualizar una regresión con
+  `representadoEnMovimientos=Si` y vínculo/evidencia fuera de tramo; debe seguir
+  excluido y deduplicado, no `FueraDeIntervalosArchivo`.
+- **`Desconocido`/`No` sin evidencia:** añadir/actualizar una regresión fuera de
+  tramo; debe conservar `DuplicadoAmbiguo`, no `FueraDeIntervalosArchivo`.
+- **Cero:** añadir una regresión de cero fuera de tramo. Si el cero llega a
+  `archivo`, la contención se evalúa y bloquea como A3; no se exime. Debe
+  comprobarse además que un cero `NoVerificado`, vinculado o `Desconocido` no se
+  convierte en `FueraDeIntervalosArchivo` por la nueva ubicación de la
+  comprobación.
 - `E45-A3-T1`, `E45-A3-T2`, `E45-A3-T3`, `E45-A3-T4`, `E45-A3-T5` y los casos
   con intervalos no vacíos no deberían cambiar.
 - `P-10` (expectativa posterior al corte sin cobertura) no tiene registros y no
   cambia; sirve de precedente para la condición 2c.
 
-### 6.4 Prueba de regresión recomendada
+### 6.4 Pruebas de corrección recomendadas (2a, 2c, 3a, 3b)
 
-Además de actualizar las anteriores, añadir una prueba que fije el caso crítico:
+Además de actualizar las anteriores, fijar explícitamente el resultado esperado
+tras la corrección. Para los cuatro casos con importe positivo:
+
+| Caso | Cobertura que aporta la otra fuente/control | `archivo` | `subtotalConocido` | `total` | `estadoCobertura` | `estadoTotal` | `motivoCodigo` | `agregadoNoAtribuible` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2a | SRC-2 cubre todo 2026 | `null` | `null` | `null` | `Completa` | `NoVerificable` | `RegistroFueraDeIntervalosArchivo` | `AH001` · `100.00` · `FueraDeIntervalosArchivo` |
+| 2c | SRC-2 cubre 01/01–06/30 | `null` | `null` | `null` | `Completa` | `NoVerificable` | `RegistroFueraDeIntervalosArchivo` | `AH001` · `100.00` · `FueraDeIntervalosArchivo` |
+| 3a | control SRC-1 cubre todo 2026 | `null` | `null` | `null` | `Completa` | `NoVerificable` | `RegistroFueraDeIntervalosArchivo` | `AH001` · `100.00` · `FueraDeIntervalosArchivo` |
+| 3b | control SRC-1 ene–jun + SRC-2 jul–dic | `null` | `null` | `null` | `Completa` | `NoVerificable` | `RegistroFueraDeIntervalosArchivo` | `AH001` · `100.00` · `FueraDeIntervalosArchivo` |
+
+En 3a/3b, `detalleControl` puede seguir siendo `"0.00"` (el control existe y no
+hay Movimientos) y la cobertura sigue siendo `Completa`; lo que cambia es que el
+registro de archivo ya no es elegible y el total deja de certificarse. Para 1,
+1b y 2b el resultado corregido es el mismo `archivo=null`,
+`subtotalConocido=null`, `total=null` y agregado
+`FueraDeIntervalosArchivo`; 1/1b mantienen `estadoCobertura=NoDisponible` y 2b
+`Parcial`/`FuenteAusente`. `Rechazado`, `NoVerificado`, vinculados y
+`Desconocido` conservan su motivo previo, según §6.3; un cero que llegue a
+`archivo` se evalúa y bloquea igual que un positivo.
 
 1. SRC-1 `intervalosArchivo: []`, `controlDetalle: null`, un registro
    `Verificado` dentro del corte.
 2. SRC-2 con cobertura completa del universo y `fuentesEsperadas` que no
-   incluyan SRC-1 (o expectativa fuera del corte).
+   incluyan SRC-1 (2a) o expectativa de SRC-1 fuera del corte (2c); para 3a/3b
+   la cobertura se completa con el control de SRC-1.
 3. Esperar `estadoCobertura=Completa`, `estadoTotal=NoVerificable`,
    `total=null`, `subtotalConocido=null`, `archivo=null`,
    `motivoCodigo=RegistroFueraDeIntervalosArchivo` y el agregado con
@@ -716,22 +807,28 @@ bun test apps/api/src/historico-precontrol.test.ts
 103 pass, 0 fail (650 expect() calls)
 
 bun run typecheck
-# resultado registrado en el retorno del worker
+exit 0
+
+python3.12 scripts/validate-template .
+Template validation passed: structure, links, manifests, contracts, resume,
+prompt, safety heuristics and CI.
 
 python3.12 scripts/verify baseline
-# resultado registrado en el retorno del worker
+Baseline phase: PASS; application phase not included.
 ```
 
-Los resultados exactos de `typecheck` y `verify` se consignan en el retorno de
-esta tarea; no se declaran PASS de AC, DT7 ni equivalencia con el Excel.
+No se modifican las pruebas en esta revisión del documento; el resultado de
+`bun test` es el del commit de caracterización. No se declaran PASS de AC, DT7
+ni equivalencia con el Excel.
 
 ## 8. Límites
 
 - Fixtures sintéticos; no hay datos reales, Excel, SQL, migración, API ni UI.
 - No se ha ejecutado una corrección ni se ha modificado el motor.
 - La interpretación de E45-A3 como bloqueo con lista vacía es la lectura
-  normativa defendida aquí; si el coordinador o el usuario consideran que una
-  fuente sin `intervalosArchivo` puede sumar sus registros por otra vía, debe
-  aprobarse una enmienda explícita. La SPEC20 vigente no la contiene.
+  normativa defendida aquí; el núcleo **no necesita una enmienda de SPEC20**.
+  Una enmienda solo sería necesaria si se quisiera mantener F2d (permitir que
+  una fuente sin `intervalosArchivo` sume registros de archivo), lo que
+  revertiría E45-A3 y requeriría decisión explícita.
 - DT7 sigue abierto; esta investigación no acredita inventario, cobertura real
   ni totales.
