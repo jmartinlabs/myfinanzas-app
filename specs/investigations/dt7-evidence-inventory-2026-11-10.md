@@ -1,5 +1,6 @@
 # DT7 — Inventario de evidencias para M1, M2, M5 y M8 (2026-11-10)
 
+Hoja accionable: [DT7 · decisiones y revisión privada](dt7-decision-sheet-2026-11-10.md).
 **Estado:** `[BORRADOR DE PREPARACIÓN]` — **DT7 NO CERRADO. NINGÚN AC EN PASS. NINGUNA
 DECISIÓN APROBADA.** Este documento describe qué evidencia exacta falta para las cuatro
 decisiones de evidencia real, cómo se verificará y qué decide el usuario. No aprueba
