@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-10d
+## Identificadores canónicos y etapas — reconciliado 2026-11-10e
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -17,7 +17,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (expediente `cb1bc8a`, paquete `149c9dd` #341) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | D08 (diseño) y D09–D15 aprobadas (#344 `29869b6`); D04 y D01–D03/D05–D07 pendientes; F1 IN_PROGRESS; AC01–17 UNRUN; B bloqueado |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
 | DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag correcto en `960c151`; fallo de reinicio SSH con rollback correcto; sin recrear/mover; sin GHCR |
-| UI | approved (enmienda Graphite 2026-11-10; 1A en alcance) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera. Graphite 1A: diseño aprobado, implementación pendiente |
+| UI | approved (enmienda Graphite 2026-11-10; 1A integrado) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera. Graphite 1A integrado en `test` (`bff714e`, #356); integración visual premium pendiente |
 
 ## UI · Graphite Lime · frontera documental (2026-11-10)
 
@@ -25,14 +25,18 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
   `graphite-lime` («Grafito») como cuarto tema y autoriza en alcance 1A.
 - **1A:** cambios aditivos en `themes.css`, `themes.ts`, `theme-boot.js` y pruebas de tema.
   Prohibido tocar pantallas, componentes, formularios, navegación, API, SQLite o datos.
-  **Implementación no iniciada.**
+  **Implementado y fusionado en `test`** con #356 (`bff714e`); Graphite es seleccionable.
 - **Invariantes:** `dark-s` predeterminado, `mf-theme` persistencia, los tres temas actuales sin
   cambios. 1A incorpora el tema al sistema, no la integración visual premium completa.
 - **1B:** `prefers-reduced-motion` **no autorizado**; se coordina con UI DEV-04 por `style.css`.
-- **Base:** `origin/test` `18f7c0c` (2026-11-10). La rama de exploración no se fusiona completa;
-  la implementación parte de una rama limpia desde la base autorizada.
-- **Estado:** diseño/QA cerrados; enmienda documental en PR; 1A pendiente de ejecución y QA;
-  sin merge ni despliegue.
+- **Base:** autorización `18f7c0c`; implementación desde `9c9544b` (#355); integración en
+  `test` `bff714e` (#356); base documental actual `e6c6be1` (#357). La rama de exploración no
+  se fusiona completa.
+- **Estado:** diseño/QA cerrados; enmienda UI-G1 fusionada (#353, `64c0335`); 1A fusionado
+  (#356, `bff714e`); Graphite seleccionable; integración visual premium completa pendiente;
+  sin despliegue. 1B fuera de alcance.
+- **Preservación:** archivo documental en `specs/investigations/graphite-lime-design-2026-11-10/`
+  (#357, `e6c6be1`); originales 2× en la release `graphite-lime-design-2026-11-10`.
 
 ## Infraestructura rootless 25→27 — estado vigente (2026-11-06)
 
