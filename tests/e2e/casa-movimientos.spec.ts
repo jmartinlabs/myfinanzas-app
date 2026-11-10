@@ -134,6 +134,13 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     path: "artifacts/ui-casa-1d/formulario-casa-1440.png",
     fullPage: true,
   });
+  await page
+    .locator(".movement-form-page .form-footer")
+    .scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeVisible();
+  await page.screenshot({
+    path: "artifacts/ui-casa-1d/formulario-casa-1440-acciones.png",
+  });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(

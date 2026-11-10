@@ -1329,10 +1329,13 @@
 }
 
 :root[data-theme="casa"] .movement-form-page .saldo-form .form-footer {
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
   margin-top: 0;
-  padding: 16px 0;
+  padding: 14px 0;
   border-top: 2px solid var(--ink);
-  background: transparent;
+  background: var(--bg);
 }
 
 :root[data-theme="casa"] .movement-form-page .movement-impact .ui-form-section-title,
