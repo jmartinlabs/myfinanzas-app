@@ -2178,3 +2178,19 @@ DT7 abierto.
 - **Límites:** cobertura global puede seguir `Completa` por otras fuentes; los 59 AC siguen
   `UNRUN`, DT7 abierto y sin aceptación financiera. QA APTO CON RESERVAS; full CI no
   completado por flakes ajenos y timeout del job, `required` PASS.
+
+
+## DT7 · M1 aprobado (2026-11-10)
+
+- **Decisión del usuario con Álex**, sobre `MyFinanzas2026_v5.11(20261110-134135).xlsx`:
+  histórico **2023–2026**; primer ejercicio **2023**; **2019–2022 excluidos por alcance**
+  (no por ausencia de datos); posteriores a 2026 fuera del histórico.
+- **Límites:** la inclusión no acredita cobertura anual ni importes. 2023–2025 son histórico
+  parcial y 2026 transición. M2 verificará Partidas/fuentes/intervalos; M5 la regularización
+  2026; M8 las aperturas de Saldos de forma independiente. No se borran datos del Excel y
+  no se declara `estadoUniverso=Acreditado`.
+- **Siguiente paso:** M2 de 2023 con metadatos estructurales (Partidas, fuentes,
+  `intervaloEsperado`, mapping por campo/ID y conciliación en privado), sin importes en el
+  repositorio. Criterios `DT7-EV-M2-01…04`.
+- **Sigue abierto:** M2/M5/M8, E45-A2 (M2/M8), designación de revisor (M12), P6/P7 (M13),
+  DT6 y los 59 AC de E4.5 `UNRUN`.

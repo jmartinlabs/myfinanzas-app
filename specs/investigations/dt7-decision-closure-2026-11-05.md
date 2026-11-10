@@ -7,7 +7,7 @@ importación, P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRU
 
 **Revisión 2026-11-05:** Álex emite **APTO CON TRES AJUSTES**. El usuario acepta M3/M6,
 ratifica M9–M13, mantiene M4/M7/M15/M16 como propuestas aceptadas, confirma M14 A y deja
-M1/M2/M5/M8 pendientes de evidencia privada real.
+M1 aprobada el 2026-11-10 (2023–2026); M2/M5/M8 pendientes de evidencia privada real.
 
 **Integración:** PR #218 mergeada en `main` `c4706a6` (2026-11-05); este documento conserva
 el contenido revisado y registra la ratificación posterior.
@@ -44,7 +44,7 @@ modifica ninguna decisión de este documento ni cambia estados; DT7 sigue abiert
 
 | ID | Tema | Grupo | Qué se propone ahora | Quién decide | Gate | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| **M1** | Ejercicios del histórico | **B** evidencia real | Preparar plantilla y criterios; no fijar años | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
+| **M1** | Ejercicios del histórico | **B** evidencia real | **Aprobada 2026-11-10:** 2023–2026 incluidos; 2019–2022 excluidos por alcance; no acredita cobertura ni importes | Usuario con Álex | G-DT7 | `APROBADA (2026-11-10)` |
 | **M2** | Partidas y fuentes por ejercicio | **B** evidencia real | Preparar formato de inventario; no fijar listas | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
 | **M3** | Identidad de fuentes sin ID | **A** técnica | Identidad estable y conservación ante cambios de fila/coordenada | Usuario sobre recomendación | G-DT7 | `ACEPTADA (2026-11-05)` |
 | **M4** | Evidencia de `NoAplica`/Referencia | **A** técnica (política) | Reutilizar `referenciaOrigen`/`estadoMapeoReferencia`; no asumir | Usuario sobre recomendación | G-DT7 | `ACEPTADA COMO PROPUESTA` |
