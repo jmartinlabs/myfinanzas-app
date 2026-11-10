@@ -139,6 +139,30 @@ arranque previo a React, fallback a `dark-s`, colores clave y ausencia de overfl
 la suite de los tres temas existentes se conserva sin cambios. La matriz AA histórica de tres
 temas no se reutiliza como PASS de Graphite.
 
+### 2.3 Enmienda UI-G2 · integración visual Graphite Lime (**propuesta** 2026-11-10)
+
+`[PROPUESTA — no ratificada]` Autoriza una capa de apariencia **exclusiva de
+`graphite-lime`** para shell, Inicio, Movimientos, estados y formularios. Detalle y plan en
+[ui-graphite-integration-plan-2026-11-10.md](investigations/ui-graphite-integration-plan-2026-11-10.md).
+
+- CSS nuevo en `apps/web/src/graphite.css`, 100 % prefijado
+  `:root[data-theme="graphite-lime"]`; sin `!important`, sin hex/rgb y sin redefinir tokens
+  globales fuera de su scope.
+- Sin cambios en `themes.css`, `themes.ts`, `theme-boot.js` ni en el catálogo; una quinta
+  apariencia sigue siendo aditiva.
+- Reutiliza las primitivas de `ui.tsx`; no crea una segunda librería ni duplica formularios.
+- Inicio conserva el contrato AC: un `article` por métrica con nombre accesible, `Fuente:`,
+  cobertura, motivos y enlaces únicos.
+- Sin datos, endpoints, cálculos en navegador, fórmulas ni estados financieros nuevos.
+- Dark, Light y Hybrid conservan tokens, apariencia y tests.
+- **No autoriza** master-detail, hoja móvil, chips de filtros, iconografía SVG global ni 1B
+  (`prefers-reduced-motion`).
+- Coexistencia: una hoja por apariencia (`casa.css`, `graphite.css`), mismo punto de
+  importación y selector compartido.
+
+La aprobación de esta enmienda no autoriza por sí misma el merge de los incrementos; cada PR
+requiere CI, QA y autorización expresa.
+
 ## 3. Dependencias
 
 | Dependencia | Estado | Qué aporta | Límite para `UI` |
