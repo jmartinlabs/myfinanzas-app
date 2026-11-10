@@ -29,6 +29,14 @@ Este testplan distingue `PASS (fixtures)` de aceptación: no declara aceptación
 cierre financiero real. La política de composición queda fijada por las decisiones aprobadas;
 no se reinterpreta en la ejecución.
 
+**Decisión §18.3.B aprobada (usuario, 2026-11-10) — opción B.** El usuario aprobó la lectura
+literal de §18.3.B: toda entrada de `noDisponible` con `motivo` textual no vacío conserva
+`bloque`, `estado` y `motivo` aunque el estado no sea canónico, sin normalizar ni añadir
+`codigoAusencia`; `Parcial` sigue yendo a la cobertura. El caso `AC09-K` fija el resultado
+esperado y la expectativa de #327 cambia, sin editar #327. `E4.11-AC09` no cambia su texto ni
+su estado `PARCIAL (fixtures) · BLOCKED real`, y la decisión no autoriza DEV, publicación ni
+merge.
+
 ## Matriz de aceptación
 
 Estados asignados según la matriz AC → evidencia → límite del informe
@@ -171,6 +179,7 @@ una guarda explícita para `null` (no recorrerlo como array).
 | AC09-H | Leer un agregado persistido con `no_disponible` JSON `null` (no SQL `NULL`: columna `NOT NULL`) y, por separado, con JSON `[]`. | JSON `null` → `noDisponible:null` (ausencia no certificada); JSON `[]` → `noDisponible:[]` (vacío declarado). No se inyecta centinela, no se reescribe la fila, no se recalcula y el total sigue `null`. | `UNRUN`; F3; SQL `NULL` no aplica. |
 | AC09-I | Periodo con un ciclo incluido y dos excluidos (sin cierre y pendiente de re-cierre). | `cobertura.bloques[]` tiene tres entradas, una por ciclo, con estado/motivo de cada uno; no solo el incluido. | `UNRUN`; F4; coherente con AC08. |
 | AC09-J | `noDisponible` con una entrada con motivo persistido (canónica o no) y otra sintética. | La persistida conserva motivo/estado sin `codigoAusencia`; la sintética lleva el código que corresponda; no se mezclan. | `UNRUN`; F5. |
+| AC09-K | Foto/fixture con una entrada de `noDisponible` de clave canónica o no canónica, `motivo` textual no vacío y `estado` distinto de `No disponible`/`NoDisponible` y de `Parcial`; generar un agregado nuevo. | La entrada se emite en `noDisponible[]` con `bloque`, `estado` y `motivo` persistidos, sin `codigoAusencia`; no se normaliza ni se descarta; no se inventa una entrada en `cobertura.bloques[].motivos`; `totalPeriodo:null`; sin `0`; `valores.porCiclo[].noDisponible` y la foto persisten sin cambios. | `UNRUN`; decisión B (usuario, 2026-11-10); requiere DEV autorizado. |
 
 ### Impacto en pruebas existentes de #300 (F2)
 
@@ -192,6 +201,25 @@ enumeran para el cambio de producto/QA:
 de AC09; §18 prevalece (F8). Las claves no canónicas y los motivos persistidos se conservan
 sin `codigoAusencia` sintético (AC09-G/J).
 
+### Impacto en #327 (decisión §18.3.B, opción B)
+
+`[CONFIRMADO]` La prueba de #327
+(`E4.11 I3 AC09 (defensiva): estado no canónico con motivo persistido se descarta del
+agregado`, `apps/api/src/e411-periodo.test.ts:1323`, commit `a1fd546`, rama
+`qa/e411-ac09-defensive`, PR abierta y no mergeada) fija hoy el descarte. Con la opción B su
+expectativa cambia; **este testplan no edita #327 ni su rama**:
+
+| Prueba / expectativa | Antes (#327) | Después (B) |
+| --- | --- | --- |
+| `periodo.noDisponible` | Solo `deudaCompleta` (canónica). | Incluye también `valoracion` con `estado:"EstadoInesperado"` y su motivo, sin `codigoAusencia`, además de `deudaCompleta`; orden de iteración `valoracion`, `deudaCompleta`. |
+| `periodo.cobertura.bloques[0].motivos` | `[]`. | `[]` (no se inventa motivo de cobertura). |
+| `periodo.cobertura.totalPeriodo` | `null`. | `null`; sin `0`. |
+| `periodo.valores.porCiclo[0].noDisponible` y `fotos_cierre.no_disponible` | Conservan la entrada desconocida. | Sin cambios: la foto y el valor por ciclo siguen intactos. |
+
+`[CONFIRMADO]` #327 **no debe mergearse** con la expectativa de descarte una vez aprobada B.
+Su prueba debe actualizarse o sustituirse por la de AC09-K en el DEV autorizado; la decisión
+no toca la rama ni el PR.
+
 ### Límite de la enmienda
 
 - La enmienda es **documental**: no implementa la iteración del conjunto canónico, el campo
@@ -205,5 +233,6 @@ sin `codigoAusencia` sintético (AC09-G/J).
   `[]` como `[]`; SQL `NULL` no existe porque la columna es `TEXT NOT NULL`.
 - AC09-D1/D2 son casos defensivos de fixture/legacy: no acreditan un estado de producto ni
   convierten AC09 en PASS.
-- AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; los casos A–J y D3 quedan `UNRUN` hasta
-  que exista producto autorizado y QA independiente.
+- AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; los casos A–K y D3 quedan `UNRUN` hasta
+  que exista producto autorizado y QA independiente. `AC09-K` fija el resultado de la
+  decisión B (usuario, 2026-11-10) y no convierte AC09 en PASS.
