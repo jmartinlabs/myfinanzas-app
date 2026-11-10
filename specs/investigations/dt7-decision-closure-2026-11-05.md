@@ -12,7 +12,7 @@ M1/M2/M5/M8 pendientes de evidencia privada real.
 **Integración:** PR #218 mergeada en `main` `c4706a6` (2026-11-05); este documento conserva
 el contenido revisado y registra la ratificación posterior.
 
-**Addendum 2026-11-10:** el usuario, con revisión de Álex, sobre **`MyFinanzas2026_v5.11(20261110-134135).xlsx`** aprueba **M1**: histórico
+**Addendum 2026-11-10:** el usuario, con revisión de Álex, sobre la referencia vigente **`MyFinanzas2026_v5.11(20261110-134135).xlsx`** aprueba **M1**: histórico
 **2023–2026** (2023 primero; 2023–2025 parcial, 2026 transición); **2019–2022 excluidos por
 alcance**; posteriores a 2026 fuera del histórico. La inclusión no acredita cobertura, importes ni
 aperturas; M2/M5/M8 siguen pendientes. Registro en la

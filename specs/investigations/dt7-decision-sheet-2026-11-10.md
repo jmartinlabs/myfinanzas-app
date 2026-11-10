@@ -8,8 +8,8 @@ no contiene datos reales y no cierra DT7.
 
 ## 1. M1 · ejercicios incluidos — APROBADO 2026-11-10
 
-**Decisión del usuario con revisión de Álex**, sobre la copia privada revisada del maestro `v5.11(7)`,
-**`MyFinanzas2026_v5.11(20261110-134135).xlsx`** (2026-11-10). El repositorio no incluye el archivo ni su hash.
+**Decisión del usuario con revisión de Álex**, sobre la referencia vigente **`MyFinanzas2026_v5.11(20261110-134135).xlsx`** (2026-11-10). La relación con `v5.11(7)` no está
+acreditada y no se afirma.. El repositorio no incluye el archivo ni su hash.
 
 | Campo | Decisión |
 | --- | --- |
