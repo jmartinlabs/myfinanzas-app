@@ -2577,7 +2577,7 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     }
   });
 
-  test("F2d: una fuente con intervalosArchivo vacío no impide sumar un registro válido", () => {
+  test("F2d: una fuente con intervalosArchivo vacío no acredita la suma de un registro válido", () => {
     const resultado = combinarHistoricoPrecontrol(
       entrada({
         fuentes: [
@@ -2595,10 +2595,23 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
         movimientos: [],
       }),
     );
+    const par100 = item(resultado);
 
-    expect(item(resultado).archivo).toBe("100.00");
-    expect(item(resultado).total).toBe("100.00");
-    expect(resultado.totales.valor).toBe("100.00");
+    // `intervalosArchivo: []` no es «sin restricción»: no hay ningún tramo
+    // aplicable, así que la fila no se atribuye aunque el control cubra el año.
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.agregadoNoAtribuible).toContainEqual(
+      expect.objectContaining({
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      }),
+    );
+    expect(resultado.totales.valor).toBeNull();
   });
 
   test("F2e: el caso mixto conserva la exclusión conservadora del componente completo", () => {
@@ -2640,7 +2653,7 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     );
   });
 
-  test("P-01a: sin intervalosArchivo declarados, un registro dentro del corte no inventa cobertura", () => {
+  test("P-01a: sin intervalosArchivo declarados, un registro dentro del corte no se atribuye ni inventa cobertura", () => {
     const resultado = combinarHistoricoPrecontrol(
       entrada({
         fuentes: [
@@ -2660,13 +2673,24 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     );
     const par100 = item(resultado);
 
-    // Sin `intervalosArchivo` no hay tramo que excluya la fila, pero la
-    // presencia de una fila tampoco inventa cobertura ni un total certificado.
-    expect(par100.archivo).toBe("100.00");
+    // Sin `intervalosArchivo` no hay tramo aplicable que contenga la fila: no
+    // se suma, no se prorratea y no se convierte en 0. `null` no es `0`.
+    expect(par100.archivo).toBeNull();
     expect(par100.estadoCobertura).toBe("NoDisponible");
+    expect(par100.estadoTotal).toBe("NoDisponible");
     expect(par100.total).toBeNull();
-    expect(par100.subtotalConocido).toBe("100.00");
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.agregadoNoAtribuible).toContainEqual(
+      expect.objectContaining({
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      }),
+    );
     expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.subtotalConocido).toBeNull();
   });
 
   test("P-01b: con intervalosArchivo declarados, un registro dentro del corte pero fuera de los tramos no se atribuye", () => {
@@ -3365,5 +3389,631 @@ describe("E45-A4 · alcance de sinClasificar y mapping posterior al corte", () =
     ]);
     expect(conElRegistro.totales.valor).toBeNull();
     expect(conElRegistro.totales.estadoTotal).toBe("NoVerificable");
+  });
+});
+
+/**
+ * E4.5 · corrección del hallazgo `intervalosArchivo: []` (2026-11-10).
+ *
+ * Equivalentes corregidos de la caracterización de #351. Regla: una lista vacía
+ * significa NINGÚN intervalo aplicable; un registro solo suma si su intervalo
+ * queda contenido en un tramo de SU PROPIA fuente, misma Partida y clase. La
+ * cobertura de otra fuente o el `controlDetalle` no sustituyen la contención.
+ * Los fixtures siguen siendo sintéticos.
+ */
+describe("E4.5 empty intervals · corrección (regla de contención)", () => {
+  const sinDetalle = [] as MovimientoPrecontrol[];
+
+  test("caso 1 corregido: fuente sin intervalos ni otra cobertura no suma ni inventa 0", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [fuente({ intervalosArchivo: [], controlDetalle: null })],
+        registros: [registro("AH001", { importeCentimos: "10000" })],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoTotal).toBe("NoDisponible");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.subtotalConocido).toBeNull();
+  });
+
+  test("caso 2a corregido: otra fuente cubre, pero el registro de la fuente sin intervalos no suma", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-2",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+          },
+        ]),
+        fuentes: [
+          fuente({ intervalosArchivo: [], controlDetalle: null }),
+          fuente({
+            fuenteId: "SRC-2",
+            etiqueta: "Fuente sintética SRC-2",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [registro("AH001", { importeCentimos: "10000" })],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(resultado.cobertura.coberturaGlobal).toBe("Completa");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.subtotalConocido).toBeNull();
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+  });
+
+  test("caso 2b corregido: una fuente esperada sin cobertura suficiente no rescata el importe sin tramos", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-1",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+          },
+          {
+            fuenteId: "SRC-2",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+          },
+        ]),
+        fuentes: [
+          fuente({ intervalosArchivo: [], controlDetalle: null }),
+          fuente({
+            fuenteId: "SRC-2",
+            etiqueta: "Fuente sintética SRC-2",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [registro("AH001", { importeCentimos: "10000" })],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.estadoCobertura).toBe("Parcial");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.cobertura.coberturaGlobal).toBe("Parcial");
+    expect(resultado.agregadoNoAtribuible).toHaveLength(1);
+    expect(resultado.agregadoNoAtribuible[0]!.causa).toBe(
+      "FueraDeIntervalosArchivo",
+    );
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("caso 2c corregido: expectativa posterior al corte no convierte el registro fuera de tramos en certificable", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-1",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+          },
+          {
+            fuenteId: "SRC-2",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+          },
+        ]),
+        fuentes: [
+          fuente({ intervalosArchivo: [], controlDetalle: null }),
+          fuente({
+            fuenteId: "SRC-2",
+            etiqueta: "Fuente sintética SRC-2",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.cobertura.coberturaGlobal).toBe("Completa");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.alcanceTotal).toBe("HastaCorte");
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("caso 3a corregido: el controlDetalle cubre, pero no sustituye la contención en intervalosArchivo", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [],
+            controlDetalle: { inicio: "2026-01-01", fin: "2026-12-31" },
+          }),
+        ],
+        registros: [registro("AH001", { importeCentimos: "10000" })],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.detalleControl).toBe("0.00");
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.cobertura.coberturaGlobal).toBe("Completa");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("caso 3b corregido: fuera del control de su fuente y sin intervalos propios, el importe no se certifica", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-1",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-06-30" },
+          },
+          {
+            fuenteId: "SRC-2",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+          },
+        ]),
+        fuentes: [
+          fuente({
+            intervalosArchivo: [],
+            controlDetalle: { inicio: "2026-01-01", fin: "2026-06-30" },
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            etiqueta: "Fuente sintética SRC-2",
+            intervalosArchivo: [archivo("2026-07-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(par100.cobertura.intervalos).toEqual([
+      { inicio: "2026-01-01", fin: "2026-12-31" },
+    ]);
+    expect(resultado.cobertura.coberturaGlobal).toBe("Completa");
+    expect(resultado.agregadoNoAtribuible).toHaveLength(1);
+    expect(resultado.agregadoNoAtribuible[0]).toMatchObject({
+      idArchivo: "AH001",
+      causa: "FueraDeIntervalosArchivo",
+    });
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("caso 3c corregido: un registro contenido en los tramos de su fuente suma una sola vez", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBe("100.00");
+    expect(par100.motivoCodigo).toBeNull();
+    expect(resultado.agregadoNoAtribuible).toEqual([]);
+    expect(resultado.totales.valor).toBe("100.00");
+    expect(
+      resultado.agregadoNoAtribuible.filter(
+        (agregado) => agregado.idArchivo === "AH001",
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("precedencia: exceder el corte conserva CorteExcedido aunque intervalosArchivo esté vacío", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        fuentes: [fuente({ intervalosArchivo: [], controlDetalle: null })],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        importe: "100.00",
+        causa: "CorteExcedido",
+      },
+    ]);
+  });
+
+  test("los filtros de elegibilidad no emiten FueraDeIntervalosArchivo: Rechazado, NoVerificado, vinculado, Desconocido y regularización pendiente", () => {
+    const casos: Array<{
+      nombre: string;
+      registro: RegistroPrecontrol;
+      movimientos: MovimientoPrecontrol[];
+    }> = [
+      {
+        nombre: "Rechazado",
+        registro: registro("AH-RECHAZADO", {
+          estadoVerificacion: "Rechazado",
+          importeCentimos: "10000",
+        }),
+        movimientos: [],
+      },
+      {
+        nombre: "NoVerificado",
+        registro: registro("AH-NOVERIFICADO", {
+          estadoVerificacion: "NoVerificado",
+          importeCentimos: "10000",
+        }),
+        movimientos: [],
+      },
+      {
+        nombre: "vinculado",
+        registro: registro("AH-VINCULADO", {
+          representadoEnMovimientos: "Si",
+          evidenciaRepresentacion: "Vínculo sintético verificado.",
+          importeCentimos: "10000",
+        }),
+        movimientos: [
+          movimiento("MV-VINCULADO", {
+            importeCentimos: "10000",
+            vinculoArchivoId: "AH-VINCULADO",
+          }),
+        ],
+      },
+      {
+        nombre: "Desconocido",
+        registro: registro("AH-DESCONOCIDO", {
+          representadoEnMovimientos: "Desconocido",
+          evidenciaRepresentacion: null,
+          importeCentimos: "10000",
+        }),
+        movimientos: [],
+      },
+      {
+        nombre: "regularización pendiente",
+        registro: registro("AH-REGULARIZACION", {
+          clase: "Regularizacion2026",
+          intervalo: { inicio: "2026-06-15", fin: "2026-06-15" },
+          fecha: "2026-06-15",
+          evidenciaRegularizacion:
+            "Q5=A: naturaleza, signo e inclusión acreditados en fixture sintético.",
+          motivo: null,
+          importeCentimos: "5000",
+        }),
+        movimientos: [],
+      },
+    ];
+
+    for (const caso of casos) {
+      const resultado = combinarHistoricoPrecontrol(
+        entrada({
+          fuentes: [fuente({ intervalosArchivo: [], controlDetalle: null })],
+          registros: [caso.registro],
+          movimientos: caso.movimientos,
+        }),
+      );
+      const par100 = item(resultado);
+
+      expect(resultado.agregadoNoAtribuible, caso.nombre).toEqual([]);
+      expect(par100.archivo, caso.nombre).toBeNull();
+      expect(par100.total, caso.nombre).toBeNull();
+      expect(par100.motivoCodigo, caso.nombre).not.toBe(
+        "RegistroFueraDeIntervalosArchivo",
+      );
+    }
+  });
+
+  test("un importe cero fuera de tramo tampoco acredita cobertura ni total verificado", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        universo: universo(["PAR100"], [
+          {
+            fuenteId: "SRC-2",
+            partidaId: "PAR100",
+            estado: "Presente",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+          },
+        ]),
+        fuentes: [
+          fuente({ intervalosArchivo: [], controlDetalle: null }),
+          fuente({
+            fuenteId: "SRC-2",
+            etiqueta: "Fuente sintética SRC-2",
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [registro("AH-CERO", { importeCentimos: "0" })],
+        movimientos: sinDetalle,
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.archivo).not.toBe("0.00");
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH-CERO",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        importe: "0.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("no duplica el registro: cada id aparece una vez y con una sola causa", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-06-30",
+            intervalosArchivo: [archivo("2026-01-01", "2026-03-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            identidad: "FUERA-TRAMOS",
+            intervalo: { inicio: "2026-04-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            identidad: "EXCEDE-CORTE",
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+        ],
+        movimientos: sinDetalle,
+      }),
+    );
+
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-04-01", fin: "2026-06-30" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+      {
+        idArchivo: "AH002",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+        importe: "1200.00",
+        causa: "CorteExcedido",
+      },
+    ]);
+    const ids = resultado.agregadoNoAtribuible.map(
+      (agregado) => agregado.idArchivo,
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(item(resultado).total).toBeNull();
+    expect(item(resultado).subtotalConocido).toBeNull();
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("misma fuente y distinta Partida: el tramo de PAR100 no cubre un registro de PAR200", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31", "PAR100")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH100", {
+            partidaId: "PAR100",
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+          registro("AH200", {
+            identidad: "REGISTRO-PAR200",
+            partidaId: "PAR200",
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "20000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100", "PAR200"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+    const par100 = item(resultado, "PAR100");
+    const par200 = item(resultado, "PAR200");
+
+    // El mismo tramo de SRC-1 contiene AH100 (PAR100) y suma.
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBe("100.00");
+    // AH200 comparte fuente pero no Partida: el tramo de PAR100 no lo cubre.
+    expect(par200.archivo).toBeNull();
+    expect(par200.subtotalConocido).toBeNull();
+    expect(par200.total).toBeNull();
+    expect(par200.estadoTotal).toBe("NoDisponible");
+    expect(par200.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH200",
+        partidaId: "PAR200",
+        intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+        importe: "200.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("misma fuente y distinta clase: un tramo GastoHistorico no cubre una Regularizacion2026", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100", "GastoHistorico"),
+            ],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH-REG", {
+            clase: "Regularizacion2026",
+            intervalo: { inicio: "2026-06-15", fin: "2026-06-15" },
+            fecha: "2026-06-15",
+            importeCentimos: "5000",
+            evidenciaRegularizacion:
+              "Q5=A: naturaleza, signo e inclusión acreditados en fixture sintético.",
+            motivo: "Regularización sintética con motivo explícito.",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.total).toBeNull();
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(par100.motivoCodigo).not.toBe("RegularizacionPendiente");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH-REG",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-06-15", fin: "2026-06-15" },
+        importe: "50.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.agregadoNoAtribuible[0]!.causa).not.toBe("CorteExcedido");
   });
 });
