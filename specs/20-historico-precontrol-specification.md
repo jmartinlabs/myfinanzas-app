@@ -9,6 +9,8 @@ Approval source/date: **Q1–Q10 y precisiones Q5 confirmadas por el usuario el
 2026-10-27** en la sesión `ses_e8571d99effev1a1aeyemjMuZ3`; **D4/D14 aceptadas
 funcionalmente el 2026-10-28** tras revisión con Álex; **SPEC20 completa y testplan
 aprobados por el usuario el 2026-10-28**. PR87 integrada en `main` `3d70fd6`.
+**Enmiendas E45-A1…E45-A4 aprobadas por el usuario el 2026-11-10** (orientación A/B/B/B;
+§«Enmiendas aprobadas (2026-11-10)»); no implican una nueva aprobación de los AC.
 
 **Nota de reconciliación (2026-11-09):** el motor puro E4.5 está integrado en
 `apps/api/src/historico-precontrol.ts` sobre el snapshot `ba24c29`; la base del PR es
@@ -21,7 +23,17 @@ sintéticos; no hay API, SQL, persistencia, importación ni UI de E4.5.
 `AperturaHistorica`, la atribución fuera de `intervalosArchivo` y el mapping
 `Pendiente`/`Ambigua` posterior al corte se analizan en
 [e45-contract-proposals-2026-11-09.md](investigations/e45-contract-proposals-2026-11-09.md).
-Ninguna opción está aprobada; este contrato y los AC-01…AC-59 no cambian.
+En la fecha de ese documento ninguna opción estaba aprobada y este contrato y los
+AC-01…AC-59 no cambiaban.
+
+**Enmiendas aprobadas (2026-11-10):** el usuario aprobó la orientación **A/B/B/B** de
+esas propuestas. El texto normativo se añade en la sección §«Enmiendas aprobadas
+(2026-11-10)»: H-09 (A, definitiva), `fuenteId` en aperturas (B, **provisional** y
+dependiente de DT7 M2/M8), atribución fuera de `intervalosArchivo` (B, definitiva) y
+alcance temporal de `sinClasificar` (B, definitiva). Las enmiendas no reescriben el
+resto del contrato, no modifican AC-01…AC-59 (siguen `UNRUN`), no crean AC nuevos, no
+autorizan DEV/DTO/motor/tests y no cierran DT7; solo E45-A1 documenta comportamiento ya
+implementado.
 
 Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-historico-precontrol-brainstorming.md),
 [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
@@ -283,7 +295,7 @@ Reglas de mapping:
 | `estadoTotal` | `Verificado`, `NoVerificable` o `NoDisponible`; por Partida en `items[].estadoTotal` y global en `totales.estadoTotal` |
 | `alcanceTotal` | `Anual` o `HastaCorte`; derivado de `corteConsulta` | Cálculo | `Anual` solo con corte 31/12; un total con corte abierto es `HastaCorte` y no se anula |
 | `coberturaGlobal` | `Completa` solo con universo acreditado, todas las fuentes esperadas presentes y sin huecos |
-| `motivoCodigo` | `SinFuente`, `HuecoDemostrado`, `FuenteAusente`, `UniversoNoAcreditado`, `AusenciaVerificadaSinHechos`, `Solapamiento`, `DuplicadoAmbiguo`, `MappingPendiente`, `VerificacionPendiente`, `RegularizacionPendiente`, `AperturaNoGasto`, `AgregadoNoAtribuibleAlCorte` |
+| `motivoCodigo` | `SinFuente`, `HuecoDemostrado`, `FuenteAusente`, `UniversoNoAcreditado`, `AusenciaVerificadaSinHechos`, `Solapamiento`, `DuplicadoAmbiguo`, `MappingPendiente`, `VerificacionPendiente`, `RegularizacionPendiente`, `AperturaNoGasto`, `AgregadoNoAtribuibleAlCorte`, `RegistroFueraDeIntervalosArchivo` |
 | `motivo` | Explicación legible y estable; no un importe |
 
 Reglas de cobertura:
@@ -1361,6 +1373,144 @@ Reglas del adaptador:
   pendiente.
 - No nuevas dependencias, ORM, servicios externos, autenticación alternativa ni
   exposición remota.
+
+## Enmiendas aprobadas (2026-11-10) — orientación A/B/B/B
+
+**Aprobación.** El usuario aprobó el **2026-11-10** la orientación **A/B/B/B** analizada
+en [e45-contract-proposals-2026-11-09.md](investigations/e45-contract-proposals-2026-11-09.md):
+A para H-09, B para `fuenteId` en aperturas (provisional), B para la atribución fuera de
+`intervalosArchivo` y B para el alcance temporal de `sinClasificar`. Esta sección añade
+el texto normativo que complementa el contrato anterior; **no reescribe** §Functionality,
+§Data model and contracts, §API behavior, §Screens and interfaces, §Validation,
+§Security ni §Consumer contracts, y **no modifica** `AC-01…AC-59`, que siguen `UNRUN`.
+No crea AC nuevos, no declara PASS, no autoriza DEV, DTO, motor, tests, SQL, migración,
+importación ni datos reales y no cierra DT7.
+
+| Enmienda | Punto | Decisión | Estado | Motor, DTO o tests | Dependencia |
+| --- | --- | --- | --- | --- | --- |
+| E45-A1 | H-09: conflictos globales de identidad/versión y `items[].conflictos` | A: global canónico; el item es proyección local | Aprobada, **definitiva** | Sin cambio de motor/DTO; prueba explícita `[PENDIENTE DEV]` | Ninguna; DT7 no cambia la semántica |
+| E45-A2 | `fuenteId` en `AperturaHistorica` | B: exigir fuente declarada | Aprobada, **provisional** | Cambio de validación y fixtures, solo con DEV | **DT7 M2/M8** |
+| E45-A3 | Atribución fuera de `intervalosArchivo` | B: motivo y causa propios | Aprobada, **definitiva** | Nuevo código y campo `causa`; DEV | DT7 M2/M3 como evidencia, no como gate de la regla |
+| E45-A4 | Mapping `Pendiente`/`Ambigua` posterior al corte | B: acotar `sinClasificar` al corte consultado | Aprobada, **definitiva** | Alcance de salida; DEV | DT7 M2/M5 como evidencia, no como gate de la regla |
+
+**Precedencia.** Para estos cuatro puntos, el texto de esta sección concreta y prevalece
+sobre el silencio o la formulación general de las secciones anteriores, que se leen con
+esta precisión. Nada de lo aquí escrito autoriza a cambiar importes, totales, subtotales,
+cobertura, AC ni estados ya aprobados.
+
+### E45-A1 — Conflictos de identidad/versión y `items[].conflictos` (A, definitiva)
+
+`resultado.conflictos[]` es la **fuente canónica** y contiene todos los conflictos no
+resueltos de la consulta, incluidos los de identidad/versión (`DuplicadoAmbiguo`,
+`VersionBifurcada`) y los de procedencia (`DosFuentes`, `Solapamiento`). Cada conflicto
+declara `partidaId` cuando es atribuible a una Partida concreta y `null` cuando no lo es;
+no se inventa una Partida para completarlo.
+
+`items[].conflictos[]` es una **proyección local de conveniencia** y contiene solo los
+conflictos emitidos por el análisis de esa Partida (por ejemplo, un `Solapamiento` o un
+`DosFuentes` local). Los conflictos globales de identidad/versión **no se copian
+automáticamente** al item y no se exige duplicarlos. Un consumidor que necesite el
+conjunto completo lee `resultado.conflictos[]` y filtra por `partidaId`; no puede inferir
+«sin conflicto» de un `items[].conflictos[]` vacío. La Partida afectada queda
+`estadoTotal=NoVerificable` y `motivoCodigo=DuplicadoAmbiguo` aunque
+`items[].conflictos[]` esté vacío; el tipo concreto (`DuplicadoAmbiguo` o
+`VersionBifurcada`) se lee en `resultado.conflictos[].tipo`.
+
+La proyección no crea conflictos nuevos, no altera el total, el subtotal ni la cobertura
+y no duplica importes: cada conflicto cuenta una vez en el global. Esta enmienda
+documenta el comportamiento ya implementado; no requiere cambio de motor ni de DTO. No
+convierte en PASS ninguna prueba sintética, no modifica AC-04/AC-48/AC-54/AC-58 y no
+acredita DT7. Si un consumidor futuro (E4.7/E2.4 o la UI) necesitara un item
+autocontenido, haría falta una enmienda nueva con prueba de deduplicación; la opción B de
+la propuesta no está aprobada.
+
+### E45-A2 — `fuenteId` en aperturas (B, **provisional**; DT7 M2/M8)
+
+**[PROVISIONAL — no es una regla ejecutable definitiva.]** Toda `AperturaHistorica` debe
+declarar un `fuenteId` no vacío que exista en `fuentes[]` del inventario de la consulta.
+La fuente de una apertura puede declarar `intervalosArchivo: []` y `controlDetalle:
+null`: acredita procedencia, no cobertura de Gastos. Su `corteArchivo` sigue siendo un
+límite de la fuente, pero no se usa para atribuir la apertura a Gastos. La apertura no
+acredita cobertura, no entra en `detalleControl` ni `detallePrecontrol`, no suma a
+`archivo`, `subtotalConocido` ni `total` y no se escribe en Saldos ni en Deudas. Una
+fuente de apertura no amplía `fuentesEsperadas[]` ni acredita un `Presente` de Gastos.
+Una apertura con `fuenteId` ausente o no declarado es entrada inválida (`ErrorPrecontrol`;
+422 en la API futura). No se inventa una Partida ni un Saldo para la apertura.
+
+**Estado provisional.** Mientras DT7 M2/M8 no aporte evidencia, esta regla **no se
+ejecuta**: el motor actual mantiene la exención de `fuenteId` para `AperturaHistorica` y
+esa exención no es un defecto ni un PASS de esta enmienda. DEV no debe implementar la
+validación hasta recibir autorización específica y evidencia o decisión expresa sobre el
+inventario. Si DT7 confirma que las aperturas usan un inventario separado, la opción C
+(`fuentesApertura[]` o equivalente) sustituye a esta regla, que quedará sin efecto. Esta
+enmienda no modifica AC-16/AC-17/AC-37/AC-43; cuando se implemente, sus fixtures deberán
+declarar la fuente de la apertura sin alterar el resultado esperado: la apertura sigue
+sin sumar, no acredita Gastos y la cobertura de Gastos no cambia.
+
+### E45-A3 — Atribución fuera de `intervalosArchivo` (B, definitiva)
+
+Un registro de archivo cuyo intervalo esté comprendido en `[inicio del ejercicio,
+corteConsulta]` pero no quede contenido en ningún `intervalosArchivo` aplicable de su
+fuente (misma Partida y clase) no se prorratea, no se recorta y no se suma. Se expone en
+`agregadoNoAtribuible[]` con `causa="FueraDeIntervalosArchivo"` y activa
+`motivoCodigo=RegistroFueraDeIntervalosArchivo`; la Partida queda
+`estadoTotal=NoVerificable`, `total=null` y `subtotalConocido=null`.
+
+`AgregadoNoAtribuibleAlCorte` se reserva para el registro cuyo intervalo excede
+`[inicio del ejercicio, corteConsulta]` o el `corteArchivo` de su fuente, con
+`causa="CorteExcedido"`. Ambos casos son contexto, nunca importe sumado; no se elige
+fuente, no se prorratea, no se recorta ni se resta. La cobertura temporal puede ser
+`Completa` si el intervalo cubre `[inicio, corte]`, pero no acredita atribución de
+importe ni ausencia de conflicto. `causa` es informativo y no altera el bloqueo: el
+efecto financiero es el mismo en los dos casos. Ningún caso de esta enmienda convierte
+el registro en importe del periodo, en `0` ni en cobertura.
+
+**Contrato ampliado.** Esta enmienda añade `RegistroFueraDeIntervalosArchivo` a la lista
+de `motivoCodigo` de §«Cobertura y corte» y `causa` a la forma de
+`agregadoNoAtribuible[]` del combinador; no cambia el resto de esa lista ni del DTO.
+AC-39 conserva `AgregadoNoAtribuibleAlCorte` para el caso que excede el corte y no cambia
+de texto. La implementación del nuevo código y de `causa` requiere autorización DEV
+específica y actualización del testplan; no se ejecuta aquí.
+
+### E45-A4 — Mapping posterior al corte y alcance de `sinClasificar` (B, definitiva)
+
+`sinClasificar` queda limitado a los registros de archivo que solapan `[inicio del
+ejercicio, corteConsulta]`. Un registro cuyo intervalo no solape ese rango no entra en
+`sinClasificar` ni deja el total global `NoVerificable` por tener `partidaId=null` o
+mapping de Partida `Pendiente`/`Ambigua`: no es un hecho del corte consultado. Un
+registro que solape el corte sí se rige por D4.5 y permanece en `sinClasificar` con
+importe y motivo. `items[].registros` y `items[].registrosNoComputados` conservan la
+trazabilidad de los vigentes que no suman, y `sinClasificar` no se convierte en `0`, en
+total ni en cobertura.
+
+**Trazabilidad de origen.** El registro fuera de corte no se borra ni se reetiqueta:
+sigue en la fuente y conserva `idArchivo`, procedencia y versión, y se mostrará en la
+consulta del ejercicio/corte que lo incluya. Si el producto decide exponerlo en la misma
+consulta, debe hacerlo en una lista o registro separado, etiquetado explícitamente como
+fuera del corte y **no bloqueante**; nunca dentro de `sinClasificar` ni sumado. El nombre
+exacto de esa salida (`sinClasificarFueraDeCorte[]` o equivalente) queda para el paquete
+DEV y no forma parte de este contrato.
+
+**Alcance.** Esta enmienda solo retira el bloqueo por mapping de un registro que no
+solapa el corte. No altera el tratamiento de un agregado que excede el corte (E45-A3),
+que sigue bloqueando con `AgregadoNoAtribuibleAlCorte`/`causa=CorteExcedido`, ni ningún
+otro bloqueo (hueco, solape, duplicado, fuente ausente o verificación pendiente). AC-04 y
+AC-59 mantienen su texto; si se implementa, su redacción se precisa con «dentro del
+corte» sin cambiar el número de AC.
+
+### E45 — Impacto en AC, gates y pruebas
+
+- **AC-01…AC-59:** sin cambios de texto ni de número; siguen `UNRUN`. Ninguna enmienda
+  los convierte en PASS ni crea AC nuevos.
+- **E45-A1:** contrato documental del motor integrado; no autoriza cambios de motor,
+  DTO ni tests. La prueba explícita de no copia queda `[PENDIENTE DEV]` en el testplan.
+- **E45-A2/E45-A3/E45-A4:** cualquier cambio de motor, DTO, código de motivo o alcance de
+  salida exige un paquete DEV con autorización explícita; no se deriva de esta enmienda.
+- **DT7:** sigue abierto. E45-A2 queda bloqueada por DT7 M2/M8. En E45-A3/E45-A4, DT7
+  M2/M3/M5 aporta la evidencia de inventario y estructura que condiciona los datos y la
+  UI, pero no la validez de la regla financiera aprobada.
+- **Datos:** los fixtures son sintéticos; ninguna enmienda acredita importes reales,
+  equivalencia con el Excel ni cobertura DT7.
 
 ## Acceptance checks
 
