@@ -705,7 +705,7 @@ html[data-theme="graphite-lime"] .graphite-cycle .ui-table th:nth-child(3) {
 }
 
 html[data-theme="graphite-lime"] .graphite-cycle .ui-table th:nth-child(4) {
-  width: 38%;
+  width: 36%;
 }
 
 html[data-theme="graphite-lime"] .graphite-cycle .ui-table td:nth-child(3) .ui-badge {
@@ -808,10 +808,6 @@ html[data-theme="graphite-lime"] .graphite-cycle-note {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
-}
-
-html[data-theme="graphite-lime"] .graphite-cycle .graphite-rail-link {
-  margin: 8px 0 0;
 }
 
 html[data-theme="graphite-lime"] .graphite-attention-list small {

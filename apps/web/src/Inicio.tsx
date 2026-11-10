@@ -305,7 +305,8 @@ const ESTADO_META: Record<
 
 /** Traduce coberturas de motor (E4.3/E2.4) a la taxonomía única de badges. */
 function estadoDesdeCobertura(value: string): EstadoMetrica {
-  if (/^(Completa|Verificada|Completo)$/i.test(value)) return "Verificado";
+  if (/^(Completa|Verificada|Verificado|Completo)$/i.test(value))
+    return "Verificado";
   if (/^Parcial/i.test(value)) return "Parcial";
   if (/^No aplica$/i.test(value)) return "No aplica";
   if (/^Sin datos$/i.test(value)) return "Sin datos";
@@ -759,18 +760,7 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
   );
 }
 
-function coberturaTone(value: string): "ok" | "partial" | "nd" {
-  const estado = estadoDesdeCobertura(value);
-  return estado === "Verificado" ? "ok" : estado === "Parcial" ? "partial" : "nd";
-}
-
-function GraphiteCycleTable({
-  overview,
-  go,
-}: {
-  overview: InicioOverview;
-  go: (path: string) => void;
-}) {
+function GraphiteCycleTable({ overview }: { overview: InicioOverview }) {
   const metrics = [
     overview.cycle.ingresos,
     overview.cycle.gasto,
@@ -835,7 +825,12 @@ function GraphiteCycleTable({
           <p className="eyebrow">CICLO REAL VS PLAN</p>
           <h2 id="graphite-cycle-title">Métricas publicadas del ciclo</h2>
         </div>
-        <Badge tone="info" label="8 métricas" />
+        <Badge
+          tone="info"
+          label={`${metrics.length} ${
+            metrics.length === 1 ? "métrica" : "métricas"
+          }`}
+        />
       </div>
       <div className="desktop-list graphite-cycle-desktop">
         <Table
@@ -857,11 +852,6 @@ function GraphiteCycleTable({
         El saldo operativo y el margen se publican tal como los entrega E2.6.
         Un subtotal parcial no se convierte en total, no se fabrica un margen y
         no se resta la deuda ni los pendientes.
-      </p>
-      <p className="graphite-rail-link">
-        <InicioLink enlace={overview.cycle.ingresos.enlace} go={go}>
-          Ver flujo mensual
-        </InicioLink>
       </p>
       <details className="graphite-cycle-detail">
         <summary>Motivos y fuentes de cada métrica</summary>
@@ -944,8 +934,14 @@ function GraphiteRail({
               </li>
             ))}
           </ul>
-        ) : (
+        ) : pendientes.fuenteFallos.length === 0 ? (
           <p className="graphite-rail-empty">Sin pendientes visibles.</p>
+        ) : null}
+        {pendientes.items.length > 3 && (
+          <p className="graphite-rail-meta">
+            Se muestran 3 de {pendientes.items.length}; el detalle inferior
+            conserva el resto.
+          </p>
         )}
         <p className="graphite-rail-link">
           <InicioLink enlace={pendientes.metrica.enlace} go={go}>
@@ -1042,7 +1038,8 @@ function GraphitePosition({
         <strong className="graphite-position-value">{saldos.items.length}</strong>
         <p className="graphite-position-meta">
           {saldos.conteos.liquidez} liquidez · {saldos.conteos.ahorro} ahorro ·{" "}
-          {saldos.conteos.bolsas} bolsas
+          {saldos.conteos.bolsas}{" "}
+          {saldos.conteos.bolsas === 1 ? "bolsa" : "bolsas"}
         </p>
         <p className="graphite-position-note">Sin total entre vistas</p>
         <InicioLink enlace={saldos.enlace} go={go}>
@@ -1058,6 +1055,7 @@ function GraphitePosition({
               state={estadoDesdeCobertura(firstAhorro.estado)}
               showNote={false}
             />
+            <EstadoBadge estado={estadoDesdeCobertura(firstAhorro.estado)} />
             <p className="graphite-position-meta">
               {firstAhorro.nombre} · {ahorro.posiciones.length}{" "}
               {ahorro.posiciones.length === 1 ? "posición" : "posiciones"}
@@ -1078,6 +1076,7 @@ function GraphitePosition({
           state={inversionState}
           showNote={false}
         />
+        <EstadoBadge estado={inversionState} />
         <p className="graphite-position-meta">
           {inversionAgregado?.coberturaValoracion ?? "No disponible"}
         </p>
@@ -1094,21 +1093,21 @@ function GraphitePosition({
           state={deuda.total.estado}
           showNote={false}
         />
+        <EstadoBadge estado={deuda.total.estado} />
         <p className="graphite-position-meta">
-          {deuda.aparte.hipotecaria.length} hipotecaria ·{" "}
-          {deuda.aparte.sinInformar.length} sin informar
+          {coverageText(deuda.total.cobertura)}
         </p>
-        <p className="graphite-position-note">Hipotecaria aparte</p>
+        <p className="graphite-position-note">
+          {deuda.aparte.hipotecaria.length} hipotecaria ·{" "}
+          {deuda.aparte.sinInformar.length} sin informar · hipotecaria aparte
+        </p>
         <InicioLink enlace={deuda.enlace} go={go}>
           Ver Deudas
         </InicioLink>
       </article>
       <article className="graphite-position-cell">
         <p className="graphite-kicker">Cobertura</p>
-        <Badge
-          tone={coberturaTone(inversionCoverage)}
-          label={estadoDesdeCobertura(inversionCoverage)}
-        />
+        <EstadoBadge estado={estadoDesdeCobertura(inversionCoverage)} />
         <p className="graphite-position-meta">
           Inversión · {inversionCoverage}
         </p>
@@ -1266,7 +1265,7 @@ export function Inicio({
           <GraphiteHero overview={overview} go={go} />
           <GraphiteKpis overview={overview} />
           <div className="graphite-cycle-layout">
-            <GraphiteCycleTable overview={overview} go={go} />
+            <GraphiteCycleTable overview={overview} />
             <GraphiteRail
               pendientes={pendientes}
               objetivo={objetivo}
