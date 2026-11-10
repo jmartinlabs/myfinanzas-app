@@ -26,7 +26,8 @@
 | CASA1A-16 | La matriz completa AA de Casa en 5 pantallas | No ejecutada | PENDING |
 | CASA1A-17 | Regresión visual de las 4 apariencias en 5 pantallas | Parcial: tema/Saldos | PARTIAL |
 | CASA1A-18 | QA independiente | Revisor separado | PENDING |
-| CASA1A-19 | CI remota | PR/CI | PENDING |
+| CASA1A-19 | CI remota | PR #364 | PENDING |
+| CASA1A-20 | Suite E2E completa local | `bun run test:e2e` | 75 pass / 3 fail; 2 restore macOS + 1 Deudas; no atribuidos a 1A |
 
 ## Comandos
 
