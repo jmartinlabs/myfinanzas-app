@@ -1338,39 +1338,6 @@ function analizarItem(
       continue;
     }
 
-    // E45-A3: un registro dentro del corte que no queda contenido en ningún
-    // tramo aplicable de su fuente (misma Partida y clase) no acredita
-    // cobertura ni suma. Su motivo es propio y la causa lo distingue del
-    // exceso de corte, sin cambiar el bloqueo financiero.
-    if (fuenteRegistro && fuenteRegistro.intervalosArchivo.length > 0) {
-      const tramosAplicables = fuenteRegistro.intervalosArchivo
-        .filter((tramo) => tramo.partidaId === partidaId)
-        .filter(
-          (tramo) =>
-            tramo.clase !== "Regularizacion2026" ||
-            entrada.ejercicio === 2026,
-        )
-        .map((tramo) => tramo.intervalo);
-      const contenido = unirIntervalos(tramosAplicables).some(
-        (intervalo) =>
-          intervalo.inicio <= registro.intervalo.inicio &&
-          intervalo.fin >= registro.intervalo.fin,
-      );
-      if (!contenido) {
-        agregados.push({
-          idArchivo: registro.idArchivo,
-          partidaId,
-          intervalo: registro.intervalo,
-          importe: decimal(importe),
-          causa: "FueraDeIntervalosArchivo",
-        });
-        bloqueos.push("RegistroFueraDeIntervalosArchivo");
-        subtotalNoSeparable = true;
-        archivoConocido = false;
-        continue;
-      }
-    }
-
     if (registro.estadoVerificacion === "NoVerificado") {
       bloqueos.push("VerificacionPendiente");
       if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
@@ -1408,6 +1375,38 @@ function analizarItem(
       if (registro.evidenciaNoDuplicidad?.trim())
         desconocidoConEvidencia += importe;
       else if (importe !== 0n) hayRegistrosArchivoExcluidos = true;
+      continue;
+    }
+
+    // E45-A3: todo registro que llegaría a sumar debe quedar contenido en un
+    // tramo aplicable de SU PROPIA fuente (misma Partida y clase). Una lista
+    // `intervalosArchivo: []` significa que no hay ningún tramo aplicable: la
+    // cobertura de otra fuente o el `controlDetalle` no sustituyen la
+    // contención. El importe es contexto; no se suma, no se prorratea, no se
+    // recorta y no se convierte en cero. Un importe cero tampoco acredita
+    // cobertura ni total verificado.
+    const tramosAplicables = (fuenteRegistro?.intervalosArchivo ?? [])
+      .filter(
+        (tramo) =>
+          tramo.partidaId === partidaId && tramo.clase === registro.clase,
+      )
+      .map((tramo) => tramo.intervalo);
+    const contenido = unirIntervalos(tramosAplicables).some(
+      (intervalo) =>
+        intervalo.inicio <= registro.intervalo.inicio &&
+        intervalo.fin >= registro.intervalo.fin,
+    );
+    if (!contenido) {
+      agregados.push({
+        idArchivo: registro.idArchivo,
+        partidaId,
+        intervalo: registro.intervalo,
+        importe: decimal(importe),
+        causa: "FueraDeIntervalosArchivo",
+      });
+      bloqueos.push("RegistroFueraDeIntervalosArchivo");
+      subtotalNoSeparable = true;
+      archivoConocido = false;
       continue;
     }
 
