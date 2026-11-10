@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import { formatDecimal } from "./format";
-import { Alert, Amount, Badge, Metric, PageHead, Skeleton } from "./ui";
+import {
+  Alert,
+  Amount,
+  Badge,
+  DataList,
+  Metric,
+  PageHead,
+  Skeleton,
+  Table,
+  type TableColumn,
+} from "./ui";
 import type { ThemeId } from "./themes";
 
 /**
@@ -295,7 +305,8 @@ const ESTADO_META: Record<
 
 /** Traduce coberturas de motor (E4.3/E2.4) a la taxonomía única de badges. */
 function estadoDesdeCobertura(value: string): EstadoMetrica {
-  if (/^(Completa|Verificada|Completo)$/i.test(value)) return "Verificado";
+  if (/^(Completa|Verificada|Verificado|Completo)$/i.test(value))
+    return "Verificado";
   if (/^Parcial/i.test(value)) return "Parcial";
   if (/^No aplica$/i.test(value)) return "No aplica";
   if (/^Sin datos$/i.test(value)) return "Sin datos";
@@ -510,9 +521,12 @@ function buildInicioOverview(secciones: ResumenInicio["secciones"]) {
     cycle: {
       ingresos: secciones.ciclo.ingresos,
       gasto: secciones.ciclo.gasto,
+      extraordinaria: secciones.ciclo.extraordinaria,
+      operativo: secciones.ciclo.operativo,
       delMes: secciones.ciclo.delMes,
       nomina: secciones.ciclo.nomina,
       margenReal: secciones.ciclo.margenReal,
+      base: secciones.ciclo.base,
     },
     kpis: {
       ingresos: secciones.ciclo.ingresos,
@@ -746,6 +760,397 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
   );
 }
 
+function GraphiteCycleTable({ overview }: { overview: InicioOverview }) {
+  const metrics = [
+    overview.cycle.ingresos,
+    overview.cycle.gasto,
+    overview.cycle.extraordinaria,
+    overview.cycle.nomina,
+    overview.cycle.operativo,
+    overview.cycle.margenReal,
+    overview.cycle.base,
+    overview.cycle.delMes,
+  ];
+  const columns: TableColumn<Metrica>[] = [
+    {
+      id: "metrica",
+      header: "Métrica",
+      cell: (metrica) => (
+        <>
+          <strong>{metrica.etiqueta}</strong>
+          <small className="table-id">
+            {metrica.clase === "plan" ? "Plan" : "Real"}
+          </small>
+        </>
+      ),
+    },
+    {
+      id: "valor",
+      header: "Valor",
+      kind: "amount",
+      cell: (metrica) => (
+        <Amount
+          value={metrica.valor}
+          subtotal={metrica.subtotal ?? null}
+          state={metrica.estado}
+          unit={metrica.unidad}
+          showNote={false}
+        />
+      ),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (metrica) => <EstadoBadge estado={metrica.estado} />,
+    },
+    {
+      id: "cobertura",
+      header: "Cobertura",
+      cell: (metrica) => (
+        <span className="graphite-cycle-coverage">
+          {coverageText(metrica.cobertura)}
+        </span>
+      ),
+    },
+  ];
+  return (
+    <section
+      className="graphite-cycle"
+      data-inicio-section="cycle"
+      aria-labelledby="graphite-cycle-title"
+    >
+      <div className="graphite-section-head">
+        <div>
+          <p className="eyebrow">CICLO REAL VS PLAN</p>
+          <h2 id="graphite-cycle-title">Métricas publicadas del ciclo</h2>
+        </div>
+        <Badge
+          tone="info"
+          label={`${metrics.length} ${
+            metrics.length === 1 ? "métrica" : "métricas"
+          }`}
+        />
+      </div>
+      <div className="desktop-list graphite-cycle-desktop">
+        <Table
+          caption="Métricas del ciclo real y plan"
+          label="Tabla de métricas del ciclo"
+          columns={columns}
+          rows={metrics}
+          rowKey={(metrica) => metrica.clave}
+        />
+      </div>
+      <DataList
+        columns={columns}
+        rows={metrics}
+        rowKey={(metrica) => metrica.clave}
+        label="Métricas del ciclo"
+        className="mobile-list graphite-cycle-cards"
+      />
+      <p className="graphite-cycle-note">
+        El saldo operativo y el margen se publican tal como los entrega E2.6.
+        Un subtotal parcial no se convierte en total, no se fabrica un margen y
+        no se resta la deuda ni los pendientes.
+      </p>
+      <details className="graphite-cycle-detail">
+        <summary>Motivos y fuentes de cada métrica</summary>
+        <ul>
+          {metrics.map((metrica) => (
+            <li key={metrica.clave}>
+              <strong>{metrica.etiqueta}</strong>
+              <span>{metrica.motivo}</span>
+              <FuenteLinea
+                fuente={metrica.fuente}
+                contexto={metrica.contexto}
+              />
+            </li>
+          ))}
+        </ul>
+      </details>
+    </section>
+  );
+}
+
+function GraphiteRail({
+  pendientes,
+  objetivo,
+  coste,
+  costeEstado,
+  go,
+}: {
+  pendientes: ResumenInicio["secciones"]["pendientes"];
+  objetivo: ResumenInicio["secciones"]["objetivo"];
+  coste: ResumenInicio["secciones"]["objetivo"]["costeEsencialMensual"];
+  costeEstado: EstadoMetrica;
+  go: (path: string) => void;
+}) {
+  return (
+    <aside className="graphite-rail" data-inicio-section="rail">
+      <section
+        className="graphite-rail-card graphite-attention"
+        aria-labelledby="graphite-attention-title"
+      >
+        <div className="graphite-section-head">
+          <div>
+            <p className="eyebrow">ATENCIÓN</p>
+            <h2 id="graphite-attention-title">Pendientes y cobertura</h2>
+          </div>
+          <Badge
+            tone={pendientes.fuenteFallos.length ? "partial" : "info"}
+            label={`${pendientes.items.length} ${
+              pendientes.items.length === 1 ? "visible" : "visibles"
+            }`}
+          />
+        </div>
+        {pendientes.fuenteFallos.length > 0 && (
+          <p className="graphite-rail-alert" role="status">
+            Hay fuentes de pendientes con fallo; el bloque no se presenta como
+            vacío.
+          </p>
+        )}
+        {pendientes.items.length > 0 ? (
+          <ul className="graphite-attention-list">
+            {pendientes.items.slice(0, 3).map((item) => (
+              <li key={item.claveEfimera}>
+                <span>
+                  {item.tipo} · {item.fuente.id}
+                </span>
+                <small>
+                  {item.estado} · {item.cobertura}
+                  {item.motivo ? ` · ${item.motivo}` : ""}
+                </small>
+                {item.enlaces[0] && (
+                  <a
+                    href={item.enlaces[0].href}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      go(item.enlaces[0].href);
+                    }}
+                  >
+                    Ver
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : pendientes.fuenteFallos.length === 0 ? (
+          <p className="graphite-rail-empty">Sin pendientes visibles.</p>
+        ) : null}
+        {pendientes.items.length > 3 && (
+          <p className="graphite-rail-meta">
+            Se muestran 3 de {pendientes.items.length}; el detalle inferior
+            conserva el resto.
+          </p>
+        )}
+        <p className="graphite-rail-link">
+          <InicioLink enlace={pendientes.metrica.enlace} go={go}>
+            Ver Pendientes
+          </InicioLink>
+        </p>
+      </section>
+
+      <section
+        className="graphite-rail-card graphite-objective"
+        aria-labelledby="graphite-objective-title"
+      >
+        <div className="graphite-section-head">
+          <div>
+            <p className="eyebrow">OBJETIVO R6</p>
+            <h2 id="graphite-objective-title">Coste esencial y meses</h2>
+          </div>
+          <EstadoBadge estado={costeEstado} />
+        </div>
+        <div className="graphite-objective-value">
+          <Amount
+            value={coste.valor}
+            subtotal={coste.subtotal}
+            state={costeEstado}
+            unit="EUR"
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-rail-meta">
+          Coste esencial mensual · ejercicio {coste.ejercicio ?? "—"} ·{" "}
+          {coste.estadoEquivalente}
+        </p>
+        <dl className="graphite-objective-facts">
+          <div>
+            <dt>Meses objetivo</dt>
+            <dd>
+              {objetivo.mesesObjetivo === null
+                ? "No configurados"
+                : `${objetivo.mesesObjetivo} meses`}
+            </dd>
+          </div>
+          <div>
+            <dt>Meses cubiertos</dt>
+            <dd>
+              <Amount
+                value={objetivo.mesesCubiertos.valor}
+                subtotal={objetivo.mesesCubiertos.subtotal ?? null}
+                state={objetivo.mesesCubiertos.estado}
+                unit={objetivo.mesesCubiertos.unidad}
+                showNote={false}
+              />
+              <EstadoBadge estado={objetivo.mesesCubiertos.estado} />
+            </dd>
+          </div>
+        </dl>
+        <p className="graphite-rail-link">
+          <InicioLink enlace={objetivo.metrica.enlace} go={go}>
+            Ver coste esencial
+          </InicioLink>
+        </p>
+      </section>
+    </aside>
+  );
+}
+
+function GraphitePosition({
+  saldos,
+  ahorro,
+  inversion,
+  deuda,
+  go,
+}: {
+  saldos: ResumenInicio["secciones"]["saldos"];
+  ahorro: ResumenInicio["secciones"]["ahorro"];
+  inversion: ResumenInicio["secciones"]["inversion"];
+  deuda: ResumenInicio["secciones"]["deudaNoHipotecaria"];
+  go: (path: string) => void;
+}) {
+  const inversionAgregado = inversion.agregado;
+  const inversionState: EstadoMetrica = inversionAgregado
+    ? estadoDesdeCobertura(inversionAgregado.coberturaValoracion)
+    : "No disponible";
+  const firstAhorro = ahorro.posiciones[0];
+  const inversionCoverage =
+    inversionAgregado?.coberturaValoracion ?? inversion.cobertura.estado;
+  return (
+    <section
+      className="graphite-position"
+      data-inicio-section="position"
+      aria-label="Posición y cobertura"
+    >
+      <article className="graphite-position-cell">
+        <p className="graphite-kicker">Saldos</p>
+        <strong className="graphite-position-value">{saldos.items.length}</strong>
+        <EstadoBadge estado={estadoDesdeCobertura(saldos.cobertura.estado)} />
+        <p className="graphite-position-meta">
+          {coverageText(saldos.cobertura)}
+        </p>
+        <p className="graphite-position-note">
+          {saldos.conteos.liquidez} liquidez · {saldos.conteos.ahorro} ahorro ·{" "}
+          {saldos.conteos.bolsas}{" "}
+          {saldos.conteos.bolsas === 1 ? "bolsa" : "bolsas"} · sin total entre
+          vistas
+        </p>
+        <InicioLink enlace={saldos.enlace} go={go}>
+          Ver Saldos
+        </InicioLink>
+      </article>
+      <article className="graphite-position-cell">
+        <p className="graphite-kicker">Ahorro</p>
+        {firstAhorro ? (
+          <>
+            <Amount
+              value={firstAhorro.valor}
+              state={estadoDesdeCobertura(firstAhorro.estado)}
+              showNote={false}
+            />
+            <EstadoBadge estado={estadoDesdeCobertura(firstAhorro.estado)} />
+            <p className="graphite-position-meta">
+              {firstAhorro.nombre} · {ahorro.posiciones.length}{" "}
+              {ahorro.posiciones.length === 1 ? "posición" : "posiciones"}
+            </p>
+          </>
+        ) : (
+          <p className="graphite-position-meta">Sin posiciones</p>
+        )}
+        <p className="graphite-position-note">Sin total de Ahorro</p>
+        <InicioLink enlace={ahorro.enlace} go={go}>
+          Ver Ahorro
+        </InicioLink>
+      </article>
+      <article className="graphite-position-cell">
+        <p className="graphite-kicker">Inversión valorada</p>
+        <Amount
+          value={inversionAgregado?.valorEur ?? null}
+          state={inversionState}
+          showNote={false}
+        />
+        <EstadoBadge estado={inversionState} />
+        <p className="graphite-position-meta">
+          {inversionAgregado?.coberturaValoracion ?? "No disponible"}
+        </p>
+        <p className="graphite-position-note">Efectivo del bróker aparte</p>
+        <InicioLink enlace={inversion.enlace} go={go}>
+          Ver Inversión
+        </InicioLink>
+      </article>
+      <article className="graphite-position-cell">
+        <p className="graphite-kicker">Deuda no hipotecaria</p>
+        <Amount
+          value={deuda.total.valor}
+          subtotal={deuda.total.subtotal ?? null}
+          state={deuda.total.estado}
+          showNote={false}
+        />
+        <EstadoBadge estado={deuda.total.estado} />
+        <p className="graphite-position-meta">
+          {deuda.total.estado === "Parcial" ? "Subtotal conocido · " : ""}
+          {coverageText(deuda.total.cobertura)}
+        </p>
+        <p className="graphite-position-note">
+          {deuda.aparte.hipotecaria.length} hipotecaria ·{" "}
+          {deuda.aparte.sinInformar.length} sin informar · hipotecaria aparte
+        </p>
+        <InicioLink enlace={deuda.enlace} go={go}>
+          Ver Deudas
+        </InicioLink>
+      </article>
+      <article className="graphite-position-cell">
+        <p className="graphite-kicker">Cobertura</p>
+        <EstadoBadge estado={estadoDesdeCobertura(inversionCoverage)} />
+        <p className="graphite-position-meta">
+          Inversión · {inversionCoverage}
+        </p>
+        <p className="graphite-position-note">Cada cifra conserva su motor</p>
+        <InicioLink enlace={inversion.enlace} go={go}>
+          Ver Inversión
+        </InicioLink>
+      </article>
+    </section>
+  );
+}
+
+function GraphiteCoverage({
+  pendientesDelModelo,
+  contexto,
+}: {
+  pendientesDelModelo: string[];
+  contexto: ResumenInicio["contexto"];
+}) {
+  return (
+    <section
+      className="graphite-coverage"
+      data-inicio-section="coverage"
+      aria-label="Cobertura del modelo y fuentes"
+    >
+      <p>
+        <strong>Cobertura del modelo</strong> · {pendientesDelModelo.length}{" "}
+        {pendientesDelModelo.length === 1
+          ? "limitación declarada"
+          : "limitaciones declaradas"}{" "}
+        · {contexto.motivos.length}{" "}
+        {contexto.motivos.length === 1 ? "motivo" : "motivos"} de contexto.
+      </p>
+      <a href="#inicio-cobertura">Ver detalle y fuentes</a>
+    </section>
+  );
+}
+
 export function Inicio({
   go,
   theme,
@@ -868,6 +1273,36 @@ export function Inicio({
         <>
           <GraphiteHero overview={overview} go={go} />
           <GraphiteKpis overview={overview} />
+          <div className="graphite-cycle-layout">
+            <GraphiteCycleTable overview={overview} />
+            <GraphiteRail
+              pendientes={pendientes}
+              objetivo={objetivo}
+              coste={coste}
+              costeEstado={costeEstadoValor}
+              go={go}
+            />
+          </div>
+          <GraphitePosition
+            saldos={saldos}
+            ahorro={ahorro}
+            inversion={inversion}
+            deuda={deuda}
+            go={go}
+          />
+          <GraphiteCoverage
+            pendientesDelModelo={data.pendientesDelModelo}
+            contexto={contexto}
+          />
+          <div className="graphite-detail-heading">
+            <p className="eyebrow">DETALLE Y FUENTES</p>
+            <h2>Información completa</h2>
+            <p>
+              Los paneles siguientes conservan el detalle, las fuentes y los
+              estados publicados. La lectura principal es la composición
+              superior.
+            </p>
+          </div>
         </>
       )}
 
@@ -1191,42 +1626,44 @@ export function Inicio({
         </section>
       </div>
 
-      <section className="panel inicio-section" aria-labelledby="inicio-ciclo">
-        <h2 id="inicio-ciclo">
-          {ciclo ? `Ciclo ${ciclo.id} · REAL vs PLAN` : "Ciclo · REAL vs PLAN"}
-        </h2>
-        <div className="inicio-metric-grid">
-          {[
-            cicloSeccion.ingresos,
-            cicloSeccion.gasto,
-            cicloSeccion.extraordinaria,
-            cicloSeccion.nomina,
-            cicloSeccion.operativo,
-            cicloSeccion.margenReal,
-            cicloSeccion.base,
-            cicloSeccion.delMes,
-          ].map((metrica) => (
-            <MetricCard
-              key={metrica.clave}
-              metrica={metrica}
-              go={go}
-              showLink={false}
-            />
-          ))}
-        </div>
-        {cicloSeccion.ingresos.enlace !== null && (
-          <p className="inicio-linkrow">
-            <InicioLink enlace={cicloSeccion.ingresos.enlace} go={go}>
-              Ver flujo mensual
-            </InicioLink>
+      {theme !== "graphite-lime" && (
+        <section className="panel inicio-section" aria-labelledby="inicio-ciclo">
+          <h2 id="inicio-ciclo">
+            {ciclo ? `Ciclo ${ciclo.id} · REAL vs PLAN` : "Ciclo · REAL vs PLAN"}
+          </h2>
+          <div className="inicio-metric-grid">
+            {[
+              cicloSeccion.ingresos,
+              cicloSeccion.gasto,
+              cicloSeccion.extraordinaria,
+              cicloSeccion.nomina,
+              cicloSeccion.operativo,
+              cicloSeccion.margenReal,
+              cicloSeccion.base,
+              cicloSeccion.delMes,
+            ].map((metrica) => (
+              <MetricCard
+                key={metrica.clave}
+                metrica={metrica}
+                go={go}
+                showLink={false}
+              />
+            ))}
+          </div>
+          {cicloSeccion.ingresos.enlace !== null && (
+            <p className="inicio-linkrow">
+              <InicioLink enlace={cicloSeccion.ingresos.enlace} go={go}>
+                Ver flujo mensual
+              </InicioLink>
+            </p>
+          )}
+          <p className="inicio-note">
+            El saldo operativo y el margen se publican tal como los entrega E2.6.
+            Un subtotal parcial no se convierte en total, no se fabrica un margen
+            y no se resta la deuda ni los pendientes.
           </p>
-        )}
-        <p className="inicio-note">
-          El saldo operativo y el margen se publican tal como los entrega E2.6.
-          Un subtotal parcial no se convierte en total, no se fabrica un margen
-          y no se resta la deuda ni los pendientes.
-        </p>
-      </section>
+        </section>
+      )}
 
       <div className="inicio-grid-4">
         <section className="panel inicio-section" aria-labelledby="inicio-saldos">

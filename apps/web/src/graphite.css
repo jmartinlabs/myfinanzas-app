@@ -435,6 +435,18 @@ html[data-theme="graphite-lime"] .graphite-control-cell:first-of-type {
   border-left: 0;
 }
 
+html[data-theme="graphite-lime"] .graphite-control-cell:nth-of-type(1),
+html[data-theme="graphite-lime"] .graphite-control-cell:nth-of-type(2) {
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-theme="graphite-lime"] .graphite-control-cell:nth-of-type(1) .graphite-control-note,
+html[data-theme="graphite-lime"] .graphite-control-cell:nth-of-type(2) .graphite-control-note {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
 html[data-theme="graphite-lime"] .graphite-kicker {
   margin: 0 0 10px;
   color: var(--muted);
@@ -628,5 +640,420 @@ html[data-theme="graphite-lime"] .graphite-kpi-meta {
 
   html[data-theme="graphite-lime"] .graphite-facts {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* G2b · Inicio: ciclo, rail, posición y cobertura ------------------------ */
+
+html[data-theme="graphite-lime"] .graphite-cycle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.85fr);
+  gap: 18px;
+  align-items: start;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle,
+html[data-theme="graphite-lime"] .graphite-rail-card {
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle {
+  padding: 20px;
+  min-width: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+html[data-theme="graphite-lime"] .graphite-section-head .eyebrow {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .graphite-section-head h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table {
+  table-layout: fixed;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table th:nth-child(1) {
+  width: 24%;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table th:nth-child(2) {
+  width: 16%;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table th:nth-child(3) {
+  width: 24%;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table th:nth-child(4) {
+  width: 36%;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table td:nth-child(3) .ui-badge {
+  max-width: 100%;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table th {
+  background: var(--table-head);
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle .ui-table td {
+  vertical-align: top;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-coverage {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-detail {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-detail summary {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-detail ul {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-detail li {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-detail li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-detail li > span,
+html[data-theme="graphite-lime"] .graphite-cycle-detail .inicio-source {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+html[data-theme="graphite-lime"] .graphite-rail {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-rail-card {
+  padding: 18px;
+  min-width: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-attention-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html[data-theme="graphite-lime"] .graphite-attention-list li {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+html[data-theme="graphite-lime"] .graphite-attention-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-attention-list li > span {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .graphite-cycle-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .graphite-attention-list small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+html[data-theme="graphite-lime"] .graphite-attention-list a,
+html[data-theme="graphite-lime"] .graphite-rail-link a {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-value {
+  margin: 4px 0 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-value .ui-amount-value {
+  font-size: 30px;
+  letter-spacing: -0.9px;
+}
+
+html[data-theme="graphite-lime"] .graphite-rail-meta,
+html[data-theme="graphite-lime"] .graphite-rail-empty,
+html[data-theme="graphite-lime"] .graphite-rail-alert {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .graphite-rail-alert {
+  color: var(--warning);
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-facts {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-facts dd {
+  margin: 0;
+  font-size: 14px;
+  text-align: right;
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-facts .ui-amount-value {
+  font-size: 16px;
+}
+
+html[data-theme="graphite-lime"] .graphite-objective-facts .ui-badge {
+  margin-left: 6px;
+}
+
+html[data-theme="graphite-lime"] .graphite-rail-link {
+  margin: 12px 0 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-position {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  background-image: linear-gradient(160deg, #161916 0%, #111311 100%);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .graphite-position-cell {
+  min-width: 0;
+  padding: 16px 18px;
+  border-left: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .graphite-position-cell:first-child {
+  border-left: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-position-value {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.9px;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .graphite-position-cell .ui-amount-value {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+
+html[data-theme="graphite-lime"] .graphite-position-meta,
+html[data-theme="graphite-lime"] .graphite-position-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+html[data-theme="graphite-lime"] .graphite-position-cell > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-top: 8px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .graphite-coverage {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .graphite-coverage p {
+  margin: 0;
+}
+
+html[data-theme="graphite-lime"] .graphite-coverage strong {
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .graphite-coverage a {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .graphite-detail-heading {
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-theme="graphite-lime"] .graphite-detail-heading .eyebrow {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .graphite-detail-heading h2 {
+  margin-bottom: 6px;
+  font-size: 20px;
+}
+
+html[data-theme="graphite-lime"] .graphite-detail-heading p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .graphite-cycle-desktop {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .graphite-cycle-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 1180px) {
+  html[data-theme="graphite-lime"] .graphite-cycle-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .graphite-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell:nth-child(3n + 1) {
+    border-left: 0;
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell:nth-child(n + 4) {
+    border-top: 1px solid var(--graphite-card-border);
+  }
+}
+
+@media (max-width: 800px) {
+  html[data-theme="graphite-lime"] .graphite-position {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell:nth-child(3n + 1) {
+    border-left: 1px solid var(--graphite-card-border);
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell:nth-child(odd) {
+    border-left: 0;
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell:nth-child(n + 3) {
+    border-top: 1px solid var(--graphite-card-border);
+  }
+}
+
+@media (max-width: 600px) {
+  html[data-theme="graphite-lime"] .graphite-rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell,
+  html[data-theme="graphite-lime"] .graphite-position-cell:nth-child(odd) {
+    border-top: 1px solid var(--graphite-card-border);
+    border-left: 0;
+  }
+
+  html[data-theme="graphite-lime"] .graphite-position-cell:first-child {
+    border-top: 0;
+  }
+
+  html[data-theme="graphite-lime"] .graphite-cycle {
+    padding: 16px;
   }
 }
