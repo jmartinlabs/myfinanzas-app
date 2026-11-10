@@ -1141,7 +1141,7 @@ export async function auditReducedMotion(
 }
 
 export async function setTheme(page: Page, theme: Dev07Theme): Promise<void> {
-  await page.getByLabel("Tema visual").selectOption(theme);
+  await page.getByLabel("Apariencia").selectOption(theme);
   await page.waitForFunction(
     (expected) => document.documentElement.dataset.theme === expected,
     theme,

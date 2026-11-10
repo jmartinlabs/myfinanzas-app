@@ -214,7 +214,7 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     ).toBeEnabled();
 
     // Evidencia visual: 1440 y 390, tres temas, sin scroll horizontal.
-    const theme = page.getByLabel("Tema visual");
+    const theme = page.getByLabel("Apariencia");
     for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await theme.selectOption(id);
@@ -545,7 +545,7 @@ test("E4.9 UI: preflight bloqueado por E3.5 y backup, sin foto parcial", async (
     ).toBe(404);
 
     // Estado crítico bloqueado: una captura por tema a 390.
-    const theme = page.getByLabel("Tema visual");
+    const theme = page.getByLabel("Apariencia");
     for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
       await page.setViewportSize({ width: 390, height: 844 });
       await theme.selectOption(id);
@@ -964,7 +964,7 @@ test("E4.10 UI: reabrir v1, ver el impacto y re-cerrar v2 con comparación", asy
     ).toBe(200);
 
     // Evidencia visual 1440/390 en los tres temas vigentes.
-    const theme = page.getByLabel("Tema visual");
+    const theme = page.getByLabel("Apariencia");
     for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await theme.selectOption(id);

@@ -574,7 +574,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   });
   expect(outlined).toBe(true);
 
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   const expectNoOverflow = async () =>
     expect(
       await page.evaluate(
@@ -701,7 +701,7 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   await expect(deudaTotal).toContainText("Subtotal conocido");
 
   // Evidencia: tres temas a 1440 y 390, también en el escenario cero.
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);
@@ -822,7 +822,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
   });
 
   // Evidencia: tres temas a 1440 y 390, también en el escenario degradado.
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);

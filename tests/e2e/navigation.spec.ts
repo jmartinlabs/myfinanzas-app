@@ -240,7 +240,7 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
   await page.keyboard.press("Escape");
 
   // Tres temas a 390 con el menú abierto: sin desbordamiento horizontal.
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   for (const [id, file] of [
     ["dark-s", "390-dark-s-menu.png"],
     ["light-s", "390-light-s-menu.png"],

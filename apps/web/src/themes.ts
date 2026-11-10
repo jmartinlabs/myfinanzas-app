@@ -5,6 +5,7 @@ export const themeCatalog = [
   { id: "dark-s", label: "Oscuro", colorScheme: "dark" },
   { id: "hybrid-s", label: "Mixto", colorScheme: "light" },
   { id: "graphite-lime", label: "Grafito", colorScheme: "dark" },
+  { id: "casa", label: "Casa", colorScheme: "light" },
 ] as const;
 
 export type ThemeId = (typeof themeCatalog)[number]["id"];
