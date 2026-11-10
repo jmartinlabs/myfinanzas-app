@@ -60,8 +60,9 @@ async function authenticate(page: Page) {
   await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
 }
 
-test("Casa 1C: Movimientos editorial, tabla/cartas y 1440/390", async ({ page }) => {
+test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }) => {
   mkdirSync("artifacts/ui-casa-1c", { recursive: true });
+  mkdirSync("artifacts/ui-casa-1d", { recursive: true });
   await authenticate(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -101,6 +102,52 @@ test("Casa 1C: Movimientos editorial, tabla/cartas y 1440/390", async ({ page })
   ).toBe(true);
   await page.screenshot({
     path: "artifacts/ui-casa-1c/movimientos-casa-390.png",
+    fullPage: true,
+  });
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page
+    .locator(".desktop-list tbody tr")
+    .first()
+    .locator("a")
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/movimientos\/\d+$/);
+  await expect(page.locator(".movement-detail")).toBeVisible();
+  await expect(page.locator(".movement-detail")).toContainText(
+    "Hecho registrado",
+  );
+  await expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: "artifacts/ui-casa-1d/detalle-casa-1440.png",
+    fullPage: true,
+  });
+
+  await page.getByRole("button", { name: "Rectificar", exact: true }).click();
+  await expect(page.locator(".movement-form-page")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Rectificar movimiento", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "artifacts/ui-casa-1d/formulario-casa-1440.png",
+    fullPage: true,
+  });
+  await page
+    .locator(".movement-form-page .form-footer")
+    .scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeVisible();
+  await page.screenshot({
+    path: "artifacts/ui-casa-1d/formulario-casa-1440-acciones.png",
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: "artifacts/ui-casa-1d/formulario-casa-390.png",
     fullPage: true,
   });
   expect(errors).toEqual([]);

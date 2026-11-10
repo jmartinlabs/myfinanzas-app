@@ -1281,7 +1281,7 @@ function MovementForm({
         ? "Revisar transferencia"
         : "Registrar movimiento";
   return (
-    <>
+    <div className="movement-form-page">
       <Link to={base} go={go}>
         Volver a Movimientos
       </Link>
@@ -1928,6 +1928,6 @@ function MovementForm({
           </div>
         </form>
       )}
-    </>
+    </div>
   );
 }
