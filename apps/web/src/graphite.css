@@ -925,7 +925,9 @@ html[data-theme="graphite-lime"] .graphite-position-note {
 }
 
 html[data-theme="graphite-lime"] .graphite-position-cell > a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
   margin-top: 8px;
   color: var(--accent);
   font-size: 12px;

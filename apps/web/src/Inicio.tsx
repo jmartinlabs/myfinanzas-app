@@ -1036,12 +1036,16 @@ function GraphitePosition({
       <article className="graphite-position-cell">
         <p className="graphite-kicker">Saldos</p>
         <strong className="graphite-position-value">{saldos.items.length}</strong>
+        <EstadoBadge estado={estadoDesdeCobertura(saldos.cobertura.estado)} />
         <p className="graphite-position-meta">
+          {coverageText(saldos.cobertura)}
+        </p>
+        <p className="graphite-position-note">
           {saldos.conteos.liquidez} liquidez · {saldos.conteos.ahorro} ahorro ·{" "}
           {saldos.conteos.bolsas}{" "}
-          {saldos.conteos.bolsas === 1 ? "bolsa" : "bolsas"}
+          {saldos.conteos.bolsas === 1 ? "bolsa" : "bolsas"} · sin total entre
+          vistas
         </p>
-        <p className="graphite-position-note">Sin total entre vistas</p>
         <InicioLink enlace={saldos.enlace} go={go}>
           Ver Saldos
         </InicioLink>
@@ -1095,6 +1099,7 @@ function GraphitePosition({
         />
         <EstadoBadge estado={deuda.total.estado} />
         <p className="graphite-position-meta">
+          {deuda.total.estado === "Parcial" ? "Subtotal conocido · " : ""}
           {coverageText(deuda.total.cobertura)}
         </p>
         <p className="graphite-position-note">
@@ -1128,7 +1133,11 @@ function GraphiteCoverage({
   contexto: ResumenInicio["contexto"];
 }) {
   return (
-    <section className="graphite-coverage" data-inicio-section="coverage">
+    <section
+      className="graphite-coverage"
+      data-inicio-section="coverage"
+      aria-label="Cobertura del modelo y fuentes"
+    >
       <p>
         <strong>Cobertura del modelo</strong> · {pendientesDelModelo.length}{" "}
         {pendientesDelModelo.length === 1

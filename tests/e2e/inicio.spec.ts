@@ -353,7 +353,7 @@ async function expectGraphiteComposition(page: Page) {
 
   // G2b: banda de posición y cobertura publicadas.
   await expect(position.locator(".graphite-position-value")).toHaveText("7");
-  await expect(position).toContainText("Sin total entre vistas");
+  await expect(position).toContainText("sin total entre vistas");
   await expect(position).toContainText("Sin total de Ahorro");
   await expect(position).toContainText("Efectivo del bróker aparte");
   await expect(position).toContainText("hipotecaria aparte");
@@ -363,6 +363,12 @@ async function expectGraphiteComposition(page: Page) {
     position
       .locator(".graphite-position-cell")
       .filter({ has: page.locator(".graphite-kicker", { hasText: label }) });
+  const saldosCell = positionCell("Saldos");
+  await expect(saldosCell).toContainText("6/7");
+  await expect(saldosCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Parcial",
+  );
   const ahorroCell = positionCell("Ahorro");
   await expect(ahorroCell).toContainText("800,00 €");
   await expect(ahorroCell).toContainText("COMPLETO");
@@ -377,6 +383,7 @@ async function expectGraphiteComposition(page: Page) {
   const deudaCell = positionCell("Deuda no hipotecaria");
   await expect(deudaCell).toContainText("1.020,00 €");
   await expect(deudaCell).toContainText("PARCIAL");
+  await expect(deudaCell).toContainText("Subtotal conocido");
   await expect(deudaCell).toContainText("2/3");
   await expect(deudaCell.locator(".ui-badge")).toHaveAttribute(
     "data-estado",
@@ -472,7 +479,7 @@ async function expectInicioContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase,.graphite-kicker,.graphite-plan-item > span,.graphite-facts dt,.graphite-kpi-meta,.graphite-control-note,.graphite-control-link",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase,.graphite-kicker,.graphite-plan-item > span,.graphite-facts dt,.graphite-kpi-meta,.graphite-control-note,.graphite-control-link,.graphite-cycle-coverage,.ui-data-list-label",
       ),
     );
     const result: number[] = [];
