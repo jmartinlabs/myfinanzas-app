@@ -45,9 +45,9 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 | `bun run test:e2e -- tests/e2e/theme.spec.ts tests/e2e/graphite-g1.spec.ts` | **3/3 PASS** |
 | `bun run test:e2e -- tests/e2e/inicio.spec.ts` | **5/5 PASS** |
 | `bun run test:e2e -- tests/e2e/movimientos.spec.ts` en Linux limpio | **1/1 PASS** (contenedor Debian arm64 con Bun, Node 20, Chromium, `age` y `git`) |
-| **Integración local Casa #363/#364 + G1 · `bun test apps/web`** | **119/119 PASS** |
+| **Integración local Casa #363/#364 + G1 · `bun test apps/web`** | **238/238 PASS** |
 | **Integración local · specs de tema** | **7/7 PASS** (Claro, Oscuro, Mixto, Grafito y Casa) |
-| **Integración local · E2E completo Linux** | **79/79 PASS** (6,5 min) |
+| **Integración local · E2E completo Linux** | **78/79 PASS**; único fallo flaky de foco de teclado en `resumen-anual`, rerun aislado **5/5 PASS** |
 | `movimientos.spec.ts` en macOS local | Falla por entorno: falta `age-keygen`/restauración auxiliar; no es una regresión de G1 |
 
 `movimientos.spec.ts` requiere `age-keygen` y un servidor auxiliar en el puerto 3004. En el
@@ -135,24 +135,27 @@ Referencias del prototipo:
 
 ## Integración local con Casa
 
-Se preparó y publicó la rama `integration/casa-g1` (`0b9e229`) con:
+Se preparó y publicó la rama `integration/casa-g1` (`5216f6b`) con:
 
-- #363 (UI-P1) y #364 (Casa 1A) fusionadas sobre `test` `1d288c5`.
+- #363 (UI-P1) y #364 (Casa 1A) fusionadas sobre `test` `fc0df99` (#367).
 - G1 (#368) integrado después, resolviendo el conflicto de las secciones 2.3/2.4 de
   `specs/ui-specification.md`.
 
 Resultados de la integración:
 
-- `bun test apps/web`: **119/119 PASS**.
+- `bun test apps/web`: **238/238 PASS**.
 - `typecheck` y `build`: **PASS**.
 - Specs de tema `theme.spec` + `theme-graphite` + `theme-casa` + `graphite-g1`: **7/7 PASS**.
-- Suite E2E completa en Linux limpio: **79/79 PASS**, incluida `movimientos.spec.ts` y las cinco
-  apariencias.
+- Suite E2E completa en Linux limpio: **78/79 PASS**, con `movimientos.spec.ts` PASS y las cinco
+  apariencias. El único fallo fue un flake de foco de teclado en `resumen-anual`; el rerun
+  aislado del archivo pasó **5/5**.
+- Una ejecución anterior sobre `test` `1d288c5` había pasado **79/79**; #367 solo añade timeouts
+  explícitos a pruebas API pesadas.
 
 Casa #363/#364 siguen **abiertas** y sin aprobación explícita de merge; no se han fusionado en
-`test` desde esta sesión. G1 #368 continúa basada en `test` `1d288c5`. Cuando el usuario autorice
-Casa, el orden es: merge #363 → merge #364 → rebase de G1 → CI/QA final. La integración local
-demuestra que ese orden funciona.
+`test` desde esta sesión. G1 #368 continúa basada en `test` `fc0df99` (rebasada). Cuando el usuario
+autorice Casa, el orden es: merge #363 → merge #364 → rebase final de G1 → CI/QA. La integración
+local demuestra que ese orden funciona.
 
 ## Riesgos residuales
 
@@ -162,7 +165,8 @@ demuestra que ese orden funciona.
 | Tabla de Saldos a 820 parte palabras largas | Abierto; ajuste de tabla responsive en G3/G5 |
 | Capturas de Inicio/Movimientos con fixture incompleto | Documentado; G2/G3 usarán datos funcionales |
 | CI `required` no ejecuta web/E2E | Evidencia local/Linux; no confundir CI con aceptación visual |
-| Casa 1A pendiente de merge | Integración local 79/79; G1 se rebasa cuando se autorice #363/#364 |
+| Casa 1A pendiente de merge | Integración local 78/79 con flake aislado; G1 se rebasa cuando se autorice #363/#364 |
+| Flake de foco en `resumen-anual` | Aislado 5/5; no relacionado con G1; repetir en CI Linux |
 
 ## Conclusión
 
