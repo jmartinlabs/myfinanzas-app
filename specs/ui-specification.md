@@ -76,18 +76,21 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Light | `light-s` | Implementado y cerrado |
 | Hybrid | `hybrid-s` | Implementado y cerrado |
 | Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; integrado en `test` con #356 (`bff714e`); seleccionable como cuarto tema |
+| Casa | `casa` | Aprobada 2026-11-10; 1A autorizado y en curso |
 
 - Los tokens semánticos vigentes son los de `apps/web/public/themes.css`; los componentes
   consumen `var(--…)` y no conocen el tema.
-- El selector de tema existente se conserva; no se añade otro selector ni se cambia el
-  mecanismo de persistencia. La ampliación del catálogo se hace con una entrada adicional y un
-  bloque de tokens, no con un segundo mecanismo.
-- Dark, Light y Hybrid no se modifican: ni paletas, ni tokens, ni orden/identidad, ni el tema
-  inicial `dark-s`.
-- Graphite Lime se añade de forma aditiva por la enmienda UI-G1. No se implementan otros
-  candidatos sin una decisión expresa y una enmienda propia.
-- **Prohibido:** reabrir o alterar los tres temas existentes, cambiar `dark-s` como
-  predeterminado, sustituir `mf-theme` o modificar `theme-boot.js` para un tema no aprobado.
+- El selector existente se etiqueta **«Apariencia»** y conserva un único control; no se añade
+  otro selector ni se cambia el mecanismo de persistencia. La ampliación del catálogo se hace
+  con una entrada adicional y un bloque de tokens, no con un segundo mecanismo.
+- Dark, Light, Hybrid y Graphite Lime no se modifican: ni paletas, ni tokens, ni orden/identidad,
+  ni el tema inicial `dark-s`.
+- Graphite Lime se añade de forma aditiva por la enmienda UI-G1. **Casa se añade de forma
+  aditiva por la enmienda UI-P1 (2.3).** No se implementan otros candidatos sin una decisión
+  expresa y una enmienda propia.
+- **Prohibido:** reabrir o alterar los cuatro temas existentes, cambiar `dark-s` como
+  predeterminado, sustituir `mf-theme` o modificar `theme-boot.js` para una apariencia no
+  aprobada.
 
 ### 2.1 Actualización aplicada de `guidelines/ui.md` (2026-11-06)
 
@@ -139,6 +142,38 @@ arranque previo a React, fallback a `dark-s`, colores clave y ausencia de overfl
 la suite de los tres temas existentes se conserva sin cambios. La matriz AA histórica de tres
 temas no se reutiliza como PASS de Graphite.
 
+### 2.3 Enmienda UI-P1 · Casa de cuentas 1A (2026-11-10)
+
+Ratificada por el usuario el 2026-11-10 para iniciar la implementación de **Casa de cuentas**
+como **quinta apariencia** del sistema de temas existente. No reabre Graphite Lime ni autoriza
+Señal.
+
+Alcance autorizado para 1A:
+
+- ID `casa`, etiqueta «Casa», `colorScheme: light`.
+- Bloque aditivo de **66 tokens semánticos** en `themes.css`, con los mismos nombres que los
+  cuatro temas existentes.
+- Tokens de tipografía, espaciado y superficies, y CSS específico de Casa en un archivo aislado
+  (`casa.css`), sin duplicar `style.css` ni usar `!important`.
+- Registro en `themes.ts` y ampliación de la lista `known` de `theme-boot.js`.
+- Selector único **«Apariencia»** con cinco opciones: Claro, Oscuro, Mixto, Grafito y Casa.
+- Persistencia en `mf-theme`; `dark-s` sigue siendo el valor inicial.
+- Sin `data-experience`, `mf-experience` ni un segundo script de arranque.
+- Pruebas unitarias y E2E de catálogo, selección, persistencia, arranque previo a React y no
+  regresión de las cuatro apariencias actuales.
+
+Límites:
+
+- 1A **no** modifica Inicio, Movimientos, navegación ni formularios; solo la base visual
+  (tokens, tipografía, espaciado, superficies y estilos de componentes ya existentes).
+- 1B (composición editorial de Inicio) requiere propuesta, alcance y autorización separados.
+- Señal no está autorizada.
+- No se modifican API, DTO, SQLite, Excel, cálculos, datos reales ni contratos financieros.
+- No se autoriza merge ni despliegue; 1A requiere su PR y QA independiente.
+
+Esta enmienda sustituye únicamente la cláusula de «no otros candidatos» en lo que respecta a
+Casa 1A; el resto de la especificación y las decisiones de Graphite Lime se conservan.
+
 ## 3. Dependencias
 
 | Dependencia | Estado | Qué aporta | Límite para `UI` |
@@ -147,7 +182,7 @@ temas no se reutiliza como PASS de Graphite.
 | E4.9 / cierre y foto | Integrada `0176ffc` (#200), QA APTO CON RESERVAS | Patrones de operación irreversible y bloqueo | No reabrir rutas, contratos ni estados |
 | E4.10 / reapertura | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1`, no fusionado; 24 AC `UNRUN` | Patrón futuro de reapertura/reapertura cancelada | No anticipar pantallas, clases ni rutas de E4.10 hasta su UI |
 | E4.11 / fotos periodo | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV | Contexto de consulta | No fijar pantallas antes de su SPEC |
-| Temas #198 | Tres temas cerrados `0b8aade`; enmienda UI-G1 2026-11-10; Graphite 1A integrado `bff714e` (#356) | Tokens, selector y ampliación Graphite 1A | No cambiar los tres existentes; Graphite solo en 1A |
+| Temas #198 | Tres temas cerrados `0b8aade`; Graphite 1A integrado `bff714e` (#356); enmienda UI-P1 2026-11-10 | Tokens, selector y ampliación Casa 1A | No cambiar los cuatro temas existentes; Casa solo en 1A |
 
 ## 4. Bloques `UI · DEV-01…07`
 

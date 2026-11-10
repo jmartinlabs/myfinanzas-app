@@ -12,35 +12,45 @@ historia de E1.1–E1.5 y no reabren decisiones.
 > clave de persistencia. La enmienda no reabre los tres temas ni autoriza otros candidatos, la
 > integración visual completa, 1B (`prefers-reduced-motion`), merge o despliegue.
 
+> **Enmienda Casa de cuentas (2026-11-10).** Se aprueba `casa` («Casa») como quinta apariencia
+> y se autoriza su base visual 1A: tokens, tipografía, espaciado, superficies y CSS aislado.
+> El selector existente pasa a etiquetarse «Apariencia» y conserva un único control con cinco
+> opciones. `mf-theme` y `dark-s` no cambian; no se introduce `data-experience` ni una segunda
+> persistencia. 1A no modifica Inicio, Movimientos, navegación ni formularios. La composición
+> editorial de Inicio (1B) y Señal requieren autorización separada.
+
 ### Temas y tokens
 
 - Temas **Dark (`dark-s`), Light (`light-s`) y Hybrid (`hybrid-s`)** implementados en `0b8aade`
   (#198); conservan identidad, tokens y comportamiento. **Graphite Lime (`graphite-lime`,
-  «Grafito»)** queda aprobado como cuarto tema por la enmienda del 2026-11-10. El catálogo solo
-  se amplía por decisión expresa; no se reabren los tres temas.
+  «Grafito»)** está integrado en `bff714e` (#356). **Casa (`casa`)** queda aprobada como quinta
+  apariencia por la enmienda del 2026-11-10. El catálogo solo se amplía por decisión expresa; no
+  se reabren los tres temas.
 - Tokens semánticos en `apps/web/public/themes.css`; los componentes consumen `var(--…)` y no
   conocen el tema. `style.css` conserva un único hex de fallback
   (`var(--warning, #6b5412)`); el resto es tokenizado.
 - Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
-  no se cambia el mecanismo. La enmienda añade una opción Graphite al final del catálogo, sin
-  reordenar los tres temas ni sustituir `mf-theme`.
+  no se cambia el mecanismo. La enmienda añade Casa al final del catálogo, sin reordenar las
+  cuatro apariencias actuales ni sustituir `mf-theme`. La etiqueta visible es «Apariencia».
 
 ### Tipografía, shell y espaciado
 
-- Tipografía de sistema; `Inter` está declarada pero no se carga. La escala tipográfica, el
-  espaciado y los radios se fijan en `UI · DEV-01`; objetivo: texto funcional ≥ 12 px y un
-  consumo real de `--space`/`--radius`.
+- Tipografía de sistema en Dark, Light, Hybrid y Graphite; `Inter` está declarada pero no se
+  carga. La escala tipográfica, el espaciado y los radios se fijan en `UI · DEV-01`; objetivo:
+  texto funcional ≥ 12 px y un consumo real de `--space`/`--radius`.
+- **Casa 1A** añade tokens de tipografía editorial y un CSS aislado (`casa.css`). No cambia la
+  tipografía de las cuatro apariencias actuales. La composición editorial de Inicio queda para 1B.
 - Shell: sidebar 236 px, contenido `max-width: 1450px`, breakpoints 1050/760 px y móvil 16 px.
 
 ### Accesibilidad
 
 - **Objetivo de los bloques UI** (no una declaración de cumplimiento actual): texto normal
-  ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas existentes; foco visible; objetivos
+  ≥ 4.5:1 y grande/componentes ≥ 3:1 en los temas existentes; foco visible; objetivos
   ≥ 44 px; zoom 200 %; `prefers-reduced-motion`; sin scroll horizontal de página a 390 px.
-  Graphite Lime se mide en su QA específico de 1A; no se deduce de la matriz histórica.
-  Fuera de la matriz el CSS conserva controles y textos por debajo de esos umbrales;
-  `DEV-01`–`DEV-05` corrigieron la base y `DEV-07` mide la matriz y declara la deuda residual
-  (véase «Evidencia AA, medición y catálogo de primitivas (DEV-07)»).
+  Graphite Lime se mide en su QA de 1A; **Casa se mide en su QA de 1A** y no se deduce de la
+  matriz histórica de tres temas. Fuera de la matriz el CSS conserva controles y textos por
+  debajo de esos umbrales; `DEV-01`–`DEV-05` corrigieron la base y `DEV-07` mide la matriz y
+  declara la deuda residual (véase «Evidencia AA, medición y catálogo de primitivas (DEV-07)»).
 - La excepción de contraste de #7 se conserva como registro histórico; los temas actuales deben
   cumplir AA con sus propios tokens.
 
