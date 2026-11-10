@@ -20,10 +20,11 @@ no crea tablas ni rutas y no declara ninguna prueba ejecutada.
 ## 1. Objetivo y alcance
 
 `[PROPUESTA]` Permitir que el usuario prepare, una vez por Ciclo, un **reparto asistido**
-de las Transferencias que financian el plan mensual. El reparto genera registros
-operativos de **Transferencia pendiente** que el usuario confirma individualmente cuando
-verifica su ejecución bancaria. La realidad financiera ejecutada sigue siendo
-exclusivamente la de Movimientos.
+de las Transferencias que financian el plan mensual. El reparto parte exclusivamente del
+**equivalente mensual de E2.3 («Del mes») por Presupuesto**, no del Plan anual completo ni
+de un prorrateo de E2.4. Genera registros operativos de **Transferencia pendiente** que el
+usuario confirma individualmente cuando verifica su ejecución bancaria. La realidad
+financiera ejecutada sigue siendo exclusivamente la de Movimientos.
 
 Incluye:
 
@@ -366,13 +367,17 @@ financiero vigente se lee siempre del Movimiento. La presentación propuesta es
 «Confirmada · hecho anulado», con vínculo de solo lectura y condición «Requiere revisión»;
 no es un cuarto estado, no reabre la línea y no duplica el hecho.
 
-## 9. Relación con el Plan anual y con los Ciclos
+## 9. Relación con E2.3, el Plan anual y los Ciclos
 
 `[PROPUESTA]`
 
-- **Plan anual E2.4.** Es una decisión anual por Partida y ejercicio. No se divide,
-  prorratea, reparte por meses ni se usa como objetivo del reparto. El reparto solo lee
-  Del mes de E2.3. No existe una segunda lógica de plan en esta spec.
+- **Fuente mensual E2.3.** El reparto parte del «Del mes» de cada Presupuesto en el Plan
+  del ciclo, que es el equivalente mensual aprobado. No parte del Plan anual completo, no
+  lo divide entre doce ni lo prorratea por Ciclo. Sin Del mes no hay importe sugerido.
+- **Plan anual E2.4.** Es una decisión anual por Partida y ejercicio, independiente del
+  reparto. No se usa como fuente, objetivo ni importe de respaldo; el reparto no lo lee
+  para calcular líneas. Esta relación no contradice SPEC10 ni crea una segunda lógica de
+  plan.
 - **Ciclo único.** El reparto se ancla a un ID de Ciclo. No se crea un Ciclo por reparto
   ni se usa el mes natural como sustituto.
 - **Ciclo futuro no iniciado.** Si no hay periodo/corte verificable, no se sugiere
@@ -397,18 +402,20 @@ no es un cuarto estado, no reabre la línea y no duplica el hecho.
 
 ```text
 PLAN DEL CICLO — C1 (01/01/2026–31/01/2026)        [Preparar reparto del ciclo]
-Presupuesto        Fuente               Del mes    Ejecutado   Pendiente   Estado
-PRE-A · Provisión  Aportación a saldo   100,00 €    40,00 €     60,00 €    Pendiente
-PRE-G · Gastos     Gasto real           200,00 €   120,00 €     80,00 €    Pendiente
-PRE-N · Reserva    No aplica            50,00 €    —           —          —
+Presupuesto        Fuente               Del mes    Ejecutado   Pendiente E2.3  Estado
+PRE-A · Provisión  Aportación a saldo   100,00 €    40,00 €     60,00 €         Pendiente
+PRE-G · Gastos     Gasto real           200,00 €   120,00 €     80,00 €         Pendiente
+PRE-N · Reserva    No aplica            50,00 €    —           —               —
 [Origen común: S001 · Cta principal]  [Añadir transferencia]
 [ ] PRE-A  S001 → S002  60,00 €  prevista 05/01  [Excluir]
 [ ] PRE-G  mantener en origen · sin transferencia automática
 [Generar pendientes seleccionados]   [Guardar borrador]
 ```
 
-- La cifra de Pendiente solo aparece con cobertura verificable; en otro caso se muestra
-  el motivo.
+- La columna «Pendiente E2.3» es el derivado presupuestario de SPEC09; no es una
+  Transferencia pendiente ni implica una propuesta de financiación para Gasto real.
+- La cifra de Pendiente E2.3 solo aparece con cobertura verificable; en otro caso se
+  muestra el motivo.
 - El origen propuesto muestra su base y exige confirmación.
 - Las líneas adicionales se distinguen de las presupuestarias.
 - El botón de generación indica cuántos pendientes creará y no afirma que se haya
@@ -538,8 +545,9 @@ sintéticos.
 | AC-20 | Escrituras sin MFA, sin Origin/CSRF o con payload inválido | Rechazo en servidor; auditoría de actor y momento; error sin datos sensibles | F36-USR | Backlog AC20; seguridad |
 | AC-21 | Completar un reparto y cambiar el plan después | No se crea otro reparto automáticamente; la vía es el registro ordinario salvo D5 | F36-PLAN | Backlog AC21; §7 |
 | AC-22 | Inspeccionar la aplicación y los mensajes | No ejecuta Transferencias bancarias ni afirma haberlas ejecutado; solo registra hechos confirmados | F36-USR | Backlog AC22; §1 |
-| AC-23 | Revisar estados y transiciones del pendiente | Solo tres estados; «Requiere revisión» es condición; ambos flujos consumen el mismo registro y confirmación | F36-PLAN | Backlog §7, §12.2; §6 |
-| AC-24 | Comparar reparto con Plan anual | El plan anual no se divide ni prorratea; el reparto solo usa Del mes de E2.3; no hay segunda lógica de plan | F36-PLAN | SPEC10; §9 |
+| AC-23 | Revisar estados y transiciones del pendiente | Solo tres estados; «Requiere revisión» es condición; ambos flujos consumen el mismo registro y confirmación | F36-PLAN | Backlog §7 Estados; §11.3 T10; §6 |
+| AC-24 | Comparar el reparto con E2.3 y con el Plan anual | El reparto parte del «Del mes» mensual de E2.3, no del Plan anual completo; el anual no se divide ni prorratea; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
+| AC-25 | Cerrar y reabrir un borrador antes de generar | Conserva líneas, origen, importe y fecha prevista; no crea pendientes ni efectos; tras generar, reabrir y añadir solo crea los pendientes nuevos | F36-PLAN | §7; AC-17 |
 
 ## 17. Decisiones que requieren aprobación
 

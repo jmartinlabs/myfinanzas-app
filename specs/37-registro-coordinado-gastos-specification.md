@@ -38,8 +38,8 @@ Principio innegociable:
 Incluye:
 
 1. Gasto normal como comportamiento predeterminado.
-2. Modalidad A: pago directo desde otro Saldo, con Transferencia ordinaria opcional.
-3. Modalidad B: financiación mediante Anticipo recuperable con Referencia obligatoria.
+2. Modalidad A: Pago directo desde otro Saldo, con Transferencia ordinaria opcional.
+3. Modalidad B: Financiación mediante Anticipo recuperable con Referencia obligatoria.
 4. Barra deslizante y campo numérico exacto para el importe de la Transferencia.
 5. Vista previa, confirmación atómica y conservación de fechas reales distintas.
 6. Transferencia pendiente de realizar, reutilizando la pieza única de SPEC36 §6.
@@ -84,7 +84,7 @@ Recuperado, Neto ni una ficha con métricas ficticias.
 Comportamiento predeterminado. Un único Gasto desde el Saldo pagador a Exterior, con
 Partida e importe íntegro. Sin Transferencia, sin pendiente y sin alerta.
 
-### 3.2 Modalidad A — pago directo desde otro Saldo
+### 3.2 Modalidad A — Pago directo desde otro Saldo
 
 Definiciones:
 
@@ -109,7 +109,7 @@ Reglas:
 - Si la Transferencia aún no se ha realizado, se conserva como pendiente; el Gasto ya
   registrado sigue siendo el hecho real.
 
-### 3.3 Modalidad B — financiación mediante Anticipo recuperable
+### 3.3 Modalidad B — Financiación mediante Anticipo recuperable
 
 Definiciones:
 
@@ -162,7 +162,7 @@ Reglas de integridad:
 - Un error de red tras el commit no duplica hechos al reintentar.
 - No se introduce una entidad de «operación compuesta» por anticipado. La correlación se
   apoya en la clave de intento, la auditoría y los vínculos existentes; si se demuestra
-  insuficiente, se justificará antes de crear una relación nueva (D8).
+  insuficiente, se justificará antes de crear una relación nueva (D7).
 
 ## 5. Referencia y ficha de Anticipo
 
@@ -253,13 +253,9 @@ La única extensión específica del flujo de Gasto es:
 | Referencia de Anticipo prevista | Solo modalidad B | No crea ficha ni métricas hasta confirmar |
 | Regla de revisión por cambio del Gasto | Conciliación | Es una condición, no un cuarto estado |
 
-Estados y transiciones, idénticos a SPEC36 §6.3:
-
-- **Pendiente de realizar** → Confirmada o Cancelada.
-- **Confirmada** es terminal para el pendiente; la corrección se hace en Movimientos.
-- **Cancelada** es terminal y conserva motivo.
-- «Requiere revisión» es una condición con motivo que bloquea la confirmación.
-- «Pendiente de realizar» y «Requieren atención» son filtros/alertas, no estados.
+Estados y transiciones: los definidos en [SPEC36 §6.3](36-reparto-mensual-asistido-presupuestos-specification.md#6-mecanismo-compartido-de-transferencia-pendiente);
+esta spec no los repite ni añade ninguno. «Requiere revisión» sigue siendo una condición
+con motivo y los filtros/alertas no son estados.
 
 `[PROPUESTA]` Un pendiente de modalidad A no genera Referencia. Un pendiente de modalidad
 B conserva la referencia prevista, pero no genera Anticipo recuperable mientras no exista
@@ -308,8 +304,9 @@ Si existe una Transferencia real que podría corresponder al pendiente:
   pendiente pasa a «Requiere revisión» con motivo.
 - La confirmación queda bloqueada hasta que el usuario edite el pendiente o lo cancele.
 - Si el Gasto se anula, el pendiente no se cancela ni se confirma automáticamente. Se
-  muestra «Gasto anulado — revisar» y solo se permite cancelar con motivo; no se confirma
-  contra un Gasto inexistente.
+  muestra «Gasto anulado — revisar» y el usuario decide explícitamente entre cancelar con
+  motivo o resolver una nueva vinculación válida con otro Gasto real. Nunca se confirma
+  contra un Gasto anulado.
 - No se infiere una Transferencia sustitutiva ni una devolución.
 
 ### 9.3 Transferencia confirmada y corregida después
@@ -339,7 +336,7 @@ Fecha real [__/__/____]   Importe total [____,__ €]   Partida [PAR-1]
 Concepto [______________________________]
 Saldo habitual [S001]   Saldo pagador [S002]
 Disponibilidad real S002: 40,00 €   Presupuesto PAR-1: 60,00 € (si existe)
-Modalidad: (•) Gasto normal  ( ) Pago directo desde otro Saldo  ( ) Anticipo
+Modalidad: (•) Gasto normal  ( ) Pago directo desde otro Saldo  ( ) Financiación mediante Anticipo
 [ ] Registrar Transferencia asociada
   Origen [S001] → Destino [S002]   Importe [30,00 €]   Fecha prevista [__/__/____]
   Mínimo informativo 60,00 € · Disponible posterior estimado 10,00 €
@@ -349,6 +346,8 @@ Modalidad: (•) Gasto normal  ( ) Pago directo desde otro Saldo  ( ) Anticipo
 ```
 
 - La modalidad normal es la predeterminada.
+- Las etiquetas visibles conservan los nombres de §3: «Pago directo desde otro Saldo» y
+  «Financiación mediante Anticipo».
 - Las modalidades alternativas se ofrecen cuando el Saldo pagador no cubre el Gasto o
   cuando el usuario decide manualmente transferir o adelantar.
 - En modalidad B, la Referencia de Anticipo es obligatoria y se puede seleccionar o
@@ -472,7 +471,7 @@ sintéticos.
 | AC-14 | Anticipo registrado junto al Gasto | El Anticipo no ejecuta el Presupuesto de fuente Aportación a saldo | F37-PAR | Backlog 14; SPEC09 |
 | AC-15 | Gasto con Partida y Presupuesto | Imputación exacta por Partida; sin doble Gasto | F37-PAR | Backlog 15; SPEC02/SPEC09 |
 | AC-16 | Saldo pagador sin permiso de salida a Exterior | Rechazo con motivo; no se elige otro Saldo automáticamente | F37-SAL | Backlog 16; SPEC04 |
-| AC-17 | Importe superior al disponible calculado | Déficit informativo y confirmación explícita; sin bloqueo nuevo por saldo; se mantienen las reglas E1.4/E1.5 | F37-GAS | Backlog 17; D3 |
+| AC-17 | Importe superior al disponible calculado | Déficit y máximo informativos; confirmación explícita; sin bloqueo nuevo por saldo calculado; D3 sigue pendiente; solo bloquean las reglas E1.4/E1.5 | F37-GAS | Backlog 17; D3 |
 | AC-18 | Mover barra y editar campo numérico | Sincronización exacta en euros y céntimos; dos decimales; sin redondeo del importe | F37-GAS | Backlog 18; §6 |
 | AC-19 | Cancelar el formulario | Sin escritura de Gasto, Transferencia ni pendiente | F37-GAS | Backlog 19 |
 | AC-20 | Fallo en la segunda escritura | Rollback íntegro; sin hechos parciales; reintento idempotente | F37-SAL | Backlog 20; §4 |
@@ -485,11 +484,18 @@ sintéticos.
 | AC-27 | Comparar disponibilidad real y presupuestaria | Se muestran separadas; el déficit presupuestario no se presenta como falta de dinero | F37-PAR | Backlog 27; §6 |
 | AC-28 | Transferencia ordinaria hacia destino de Aportación a saldo | Se muestra que ejecutará ese Presupuesto; sin doble ejecución | F37-PAR | Backlog 28; SPEC09 |
 | AC-29 | Recorrer estados del pendiente | Solo tres estados; «Requiere revisión» es condición; una sola alerta y filtro; sin segundo mecanismo | F37-SAL | Backlog 29–37; SPEC36 §6 |
-| AC-30 | Modificar o anular el Gasto vinculado | El pendiente pasa a «Requiere revisión»; no se cancela ni se transfiere automáticamente | F37-GAS | Backlog 38; §9.2 |
+| AC-30 | Modificar o anular el Gasto vinculado | El pendiente pasa a «Requiere revisión»; se permite cancelar con motivo o una nueva vinculación válida; nunca se confirma contra el Gasto anulado; sin automatismo | F37-GAS | Backlog 38; §9.2; D6 |
 | AC-31 | Vincular una Transferencia real ya registrada | Se vincula sin duplicar el hecho; si no coincide, se cancela con motivo | F37-SAL | Backlog 42; §9.1 |
 | AC-32 | Pendiente de Anticipo antes de confirmar | Sin ficha, Adelantado, Recuperado, Neto ni pendiente de recuperación ficticios | F37-REF | Backlog 31/41; §5.3 |
 | AC-33 | Confirmar con fecha real en ventana cerrada | `HISTORY_LOCKED`; sin escritura; se conserva el pendiente | F37-CIC | Backlog 39; SPEC27 |
 | AC-34 | Revisar orden y atomicidad en ambos escenarios | Hechos ya realizados o mixtos: una transacción, sin éxito parcial ni orden que altere fechas | F37-SAL | Backlog 40; §4 |
+| AC-35 | Confirmar un pendiente en estado Pendiente de realizar con fecha real válida | Se crea una sola Transferencia, se resuelve el pendiente, se aplican los efectos de los motores y la alerta desaparece; sin duplicados | F37-SAL, F37-GAS | Backlog 33; §8 |
+| AC-36 | Editar importe y fecha prevista antes de ejecutar | Se revalidan contexto, elegibilidad y Referencia; no se usan validaciones antiguas como garantía; sin Movimiento hasta confirmar | F37-REF | Backlog 35; §8 |
+| AC-37 | Cancelar un pendiente con motivo | Sin efecto financiero; motivo y trazabilidad conservados; alerta retirada; sin Transferencia | F37-GAS | Backlog 36; §7 |
+| AC-38 | Revisar la alerta en lista general, Transferencias y detalle del Gasto, a 390 y 1440 | Icono y texto «Pendiente de realizar» en las tres superficies; contador/filtro; no solo color; accesible | F37-USR | Backlog 37; §10.3 |
+| AC-39 | La Referencia seleccionada deja de ser elegible antes de confirmar | El pendiente pasa a «Requiere revisión»; confirmación bloqueada; se permite editar, cancelar o elegir otra REF válida; sin sustitución automática | F37-REF | Backlog 35/41; §7/§9.4 |
+| AC-40 | Error de red después del commit y reintento con la misma clave y payload | Mismo resultado; un único Movimiento y una única resolución; sin duplicado ni éxito parcial | F37-SAL | Backlog 34; §4/§8 |
+| AC-41 | Confirmar, editar o cancelar sin MFA o sin Origin/CSRF | Rechazo 401/403 en servidor; sin escritura; auditoría; error sin datos sensibles | F37-USR | Backlog 20/34; seguridad |
 
 ## 17. Decisiones que requieren aprobación
 
