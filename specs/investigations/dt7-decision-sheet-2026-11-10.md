@@ -19,15 +19,16 @@ no contiene datos reales y no cierra DT7.
 | Posteriores a 2026 | Fuera del histórico; operativa futura |
 
 **Límites:** 2023–2025 son histórico parcial y 2026 es transición; la inclusión **no**
-acredita cobertura anual, importes ni aperturas; **no se borra nada del Excel**. M2 verificará Partidas/fuentes/intervalos;
+acredita cobertura anual, importes ni aperturas. M2 verificará Partidas/fuentes/intervalos;
 M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente. No se borra nada del Excel. No se declara `estadoUniverso=Acreditado`.
 
 **Evidencia de la decisión:** revisión financiera de Álex y el usuario sobre v5.11(7).
-Referencia privada por año y hash: **`UNRUN`** (fuera del repositorio). El repositorio no
-contiene importes ni datos privados.
+Referencia privada por año y hash: **`UNRUN`** (no verificable desde el repositorio; puede
+existir en privado). El repositorio no contiene importes ni datos privados.
 
 **Registro M1:** `M1 · APROBADA · 2026-11-10 · usuario (revisión Álex) · alcance 2023–2026 ·
-efecto: fija el universo, no acredita cobertura, importes ni aperturas; M2/M5/M8 sin cambios`.
+evidencia: v5.11(7), privada, UNRUN · efecto: fija el universo, no acredita cobertura,
+importes ni aperturas; M2/M5/M8 sin cambios`.
 
 ## 1.1 Siguiente paso: M2 de 2023
 

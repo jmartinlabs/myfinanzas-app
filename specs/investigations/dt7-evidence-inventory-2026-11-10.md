@@ -2,8 +2,7 @@
 
 Hoja accionable: [DT7 · decisiones y revisión privada](dt7-decision-sheet-2026-11-10.md).
 **Estado:** `[BORRADOR DE PREPARACIÓN]` — **DT7 NO CERRADO. NINGÚN AC EN PASS. M1
-APROBADA 2026-11-10; M2/M5/M8 SIN DECISIÓN.** Este documento describe qué evidencia exacta falta para las cuatro
-decisiones de evidencia real, cómo se verificará y qué decide el usuario. No aprueba
+APROBADA 2026-11-10; M2/M5/M8 SIN DECISIÓN.** Este documento describe qué evidencia exacta falta para M2/M5/M8 (M1 ya decidida), cómo se verificará y qué decide el usuario. No aprueba
 mapping, universo, corte, regularización ni apertura; no cierra DT7; no autoriza DEV,
 datos reales, Excel, importación, P6/P7, SQL, migración, despliegue, push, PR ni merge.
 Los 59 AC de SPEC20 siguen `UNRUN`.
@@ -303,7 +302,7 @@ evidencia exigida** sin exponer datos y sin prejuzgar la decisión.
 evidencia; **no** significa que haya decidido ni que el mapping, el universo o el registro
 estén aprobados.
 
-**Condiciones LPD (las cuatro M):**
+**Condiciones LPD (aplicables a cada M pendiente):**
 
 | ID | Condición |
 | --- | --- |
