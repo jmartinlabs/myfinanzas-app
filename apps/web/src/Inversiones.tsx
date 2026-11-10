@@ -464,7 +464,7 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="inversiones-page">
       <PageHead
         eyebrow="E4.1 · INVERSIONES"
         title="Inversiones"
@@ -569,7 +569,7 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }
 function InstrumentDetail({
@@ -720,7 +720,7 @@ function InstrumentDetail({
       : column,
   );
   return (
-    <>
+    <div className="inversion-detail-page">
       <a
         className="back"
         href={BASE}
@@ -938,7 +938,7 @@ function InstrumentDetail({
           </ul>
         )}
       </section>
-    </>
+    </div>
   );
 }
 function InstrumentForm({

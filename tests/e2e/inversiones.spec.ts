@@ -344,6 +344,20 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       path: "artifacts/e4-1/instrumento-ficha-390.png",
       fullPage: true,
     });
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByLabel("Apariencia").selectOption("casa");
+    await expect(page.locator(".inversion-detail-page")).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/e4-1/casa-instrumento-1440.png",
+      fullPage: true,
+    });
+    await page.goto("/inversiones");
+    await expect(page.locator(".inversiones-page")).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/e4-1/casa-listado-1440.png",
+      fullPage: true,
+    });
     expect(errors).toEqual([]);
   } finally {
     child.kill();
