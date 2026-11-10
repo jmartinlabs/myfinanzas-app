@@ -37,3 +37,18 @@ test("G1 cubre shell, superficies, controles, tablas y tarjetas", () => {
     expect(graphiteCss).toContain(selector);
   }
 });
+
+test("todos los selectores de la capa Graphite están scoped al tema", () => {
+  const selectors = graphiteCss
+    .split("\n")
+    .filter(
+      (line) =>
+        line.includes("{") &&
+        !line.trim().startsWith("@") &&
+        !line.trim().startsWith("/*"),
+    );
+  expect(selectors.length).toBeGreaterThan(0);
+  for (const line of selectors) {
+    expect(line).toContain('html[data-theme="graphite-lime"]');
+  }
+});

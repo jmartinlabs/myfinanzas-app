@@ -10,9 +10,7 @@ html[data-theme="graphite-lime"] {
   --graphite-card-bg: linear-gradient(160deg, #171a16 0%, #111311 100%);
   --graphite-card-border: #2a2f28;
   --graphite-card-shadow: 0 12px 30px rgb(0 0 0 / 0.24);
-  --graphite-elevated-shadow: 0 22px 58px rgb(0 0 0 / 0.4);
   --graphite-topbar-bg: rgb(9 10 9 / 0.78);
-  --graphite-grid-line: rgb(215 255 94 / 0.03);
   --graphite-input-bg: #0c0e0c;
 }
 
@@ -99,6 +97,7 @@ html[data-theme="graphite-lime"] .global-header {
   background: var(--graphite-topbar-bg);
   border-bottom-color: var(--border);
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.025);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
 
@@ -258,6 +257,7 @@ html[data-theme="graphite-lime"] .switch {
 html[data-theme="graphite-lime"] .switch.on {
   border-color: var(--action);
   background: var(--accent-soft);
+  color: var(--accent);
 }
 
 /* Badges and tags -------------------------------------------------------- */
@@ -266,7 +266,7 @@ html[data-theme="graphite-lime"] .ui-badge {
   padding: 3px 9px;
   border-radius: var(--radius-pill);
   background: var(--graphite-input-bg);
-  font-size: 10px;
+  font-size: var(--text-xs);
   letter-spacing: 0.75px;
   text-transform: uppercase;
 }

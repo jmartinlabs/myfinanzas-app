@@ -37,11 +37,11 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 
 | Prueba | Resultado |
 | --- | --- |
-| `bun test apps/web` | **114/114 PASS** |
+| `bun test apps/web` | **115/115 PASS** |
 | `bun run typecheck` | **PASS** |
 | `bun run build` | **PASS** |
 | `bun run test:e2e -- tests/e2e/graphite-g1.spec.ts` | **1/1 PASS** |
-| `bun run test:e2e -- tests/e2e/theme-graphite.spec.ts` | **2/2 PASS** |
+| `bun run test:e2e -- tests/e2e/theme-graphite.spec.ts tests/e2e/theme.spec.ts` | **4/4 PASS** |
 | `bun run test:e2e -- tests/e2e/theme.spec.ts tests/e2e/graphite-g1.spec.ts` | **3/3 PASS** |
 | `bun run test:e2e -- tests/e2e/inicio.spec.ts` | **5/5 PASS** |
 | `bun run test:e2e -- tests/e2e/movimientos.spec.ts` | **FAIL** en timeout de restauración del servidor auxiliar 3004 (2 intentos); no relacionado con G1, que no cambia JS/API |
@@ -52,7 +52,8 @@ ningún archivo de lógica de Movimientos. Queda como riesgo residual de entorno
 
 ## Capturas
 
-Ruta local (ignorada por Git): `artifacts/graphite-g1/`.
+Ruta local (ignorada por Git): `artifacts/graphite-g1/`. El tablero comparativo se versiona
+como JPEG para que la revisión independiente pueda verlo: [comparison board](graphite-g1-comparison-2026-11-10.jpg).
 
 | Captura | Dimensiones | Uso |
 | --- | --- | --- |
@@ -65,7 +66,7 @@ Ruta local (ignorada por Git): `artifacts/graphite-g1/`.
 | `movimientos-1440.png` | 1440 × 1000 | Baseline con fixture vacío; G3 pendiente |
 | `movimientos-820.png` | 820 × 1097 | Baseline con fixture vacío; G3 pendiente |
 | `movimientos-390.png` | 390 × 1495 | Baseline con fixture vacío; G3 pendiente |
-| `comparison-board.png` | 1800 × 3660 | Tablero comparativo app/prototipo a 1440/820/390 e Inicio |
+| `graphite-g1-comparison-2026-11-10.jpg` | 1800 × 3660 | Tablero comparativo versionado: app/prototipo a 1440/820/390 e Inicio |
 
 Referencias del prototipo:
 
@@ -94,14 +95,15 @@ Referencias del prototipo:
 - **Movimientos:** faltan tarjeta de filtros separada, tarjeta de listado, iconos por tipo,
   selección y detalle inline. Es G3/G4/G4b. Las capturas de Movimientos usan el fixture de tema
   vacío; la tabla con datos se validará en G3 con el servidor funcional.
-- **Shell:** se conserva 236 px en lugar de 264 px, por decisión aprobada. No se añade la marca
+- **Shell:** se conservan 236 px en escritorio y 206 px a 820 por el breakpoint base, en lugar
+  de los 264 px del prototipo, por decisión aprobada. No se añade la marca
   gráfica “M” ni el juego de iconos SVG del prototipo; se mantienen los glifos y la navegación
   actuales. G1 no cambia la estructura de navegación.
 - **820/móvil:** el prototipo colapsa la sidebar a un rail de iconos y compacta el topbar; la app
   conserva la sidebar etiquetada y el header actual. Es una diferencia de composición de shell
   fuera de G1; requeriría autorización específica y no se ha tocado.
-- **Tablero comparativo:** `artifacts/graphite-g1/comparison-board.png` (app vs. prototipo a
-  1440/820/390, más Inicio 1440). Es evidencia local, no se versiona.
+- **Tablero comparativo:** [graphite-g1-comparison-2026-11-10.jpg](graphite-g1-comparison-2026-11-10.jpg)
+  (app vs. prototipo a 1440/820/390, más Inicio 1440).
 - **Tabla a 820:** en Saldos, la columna “Control” puede partir palabras largas (“Movimientos”)
   por el ancho disponible y el `overflow-wrap` base. No es una regresión de G1; queda como
   ajuste de tabla responsive para G3/G5.
@@ -112,13 +114,20 @@ Referencias del prototipo:
 ## Accesibilidad y regresión
 
 - Foco visible lima de 3 px y `outline-offset: 3px` en inputs.
-- Sin overflow de página a 390 y 820 en las capturas.
+- Switch Graphite comprobado con contraste >= 4,5:1, activación por teclado (Space) y texto
+  legible sobre `--accent-soft`.
+- Sin overflow de página en Saldos a 390/720/820/640; 720/640 se usan como equivalencia de
+  reflow al 200 % sobre 1440/1280. Inicio y Movimientos se comprueban a 820 y 390.
+- Badges de Inicio conservan 12 px; cabeceras de tabla, tags y etiquetas de tarjeta se mantienen
+  en 12 px.
+- Regresión comprobada en Graphite para `dark-s`, `light-s` y `hybrid-s`: sin gradiente Graphite,
+  `h1` 28 px y botón sin sombra Graphite en los tres temas.
 - `theme.spec.ts`, `theme-graphite.spec.ts` y `inicio.spec.ts` PASS; Dark, Light y Hybrid
   conservan sus estilos.
-- G1 no cambia tokens cromáticos, contrastes ni el mecanismo de tema; usa los tokens Graphite
-  ya validados en 1A.
-- La regresión G1 comprueba que `dark-s` recupera `background-image: none`, `h1` 28 px y botón
-  sin sombra Graphite.
+- G1 no cambia tokens cromáticos ni el mecanismo de tema; ajusta presentación (switch, badges)
+  y conserva/mejora el contraste con los tokens Graphite de 1A.
+- La regresión G1 comprueba que `dark-s`, `light-s` y `hybrid-s` recuperan
+  `background-image: none`, `h1` 28 px y botón sin sombra Graphite.
 
 ## Riesgos residuales
 

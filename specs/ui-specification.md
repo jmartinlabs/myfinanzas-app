@@ -179,8 +179,8 @@ Casa 1A; el resto de la especificación y las decisiones de Graphite Lime se con
 Ratificada por el usuario el 2026-11-10 como dirección de integración visual. Autoriza
 **G1 · Fundamento y shell**; G2a/G2b (Inicio), G3 (Movimientos lista) y G4 (detalle/formularios)
 quedan planificados y requieren autorización individual. G1b, G2c, G3b y G4b son opcionales y
-se difieren. La sección 2.3 corresponde a la enmienda UI-P1 de Casa (#363) y se integra en su
-PR; esta enmienda no la sustituye.
+se difieren. La enmienda UI-P1 de Casa (#363) se integra en su propio PR; si no está
+fusionada al integrar G1, esta sección se renumera en el rebase para no dejar un hueco.
 
 **Alcance autorizado para G1:**
 
@@ -209,9 +209,10 @@ PR; esta enmienda no la sustituye.
 - Dark, Light, Hybrid y Casa conservan su identidad; cuando Casa 1A esté integrada, el catálogo
   mantiene cinco apariencias. No se modifica `themes.ts`, `theme-boot.js`, los tokens de Casa
   ni el mecanismo `mf-theme`/`dark-s`.
-- G1 no toca `Inicio.tsx`, `Movimientos.tsx`, `ui.tsx` ni `style.css`. Cualquier cambio
-  compartido posterior en componentes o composición se coordina antes de ejecutarse.
-- El DOM compartido de Inicio usará secciones semánticas estables `data-inicio-section`
+- G1 solo toca `style.css` para el import aditivo de `graphite.css`; no toca `Inicio.tsx`,
+  `Movimientos.tsx` ni `ui.tsx`. Cualquier cambio compartido posterior en componentes o
+  composición se coordina antes de ejecutarse.
+- El DOM compartido de Inicio (G2a) usará secciones semánticas estables `data-inicio-section`
   (`hero`, `kpis`, `cycle`, `rail`, `position`, `coverage`; `recent`/`budget` solo si se
   autoriza G2c). No se impone una estructura rígida: Casa 1B podrá reflowar las secciones o
   añadir las suyas sin duplicar lógica.

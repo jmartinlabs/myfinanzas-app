@@ -105,6 +105,10 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await page.goto("/inicio");
   await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
   await expect(page.locator(".inicio-context")).toBeVisible();
+  await expect(page.locator(".inicio-page .ui-badge").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
   await page.screenshot({
     path: "artifacts/graphite-g1/inicio-1440.png",
     fullPage: true,
@@ -129,6 +133,46 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(nameInput).toHaveCSS("outline-width", "3px");
   await expect(nameInput).toHaveCSS("outline-offset", "3px");
 
+  const informLiquidez = page.getByRole("button", {
+    name: /Informar Liquidez como No/,
+  });
+  if (await informLiquidez.count()) await informLiquidez.click();
+  const liquidezSwitch = page.getByRole("switch", { name: "Liquidez" });
+  await liquidezSwitch.click();
+  await expect(liquidezSwitch).toHaveAttribute("aria-checked", "true");
+  await expect(liquidezSwitch).toHaveCSS("background-color", "rgb(35, 40, 25)");
+  await expect(liquidezSwitch).toHaveCSS("color", "rgb(215, 255, 94)");
+  const switchContrast = await page.evaluate(() => {
+    const element = document.querySelector<HTMLElement>(".switch.on");
+    if (!element) return 0;
+    const parse = (value: string) => {
+      const match = value.match(/\d+/g)?.map(Number) ?? [];
+      return match.length >= 3 ? match.slice(0, 3) : null;
+    };
+    const luminance = (rgb: number[]) => {
+      const channels = rgb.map((channel) => {
+        const value = channel / 255;
+        return value <= 0.03928
+          ? value / 12.92
+          : Math.pow((value + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    };
+    const style = getComputedStyle(element);
+    const foreground = parse(style.color);
+    const background = parse(style.backgroundColor);
+    if (!foreground || !background) return 0;
+    const a = luminance(foreground);
+    const b = luminance(background);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  });
+  expect(switchContrast).toBeGreaterThanOrEqual(4.5);
+  await liquidezSwitch.focus();
+  await page.keyboard.press("Space");
+  await expect(liquidezSwitch).toHaveAttribute("aria-checked", "false");
+  await page.keyboard.press("Space");
+  await expect(liquidezSwitch).toHaveAttribute("aria-checked", "true");
+
   const noOverflow = async () =>
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -151,6 +195,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     path: "artifacts/graphite-g1/inicio-820.png",
     fullPage: true,
   });
+  await noOverflow();
 
   await page.goto("/movimientos");
   await expect(page.getByRole("heading", { name: "Movimientos", exact: true })).toBeVisible();
@@ -158,6 +203,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     path: "artifacts/graphite-g1/movimientos-820.png",
     fullPage: true,
   });
+  await noOverflow();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/saldos");
@@ -183,6 +229,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     path: "artifacts/graphite-g1/inicio-390.png",
     fullPage: true,
   });
+  await noOverflow();
 
   await page.goto("/movimientos");
   await expect(page.getByRole("heading", { name: "Movimientos", exact: true })).toBeVisible();
@@ -190,6 +237,16 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     path: "artifacts/graphite-g1/movimientos-390.png",
     fullPage: true,
   });
+  await noOverflow();
+
+  await page.setViewportSize({ width: 720, height: 900 });
+  await page.goto("/saldos");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
+  await noOverflow();
+  await page.setViewportSize({ width: 640, height: 900 });
+  await page.goto("/saldos");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
+  await noOverflow();
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/saldos");
@@ -198,4 +255,12 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.locator(".panel").first()).toHaveCSS("background-image", "none");
   await expect(page.locator(".page-head h1")).toHaveCSS("font-size", "28px");
   await expect(page.locator(".primary").first()).toHaveCSS("box-shadow", "none");
+
+  for (const id of ["light-s", "hybrid-s"]) {
+    await themeSelect.selectOption(id);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", id);
+    await expect(page.locator(".panel").first()).toHaveCSS("background-image", "none");
+    await expect(page.locator(".page-head h1")).toHaveCSS("font-size", "28px");
+    await expect(page.locator(".primary").first()).toHaveCSS("box-shadow", "none");
+  }
 });
