@@ -1174,3 +1174,188 @@
     padding: 14px 0;
   }
 }
+
+/* ============================================================
+   Casa de cuentas · 1D
+   Detalle y formularios de Movimientos sobre componentes existentes.
+   Solo estilos y un wrapper semántico; sin cambios de comportamiento.
+   ============================================================ */
+
+:root[data-theme="casa"] .movement-detail,
+:root[data-theme="casa"] .movement-form-page {
+  max-width: 1180px;
+}
+
+:root[data-theme="casa"] .movement-detail > .page-head,
+:root[data-theme="casa"] .movement-form-page > .page-head {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .movement-detail > .page-head h1,
+:root[data-theme="casa"] .movement-form-page > .page-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 3.8vw, 48px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+:root[data-theme="casa"] .movement-detail > a:first-child,
+:root[data-theme="casa"] .movement-form-page > a:first-child {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movement-detail > a:first-child:hover,
+:root[data-theme="casa"] .movement-form-page > a:first-child:hover {
+  color: var(--action);
+}
+
+:root[data-theme="casa"] .movement-detail .movement-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 42px;
+  margin-top: 8px;
+}
+
+:root[data-theme="casa"] .movement-detail .ui-form-section,
+:root[data-theme="casa"] .movement-detail > .panel,
+:root[data-theme="casa"] .movement-impact.panel {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 22px 0;
+}
+
+:root[data-theme="casa"] .movement-detail .ui-form-section-head,
+:root[data-theme="casa"] .movement-form-page .ui-form-section-head {
+  margin-bottom: 14px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+:root[data-theme="casa"] .movement-detail .ui-form-section-title,
+:root[data-theme="casa"] .movement-form-page .ui-form-section-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .movement-detail .ui-form-section > dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin: 0;
+}
+
+:root[data-theme="casa"] .movement-detail .ui-form-section > dl > div {
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px dotted var(--border);
+}
+
+:root[data-theme="casa"] .movement-detail dt,
+:root[data-theme="casa"] .movement-detail .movement-facts dt {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movement-detail dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+:root[data-theme="casa"] .movement-detail .help,
+:root[data-theme="casa"] .movement-detail .movement-facts dd span {
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .movement-detail .movement-audit {
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .movement-detail .movement-audit h3 {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movement-form-page .saldo-form {
+  gap: 0;
+}
+
+:root[data-theme="casa"] .movement-form-page .saldo-form > .ui-form-section {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 22px 0;
+}
+
+:root[data-theme="casa"] .movement-form-page .saldo-form .ui-form-grid {
+  gap: 16px 24px;
+}
+
+:root[data-theme="casa"] .movement-form-page .saldo-form .ui-field-label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movement-form-page .saldo-form input,
+:root[data-theme="casa"] .movement-form-page .saldo-form select,
+:root[data-theme="casa"] .movement-form-page .saldo-form textarea {
+  min-height: 44px;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+:root[data-theme="casa"] .movement-form-page .saldo-form .form-footer {
+  margin-top: 0;
+  padding: 16px 0;
+  border-top: 2px solid var(--ink);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .movement-form-page .movement-impact .ui-form-section-title,
+:root[data-theme="casa"] .movement-form-page .movement-impact h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  :root[data-theme="casa"] .movement-detail .movement-detail-grid,
+  :root[data-theme="casa"] .movement-detail .ui-form-section > dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  :root[data-theme="casa"] .movement-detail > .page-head h1,
+  :root[data-theme="casa"] .movement-form-page > .page-head h1 {
+    font-size: 32px;
+  }
+
+  :root[data-theme="casa"] .movement-form-page .saldo-form .form-footer {
+    gap: 10px;
+  }
+}
