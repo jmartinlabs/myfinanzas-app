@@ -6,15 +6,24 @@ Esta sección sustituye como **estado vigente** cualquier referencia posterior a
 exclusivamente» o a la paleta verde histórica. Las secciones siguientes se conservan como
 historia de E1.1–E1.5 y no reabren decisiones.
 
+> **Enmienda Graphite Lime (2026-11-10).** Se aprueba `graphite-lime` («Grafito») como cuarto
+> tema y se autoriza su incorporación aditiva 1A. Dark, Light y Hybrid conservan sus
+> identidades, tokens y comportamiento; `dark-s` sigue siendo el tema inicial y `mf-theme` la
+> clave de persistencia. La enmienda no reabre los tres temas ni autoriza otros candidatos, la
+> integración visual completa, 1B (`prefers-reduced-motion`), merge o despliegue.
+
 ### Temas y tokens
 
-- Temas **Dark (`dark-s`), Light (`light-s`) y Hybrid (`hybrid-s`)**, implementados en `0b8aade`
-  (#198). Paletas, tokens y selector están **cerrados**; no se añaden colores ni un cuarto tema.
+- Temas **Dark (`dark-s`), Light (`light-s`) y Hybrid (`hybrid-s`)** implementados en `0b8aade`
+  (#198); conservan identidad, tokens y comportamiento. **Graphite Lime (`graphite-lime`,
+  «Grafito»)** queda aprobado como cuarto tema por la enmienda del 2026-11-10. El catálogo solo
+  se amplía por decisión expresa; no se reabren los tres temas.
 - Tokens semánticos en `apps/web/public/themes.css`; los componentes consumen `var(--…)` y no
   conocen el tema. `style.css` conserva un único hex de fallback
   (`var(--warning, #6b5412)`); el resto es tokenizado.
 - Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
-  no se cambia el mecanismo ni el orden de los temas.
+  no se cambia el mecanismo. La enmienda añade una opción Graphite al final del catálogo, sin
+  reordenar los tres temas ni sustituir `mf-theme`.
 
 ### Tipografía, shell y espaciado
 
@@ -26,11 +35,12 @@ historia de E1.1–E1.5 y no reabren decisiones.
 ### Accesibilidad
 
 - **Objetivo de los bloques UI** (no una declaración de cumplimiento actual): texto normal
-  ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas; foco visible; objetivos ≥ 44 px; zoom
-  200 %; `prefers-reduced-motion`; sin scroll horizontal de página a 390 px. Fuera de la matriz
-  el CSS conserva controles y textos por debajo de esos umbrales; `DEV-01`–`DEV-05` corrigieron
-  la base y `DEV-07` mide la matriz y declara la deuda residual (véase «Evidencia AA, medición y
-  catálogo de primitivas (DEV-07)»).
+  ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas existentes; foco visible; objetivos
+  ≥ 44 px; zoom 200 %; `prefers-reduced-motion`; sin scroll horizontal de página a 390 px.
+  Graphite Lime se mide en su QA específico de 1A; no se deduce de la matriz histórica.
+  Fuera de la matriz el CSS conserva controles y textos por debajo de esos umbrales;
+  `DEV-01`–`DEV-05` corrigieron la base y `DEV-07` mide la matriz y declara la deuda residual
+  (véase «Evidencia AA, medición y catálogo de primitivas (DEV-07)»).
 - La excepción de contraste de #7 se conserva como registro histórico; los temas actuales deben
   cumplir AA con sus propios tokens.
 
