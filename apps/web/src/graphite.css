@@ -1057,3 +1057,445 @@ html[data-theme="graphite-lime"] .graphite-detail-heading p:last-child {
     padding: 16px;
   }
 }
+
+/* G3 · Movimientos: filtros, tabla, tarjetas y paginación ---------------- */
+
+html[data-theme="graphite-lime"] .movements-page .page-head .primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .movement-new-icon::before {
+  content: "+";
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+/* Filtros ---------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .movements-list .filters {
+  background:
+    linear-gradient(180deg, rgb(215 255 94 / 0.025), transparent 60%),
+    var(--surface);
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .filters label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .movements-list .filters input,
+html[data-theme="graphite-lime"] .movements-list .filters select {
+  min-height: 44px;
+  margin-top: 7px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .movement-search {
+  position: relative;
+  display: block;
+}
+
+html[data-theme="graphite-lime"] .movement-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+  transform: translateY(-55%);
+  pointer-events: none;
+}
+
+html[data-theme="graphite-lime"] .movement-search-icon::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--muted);
+  transform: rotate(45deg);
+}
+
+html[data-theme="graphite-lime"] .movement-search input {
+  padding-left: 38px;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movement-filters {
+  background: var(--surface-3);
+  border-top-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movement-filters summary {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movement-filters summary::after {
+  border-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movement-filters[open] summary {
+  border-bottom-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movement-filters .form-grid label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movement-filters .form-grid input,
+html[data-theme="graphite-lime"] .movements-list .movement-filters .form-grid select {
+  margin-top: 7px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Barra de recuento ------------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .movements-list .list-toolbar {
+  background: #0e110e;
+  border-block-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-toolbar p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .movement-status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgb(215 255 94 / 0.55);
+}
+
+html[data-theme="graphite-lime"] .movement-status-dot[data-state="loading"] {
+  background: var(--warning);
+  box-shadow: 0 0 10px rgb(255 209 102 / 0.45);
+}
+
+html[data-theme="graphite-lime"] .movement-status-dot[data-state="error"] {
+  background: var(--negative);
+  box-shadow: 0 0 10px rgb(255 154 140 / 0.4);
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-toolbar > span::before {
+  content: "↕";
+  margin-right: 6px;
+  color: var(--muted);
+}
+
+/* Tabla ------------------------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .movements-list .ui-table th {
+  background: #101310;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table td {
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table tbody tr {
+  transition: background-color 120ms ease;
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table tbody tr:hover td:first-child,
+html[data-theme="graphite-lime"] .movements-list .ui-table tbody tr:focus-within td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table td:first-child {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table td:nth-child(3) a {
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table td .table-id {
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .movement-type {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+html[data-theme="graphite-lime"] .movement-type-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+html[data-theme="graphite-lime"] .movement-type-icon::before {
+  content: "•";
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Ingreso"] .movement-type-icon::before {
+  content: "↓";
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Gasto"] .movement-type-icon::before {
+  content: "↗";
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Transferencia"] .movement-type-icon::before {
+  content: "⇄";
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon::before {
+  content: "▤";
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon::before {
+  content: "↺";
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Ingreso"] .movement-type-icon,
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
+  border-color: var(--positive-border);
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Gasto"] .movement-type-icon,
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon {
+  border-color: var(--negative-border);
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+
+html[data-theme="graphite-lime"] .movement-type[data-tipo="Transferencia"] .movement-type-icon {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .movement-type-copy {
+  min-width: 0;
+}
+
+html[data-theme="graphite-lime"] .movement-amount {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .movement-amount[data-flow="inflow"] {
+  color: var(--positive);
+}
+
+html[data-theme="graphite-lime"] .movement-amount[data-flow="outflow"] {
+  color: var(--negative);
+}
+
+html[data-theme="graphite-lime"] .movement-amount[data-flow="neutral"] {
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table tbody tr.annulled td {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table tbody tr.annulled .movement-amount {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .movements-list .ui-table .tag {
+  margin-top: 6px;
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Tarjetas móviles ------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards {
+  gap: 10px;
+  padding: 12px;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-item {
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-item.annulled {
+  background-image: none;
+  background-color: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-field[data-kind="amount"] {
+  border-block-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .movement-amount {
+  font-size: 18px;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-field[data-label="Concepto"] {
+  border-bottom-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-field[data-label="Concepto"] a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-field[data-label="Concepto"] a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+html[data-theme="graphite-lime"] .movements-list .movements-cards .ui-data-list-item.annulled .movement-amount {
+  color: var(--muted);
+}
+
+/* Paginación ------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .movements-list .list-footer {
+  background: #0e110e;
+  border-top-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-footer-pages {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-footer-total {
+  display: inline;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-footer .text-button {
+  padding: 0 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-footer .text-button:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .movements-list .list-footer .text-button:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+/* Estados vacío/carga dentro del panel -------------------------------- */
+
+html[data-theme="graphite-lime"] .movements-list > .empty {
+  border: 0;
+  background-image: none;
+  background-color: transparent;
+}
+
+html[data-theme="graphite-lime"] .movements-list > .empty h2 {
+  color: var(--text);
+}
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .movements-list .desktop-list {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .movements-list .movements-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .movements-list .movements-cards {
+    padding: 10px;
+  }
+
+  html[data-theme="graphite-lime"] .movements-list .list-toolbar > span::before {
+    content: "";
+    margin: 0;
+  }
+
+  html[data-theme="graphite-lime"] .movements-list .list-footer {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  html[data-theme="graphite-lime"] .movements-list .list-footer-pages {
+    flex: 1 1 100%;
+    white-space: nowrap;
+  }
+
+  html[data-theme="graphite-lime"] .movements-list .list-footer .actions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="graphite-lime"] .movements-list .ui-table tbody tr {
+    transition: none;
+  }
+}

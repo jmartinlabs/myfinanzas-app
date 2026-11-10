@@ -562,6 +562,10 @@ small {
   color: var(--muted);
   border-top: 1px solid var(--border);
 }
+/* El recuento ampliado de página solo se muestra en Graphite (G3). */
+.list-footer-total {
+  display: none;
+}
 .list-footer button {
   font-size: var(--text-xs);
   min-height: var(--touch-min);

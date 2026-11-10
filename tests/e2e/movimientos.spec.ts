@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
+const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
 
 /**
  * Paridad explícita tabla/carta: cada campo de la tarjeta conserva la misma
@@ -535,10 +535,63 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await expect(page.locator(".desktop-list")).toBeVisible();
       await expect(page.locator(".movements-cards")).toBeHidden();
       await evidence(`movimientos-${theme}-1440`);
+      if (theme === "graphite-lime") {
+        const tracks = await page
+          .locator(".movements-list .filters")
+          .evaluate(
+            (element) =>
+              getComputedStyle(element).gridTemplateColumns
+                .split(" ")
+                .filter(Boolean).length,
+          );
+        expect(tracks).toBe(5);
+        await expect(page.locator(".movement-search-icon")).toBeVisible();
+        await expect(page.locator(".movement-status-dot")).toBeVisible();
+        await expect(page.locator(".movement-type-icon").first()).toBeVisible();
+        await expect(page.locator(".list-footer-total")).toBeVisible();
+        const flows = await page
+          .locator(".movement-amount")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => ({
+              flow: node.getAttribute("data-flow"),
+              color: getComputedStyle(node).color,
+            })),
+          );
+        expect(flows.find((flow) => flow.flow === "inflow")?.color).toBe(
+          "rgb(127, 224, 168)",
+        );
+        expect(flows.find((flow) => flow.flow === "outflow")?.color).toBe(
+          "rgb(255, 154, 140)",
+        );
+        await page.setViewportSize({ width: 820, height: 1000 });
+        await expect(page.locator(".desktop-list")).toBeHidden();
+        await expect(page.locator(".movements-cards")).toBeVisible();
+        await expect(page.locator(".movements-cards .ui-data-list-item")).toHaveCount(
+          5,
+        );
+        await expectNoOverflow();
+        await evidence("movimientos-graphite-lime-820");
+      }
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(page.locator(".desktop-list")).toBeHidden();
       await expect(page.locator(".movements-cards")).toBeVisible();
       await expectMovementsParity(page);
+      if (theme === "graphite-lime") {
+        const tracks = await page
+          .locator(".movements-list .filters")
+          .evaluate(
+            (element) =>
+              getComputedStyle(element).gridTemplateColumns
+                .split(" ")
+                .filter(Boolean).length,
+          );
+        expect(tracks).toBe(1);
+        await expect(page.locator(".movement-search-icon")).toBeVisible();
+        await expect(
+          page.locator(".movements-cards .movement-type-icon").first(),
+        ).toBeVisible();
+        await expect(page.locator(".list-footer-total")).toBeVisible();
+      }
       await evidence(`movimientos-${theme}-390`);
     }
     await themeSelect.selectOption("light-s");
@@ -570,6 +623,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await expectNoOverflow();
       await evidence(`movimientos-vacio-${theme}-390`);
     }
+    await themeSelect.selectOption("hybrid-s");
     await page
       .getByRole("button", { name: "Limpiar filtros", exact: true })
       .click();
@@ -658,6 +712,24 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       .selectOption("Anulado");
     await expect(page.locator(".mobile-list li")).toHaveCount(2);
     await shot("annulled-mobile");
+    await themeSelect.selectOption("graphite-lime");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(page.locator(".desktop-list tbody tr.annulled")).toHaveCount(2);
+    await expect(
+      page.locator(".desktop-list tbody tr.annulled .tag").first(),
+    ).toBeVisible();
+    expect(
+      await page
+        .locator(".desktop-list tbody tr.annulled .movement-amount")
+        .first()
+        .evaluate((element) => getComputedStyle(element).color),
+    ).toBe("rgb(143, 152, 139)");
+    await evidence("movimientos-anulados-graphite-lime-1440");
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await evidence("movimientos-anulados-graphite-lime-820");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence("movimientos-anulados-graphite-lime-390");
+    await themeSelect.selectOption("hybrid-s");
     await navigate("/movimientos/nuevo");
     await fill("Ingreso", "Fecha futura inválida", "2026-10-12", "1", saldo.id);
     const options = await get("/movimientos/opciones"),
@@ -723,6 +795,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await expectNoOverflow();
       await evidence(`movimientos-error-${theme}-390`);
     }
+    await themeSelect.selectOption("hybrid-s");
     await shot("error-mobile");
     await page.unroute("**/api/movimientos?*");
     await page.getByRole("button", { name: "Reintentar", exact: true }).click();
@@ -748,6 +821,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await expectNoOverflow();
       await evidence(`movimientos-carga-${theme}-390`);
     }
+    await themeSelect.selectOption("hybrid-s");
     await shot("loading-mobile");
     release();
     await expect(page.locator(".mobile-list li")).toHaveCount(4);
@@ -794,6 +868,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       await expectNoOverflow();
       await evidence(`movimientos-paginacion-${theme}-390`);
     }
+    await themeSelect.selectOption("hybrid-s");
     await next.click();
     await expect(page.getByText("Página 3", { exact: true })).toBeVisible();
     await expect(next).toBeDisabled();
