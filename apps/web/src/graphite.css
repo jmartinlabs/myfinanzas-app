@@ -532,6 +532,16 @@ html[data-theme="graphite-lime"] .graphite-control-link {
   font-size: 12px;
 }
 
+html[data-theme="graphite-lime"] .graphite-control-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .graphite-facts .ui-badge {
+  margin-top: 4px;
+}
+
 html[data-theme="graphite-lime"] .graphite-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -569,7 +579,7 @@ html[data-theme="graphite-lime"] .graphite-kpi-meta {
   margin-top: 10px;
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 1180px) {
   html[data-theme="graphite-lime"] .graphite-control {
     grid-template-columns: minmax(0, 1fr);
   }

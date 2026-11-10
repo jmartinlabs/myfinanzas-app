@@ -513,7 +513,6 @@ function buildInicioOverview(secciones: ResumenInicio["secciones"]) {
       delMes: secciones.ciclo.delMes,
       nomina: secciones.ciclo.nomina,
       margenReal: secciones.ciclo.margenReal,
-      base: secciones.ciclo.base,
     },
     kpis: {
       ingresos: secciones.ciclo.ingresos,
@@ -548,7 +547,7 @@ function GraphiteHero({
       <h2 id="graphite-control-title" className="sr-only">
         Control del ciclo
       </h2>
-      <div className="graphite-control-cell graphite-control-liquidity">
+      <div className="graphite-control-cell">
         <p className="graphite-kicker">Liquidez disponible</p>
         <div className="graphite-hero-amount">
           <Amount
@@ -628,6 +627,7 @@ function GraphiteHero({
                 unit={cycle.ingresos.unidad}
                 showNote={false}
               />
+              <EstadoBadge estado={cycle.ingresos.estado} />
             </dd>
           </div>
           <div>
@@ -640,6 +640,7 @@ function GraphiteHero({
                 unit={cycle.gasto.unidad}
                 showNote={false}
               />
+              <EstadoBadge estado={cycle.gasto.estado} />
             </dd>
           </div>
           <div>
@@ -652,6 +653,7 @@ function GraphiteHero({
                 unit={cycle.nomina.unidad}
                 showNote={false}
               />
+              <EstadoBadge estado={cycle.nomina.estado} />
             </dd>
           </div>
         </dl>
@@ -677,7 +679,7 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
       aria-label="Indicadores del ciclo"
     >
       <article className="graphite-kpi">
-        <p className="graphite-kicker">Ingresos del ciclo</p>
+        <h3 className="graphite-kicker">Ingresos del ciclo</h3>
         <div className="graphite-kpi-value">
           <Amount
             value={overview.kpis.ingresos.valor}
@@ -694,7 +696,7 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
       </article>
 
       <article className="graphite-kpi">
-        <p className="graphite-kicker">Gasto bruto</p>
+        <h3 className="graphite-kicker">Gasto bruto</h3>
         <div className="graphite-kpi-value">
           <Amount
             value={overview.kpis.gasto.valor}
@@ -711,7 +713,7 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
       </article>
 
       <article className="graphite-kpi">
-        <p className="graphite-kicker">Inversión valorada</p>
+        <h3 className="graphite-kicker">Inversión valorada</h3>
         <div className="graphite-kpi-value">
           <Amount
             value={inversion?.valorEur ?? null}
@@ -726,7 +728,7 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
       </article>
 
       <article className="graphite-kpi">
-        <p className="graphite-kicker">Deuda no hipotecaria</p>
+        <h3 className="graphite-kicker">Deuda no hipotecaria</h3>
         <div className="graphite-kpi-value">
           <Amount
             value={overview.kpis.deuda.valor}
