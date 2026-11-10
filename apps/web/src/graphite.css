@@ -1513,7 +1513,7 @@ html[data-theme="graphite-lime"] .movement-form-page > a:first-child {
   align-items: center;
   gap: 8px;
   width: fit-content;
-  min-height: 32px;
+  min-height: var(--touch-min);
   margin-bottom: 10px;
   color: var(--muted);
   font-size: 12px;
@@ -1566,11 +1566,11 @@ html[data-theme="graphite-lime"] .movement-detail .ui-form-section-title {
   letter-spacing: -0.1px;
 }
 
-html[data-theme="graphite-lime"] .movement-detail dl {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dl {
   margin: 0;
 }
 
-html[data-theme="graphite-lime"] .movement-detail dl > div {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dl > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1580,11 +1580,11 @@ html[data-theme="graphite-lime"] .movement-detail dl > div {
   font-size: 13px;
 }
 
-html[data-theme="graphite-lime"] .movement-detail dl > div:last-child {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dl > div:last-child {
   border-bottom: 0;
 }
 
-html[data-theme="graphite-lime"] .movement-detail dt {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dt {
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
@@ -1593,7 +1593,7 @@ html[data-theme="graphite-lime"] .movement-detail dt {
   text-transform: uppercase;
 }
 
-html[data-theme="graphite-lime"] .movement-detail dd {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
@@ -1601,12 +1601,12 @@ html[data-theme="graphite-lime"] .movement-detail dd {
   text-align: right;
 }
 
-html[data-theme="graphite-lime"] .movement-detail dd a {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dd a {
   color: var(--text);
   text-decoration-color: var(--accent-border);
 }
 
-html[data-theme="graphite-lime"] .movement-detail dd a:hover {
+html[data-theme="graphite-lime"] .movement-detail .ui-form-section dd a:hover {
   color: var(--accent);
 }
 
@@ -1902,7 +1902,7 @@ html[data-theme="graphite-lime"] .movement-form-page .form-footer .primary {
     font-size: clamp(26px, 8vw, 32px);
   }
 
-  html[data-theme="graphite-lime"] .movement-detail dt {
+  html[data-theme="graphite-lime"] .movement-detail .ui-form-section dt {
     max-width: 52%;
     white-space: normal;
   }

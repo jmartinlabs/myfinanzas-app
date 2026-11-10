@@ -128,6 +128,12 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     verify?: () => Promise<void>,
   ) => {
     const picker = page.getByLabel("Apariencia");
+    const previousTheme =
+      (await page.locator("html").getAttribute("data-theme")) ?? "dark-s";
+    const previousViewport = page.viewportSize() ?? {
+      width: 1440,
+      height: 1000,
+    };
     await picker.selectOption("graphite-lime");
     await page.setViewportSize({ width: 1440, height: 1000 });
     if (verify) await verify();
@@ -136,8 +142,8 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await evidence(`${name}-820`);
     await page.setViewportSize({ width: 390, height: 844 });
     await evidence(`${name}-390`);
-    await picker.selectOption("dark-s");
-    await page.setViewportSize({ width: 1440, height: 1000 });
+    await picker.selectOption(previousTheme);
+    await page.setViewportSize(previousViewport);
   };
   const navigate = async (path: string) => {
     await page.goto(path);
@@ -437,6 +443,14 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         ),
       ).toBeGreaterThanOrEqual(28);
     });
+    await graphiteEvidence("g4-detalle-auditoria", async () => {
+      await page.locator(".movement-detail > .panel summary").click();
+      await expect(page.locator(".movement-audit").first()).toBeVisible();
+      await expect(
+        page.locator(".movement-audit .movement-facts").first(),
+      ).toBeVisible();
+    });
+    await page.locator(".movement-detail > .panel summary").click();
     await page.setViewportSize({ width: 390, height: 844 });
     await shot("detail-mobile");
     expect((await get("/saldos/" + saldo.id)).saldo.posicion.importe).toBe(
@@ -455,6 +469,19 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       "2026-10-13",
       "20",
     );
+    await navigate(`/movimientos/${gasto}`);
+    await graphiteEvidence("g4-detalle-gasto", async () => {
+      await expect(page.locator(".movement-detail")).toHaveAttribute(
+        "data-flow",
+        "outflow",
+      );
+      expect(
+        await page
+          .locator('.movement-detail [data-label="Importe"] dd')
+          .evaluate((element) => getComputedStyle(element).color),
+      ).toBe("rgb(255, 154, 140)");
+    });
+    await navigate("/movimientos");
     expect((await get("/saldos/" + saldo.id)).saldo.posicion.importe).toBe(
       "130.00",
     );
@@ -502,6 +529,9 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await shot("duplicate-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await shot("duplicate-desktop");
+    await graphiteEvidence("g4-duplicado", async () => {
+      await expect(page.locator(".duplicate-warning")).toBeVisible();
+    });
     await page
       .getByRole("button", { name: "Registrar otro hecho real", exact: true })
       .click();

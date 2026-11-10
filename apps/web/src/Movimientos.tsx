@@ -679,7 +679,6 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
   return (
     <div
       className="movement-detail"
-      data-tipo={m.tipo}
       data-flow={movementFlow(m)}
       data-anulado={m.anulado || undefined}
     >
