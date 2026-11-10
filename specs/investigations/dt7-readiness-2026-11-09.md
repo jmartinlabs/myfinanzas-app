@@ -21,7 +21,8 @@ despliegue, push, PR ni merge. Los 59 AC de SPEC20 siguen `UNRUN`.
   indicada; `[PROPUESTA]` = recomendación de este expediente; `[PENDIENTE]` = evidencia o
   decisión que todavía no existe.
 
-**Fuentes:** [cierre de decisiones DT7](dt7-decision-closure-2026-11-05.md),
+**Fuentes:** [inventario de evidencias M1/M2/M5/M8](dt7-evidence-inventory-2026-11-10.md),
+[cierre de decisiones DT7](dt7-decision-closure-2026-11-05.md),
 [preparación con ficción](dt7-preparation-2026-11-05.md),
 [SPEC20](../20-historico-precontrol-specification.md),
 [testplan 20](../20-historico-precontrol-testplan.md),
@@ -446,7 +447,9 @@ sin evidencia deja la decisión `PENDIENTE`; el silencio no aprueba.
 1. **Usuario:** decidir si autoriza la revisión con evidencia privada y designar el canal
    y al asesor. Sin esa autorización, el trabajo se limita a estructura y criterios.
 2. **Usuario/asesor:** rellenar §3 (M-1…M-6) y §4 (C-1…C-3) con evidencia real,
-   manteniendo fuera del repositorio el documento y los importes.
+   manteniendo fuera del repositorio el documento y los importes. El detalle de la
+   evidencia exigida por M1/M2/M5/M8 está en el
+   [inventario de evidencias](dt7-evidence-inventory-2026-11-10.md).
 3. **Coordinador:** contrastar los checklists, señalar huecos y preparar el DT7 definitivo
    con IDs, hashes, recuentos y agregados sanitizados. No aprueba.
 4. **Usuario:** resolver §7 y aprobar o rechazar el DT7 documental. Aprobar DT7 no autoriza
