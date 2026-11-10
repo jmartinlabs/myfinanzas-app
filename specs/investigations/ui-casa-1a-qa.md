@@ -65,7 +65,12 @@ Revisión independiente del diff `034831f..4682fa1`:
 - Sin regresiones en las cuatro apariencias.
 - `casa.css`: 91 reglas, todas bajo `:root[data-theme="casa"]`; solo los `@font-face` son globales.
 - Sin secretos, datos reales, cambios de API/rutas/contratos ni `data-experience`/`mf-experience`.
-- Observaciones no bloqueantes: higiene de afirmaciones de CI (corregida aquí) y flake local de Deudas (descartado en Linux).
+- Observaciones no bloqueantes:
+  - Fuentes variables duplicadas byte a byte: IBM Plex Sans 400/500/600 y Newsreader 500/600 comparten archivo; ~212 KB repetidos. Se puede reducir a una fuente variable por familia antes de 1B.
+  - Los WOFF2 no incluyen `→`, `≥` o `≤`; en copy que usa flechas, el glifo cae a la fuente del sistema. Es un riesgo visual menor, no de layout.
+  - La cobertura de matriz del commit revisado era parcial; queda resuelta por `a10f96d`, que añade Casa a `ui-dev07` y pasa 7/7.
+  - Hay CSS muerto/redundante menor y el listener de consola de `theme-casa.spec.ts` se registra después del login.
+  - El nombre accesible «Apariencia» está duplicado por `label` + `aria-label`; es inocuo.
 
 ## 6. Alcance y límites
 
