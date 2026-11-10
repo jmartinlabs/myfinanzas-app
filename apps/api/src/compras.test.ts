@@ -1046,7 +1046,9 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-});
+  // CI paralelo midió 5,3–8,2 s en las seis migraciones reales de este caso; el
+  // límite por defecto de 5 s abortaba la prueba sin cambiar sus aserciones.
+}, 30000);
 
 test("E4.1-AC-33(f): v17 real con filas D5 preserva movimiento_compartido al subir a 18", () => {
   const dir = mkdtempSync(join(tmpdir(), "e41-real-v17-"));

@@ -514,7 +514,10 @@ test.skipIf(process.platform !== "linux")(
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+    // Backup age + restore real medido en CI: 5,07 s; el límite por defecto lo
+    // abortaba. 30 s mantiene la verificación y solo amplía el margen.
   },
+  30000,
 );
 
 test.skipIf(process.platform !== "linux")(
