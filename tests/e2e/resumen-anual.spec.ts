@@ -177,14 +177,33 @@ async function readKeyboardFocus(page: Page) {
  * En ningún caso se acepta un elemento sin outline visible de al menos 1px.
  */
 async function expectVisibleKeyboardFocus(page: Page) {
-  await page.evaluate(() => {
-    (document.activeElement as HTMLElement | null)?.blur();
-  });
+  // `blur()` no garantiza que `<body>` quede como activeElement en todos los
+  // estados: la app puede tener un `requestAnimationFrame` pendiente que
+  // enfoque el `<h1>`. Por eso se repite el anclaje a `<body>` y se comprueba
+  // tras dos frames; solo entonces se pulsa un único Tab.
   await expect
-    .poll(() => page.evaluate(() => document.activeElement === document.body), {
-      message: "El foco debe partir de <body> antes de pulsar Tab",
-      timeout: 5000,
-    })
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const active = document.activeElement as HTMLElement | null;
+          active?.blur();
+          // `tabIndex=-1` hace `<body>` enfocable por programa sin añadirlo al
+          // orden de tabulación.
+          if (!document.body.hasAttribute("tabindex"))
+            document.body.tabIndex = -1;
+          document.body.focus();
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => resolve()),
+            ),
+          );
+          return document.activeElement === document.body;
+        }),
+      {
+        message: "El foco debe partir de <body> antes de pulsar Tab",
+        timeout: 5000,
+      },
+    )
     .toBe(true);
 
   await page.keyboard.press("Tab");
