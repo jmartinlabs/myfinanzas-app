@@ -358,6 +358,23 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             result=self.run_entry(mode,extra=extra); self.assertNotEqual(result.returncode,0,result.stdout)
         self.assertEqual(self.calls(),[])
 
+    def test_ci_deploy_tag_runs_full_on_the_exact_commit(self):
+        self.git('tag','deploy-test-v1.2.3',self.head)
+        tag='refs/tags/deploy-test-v1.2.3'
+        event=self.home/'tag-push.json'
+        event.write_text(json.dumps({'ref':tag,'before':'0'*40,'after':self.head}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':tag}
+        plan=self.run_entry('ci-plan',extra=extra)
+        self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'full')
+        result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),APP_NAMES)
+        # A non-tag checkout or a non-deploy tag never borrows full coverage.
+        self.clear()
+        for frozen in (self.head, 'refs/tags/v1'):
+            result=self.run_entry('ci-plan',extra={**extra,'CI_CHECKOUT_REF':frozen})
+            self.assertNotEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),[])
+
     def test_ci_test_integration_base_and_push_profiles(self):
         cases = (('apps/web/src/style.css','fast',['typecheck','build']),
                  ('specs/backlog/test-base.md','docs',[]))

@@ -1,8 +1,6 @@
 name: Rootless infrastructure 32
 on:
   push:
-    branches:
-      - test
     tags:
       - 'deploy-test-v*'
   pull_request:
@@ -74,7 +72,7 @@ jobs:
   qa:
     name: qa
     # Automated regression on the exact test SHA, not a substitute for independent PR review.
-    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && (github.ref == 'refs/heads/test' || startsWith(github.ref, 'refs/tags/deploy-test-v'))) || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/deploy-test-v')) || github.event_name == 'workflow_dispatch' }}
     needs: capability
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -88,10 +86,10 @@ jobs:
         with:
           bun-version-file: .bun-version
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck
-      - run: bun run build
+      # Unique coverage: the canonical full profile runs API tests (`bun run test`)
+      # but not the web suite. Typecheck, build and baseline are already covered by
+      # the required full run on the same tag SHA, so they are not repeated here.
       - run: bun test apps/web
-      - run: python3 scripts/verify baseline
 
   deploy:
     name: Deploy TEST from an authorized tag
@@ -148,10 +146,38 @@ jobs:
             [[ -n "$allowed" && "$allowed" == "$ACTOR" ]] && found=1
           done
           [[ "$found" == 1 ]]
-          gh api "repos/$GITHUB_REPOSITORY/commits/$TAG_SHA/check-runs?per_page=100" \
-            | jq -e '.check_runs | any(.name == "qa" and .conclusion == "success")' >/dev/null
-          gh api "repos/$GITHUB_REPOSITORY/commits/$TAG_SHA/check-runs?per_page=100" \
-            | jq -e '.check_runs | any(.name == "required" and .conclusion == "success")' >/dev/null
+      - name: Wait for required and qa checks on the tag commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ -n "$RELEASE_SHA" ]]
+          deadline=$((SECONDS + 1200))
+          while true; do
+            payload="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" 2>/dev/null || true)"
+            if printf '%s' "$payload" | jq -e '
+              (.check_runs | any(.name == "qa" and .conclusion == "success"))
+              and (.check_runs | any(.name == "required" and .conclusion == "success"))
+            ' >/dev/null 2>&1; then
+              echo "required and qa succeeded on $RELEASE_SHA"
+              exit 0
+            fi
+            if printf '%s' "$payload" | jq -e '
+              ([.check_runs[] | select(.name == "qa")] | length) >= 1
+              and ([.check_runs[] | select(.name == "required")] | length) >= 1
+              and ([.check_runs[] | select(.name == "qa" or .name == "required") | .status] | all(. == "completed"))
+              and ([.check_runs[] | select(.name == "qa" or .name == "required") | .conclusion] | all(. != "success"))
+            ' >/dev/null 2>&1; then
+              echo "required or qa failed on $RELEASE_SHA" >&2
+              exit 1
+            fi
+            if (( SECONDS >= deadline )); then
+              echo "Timed out waiting for required and qa on $RELEASE_SHA" >&2
+              exit 1
+            fi
+            sleep 30
+          done
       - name: Install rootless builder on disposable runner
         run: |
           sudo apt-get update

@@ -1,4 +1,4 @@
-"""Freeze the integration checkout for main/test pushes and PR merge refs."""
+"""Freeze the integration checkout for PR merge refs, integration pushes and deploy tags."""
 import json
 import os
 from pathlib import Path
@@ -40,9 +40,14 @@ def select_ref(event_name, event, repository, list_pulls):
     if not isinstance(default, str) or not default:
         raise ValueError('missing default branch')
     # main and test are integration branches: validate their exact tip rather
-    # than borrowing a pull-request merge ref. Tags keep their pinned commit.
-    if ref in ('refs/heads/' + default, 'refs/heads/test') or ref.startswith('refs/tags/'):
+    # than borrowing a pull-request merge ref. Tags keep their pinned ref so an
+    # annotated tag is checked out and peeled to its commit.
+    if ref in ('refs/heads/' + default, 'refs/heads/test'):
         return event['after']
+    if ref.startswith('refs/tags/'):
+        if not ref[len('refs/tags/'):]:
+            raise ValueError('invalid tag')
+        return ref
     if not ref.startswith('refs/heads/') or not ref[len('refs/heads/'):]:
         raise ValueError('invalid branch')
     branch = ref[len('refs/heads/'):]
@@ -82,6 +87,18 @@ def snapshot(root, event_name, event, checkout_ref, manual_sha=None):
     actual = rev('HEAD')
     if not sha(expected) or not sha(actual):
         raise ValueError('invalid checkout snapshot')
+    if isinstance(checkout_ref, str) and checkout_ref.startswith('refs/tags/'):
+        # A tag push checks out the tag ref. GITHUB_SHA is its peeled commit,
+        # so verify the tag still resolves to that exact commit.
+        if event.get('ref') != checkout_ref or not sha(manual_sha):
+            raise ValueError('invalid tag checkout snapshot')
+        try:
+            tagged = rev(checkout_ref + '^{commit}')
+        except subprocess.SubprocessError:
+            raise ValueError('tag ref is unavailable')
+        if tagged != manual_sha or actual != manual_sha:
+            raise ValueError('tag checkout does not match the event')
+        return actual
     if isinstance(checkout_ref, str) and re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref):
         # The merge ref may move between API lookup and checkout. Never classify an
         # older docs event while testing a different, newer PR head.

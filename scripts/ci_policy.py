@@ -118,6 +118,10 @@ def classify_event_range(root, event_name, event):
             pr = event['pull_request']
             return classify_git(root, pr['base']['sha'], pr['head']['sha'], pull_request=True)
         if event_name == 'push':
+            # Deploy tags carry no comparable "before" and must never borrow a
+            # documentation-only exemption from an arbitrary old commit.
+            if str(event.get('ref', '')).startswith('refs/tags/'):
+                return 'full'
             return classify_git(root, event['before'], event['after'])
     except (KeyError, TypeError):
         pass
@@ -168,11 +172,29 @@ def ci_profile(root, event_name, event, checkout_ref=None):
     if event_name == 'workflow_dispatch':
         return 'full'
     if event_name == 'push':
-        # Only the two integration branches have a postmerge gate. Feature/tag
-        # pushes and deleted refs still fail closed instead of borrowing it.
-        if event.get('ref') not in ('refs/heads/main', 'refs/heads/test') or not re.fullmatch(r'[0-9a-f]{40}', event.get('after', '')) or event['after'] == '0' * 40:
-            raise ValueError('only main and test pushes have a fast postmerge gate')
-        if git(root, 'rev-parse', 'HEAD').decode().strip() != event['after'] or checkout_ref != event['after']:
+        ref = event.get('ref')
+        after = event.get('after', '')
+        if not re.fullmatch(r'[0-9a-f]{40}', after) or after == '0' * 40:
+            raise ValueError('deleted or invalid push ref')
+        if isinstance(ref, str) and ref.startswith('refs/tags/deploy-test-v'):
+            # Deploy tags always run full over the exact tagged commit. The tag
+            # ref (not the raw event SHA, which may be a tag object) is the
+            # verified checkout ref, so resolve both to the same commit.
+            if checkout_ref != ref:
+                raise ValueError('deploy tag checkout differs from the event')
+            try:
+                tagged = git(root, 'rev-parse', after + '^{commit}').decode().strip()
+                head = git(root, 'rev-parse', 'HEAD').decode().strip()
+            except (OSError, subprocess.SubprocessError):
+                raise ValueError('deploy tag commit is unavailable')
+            if head != tagged:
+                raise ValueError('deploy tag checkout differs from the tag commit')
+            return 'full'
+        # main/test push compatibility is retained for historical agent runs;
+        # the workflows no longer trigger postmerge pushes.
+        if ref not in ('refs/heads/main', 'refs/heads/test'):
+            raise ValueError('only main/test pushes and deploy tags are supported')
+        if git(root, 'rev-parse', 'HEAD').decode().strip() != after or checkout_ref != after:
             raise ValueError('postmerge snapshot differs from event')
         before = event.get('before')
         if not re.fullmatch(r'[0-9a-f]{40}', before or '') or before == '0' * 40:
