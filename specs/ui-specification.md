@@ -4,7 +4,7 @@
 `UI · SPEC`, el merge condicionado de #205 y `UI · DEV-01` por separado; **no** autoriza
 `DEV-02…07` ni otros merges. No cambia código, componentes, CSS, temas, API, cálculos
 financieros ni datos reales. La enmienda UI-G1 es documental; la implementación de 1A se
-realiza en una PR separada y no forma parte de este PR documental.
+realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 
 > **Enmienda UI-G1 · Graphite Lime (2026-11-10).** Ratificada por el usuario para desbloquear
 > el Incremento 1A. Añade `graphite-lime` («Grafito») como cuarto tema, con `colorScheme: dark`,
@@ -15,8 +15,8 @@ realiza en una PR separada y no forma parte de este PR documental.
 > (`prefers-reduced-motion`) queda fuera de alcance. No autoriza otros candidatos, cambios de
 > pantallas/componentes/formularios, merge ni despliegue. Esta enmienda sustituye únicamente las
 > cláusulas de «tres temas cerrados / no cuarto tema» que se indican; el resto de la
-> especificación y su historial se conserva. La implementación de 1A se ejecuta en una rama y PR
-> separados, con QA independiente.
+> especificación y su historial se conserva. La implementación de 1A se ejecutó en una rama y PR
+> separados (#356, `bff714e`), con QA independiente.
 
 - **Base:** `main` **`043869f`** (2026-11-05; I1 de E4.10 integrado y recarga de agentes #234).
 - **Análisis:** [ui-evolution-2026-11-04](investigations/ui-evolution-2026-11-04.md);
@@ -37,12 +37,12 @@ realiza en una PR separada y no forma parte de este PR documental.
   API/DTO, cifras, estados financieros, cálculos, datos reales, despliegue y `UI · DEV` sin
   autorización.
 
-### 0. Estado real verificado (2026-11-05)
+### 0. Estado real verificado (2026-11-05; actualizado 2026-11-10 para Graphite)
 
 | Superficie | Estado comprobado |
 | --- | --- |
 | Navegación | **23 enlaces** de navegación en un único grupo «MI ESPACIO» (`main.tsx:179-493`); `/saldos/nuevo` es subvista y `/` es alias de Saldos. No se añaden rutas. |
-| Temas | Tres temas vigentes y **66 tokens** semánticos (`themes.css`, 220 líneas); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). Graphite Lime está aprobado para 1A, aún no implementado. |
+| Temas | Cuatro temas vigentes con **66 tokens** semánticos por tema (`themes.css`); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). Graphite Lime se integró en `test` con #356 (`bff714e`) y es seleccionable. |
 | Shell | Sidebar 236 px; contenido `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px (`style.css`). |
 | Componentes | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` (`ui.tsx`). |
 | CSS | `style.css`: **4.784 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados (incluye alias locales); de los 66 tokens definidos, 30 sin uso; 0 usos de `var(--space)`. |
@@ -75,7 +75,7 @@ realiza en una PR separada y no forma parte de este PR documental.
 | Dark | `dark-s` | Implementado y cerrado; predeterminado |
 | Light | `light-s` | Implementado y cerrado |
 | Hybrid | `hybrid-s` | Implementado y cerrado |
-| Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; 1A autorizado en alcance, implementación pendiente |
+| Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; integrado en `test` con #356 (`bff714e`); seleccionable como cuarto tema |
 
 - Los tokens semánticos vigentes son los de `apps/web/public/themes.css`; los componentes
   consumen `var(--…)` y no conocen el tema.
@@ -114,7 +114,7 @@ La enmienda 2.2 amplía el catálogo con Graphite Lime; no reabre los tres temas
 
 ### 2.2 Enmienda Graphite Lime 1A (2026-11-10)
 
-Alcance autorizado para 1A, sin implementación en esta PR documental:
+Alcance autorizado para 1A, implementado en la PR separada #356 (`bff714e`):
 
 - ID `graphite-lime`, etiqueta «Grafito», `colorScheme: dark`.
 - Bloque aditivo de tokens Graphite en `themes.css`, usando los nombres semánticos existentes.
@@ -130,7 +130,9 @@ Límites:
   Movimientos, formularios ni navegación.
 - 1B (`prefers-reduced-motion`) no está autorizado.
 - Añadir Graphite no autoriza Color Finance, Pastel Editorial ni ningún otro candidato.
-- Esta enmienda no autoriza merge ni despliegue; 1A requiere su PR y QA independiente.
+- Esta enmienda no autoriza merge ni despliegue; 1A requirió su PR y QA independiente.
+- **Estado (2026-11-10):** 1A integrado en `test` (`bff714e`, #356); Graphite es seleccionable.
+  La integración visual premium completa sigue pendiente y 1B permanece fuera de alcance.
 
 Verificación mínima de 1A: pruebas unitarias del catálogo; E2E de selector, persistencia,
 arranque previo a React, fallback a `dark-s`, colores clave y ausencia de overflow a 1440/390;
@@ -145,7 +147,7 @@ temas no se reutiliza como PASS de Graphite.
 | E4.9 / cierre y foto | Integrada `0176ffc` (#200), QA APTO CON RESERVAS | Patrones de operación irreversible y bloqueo | No reabrir rutas, contratos ni estados |
 | E4.10 / reapertura | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1`, no fusionado; 24 AC `UNRUN` | Patrón futuro de reapertura/reapertura cancelada | No anticipar pantallas, clases ni rutas de E4.10 hasta su UI |
 | E4.11 / fotos periodo | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV | Contexto de consulta | No fijar pantallas antes de su SPEC |
-| Temas #198 | Tres temas cerrados `0b8aade`; enmienda UI-G1 2026-11-10 | Tokens, selector y ampliación Graphite 1A | No cambiar los tres existentes; Graphite solo en 1A |
+| Temas #198 | Tres temas cerrados `0b8aade`; enmienda UI-G1 2026-11-10; Graphite 1A integrado `bff714e` (#356) | Tokens, selector y ampliación Graphite 1A | No cambiar los tres existentes; Graphite solo en 1A |
 
 ## 4. Bloques `UI · DEV-01…07`
 
