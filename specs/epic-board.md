@@ -2070,7 +2070,7 @@ pruebas y documental; no es aceptación financiera, no acredita P7 ni equivalenc
   equivalencia con Excel.
 
 
-## Avance 2026-11-10
+## Avance 2026-11-10 (histórico: las decisiones abiertas se aprobaron el 2026-11-10; véase «Decisiones aprobadas»)
 
 - **E4.7 `bc192cd` (#337):** E2E de foco estabilizado con `expect.poll`/`toPass`, sin
   reintento de `Tab` ni relajación del umbral; CI full PASS.
@@ -2109,7 +2109,7 @@ temporal consultado con trazabilidad de origen. Integradas en SPEC20/testplan (`
 `bfcd7a0`); motor y DTO sin cambios; 59 AC `UNRUN`; DT7 abierto.
 
 **C. E4.12 F1.** D08 aprobada solo en diseño; D09–D15 aprobadas con sus límites (D09 sin
-matriz real, D10 datos fuera de alcance, D11 A antes que B, D12/D13 cortes con reservas,
+matriz real, D10 datos fuera de alcance, D11 A antes que B, D12 con reservas y D13 con brechas,
 D14 SHA sin tag, D15 exclusión de E4.5/DT7 en A). D04 pendiente de fecha/capacidad/
 responsable; D01–D03 y D05–D07 pendientes. Registro en
 `specs/investigations/e412-f1-approvals-2026-11-10.md` (`#344`, `29869b6`). F1 sigue
