@@ -206,6 +206,13 @@ const FUNCTIONAL_TEXT_SELECTOR = [
   ".ui-badge",
   ".ui-amount-note",
   ".ui-amount-state",
+  ".graphite-kicker",
+  ".graphite-control-meta",
+  ".graphite-control-note",
+  ".graphite-plan-item > span",
+  ".graphite-facts dt",
+  ".graphite-kpi-meta",
+  ".graphite-control-link",
   "small",
 ].join(",");
 
@@ -277,7 +284,7 @@ async function expectInicioContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase,.graphite-kicker,.graphite-plan-item > span,.graphite-facts dt,.graphite-kpi-meta,.graphite-control-note,.graphite-control-link",
       ),
     );
     const result: number[] = [];
@@ -626,7 +633,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   expect(objetivoSizes.submetrica).toBeGreaterThanOrEqual(12);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -634,6 +646,48 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    if (theme === "graphite-lime") {
+      const hero = page.locator('[data-inicio-section="hero"]');
+      const kpis = page.locator('[data-inicio-section="kpis"]');
+      await expect(hero).toBeVisible();
+      await expect(kpis).toBeVisible();
+      await expect(hero).toContainText("Liquidez disponible");
+      await expect(hero).toContainText("3.456,40 €");
+      await expect(hero).toContainText("3/4");
+      await expect(hero).toContainText("1.800,00 €");
+      await expect(hero).toContainText("1.900,00 €");
+      await expect(hero).toContainText("NO DISPONIBLE");
+      await expect(kpis).toContainText("2.250,00 €");
+      await expect(kpis).toContainText("1.800,00 €");
+      await expect(kpis).toContainText("1.197,50 €");
+      await expect(kpis).toContainText("1.020,00 €");
+      await expect(kpis).toContainText("2/2");
+      await expect(hero).not.toContainText("%");
+      await expect(kpis).not.toContainText("%");
+      await expect(hero.locator(".graphite-hero-margin")).toContainText("ND");
+      await expect(hero.locator(".graphite-hero-margin")).not.toContainText(
+        "0,00 €",
+      );
+      const planItem = (label: string) =>
+        hero.locator(".graphite-plan-item").filter({ hasText: label });
+      await expect(planItem("Gasto bruto")).toContainText("1.800,00 €");
+      await expect(planItem("Del mes planificado")).toContainText(
+        "1.900,00 €",
+      );
+      const kpi = (label: string) =>
+        kpis.locator(".graphite-kpi").filter({ hasText: label });
+      await expect(kpi("Ingresos del ciclo")).toContainText("2.250,00 €");
+      await expect(kpi("Gasto bruto")).toContainText("1.800,00 €");
+      await expect(kpi("Inversión valorada")).toContainText("1.197,50 €");
+      await expect(kpi("Deuda no hipotecaria")).toContainText("1.020,00 €");
+      const fact = (label: string) =>
+        hero.locator(".graphite-facts > div").filter({ hasText: label });
+      await expect(fact("Ingresos")).toContainText("2.250,00 €");
+      await expect(fact("Gasto bruto")).toContainText("1.800,00 €");
+      await expect(fact("Nómina")).toContainText("2.000,00 €");
+      await expect(fact("Ingresos")).toContainText("PARCIAL");
+      await expectInicioFunctionalText(page);
+    }
     // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
@@ -650,7 +704,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -658,6 +717,48 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    if (theme === "graphite-lime") {
+      const hero = page.locator('[data-inicio-section="hero"]');
+      const kpis = page.locator('[data-inicio-section="kpis"]');
+      await expect(hero).toBeVisible();
+      await expect(kpis).toBeVisible();
+      await expect(hero).toContainText("Liquidez disponible");
+      await expect(hero).toContainText("3.456,40 €");
+      await expect(hero).toContainText("3/4");
+      await expect(hero).toContainText("1.800,00 €");
+      await expect(hero).toContainText("1.900,00 €");
+      await expect(hero).toContainText("NO DISPONIBLE");
+      await expect(kpis).toContainText("2.250,00 €");
+      await expect(kpis).toContainText("1.800,00 €");
+      await expect(kpis).toContainText("1.197,50 €");
+      await expect(kpis).toContainText("1.020,00 €");
+      await expect(kpis).toContainText("2/2");
+      await expect(hero).not.toContainText("%");
+      await expect(kpis).not.toContainText("%");
+      await expect(hero.locator(".graphite-hero-margin")).toContainText("ND");
+      await expect(hero.locator(".graphite-hero-margin")).not.toContainText(
+        "0,00 €",
+      );
+      const planItem = (label: string) =>
+        hero.locator(".graphite-plan-item").filter({ hasText: label });
+      await expect(planItem("Gasto bruto")).toContainText("1.800,00 €");
+      await expect(planItem("Del mes planificado")).toContainText(
+        "1.900,00 €",
+      );
+      const kpi = (label: string) =>
+        kpis.locator(".graphite-kpi").filter({ hasText: label });
+      await expect(kpi("Ingresos del ciclo")).toContainText("2.250,00 €");
+      await expect(kpi("Gasto bruto")).toContainText("1.800,00 €");
+      await expect(kpi("Inversión valorada")).toContainText("1.197,50 €");
+      await expect(kpi("Deuda no hipotecaria")).toContainText("1.020,00 €");
+      const fact = (label: string) =>
+        hero.locator(".graphite-facts > div").filter({ hasText: label });
+      await expect(fact("Ingresos")).toContainText("2.250,00 €");
+      await expect(fact("Gasto bruto")).toContainText("1.800,00 €");
+      await expect(fact("Nómina")).toContainText("2.000,00 €");
+      await expect(fact("Ingresos")).toContainText("PARCIAL");
+      await expectInicioFunctionalText(page);
+    }
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
@@ -671,6 +772,24 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
       fullPage: true,
     });
   }
+
+  await page.setViewportSize({ width: 820, height: 1000 });
+  await select.selectOption("graphite-lime");
+  const hero820 = page.locator('[data-inicio-section="hero"]');
+  const kpis820 = page.locator('[data-inicio-section="kpis"]');
+  await expect(hero820).toBeVisible();
+  await expect(kpis820).toBeVisible();
+  await expectNoOverflow();
+  await expectInicioFunctionalText(page);
+  await page.screenshot({
+    path: "artifacts/e4-6/inicio-graphite-lime-820.png",
+    fullPage: true,
+  });
+  await page.screenshot({
+    path: "artifacts/dev-06/inicio-graphite-lime-820.png",
+    fullPage: true,
+  });
+
   await page.setViewportSize({ width: 1440, height: 1000 });
   expect(errors).toEqual([]);
 });
