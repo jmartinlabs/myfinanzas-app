@@ -295,7 +295,7 @@ Reglas de mapping:
 | `estadoTotal` | `Verificado`, `NoVerificable` o `NoDisponible`; por Partida en `items[].estadoTotal` y global en `totales.estadoTotal` |
 | `alcanceTotal` | `Anual` o `HastaCorte`; derivado de `corteConsulta` | Cálculo | `Anual` solo con corte 31/12; un total con corte abierto es `HastaCorte` y no se anula |
 | `coberturaGlobal` | `Completa` solo con universo acreditado, todas las fuentes esperadas presentes y sin huecos |
-| `motivoCodigo` | `SinFuente`, `HuecoDemostrado`, `FuenteAusente`, `UniversoNoAcreditado`, `AusenciaVerificadaSinHechos`, `Solapamiento`, `DuplicadoAmbiguo`, `MappingPendiente`, `VerificacionPendiente`, `RegularizacionPendiente`, `AperturaNoGasto`, `AgregadoNoAtribuibleAlCorte` |
+| `motivoCodigo` | `SinFuente`, `HuecoDemostrado`, `FuenteAusente`, `UniversoNoAcreditado`, `AusenciaVerificadaSinHechos`, `Solapamiento`, `DuplicadoAmbiguo`, `MappingPendiente`, `VerificacionPendiente`, `RegularizacionPendiente`, `AperturaNoGasto`, `AgregadoNoAtribuibleAlCorte`, `RegistroFueraDeIntervalosArchivo` |
 | `motivo` | Explicación legible y estable; no un importe |
 
 Reglas de cobertura:
