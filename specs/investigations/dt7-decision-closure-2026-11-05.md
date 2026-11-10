@@ -14,8 +14,8 @@ el contenido revisado y registra la ratificación posterior.
 
 **Addendum 2026-11-10:** el usuario, con revisión de Álex, sobre **v5.11(7)** aprueba **M1**: histórico
 **2023–2026** (2023 primero; 2023–2025 parcial, 2026 transición); **2019–2022 excluidos por
-alcance**; posteriores a 2026 fuera del histórico. La inclusión no acredita cobertura ni
-importes; M2/M5/M8 siguen pendientes. Registro en la
+alcance**; posteriores a 2026 fuera del histórico. La inclusión no acredita cobertura, importes ni
+aperturas; M2/M5/M8 siguen pendientes. Registro en la
 [hoja de decisiones](dt7-decision-sheet-2026-11-10.md).
 
 **Preparación de la revisión (2026-11-09):** el expediente
