@@ -479,14 +479,28 @@ identificable y, cuando corresponda, su propia especificación y autorización.
 
 ## 9. Decisiones F1
 
-`[PENDIENTE]` **F1 está `IN_PROGRESS`**: esta sección contiene **propuestas documentales**
-para las nueve decisiones de preparación. Ninguna se considera tomada y ninguna fija
-destino, custodio, retención, claves ni configuración operativa; el usuario debe resolverlas
-de forma explícita e identificable antes de F2. Cada propuesta indica la opción recomendada,
-las alternativas, los criterios y riesgos, la evidencia o autorización que falta y el AC/gate
-que desbloquearía. No se inventan plazos, umbrales, rutas ni proveedores. DT6 y DT7 siguen
-abiertos y estas propuestas no los cierran; tampoco alteran AC, niveles, gates ni las
-reservas de E4.5/E4.7/E4.9/E4.10/E4.11.
+`[CONFIRMADO]` **F1 sigue `IN_PROGRESS`.** El **2026-11-10**, sobre `test` `d25cbc6`, el
+usuario aprobó D08 (solo el diseño) y D09–D15 con las limitaciones de sus propuestas; D04 y
+D01–D03/D05–D07 siguen `[PENDIENTE]`. Las propuestas de esta sección **no se reescriben**:
+cada subsección conserva su análisis y añade únicamente su estado. El estado vigente, el
+alcance y las reservas están en el
+[registro de aprobaciones](investigations/e412-f1-approvals-2026-11-10.md). Ninguna
+aprobación fija destino, custodio, retención, claves ni configuración operativa, ni autoriza
+DEV/F2/F3/F4. DT6 y DT7 siguen abiertos; no se alteran AC, niveles, gates ni las reservas de
+E4.5/E4.7/E4.9/E4.10/E4.11.
+
+| Subsección | Decisión | Estado 2026-11-10 |
+| --- | --- | --- |
+| §9.1 | F1-D01 — Destino y segunda copia | `[PENDIENTE]` |
+| §9.2 | F1-D02 — Canal de exportación | `[PENDIENTE]` |
+| §9.3 | F1-D03 — Custodia de la identidad `age` | `[PENDIENTE]` |
+| §9.4 | F1-D04 — Retención y poda | `[PENDIENTE]`: faltan fecha, capacidad y responsable; objetivo 7/4/3 se mantiene |
+| §9.5 | F1-D05 — `--allow-older` | `[PENDIENTE]` |
+| §9.6 | F1-D06 — Equipo de ensayo Linux x86_64 | `[PENDIENTE]` |
+| §9.7 | F1-D07 — Configuración productiva | `[PENDIENTE]` |
+| §9.8 | F1-D08 — Carpeta de evidencias | `[APROBADA 2026-11-10]` **solo el diseño**; ruta, responsable y puesta en marcha `[PENDIENTE]` |
+| §9.9 | F1-D09 — Corte y matriz | `[APROBADA 2026-11-10]` **solo la parte documental**; matriz real y mapping DT7 `[PENDIENTE]` |
+| §9.10 | F1-D10 a F1-D15 | `[APROBADA 2026-11-10]` con el alcance y las reservas de §9.10 |
 
 El [expediente consolidado de decisiones F1](investigations/e412-f1-decision-dossier-2026-11-09.md)
 reúne las quince decisiones —§9.1–§9.9 y §9.10— con recomendación, alternativa, riesgos,
@@ -494,7 +508,8 @@ dependencias, evidencia disponible, autorización y gate. Es apoyo documental: n
 ninguna decisión ni altera esta sección. El
 [paquete de decisiones resolubles](investigations/e412-f1-package-2026-11-09.md) clasifica qué
 puede aprobarse ahora, qué exige evidencia externa/DT6/DT7 y qué no es aprobable aún, e
-incluye formulario y preparación documental de D08/D09. Tampoco aprueba nada.
+incluye formulario y preparación documental de D08/D09. Registra las aprobaciones del
+2026-11-10, pero no las ejecuta.
 
 ### 9.1 Destino y segunda copia
 
@@ -593,6 +608,11 @@ valores operativos ni sustituye la configuración del despliegue.
 
 ### 9.8 Carpeta de evidencias
 
+**Estado 2026-11-10:** `[APROBADA 2026-11-10]` **solo el diseño** — estructura, metadatos,
+criterios de conservación y plantilla del
+[Anexo A](investigations/e412-f1-package-2026-11-09.md#anexo-a--d08-estructura-y-registro).
+La ruta privada, el responsable y la puesta en funcionamiento siguen `[PENDIENTE]`.
+
 | Opción | Criterios | Riesgos |
 | --- | --- | --- |
 | **Recomendada — carpeta privada fuera de Git y del VPS:** permisos `0700`, estructura por fase/AC, registro con acción, entorno, candidato, base, fecha, operador y log crudo; sin datos personales, rutas sensibles ni secretos; acceso restringido y sin sincronización pública. `[PROPUESTA]` | Privacidad; trazabilidad por AC; revisión QA y reproducción; no publica datos. | Fuga por sincronización o copia de seguridad; pérdida de evidencia; logs que arrastran secretos. |
@@ -601,10 +621,17 @@ valores operativos ni sustituye la configuración del despliegue.
 | Alternativa — almacenamiento cifrado en nube | Disponibilidad y copia remota. | Tercero y decisión DT10; claves y acceso remoto añaden superficie. |
 | Alternativa — disco local cifrado | Control físico y sin tercero. | Debe garantizar separación del VPS, permisos y copia de la propia evidencia. |
 
-`[PENDIENTE]` Falta: ruta, responsable, formato y política de conservación de la evidencia;
-decisión F1. Desbloquea AC10/AC17 y la revisión QA de AC14/AC15; gate Evidencia.
+`[PENDIENTE]` Falta: ruta, responsable y puesta en funcionamiento; el formato y la política
+de conservación ya están aprobados (estado arriba). Desbloquea AC10/AC17 y la revisión QA de
+AC14/AC15; gate Evidencia.
 
 ### 9.9 Corte y matriz
+
+**Estado 2026-11-10:** `[APROBADA 2026-11-10]` **solo la parte documental** — política de
+corte (fecha civil y SHA de `test` con v27/C27) y congelación en F2 de una matriz sanitizada
+con los criterios del
+[Anexo B](investigations/e412-f1-package-2026-11-09.md#anexo-b--d09-corte-y-congelación).
+Matriz real, mapping DT7 y equivalencia siguen `[PENDIENTE]`.
 
 | Opción | Criterios | Riesgos |
 | --- | --- | --- |
@@ -614,27 +641,31 @@ decisión F1. Desbloquea AC10/AC17 y la revisión QA de AC14/AC15; gate Evidenci
 | Alternativa — corte móvil | Evita re-fijar el SHA. | Invalida AC16 y mezcla versiones de app/esquema. |
 | Alternativa — solo referencia sanitizada | No exige datos privados. | Limita AC12/AC13 a un alcance ficticio; no acredita equivalencia real. |
 
-`[PENDIENTE]` Falta: fecha/corte, revisión del mapping DT7 por el usuario, registro de
-congelación y autorización de datos reales si aplica; AUD-06. Desbloquea
-AC12/AC13/AC14/AC16 y los gates Oráculo/DT7; no desbloquea por sí solo AC-25/P3.
+`[PENDIENTE]` Falta: fijar el corte en F2, la revisión del mapping DT7 por el usuario, el
+registro de congelación y la autorización de datos reales si aplica; la política está
+aprobada (estado arriba). Desbloquea AC12/AC13/AC14/AC16 y los gates Oráculo/DT7; no
+desbloquea por sí solo AC-25/P3.
 
 ### 9.10 Decisiones restantes
 
-`[PENDIENTE]` Estas decisiones no tienen propuesta cerrada en F1 y siguen sujetas a los
-informes de aceptación y al tablero:
+`[CONFIRMADO]` El **2026-11-10** el usuario aprobó estas seis decisiones con el alcance y
+las reservas de la columna «Estado»; las partes no aprobadas siguen `[PENDIENTE]`. Ninguna
+aprobación declara aceptación global, equivalencia real ni cierre de AC, y todas siguen
+sujetas a los informes de aceptación y al tablero:
 
-| Decisión | Qué debe fijar | Fuente |
-| --- | --- | --- |
-| Datos reales | Si se autoriza contraste privado (AC-25/P3) o se declara límite | AUD-06 |
-| **Nivel de F3** | Si se autoriza solo nivel A (fixtures), solo nivel B o ambos, con AC incluidos y exclusiones | §2.5, §4.6, §6 |
-| **Aceptación E4.9/E4.10/E4.11** | Si sus PASS de fixtures y reservas (`PARCIAL`/`BLOCKED real`) se aceptan como corte de E4.12 o si se espera a su cierre; conciliar el tablero con I1–I6 de E4.11 | Informes de aceptación; tablero |
-| **Aceptación E4.7** | AC3 `PARCIAL`, AC10–15 `BLOCKED`, AC19 `UNRUN`; decidir si se acepta como corte o se excluye con brecha explícita | Informe E4.7; tablero |
-| **Candidato y tags** | SHA congelado de `test` con v27/C27; confirmar que no se crea tag ni se depende de SPEC35 para F3 | SPEC35; AC16 |
-| **Alcance E4.5/DT7** | Si E4.5 y el archivo precontrol entran en el corte o se excluyen con brecha explícita | roadmap E4.12-AC3; DT7 |
+| Decisión | Qué debe fijar | Estado 2026-11-10 | Fuente |
+| --- | --- | --- | --- |
+| Datos reales | Si se autoriza contraste privado (AC-25/P3) o se declara límite | `[APROBADA 2026-11-10]`: acceso cerrado y AC-25/P3 abierto; datos reales fuera de alcance; revertir exige autorización nueva y específica | AUD-06 |
+| **Nivel de F3** | Si se autoriza solo nivel A (fixtures), solo nivel B o ambos, con AC incluidos y exclusiones | `[APROBADA 2026-11-10]` **solo la secuencia**: nivel A primero y nivel B separado; autorización concreta de F3 `[PENDIENTE]` | §2.5, §4.6, §6 |
+| **Aceptación E4.9/E4.10/E4.11** | Si sus PASS de fixtures y reservas (`PARCIAL`/`BLOCKED real`) se aceptan como corte de E4.12 o si se espera a su cierre; conciliar el tablero con I1–I6 de E4.11 | `[APROBADA 2026-11-10]` como corte documental **con reservas** para nivel A; sin aceptación global; nivel B decide cada reserva | Informes de aceptación; tablero |
+| **Aceptación E4.7** | AC3 `PARCIAL`, AC10–15 `BLOCKED`, AC19 `UNRUN`; decidir si se acepta como corte o se excluye con brecha explícita | `[APROBADA 2026-11-10]` como **corte parcial con brecha**: AC3 `PARCIAL`, AC10–AC15 `BLOCKED` por E4.5/DT7, AC19 `N/A`; no completa AC13/AC15 ni total anual | Informe E4.7; tablero |
+| **Candidato y tags** | SHA congelado de `test` con v27/C27; confirmar que no se crea tag ni se depende de SPEC35 para F3 | `[APROBADA 2026-11-10]` **solo la política**: SHA de `test` v27/C27 sin tag; SHA definitivo `[PENDIENTE]` en la autorización de F2 | SPEC35; AC16 |
+| **Alcance E4.5/DT7** | Si E4.5 y el archivo precontrol entran en el corte o se excluyen con brecha explícita | `[APROBADA 2026-11-10]` **solo la exclusión** de E4.5/DT7 del nivel A con brecha; inclusión real en B `[PENDIENTE]` | roadmap E4.12-AC3; DT7 |
 
-`[PENDIENTE]` F1 no se cierra hasta que el usuario resuelva de forma explícita e
-identificable las nueve propuestas anteriores y estas decisiones restantes. Ninguna
-propuesta es una decisión y el silencio no la convierte en aprobada.
+`[CONFIRMADO]` F1 no se cierra todavía: D01–D07 siguen `[PENDIENTE]` y D08 carece de ruta,
+responsable y puesta en marcha. Las aprobaciones del 2026-11-10 son explícitas e
+identificables, pero limitadas a su alcance; una parte no aprobada no se presume y el
+silencio no la convierte en aprobada.
 
 ---
 
@@ -644,5 +675,9 @@ propuesta es una decisión y el silencio no la convierte en aprobada.
 testplan, 17 AC, niveles A/B y gates independientes). Esa aprobación no autoriza DEV,
 ensayo, datos reales, migración, VPS ni merge, y no cierra ningún AC.
 
-`[PENDIENTE]` F1 sigue **`IN_PROGRESS`**: las decisiones de §9 no están tomadas. F2/F3/F4
-permanecen `UNRUN`. La ejecución del ensayo requiere las autorizaciones separadas de §6.
+`[CONFIRMADO]` F1 sigue **`IN_PROGRESS`**: D01–D07 están `[PENDIENTE]` y D08 no tiene ruta,
+responsable ni puesta en marcha. D08 (solo diseño) y D09–D15 se aprobaron el 2026-11-10 con
+las reservas del
+[registro de aprobaciones](investigations/e412-f1-approvals-2026-11-10.md). F2/F3/F4
+permanecen `UNRUN`. La ejecución del ensayo requiere las autorizaciones separadas de §6 y
+ninguna aprobación de §9 autoriza F2.
