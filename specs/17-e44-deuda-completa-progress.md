@@ -105,12 +105,13 @@ pendiente de CI; **PARCIAL** = cubre parte del AC; **UNRUN** = sin prueba espec�
 | AC-28 | 390 mismas pantallas; sin overflow; acciones accesibles | `tests/e2e/deudas-completa.spec.ts` | CUBIERTO, sin aceptación visual |
 | AC-29 | Vacío/carga/parcial/no calculable/diferencia/401/404/409/422 | `deuda-completa.test.ts` (parcial, no calculable, diferencia, 404/422); rutas GET y E2E para 401/409/404 | PARCIAL: carga visual, error de red y borrador conservado pendientes; API de estados cubierta |
 | AC-30 | Rechazo de simulación/cuadro/previsión/comisión/activo/ajuste | `deuda-completa.test.ts` (POST/PATCH/conciliación 422 y cero hechos creados) | **CUBIERTO local**; CI pendiente |
-| AC-31 | Regresión E1.1–E1.6 y cuatro Tipos | `deuda-completa.test.ts` (cuota Gasto, extraordinaria sin Gasto, `getDebt`/`debtPeriod`, matriz de Tipos, Exterior bloqueado, lectura sin hechos); suite CI `full` | PARCIAL: prueba dedicada E4.4 local; falta ejecutar la suite E1.1–E1.6 completa en CI para este candidato |
+| AC-31 | Regresión E1.1–E1.6 y cuatro Tipos | `deuda-completa.test.ts` (cuota Gasto, extraordinaria sin Gasto, `getDebt`/`debtPeriod`, matriz de Tipos, Exterior bloqueado, lectura sin hechos); suite completa en CI Linux x64 | **PASS (fixtures)**: prueba dedicada + CI `full` `42863718688` sobre `1d288c5`; verificación focalizada de requisitos (2026-11-10) |
 | AC-32 | EUR/tasas/textos/fechas exactos; 422; sin float/redondeo | `deudas.test.ts` (AC-32); migración (límites) | CUBIERTO |
 | AC-33 | Auditoría actor/UTC/anterior/posterior/motivo; append-only | `deudas.test.ts`; `conciliaciones.test.ts` | CUBIERTO |
 
-**Resumen tras QA-01:** 26 CUBIERTO con evidencia CI previa, 5 **CUBIERTO local** pendiente
-de CI (AC-19/21/23/25/30), 2 PARCIAL (AC-29/31) y 0 UNRUN. Ningún estado es PASS funcional.
+**Resumen tras verificación AC31:** 26 CUBIERTO con evidencia CI previa, 5 **CUBIERTO local**
+(AC-19/21/23/25/30) y 1 **PASS (fixtures)** (AC-31), 1 PARCIAL (AC-29) y 0 UNRUN. Ningún
+estado es PASS funcional ni aceptación financiera real.
 Los CUBIERTO dependen de la ejecución de CI registrada; los CUBIERTO local solo acreditan la
 prueba ficticia ejecutada en local. Nada de esto sustituye la validación AC por AC ni la
 aceptación visual.
@@ -120,7 +121,7 @@ aceptación visual.
 - **Sin PASS funcional:** el dictamen QA-2 fue APTO CON RESERVAS; no hay veredicto AC por
   AC ni aceptación visual de W1–W5/S1–S13.
 - **Cobertura incompleta:** AC-29 sigue PARCIAL (carga visual, error de red, borrador y
-  aceptación visual) y AC-31 requiere la suite E1.1–E1.6 completa en CI para este candidato.
+  aceptación visual) y AC-31 queda **PASS (fixtures)** con la suite E1.1–E1.6 y el run `42863718688`.
   AC-19/21/23/25/30 ya tienen prueba directa local, pero su CI sigue pendiente.
 - **Testplan reconciliado:** [17 testplan](17-e44-deuda-completa-testplan.md) ya refleja
   DEV17 integrado, la ejecución local de QA-01 y enlaza este mapa. Su matriz conserva el
@@ -133,7 +134,7 @@ aceptación visual.
 ## 5. Próxima acción
 
 1. Ejecutar CI del candidato `qa01/e44-deuda` y, si procede, el perfil `full` para acreditar
-   AC-31; no se declara PASS mientras no exista esa evidencia.
+   AC-31 (ya acreditado con fixtures).
 2. Decidir con el usuario la aceptación visual y las reservas de AC-29 (carga/error/borrador)
    antes de proponer cualquier cierre funcional.
 3. No abrir E4.5/E4.6/E4.7, v25, datos reales ni despliegue por este documento.

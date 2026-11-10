@@ -85,7 +85,7 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 | AC-28 | R11 | 390 mismas pantallas | Acción oculta, scroll horizontal, texto truncado | Secciones apiladas; acciones accesibles; sin overflow | Playwright 390 + capturas | UNRUN |
 | AC-29 | R4/R11 | Vacío/carga/parcial/no calculable/diferencia | 401/404/409/422 y pérdida de borrador | Estados diferenciados; borrador conservado; foco | Playwright/API | UNRUN |
 | AC-30 | R12 | Consulta normal | Simulación, cuadro, previsión, comisión, activo, ajuste | Rechazo/exclusión; cero hechos/cuotas/activos/ajustes | API/UI/inspección | UNRUN |
-| AC-31 | R1/R5 | Regresión E1.1–E1.6 y cuatro Tipos | Exterior Transferencia, E3, cierre, doble Gasto | Reglas previas intactas; cuota Gasto; extraordinaria no Gasto | Suite completa + E2E | UNRUN |
+| AC-31 | R1/R5 | Regresión E1.1–E1.6 y cuatro Tipos | Exterior Transferencia, E3, cierre, doble Gasto | Reglas previas intactas; cuota Gasto; extraordinaria no Gasto | Suite completa + E2E | PASS (fixtures) · CI `42863718688` |
 | AC-32 | R7 | EUR/tasas/textos/fechas exactos | Tercer decimal, float, overflow, texto/fecha inválidos | Exactitud; 422; sin redondeo | API/Bun | UNRUN |
 | AC-33 | R3/R9 | Cambios de Deuda/conciliación auditados | Log con importes/notas/secretos; auditoría ausente | Actor/UTC/anterior/posterior/motivo; append-only | API/SQL | UNRUN |
 
