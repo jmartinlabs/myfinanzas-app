@@ -67,7 +67,14 @@ export function NoDisponibleList({ rows }: { rows: NoDisponibleRow[] }) {
             {TOTAL_LABELS[row.bloque] ?? row.bloque}
             {row.version !== undefined ? ` · v${row.version}` : ""}
           </strong>{" "}
-          <Badge tone={estadoTone(row.estado)} label={row.estado} />{" "}
+          <Badge
+            tone={
+              estadoNoDisponibleReconocido(row.estado)
+                ? estadoTone(row.estado)
+                : "info"
+            }
+            label={row.estado}
+          />{" "}
           {estadoNoDisponibleReconocido(row.estado) ? null : (
             <small className="fotos-code">estado no reconocido</small>
           )}{" "}

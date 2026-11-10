@@ -123,5 +123,24 @@ test("un estado no canónico se muestra tal cual y rotulado no reconocido", () =
   });
   expect(html).toContain("EstadoInesperado");
   expect(html).toContain("estado no reconocido");
+  expect(html).toContain('ui-badge-info"> EstadoInesperado');
   expect(html).not.toContain("NULO_EXPLICITO");
+});
+
+test("un estado canónico no se rotula como no reconocido", () => {
+  const html = renderData({
+    ...periodo(true),
+    noDisponible: [
+      {
+        ciclo: "1",
+        versionFoto: 1,
+        bloque: "valoracion",
+        estado: "No disponible",
+        motivo: "Bloque no disponible en la foto",
+      },
+    ],
+  });
+  expect(html).toContain("No disponible");
+  expect(html).toContain('ui-badge-nd"> No disponible');
+  expect(html).not.toContain("estado no reconocido");
 });
