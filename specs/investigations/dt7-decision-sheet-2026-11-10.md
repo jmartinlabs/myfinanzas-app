@@ -8,7 +8,8 @@ no contiene datos reales y no cierra DT7.
 
 ## 1. M1 · ejercicios incluidos — APROBADO 2026-11-10
 
-**Decisión del usuario con revisión de Álex**, sobre `MyFinanzas2026_v5.11(20261110-134135).xlsx`.
+**Decisión del usuario con revisión de Álex**, sobre la versión vigente **v5.11(7)** del maestro
+(copia privada revisada el 2026-11-10). El repositorio no incluye el archivo ni su hash.
 
 | Campo | Decisión |
 | --- | --- |
@@ -18,12 +19,15 @@ no contiene datos reales y no cierra DT7.
 | Posteriores a 2026 | Fuera del histórico; operativa futura |
 
 **Límites:** 2023–2025 son histórico parcial y 2026 es transición; la inclusión **no**
-acredita cobertura anual, importes ni aperturas. M2 verificará Partidas/fuentes/intervalos;
-M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente. No se
-borran datos anteriores del Excel. No se declara `estadoUniverso=Acreditado`.
+acredita cobertura anual, importes ni aperturas; **no se borra nada del Excel**. M2 verificará Partidas/fuentes/intervalos;
+M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente. No se borra nada del Excel. No se declara `estadoUniverso=Acreditado`.
 
-**Evidencia de la decisión:** revisión financiera de Álex y el usuario sobre la versión
-v5.11 indicada. El repositorio no contiene importes ni datos privados.
+**Evidencia de la decisión:** revisión financiera de Álex y el usuario sobre v5.11(7).
+Referencia privada por año y hash: **`UNRUN`** (fuera del repositorio). El repositorio no
+contiene importes ni datos privados.
+
+**Registro M1:** `M1 · APROBADA · 2026-11-10 · usuario (revisión Álex) · alcance 2023–2026 ·
+efecto: fija el universo, no acredita cobertura, importes ni aperturas; M2/M5/M8 sin cambios`.
 
 ## 1.1 Siguiente paso: M2 de 2023
 
@@ -38,8 +42,9 @@ Primer ejercicio a mapear. Solo **metadatos estructurales**, sin importes:
 5. Verificación de que no hay `Dxxx`, ni destinos creados, ni Partidas absorbidas.
 
 **Criterios:** `DT7-EV-M2-01…04`. **No** se fijan listas ni mappings por inferencia; cada
-dato debe venir de la revisión privada. 2023 no requiere apertura acreditada para entrar
-en M1; M8 la valida aparte.
+dato debe venir de la revisión privada. La inclusión de 2023 no depende de que su apertura
+esté acreditada (decisión de alcance M1); M8 la valida aparte. La plantilla material de M2
+sigue **`UNRUN`** hasta completar el inventario privado.
 
 ## 2. Decisiones por bloque
 

@@ -1,16 +1,22 @@
 # DT7 — Propuesta de cierre de decisiones (2026-11-05)
 
 **Estado:** `[PROPUESTA REVISADA Y PARCIALMENTE RATIFICADA]` — **DT7 NO CERRADO.** Las
-decisiones M3/M6 están aceptadas y M9–M13 ratificadas por el usuario; el resto sigue
-pendiente. Este documento no es un PASS, no cierra DT7 y no autoriza DEV, datos reales,
+decisiones M3/M6 están aceptadas, M9–M13 ratificadas y **M1 aprobada el 2026-11-10**; M2/M5/M8
+siguen pendientes. Este documento no es un PASS, no cierra DT7 y no autoriza DEV, datos reales,
 importación, P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
 
 **Revisión 2026-11-05:** Álex emite **APTO CON TRES AJUSTES**. El usuario acepta M3/M6,
 ratifica M9–M13, mantiene M4/M7/M15/M16 como propuestas aceptadas, confirma M14 A y deja
-M1 aprobada el 2026-11-10 (2023–2026); M2/M5/M8 pendientes de evidencia privada real.
+M1/M2/M5/M8 pendientes de evidencia privada real.
 
 **Integración:** PR #218 mergeada en `main` `c4706a6` (2026-11-05); este documento conserva
 el contenido revisado y registra la ratificación posterior.
+
+**Addendum 2026-11-10:** el usuario, con revisión de Álex, aprueba **M1**: histórico
+**2023–2026** (2023 primero; 2023–2025 parcial, 2026 transición); **2019–2022 excluidos por
+alcance**; posteriores a 2026 fuera del histórico. La inclusión no acredita cobertura ni
+importes; M2/M5/M8 siguen pendientes. Registro en la
+[hoja de decisiones](dt7-decision-sheet-2026-11-10.md).
 
 **Preparación de la revisión (2026-11-09):** el expediente
 [dt7-readiness-2026-11-09](dt7-readiness-2026-11-09.md) reúne el estado, la evidencia
@@ -64,7 +70,7 @@ modifica ninguna decisión de este documento ni cambia estados; DT7 sigue abiert
 ## 2. Recomendaciones técnicas (A)
 
 **Estado tras la revisión:** M3/M6 aceptadas; M4/M7/M15/M16 aceptadas como propuesta de
-decisión; M14 A confirmada como contrato; M9–M13 ratificadas; M1/M2/M5/M8 pendientes de
+decisión; M14 A confirmada como contrato; M9–M13 ratificadas; M1 aprobada 2026-11-10; M2/M5/M8 pendientes de
 evidencia real.
 
 ### M3 — Identidad de fuentes sin ID
@@ -326,7 +332,7 @@ sigue en E4.4.
 
 ## 5. Matriz de cierre
 
-Estados: `PENDIENTE DE EVIDENCIA` (M1/M2/M5/M8); `ACEPTADA COMO PROPUESTA` (M4/M7/M15/M16,
+Estados: `APROBADA` (M1, 2026-11-10); `PENDIENTE DE EVIDENCIA` (M2/M5/M8); `ACEPTADA COMO PROPUESTA` (M4/M7/M15/M16,
 sin decisión formal); `ACEPTADA (2026-11-05)` (M3/M6); `CONFIRMADO (A); implementación
 PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
@@ -385,7 +391,7 @@ aprobación.
 
 - Este documento **no** cierra DT7. M9–M13 están ratificadas; M3/M6 aceptadas; M14 A
   confirmada como contrato, sin implementación; M4/M7/M15/M16 aceptadas como propuesta;
-  M1/M2/M5/M8 pendientes de evidencia real.
+  M1 aprobada (2026-11-10); M2/M5/M8 pendientes de evidencia real.
 - Sin DEV E4.5, datos reales, Excel, importación, P6/P7, SQL, migración, despliegue ni
   merge.
 - Los 59 AC siguen `UNRUN`; no se declara PASS funcional.
