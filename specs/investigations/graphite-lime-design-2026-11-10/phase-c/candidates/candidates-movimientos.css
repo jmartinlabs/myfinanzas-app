@@ -1,0 +1,951 @@
+/* ==========================================================================
+   MyFinanzas · Fase 2 · Movimientos de candidatos
+   Superficies de filtros, tabla, detalle y móvil. Capa aditiva: no cambia la
+   estructura, los datos ni el comportamiento de Movimientos.
+   ========================================================================== */
+
+/* ==========================================================================
+   Graphite Lime
+   ========================================================================== */
+
+html[data-theme="graphite-lime"] .page-note {
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .filter-card {
+  border-color: #2b302a;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 320px 220px at 100% 0%, rgba(215, 255, 94, 0.035), transparent 66%),
+    linear-gradient(160deg, #151815 0%, #101210 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(215, 255, 94, 0.04),
+    0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+html[data-theme="graphite-lime"] .filter-main {
+  padding: 18px 18px 14px;
+}
+
+html[data-theme="graphite-lime"] .more-filters {
+  border-top-color: #262b25;
+  background: rgba(9, 11, 9, 0.35);
+}
+
+html[data-theme="graphite-lime"] .filter-toggle {
+  border-color: #343a32;
+  background: #151815;
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .filter-toggle .icon {
+  color: #d7ff5e;
+}
+
+html[data-theme="graphite-lime"] .chip {
+  border-color: rgba(215, 255, 94, 0.3);
+  background: #232819;
+  color: #d7ff5e;
+}
+
+html[data-theme="graphite-lime"] .text-link {
+  color: #d7ff5e;
+}
+
+html[data-theme="graphite-lime"] .list-meta {
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .list-count strong {
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .list-card {
+  border-color: #292d28;
+  border-top: 2px solid rgba(215, 255, 94, 0.58);
+  border-radius: 10px;
+  background: linear-gradient(160deg, #151815 0%, #101210 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(215, 255, 94, 0.035),
+    0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+html[data-theme="graphite-lime"] .mov-table th {
+  padding-top: 12px;
+  padding-bottom: 11px;
+  border-bottom-color: #333a31;
+  background: #0e110e;
+  color: #9da796;
+  font-size: 12px;
+  letter-spacing: 0.65px;
+}
+
+html[data-theme="graphite-lime"] .mov-table td {
+  border-bottom-color: #21251f;
+}
+
+html[data-theme="graphite-lime"] .mov-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+html[data-theme="graphite-lime"] .mov-row:hover {
+  background: #171a16;
+}
+
+html[data-theme="graphite-lime"] .mov-row.is-selected {
+  background: linear-gradient(90deg, #1c2417 0%, #151a13 100%);
+  box-shadow: inset 3px 0 0 #d7ff5e;
+}
+
+html[data-theme="graphite-lime"] .mov-date,
+html[data-theme="graphite-lime"] .mov-type-name,
+html[data-theme="graphite-lime"] .mov-concept {
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .mov-saldo,
+html[data-theme="graphite-lime"] .mov-partida {
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .mov-id,
+html[data-theme="graphite-lime"] .mov-type-sub,
+html[data-theme="graphite-lime"] .mov-ref,
+html[data-theme="graphite-lime"] .mov-cycle {
+  color: #8f988b;
+}
+
+html[data-theme="graphite-lime"] .detail-card {
+  border: 1px solid #2f362c;
+  border-top: 2px solid #d7ff5e;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 280px 220px at 100% 0%, rgba(215, 255, 94, 0.045), transparent 66%),
+    linear-gradient(160deg, #181c15 0%, #0f120f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(215, 255, 94, 0.04),
+    0 20px 44px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="graphite-lime"] .detail-kicker {
+  color: #d7ff5e;
+}
+
+html[data-theme="graphite-lime"] .detail-head h2,
+html[data-theme="graphite-lime"] .detail-concept {
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .detail-fields {
+  border-top-color: #30362e;
+}
+
+html[data-theme="graphite-lime"] .detail-fields span {
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .detail-fields strong {
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .detail-note {
+  border-color: #30362e;
+  background: #191c17;
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .detail-note .icon {
+  color: #d7ff5e;
+}
+
+html[data-theme="graphite-lime"] .detail-foot {
+  border-top-color: #30362e;
+}
+
+html[data-theme="graphite-lime"] .detail-foot .meta b {
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .detail-foot .btn-secondary {
+  border-color: #343a32;
+  background: #151815;
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .detail-foot .btn-secondary:hover {
+  border-color: #4c5548;
+  background: #1b1f1a;
+}
+
+html[data-theme="graphite-lime"] .page-btn {
+  border-color: #343a32;
+  background: #151815;
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .page-btn:hover:not(:disabled) {
+  border-color: #4c5548;
+  background: #1b1f1a;
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-card {
+  border-color: #292d28;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #151815 0%, #101210 100%);
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-card.is-selected {
+  border-color: #d7ff5e;
+  box-shadow:
+    0 0 0 1px #d7ff5e,
+    0 12px 28px rgba(0, 0, 0, 0.24);
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-card h3 {
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-date,
+html[data-theme="graphite-lime"] .mov-mobile-card > p {
+  color: #8f988b;
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-fields {
+  border-top-color: #21251f;
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-fields span {
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-fields strong {
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .mov-mobile-foot {
+  border-top-color: #21251f;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet {
+  background: rgba(4, 6, 4, 0.72);
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel {
+  border-color: #2f362c;
+  border-top: 2px solid #d7ff5e;
+  background:
+    radial-gradient(ellipse 260px 200px at 100% 0%, rgba(215, 255, 94, 0.045), transparent 66%),
+    linear-gradient(160deg, #181c15 0%, #0f120f 100%);
+  color: #f1f4ec;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.42);
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel h2,
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-concept {
+  color: #f1f4ec;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-fields {
+  border-top-color: #30362e;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-fields span {
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-fields strong {
+  color: #c2c8bc;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-note {
+  border-color: #30362e;
+  background: #191c17;
+  color: #98a192;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-foot {
+  border-top-color: #30362e;
+}
+
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-foot .btn-secondary {
+  border-color: #343a32;
+  background: #151815;
+  color: #f1f4ec;
+}
+
+/* ==========================================================================
+   Color Finance
+   ========================================================================== */
+
+html[data-theme="color-finance"] .page-note {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .filter-card {
+  border-color: #ded4c8;
+  border-top: 3px solid #c9bdf0;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 320px 220px at 100% 0%, rgba(199, 184, 255, 0.2), transparent 66%),
+    linear-gradient(160deg, #fffdf9 0%, #f8f2ea 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 14px 32px rgba(78, 60, 94, 0.09);
+}
+
+html[data-theme="color-finance"] .filter-main {
+  padding: 18px 20px 14px;
+}
+
+html[data-theme="color-finance"] .more-filters {
+  border-top-color: #e8dfd3;
+  background: rgba(246, 240, 233, 0.52);
+}
+
+html[data-theme="color-finance"] .filter-toggle {
+  border-color: #ddd2e9;
+  background: #f8f3fa;
+  color: #5947c4;
+}
+
+html[data-theme="color-finance"] .filter-toggle .icon {
+  color: #5947c4;
+}
+
+html[data-theme="color-finance"] .chip {
+  border-color: #c9bdf0;
+  background: #eee9fb;
+  color: #5947c4;
+}
+
+html[data-theme="color-finance"] .text-link {
+  color: #5947c4;
+}
+
+html[data-theme="color-finance"] .list-meta {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .list-count strong {
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .list-card {
+  border-color: #ded4c8;
+  border-top: 3px solid #c9bdf0;
+  border-radius: 18px;
+  background: #fffdf9;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 18px 40px rgba(78, 60, 94, 0.09);
+}
+
+html[data-theme="color-finance"] .mov-table th {
+  padding-top: 12px;
+  padding-bottom: 11px;
+  border-bottom-color: #e5dcef;
+  background: #f4eef8;
+  color: #635c6d;
+  font-size: 12px;
+  letter-spacing: 0.55px;
+}
+
+html[data-theme="color-finance"] .mov-table td {
+  border-bottom-color: #eee5da;
+}
+
+html[data-theme="color-finance"] .mov-row:hover {
+  background: #fdf8f0;
+}
+
+html[data-theme="color-finance"] .mov-row.is-selected {
+  background: linear-gradient(90deg, #eee9fb 0%, #faf7ff 100%);
+  box-shadow: inset 3px 0 0 #6a56d8;
+}
+
+html[data-theme="color-finance"] .mov-date,
+html[data-theme="color-finance"] .mov-type-name,
+html[data-theme="color-finance"] .mov-concept {
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .mov-saldo,
+html[data-theme="color-finance"] .mov-partida {
+  color: #494451;
+}
+
+html[data-theme="color-finance"] .mov-id,
+html[data-theme="color-finance"] .mov-type-sub,
+html[data-theme="color-finance"] .mov-ref,
+html[data-theme="color-finance"] .mov-cycle {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .detail-card {
+  border: 1px solid #ded4c8;
+  border-top: 3px solid #6a56d8;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 260px 220px at 100% 0%, rgba(199, 184, 255, 0.36), transparent 68%),
+    linear-gradient(160deg, #fffdf9 0%, #f6f0fa 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 18px 40px rgba(78, 60, 94, 0.1);
+}
+
+html[data-theme="color-finance"] .detail-kicker {
+  color: #5947c4;
+}
+
+html[data-theme="color-finance"] .detail-head h2,
+html[data-theme="color-finance"] .detail-concept {
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .detail-fields {
+  border-top-color: #e8dfd3;
+}
+
+html[data-theme="color-finance"] .detail-fields span {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .detail-fields strong {
+  color: #494451;
+}
+
+html[data-theme="color-finance"] .detail-note {
+  border-color: #e3d9ed;
+  background: #f6f1fc;
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .detail-note .icon {
+  color: #5947c4;
+}
+
+html[data-theme="color-finance"] .detail-foot {
+  border-top-color: #e8dfd3;
+}
+
+html[data-theme="color-finance"] .detail-foot .meta b {
+  color: #494451;
+}
+
+html[data-theme="color-finance"] .detail-foot .btn-secondary {
+  border-color: #ddd2e9;
+  background: #fffdf9;
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .detail-foot .btn-secondary:hover {
+  border-color: #b9a8e0;
+  background: #f8f3fa;
+}
+
+html[data-theme="color-finance"] .page-btn {
+  border-color: #ddd2e9;
+  background: #fffdf9;
+  color: #494451;
+}
+
+html[data-theme="color-finance"] .page-btn:hover:not(:disabled) {
+  border-color: #b9a8e0;
+  background: #f8f3fa;
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .mov-mobile-card {
+  border-color: #ded4c8;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse 220px 160px at 100% 0%, rgba(199, 184, 255, 0.18), transparent 68%),
+    #fffdf9;
+}
+
+html[data-theme="color-finance"] .mov-mobile-card.is-selected {
+  border-color: #6a56d8;
+  box-shadow:
+    0 0 0 1px #6a56d8,
+    0 14px 30px rgba(91, 75, 207, 0.14);
+}
+
+html[data-theme="color-finance"] .mov-mobile-card h3 {
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .mov-mobile-date,
+html[data-theme="color-finance"] .mov-mobile-card > p {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .mov-mobile-fields {
+  border-top-color: #eee5da;
+}
+
+html[data-theme="color-finance"] .mov-mobile-fields span {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .mov-mobile-fields strong {
+  color: #494451;
+}
+
+html[data-theme="color-finance"] .mov-mobile-foot {
+  border-top-color: #eee5da;
+}
+
+html[data-theme="color-finance"] .detail-sheet {
+  background: rgba(38, 31, 45, 0.5);
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel {
+  border-color: #ded4c8;
+  border-top: 3px solid #6a56d8;
+  background:
+    radial-gradient(ellipse 260px 200px at 100% 0%, rgba(199, 184, 255, 0.32), transparent 68%),
+    linear-gradient(160deg, #fffdf9 0%, #f6f0fa 100%);
+  color: #26232b;
+  box-shadow: 0 -18px 50px rgba(78, 60, 94, 0.2);
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel h2,
+html[data-theme="color-finance"] .detail-sheet-panel .detail-concept {
+  color: #26232b;
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel .detail-fields {
+  border-top-color: #e8dfd3;
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel .detail-fields span {
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel .detail-fields strong {
+  color: #494451;
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel .detail-note {
+  border-color: #e3d9ed;
+  background: #f6f1fc;
+  color: #635c6d;
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel .detail-foot {
+  border-top-color: #e8dfd3;
+}
+
+html[data-theme="color-finance"] .detail-sheet-panel .detail-foot .btn-secondary {
+  border-color: #ddd2e9;
+  background: #fffdf9;
+  color: #26232b;
+}
+
+/* ==========================================================================
+   Pastel Editorial
+   ========================================================================== */
+
+html[data-theme="pastel-editorial"] .page-note {
+  color: #615868;
+}
+
+html[data-theme="pastel-editorial"] .filter-card {
+  border: 1px solid #1b181e;
+  border-top: 3px solid #1b181e;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse 300px 220px at 100% 0%, rgba(248, 236, 180, 0.32), transparent 66%),
+    #fffdf8;
+  box-shadow: 4px 4px 0 rgba(27, 24, 30, 0.08);
+}
+
+html[data-theme="pastel-editorial"] .filter-main {
+  padding: 18px 18px 14px;
+}
+
+html[data-theme="pastel-editorial"] .more-filters {
+  border-top-color: rgba(27, 24, 30, 0.18);
+  background: #f8f2e8;
+}
+
+html[data-theme="pastel-editorial"] .filter-toggle {
+  border-color: #1b181e;
+  border-radius: 3px;
+  background: #fffdf8;
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .filter-toggle .icon {
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .chip {
+  border-color: #1b181e;
+  border-radius: 3px;
+  background: #f8ecb4;
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .text-link {
+  color: #1b181e;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+html[data-theme="pastel-editorial"] .list-meta {
+  color: #615868;
+}
+
+html[data-theme="pastel-editorial"] .list-count strong {
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .list-card {
+  border: 1px solid #1b181e;
+  border-top: 4px solid #1b181e;
+  border-radius: 6px;
+  background: #fffdf8;
+  box-shadow: 4px 4px 0 rgba(27, 24, 30, 0.08);
+}
+
+html[data-theme="pastel-editorial"] .mov-table th {
+  padding-top: 11px;
+  padding-bottom: 10px;
+  border-top: 1px solid #1b181e;
+  border-bottom: 1px solid #1b181e;
+  background: transparent;
+  color: #514958;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+}
+
+html[data-theme="pastel-editorial"] .mov-table td {
+  border-bottom-color: rgba(27, 24, 30, 0.16);
+}
+
+html[data-theme="pastel-editorial"] .mov-row:hover {
+  background: #f6efe4;
+}
+
+html[data-theme="pastel-editorial"] .mov-row.is-selected {
+  background: #e9e0f6;
+  box-shadow: inset 3px 0 0 #1b181e;
+}
+
+html[data-theme="pastel-editorial"] .mov-date,
+html[data-theme="pastel-editorial"] .mov-type-name,
+html[data-theme="pastel-editorial"] .mov-concept {
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .mov-saldo,
+html[data-theme="pastel-editorial"] .mov-partida {
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .mov-id,
+html[data-theme="pastel-editorial"] .mov-type-sub,
+html[data-theme="pastel-editorial"] .mov-ref,
+html[data-theme="pastel-editorial"] .mov-cycle {
+  color: #615868;
+}
+
+html[data-theme="pastel-editorial"] .detail-card {
+  border: 1px solid #1b181e;
+  border-top: 4px solid #1b181e;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse 250px 220px at 100% 0%, rgba(255, 255, 255, 0.45), transparent 68%),
+    linear-gradient(160deg, #ece3f7 0%, #e2d5ef 100%);
+  box-shadow: 4px 4px 0 rgba(27, 24, 30, 0.1);
+}
+
+html[data-theme="pastel-editorial"] .detail-kicker {
+  color: #615868;
+}
+
+html[data-theme="pastel-editorial"] .detail-head h2 {
+  font-family: var(--font-display);
+  color: #17151a;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+html[data-theme="pastel-editorial"] .detail-concept {
+  font-family: var(--font-display);
+  color: #17151a;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+html[data-theme="pastel-editorial"] .detail-fields {
+  border-top-color: rgba(27, 24, 30, 0.2);
+}
+
+html[data-theme="pastel-editorial"] .detail-fields span {
+  color: #574e5c;
+}
+
+html[data-theme="pastel-editorial"] .detail-fields strong {
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .detail-note {
+  border-color: rgba(27, 24, 30, 0.24);
+  background: #f8ecb4;
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .detail-note .icon {
+  color: #1b181e;
+}
+
+html[data-theme="pastel-editorial"] .detail-foot {
+  border-top-color: rgba(27, 24, 30, 0.2);
+}
+
+html[data-theme="pastel-editorial"] .detail-foot .meta b {
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .detail-foot .btn-secondary {
+  border-color: #1b181e;
+  border-radius: 4px;
+  background: #fffdf8;
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .detail-foot .btn-secondary:hover {
+  border-color: #1b181e;
+  background: #f8ecb4;
+}
+
+html[data-theme="pastel-editorial"] .page-btn {
+  border-color: #1b181e;
+  border-radius: 4px;
+  background: #fffdf8;
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .page-btn:hover:not(:disabled) {
+  border-color: #1b181e;
+  background: #f8ecb4;
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-card {
+  border-color: #1b181e;
+  border-radius: 4px;
+  background: #fffdf8;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-card.is-selected {
+  border-color: #1b181e;
+  background: #e9e0f6;
+  box-shadow: 0 0 0 1px #1b181e;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-card h3 {
+  color: #17151a;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-date,
+html[data-theme="pastel-editorial"] .mov-mobile-card > p {
+  color: #615868;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-fields {
+  border-top-color: rgba(27, 24, 30, 0.18);
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-fields span {
+  color: #615868;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-fields strong {
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .mov-mobile-foot {
+  border-top-color: rgba(27, 24, 30, 0.18);
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet {
+  background: rgba(27, 24, 30, 0.55);
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel {
+  border: 1px solid #1b181e;
+  border-top: 4px solid #1b181e;
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  background:
+    radial-gradient(ellipse 260px 200px at 100% 0%, rgba(255, 255, 255, 0.45), transparent 68%),
+    linear-gradient(160deg, #ece3f7 0%, #e2d5ef 100%);
+  color: #17151a;
+  box-shadow: 0 -18px 50px rgba(27, 24, 30, 0.28);
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel h2 {
+  font-family: var(--font-display);
+  color: #17151a;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-concept {
+  font-family: var(--font-display);
+  color: #17151a;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-fields {
+  border-top-color: rgba(27, 24, 30, 0.2);
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-fields span {
+  color: #574e5c;
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-fields strong {
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-note {
+  border-color: rgba(27, 24, 30, 0.24);
+  background: #f8ecb4;
+  color: #3d3742;
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-foot {
+  border-top-color: rgba(27, 24, 30, 0.2);
+}
+
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-foot .btn-secondary {
+  border-color: #1b181e;
+  border-radius: 4px;
+  background: #fffdf8;
+  color: #17151a;
+}
+
+/* ==========================================================================
+   Legibilidad móvil de candidatos
+   ========================================================================== */
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .page-note,
+  html[data-theme="color-finance"] .page-note,
+  html[data-theme="pastel-editorial"] .page-note,
+  html[data-theme="graphite-lime"] .site-foot,
+  html[data-theme="color-finance"] .site-foot,
+  html[data-theme="pastel-editorial"] .site-foot {
+    font-size: 12px;
+  }
+
+  html[data-theme="graphite-lime"] .site-foot .right,
+  html[data-theme="color-finance"] .site-foot .right,
+  html[data-theme="pastel-editorial"] .site-foot .right {
+    font-size: 12px;
+  }
+
+  html[data-theme="graphite-lime"] .mov-mobile-date,
+  html[data-theme="graphite-lime"] .mov-mobile-card > p,
+  html[data-theme="graphite-lime"] .mov-mobile-fields,
+  html[data-theme="graphite-lime"] .mov-mobile-foot .link-arrow,
+  html[data-theme="color-finance"] .mov-mobile-date,
+  html[data-theme="color-finance"] .mov-mobile-card > p,
+  html[data-theme="color-finance"] .mov-mobile-fields,
+  html[data-theme="color-finance"] .mov-mobile-foot .link-arrow,
+  html[data-theme="pastel-editorial"] .mov-mobile-date,
+  html[data-theme="pastel-editorial"] .mov-mobile-card > p,
+  html[data-theme="pastel-editorial"] .mov-mobile-fields,
+  html[data-theme="pastel-editorial"] .mov-mobile-foot .link-arrow {
+    font-size: 12px;
+  }
+}
+
+
+/* El ciclo completo cabe en una línea dentro del detalle a 12 px. */
+html[data-theme="graphite-lime"] .detail-fields strong[data-field="ciclo"],
+html[data-theme="color-finance"] .detail-fields strong[data-field="ciclo"],
+html[data-theme="pastel-editorial"] .detail-fields strong[data-field="ciclo"],
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-fields strong[data-field="ciclo"],
+html[data-theme="color-finance"] .detail-sheet-panel .detail-fields strong[data-field="ciclo"],
+html[data-theme="pastel-editorial"] .detail-sheet-panel .detail-fields strong[data-field="ciclo"] {
+  font-size: 12px;
+  letter-spacing: -0.1px;
+}
+
+/* El estado "Vigente" del detalle no usa el lima de marca/acción. */
+html[data-theme="graphite-lime"] .detail-card .detail-head .badge--info,
+html[data-theme="graphite-lime"] .detail-sheet-panel .detail-head .badge--info {
+  border-color: #3a4237;
+  background: #1a1e18;
+  color: #c2c8bc;
+}
+
+/* El ciclo secundario no debe romper la altura de fila en tablet. */
+html[data-theme="graphite-lime"] .mov-cycle,
+html[data-theme="color-finance"] .mov-cycle,
+html[data-theme="pastel-editorial"] .mov-cycle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .mobile-context,
+  html[data-theme="color-finance"] .mobile-context,
+  html[data-theme="pastel-editorial"] .mobile-context {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  html[data-theme="graphite-lime"] .mobile-cycle,
+  html[data-theme="color-finance"] .mobile-cycle,
+  html[data-theme="pastel-editorial"] .mobile-cycle {
+    flex: 1 1 100%;
+  }
+
+  html[data-theme="graphite-lime"] .mobile-theme,
+  html[data-theme="color-finance"] .mobile-theme,
+  html[data-theme="pastel-editorial"] .mobile-theme {
+    margin-left: auto;
+  }
+}
+
+html[data-theme="graphite-lime"] .readonly,
+html[data-theme="color-finance"] .readonly,
+html[data-theme="pastel-editorial"] .readonly {
+  white-space: nowrap;
+}
+
+/* En tablet el ciclo secundario se consulta en el detalle; se evita truncarlo. */
+@media (max-width: 900px) {
+  html[data-theme="graphite-lime"] .mov-cycle,
+  html[data-theme="color-finance"] .mov-cycle,
+  html[data-theme="pastel-editorial"] .mov-cycle {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .mobile-theme,
+  html[data-theme="color-finance"] .mobile-theme,
+  html[data-theme="pastel-editorial"] .mobile-theme {
+    min-height: 44px;
+  }
+
+  html[data-theme="graphite-lime"] .text-link,
+  html[data-theme="color-finance"] .text-link,
+  html[data-theme="pastel-editorial"] .text-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

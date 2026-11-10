@@ -1,0 +1,68 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>MyFinanzas · Movimientos candidatos</title><style>
+* { box-sizing:border-box; }
+body { margin:0; background:#0b0f10; color:#f4f1ea; font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.board { padding:28px 30px 34px; }
+.head { display:flex; align-items:flex-end; justify-content:space-between; gap:28px; margin-bottom:18px; }
+.eyebrow { margin:0 0 7px; color:#c8e88b; font-size:10px; font-weight:750; letter-spacing:1.7px; text-transform:uppercase; }
+h1 { margin:0 0 6px; font-size:32px; font-weight:700; letter-spacing:-1.2px; line-height:1.05; }
+.sub { margin:0; color:#cbc5ba; font-size:12.5px; }
+.note { max-width:560px; margin:0; color:#939e9b; font-size:10.5px; line-height:1.55; text-align:right; }
+.grid3 { display:grid; grid-template-columns:repeat(3,1440px); gap:16px; align-items:start; }
+figure { margin:0; overflow:hidden; border:1px solid #354340; border-radius:14px; background:#131b1a; box-shadow:0 20px 44px rgba(0,0,0,.28); }
+figcaption { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; border-bottom:1px solid rgba(200,210,205,.17); background:rgba(7,12,10,.5); }
+figcaption strong { color:#f4f1ea; font-size:12.5px; font-weight:650; }
+.pill { display:inline-flex; align-items:center; min-height:20px; padding:2px 8px; border:1px solid rgba(200,232,139,.34); border-radius:999px; color:#c8e88b; font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; white-space:nowrap; }
+.pill--amber { border-color:rgba(242,193,78,.34); color:#f2c14e; }
+.pill--blue { border-color:rgba(154,134,220,.4); color:#c7b8ff; }
+img { display:block; width:100%; height:auto; }
+.theme-copy { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }
+.theme-card { padding:14px 16px 15px; border:1px solid #354340; border-radius:12px; background:#131b1a; }
+.theme-card .kicker { margin:0 0 5px; color:#c8e88b; font-size:9px; font-weight:750; letter-spacing:1.4px; text-transform:uppercase; }
+.theme-card .kicker--amber { color:#f2c14e; }
+.theme-card .kicker--blue { color:#c7b8ff; }
+.theme-card h2 { margin:0 0 5px; font-size:17px; font-weight:650; letter-spacing:-.3px; }
+.theme-card p { margin:0; color:#b7c0bc; font-size:11px; line-height:1.55; }
+.theme-card p + p { margin-top:6px; }
+.matrix { width:100%; margin-top:18px; overflow:hidden; border:1px solid #354340; border-radius:12px; border-collapse:collapse; background:#131b1a; }
+.matrix th, .matrix td { padding:11px 14px; border-bottom:1px solid rgba(200,210,205,.13); text-align:left; font-size:10.5px; color:#c6cec9; }
+.matrix th { color:#8f9b97; font-size:9px; font-weight:750; letter-spacing:1.3px; text-transform:uppercase; }
+.matrix tr:last-child td { border-bottom:0; }
+.matrix td:first-child { color:#f4f1ea; font-weight:650; }
+.matrix .good { color:#c8e88b; }
+.matrix .warn { color:#f2c14e; }
+.reading { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; margin-top:18px; overflow:hidden; border:1px solid #354340; border-radius:12px; background:#131b1a; }
+.reading div { padding:14px 16px; border-left:1px solid rgba(200,210,205,.15); }
+.reading div:first-child { border-left:0; }
+.reading h2 { margin:0 0 4px; color:#f4f1ea; font-size:11.5px; }
+.reading p { margin:0; color:#aeb8b4; font-size:10px; line-height:1.55; }
+.foot { margin:16px 0 0; color:#89938f; font-size:10px; line-height:1.5; }
+.foot b { color:#c8e88b; font-weight:650; }
+.responsive { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; }
+.responsive .tablet { width:820px; }
+.responsive .phone { width:390px; }
+.responsive figure { border-radius:12px; }
+.responsive .reading { flex:1 1 100%; }
+.six-grid { display:grid; grid-template-columns:repeat(3,1440px); gap:16px; align-items:start; }
+.six-grid .group { grid-column:span 3; display:flex; align-items:center; gap:10px; margin:6px 0 -4px; color:#8f9b97; font-size:10px; font-weight:750; letter-spacing:1.4px; text-transform:uppercase; }
+.six-grid .group::after { content:""; flex:1; height:1px; background:rgba(200,210,205,.15); }
+.six-caption { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 13px; border-bottom:1px solid rgba(200,210,205,.17); background:rgba(7,12,10,.5); }
+.six-caption strong { color:#f4f1ea; font-size:11.5px; }
+.states-grid2 { display:grid; grid-template-columns:1440px 390px; gap:14px; align-items:start; }
+.states-grid2 .reading { grid-column:1 / -1; }
+@media (max-width:1000px) { .head{display:block} .note{margin-top:10px;text-align:left} .grid3,.theme-copy,.reading,.six-grid,.responsive,.states-grid2{grid-template-columns:1fr} .six-grid .group{grid-column:1} }
+</style></head><body><main class="board">
+<header class="head"><div><p class="eyebrow">MyFinanzas · Fase 2 · Movimientos 1440</p><h1>Tres formas de trabajar la misma tabla</h1><p class="sub">Filtros, tabla poblada, selección y detalle contextual con los mismos datos sintéticos.</p></div><p class="note">Capturas 1440 × 1000. Prototipos aislados; no integrados ni desplegados. Dark, Light y Hybrid se conservan como referencia.</p></header>
+<div class="grid3"><figure><figcaption><strong>Graphite Lime</strong><span class="pill ">Candidato 4</span></figcaption><img src="shots-movimientos/graphite-lime-1440-fold.jpg" alt="Graphite Lime"></figure><figure><figcaption><strong>Color Finance</strong><span class="pill pill--blue">Candidato 5</span></figcaption><img src="shots-movimientos/color-finance-1440-fold.jpg" alt="Color Finance"></figure><figure><figcaption><strong>Pastel Editorial</strong><span class="pill pill--amber">Candidato 6</span></figcaption><img src="shots-movimientos/pastel-editorial-1440-fold.jpg" alt="Pastel Editorial"></figure></div>
+<section class="theme-copy">
+<article class="theme-card"><p class="kicker">Prioridad principal</p><h2>Graphite Lime</h2><p>Filtros carbón, tabla de cabecera casi negra, selección lima y detalle profundo. La acción, la selección y la información usan lima; los importes positivos y los estados correctos usan menta.</p><p><strong>Inspiración:</strong> Qiespend · fintech oscuro con lima.</p><p><strong>Riesgo:</strong> conservar la disciplina semántica al añadir más estados.</p></article>
+<article class="theme-card"><p class="kicker kicker--blue">Alternativa diurna</p><h2>Color Finance</h2><p>Filtros y tabla neutros con cabecera lavanda, selección violeta y detalle lavanda. El color se concentra en los bordes, la selección y los estados; la tabla no se vuelve un arcoíris.</p><p><strong>Inspiración:</strong> Nixtio · papel cálido y color estructurado.</p><p><strong>Riesgo:</strong> que el violeta compita con los estados de aviso.</p></article>
+<article class="theme-card"><p class="kicker kicker--amber">Exploración secundaria</p><h2>Pastel Editorial</h2><p>Tabla con reglas de tinta, selección lavanda y detalle editorial. El serif se reserva para los titulares; las cifras y los campos siguen en Inter.</p><p><strong>Inspiración:</strong> Eilo · editorial pastel y tinta.</p><p><strong>Riesgo:</strong> el borde negro y la asimetría pesan más en pantallas densas.</p></article>
+</section>
+<table class="matrix"><thead><tr><th>Tema</th><th>Filtros</th><th>Tabla</th><th>Detalle</th><th>Móvil</th><th>Estados</th><th>Recomendación</th></tr></thead><tbody>
+<tr><td>Graphite Lime</td><td class="good">Compactos, foco lima</td><td class="good">Cabecera fina, fila activa clara</td><td class="good">Carbón, borde lima, importe semántico</td><td class="good">Validado 390 + hoja</td><td class="good">Formulario y 10 estados</td><td class="good">Continuar</td></tr>
+<tr><td>Color Finance</td><td class="good">Neutros con carril lavanda</td><td class="good">Cabecera lavanda, selección violeta</td><td class="good">Lavanda, borde violeta</td><td class="good">Validado 390 + hoja</td><td class="good">Comparte galería</td><td class="good">Continuar</td></tr>
+<tr><td>Pastel Editorial</td><td class="warn">Tinta y reglas editoriales</td><td class="good">Reglas negras, lectura clara</td><td class="good">Lavanda, serif en titulares</td><td class="warn">Solo escritorio validado</td><td class="warn">Pendiente de adaptar</td><td class="warn">Explorar</td></tr>
+</tbody></table>
+<section class="reading"><div><h2>La tabla manda</h2><p>Los tres mantienen la jerarquía Fecha → Tipo → Concepto → Saldo → Importe. La partida y la referencia viven en el detalle; no se añaden columnas nuevas.</p></div><div><h2>El detalle contextual</h2><p>Graphite usa un bloque carbón con borde lima; Color un panel lavanda; Pastel un panel editorial claro. En móvil se convierten en hoja inferior.</p></div><div><h2>Color con semántica</h2><p>Graphite separa lima (marca/acción/info), menta (positivo/completo), ámbar (parcial) y coral (negativo/error). No usa lima para importes positivos ni para “Vigente”.</p></div></section>
+<p class="foot"><b>Lectura de diseño, no auditoría WCAG completa.</b> Inspiración estética: Qiespend, Nixtio y Eilo; no se copian interfaces. Datos sintéticos. Pastel no tiene móvil ni estados finales; Graphite y Color sí se han probado a 390.</p>
+</main></body></html>

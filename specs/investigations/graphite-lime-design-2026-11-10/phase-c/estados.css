@@ -1,0 +1,246 @@
+/* ==========================================================================
+   MyFinanzas · Fase C · Galería de estados
+   ========================================================================== */
+
+.states-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.state-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-soft);
+}
+
+.state-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 0;
+}
+
+.state-kicker {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.state-head h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.state-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px 20px 20px;
+}
+
+.state-body > .meta {
+  margin: 0;
+  font-size: 11.5px;
+}
+
+.state-chips {
+  padding: 0;
+}
+
+.state-selected-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--selected-border);
+  border-radius: var(--radius-sm);
+  background: var(--selected-bg);
+  box-shadow: inset 3px 0 0 var(--selected-border);
+}
+
+.state-selected-row strong {
+  display: block;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.state-selected-row span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.state-selected-row .amount {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.state-selected-detail {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 5px 10px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px;
+}
+
+.state-selected-detail .meta {
+  font-size: 11.5px;
+}
+
+.state-selected-detail strong {
+  color: var(--text-2);
+  font-weight: 550;
+  text-align: right;
+}
+
+.partial-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.partial-row:last-of-type {
+  border-bottom: 0;
+}
+
+.partial-row .meta {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.partial-row .amount {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.state-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.state-form .field:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.state-form .field-error {
+  margin: 5px 0 0;
+  color: var(--error);
+  font-size: 11.5px;
+}
+
+.input[aria-invalid="true"],
+.select[aria-invalid="true"] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px var(--error-soft);
+}
+
+.state-form-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.state-disabled {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.state-disabled .field {
+  flex: 1 1 220px;
+}
+
+@media (max-width: 1000px) {
+  .states-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .state-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .state-form .field:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .state-form-actions {
+    grid-column: auto;
+  }
+
+  .state-selected-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .state-selected-detail {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .state-selected-detail strong {
+    text-align: right;
+  }
+
+  .state-head {
+    padding: 16px 16px 0;
+  }
+
+  .state-body {
+    padding: 12px 16px 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .state-selected-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .state-selected-row > .amount {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
+.state-kicker {
+  font-size: 11.5px;
+}
+
+.state-kicker {
+  font-size: 12px;
+}
+
+.state-body > .meta,
+.state-selected-row span,
+.state-selected-detail,
+.state-selected-detail .meta,
+.state-form .field-error {
+  font-size: 12px;
+}
+
+.chip,
+.field > label {
+  font-size: 12px;
+}

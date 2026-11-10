@@ -1,0 +1,93 @@
+{
+  "sequence": [
+    {
+      "id": "compra-instrumento",
+      "tag": "SELECT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "Selecciona instrumento\n "
+    },
+    {
+      "id": "compra-efectivo",
+      "tag": "SELECT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "Selecciona Saldo de efec"
+    },
+    {
+      "id": "compra-inversion",
+      "tag": "SELECT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "Selecciona Saldo de inve"
+    },
+    {
+      "id": "compra-cantidad",
+      "tag": "INPUT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": ""
+    },
+    {
+      "id": "compra-precio",
+      "tag": "INPUT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": ""
+    },
+    {
+      "id": "compra-divisa-select",
+      "tag": "SELECT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "USD · dólar estadouniden"
+    },
+    {
+      "id": "compra-cambio",
+      "tag": "INPUT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": ""
+    },
+    {
+      "id": "compra-eur",
+      "tag": "INPUT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": ""
+    },
+    {
+      "id": "compra-comision",
+      "tag": "INPUT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": ""
+    },
+    {
+      "id": "compra-concepto",
+      "tag": "INPUT",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": ""
+    },
+    {
+      "id": "compra-nota",
+      "tag": "TEXTAREA",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "Compra sintética de demo"
+    },
+    {
+      "id": "",
+      "tag": "BUTTON",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "Cancelar"
+    },
+    {
+      "id": "",
+      "tag": "BUTTON",
+      "outline": "solid 3px rgb(215, 255, 94)",
+      "label": "Revisar compra"
+    }
+  ],
+  "dateFocus": {
+    "id": "compra-fecha",
+    "outline": "solid 3px rgb(215, 255, 94)"
+  },
+  "eurNext": "compra-eur",
+  "expectedEurNext": "compra-eur",
+  "rowFocus": {
+    "tag": "TR",
+    "outline": "solid 3px rgb(215, 255, 94)"
+  },
+  "ok": true
+}

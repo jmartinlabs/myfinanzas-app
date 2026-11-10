@@ -1,0 +1,23 @@
+/* ==========================================================================
+   MyFinanzas · Candidatos · refuerzo de foco visible
+   Los inputs de base sustituyen el outline por borde/sombra; se añade un
+   anillo explícito para teclado sin alterar el estado de hover.
+   ========================================================================== */
+
+:is(
+  html[data-theme="graphite-lime"],
+  html[data-theme="color-finance"],
+  html[data-theme="pastel-editorial"]
+) :is(.input, .select, .textarea, .theme-select, .theme-control select, .mobile-theme select):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+:is(
+  html[data-theme="graphite-lime"],
+  html[data-theme="color-finance"],
+  html[data-theme="pastel-editorial"]
+) .mov-mobile-card:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
