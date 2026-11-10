@@ -206,6 +206,28 @@ const FUNCTIONAL_TEXT_SELECTOR = [
   ".ui-badge",
   ".ui-amount-note",
   ".ui-amount-state",
+  ".graphite-kicker",
+  ".graphite-control-meta",
+  ".graphite-control-note",
+  ".graphite-plan-item > span",
+  ".graphite-facts dt",
+  ".graphite-kpi-meta",
+  ".graphite-control-link",
+  ".graphite-cycle-note",
+  ".graphite-cycle-coverage",
+  ".graphite-cycle-detail summary",
+  ".graphite-cycle-detail li > span",
+  ".graphite-rail-meta",
+  ".graphite-rail-empty",
+  ".graphite-rail-alert",
+  ".graphite-objective-facts dt",
+  ".graphite-objective-facts dd",
+  ".graphite-rail-link",
+  ".graphite-position-meta",
+  ".graphite-position-note",
+  ".graphite-position-cell > a",
+  ".graphite-coverage",
+  ".graphite-detail-heading p",
   "small",
 ].join(",");
 
@@ -240,6 +262,186 @@ async function expectInicioFunctionalText(page: Page) {
   await page.locator(".inicio-page details").evaluateAll((nodes) => {
     for (const node of nodes) (node as HTMLDetailsElement).open = false;
   });
+}
+
+async function expectGraphiteComposition(page: Page) {
+  const hero = page.locator('[data-inicio-section="hero"]');
+  const kpis = page.locator('[data-inicio-section="kpis"]');
+  const cycle = page.locator('[data-inicio-section="cycle"]');
+  const rail = page.locator('[data-inicio-section="rail"]');
+  const position = page.locator('[data-inicio-section="position"]');
+  const coverage = page.locator('[data-inicio-section="coverage"]');
+  await expect(hero).toBeVisible();
+  await expect(kpis).toBeVisible();
+  await expect(cycle).toBeVisible();
+  await expect(rail).toBeVisible();
+  await expect(position).toBeVisible();
+  await expect(coverage).toBeVisible();
+
+  // G2a: hero y banda KPI con cifras publicadas.
+  await expect(hero).toContainText("Liquidez disponible");
+  await expect(hero).toContainText("3.456,40 €");
+  await expect(hero).toContainText("3/4");
+  await expect(hero).toContainText("1.800,00 €");
+  await expect(hero).toContainText("1.900,00 €");
+  await expect(hero).toContainText("NO DISPONIBLE");
+  await expect(kpis).toContainText("2.250,00 €");
+  await expect(kpis).toContainText("1.800,00 €");
+  await expect(kpis).toContainText("1.197,50 €");
+  await expect(kpis).toContainText("1.020,00 €");
+  await expect(kpis).toContainText("2/2");
+  await expect(hero).not.toContainText("%");
+  await expect(kpis).not.toContainText("%");
+  await expect(hero.locator(".graphite-hero-margin")).toContainText("ND");
+  await expect(hero.locator(".graphite-hero-margin")).not.toContainText(
+    "0,00 €",
+  );
+  const planItem = (label: string) =>
+    hero.locator(".graphite-plan-item").filter({ hasText: label });
+  await expect(planItem("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(planItem("Del mes planificado")).toContainText("1.900,00 €");
+  const kpi = (label: string) =>
+    kpis.locator(".graphite-kpi").filter({ hasText: label });
+  await expect(kpi("Ingresos del ciclo")).toContainText("2.250,00 €");
+  await expect(kpi("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(kpi("Inversión valorada")).toContainText("1.197,50 €");
+  await expect(kpi("Deuda no hipotecaria")).toContainText("1.020,00 €");
+  const fact = (label: string) =>
+    hero.locator(".graphite-facts > div").filter({ hasText: label });
+  await expect(fact("Ingresos")).toContainText("2.250,00 €");
+  await expect(fact("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(fact("Nómina")).toContainText("2.000,00 €");
+  await expect(fact("Ingresos")).toContainText("PARCIAL");
+
+  // G2b: ciclo publicado, sin duplicar el panel antiguo.
+  await expect(
+    page.getByRole("heading", { name: "Métricas publicadas del ciclo" }),
+  ).toBeVisible();
+  await expect(
+    page.locator("section[aria-labelledby='inicio-ciclo']"),
+  ).toHaveCount(0);
+  const cycleRows = cycle.locator(".graphite-cycle-desktop tbody tr");
+  await expect(cycleRows).toHaveCount(8);
+  const row = (label: string) => cycleRows.filter({ hasText: label });
+  await expect(row("Ingresos")).toContainText("2.250,00 €");
+  await expect(row("Ingresos")).toContainText("PARCIAL");
+  await expect(row("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(row("Amortización extraordinaria")).toContainText("100,00 €");
+  await expect(row("Nómina cobrada")).toContainText("2.000,00 €");
+  await expect(row("Saldo operativo bruto observado")).toContainText("ND");
+  await expect(row("Margen frente a nómina real")).toContainText("ND");
+  await expect(row("Base planificada")).toContainText("1.900,00 €");
+  await expect(row("Del mes planificado")).toContainText("1.900,00 €");
+  await expect(row("Base planificada")).toContainText("COMPLETO");
+  await expect(cycle).toContainText("Motivos y fuentes de cada métrica");
+  await expect(cycle).not.toContainText("Ver flujo mensual");
+  await expect(cycle).not.toContainText("%");
+  await expect(hero).toContainText("Ver flujo mensual");
+
+  // G2b: rail de atención y objetivo.
+  await expect(rail).toContainText("Pendientes y cobertura");
+  await expect(rail).toContainText(/\d+ visibles?/);
+  await expect(
+    rail.getByRole("heading", { name: "Coste esencial y meses" }),
+  ).toBeVisible();
+  await expect(rail).toContainText("1.500,00 €");
+  await expect(rail).toContainText("No configurados");
+  await expect(rail).toContainText("Meses cubiertos");
+  await expect(rail).toContainText("Ver Pendientes");
+  await expect(rail).toContainText("Ver coste esencial");
+  await expect(rail).not.toContainText("%");
+
+  // G2b: banda de posición y cobertura publicadas.
+  await expect(position.locator(".graphite-position-value")).toHaveText("7");
+  await expect(position).toContainText("sin total entre vistas");
+  await expect(position).toContainText("Sin total de Ahorro");
+  await expect(position).toContainText("Efectivo del bróker aparte");
+  await expect(position).toContainText("hipotecaria aparte");
+  await expect(position).toContainText("Inversión ·");
+  await expect(position).not.toContainText("%");
+  const positionCell = (label: string) =>
+    position
+      .locator(".graphite-position-cell")
+      .filter({ has: page.locator(".graphite-kicker", { hasText: label }) });
+  const saldosCell = positionCell("Saldos");
+  await expect(saldosCell).toContainText("6/7");
+  await expect(saldosCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Parcial",
+  );
+  const ahorroCell = positionCell("Ahorro");
+  await expect(ahorroCell).toContainText("800,00 €");
+  await expect(ahorroCell).toContainText("COMPLETO");
+  await expect(ahorroCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Verificado",
+  );
+  await expect(ahorroCell).not.toContainText("ND");
+  const inversionCell = positionCell("Inversión valorada");
+  await expect(inversionCell).toContainText("1.197,50 €");
+  await expect(inversionCell).toContainText("COMPLETO");
+  const deudaCell = positionCell("Deuda no hipotecaria");
+  await expect(deudaCell).toContainText("1.020,00 €");
+  await expect(deudaCell).toContainText("PARCIAL");
+  await expect(deudaCell).toContainText("Subtotal conocido");
+  await expect(deudaCell).toContainText("2/3");
+  await expect(deudaCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Parcial",
+  );
+  const coverageCell = positionCell("Cobertura");
+  await expect(coverageCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Verificado",
+  );
+  await expect(coverageCell).toContainText("Inversión · Completa");
+
+  // Taxonomía única también en la composición Graphite.
+  const graphiteBadges = page.locator(
+    ".inicio-page .ui-badge[data-estado]",
+  );
+  expect(await graphiteBadges.count()).toBeGreaterThan(0);
+  for (const badge of await graphiteBadges.all()) {
+    expect([
+      "Verificado",
+      "Cero verificado",
+      "Parcial",
+      "No disponible",
+      "No aplica",
+      "Sin datos",
+    ]).toContain(await badge.getAttribute("data-estado"));
+    expect((await badge.getAttribute("data-tipo")) ?? "").toBeTruthy();
+  }
+  await expect(coverage).toContainText("Cobertura del modelo");
+  await expect(coverage).toContainText("motivos de contexto");
+  await expect(page.locator(".graphite-detail-heading")).toContainText(
+    "Información completa",
+  );
+  for (const section of [
+    "inicio-saldos",
+    "inicio-ahorro",
+    "inicio-inversion",
+    "inicio-deuda",
+    "inicio-objetivo",
+  ])
+    await expect(
+      page.locator(`section[aria-labelledby='${section}']`),
+    ).toBeVisible();
+  await expect(page.locator("#inicio-cobertura")).toBeVisible();
+
+  // Los drill-down usan rutas publicadas sin importes.
+  const hrefs = await page
+    .locator(".inicio-page [data-inicio-section] a")
+    .evaluateAll((anchors) =>
+      anchors.map((anchor) => anchor.getAttribute("href") ?? ""),
+    );
+  expect(hrefs).toContain("/flujo-mensual?ciclo=7");
+  expect(hrefs).toContain("/saldos");
+  expect(hrefs).toContain("/inversiones");
+  expect(hrefs).toContain("/deudas");
+  expect(hrefs).toContain("/pendientes");
+  for (const href of hrefs)
+    expect(href).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
 }
 
 async function gridColumnCount(page: Page, selector: string) {
@@ -277,7 +479,7 @@ async function expectInicioContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase,.graphite-kicker,.graphite-plan-item > span,.graphite-facts dt,.graphite-kpi-meta,.graphite-control-note,.graphite-control-link,.graphite-cycle-coverage,.ui-data-list-label",
       ),
     );
     const result: number[] = [];
@@ -626,7 +828,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   expect(objetivoSizes.submetrica).toBeGreaterThanOrEqual(12);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -634,11 +841,22 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    await expect(
+      page.locator("section[aria-labelledby='inicio-ciclo']"),
+    ).toHaveCount(theme === "graphite-lime" ? 0 : 1);
+    if (theme === "graphite-lime") {
+      await expectGraphiteComposition(page);
+      await expectInicioFunctionalText(page);
+    }
     // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
     await resetScroll(page);
+    if (theme === "graphite-lime")
+      await page.screenshot({
+        path: "artifacts/e4-6/inicio-graphite-lime-1440-fold.png",
+      });
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-1440.png`,
       fullPage: true,
@@ -650,7 +868,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -658,6 +881,15 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    await expect(
+      page.locator("section[aria-labelledby='inicio-ciclo']"),
+    ).toHaveCount(theme === "graphite-lime" ? 0 : 1);
+    if (theme === "graphite-lime") {
+      await expectGraphiteComposition(page);
+      await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
+      await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
+      await expectInicioFunctionalText(page);
+    }
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
@@ -671,6 +903,27 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
       fullPage: true,
     });
   }
+
+  await page.setViewportSize({ width: 820, height: 1000 });
+  await select.selectOption("graphite-lime");
+  await expectGraphiteComposition(page);
+  await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
+  await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
+  await expect(page.locator(".graphite-cycle-cards .ui-data-list-item")).toHaveCount(
+    8,
+  );
+  await expectNoOverflow();
+  await expectInicioContrast(page);
+  await expectInicioFunctionalText(page);
+  await page.screenshot({
+    path: "artifacts/e4-6/inicio-graphite-lime-820.png",
+    fullPage: true,
+  });
+  await page.screenshot({
+    path: "artifacts/dev-06/inicio-graphite-lime-820.png",
+    fullPage: true,
+  });
+
   await page.setViewportSize({ width: 1440, height: 1000 });
   expect(errors).toEqual([]);
 });
@@ -834,8 +1087,30 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
     for (const node of nodes) (node as HTMLDetailsElement).open = false;
   });
 
-  // Evidencia: tres temas a 1440 y 390, también en el escenario degradado.
+  // Graphite: un fallo de fuente no se presenta como bloque vacío.
   const select = page.getByLabel("Apariencia");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await select.selectOption("graphite-lime");
+  const railDegradado = page.locator('[data-inicio-section="rail"]');
+  await expect(railDegradado).toContainText(
+    "Hay fuentes de pendientes con fallo",
+  );
+  await expect(railDegradado).not.toContainText("Sin pendientes visibles");
+  const posicionDegradada = page.locator('[data-inicio-section="position"]');
+  await expect(posicionDegradada).toContainText("NO DISPONIBLE");
+  await expect(posicionDegradada).not.toContainText("0,00 €");
+  await expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await resetScroll(page);
+  await page.screenshot({
+    path: "artifacts/e4-6/inicio-degradado-graphite-lime-1440.png",
+    fullPage: true,
+  });
+
+  // Evidencia: tres temas a 1440 y 390, también en el escenario degradado.
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);
