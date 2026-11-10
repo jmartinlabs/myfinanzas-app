@@ -69,8 +69,8 @@ Capturas:
 ## Límites declarados
 
 - 1A es una **base visual**, no la composición editorial de Casa. Inicio conserva su estructura; el inspector, la tabla agrupada y la atención llegan en 1B.
-- La matriz AA específica de Casa se limita a los pares críticos y a la pantalla de Saldos; no se ha ejecutado la matriz completa de cinco pantallas.
-- La suite E2E completa se ejecutó: 75/78. Los 3 fallos son de restauración macOS y una aserción de teclado de Deudas; no se han atribuido a Casa. CI Linux y QA independiente siguen pendientes.
+- La matriz AA de Casa se ha ejecutado en las cinco pantallas (`ui-dev07`): 7/7 tests, 10 capturas base y 5 críticas. La matriz cubre light/dark/hybrid/casa.
+- La suite E2E completa local se ejecutó en macOS: 75/78. Los 3 fallos son de restauración macOS y una aserción de teclado de Deudas; se está verificando en Linux. La matriz AA de Casa pasó 7/7.
 - No hay QA independiente; la CI remota de #364 está en curso y la de #363 ya pasó.
 - No se ha fusionado ni desplegado nada.
 

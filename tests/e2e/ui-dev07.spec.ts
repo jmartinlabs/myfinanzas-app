@@ -36,7 +36,7 @@ import {
  * `nativeDateShadowFocus` y se compensa verificando que el host sí dibuja el
  * anillo al enfocarse.
  *
- * Esta spec produce 30 capturas base (5 pantallas × 3 temas × 1440/390) y 15
+ * Esta spec produce 40 capturas base (5 pantallas × 4 temas × 1440/390) y 20
  * críticas (un estado por pantalla y tema), y convierte las comprobaciones en
  * aserciones duras. Forma parte del E2E normal (`bun run test:e2e`), igual que
  * las specs de evidencia de DEV-05.
