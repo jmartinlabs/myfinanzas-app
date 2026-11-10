@@ -1,7 +1,7 @@
 # UI · Casa de cuentas 1A — progreso
 
 **Estado:** implementación local de 1A completa; PR #364 publicada; CI pendiente y QA independiente pendiente.
-**Base:** `origin/test` `bff714e` — Graphite Lime 1A integrado (#356).
+**Base:** `origin/test` `034831f` — Graphite Lime 1A integrado (#356) y cierre documental (#357/#362).
 **Rama:** `feat/ui-casa-1a`. **PR:** #364. **Enmienda:** #363.
 **Alcance:** quinta apariencia `casa` sobre el sistema de temas existente; sin composición editorial de Inicio (1B), sin Señal.
 

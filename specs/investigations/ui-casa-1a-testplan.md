@@ -1,6 +1,6 @@
 # UI · Casa de cuentas 1A — test plan
 
-**Base:** `bff714e` (Graphite Lime 1A, #356).
+**Base:** `034831f` (Graphite Lime 1A #356 y cierre documental #357/#362).
 **Rama:** `feat/ui-casa-1a`.
 **Estado:** evidencia local; QA independiente y CI remota pendientes.
 
