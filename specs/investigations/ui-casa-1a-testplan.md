@@ -25,9 +25,10 @@
 | CASA1A-15 | La suite web existente sigue pasando | `bun test apps/web/test` | PASS (115) |
 | CASA1A-16 | La matriz completa AA de Casa en 5 pantallas | `bunx playwright test tests/e2e/ui-dev07.spec.ts` | PASS (7/7; 10 capturas Casa base + 5 críticas) |
 | CASA1A-17 | Regresión visual de las 4 apariencias en 5 pantallas | Matriz DEV-07 con light/dark/hybrid/casa | PASS |
-| CASA1A-18 | QA independiente | Revisor separado | PENDING |
-| CASA1A-19 | CI remota | PR #364 | PENDING |
-| CASA1A-20 | Suite E2E completa local | `bun run test:e2e` | 75 pass / 3 fail; 2 restore macOS + 1 Deudas; no atribuidos a 1A |
+| CASA1A-18 | QA independiente | Revisor separado | PASS: APTO, ver `ui-casa-1a-qa.md` |
+| CASA1A-19 | CI remota | PR #364, perfil `critical` | PENDING (head final) |
+| CASA1A-20 | Suite E2E completa local macOS | `bun run test:e2e` | 75 pass / 3 fail; 2 restore macOS + 1 flake Deudas |
+| CASA1A-21 | Suite E2E completa Linux | Playwright en contenedor Linux | PASS 78/78 (5,5m) |
 
 ## Comandos
 
