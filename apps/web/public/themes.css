@@ -6,7 +6,7 @@ html {
 /*
  * MyFinanzas · tokens semánticos de temas.
  * Los componentes no conocen el tema: solo consumen estas variables.
- * Añadir un tema = añadir un bloque + una entrada en src/themes.ts.
+ * Añadir un tema = añadir un bloque + una entrada en src/themes.ts + known en theme-boot.js.
  */
 :root,
 :root[data-theme="dark-s"] {
@@ -217,4 +217,74 @@ html {
   --chip-bg: #fffcf7;
   --chip-border: #d8d2c7;
   --chip-text: #1f1f1f;
+}
+
+:root[data-theme="graphite-lime"] {
+  color-scheme: dark;
+  --bg: #0b0c0b;
+  --surface: #131513;
+  --surface-2: #191c18;
+  --surface-3: #0e100e;
+  --sidebar: #080908;
+  --sidebar-text: #f3f6ec;
+  --sidebar-muted: #8f988b;
+  --sidebar-border: #1e221d;
+  --sidebar-hover: #171a16;
+  --sidebar-active-bg: #d7ff5e;
+  --sidebar-active-text: #0b0e08;
+  --sidebar-focus: #d7ff5e;
+  --brand-accent: #d7ff5e;
+  --text: #f1f4ec;
+  --muted: #8f988b;
+  --border: #2b2f2a;
+  --control-border: #66705f;
+  --action: #d7ff5e;
+  --on-action: #0b0e08;
+  --action-hover: #e2ff7c;
+  --on-action-hover: #0b0e08;
+  --action-active: #c2e84a;
+  --on-action-active: #0b0e08;
+  --action-soft: #232819;
+  --action-soft-border: #3b4426;
+  --accent: #d7ff5e;
+  --on-accent: #0b0e08;
+  --accent-soft: #232819;
+  --accent-border: #3b4426;
+  --focus: #d7ff5e;
+  --positive: #7fe0a8;
+  --positive-soft: #1d2720;
+  --positive-border: #2f4234;
+  --negative: #ff9a8c;
+  --negative-soft: #28211d;
+  --negative-border: #4a302a;
+  --warning: #ffd166;
+  --warning-soft: #28261b;
+  --warning-border: #4a432a;
+  --error: #ff8178;
+  --error-soft: #2a1b19;
+  --error-border: #4a2b27;
+  --ok: #7fe0a8;
+  --row-hover: #171a16;
+  --selected: #1c2417;
+  --disabled-bg: #171a16;
+  --disabled-text: #6f786c;
+  --shadow-1: rgb(0 0 0 / 0.4);
+  --shadow-2: rgb(0 0 0 / 0.24);
+  --strong-surface: #181c15;
+  --on-strong: #f1f4ec;
+  --muted-on-strong: #a6afa0;
+  --strong-border: #2f362c;
+  --chart-1: #d7ff5e;
+  --chart-2: #7fe0a8;
+  --chart-3: #ffd166;
+  --chart-4: #c2c8bc;
+  --chart-strong: #f1f4ec;
+  --chart-accent: #d7ff5e;
+  --header-bg: #0b0c0b;
+  --footer-bg: #080908;
+  --input-bg: #0c0e0c;
+  --table-head: #0e110e;
+  --chip-bg: #232819;
+  --chip-border: #3b4426;
+  --chip-text: #d7ff5e;
 }
