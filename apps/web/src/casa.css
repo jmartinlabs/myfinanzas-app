@@ -965,3 +965,212 @@
     gap: 10px 16px;
   }
 }
+
+/* ============================================================
+   Casa de cuentas · 1C
+   Movimientos · registro editorial sobre Table/DataList existentes.
+   Solo estilos; no cambia columnas, filtros, rutas ni contratos.
+   ============================================================ */
+
+:root[data-theme="casa"] .movements-page {
+  max-width: 1180px;
+  gap: 0;
+}
+
+:root[data-theme="casa"] .movements-page > .page-head {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .movements-page > .page-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 4.4vw, 58px);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="casa"] .movements-page > .page-foot {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .movements-list.panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+:root[data-theme="casa"] .movements-list .filters {
+  grid-template-columns: minmax(250px, 2fr) repeat(4, minmax(118px, 1fr));
+  gap: 14px 22px;
+  padding: 20px 0 18px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .movements-list .filters label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movements-list .filters input,
+:root[data-theme="casa"] .movements-list .filters select {
+  margin-top: 5px;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+:root[data-theme="casa"] .movements-list .movement-filters {
+  padding: 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .movements-list .movement-filters summary {
+  min-height: 44px;
+  padding: 10px 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movements-list .list-toolbar {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .movements-list .list-toolbar p {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="casa"] .movements-list .list-toolbar > span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .movements-list .ui-table {
+  border-collapse: collapse;
+}
+
+:root[data-theme="casa"] .movements-list .ui-table th {
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movements-list .ui-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-size: 13px;
+}
+
+:root[data-theme="casa"] .movements-list .ui-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+:root[data-theme="casa"] .movements-list .ui-table td.ui-table-amount {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+:root[data-theme="casa"] .movements-list .ui-table-amount strong {
+  font-weight: 500;
+}
+
+:root[data-theme="casa"] .movements-list .table-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .movements-list .list-footer {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .movements-list .list-footer > span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+:root[data-theme="casa"] .movements-list > .empty {
+  border-top: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .movements-cards {
+  gap: 0;
+}
+
+:root[data-theme="casa"] .movements-cards > li {
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="casa"] .movements-cards .ui-data-list-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .movements-cards .ui-data-list-value {
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  :root[data-theme="casa"] .movements-list .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :root[data-theme="casa"] .movements-list .filters .search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  :root[data-theme="casa"] .movements-page > .page-head h1 {
+    font-size: 36px;
+  }
+
+  :root[data-theme="casa"] .movements-list .filters {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px 0;
+  }
+
+  :root[data-theme="casa"] .movements-list .list-toolbar {
+    align-items: flex-start;
+  }
+
+  :root[data-theme="casa"] .movements-cards > li {
+    padding: 14px 0;
+  }
+}
