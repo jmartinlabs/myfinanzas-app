@@ -68,7 +68,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(
     page.getByRole("heading", { name: "Saldos", exact: true }),
   ).toBeVisible();
-  const themeSelect = page.getByLabel("Tema visual");
+  const themeSelect = page.getByLabel("Apariencia");
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
   await expect(
     page.getByRole("region", { name: "Catálogo de Saldos" }),

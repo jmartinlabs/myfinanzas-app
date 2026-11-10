@@ -65,7 +65,7 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
   const html = page.locator("html");
   const body = page.locator("body");
   const sidebar = page.locator(".sidebar");
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   const expectNoOverflow = async () =>
     expect(
       await page.evaluate(

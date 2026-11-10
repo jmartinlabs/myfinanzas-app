@@ -91,7 +91,7 @@ test("UI DEV-05 I5a: formularios, error asociado, foco y temas", async ({
       ),
     ).toBe(true);
   const selectTheme = async (theme: (typeof THEMES)[number]) => {
-    await page.getByLabel("Tema visual").selectOption(theme);
+    await page.getByLabel("Apariencia").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const openPlanEditor = async () => {

@@ -420,7 +420,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   // Foco visible.
   await expectVisibleKeyboardFocus(page);
 
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);

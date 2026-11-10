@@ -76,15 +76,17 @@ test("Graphite Lime: catálogo, persistencia, colores, contraste y 1440/390", as
   const html = page.locator("html");
   const body = page.locator("body");
   const sidebar = page.locator(".sidebar");
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   const expectNoOverflow = async () =>
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
 
-  await expect(select.locator("option")).toHaveCount(4);
+  await expect(select.locator("option")).toHaveCount(5);
   await expect(select.locator("option").nth(3)).toHaveAttribute("value", "graphite-lime");
   await expect(select.locator("option").nth(3)).toHaveText("Grafito");
+  await expect(select.locator("option").nth(4)).toHaveAttribute("value", "casa");
+  await expect(select.locator("option").nth(4)).toHaveText("Casa");
 
   await select.selectOption("graphite-lime");
   await expect(html).toHaveAttribute("data-theme", "graphite-lime");

@@ -1,0 +1,598 @@
+/* ============================================================
+   Casa de cuentas · base visual 1A
+   Apariencia `casa` sobre el sistema de temas existente.
+   Solo tokens, tipografía, superficies y estilos de componentes.
+   No cambia composición, rutas ni contratos.
+   ============================================================ */
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/newsreader-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/newsreader-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-sans-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-500-normal.woff2") format("woff2");
+}
+
+:root[data-theme="casa"] {
+  --font-display: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+  --font-ui: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 2px;
+  --radius-sm: 2px;
+  --radius-pill: 2px;
+  --text-base: 15px;
+  --text-sm: 13px;
+  --text-md: 17px;
+  --text-xl: 38px;
+  --leading-normal: 1.55;
+}
+
+:root[data-theme="casa"] body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-theme="casa"] h1,
+:root[data-theme="casa"] h2,
+:root[data-theme="casa"] h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 27px;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="casa"] .brand small {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--sidebar-muted);
+}
+
+:root[data-theme="casa"] .sidebar {
+  background: var(--sidebar);
+  border-right-color: var(--sidebar-border);
+  padding: 28px 20px 22px;
+}
+
+:root[data-theme="casa"] .nav-group {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--sidebar-muted);
+  margin: 34px 8px 10px;
+}
+
+:root[data-theme="casa"] .nav-link,
+:root[data-theme="casa"] .nav-active {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 2px;
+}
+
+:root[data-theme="casa"] .nav-active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+:root[data-theme="casa"] .nav-active::before {
+  display: none;
+}
+
+:root[data-theme="casa"] .nav-icon {
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+:root[data-theme="casa"] .nav-chevron {
+  opacity: 0.35;
+}
+
+:root[data-theme="casa"] .sidebar-bottom {
+  border-top-color: var(--sidebar-border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+:root[data-theme="casa"] .sidebar-bottom small {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+:root[data-theme="casa"] .global-header {
+  background: var(--header-bg);
+  border-bottom-color: var(--border);
+  min-height: 76px;
+  padding: 16px 34px;
+}
+
+:root[data-theme="casa"] .header-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .global-header strong {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 17px;
+}
+
+:root[data-theme="casa"] .theme-picker {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .theme-picker select {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  background: var(--input-bg);
+  border-radius: 2px;
+}
+
+:root[data-theme="casa"] .local-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-radius: 2px;
+}
+
+:root[data-theme="casa"] .content {
+  padding: 34px 38px 44px;
+}
+
+:root[data-theme="casa"] .page-head {
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+
+:root[data-theme="casa"] .page-head h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  margin: 4px 0 8px;
+}
+
+:root[data-theme="casa"] .page-head p.muted {
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 74ch;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+:root[data-theme="casa"] .panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+:root[data-theme="casa"] .panel-head {
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme="casa"] .alert {
+  border: 1px solid var(--error-border);
+  border-left: 3px solid var(--error);
+  border-radius: 2px;
+  background: var(--error-soft);
+}
+
+:root[data-theme="casa"] .notice {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface-2);
+}
+
+:root[data-theme="casa"] .page-foot {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+:root[data-theme="casa"] .primary,
+:root[data-theme="casa"] .secondary {
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+}
+
+:root[data-theme="casa"] .primary {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--on-action);
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.12);
+}
+
+:root[data-theme="casa"] .primary:hover {
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+}
+
+:root[data-theme="casa"] .secondary {
+  background: transparent;
+  border-color: var(--control-border);
+}
+
+:root[data-theme="casa"] .secondary:hover {
+  background: var(--surface-2);
+}
+
+:root[data-theme="casa"] .text-button {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="casa"] button:focus-visible,
+:root[data-theme="casa"] a:focus-visible,
+:root[data-theme="casa"] input:focus-visible,
+:root[data-theme="casa"] select:focus-visible,
+:root[data-theme="casa"] textarea:focus-visible,
+:root[data-theme="casa"] summary:focus-visible {
+  outline-color: var(--focus);
+}
+
+:root[data-theme="casa"] label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme="casa"] input,
+:root[data-theme="casa"] select,
+:root[data-theme="casa"] textarea {
+  background: var(--input-bg);
+  border-color: var(--control-border);
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+:root[data-theme="casa"] input::placeholder {
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .filters {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .filters label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .filters input,
+:root[data-theme="casa"] .filters select {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+:root[data-theme="casa"] .tag,
+:root[data-theme="casa"] .ui-badge {
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="casa"] .tag {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--accent);
+}
+
+:root[data-theme="casa"] .tag.inactive {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .ui-table th {
+  background: var(--table-head);
+  border-bottom: 1px solid var(--control-border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .ui-table td {
+  border-top: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+:root[data-theme="casa"] .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+:root[data-theme="casa"] .ui-table-amount,
+:root[data-theme="casa"] .money,
+:root[data-theme="casa"] .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+:root[data-theme="casa"] .ui-table .ui-amount-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+:root[data-theme="casa"] .ui-amount-value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+:root[data-theme="casa"] .ui-amount-note,
+:root[data-theme="casa"] .ui-amount-state {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+:root[data-theme="casa"] .ui-metric {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+:root[data-theme="casa"] .ui-metric-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .ui-metric-class {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+:root[data-theme="casa"] .ui-metric-main .ui-amount-value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+:root[data-theme="casa"] .ui-form-section {
+  border-top-color: var(--border);
+}
+
+:root[data-theme="casa"] .ui-form-section-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .ui-form-section-description {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:root[data-theme="casa"] .ui-field-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .empty {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+:root[data-theme="casa"] .empty h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+:root[data-theme="casa"] .empty-symbol {
+  color: var(--accent);
+}
+
+:root[data-theme="casa"] .skeleton,
+:root[data-theme="casa"] .e47-skeleton-line {
+  background: var(--surface-2);
+  border-radius: 2px;
+}
+
+:root[data-theme="casa"] .list-toolbar,
+:root[data-theme="casa"] .list-footer {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .desktop-list th {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .desktop-list td {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  border-top-color: var(--border);
+}
+
+:root[data-theme="casa"] .desktop-list tbody tr:hover {
+  background: var(--row-hover);
+}
+
+:root[data-theme="casa"] .table-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .ui-data-list-item {
+  border-color: var(--border);
+  background: var(--surface);
+  border-radius: 2px;
+}
+
+:root[data-theme="casa"] .ui-data-list-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .ui-data-list-value {
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  :root[data-theme="casa"] {
+    --text-xl: 30px;
+  }
+
+  :root[data-theme="casa"] .content {
+    padding: 24px 16px 30px;
+  }
+
+  :root[data-theme="casa"] .global-header {
+    padding: 12px 16px;
+  }
+
+  :root[data-theme="casa"] .page-head {
+    align-items: flex-start;
+  }
+
+  :root[data-theme="casa"] .page-head h1 {
+    font-size: 30px;
+  }
+
+  :root[data-theme="casa"] .brand {
+    font-size: 25px;
+  }
+
+  :root[data-theme="casa"] .ui-table th,
+  :root[data-theme="casa"] .ui-table td {
+    font-size: 12px;
+  }
+
+  :root[data-theme="casa"] .ui-table th {
+    font-size: 12px;
+  }
+
+  :root[data-theme="casa"] .ui-metric-main .ui-amount-value {
+    font-size: 26px;
+  }
+
+  :root[data-theme="casa"] .panel {
+    padding: 18px;
+  }
+}

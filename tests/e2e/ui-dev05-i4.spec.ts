@@ -122,7 +122,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     return result.data;
   };
   const selectTheme = async (theme: (typeof THEMES)[number]) => {
-    await page.getByLabel("Tema visual").selectOption(theme);
+    await page.getByLabel("Apariencia").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const capture = async (

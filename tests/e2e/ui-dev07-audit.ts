@@ -7,7 +7,7 @@ import type { Page } from "@playwright/test";
  * mínimos se convierten en aserciones duras. Sin dependencias nuevas.
  */
 
-export const DEV07_THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
+export const DEV07_THEMES = ["light-s", "dark-s", "hybrid-s", "casa"] as const;
 export type Dev07Theme = (typeof DEV07_THEMES)[number];
 
 export type Dev07Viewport = {
@@ -1141,7 +1141,7 @@ export async function auditReducedMotion(
 }
 
 export async function setTheme(page: Page, theme: Dev07Theme): Promise<void> {
-  await page.getByLabel("Tema visual").selectOption(theme);
+  await page.getByLabel("Apariencia").selectOption(theme);
   await page.waitForFunction(
     (expected) => document.documentElement.dataset.theme === expected,
     theme,

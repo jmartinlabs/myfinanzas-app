@@ -41,6 +41,7 @@ import {
   type ThemeId,
 } from "./themes";
 import "./style.css";
+import "./casa.css";
 function App() {
   const environment = environmentLabel();
   const localEnvironment = environment === "Entorno local";
@@ -256,9 +257,9 @@ function App() {
           <CycleHeader path={path} />
           <div className="header-actions">
             <label className="theme-picker">
-              Tema
+              Apariencia
               <select
-                aria-label="Tema visual"
+                aria-label="Apariencia"
                 value={theme}
                 onChange={(event) => setTheme(event.target.value as ThemeId)}
               >

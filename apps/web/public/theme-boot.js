@@ -2,7 +2,7 @@
 (function () {
   try {
     var stored = window.localStorage.getItem("mf-theme");
-    var known = ["light-s", "dark-s", "hybrid-s", "graphite-lime"];
+    var known = ["light-s", "dark-s", "hybrid-s", "graphite-lime", "casa"];
     document.documentElement.setAttribute(
       "data-theme",
       known.indexOf(stored) >= 0 ? stored : "dark-s",
