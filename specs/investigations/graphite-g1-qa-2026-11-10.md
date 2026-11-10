@@ -2,7 +2,7 @@
 
 **Estado:** evidencia de la PR de G1. **No autoriza merge ni despliegue.**
 **Fecha:** 2026-11-10.
-**Base:** `origin/test` `1d288c5`.
+**Base final:** `origin/test` `4e821dc` (Casa #363/#364 integradas).
 **Rama:** `feature/graphite-g1-foundation`.
 **Diseño de referencia:** [archivo Graphite Lime](graphite-lime-design-2026-11-10/README.md).
 
@@ -37,7 +37,7 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 
 | Prueba | Resultado |
 | --- | --- |
-| `bun test apps/web` | **115/115 PASS** |
+| `bun test apps/web` (rama final con Casa) | **357/357 PASS** |
 | `bun run typecheck` | **PASS** |
 | `bun run build` | **PASS** |
 | `bun run test:e2e -- tests/e2e/graphite-g1.spec.ts` | **1/1 PASS** |
@@ -45,9 +45,8 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 | `bun run test:e2e -- tests/e2e/theme.spec.ts tests/e2e/graphite-g1.spec.ts` | **3/3 PASS** |
 | `bun run test:e2e -- tests/e2e/inicio.spec.ts` | **5/5 PASS** |
 | `bun run test:e2e -- tests/e2e/movimientos.spec.ts` en Linux limpio | **1/1 PASS** (contenedor Debian arm64 con Bun, Node 20, Chromium, `age` y `git`) |
-| **Integración local Casa #363/#364 + G1 · `bun test apps/web`** | **238/238 PASS** |
-| **Integración local · specs de tema** | **7/7 PASS** (Claro, Oscuro, Mixto, Grafito y Casa) |
-| **Integración local · E2E completo Linux** | **78/79 PASS**; único fallo flaky de foco de teclado en `resumen-anual`, rerun aislado **5/5 PASS** |
+| **Rama final con Casa · specs de tema** | **7/7 PASS** (Claro, Oscuro, Mixto, Grafito y Casa) |
+| **Rama final con Casa · E2E completo Linux** | **79/79 PASS** (9,4 min) |
 | `movimientos.spec.ts` en macOS local | Falla por entorno: falta `age-keygen`/restauración auxiliar; no es una regresión de G1 |
 
 `movimientos.spec.ts` requiere `age-keygen` y un servidor auxiliar en el puerto 3004. En el
@@ -133,29 +132,21 @@ Referencias del prototipo:
 - La regresión G1 comprueba que `dark-s`, `light-s` y `hybrid-s` recuperan
   `background-image: none`, `h1` 28 px y botón sin sombra Graphite.
 
-## Integración local con Casa
+## Integración en `test`
 
-Se preparó y publicó la rama `integration/casa-g1` (`5216f6b`) con:
+Casa #363 (UI-P1) y #364 (Casa 1A) ya están integradas en `test` (`4e821dc`). G1 se rebasó sobre
+esa base; el conflicto de las secciones 2.3/2.4 de `specs/ui-specification.md` se resolvió
+manteniendo ambas enmiendas.
 
-- #363 (UI-P1) y #364 (Casa 1A) fusionadas sobre `test` `fc0df99` (#367).
-- G1 (#368) integrado después, resolviendo el conflicto de las secciones 2.3/2.4 de
-  `specs/ui-specification.md`.
+Resultados finales sobre la rama G1 rebasada:
 
-Resultados de la integración:
-
-- `bun test apps/web`: **238/238 PASS**.
+- `bun test apps/web`: **357/357 PASS**.
 - `typecheck` y `build`: **PASS**.
 - Specs de tema `theme.spec` + `theme-graphite` + `theme-casa` + `graphite-g1`: **7/7 PASS**.
-- Suite E2E completa en Linux limpio: **78/79 PASS**, con `movimientos.spec.ts` PASS y las cinco
-  apariencias. El único fallo fue un flake de foco de teclado en `resumen-anual`; el rerun
-  aislado del archivo pasó **5/5**.
-- Una ejecución anterior sobre `test` `1d288c5` había pasado **79/79**; #367 solo añade timeouts
-  explícitos a pruebas API pesadas.
-
-Casa #363/#364 siguen **abiertas** y sin aprobación explícita de merge; no se han fusionado en
-`test` desde esta sesión. G1 #368 continúa basada en `test` `fc0df99` (rebasada). Cuando el usuario
-autorice Casa, el orden es: merge #363 → merge #364 → rebase final de G1 → CI/QA. La integración
-local demuestra que ese orden funciona.
+- Suite E2E completa en Linux limpio: **79/79 PASS**, incluidas las cinco apariencias y
+  `movimientos.spec.ts`.
+- Una ejecución intermedia de la integración local sufrió un flake de foco en `resumen-anual`;
+  el rerun aislado pasó 5/5 y la ejecución final completa pasó 79/79.
 
 ## Riesgos residuales
 
@@ -165,11 +156,11 @@ local demuestra que ese orden funciona.
 | Tabla de Saldos a 820 parte palabras largas | Abierto; ajuste de tabla responsive en G3/G5 |
 | Capturas de Inicio/Movimientos con fixture incompleto | Documentado; G2/G3 usarán datos funcionales |
 | CI `required` no ejecuta web/E2E | Evidencia local/Linux; no confundir CI con aceptación visual |
-| Casa 1A pendiente de merge | Integración local 78/79 con flake aislado; G1 se rebasa cuando se autorice #363/#364 |
-| Flake de foco en `resumen-anual` | Aislado 5/5; no relacionado con G1; repetir en CI Linux |
+| Flake de foco en `resumen-anual` | Observado una vez en integración intermedia; aislado 5/5 y final 79/79; vigilar en CI |
+| Casa 1A | Integrada en `test` `4e821dc`; cinco apariencias verificadas |
 
 ## Conclusión
 
-G1 está listo para revisión independiente y la integración local con Casa está validada. La capa
-visual es aditiva, scoped y no cambia la composición ni la lógica. **No se fusiona ni se despliega**
-sin autorización; Casa #363/#364 tampoco se han fusionado sin aprobación explícita.
+G1 está listo para autorización final de merge sobre `test` `4e821dc`, con Casa integrada y la
+suite completa en Linux 79/79. La capa visual es aditiva, scoped y no cambia la composición ni la
+lógica. **No se fusiona ni se despliega** sin autorización explícita.

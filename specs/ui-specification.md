@@ -179,8 +179,8 @@ Casa 1A; el resto de la especificación y las decisiones de Graphite Lime se con
 Ratificada por el usuario el 2026-11-10 como dirección de integración visual. Autoriza
 **G1 · Fundamento y shell**; G2a/G2b (Inicio), G3 (Movimientos lista) y G4 (detalle/formularios)
 quedan planificados y requieren autorización individual. G1b, G2c, G3b y G4b son opcionales y
-se difieren. La enmienda UI-P1 de Casa (#363) se integra en su propio PR; si no está
-fusionada al integrar G1, esta sección se renumera en el rebase para no dejar un hueco.
+se difieren. La enmienda UI-P1 de Casa (#363) y su implementación 1A (#364) están integradas
+en `test` (`4e821dc`); esta sección mantiene la numeración 2.4.
 
 **Alcance autorizado para G1:**
 
@@ -192,7 +192,7 @@ fusionada al integrar G1, esta sección se renumera en el rebase para no dejar u
 - Conservar la sidebar en 236 px y el contenido en `--content-max`; la diferencia con el
   prototipo es una desviación consciente.
 - Pruebas unitarias/E2E, capturas 1440/820/390, contraste, foco, teclado, zoom y regresión de
-  Dark, Light y Hybrid.
+  Dark, Light, Hybrid y Casa.
 
 **Planificación posterior, no autorizada en esta enmienda:**
 
@@ -206,7 +206,7 @@ fusionada al integrar G1, esta sección se renumera en el rebase para no dejar u
 
 **Invariantes y límites:**
 
-- Dark, Light, Hybrid y Casa conservan su identidad; cuando Casa 1A esté integrada, el catálogo
+- Dark, Light, Hybrid y Casa conservan su identidad; Casa 1A está integrada y el catálogo
   mantiene cinco apariencias. No se modifica `themes.ts`, `theme-boot.js`, los tokens de Casa
   ni el mecanismo `mf-theme`/`dark-s`.
 - G1 solo toca `style.css` para el import aditivo de `graphite.css`; no toca `Inicio.tsx`,
