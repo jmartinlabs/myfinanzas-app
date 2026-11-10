@@ -984,6 +984,19 @@ test("Casa 1B: portada editorial de Inicio, datos publicados y responsive", asyn
   await expect(cover).toContainText("Casa de cuentas · Ciclo 7");
   await expect(cover).toContainText("3.456,40 €");
   await expect(cover).toContainText("3/4");
+  await expect(cover).toContainText("Saldos listados");
+  await expect(cover.locator(".casa-cover-counts dt").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await expect(cover.locator(".casa-cover-counts dd").first()).toHaveCSS(
+    "font-family",
+    /Newsreader/,
+  );
+  await expect(cover.locator(".casa-cover-coverage dd")).toHaveCSS(
+    "font-family",
+    /IBM Plex Sans/,
+  );
   await expect(
     cover.getByRole("link", { name: "Registrar movimiento", exact: true }),
   ).toBeVisible();

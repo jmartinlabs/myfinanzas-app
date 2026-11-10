@@ -651,14 +651,14 @@ export function Inicio({
               <p className="casa-cover-aside-label">Posición del ciclo</p>
               <dl className="casa-cover-counts">
                 <div>
-                  <dt>Saldos</dt>
+                  <dt>Saldos listados</dt>
                   <dd>{saldos.items.length}</dd>
                 </div>
                 <div>
                   <dt>Pendientes visibles</dt>
                   <dd>{pendientes.items.length}</dd>
                 </div>
-                <div>
+                <div className="casa-cover-coverage">
                   <dt>Cobertura</dt>
                   <dd>{liquidez.metrica.cobertura.estado}</dd>
                 </div>

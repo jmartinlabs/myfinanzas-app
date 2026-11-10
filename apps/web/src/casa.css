@@ -726,7 +726,7 @@
 
 :root[data-theme="casa"] .casa-cover-counts dt {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 :root[data-theme="casa"] .casa-cover-counts dd {
@@ -738,7 +738,7 @@
   line-height: 1;
 }
 
-:root[data-theme="casa"] .casa-cover-counts dd:last-child {
+:root[data-theme="casa"] .casa-cover-coverage dd {
   font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 600;
@@ -838,7 +838,7 @@
 :root[data-theme="casa"] .inicio-casa .inicio-context-facts dt {
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
