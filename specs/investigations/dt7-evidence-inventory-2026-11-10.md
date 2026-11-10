@@ -13,6 +13,7 @@ Los 59 AC de SPEC20 siguen `UNRUN`.
   inventario de evidencias de **M1, M2, M5 y M8**: documento, campo, fuente, formato y
   responsable; criterio verificable; decisión humana; dependencia con E4.5/`F-DT7`; y
   efecto de la ausencia.
+- **Laboratorio M2 2023–2026:** [dt7-m2-lab-2026-11-10.md](dt7-m2-lab-2026-11-10.md) (plantillas, intervalos, conciliación, anomalías y orden 2023; sin datos ni mappings).
 - **Relación con el expediente:** no lo sustituye ni lo reinterpreta. Los checklists
   M-1…M-6 y C-1…C-3 siguen en el
   [expediente §3 y §4](dt7-readiness-2026-11-09.md); este documento añade la capa de
