@@ -107,3 +107,60 @@ test("una fila sintética muestra codigoAusencia sin ocultar el motivo", () => {
   expect(html).toContain("NULO_EXPLICITO");
   expect(html).toContain("Bloque no disponible en la foto");
 });
+
+test("un estado no canónico se muestra tal cual y rotulado no reconocido", () => {
+  const html = renderData({
+    ...periodo(true),
+    noDisponible: [
+      {
+        ciclo: "1",
+        versionFoto: 1,
+        bloque: "valoracion",
+        estado: "EstadoInesperado",
+        motivo: "E4.3 valoración persistida con estado no canónico.",
+      },
+    ],
+  });
+  expect(html).toContain("EstadoInesperado");
+  expect(html).toContain("estado no reconocido");
+  expect(html).toContain('ui-badge-info"> EstadoInesperado');
+  expect(html).not.toContain("NULO_EXPLICITO");
+});
+
+test("un estado canónico no se rotula como no reconocido", () => {
+  const html = renderData({
+    ...periodo(true),
+    noDisponible: [
+      {
+        ciclo: "1",
+        versionFoto: 1,
+        bloque: "valoracion",
+        estado: "No disponible",
+        motivo: "Bloque no disponible en la foto",
+      },
+    ],
+  });
+  expect(html).toContain("No disponible");
+  expect(html).toContain('ui-badge-nd"> No disponible');
+  expect(html).not.toContain("estado no reconocido");
+});
+
+test("un estado «Completo» no reconocido usa tono neutro y no verde", () => {
+  const html = renderData({
+    ...periodo(true),
+    noDisponible: [
+      {
+        ciclo: "1",
+        versionFoto: 1,
+        bloque: "auxiliares.anticipos",
+        estado: "Completo",
+        motivo: "E4.10 v2 anticipos con estado contradictorio.",
+      },
+    ],
+  });
+  // El estado se muestra tal cual, sin normalizarse a «No disponible».
+  expect(html).toContain('ui-badge-info"> Completo');
+  expect(html).not.toContain("ui-badge-ok");
+  expect(html).toContain("estado no reconocido");
+  expect(html).not.toContain('ui-badge-nd"> Completo');
+});

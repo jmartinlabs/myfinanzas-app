@@ -1320,6 +1320,89 @@ test("E4.11 I3 AC09-J: fila persistida y fila sintética no se mezclan", () => {
   ]);
 });
 
+test("E4.11 I3 AC09-K: estado no canónico con motivo se conserva sin normalizar", () => {
+  const db = openDatabase(":memory:");
+  seedCycle(db, "1", "2025-12-01");
+  const noDisponible = {
+    valoracion: {
+      estado: "EstadoInesperado",
+      motivo: "E4.3 valoración persistida con estado no canónico.",
+    },
+    deudaCompleta: {
+      estado: "No disponible",
+      motivo: "E4.4 conciliaciones persistido canónico.",
+    },
+    "auxiliares.anticipos": {
+      estado: "Completo",
+      motivo: "E4.10 v2 anticipos con estado contradictorio.",
+    },
+  };
+  seedClosure(
+    db,
+    "1",
+    1,
+    "2025-12-01",
+    "2025-12-31",
+    "Cierre ficticio AC09-K",
+    noDisponible,
+    coberturaCompleta(),
+  );
+  const now = Date.parse("2026-02-15T12:00:00Z");
+
+  const periodo = crearFotoPeriodo(
+    db,
+    { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
+    key("ac09-k"),
+    { actor: "usuario-unico", appVersion: "0.0.0-fixture" },
+    now,
+  );
+
+  expect(periodo.noDisponible).toEqual([
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "valoracion",
+      estado: "EstadoInesperado",
+      motivo: noDisponible.valoracion.motivo,
+    },
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "deudaCompleta",
+      estado: "No disponible",
+      motivo: noDisponible.deudaCompleta.motivo,
+    },
+    {
+      ciclo: "1",
+      versionFoto: 1,
+      bloque: "auxiliares.anticipos",
+      estado: "Completo",
+      motivo: noDisponible["auxiliares.anticipos"].motivo,
+    },
+  ]);
+  // A persisted motive never creates a coverage motive by itself.
+  expect(periodo.cobertura.bloques[0].motivos).toEqual([]);
+  expect(periodo.cobertura.totalPeriodo).toBeNull();
+  expect(periodo.valores.totalPeriodo).toBeNull();
+  expect(JSON.stringify(periodo)).not.toContain('"totalPeriodo":0');
+  expect(periodo.valores.porCiclo[0].noDisponible).toEqual(noDisponible);
+  expect(
+    db
+      .query(
+        "SELECT no_disponible FROM fotos_cierre WHERE ciclo='1' AND version=1",
+      )
+      .get(),
+  ).toEqual({ no_disponible: JSON.stringify(noDisponible) });
+});
+
+test("E4.11 I3 AC09-K: estado no canónico sin motivo conserva el descarte", () => {
+  const compuesto = noDisponibleDeFoto("1", 1, {
+    valoracion: { estado: "EstadoInesperado" },
+  });
+  expect(compuesto.entries).toEqual([]);
+  expect(compuesto.parciales).toEqual([]);
+});
+
 test("E4.11 I3 AC09: ausencia no se sintetiza como 0 ni como total", () => {
   const db = openDatabase(":memory:");
   seedCycle(db, "1", "2025-12-01");

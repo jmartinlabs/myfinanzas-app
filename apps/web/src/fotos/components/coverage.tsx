@@ -6,7 +6,7 @@
 
 import { Badge, DataList, Table, type TableColumn } from "../../ui";
 import { motivoTexto, TOTAL_LABELS } from "../labels";
-import { estadoTone } from "../states";
+import { estadoNoDisponibleReconocido, estadoTone } from "../states";
 import type { CoverageRow, NoDisponibleRow } from "../types";
 
 export function CoverageTable({
@@ -67,7 +67,17 @@ export function NoDisponibleList({ rows }: { rows: NoDisponibleRow[] }) {
             {TOTAL_LABELS[row.bloque] ?? row.bloque}
             {row.version !== undefined ? ` · v${row.version}` : ""}
           </strong>{" "}
-          <Badge tone={estadoTone(row.estado)} label={row.estado} />{" "}
+          <Badge
+            tone={
+              estadoNoDisponibleReconocido(row.estado)
+                ? estadoTone(row.estado)
+                : "info"
+            }
+            label={row.estado}
+          />{" "}
+          {estadoNoDisponibleReconocido(row.estado) ? null : (
+            <small className="fotos-code">estado no reconocido</small>
+          )}{" "}
           <span>{row.motivo ?? "Motivo no informado"}</span>
           {row.codigoAusencia ? (
             <>
