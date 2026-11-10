@@ -44,11 +44,15 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 | `bun run test:e2e -- tests/e2e/theme-graphite.spec.ts tests/e2e/theme.spec.ts` | **4/4 PASS** |
 | `bun run test:e2e -- tests/e2e/theme.spec.ts tests/e2e/graphite-g1.spec.ts` | **3/3 PASS** |
 | `bun run test:e2e -- tests/e2e/inicio.spec.ts` | **5/5 PASS** |
-| `bun run test:e2e -- tests/e2e/movimientos.spec.ts` | **FAIL** en timeout de restauración del servidor auxiliar 3004 (2 intentos); no relacionado con G1, que no cambia JS/API |
+| `bun run test:e2e -- tests/e2e/movimientos.spec.ts` en Linux limpio | **1/1 PASS** (contenedor Debian arm64 con Bun, Node 20, Chromium, `age` y `git`) |
+| **Integración local Casa #363/#364 + G1 · `bun test apps/web`** | **119/119 PASS** |
+| **Integración local · specs de tema** | **7/7 PASS** (Claro, Oscuro, Mixto, Grafito y Casa) |
+| **Integración local · E2E completo Linux** | **79/79 PASS** (6,5 min) |
+| `movimientos.spec.ts` en macOS local | Falla por entorno: falta `age-keygen`/restauración auxiliar; no es una regresión de G1 |
 
-La suite `movimientos.spec.ts` es un recorrido funcional largo; el fallo se produce al restaurar
-un servidor auxiliar después de ~46 s, no en una aserción visual de Graphite. No se ha modificado
-ningún archivo de lógica de Movimientos. Queda como riesgo residual de entorno, no como PASS.
+`movimientos.spec.ts` requiere `age-keygen` y un servidor auxiliar en el puerto 3004. En el
+contenedor Linux limpio, con `age` instalado, el recorrido completo pasa. El fallo local de macOS
+se explica por la ausencia de esa dependencia, no por G1.
 
 ## Capturas
 
@@ -129,17 +133,39 @@ Referencias del prototipo:
 - La regresión G1 comprueba que `dark-s`, `light-s` y `hybrid-s` recuperan
   `background-image: none`, `h1` 28 px y botón sin sombra Graphite.
 
+## Integración local con Casa
+
+Se preparó y publicó la rama `integration/casa-g1` (`0b9e229`) con:
+
+- #363 (UI-P1) y #364 (Casa 1A) fusionadas sobre `test` `1d288c5`.
+- G1 (#368) integrado después, resolviendo el conflicto de las secciones 2.3/2.4 de
+  `specs/ui-specification.md`.
+
+Resultados de la integración:
+
+- `bun test apps/web`: **119/119 PASS**.
+- `typecheck` y `build`: **PASS**.
+- Specs de tema `theme.spec` + `theme-graphite` + `theme-casa` + `graphite-g1`: **7/7 PASS**.
+- Suite E2E completa en Linux limpio: **79/79 PASS**, incluida `movimientos.spec.ts` y las cinco
+  apariencias.
+
+Casa #363/#364 siguen **abiertas** y sin aprobación explícita de merge; no se han fusionado en
+`test` desde esta sesión. G1 #368 continúa basada en `test` `1d288c5`. Cuando el usuario autorice
+Casa, el orden es: merge #363 → merge #364 → rebase de G1 → CI/QA final. La integración local
+demuestra que ese orden funciona.
+
 ## Riesgos residuales
 
 | Riesgo | Estado |
 | --- | --- |
-| `movimientos.spec.ts` timeout en servidor auxiliar 3004 | Abierto; no relacionado con G1; repetir en entorno limpio/CI |
+| `movimientos.spec.ts` en macOS local | Requiere `age-keygen`; pasa en Linux limpio. No es regresión de G1 |
 | Tabla de Saldos a 820 parte palabras largas | Abierto; ajuste de tabla responsive en G3/G5 |
 | Capturas de Inicio/Movimientos con fixture incompleto | Documentado; G2/G3 usarán datos funcionales |
-| CI `required` no ejecuta web/E2E | Evidencia local; no confundir CI con aceptación visual |
-| Casa 1A pendiente de merge | G1 no toca catálogo/tokens; rebasar y conservar cinco temas al integrarse |
+| CI `required` no ejecuta web/E2E | Evidencia local/Linux; no confundir CI con aceptación visual |
+| Casa 1A pendiente de merge | Integración local 79/79; G1 se rebasa cuando se autorice #363/#364 |
 
 ## Conclusión
 
-G1 está listo para revisión independiente. La capa visual es aditiva, scoped y no cambia la
-composición ni la lógica. **No se fusiona ni se despliega** sin autorización.
+G1 está listo para revisión independiente y la integración local con Casa está validada. La capa
+visual es aditiva, scoped y no cambia la composición ni la lógica. **No se fusiona ni se despliega**
+sin autorización; Casa #363/#364 tampoco se han fusionado sin aprobación explícita.
