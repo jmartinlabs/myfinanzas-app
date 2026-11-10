@@ -8,7 +8,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional y visual pendientes | 26 CUBIERTO + 5 CUBIERTO local (AC19/21/23/25/30) + 2 PARCIAL (AC29/AC31); 0 UNRUN; sin PASS funcional |
-| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` + propuestas #339 `4fcee13` | APTO CON RESERVAS por incremento; QA previa sin informe versionado; DEV 94 pruebas | merged | pending | E45-A1/A3/A4 implementadas `99bfce5` (#348); E45-A2 bloqueada por DT7 M2/M8; 94 pruebas; DT7 abierto; 59 AC UNRUN |
+| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` + propuestas #339 `4fcee13` | APTO CON RESERVAS por incremento; QA previa sin informe versionado; DEV 94 pruebas | merged | pending | E45-A1/A3/A4 `99bfce5` (#348) + contención obligatoria `092e3b8` (#354); E45-A2 bloqueada por DT7 M2/M8; 107 pruebas; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` + E2E `bc192cd` (#337) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional pendiente | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL (F-MARGEN sin valor numérico); AC10–15 BLOCKED; AC19 N/A; E2E de foco estabilizado |
 | E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin cierre real ni DT6 | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
@@ -2155,3 +2155,22 @@ DT7 abierto.
   campo nuevo). Las tres requieren enmienda/DT7 si se quieren cerrar.
 - **QA:** APTO CON RESERVAS en ambos; CI required y full PASS tras rerun por timeouts
   ajenos. Sin elevación de AC ni aceptación financiera.
+
+
+## Corrección E4.5 · contención en `intervalosArchivo` (2026-11-10)
+
+- **Defecto demostrado** (`investigation/e45-empty-intervals`, #351 cerrada sin merge): con
+  `intervalosArchivo: []` se omitía la contención y el importe sumaba a `archivo`; con
+  cobertura de otra fuente o `controlDetalle` podía certificarse un total `Verificado` con
+  importes sin cobertura propia (casos 2a/2c/3a/3b).
+- **Corrección `092e3b8` (#354):** la contención se ejecuta siempre, solo para registros que
+  llegarían a sumar y con coincidencia de fuente, Partida y clase. Sin contención:
+  `RegistroFueraDeIntervalosArchivo`, `causa="FueraDeIntervalosArchivo"`, importe solo como
+  contexto, `archivo/subtotal/total=null` y bloqueo; precedencia de `CorteExcedido`,
+  `Rechazado`, `NoVerificado`, conflictos, vinculados y regularización pendiente intacta.
+  El cero elegible fuera de tramo tampoco acredita cobertura.
+- **Pruebas:** 107 pass, sin skips; F2d y P-01a corregidos; casos 2a/2c/3a/3b, cero,
+  precedencia, misma fuente con distinta Partida y distinta clase.
+- **Límites:** cobertura global puede seguir `Completa` por otras fuentes; los 59 AC siguen
+  `UNRUN`, DT7 abierto y sin aceptación financiera. QA APTO CON RESERVAS; full CI no
+  completado por flakes ajenos y timeout del job, `required` PASS.
