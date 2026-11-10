@@ -2,6 +2,8 @@
 
 Estado: propuesta funcional futura; pendiente de especificación.
 Procedencia: solicitud del usuario del 2026-10-23, mejora acordada con Álex.
+Especificación propuesta: [SPEC37](../37-registro-coordinado-gastos-specification.md)
+`[PROPUESTA]`; mecanismo compartido en [SPEC36 §6](../36-reparto-mensual-asistido-presupuestos-specification.md#6-mecanismo-compartido-de-transferencia-pendiente).
 No autoriza desarrollo, cambios del roadmap, PR, merge ni modificaciones del Excel.
 
 Registro documental autorizado por el usuario el 2026-10-23 mediante «Autorizado»,

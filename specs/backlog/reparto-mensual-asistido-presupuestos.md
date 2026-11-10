@@ -3,6 +3,8 @@
 **Status: PROPUESTA FUNCIONAL — PENDIENTE DE APROBACIÓN; NO AUTORIZA DESARROLLO.**
 Procedencia: documento consolidado aportado por el usuario el 2026-10-28.
 Relación: E2.3 — Plan del ciclo. Entrada independiente del backlog, sin número de entrega.
+Especificación propuesta: [SPEC36](../36-reparto-mensual-asistido-presupuestos-specification.md)
+`[PROPUESTA]`; no aprobada ni autoriza desarrollo.
 Alcance de esta entrada: exclusivamente documentación. No modifica el roadmap, las
 especificaciones aprobadas, el esquema, el código, el tablero ni el Excel.
 Base de redacción: `origin/main` `da93682` (2026-10-28); contrastar antes de publicar.
