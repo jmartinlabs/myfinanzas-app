@@ -22,14 +22,17 @@ const BASE_PORT = 3014;
 const ZERO_PORT = 3015;
 const DEGRADED_PORT = 3016;
 const AUTH_PORT = 3017;
+const CASA_PORT = 3018;
 const BASE_DIR = ".local/e2e-inicio";
 const ZERO_DIR = ".local/e2e-inicio-zero";
 const DEGRADED_DIR = ".local/e2e-inicio-degradado";
 const AUTH_DIR = ".local/e2e-inicio-auth";
+const CASA_DIR = ".local/e2e-inicio-casa";
 let base: ChildProcess | undefined;
 let zero: ChildProcess | undefined;
 let degraded: ChildProcess | undefined;
 let auth: ChildProcess | undefined;
+let casa: ChildProcess | undefined;
 
 async function waitForApi(request: APIRequestContext, port: number) {
   await expect
@@ -80,10 +83,19 @@ test.beforeAll(async ({ request }) => {
       env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "auth" },
     },
   );
+  casa = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "casa" },
+    },
+  );
   await waitForApi(request, BASE_PORT);
   await waitForApi(request, ZERO_PORT);
   await waitForApi(request, DEGRADED_PORT);
   await waitForApi(request, AUTH_PORT);
+  await waitForApi(request, CASA_PORT);
 });
 
 test.afterAll(() => {
@@ -91,6 +103,7 @@ test.afterAll(() => {
   zero?.kill();
   degraded?.kill();
   auth?.kill();
+  casa?.kill();
 });
 
 async function routeApi(page: Page, port: number) {
@@ -947,6 +960,58 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   await expect(
     page.getByRole("article", { name: "Liquidez", exact: true }),
   ).toContainText("3.456,40 €");
+});
+
+test("Casa 1B: portada editorial de Inicio, datos publicados y responsive", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/ui-casa-1b", { recursive: true });
+  await routeApi(page, CASA_PORT);
+  await login(page, CASA_DIR);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  const select = page.getByLabel("Apariencia");
+  await select.selectOption("casa");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
+  await expect(page.locator(".inicio-page")).toHaveClass(/inicio-casa/);
+
+  const cover = page.locator(".casa-cover");
+  await expect(cover).toBeVisible();
+  await expect(cover).toContainText("Casa de cuentas · Ciclo 7");
+  await expect(cover).toContainText("3.456,40 €");
+  await expect(cover).toContainText("3/4");
+  await expect(
+    cover.getByRole("link", { name: "Registrar movimiento", exact: true }),
+  ).toBeVisible();
+  await expect(
+    cover.getByRole("link", { name: "Ver Movimientos", exact: true }),
+  ).toBeVisible();
+  await expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: "artifacts/ui-casa-1b/inicio-casa-1440.png",
+    fullPage: true,
+  });
+
+  await select.selectOption("light-s");
+  await expect(cover).toHaveCount(0);
+  await select.selectOption("casa");
+  await expect(cover).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: "artifacts/ui-casa-1b/inicio-casa-390.png",
+    fullPage: true,
+  });
+  expect(errors).toEqual([]);
 });
 
 test("AC-27: acceso anónimo 401 y respuesta no-store", async ({ request }) => {

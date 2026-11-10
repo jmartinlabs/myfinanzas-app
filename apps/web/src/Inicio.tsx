@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import { formatDecimal } from "./format";
 import { Alert, Amount, Badge, Metric, PageHead, Skeleton } from "./ui";
+import type { ThemeId } from "./themes";
 
 /**
  * E4.6 — Resumen de inicio.
@@ -500,7 +501,13 @@ function MetricCard({
   );
 }
 
-export function Inicio({ go }: { go: (path: string) => void }) {
+export function Inicio({
+  go,
+  theme,
+}: {
+  go: (path: string) => void;
+  theme?: ThemeId;
+}) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -579,7 +586,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
         : "No disponible";
 
   return (
-    <div className="inicio-page">
+    <div className={`inicio-page${theme === "casa" ? " inicio-casa" : ""}`}>
       <PageHead
         eyebrow="RESUMEN FINANCIERO · SOLO LECTURA"
         title="Inicio"
@@ -610,6 +617,82 @@ export function Inicio({ go }: { go: (path: string) => void }) {
           </a>
         )}
       </PageHead>
+
+      {theme === "casa" && (
+        <section className="casa-cover" aria-labelledby="casa-cover-title">
+          <div className="casa-cover-head">
+            <p className="casa-cover-kicker">
+              Casa de cuentas · {ciclo ? `Ciclo ${ciclo.id}` : "Sin ciclo actual"}
+            </p>
+            <p className="casa-cover-date">
+              {ciclo
+                ? `${formatDate(ciclo.inicio)} — ${ciclo.fin ? formatDate(ciclo.fin) : "Abierto"}`
+                : "Referencia actual sin ciclo"}
+            </p>
+          </div>
+          <div className="casa-cover-main">
+            <div className="casa-cover-amount-block">
+              <h2 id="casa-cover-title">Liquidez disponible</h2>
+              <p className="casa-cover-amount">
+                <Amount
+                  value={liquidez.metrica.valor}
+                  subtotal={liquidez.metrica.subtotal ?? null}
+                  state={liquidez.metrica.estado}
+                  unit={liquidez.metrica.unidad ?? "EUR"}
+                  showNote={false}
+                />
+              </p>
+              <p className="casa-cover-meta">
+                <EstadoBadge estado={liquidez.metrica.estado} />
+                <span>{coverageText(liquidez.metrica.cobertura)}</span>
+              </p>
+            </div>
+            <div className="casa-cover-aside">
+              <p className="casa-cover-aside-label">Posición del ciclo</p>
+              <dl className="casa-cover-counts">
+                <div>
+                  <dt>Saldos</dt>
+                  <dd>{saldos.items.length}</dd>
+                </div>
+                <div>
+                  <dt>Pendientes visibles</dt>
+                  <dd>{pendientes.items.length}</dd>
+                </div>
+                <div>
+                  <dt>Cobertura</dt>
+                  <dd>{liquidez.metrica.cobertura.estado}</dd>
+                </div>
+              </dl>
+              <div className="casa-cover-actions">
+                <a
+                  className="casa-cover-primary"
+                  href="/movimientos/nuevo"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    go("/movimientos/nuevo");
+                  }}
+                >
+                  Registrar movimiento
+                </a>
+                <a
+                  className="casa-cover-secondary"
+                  href="/movimientos"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    go("/movimientos");
+                  }}
+                >
+                  Ver Movimientos
+                </a>
+              </div>
+            </div>
+          </div>
+          <p className="casa-cover-note">
+            No es un total patrimonial. Cada cifra conserva su motor y su
+            cobertura; las posiciones sin información se muestran como ND.
+          </p>
+        </section>
+      )}
 
       <section
         className="panel inicio-context"
