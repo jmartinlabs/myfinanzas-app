@@ -249,7 +249,9 @@ test("E4.10 A: v25→v27 is additive and rewrites no C25 object or row", () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-});
+  // Migración v25→v27 real: 5,07 s medidos en CI con carga paralela; el límite
+  // por defecto de 5 s la abortaba. Sin cambios en aserciones ni en el esquema.
+}, 30000);
 
 test("E4.10 A: reopening and closure links reject orphan cycles, closures and events", () => {
   const db = store();

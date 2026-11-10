@@ -464,7 +464,10 @@ test.skipIf(process.platform !== "linux")(
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+    // Backup v27 + restore real con MFA y age: mismo trabajo pesado que el
+    // histórico v24; 30 s mantiene la verificación y solo amplía el margen.
   },
+  30000,
 );
 
 test.skipIf(process.platform !== "linux")(
@@ -514,7 +517,10 @@ test.skipIf(process.platform !== "linux")(
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+    // Backup age + restore real medido en CI: 5,07 s; el límite por defecto lo
+    // abortaba. 30 s mantiene la verificación y solo amplía el margen.
   },
+  30000,
 );
 
 test.skipIf(process.platform !== "linux")(
@@ -565,5 +571,8 @@ test.skipIf(process.platform !== "linux")(
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+    // Backup v24 + paquete v28 corrupto con age real: mismo criterio que el
+    // histórico v24; 30 s solo amplía el margen, sin cambiar las aserciones.
   },
+  30000,
 );

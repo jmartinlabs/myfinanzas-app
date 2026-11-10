@@ -493,7 +493,9 @@ for (const unknown of [28, 999]) {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+    // v24 real + rechazo de versión desconocida: 5,5 s medidos en CI (run
+    // 42629570514); el límite por defecto de 5 s lo abortaba. Mismos asserts.
+  }, 20000);
 }
 
 test("E4.9 A: two starts are idempotent", () => {
