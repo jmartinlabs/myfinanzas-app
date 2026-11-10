@@ -41,8 +41,8 @@ que falta es una **capa de apariencia**:
 
 ## 3. Enmienda propuesta (UI-G2)
 
-Añadir a [SPEC UI](../ui-specification.md) §2.5 (los números 2.3 y 2.4 están reservados por
-las enmiendas Casa abiertas #363 y #365):
+Añadir a [SPEC UI](../ui-specification.md) §2.5: 2.3 está reservado por la enmienda Casa
+(#363) y 2.4 por la propuesta alternativa de UI-G2 (#365).
 
 > **UI-G2 · Integración visual Graphite Lime (propuesta 2026-11-10).** Autoriza una capa de
 > apariencia **exclusiva de `graphite-lime`** para shell, Inicio, Movimientos, estados y
@@ -73,7 +73,7 @@ las enmiendas Casa abiertas #363 y #365):
 | `apps/web/src/graphite.css` (nuevo) | Capa scoped: shell, Inicio, Movimientos, estados, formularios, escala tipográfica local | Medio: fuga si no se prefija |
 | `apps/web/src/main.tsx` | `import "./graphite.css"`; sin tocar selector ni lógica | **Alto textual** con Casa (`casa.css`) |
 | `apps/web/src/style.css` | **Sin cambios**: la semántica se corrige scoped en `graphite.css` | — |
-| `apps/web/src/Inicio.tsx` | Fase CSS posible sin JSX; la banda KPI/tabla con datos existentes puede requerir JSX mínimo | Alto: AC y enlaces únicos |
+| `apps/web/src/Inicio.tsx` | Fase CSS sin JSX; banda KPI y ciclo como layout con `article` por métrica (sin `Table` sustitutiva) | Alto: AC y enlaces únicos |
 | `apps/web/src/Movimientos.tsx` | Solo reskin CSS en I4; sin chips/panel | Bajo |
 | Tests `themes`, `ui-dev07-*`, `theme-graphite`, `inicio`, `movimientos` | Ampliar Graphite y guardas | Alto con Casa (listas de temas) |
 
@@ -86,7 +86,7 @@ las enmiendas Casa abiertas #363 y #365):
   `.valoracion-*.ok` y `.duplicate-warning` (ámbar).
 - Sin JSX. Pruebas: guarda de scope (todo selector prefijado, cero hex/`!important`), ampliación
   de la guarda de tokens/AA a Graphite, E2E de shell en `/saldos`, `/inicio`, `/movimientos`
-  y comprobación específica en `/cierre` y valoración para las clases corregidas.
+  y comprobación específica en `/cierre` y `/inversiones` (Valoración) para las clases corregidas.
 - Aceptación: Dark/Light/Hybrid sin diferencias; Graphite AA, foco 3 px, 1440/820/390 sin
   overflow.
 
@@ -126,8 +126,8 @@ las enmiendas Casa abiertas #363 y #365):
 
 ## 7. Coexistencia con Casa de cuentas
 
-- **Una hoja por apariencia**: `casa.css` y `graphite.css`, ambas prefijadas por su
-  `data-theme`; sin refactor de `themes.ts`/`themes.css`/`theme-boot.js`.
+- **Una hoja por apariencia** (cuando Casa 1A se integre): `casa.css` y `graphite.css`, ambas
+  prefijadas por su `data-theme`; sin refactor de `themes.ts`/`themes.css`/`theme-boot.js`.
 - **Punto de importación compartido** en `main.tsx`; rebase antes de cada PR y orden estable
   `style.css`, `casa.css`, `graphite.css`.
 - **Sin tocar el selector** ni su etiqueta: el cambio “Tema → Apariencia” pertenece a Casa.
@@ -142,9 +142,11 @@ las enmiendas Casa abiertas #363 y #365):
 ## 8. Riesgos
 
 1. **Contrato AC de Inicio**: sustituir `article`/fuentes por una tabla agregada rompe tests y
-   trazabilidad. Mitigación: conservar `article` y componer con CSS/`Table` alrededor.
-2. **Datos inexistentes**: sparkline, % plan, atención detallada, últimos movimientos y
-   presupuesto. Mitigación: excluirlos hasta contrato de API.
+   trazabilidad. Mitigación: conservar `article` y componer solo con CSS alrededor; sin `Table`
+   sustitutiva.
+2. **Bloques no compuestos en `/resumen-inicio`**: sparkline, % plan, atención detallada,
+   últimos movimientos y presupuesto. Mitigación: excluirlos hasta decisión de producto/
+   snapshot o consumo de endpoints existentes; no se inventan.
 3. **Semántica cromática**: usos heredados de `--accent` como “ok”. Mitigación: corregir
    **solo scoped** en `graphite.css` (`:root[data-theme="graphite-lime"] …`), sin tocar
    `style.css` ni los tres temas. Una corrección global exigiría enmienda separada.
