@@ -192,7 +192,8 @@ authorization, including instructions to merge. Record usage from attributed cli
 telemetry only. The bundled usage reader accounts for Codex only; other-client usage is
 unavailable unless separately collected, not zero or a complete cross-client total.
 
-At closure, update one current summary in existing progress/setup/board documents:
+At closure, update one current summary in the project's single current-state surface — the
+board when it exists, otherwise the progress document — with:
 authorized scope, revision, QA/check evidence, PR/merge state and next safe action.
 Replace stale current-state labels; preserve historical entries as explicitly superseded.
 Other documents link that summary rather than maintain competing statuses. Token/time
