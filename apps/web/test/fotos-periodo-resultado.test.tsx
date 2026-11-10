@@ -107,3 +107,21 @@ test("una fila sintética muestra codigoAusencia sin ocultar el motivo", () => {
   expect(html).toContain("NULO_EXPLICITO");
   expect(html).toContain("Bloque no disponible en la foto");
 });
+
+test("un estado no canónico se muestra tal cual y rotulado no reconocido", () => {
+  const html = renderData({
+    ...periodo(true),
+    noDisponible: [
+      {
+        ciclo: "1",
+        versionFoto: 1,
+        bloque: "valoracion",
+        estado: "EstadoInesperado",
+        motivo: "E4.3 valoración persistida con estado no canónico.",
+      },
+    ],
+  });
+  expect(html).toContain("EstadoInesperado");
+  expect(html).toContain("estado no reconocido");
+  expect(html).not.toContain("NULO_EXPLICITO");
+});

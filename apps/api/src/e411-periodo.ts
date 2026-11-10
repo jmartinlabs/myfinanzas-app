@@ -593,7 +593,8 @@ export type NoDisponibleCompuesto = {
  *   `No disponible` object without motive creates a synthetic row with
  *   `codigoAusencia`;
  * - an entry with a persisted non-empty motive keeps `bloque`/`estado`/`motivo`
- *   and never receives a synthetic code, even when the key is non-canonical;
+ *   and never receives a synthetic code, even when the key is non-canonical or
+ *   the state is not `No disponible`/`NoDisponible`;
  * - a `Parcial` entry is not emitted here; it is declared in coverage.
  */
 export function noDisponibleDeFoto(
@@ -632,7 +633,10 @@ export function noDisponibleDeFoto(
       parciales.push({ bloque, motivo: motivo ?? MOTIVO_MOTIVO_AUSENTE });
       return;
     }
-    if (!ESTADOS_NO_DISPONIBLE.has(estado)) return;
+    // AC09-K (decisión 2026-11-10): un motivo persistido se conserva con su
+    // estado aunque no sea canónico; solo se descarta un estado desconocido
+    // sin motivo.
+    if (motivo === null && !ESTADOS_NO_DISPONIBLE.has(estado)) return;
     entries.push({
       ciclo,
       versionFoto: version,
