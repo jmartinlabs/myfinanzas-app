@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  PageHead,
+  Skeleton,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 import { referenceReturn } from "./movement-draft";
 
 /*
@@ -136,6 +144,28 @@ type DetailData = {
 
 const base = "/deudas";
 
+/*
+ * AC-29: loading, network, session and validation failures are distinct.
+ * The API already distinguishes 401/404/409/422; the page only translates the
+ * session case and keeps an actionable retry for transient failures.
+ */
+const failure = (e: unknown) =>
+  e instanceof ApiError
+    ? e
+    : new ApiError(0, (e as Error)?.message ?? "No se pudo completar la operación.");
+
+const failureText = (e: ApiError) =>
+  e.status === 401
+    ? "La sesión ha caducado. Vuelve a identificarte; no se envían datos."
+    : e.message;
+
+const retryable = (e: ApiError | null) =>
+  !!e &&
+  e.status !== 401 &&
+  e.status !== 403 &&
+  e.status !== 404 &&
+  e.status !== 422;
+
 const fecha = (iso: string | null) =>
   iso ? iso.split("-").reverse().join("/") : "Sin informar";
 
@@ -268,11 +298,12 @@ function List({ go }: { go: (p: string) => void }) {
     [page, setPage] = useState(1),
     [retry, setRetry] = useState(0),
     [data, setData] = useState<{ items: Debt[]; total: number } | null>(null),
-    [error, setError] = useState("");
+    [error, setError] = useState<ApiError | null>(null);
+  const alert = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true;
     setData(null);
-    setError("");
+    setError(null);
     api(
       base +
         "?" +
@@ -282,12 +313,16 @@ function List({ go }: { go: (p: string) => void }) {
         if (live) setData(d);
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (!live) return;
+        setError(failure(e));
       });
     return () => {
       live = false;
     };
   }, [filters, page, retry]);
+  useEffect(() => {
+    if (error && !Object.keys(error.fields).length) alert.current?.focus();
+  }, [error]);
   const link = (d: Debt) => (
     <a
       href={base + "/" + d.id}
@@ -414,9 +449,17 @@ function List({ go }: { go: (p: string) => void }) {
           </label>
         </div>
         {error ? (
-          <Alert retry={() => setRetry((v) => v + 1)}>{error}</Alert>
+          <div tabIndex={-1} ref={alert} className="focus-alert">
+            <Alert
+              retry={
+                retryable(error) ? () => setRetry((v) => v + 1) : undefined
+              }
+            >
+              {failureText(error)}
+            </Alert>
+          </div>
         ) : !data ? (
-          <p role="status">Cargando Deudas…</p>
+          <Skeleton label="Cargando Deudas…" lines={5} />
         ) : !data.items.length ? (
           <div className="empty">
             <h2>Sin deudas que mostrar</h2>
@@ -485,7 +528,7 @@ function List({ go }: { go: (p: string) => void }) {
 
 function Detail({ id, go }: { id: string; go: (p: string) => void }) {
   const [data, setData] = useState<DetailData | null>(null),
-    [error, setError] = useState(""),
+    [error, setError] = useState<ApiError | null>(null),
     [retry, setRetry] = useState(0),
     [corte, setCorte] = useState(""),
     [corteDraft, setCorteDraft] = useState(""),
@@ -522,7 +565,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
 
   useEffect(() => {
     let live = true;
-    setError("");
+    setError(null);
     api(
       base +
         "/" +
@@ -533,19 +576,25 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
         if (live) setData(d);
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (!live) return;
+        const err = failure(e);
+        setError(err);
+        focusError(err.fields);
       });
     return () => {
       live = false;
     };
   }, [id, retry, corte]);
+  useEffect(() => {
+    if (error && !Object.keys(error.fields).length) alert.current?.focus();
+  }, [error]);
 
   const reload = () => setRetry((v) => v + 1);
   const focusError = (fields: Record<string, string> = {}) => {
     const first = Object.keys(fields)[0];
     requestAnimationFrame(() => {
-      if (first) document.getElementById("debt-" + first)?.focus();
-      else alert.current?.focus();
+      const target = first ? document.getElementById("debt-" + first) : null;
+      (target ?? alert.current)?.focus();
     });
   };
 
@@ -557,7 +606,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       return;
     }
     setBusy(true);
-    setError("");
+    setError(null);
     try {
       await api(
         base +
@@ -575,7 +624,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       setEstadoField("");
       reload();
     } catch (e) {
-      setError((e as Error).message);
+      setError(failure(e));
       requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
@@ -586,7 +635,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
     setConcCreate(true);
     setConcEdit(null);
     setConcAnnul(null);
-    setError("");
+    setError(null);
     setConcForm({
       fechaCorte: "",
       capitalDeclarado: "",
@@ -602,7 +651,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
     setConcCreate(false);
     setConcAnnul(null);
     setConcEdit(c.id);
-    setError("");
+    setError(null);
     setConcForm({
       fechaCorte: c.fechaCorte,
       capitalDeclarado: c.capitalDeclarado,
@@ -618,7 +667,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
     setConcCreate(false);
     setConcEdit(null);
     setConcAnnul(c.id);
-    setError("");
+    setError(null);
     setConcMotivo("");
     setConcFields({});
     setOpen((v) => ({ ...v, conciliacion: true }));
@@ -634,7 +683,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
 
   async function createConciliacion() {
     setBusy(true);
-    setError("");
+    setError(null);
     setConcFields({});
     try {
       await api(
@@ -653,8 +702,8 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       });
       reload();
     } catch (e) {
-      const err = e as ApiError;
-      setError(err.message);
+      const err = failure(e);
+      setError(err);
       setConcFields(err.fields ?? {});
       focusError(err.fields);
     } finally {
@@ -664,7 +713,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
 
   async function saveConciliacion(c: Conciliacion) {
     setBusy(true);
-    setError("");
+    setError(null);
     setConcFields({});
     try {
       await api(
@@ -676,8 +725,8 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       setConcMotivo("");
       reload();
     } catch (e) {
-      const err = e as ApiError;
-      setError(err.message);
+      const err = failure(e);
+      setError(err);
       setConcFields(err.fields ?? {});
       focusError(err.fields);
     } finally {
@@ -687,7 +736,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
 
   async function annulConciliacion(c: Conciliacion) {
     setBusy(true);
-    setError("");
+    setError(null);
     setConcFields({});
     try {
       await api(
@@ -699,8 +748,8 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       setConcMotivo("");
       reload();
     } catch (e) {
-      const err = e as ApiError;
-      setError(err.message);
+      const err = failure(e);
+      setError(err);
       setConcFields(err.fields ?? {});
       focusError(err.fields);
     } finally {
@@ -799,11 +848,13 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       </button>
       {error && (
         <div tabIndex={-1} ref={alert} className="focus-alert">
-          <Alert retry={reload}>{error}</Alert>
+          <Alert retry={retryable(error) ? reload : undefined}>
+            {failureText(error)}
+          </Alert>
         </div>
       )}
       {!data ? (
-        !error && <p role="status">Cargando Deuda…</p>
+        !error && <Skeleton label="Cargando Deuda…" lines={6} />
       ) : (
         <>
           <PageHead
@@ -1518,7 +1569,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
       condiciones: "",
       motivo: "",
     }),
-    [error, setError] = useState(""),
+    [error, setError] = useState<ApiError | null>(null),
     [fields, setFields] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [retry, setRetry] = useState(0),
@@ -1529,6 +1580,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
   useEffect(() => {
     if (!id) return;
     let live = true;
+    setError(null);
     api(base + "/" + id)
       .then((d) => {
         if (!live) return;
@@ -1548,14 +1600,19 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
           initialized.current = true;
         }
         setConflict(false);
+        setError(null);
       })
       .catch((e) => {
-        if (live) setError(e.message);
+        if (!live) return;
+        setError(failure(e));
       });
     return () => {
       live = false;
     };
   }, [id, retry]);
+  useEffect(() => {
+    if (error && !Object.keys(error.fields).length) alert.current?.focus();
+  }, [error]);
   const back = () =>
     go(
       !id && referenceReturn
@@ -1566,7 +1623,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     );
   async function save() {
     setBusy(true);
-    setError("");
+    setError(null);
     setFields({});
     try {
       const normalizedTipo = form.tipoDeuda || null,
@@ -1616,8 +1673,8 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
         !id && referenceReturn ? referenceReturn.path : base + "/" + r.item.id,
       );
     } catch (e) {
-      const err = e as ApiError;
-      setError(err.message);
+      const err = failure(e);
+      setError(err);
       setFields(err.fields ?? {});
       setConflict(err.status === 409);
       const first = Object.keys(err.fields ?? {})[0];
@@ -1638,13 +1695,19 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
       />
       {error && (
         <div tabIndex={-1} ref={alert} className="focus-alert">
-          <Alert>
-            {error}
+          <Alert
+            retry={
+              !!id && !data && retryable(error)
+                ? () => setRetry((v) => v + 1)
+                : undefined
+            }
+          >
+            {failureText(error)}
             {conflict && (
               <button
                 className="secondary"
                 onClick={() => {
-                  setError("");
+                  setError(null);
                   setRetry((v) => v + 1);
                 }}
               >
@@ -1655,7 +1718,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
         </div>
       )}
       {id && !data ? (
-        !error && <p role="status">Cargando Deuda…</p>
+        !error && <Skeleton label="Cargando Deuda…" lines={6} />
       ) : (
         <form
           className="saldo-form"
@@ -1700,7 +1763,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
                       onChange={(e) => {
                         setForm((v) => ({ ...v, [k]: e.target.value }));
                         attempt.current = crypto.randomUUID();
-                        setError("");
+                        setError(null);
                         setFields((v) => ({ ...v, [k]: "" }));
                       }}
                     />
