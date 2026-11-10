@@ -301,6 +301,7 @@ describe("F-DT7-09 · agregado que excede el corte", () => {
         partidaId: "PAR100",
         intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
         importe: "1200.00",
+        causa: "CorteExcedido",
       },
     ]);
     expect(resultado.totales.valor).toBeNull();
@@ -339,6 +340,7 @@ describe("F-DT7-09 · agregado que excede el corte", () => {
         partidaId: "PAR100",
         intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
         importe: "100.00",
+        causa: "CorteExcedido",
       },
     ]);
     expect(resultado.totales.subtotalConocido).toBeNull();
@@ -2065,6 +2067,7 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
         idArchivo: "AH001",
         partidaId: "PAR100",
         importe: "100.00",
+        causa: "CorteExcedido",
       }),
     );
     expect(item(resultado).motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
@@ -2223,11 +2226,15 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     expect(item(resultado).archivo).toBeNull();
     expect(item(resultado).total).toBeNull();
     expect(item(resultado).subtotalConocido).toBeNull();
+    expect(item(resultado).motivoCodigo).toBe(
+      "RegistroFueraDeIntervalosArchivo",
+    );
     expect(resultado.agregadoNoAtribuible).toContainEqual(
       expect.objectContaining({
         idArchivo: "AH001",
         partidaId: "PAR100",
         importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
       }),
     );
   });
@@ -2622,12 +2629,13 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     expect(par100.archivo).toBeNull();
     expect(par100.total).toBeNull();
     expect(par100.subtotalConocido).toBeNull();
-    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
     expect(resultado.agregadoNoAtribuible).toContainEqual(
       expect.objectContaining({
         idArchivo: "AH002",
         partidaId: "PAR100",
         importe: "50.00",
+        causa: "FueraDeIntervalosArchivo",
       }),
     );
   });
@@ -2684,12 +2692,13 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     expect(par100.archivo).toBeNull();
     expect(par100.total).toBeNull();
     expect(par100.subtotalConocido).toBeNull();
-    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
     expect(resultado.agregadoNoAtribuible).toContainEqual(
       expect.objectContaining({
         idArchivo: "AH001",
         partidaId: "PAR100",
         importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
       }),
     );
   });
@@ -2806,5 +2815,555 @@ describe("Conformidad E4.5 · P-01…P-14", () => {
     expect(resultado.totales.valor).toBe("0.00");
     expect(resultado.totales.estadoTotal).toBe("Verificado");
     expect(resultado.totales.motivoCodigo).not.toBe("MappingPendiente");
+  });
+});
+
+/**
+ * Enmiendas E45 aprobadas el 2026-11-10 (orientación A/B/B/B).
+ *
+ * Estas pruebas son sintéticas: no son AC nuevos ni PASS funcional, no
+ * acreditan DT7 y usan solo estructuras ya existentes del motor.
+ */
+describe("E45-A1 · conflictos globales canónicos y proyección local", () => {
+  test("E45-A1-T1: un DuplicadoAmbiguo global no se copia a items[].conflictos", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100"),
+              archivo("2026-01-01", "2026-12-31", "PAR200"),
+            ],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            identidad: "COMPARTIDA-E45-A1",
+            huellaContenido: "MISMA-HUELLA-E45-A1",
+            partidaId: "PAR100",
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            identidad: "COMPARTIDA-E45-A1",
+            huellaContenido: "MISMA-HUELLA-E45-A1",
+            partidaId: "PAR200",
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100", "PAR200"]),
+    });
+
+    for (const partidaId of ["PAR100", "PAR200"]) {
+      const actual = item(resultado, partidaId);
+      // La Partida afectada queda bloqueada aunque su proyección local esté vacía.
+      expect(actual.estadoTotal).toBe("NoVerificable");
+      expect(actual.motivoCodigo).toBe("DuplicadoAmbiguo");
+      expect(actual.archivo).toBeNull();
+      expect(actual.total).toBeNull();
+      expect(actual.conflictos).toEqual([]);
+      expect(
+        resultado.conflictos.filter(
+          (conflicto) =>
+            conflicto.tipo === "DuplicadoAmbiguo" &&
+            conflicto.partidaId === partidaId,
+        ),
+      ).toHaveLength(1);
+    }
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+  });
+
+  test("E45-A1-T2: VersionBifurcada solo en el global y Solapamiento local en su Partida", () => {
+    const resultado = combinarHistoricoPrecontrol({
+      ...entrada({
+        fuentes: [
+          fuente({
+            fuenteId: "SRC-1",
+            intervalosArchivo: [
+              archivo("2026-01-01", "2026-12-31", "PAR100"),
+              archivo("2026-01-01", "2026-07-31", "PAR200"),
+            ],
+            controlDetalle: null,
+          }),
+          fuente({
+            fuenteId: "SRC-2",
+            etiqueta: "Fuente sintética SRC-2",
+            intervalosArchivo: [archivo("2026-07-01", "2026-12-31", "PAR200")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("BIF-V1", {
+            identidad: "BIFURCADA-E45-A1",
+            version: 1,
+            partidaId: "PAR100",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+          registro("BIF-V2", {
+            identidad: "BIFURCADA-E45-A1",
+            version: 2,
+            partidaId: "PAR100",
+            intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+      universo: universo(["PAR100", "PAR200"], [
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR100",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-12-31" },
+        },
+        {
+          fuenteId: "SRC-1",
+          partidaId: "PAR200",
+          estado: "Presente",
+          intervalo: { inicio: "2026-01-01", fin: "2026-07-31" },
+        },
+        {
+          fuenteId: "SRC-2",
+          partidaId: "PAR200",
+          estado: "Presente",
+          intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+        },
+      ]),
+    });
+
+    const versiones = resultado.conflictos.filter(
+      (conflicto) => conflicto.tipo === "VersionBifurcada",
+    );
+    expect(versiones).toHaveLength(1);
+    expect(versiones[0]!.partidaId).toBe("PAR100");
+    expect(item(resultado, "PAR100").conflictos).toEqual([]);
+    expect(item(resultado, "PAR100").motivoCodigo).toBe("DuplicadoAmbiguo");
+
+    const locales = item(resultado, "PAR200").conflictos;
+    expect(locales).toHaveLength(1);
+    expect(locales[0]).toMatchObject({
+      tipo: "Solapamiento",
+      partidaId: "PAR200",
+    });
+    expect(locales.some((conflicto) => conflicto.tipo === "VersionBifurcada")).toBe(
+      false,
+    );
+
+    // Filtrar el global por `partidaId` reconstruye la causa de cada item y
+    // ningún conflicto se duplica.
+    expect(
+      resultado.conflictos
+        .filter((conflicto) => conflicto.partidaId === "PAR100")
+        .map((conflicto) => conflicto.tipo),
+    ).toEqual(["VersionBifurcada"]);
+    expect(
+      resultado.conflictos
+        .filter((conflicto) => conflicto.partidaId === "PAR200")
+        .map((conflicto) => conflicto.tipo),
+    ).toEqual(["Solapamiento"]);
+    const claves = resultado.conflictos.map(
+      (conflicto) =>
+        `${conflicto.tipo}|${conflicto.partidaId}|${conflicto.motivo}`,
+    );
+    expect(new Set(claves).size).toBe(claves.length);
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("E45-A1-T3: un caso limpio mantiene ambos niveles vacíos y certifica", () => {
+    const resultado = combinarHistoricoPrecontrol(entrada());
+
+    expect(resultado.conflictos).toEqual([]);
+    expect(item(resultado).conflictos).toEqual([]);
+    expect(item(resultado).estadoTotal).toBe("Verificado");
+    expect(resultado.totales.estadoTotal).toBe("Verificado");
+    expect(resultado.totales.valor).toBe("1500.00");
+  });
+});
+
+describe("E45-A3 · atribución fuera de intervalosArchivo", () => {
+  test("E45-A3-T1: dentro del corte pero fuera de tramos usa motivo y causa propios", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-12-31",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: { inicio: "2026-07-01", fin: "2026-12-31" },
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.archivo).toBeNull();
+    expect(par100.motivoCodigo).toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+  });
+
+  test("E45-A3-T2: exceder el corte conserva AgregadoNoAtribuibleAlCorte/CorteExcedido", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-08-27")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+        ],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.estadoCobertura).toBe("Completa");
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.total).toBeNull();
+    expect(par100.subtotalConocido).toBeNull();
+    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+        importe: "1200.00",
+        causa: "CorteExcedido",
+      },
+    ]);
+    expect(par100.total).not.toBe("1200.00");
+    expect(resultado.totales.valor).toBeNull();
+  });
+
+  test("E45-A3-T3: un registro dentro del tramo suma y no entra en agregados", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-12-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-02-01", fin: "2026-05-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(par100.archivo).toBe("100.00");
+    expect(par100.total).toBe("100.00");
+    expect(resultado.agregadoNoAtribuible).toEqual([]);
+    expect(par100.motivoCodigo).not.toBe("RegistroFueraDeIntervalosArchivo");
+    expect(resultado.totales.valor).toBe("100.00");
+  });
+
+  test("E45-A3-T4: mismas consecuencias financieras con causa distinta", () => {
+    const fueraDeTramos = combinarHistoricoPrecontrol(
+      entrada({
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-12-31",
+            intervalosArchivo: [archivo("2026-01-01", "2026-06-30")],
+            controlDetalle: { inicio: "2026-07-01", fin: "2026-12-31" },
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "10000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const excedeCorte = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            intervalosArchivo: [archivo("2026-01-01", "2026-08-27")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+        ],
+      }),
+    );
+
+    for (const resultado of [fueraDeTramos, excedeCorte]) {
+      const par100 = item(resultado);
+      expect(par100.estadoTotal).toBe("NoVerificable");
+      expect(par100.total).toBeNull();
+      expect(par100.subtotalConocido).toBeNull();
+      expect(resultado.totales.valor).toBeNull();
+      expect(resultado.totales.subtotalConocido).toBeNull();
+    }
+    expect(fueraDeTramos.agregadoNoAtribuible[0]!.causa).toBe(
+      "FueraDeIntervalosArchivo",
+    );
+    expect(excedeCorte.agregadoNoAtribuible[0]!.causa).toBe("CorteExcedido");
+    expect(item(fueraDeTramos).estadoTotal).toBe(
+      item(excedeCorte).estadoTotal,
+    );
+  });
+
+  test("E45-A3-T5: las comparaciones exactas de agregados incluyen causa sin duplicar", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        fuentes: [
+          fuente({
+            corteArchivo: "2026-06-30",
+            intervalosArchivo: [archivo("2026-01-01", "2026-03-31")],
+            controlDetalle: null,
+          }),
+        ],
+        registros: [
+          registro("AH001", {
+            identidad: "FUERA-TRAMOS",
+            intervalo: { inicio: "2026-04-01", fin: "2026-06-30" },
+            importeCentimos: "10000",
+          }),
+          registro("AH002", {
+            identidad: "EXCEDE-CORTE",
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+        ],
+      }),
+    );
+
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH001",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-04-01", fin: "2026-06-30" },
+        importe: "100.00",
+        causa: "FueraDeIntervalosArchivo",
+      },
+      {
+        idArchivo: "AH002",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+        importe: "1200.00",
+        causa: "CorteExcedido",
+      },
+    ]);
+    expect(
+      new Set(resultado.agregadoNoAtribuible.map((agregado) => agregado.idArchivo))
+        .size,
+    ).toBe(resultado.agregadoNoAtribuible.length);
+    expect(item(resultado).total).toBeNull();
+    expect(item(resultado).subtotalConocido).toBeNull();
+    expect(resultado.totales.valor).toBeNull();
+  });
+});
+
+describe("E45-A4 · alcance de sinClasificar y mapping posterior al corte", () => {
+  test("E45-A4-T1: un Pendiente posterior al corte no bloquea y conserva trazabilidad", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-09-30",
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+          registro("AH002", {
+            estadoMapeo: "Pendiente",
+            intervalo: { inicio: "2026-10-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(resultado.sinClasificar).toEqual([]);
+    expect(par100.estadoTotal).toBe("Verificado");
+    expect(par100.total).toBe("1500.00");
+    expect(resultado.totales.valor).toBe("1500.00");
+    expect(resultado.totales.estadoTotal).toBe("Verificado");
+    // Trazabilidad en las estructuras existentes del item.
+    expect(par100.registros).toEqual(["AH001", "AH002"]);
+    expect(par100.registrosNoComputados).toEqual([
+      {
+        idArchivo: "AH002",
+        importe: "50.00",
+        estadoVerificacion: "Verificado",
+        estadoMapeo: "Pendiente",
+        motivo: "Mapping de Partida pendiente; no se suma.",
+      },
+    ]);
+  });
+
+  test("E45-A4-T2: un Ambigua sin Partida posterior al corte no bloquea ni inventa item", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-09-30",
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+          registro("AH002", {
+            partidaId: null,
+            estadoMapeo: "Ambigua",
+            intervalo: { inicio: "2026-10-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+      }),
+    );
+
+    // Sin lista nueva (no autorizada): el registro posterior sin Partida no se
+    // expone en esta consulta; no se suma ni se reetiqueta y no bloquea.
+    expect(resultado.sinClasificar).toEqual([]);
+    expect(resultado.items.map((actual) => actual.partidaId)).toEqual([
+      "PAR100",
+    ]);
+    expect(resultado.totales.valor).toBe("1500.00");
+    expect(resultado.totales.estadoTotal).toBe("Verificado");
+  });
+
+  test("E45-A4-T3: un Pendiente que solapa el corte sigue en sinClasificar y bloquea", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        registros: [
+          registro("AH001", {
+            intervalo: { inicio: "2026-01-01", fin: "2026-08-27" },
+            importeCentimos: "120000",
+          }),
+          registro("AH002", {
+            estadoMapeo: "Pendiente",
+            intervalo: { inicio: "2026-09-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+      }),
+    );
+
+    expect(resultado.sinClasificar).toEqual([
+      {
+        idArchivo: "AH002",
+        importe: "50.00",
+        motivo: "Mapping de Partida pendiente; no se suma.",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+    expect(resultado.totales.motivoCodigo).toBe("MappingPendiente");
+  });
+
+  test("E45-A4-T4: un Mapeado posterior que excede el corte sigue bloqueando como A3", () => {
+    const resultado = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        movimientos: [],
+        registros: [
+          registro("AH002", {
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+      }),
+    );
+    const par100 = item(resultado);
+
+    expect(resultado.sinClasificar).toEqual([]);
+    expect(par100.estadoTotal).toBe("NoVerificable");
+    expect(par100.motivoCodigo).toBe("AgregadoNoAtribuibleAlCorte");
+    expect(resultado.agregadoNoAtribuible).toEqual([
+      {
+        idArchivo: "AH002",
+        partidaId: "PAR100",
+        intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+        importe: "50.00",
+        causa: "CorteExcedido",
+      },
+    ]);
+    expect(resultado.totales.valor).toBeNull();
+    expect(resultado.totales.estadoTotal).toBe("NoVerificable");
+  });
+
+  test("E45-A4-T5: dos consultas conservan el registro sin contaminar el corte anterior", () => {
+    const antesDelCorte = combinarHistoricoPrecontrol(
+      entrada({
+        corte: "2026-06-30",
+        registros: [
+          registro("AH002", {
+            estadoMapeo: "Pendiente",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+    const conElRegistro = combinarHistoricoPrecontrol(
+      entrada({
+        registros: [
+          registro("AH002", {
+            estadoMapeo: "Pendiente",
+            intervalo: { inicio: "2026-07-01", fin: "2026-12-31" },
+            importeCentimos: "5000",
+          }),
+        ],
+        movimientos: [],
+      }),
+    );
+
+    // La consulta anterior no lo clasifica ni lo suma, pero conserva el mismo
+    // `idArchivo` en la trazabilidad del item; no se borra ni se reetiqueta.
+    expect(antesDelCorte.sinClasificar).toEqual([]);
+    expect(item(antesDelCorte).registros).toEqual(["AH002"]);
+    expect(antesDelCorte.totales.valor).toBe("0.00");
+    expect(antesDelCorte.totales.estadoTotal).toBe("Verificado");
+    expect(conElRegistro.sinClasificar.map((fila) => fila.idArchivo)).toEqual([
+      "AH002",
+    ]);
+    expect(conElRegistro.totales.valor).toBeNull();
+    expect(conElRegistro.totales.estadoTotal).toBe("NoVerificable");
   });
 });

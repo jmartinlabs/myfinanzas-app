@@ -74,7 +74,8 @@ export type MotivoCodigo =
   | "VerificacionPendiente"
   | "RegularizacionPendiente"
   | "AperturaNoGasto"
-  | "AgregadoNoAtribuibleAlCorte";
+  | "AgregadoNoAtribuibleAlCorte"
+  | "RegistroFueraDeIntervalosArchivo";
 
 export type TipoConflicto =
   | "Solapamiento"
@@ -194,6 +195,13 @@ export type AgregadoNoAtribuible = {
   partidaId: string;
   intervalo: Intervalo;
   importe: string;
+  /**
+   * E45-A3: contexto informativo del bloqueo; nunca cambia el efecto
+   * financiero. `CorteExcedido` = el intervalo excede el corte de la consulta
+   * o el `corteArchivo` de su fuente; `FueraDeIntervalosArchivo` = el intervalo
+   * está dentro del corte pero ningún tramo aplicable de la fuente lo contiene.
+   */
+  causa: "FueraDeIntervalosArchivo" | "CorteExcedido";
 };
 
 export type AperturaPrecontrol = {
@@ -900,6 +908,7 @@ const PRIORIDAD_MOTIVO: MotivoCodigo[] = [
   "VerificacionPendiente",
   "MappingPendiente",
   "AgregadoNoAtribuibleAlCorte",
+  "RegistroFueraDeIntervalosArchivo",
   "HuecoDemostrado",
   "FuenteAusente",
   "SinFuente",
@@ -928,6 +937,8 @@ function textoMotivo(motivo: MotivoCodigo | null, partidaId: string | null): str
     RegularizacionPendiente: "regularización 2026 sin evidencia Q5=A suficiente",
     AperturaNoGasto: "la apertura se muestra aparte y no suma a Gastos",
     AgregadoNoAtribuibleAlCorte: "agregado no atribuible al corte; no se prorratea",
+    RegistroFueraDeIntervalosArchivo:
+      "registro fuera de los intervalos de archivo de su fuente; no se prorratea",
   };
   return `${prefijo}${textos[motivo]}`;
 }
@@ -1302,6 +1313,7 @@ function analizarItem(
         partidaId,
         intervalo: registro.intervalo,
         importe: decimal(importe),
+        causa: "CorteExcedido",
       });
       bloqueos.push("AgregadoNoAtribuibleAlCorte");
       subtotalNoSeparable = true;
@@ -1309,10 +1321,27 @@ function analizarItem(
       continue;
     }
 
-    // Si la fuente declara intervalos, el registro debe quedar contenido en
-    // los aplicables a su Partida; si no hay tramo que lo contenga, no acredita
-    // cobertura ni suma. Sin intervalos declarados no hay límite adicional que
-    // imponer aquí. Un `fuenteId` desconocido ya se rechazó en la validación.
+    // El corte de la consulta se comprueba antes de los tramos: un registro
+    // cuyo intervalo excede `[inicio del ejercicio, corte]` es contexto con
+    // `causa=CorteExcedido`, nunca un importe del periodo ni del subtotal.
+    if (registro.intervalo.inicio < desde || registro.intervalo.fin > hasta) {
+      agregados.push({
+        idArchivo: registro.idArchivo,
+        partidaId,
+        intervalo: registro.intervalo,
+        importe: decimal(importe),
+        causa: "CorteExcedido",
+      });
+      bloqueos.push("AgregadoNoAtribuibleAlCorte");
+      subtotalNoSeparable = true;
+      archivoConocido = false;
+      continue;
+    }
+
+    // E45-A3: un registro dentro del corte que no queda contenido en ningún
+    // tramo aplicable de su fuente (misma Partida y clase) no acredita
+    // cobertura ni suma. Su motivo es propio y la causa lo distingue del
+    // exceso de corte, sin cambiar el bloqueo financiero.
     if (fuenteRegistro && fuenteRegistro.intervalosArchivo.length > 0) {
       const tramosAplicables = fuenteRegistro.intervalosArchivo
         .filter((tramo) => tramo.partidaId === partidaId)
@@ -1333,27 +1362,13 @@ function analizarItem(
           partidaId,
           intervalo: registro.intervalo,
           importe: decimal(importe),
+          causa: "FueraDeIntervalosArchivo",
         });
-        bloqueos.push("AgregadoNoAtribuibleAlCorte");
+        bloqueos.push("RegistroFueraDeIntervalosArchivo");
         subtotalNoSeparable = true;
         archivoConocido = false;
         continue;
       }
-    }
-
-    // El corte se comprueba antes de cualquier rama de representación: un
-    // agregado fuera del corte no atribuye importe ni entra en el subtotal.
-    if (registro.intervalo.inicio < desde || registro.intervalo.fin > hasta) {
-      agregados.push({
-        idArchivo: registro.idArchivo,
-        partidaId,
-        intervalo: registro.intervalo,
-        importe: decimal(importe),
-      });
-      bloqueos.push("AgregadoNoAtribuibleAlCorte");
-      subtotalNoSeparable = true;
-      archivoConocido = false;
-      continue;
     }
 
     if (registro.estadoVerificacion === "NoVerificado") {
@@ -1655,9 +1670,14 @@ export function combinarHistoricoPrecontrol(
       continue;
     }
     const mappingPendiente =
-      registro.partidaId === null ||
       registro.estadoMapeo === "Pendiente" ||
-      registro.estadoMapeo === "Ambigua";
+      registro.estadoMapeo === "Ambigua" ||
+      registro.partidaId === null;
+    // E45-A4: `sinClasificar` se limita a los registros que solapan el corte
+    // consultado. Un registro íntegramente posterior no es un hecho de este
+    // corte y no bloquea por mapping; su trazabilidad de origen se conserva en
+    // `items[].registros` cuando la Partida existe.
+    if (!registroEnAlcance(registro, desde, hasta)) continue;
     // SPEC20 §FueraDeUniverso: una Partida no declarada conserva el motivo de
     // universo aunque su mapping también esté Pendiente/Ambigua. El motivo
     // específico se añade en el bloque de `partidasFueraDeUniverso`.
@@ -1812,7 +1832,14 @@ export function combinarHistoricoPrecontrol(
   if (estadoCobertura === "Solapada") motivosGlobales.push("Solapamiento");
   if (conflictos.some((conflicto) => conflicto.tipo === "DuplicadoAmbiguo" || conflicto.tipo === "VersionBifurcada" || conflicto.tipo === "DosFuentes"))
     motivosGlobales.push("DuplicadoAmbiguo");
-  if (agregados.length > 0) motivosGlobales.push("AgregadoNoAtribuibleAlCorte");
+  if (agregados.some((agregado) => agregado.causa === "CorteExcedido"))
+    motivosGlobales.push("AgregadoNoAtribuibleAlCorte");
+  if (
+    agregados.some(
+      (agregado) => agregado.causa === "FueraDeIntervalosArchivo",
+    )
+  )
+    motivosGlobales.push("RegistroFueraDeIntervalosArchivo");
   if (sinClasificar.length > 0) motivosGlobales.push("MappingPendiente");
   if (items.some((item) => item.detallePrecontrolNoVinculado !== null))
     motivosGlobales.push("VerificacionPendiente");
