@@ -253,7 +253,7 @@ La única extensión específica del flujo de Gasto es:
 | Referencia de Anticipo prevista | Solo modalidad B | No crea ficha ni métricas hasta confirmar |
 | Regla de revisión por cambio del Gasto | Conciliación | Es una condición, no un cuarto estado |
 
-Estados y transiciones: los definidos en [SPEC36 §6.3](36-reparto-mensual-asistido-presupuestos-specification.md#6-mecanismo-compartido-de-transferencia-pendiente);
+Estados y transiciones: los definidos en [SPEC36 §6.3](36-reparto-mensual-asistido-presupuestos-specification.md#63-estados-y-transiciones);
 esta spec no los repite ni añade ninguno. «Requiere revisión» sigue siendo una condición
 con motivo y los filtros/alertas no son estados.
 
@@ -484,7 +484,7 @@ sintéticos.
 | AC-27 | Comparar disponibilidad real y presupuestaria | Se muestran separadas; el déficit presupuestario no se presenta como falta de dinero | F37-PAR | Backlog 27; §6 |
 | AC-28 | Transferencia ordinaria hacia destino de Aportación a saldo | Se muestra que ejecutará ese Presupuesto; sin doble ejecución | F37-PAR | Backlog 28; SPEC09 |
 | AC-29 | Recorrer estados del pendiente | Solo tres estados; «Requiere revisión» es condición; una sola alerta y filtro; sin segundo mecanismo | F37-SAL | Backlog 29–37; SPEC36 §6 |
-| AC-30 | Modificar o anular el Gasto vinculado | El pendiente pasa a «Requiere revisión»; se permite cancelar con motivo o una nueva vinculación válida; nunca se confirma contra el Gasto anulado; sin automatismo | F37-GAS | Backlog 38; §9.2; D6 |
+| AC-30 | Modificar o anular el Gasto vinculado | El pendiente pasa a «Requiere revisión»; se permite cancelar con motivo o una nueva vinculación válida con otro Gasto real; nunca se confirma contra el Gasto anulado; sin automatismo | F37-GAS | Backlog 38; §9.2; D6 |
 | AC-31 | Vincular una Transferencia real ya registrada | Se vincula sin duplicar el hecho; si no coincide, se cancela con motivo | F37-SAL | Backlog 42; §9.1 |
 | AC-32 | Pendiente de Anticipo antes de confirmar | Sin ficha, Adelantado, Recuperado, Neto ni pendiente de recuperación ficticios | F37-REF | Backlog 31/41; §5.3 |
 | AC-33 | Confirmar con fecha real en ventana cerrada | `HISTORY_LOCKED`; sin escritura; se conserva el pendiente | F37-CIC | Backlog 39; SPEC27 |
@@ -506,7 +506,7 @@ sintéticos.
 | D3 | «Máximo permitido» de la barra | Referencia informativa; sin bloqueo nuevo por saldo calculado; solo reglas E1.4/E1.5 | Aprobación funcional; tensión con backlog AC17 |
 | D4 | Gasto real con financiación pendiente | El Gasto se registra como hecho real; el pendiente no aporta liquidez ni exime de validaciones | Aprobación funcional |
 | D5 | Vinculación de una Transferencia existente | Solo con dirección, importe y Referencia exactos; si no, cancelar con motivo | Aprobación funcional |
-| D6 | Gasto anulado con pendiente | Bloquear y exigir cancelación o nueva vinculación; nunca automático | Aprobación funcional |
+| D6 | Gasto anulado con pendiente | Bloquear y exigir cancelación o nueva vinculación válida con otro Gasto real; nunca automático | Aprobación funcional |
 | D7 | Entidad de operación compuesta | No crearla; usar clave de intento, auditoría y vínculos existentes | Aprobación técnica |
 | D8 | Terminales | Sin posición, déficit, mínimo ni máximo; importe manual y validaciones vigentes | Aprobación funcional |
 | D9 | Referencias Viaje/Evento en el flujo | No habilitarlas en esta mejora; solo Anticipo en modalidad B | Aprobación funcional |

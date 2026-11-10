@@ -61,7 +61,7 @@ documento no habilita desarrollo. Se detalla en §17 (D1).
 | Ciclos | [SPEC07](07-ciclos-operacion-specification.md) | Maestro temporal único; fecha real asigna Ciclo | Intervalo y corte |
 | Presupuestos | [SPEC08](08-presupuestos-specification.md) | Fuente, destino obligatorio y unicidad de Aportación | Dominio de fuente y destino |
 | Plan del ciclo | [SPEC09](09-plan-ciclo-specification.md) | Del mes, Ejecutado, Pendiente y Estado | Motor R3 y sus fórmulas |
-| Plan anual | [SPEC10](10-plan-anual-specification.md) | Relación de lectura, sin prorrateo | Presupuesto anual por Partida |
+| Plan anual | [SPEC10](10-plan-anual-specification.md) | Relación conceptual; no se lee para calcular líneas ni importes del reparto | Presupuesto anual por Partida; conserva su equivalente esencial mensual |
 | Nómina | [SPEC11](11-nomina-prevision-specification.md) | Propuesta opcional de cuenta receptora | Vínculos de nómina |
 | Anticipos | [SPEC13](13-anticipos-specification.md) | Distinción pendiente de realizar / pendiente de recuperación | Motor de Anticipos |
 | Pendientes transversales | [SPEC21](21-pendientes-conciliacion-specification.md) | Bandeja de pendientes y taxonomía de cobertura | Read model E3.6 |
@@ -372,8 +372,9 @@ no es un cuarto estado, no reabre la línea y no duplica el hecho.
 `[PROPUESTA]`
 
 - **Fuente mensual E2.3.** El reparto parte del «Del mes» de cada Presupuesto en el Plan
-  del ciclo, que es el equivalente mensual aprobado. No parte del Plan anual completo, no
-  lo divide entre doce ni lo prorratea por Ciclo. Sin Del mes no hay importe sugerido.
+  del ciclo, que es el equivalente mensual aprobado. No parte del Plan anual completo. El
+  reparto no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual.
+  Sin Del mes no hay importe sugerido.
 - **Plan anual E2.4.** Es una decisión anual por Partida y ejercicio, independiente del
   reparto. No se usa como fuente, objetivo ni importe de respaldo; el reparto no lo lee
   para calcular líneas. Esta relación no contradice SPEC10 ni crea una segunda lógica de
@@ -546,7 +547,7 @@ sintéticos.
 | AC-21 | Completar un reparto y cambiar el plan después | No se crea otro reparto automáticamente; la vía es el registro ordinario salvo D5 | F36-PLAN | Backlog AC21; §7 |
 | AC-22 | Inspeccionar la aplicación y los mensajes | No ejecuta Transferencias bancarias ni afirma haberlas ejecutado; solo registra hechos confirmados | F36-USR | Backlog AC22; §1 |
 | AC-23 | Revisar estados y transiciones del pendiente | Solo tres estados; «Requiere revisión» es condición; ambos flujos consumen el mismo registro y confirmación | F36-PLAN | Backlog §7 Estados; §11.3 T10; §6 |
-| AC-24 | Comparar el reparto con E2.3 y con el Plan anual | El reparto parte del «Del mes» mensual de E2.3, no del Plan anual completo; el anual no se divide ni prorratea; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
+| AC-24 | Comparar el reparto con E2.3 y con el Plan anual | El reparto parte del «Del mes» mensual de E2.3, no del Plan anual completo; el reparto no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
 | AC-25 | Cerrar y reabrir un borrador antes de generar | Conserva líneas, origen, importe y fecha prevista; no crea pendientes ni efectos; tras generar, reabrir y añadir solo crea los pendientes nuevos | F36-PLAN | §7; AC-17 |
 
 ## 17. Decisiones que requieren aprobación
