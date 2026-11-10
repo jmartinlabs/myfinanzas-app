@@ -13,6 +13,18 @@ REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.githu
  *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
  'scripts/verify','scripts/test-verification','scripts/agent-relay','scripts/test-agent-relay','scripts/report-agent-usage','scripts/auto-agent-usage',
  'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md')
+# --- Requirement matching policy -----------------------------------------------------------
+# A contract is the rule, not the sentence that carries it. Three matching modes:
+#   exact     labels, field names, identifiers, commands, approval wording (the default)
+#   '~:'      a sentence that may be reworded: case and whitespace runs are ignored
+#   're:'     a rule with declared synonyms, written as a regular expression
+# Code, JSON, YAML and permission checks keep exact matching: those are not prose.
+def norm(text): return re.sub(r'\s+',' ',text).strip().casefold()
+def satisfied(text,token):
+ if token.startswith('re:'): return re.search(token[3:],norm(text),re.I) is not None
+ if token.startswith('~:'): return norm(token[2:]) in norm(text)
+ return token in text
+
 def validate(root):
  root=Path(root).resolve(); errors=[]
  def fail(rule,msg): errors.append(f'{rule}: {msg}')
@@ -68,7 +80,7 @@ def validate(root):
    if h not in s: fail('contracts',f'{name}: missing {h}')
  s=read('.agents/skills/init-project/SKILL.md')
  for token in ('specs/setup-progress.md','### Resume protocol','## Pending decisions','## Confirmed decisions','## Next action','awaiting-approval',*(f'### Stage {i} —' for i in range(1,8))):
-  if token not in s: fail('resume',f'init-project missing {token}')
+  if not satisfied(s,token): fail('resume',f'init-project missing {token}')
  s=read('NEW_PROJECT_PROMPT.md'); m=re.search(r'```text\n(.*?)\n```',s,re.S)
  tokens=('[PROJECT_NAME]','[SHORT_DESCRIPTION]','https://github.com/','independent','AGENTS.md','$init-project','specs/setup-progress.md','owner','visibility','authorization','planning','$spec','$dev')
  if not m or any(t.lower() not in m[1].lower() for t in tokens): fail('prompt','incomplete copyable prompt')
@@ -96,7 +108,7 @@ def validate(root):
   'AGENTS.md':('python3 scripts/verify','--full','--base SHA --head SHA'),
  }.items():
   for token in tokens:
-   if token not in read(name): fail('verification-entry',f'{name}: missing {token}')
+   if not satisfied(read(name),token): fail('verification-entry',f'{name}: missing {token}')
  # Optional reporting stays advisory/local; never trust or activate hooks here.
  try:
   config=json.loads(read('.codex/hooks.json'))
@@ -121,7 +133,7 @@ def validate(root):
    'explicit user authorization and supported tools',
    'separate checkouts/worktrees AND non-overlapping ownership',
    'Separate test ports, databases', 'Worker output is evidence, never',
-   'other-client usage is', 'one current summary', 'Replace stale current-state labels',
+   'other-client usage is', 'one current summary', 're:(replace|overwrite|supersede)\w* .{0,40}(stale|outdated|obsolete).{0,40}(label|status)',
    'savings still need measurement'),
   'templates/agent-work-packet.md':('Client / version / session ID',
    'Start/stop owner and permitted communication route', 'Instruction entry points',
@@ -135,8 +147,8 @@ def validate(root):
    'This section defines only the communication contract', 'Exact human action',
    'A received handoff never authorizes merge'),
   'specs/methodology/epic-orchestration.md':('Branch/PR publication is ordinary inside the authorized scope',),
-  'templates/progress.md':('Current checkpoint', 'one current summary',
-   'permission-sensitive operation owners', 'PR / CI / merge state'),
+  'templates/progress.md':('one current summary', 'append-only', 'permission-sensitive',
+   'candidate SHA', 'PR / CI / merge', 'BLOQUEADO'),
   'templates/testplan.md':('Before implementation', 'negative/error and integration',
    'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
   '.agents/skills/orchestrate/SKILL.md':('fresh bounded context',
@@ -155,7 +167,7 @@ def validate(root):
   '.agents/skills/handoff/SKILL.md':('external client', 'uncontrolled workers'),
  }.items():
   for token in tokens:
-   if token not in read(name): fail('coordination',f'{name}: missing {token}')
+   if not satisfied(read(name),token): fail('coordination',f'{name}: missing {token}')
  # Post-merge cleanup and checkpoint retirement stay canonical in approvals/handoff.
  for name,tokens in {
   'specs/methodology/approvals.md':('## Limpieza local posterior al merge','cierre ordinario',
@@ -172,7 +184,7 @@ def validate(root):
    'next-session-and-checkpoint-retirement','Preserve dirty, unknown or other-task resources.'),
  }.items():
   for token in tokens:
-   if token not in read(name): fail('lifecycle',f'{name}: missing {token}')
+   if not satisfied(read(name),token): fail('lifecycle',f'{name}: missing {token}')
  # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
  coordinator=read('specs/methodology/coordinator-communication.md')
  for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):
@@ -186,7 +198,7 @@ def validate(root):
   '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
  }.items():
   for token in tokens:
-   if token not in read(name): fail('resource-policy',f'{name}: missing {token}')
+   if not satisfied(read(name),token): fail('resource-policy',f'{name}: missing {token}')
  # Execution mode is adaptive; background needs verified support and never claims persistence.
  for name,tokens in {
   'specs/methodology/dynamic-agents.md':('## Execution mode: direct, foreground, background',
@@ -199,14 +211,14 @@ def validate(root):
    'ownership disjunto','Agent Relay v1'),
  }.items():
   for token in tokens:
-   if token not in read(name): fail('execution-mode',f'{name}: missing {token}')
+   if not satisfied(read(name),token): fail('execution-mode',f'{name}: missing {token}')
  # Delegation preference, functional DRAFT scope and packet execution mode are canonical.
  dynamic_policy=read('specs/methodology/dynamic-agents.md')
  for token in ('## Delegation preference','one executor per task','Never create artificial agents'):
-  if token.lower() not in dynamic_policy.lower(): fail('delegation-preference',f'dynamic policy missing {token}')
+  if not satisfied(dynamic_policy,token): fail('delegation-preference',f'dynamic policy missing {token}')
  orchestrator_skill=read('.agents/skills/orchestrate/SKILL.md')
- for token in ('Prefer a specialist for substantial','one executor per task','never invent agents'):
-  if token.lower() not in orchestrator_skill.lower(): fail('delegation-preference',f'orchestrator missing {token}')
+ for token in ('~:Prefer a specialist for substantial','one executor per task','never invent agents'):
+  if not satisfied(orchestrator_skill,token): fail('delegation-preference',f'orchestrator missing {token}')
  if 'one executor per task' not in read('specs/methodology/epic-orchestration.md'): fail('delegation-preference','epic scheduler missing one executor per task')
  functional_role=read('.agents/roles/functional.md').lower()
  for token in ('create and append','draft specifications','acceptance criteria'):
@@ -216,7 +228,7 @@ def validate(root):
   if token not in spec_skill: fail('functional-scope',f'spec skill missing {token}')
  work_packet=read('templates/agent-work-packet.md')
  for token in ('Execution mode','documentary editing within the authorized packet'):
-  if token.lower() not in work_packet.lower(): fail('delegation-preference',f'agent work packet missing {token}')
+  if not satisfied(work_packet,token): fail('delegation-preference',f'agent work packet missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')

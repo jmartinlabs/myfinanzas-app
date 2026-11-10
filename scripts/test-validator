@@ -35,6 +35,14 @@ class ValidationTests(unittest.TestCase):
  def test_change_requires_original_text(self):
   with self.assertRaisesRegex(AssertionError,'fixture anchor not found'):
    self.change('README.md','text absent from this README','replacement')
+ def test_rule_rewording_passes_validation(self):
+  # The contract is the rule, not its wording: a legitimate rewrite must not fail CI.
+  self.change('specs/methodology/dynamic-agents.md','Replace stale current-state labels',
+              'Overwrite outdated status labels')
+  self.assertEqual(validate(self.root),[])
+ def test_rule_removal_still_fails_validation(self):
+  self.change('specs/methodology/dynamic-agents.md','Replace stale current-state labels','')
+  self.assertRule('coordination')
  def test_structure(self):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
  def test_links(self):
@@ -93,7 +101,7 @@ class ValidationTests(unittest.TestCase):
    ('templates/agent-work-packet.md', 'Client / version / session ID'),
    ('templates/agent-work-packet.md', 'Blocking notice'),
    ('templates/agent-work-packet.md', 'PR none unless the authorized scope includes publication'),
-   ('templates/progress.md', 'Current checkpoint'),
+   ('templates/progress.md', 'append-only'),
    ('templates/testplan.md', 'Local / CI platform and owner'),
    ('specs/methodology/approvals.md', 'Publicación de rama y PR'),
    ('specs/methodology/approvals.md', 'No se necesita otra aprobación de'),
