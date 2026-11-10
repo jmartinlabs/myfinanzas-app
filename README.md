@@ -268,4 +268,7 @@ El trabajo autorizado de código o documentación incluye publicar su rama y cre
 actualizar su PR; el merge conserva aprobación explícita y nunca se auto-fusiona.
 La [comunicación del coordinador](specs/methodology/coordinator-communication.md)
 define retornos manuales y el cierre con responsable, acción humana y motivo de espera.
+Clientes adicionales: Hermes reutiliza las mismas Skills canónicas de `.agents/skills/` tras
+`hermes skills trust` por checkout; OpenCode sigue siendo el coordinador principal
+([adaptador Hermes](docs/HERMES_ADAPTER.md)).
 Esta adopción no reabre epics ni autoriza desarrollo.
