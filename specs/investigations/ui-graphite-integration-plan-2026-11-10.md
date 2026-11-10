@@ -13,25 +13,27 @@ que falta es una **capa de apariencia**:
 
 | Capa | Estado | Qué añade |
 | --- | --- | --- |
-| Paleta y semántica de tokens | Hecho | 66 tokens, `accent≠positive`, AA |
+| Paleta y semántica de tokens | Hecho | 66 tokens, `accent≠positive`, pares AA de 1A |
 | Shell/header/rail (CSS) | Falta | densidad, superficies, tipografía, sidebar 1050/móvil |
 | Inicio (CSS + composición con datos existentes) | Falta | carriles, banda KPI, objetivo, posición |
 | Movimientos (CSS) | Falta | filtros, tabla, tarjetas, detalle, formulario |
 | Estados y formularios | Falta | superficies y jerarquía sobre primitivas existentes |
 | Semántica cromática | Falta corregir | “ok” debe ser menta, no lima; avisos ámbar; “Vigente” neutro |
-| Datos nuevos (sparkline, % plan, atención, últimos movimientos, presupuesto) | **Bloqueado** | Requiere contrato de API; no se inventa |
+| Bloques no compuestos en `/resumen-inicio` (sparkline, % plan, atención, últimos movimientos, presupuesto) | **Bloqueado** | No se componen en el resumen; requieren decisión de producto/snapshot o endpoints existentes; no se inventan |
 | Interacción master-detail, chips, hoja móvil | **Fuera** | No es reskin; requiere decisión de UX |
 | 1B `prefers-reduced-motion` | **Fuera** | Sigue sin autorizar |
 
 ## 2. Diferencias que sí se pueden cerrar sin datos nuevos
 
 - **Inicio:** hero de control con liquidez + objetivo (sin duplicar el margen del ciclo),
-  banda KPI con ingresos/gasto/inversión/deuda, tabla o tarjetas de ciclo reutilizando
-  `Table`/`DataList` **manteniendo un `article` por métrica** con fuente, cobertura y motivos,
-  rail de pendientes (conteos existentes) y posición con conteos de Saldos/Ahorro/Inversión/Deuda.
+  banda KPI con ingresos/gasto/inversión/deuda y composición de las métricas de ciclo
+  **conservando un `article` por métrica** con fuente, cobertura, motivos y enlaces únicos;
+  rail de pendientes (conteos existentes) y posición con conteos de Saldos/Ahorro/Inversión/
+  Deuda. Sustituir los `article` por una tabla agregada queda fuera: exigiría cambiar AC y
+  tests.
 - **Movimientos:** superficie de filtros, cabecera y hover de tabla, fila anulada, paginación,
-  tarjetas móviles y detalle/formulario con la jerarquía Graphite; se conservan columnas,
-  filtros y rutas.
+  tarjetas móviles y **ficha existente** (ruta) con la jerarquía Graphite; se conservan
+  columnas, filtros y rutas. No se implementa hoja móvil ni panel lateral.
 - **Shell:** densidad, superficies, tipografía de página y radios scoped; sidebar 236 px y
   breakpoints 1050/760 sin cambios.
 - **Semántica:** `ok`/verificado en menta, avisos en ámbar, “Vigente” neutro, lima para
@@ -39,7 +41,8 @@ que falta es una **capa de apariencia**:
 
 ## 3. Enmienda propuesta (UI-G2)
 
-Añadir a [SPEC UI](../ui-specification.md) §2.3:
+Añadir a [SPEC UI](../ui-specification.md) §2.5 (los números 2.3 y 2.4 están reservados por
+las enmiendas Casa abiertas #363 y #365):
 
 > **UI-G2 · Integración visual Graphite Lime (propuesta 2026-11-10).** Autoriza una capa de
 > apariencia **exclusiva de `graphite-lime`** para shell, Inicio, Movimientos, estados y
@@ -69,7 +72,7 @@ Añadir a [SPEC UI](../ui-specification.md) §2.3:
 | --- | --- | --- |
 | `apps/web/src/graphite.css` (nuevo) | Capa scoped: shell, Inicio, Movimientos, estados, formularios, escala tipográfica local | Medio: fuga si no se prefija |
 | `apps/web/src/main.tsx` | `import "./graphite.css"`; sin tocar selector ni lógica | **Alto textual** con Casa (`casa.css`) |
-| `apps/web/src/style.css` | Solo si se corrige semántica compartida (`ok`, aviso duplicado); preferible scoped | Medio |
+| `apps/web/src/style.css` | **Sin cambios**: la semántica se corrige scoped en `graphite.css` | — |
 | `apps/web/src/Inicio.tsx` | Fase CSS posible sin JSX; la banda KPI/tabla con datos existentes puede requerir JSX mínimo | Alto: AC y enlaces únicos |
 | `apps/web/src/Movimientos.tsx` | Solo reskin CSS en I4; sin chips/panel | Bajo |
 | Tests `themes`, `ui-dev07-*`, `theme-graphite`, `inicio`, `movimientos` | Ampliar Graphite y guardas | Alto con Casa (listas de temas) |
@@ -82,15 +85,16 @@ Añadir a [SPEC UI](../ui-specification.md) §2.3:
   sidebar, foco; corrección scoped de `Tag` (“Vigente” neutro), `.cierre-badge.tone-ok`,
   `.valoracion-*.ok` y `.duplicate-warning` (ámbar).
 - Sin JSX. Pruebas: guarda de scope (todo selector prefijado, cero hex/`!important`), ampliación
-  de la guarda de tokens/AA a Graphite, E2E de shell en `/saldos`, `/inicio`, `/movimientos`.
+  de la guarda de tokens/AA a Graphite, E2E de shell en `/saldos`, `/inicio`, `/movimientos`
+  y comprobación específica en `/cierre` y valoración para las clases corregidas.
 - Aceptación: Dark/Light/Hybrid sin diferencias; Graphite AA, foco 3 px, 1440/820/390 sin
   overflow.
 
 ### I3 · Inicio (composición con datos existentes)
 
-- CSS sobre `.inicio-page`/`.inicio-grid-*`; reutilizar `Metric`, `Amount`, `Badge`, `Table`/
-  `DataList`. Hero liquidez+objetivo, banda KPI, ciclo con article por métrica, pendientes y
-  posición.
+- CSS sobre `.inicio-page`/`.inicio-grid-*`; reutilizar `Metric`, `Amount`, `Badge`. Hero
+  liquidez+objetivo, banda KPI, ciclo con `article` por métrica (sin tabla sustitutiva),
+  pendientes y posición.
 - Sin sparkline, anillo de plan, atención detallada, últimos movimientos ni presupuesto.
 - Pruebas: `inicio-graphite.spec.ts` con AC-01/05/09/26, fuentes, hrefs únicos, contraste y
   responsive; matriz base intacta.
@@ -142,9 +146,12 @@ Añadir a [SPEC UI](../ui-specification.md) §2.3:
 2. **Datos inexistentes**: sparkline, % plan, atención detallada, últimos movimientos y
    presupuesto. Mitigación: excluirlos hasta contrato de API.
 3. **Semántica cromática**: usos heredados de `--accent` como “ok”. Mitigación: corregir
-   scoped o en `style.css` con regresión de los tres temas.
+   **solo scoped** en `graphite.css` (`:root[data-theme="graphite-lime"] …`), sin tocar
+   `style.css` ni los tres temas. Una corrección global exigiría enmienda separada.
 4. **Conflicto con Casa**: `main.tsx`, listas de temas y `themes.css`. Mitigación: ramas
-   independientes, rebase, hoja propia, constantes de test.
+   independientes, rebase, hoja propia, constantes de test. Estado: #363 (enmienda UI-P1) y
+   #364 (Casa 1A) están **abiertas y no fusionadas**; `casa.css` no existe en la base. Este
+   plan no presupone Casa integrada ni toca su código; el orden de merge debe acordarse.
 5. **`display:contents` y a11y**: puede alterar semántica visual sin cambiar el DOM; validar
    foco y lectores.
 6. **Coste de matriz**: añadir Graphite a DEV-07 multiplica capturas y tiempo. Mitigación:

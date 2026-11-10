@@ -139,7 +139,7 @@ arranque previo a React, fallback a `dark-s`, colores clave y ausencia de overfl
 la suite de los tres temas existentes se conserva sin cambios. La matriz AA histórica de tres
 temas no se reutiliza como PASS de Graphite.
 
-### 2.3 Enmienda UI-G2 · integración visual Graphite Lime (**propuesta** 2026-11-10)
+### 2.5 Enmienda UI-G2 · integración visual Graphite Lime (**propuesta** 2026-11-10)
 
 `[PROPUESTA — no ratificada]` Autoriza una capa de apariencia **exclusiva de
 `graphite-lime`** para shell, Inicio, Movimientos, estados y formularios. Detalle y plan en
