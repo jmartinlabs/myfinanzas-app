@@ -2182,7 +2182,7 @@ DT7 abierto.
 
 ## DT7 · M1 aprobado (2026-11-10)
 
-- **Decisión del usuario con Álex**, sobre la versión vigente **v5.11(7)** (copia privada revisada el 2026-11-10; hash y referencia por año `UNRUN`):
+- **Decisión del usuario con Álex**, sobre **`MyFinanzas2026_v5.11(20261110-134135).xlsx`** (revisión privada del 2026-11-10; hash y referencia por año `UNRUN`):
   histórico **2023–2026**; primer ejercicio **2023**; **2019–2022 excluidos por alcance**
   (no por ausencia de datos); posteriores a 2026 fuera del histórico.
 - **Límites:** la inclusión no acredita cobertura anual ni importes. 2023–2025 son histórico

@@ -8,8 +8,8 @@ no contiene datos reales y no cierra DT7.
 
 ## 1. M1 · ejercicios incluidos — APROBADO 2026-11-10
 
-**Decisión del usuario con revisión de Álex**, sobre la versión vigente **v5.11(7)** del maestro
-(copia privada revisada el 2026-11-10). El repositorio no incluye el archivo ni su hash.
+**Decisión del usuario con revisión de Álex**, sobre el maestro vigente **`MyFinanzas2026_v5.11(20261110-134135).xlsx`**
+(revisión privada del 2026-11-10). El repositorio no incluye el archivo ni su hash.
 
 | Campo | Decisión |
 | --- | --- |
@@ -22,12 +22,12 @@ no contiene datos reales y no cierra DT7.
 acredita cobertura anual, importes ni aperturas. M2 verificará Partidas/fuentes/intervalos;
 M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente. No se borra nada del Excel. No se declara `estadoUniverso=Acreditado`.
 
-**Evidencia de la decisión:** revisión financiera de Álex y el usuario sobre v5.11(7).
+**Evidencia de la decisión:** revisión financiera de Álex y el usuario sobre `MyFinanzas2026_v5.11(20261110-134135).xlsx`.
 Referencia privada por año y hash: **`UNRUN`** (no verificable desde el repositorio; puede
 existir en privado). El repositorio no contiene importes ni datos privados.
 
 **Registro M1:** `M1 · APROBADA · 2026-11-10 · usuario (revisión Álex) · alcance 2023–2026 ·
-evidencia: v5.11(7), privada, UNRUN · efecto: fija el universo, no acredita cobertura,
+evidencia: `MyFinanzas2026_v5.11(20261110-134135).xlsx`, privada, UNRUN · efecto: fija el universo, no acredita cobertura,
 importes ni aperturas; M2/M5/M8 sin cambios`.
 
 ## 1.1 Siguiente paso: M2 de 2023
