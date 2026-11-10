@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-09e
+## Identificadores canónicos y etapas — reconciliado 2026-11-10
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,13 +8,13 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional y visual pendientes | 26 CUBIERTO + 5 CUBIERTO local (AC19/21/23/25/30) + 2 PARCIAL (AC29/AC31); 0 UNRUN; sin PASS funcional |
-| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` (#329) | APTO CON RESERVAS (revisión independiente por incremento; sin informe versionado); 81 pruebas | merged | pending | H-09, fuenteId en aperturas y mapping post-corte documentados sin cambio de producto; enmienda de SPEC20 solo si se quiere otro comportamiento; DT7 abierto; 59 AC UNRUN |
+| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` + propuestas #339 `4fcee13` | APTO CON RESERVAS por incremento; 81 pruebas | merged | pending | Cuatro puntos abiertos con propuesta A/B/C (`docs/e45-contract-proposals`); sin cambio de producto; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` (#334) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional pendiente | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL (F-MARGEN sin valor numérico); AC10–15 BLOCKED; AC19 N/A |
+| E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` + E2E `bc192cd` (#337) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional pendiente | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL; AC10–15 BLOCKED; AC19 N/A; E2E de foco estabilizado |
 | E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin cierre real ni DT6 | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
 | E4.10 | approved | verified I1–I8; QA-01 `c335ad0` (#333) añade regresión cruzada | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin aceptación financiera real | 23 PASS (fixtures, desde #291) + AC15 PARCIAL; sin aceptación global; DT6/E3.5 abiertos |
-| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado 2026-11-09; DEV AC09 `9c857b6` (#325); defensiva #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | #327 fija el descarte de estado no canónico y requiere decisión sobre la lectura de §18.3.B; 103 web; datos reales BLOCKED |
-| E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (#323, expediente `cb1bc8a` #328) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | 15 decisiones en el expediente, todas `[PENDIENTE]`; AC01–17 UNRUN; restore Linux y DT6/DT7 bloquean B |
+| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado; DEV AC09 `9c857b6`; decisión §18.3.B `0b823d8` (#340); #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | Decisión A–D pendiente sobre §18.3.B; #327 no se mergea sin decisión; 103 web; datos reales BLOCKED |
+| E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (expediente `cb1bc8a`, paquete `149c9dd` #341) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | D08–D15 clasificadas; Ocho decisiones resolubles ya, D01–D07 dependientes; AC01–17 UNRUN |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
 | DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag correcto en `960c151`; fallo de reinicio SSH con rollback correcto; sin recrear/mover; sin GHCR |
 | UI | draft (SPEC sin ratificar) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera |
@@ -2068,3 +2068,22 @@ pruebas y documental; no es aceptación financiera, no acredita P7 ni equivalenc
   mejor evidencia de fixture; DT6/DT7 mantienen bloqueado el nivel real.
 - **Recomendación:** aceptación con reservas por módulo; sin aceptación global ni
   equivalencia con Excel.
+
+
+## Avance 2026-11-10
+
+- **E4.7 `bc192cd` (#337):** E2E de foco estabilizado con `expect.poll`/`toPass`, sin
+  reintento de `Tab` ni relajación del umbral; CI full PASS.
+- **DT7 `aa21796` (#338):** expediente de preparación con checklists de mapping y corte,
+  evidencia disponible y faltante; DT7 sigue abierto y sin datos reales.
+- **E4.5 `4fcee13` (#339):** propuestas A/B/C para H-09, `fuenteId` en aperturas,
+  atribución fuera de intervalos y mapping posterior al corte; sin cambio de producto.
+- **E4.11 `0b823d8` (#340):** expediente de decisión §18.3.B con opciones A–D y texto de
+  aclaración propuesto; #327 sigue sin mergear y AC09 sigue PARCIAL.
+- **E4.12 `149c9dd` (#341):** paquete F1 con D08–D15 clasificadas y formulario de decisión;
+  D01–D07 quedan dependientes de DT6/entorno.
+- **CI:** full verde en #337–#340; #341 se integró con `required` PASS y validación
+  documental porque el full no completó por flakes E2E ajenos y el timeout de 15 min del
+  job. Es un cambio solo documental; no altera código ni aceptación.
+- **Decisiones materiales abiertas:** AC09 §18.3.B (A/B/C/D); cuatro puntos de contrato
+  E4.5; D08–D15 de F1; evidencia real DT7 (M1/M2/M5/M8).
