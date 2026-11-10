@@ -338,7 +338,7 @@ PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
 | ID | Grupo | Recomendación / decisión | Evidencia | Estado |
 | --- | --- | --- | --- | --- |
-| M1 | B | Años y primero incluido | Privada por año | `PENDIENTE DE EVIDENCIA` |
+| M1 | B | Años y primero incluido | Privada por año, `UNRUN` | `APROBADA (2026-11-10)` |
 | M2 | B | Partidas/fuentes por año | Privada por fuente | `PENDIENTE DE EVIDENCIA` |
 | M3 | A | Identidad estable; coordenada en cualquier fuente; conservación ante cambios | Fuentes sin ID | `ACEPTADA (2026-11-05)` |
 | M4 | A | `NoAplica` solo con evidencia | Esquema/muestra | `ACEPTADA COMO PROPUESTA` |
@@ -359,7 +359,7 @@ PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
 1. **Usuario:** M3/M6 aceptadas; M4/M7/M15/M16 aceptadas como propuesta; M14 A confirmada;
    M9–M13 ratificadas. No hay decisiones nuevas pendientes en estos bloques.
-2. **Usuario:** aporta evidencia privada para M1/M2/M5/M8 en el canal que autorice; no se
+2. **Usuario:** aporta evidencia privada para M2/M5/M8 (M1 ya decidida) en el canal que autorice; no se
    publica en el repositorio.
 3. **Coordinador:** redacta el DT7 definitivo (inventario, mapping por campo, excepciones,
    criterios de aceptación) con evidencia sanitizada y decisiones registradas.
