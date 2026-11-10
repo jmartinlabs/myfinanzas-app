@@ -2,7 +2,7 @@
 
 **Estado:** evidencia de la PR de G1. **No autoriza merge ni despliegue.**
 **Fecha:** 2026-11-10.
-**Base final:** `origin/test` `4e821dc` (Casa #363/#364 integradas).
+**Base final:** `origin/test` `076288e` (Casa 1A #364, 1B #370 y 1C #371 integradas).
 **Rama:** `feature/graphite-g1-foundation`.
 **Diseño de referencia:** [archivo Graphite Lime](graphite-lime-design-2026-11-10/README.md).
 
@@ -37,7 +37,7 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 
 | Prueba | Resultado |
 | --- | --- |
-| `bun test apps/web` (rama final con Casa) | **357/357 PASS** |
+| `bun test apps/web` (rama final con Casa 1A/1B/1C) | **595/595 PASS** |
 | `bun run typecheck` | **PASS** |
 | `bun run build` | **PASS** |
 | `bun run test:e2e -- tests/e2e/graphite-g1.spec.ts` | **1/1 PASS** |
@@ -45,8 +45,9 @@ No se modifican `themes.css`, `themes.ts`, `theme-boot.js`, `ui.tsx`, `Inicio.ts
 | `bun run test:e2e -- tests/e2e/theme.spec.ts tests/e2e/graphite-g1.spec.ts` | **3/3 PASS** |
 | `bun run test:e2e -- tests/e2e/inicio.spec.ts` | **5/5 PASS** |
 | `bun run test:e2e -- tests/e2e/movimientos.spec.ts` en Linux limpio | **1/1 PASS** (contenedor Debian arm64 con Bun, Node 20, Chromium, `age` y `git`) |
-| **Rama final con Casa · specs de tema** | **7/7 PASS** (Claro, Oscuro, Mixto, Grafito y Casa) |
-| **Rama final con Casa · E2E completo Linux** | **79/79 PASS** (9,4 min) |
+| **Rama final con Casa · specs de tema + Inicio** | **13/13 PASS** (Claro, Oscuro, Mixto, Grafito, Casa y Casa 1B) |
+| **Rama final con Casa 1C · focused Linux** | **6/6 PASS** (`movimientos.spec`, `theme-casa`, `theme-graphite`, `graphite-g1`) |
+| **Rama con Casa 1B · E2E completo Linux** | **79/80 PASS**; único fallo flaky de foco en `fotos`, rerun aislado **8/8 PASS** |
 | `movimientos.spec.ts` en macOS local | Falla por entorno: falta `age-keygen`/restauración auxiliar; no es una regresión de G1 |
 
 `movimientos.spec.ts` requiere `age-keygen` y un servidor auxiliar en el puerto 3004. En el
@@ -134,19 +135,23 @@ Referencias del prototipo:
 
 ## Integración en `test`
 
-Casa #363 (UI-P1) y #364 (Casa 1A) ya están integradas en `test` (`4e821dc`). G1 se rebasó sobre
-esa base; el conflicto de las secciones 2.3/2.4 de `specs/ui-specification.md` se resolvió
-manteniendo ambas enmiendas.
+Casa #363 (UI-P1), #364 (Casa 1A), #370 (Casa 1B) y #371 (Casa 1C · Movimientos) ya están
+integradas en `test` (`076288e`). G1 se rebasó sobre esa base; el conflicto de las secciones
+2.3/2.4 de `specs/ui-specification.md` se resolvió manteniendo ambas enmiendas.
 
 Resultados finales sobre la rama G1 rebasada:
 
-- `bun test apps/web`: **357/357 PASS**.
+- `bun test apps/web`: **595/595 PASS**.
 - `typecheck` y `build`: **PASS**.
-- Specs de tema `theme.spec` + `theme-graphite` + `theme-casa` + `graphite-g1`: **7/7 PASS**.
-- Suite E2E completa en Linux limpio: **79/79 PASS**, incluidas las cinco apariencias y
-  `movimientos.spec.ts`.
-- Una ejecución intermedia de la integración local sufrió un flake de foco en `resumen-anual`;
-  el rerun aislado pasó 5/5 y la ejecución final completa pasó 79/79.
+- Specs de tema + Inicio (`theme.spec`, `theme-graphite`, `theme-casa`, `graphite-g1`,
+  `inicio.spec`): **13/13 PASS**.
+- Suite E2E completa en Linux sobre Casa 1B: **79/80 PASS**, incluidas las cinco apariencias y
+  `movimientos.spec.ts`. El único fallo fue un flake de foco de teclado en `fotos`; rerun
+  aislado **8/8**. Una ejecución intermedia anterior también tuvo un flake en `resumen-anual`,
+  aislado 5/5.
+- Tras Casa 1C (Movimientos), revalidación focalizada en Linux: **6/6 PASS** para
+  `movimientos.spec`, `theme-casa`, `theme-graphite` y `graphite-g1`. No se repitió la suite
+  completa porque el cambio compartido es de Movimientos y G1 solo aporta CSS scoped.
 
 ## Riesgos residuales
 
@@ -156,11 +161,12 @@ Resultados finales sobre la rama G1 rebasada:
 | Tabla de Saldos a 820 parte palabras largas | Abierto; ajuste de tabla responsive en G3/G5 |
 | Capturas de Inicio/Movimientos con fixture incompleto | Documentado; G2/G3 usarán datos funcionales |
 | CI `required` no ejecuta web/E2E | Evidencia local/Linux; no confundir CI con aceptación visual |
-| Flake de foco en `resumen-anual` | Observado una vez en integración intermedia; aislado 5/5 y final 79/79; vigilar en CI |
-| Casa 1A | Integrada en `test` `4e821dc`; cinco apariencias verificadas |
+| Flakes de foco en tests | `resumen-anual` y `fotos`: aislados 5/5 y 8/8; no relacionados con G1; vigilar en CI |
+| Casa 1A/1B/1C | Integradas en `test` `076288e`; cinco apariencias, portada y Movimientos Casa verificados |
 
 ## Conclusión
 
-G1 está listo para autorización final de merge sobre `test` `4e821dc`, con Casa integrada y la
-suite completa en Linux 79/79. La capa visual es aditiva, scoped y no cambia la composición ni la
-lógica. **No se fusiona ni se despliega** sin autorización explícita.
+G1 está listo para autorización final de merge sobre `test` `076288e`, con Casa 1A/1B/1C
+integrada, cinco apariencias verificadas y revalidación focalizada tras Casa 1C (6/6). La suite
+completa en Linux sobre Casa 1B fue 79/80 con un flake de foco aislado (8/8). La capa visual es aditiva, scoped y no cambia la composición ni la lógica.
+**No se fusiona ni se despliega** sin autorización explícita.

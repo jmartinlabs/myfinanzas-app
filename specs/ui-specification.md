@@ -179,8 +179,8 @@ Casa 1A; el resto de la especificación y las decisiones de Graphite Lime se con
 Ratificada por el usuario el 2026-11-10 como dirección de integración visual. Autoriza
 **G1 · Fundamento y shell**; G2a/G2b (Inicio), G3 (Movimientos lista) y G4 (detalle/formularios)
 quedan planificados y requieren autorización individual. G1b, G2c, G3b y G4b son opcionales y
-se difieren. La enmienda UI-P1 de Casa (#363) y su implementación 1A (#364) están integradas
-en `test` (`4e821dc`); esta sección mantiene la numeración 2.4.
+se difieren. Casa UI-P1 (#363), 1A (#364), 1B (#370) y 1C (#371) están integradas en `test`
+(`076288e`); esta sección mantiene la numeración 2.4.
 
 **Alcance autorizado para G1:**
 
@@ -206,16 +206,17 @@ en `test` (`4e821dc`); esta sección mantiene la numeración 2.4.
 
 **Invariantes y límites:**
 
-- Dark, Light, Hybrid y Casa conservan su identidad; Casa 1A está integrada y el catálogo
-  mantiene cinco apariencias. No se modifica `themes.ts`, `theme-boot.js`, los tokens de Casa
+- Dark, Light, Hybrid y Casa conservan su identidad; Casa 1A/1B/1C están integradas y el
+  catálogo mantiene cinco apariencias. No se modifica `themes.ts`, `theme-boot.js`, los tokens de Casa
   ni el mecanismo `mf-theme`/`dark-s`.
 - G1 solo toca `style.css` para el import aditivo de `graphite.css`; no toca `Inicio.tsx`,
   `Movimientos.tsx` ni `ui.tsx`. Cualquier cambio compartido posterior en componentes o
   composición se coordina antes de ejecutarse.
 - El DOM compartido de Inicio (G2a) usará secciones semánticas estables `data-inicio-section`
   (`hero`, `kpis`, `cycle`, `rail`, `position`, `coverage`; `recent`/`budget` solo si se
-  autoriza G2c). No se impone una estructura rígida: Casa 1B podrá reflowar las secciones o
-  añadir las suyas sin duplicar lógica.
+  autoriza G2c) en las secciones compartidas que correspondan. Casa 1B ya implementa una
+  portada editorial dentro de `Inicio.tsx`; G2a debe componer Graphite sin duplicar lógica, sin
+  romper la rama Casa y sin imponer una reescritura rígida.
 - No se modifican API, DTO, SQLite, Excel, contratos financieros, datos reales ni motores.
 - No se inventan métricas, totales, series, porcentajes ni movimientos. Si falta un dato
   publicado, se omite o se difiere.
