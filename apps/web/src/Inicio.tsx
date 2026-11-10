@@ -501,6 +501,249 @@ function MetricCard({
   );
 }
 
+/** Extracción compartida de cifras publicadas para Inicio (Graphite y Casa). */
+function buildInicioOverview(secciones: ResumenInicio["secciones"]) {
+  return {
+    liquidity: secciones.liquidez.metrica,
+    liquidityIncluded: secciones.liquidez.incluidos.length,
+    liquidityExcluded: secciones.liquidez.excluidos.length,
+    cycle: {
+      ingresos: secciones.ciclo.ingresos,
+      gasto: secciones.ciclo.gasto,
+      delMes: secciones.ciclo.delMes,
+      nomina: secciones.ciclo.nomina,
+      margenReal: secciones.ciclo.margenReal,
+      base: secciones.ciclo.base,
+    },
+    kpis: {
+      ingresos: secciones.ciclo.ingresos,
+      gasto: secciones.ciclo.gasto,
+      inversion: secciones.inversion.agregado,
+      inversionCoverage: secciones.inversion.cobertura,
+      deuda: secciones.deudaNoHipotecaria.total,
+    },
+    counts: {
+      saldos: secciones.saldos.items.length,
+      pendientes: secciones.pendientes.items.length,
+    },
+  };
+}
+
+type InicioOverview = ReturnType<typeof buildInicioOverview>;
+
+function GraphiteHero({
+  overview,
+  go,
+}: {
+  overview: InicioOverview;
+  go: (path: string) => void;
+}) {
+  const { liquidity, cycle } = overview;
+  return (
+    <section
+      className="graphite-control"
+      data-inicio-section="hero"
+      aria-labelledby="graphite-control-title"
+    >
+      <h2 id="graphite-control-title" className="sr-only">
+        Control del ciclo
+      </h2>
+      <div className="graphite-control-cell graphite-control-liquidity">
+        <p className="graphite-kicker">Liquidez disponible</p>
+        <div className="graphite-hero-amount">
+          <Amount
+            value={liquidity.valor}
+            subtotal={liquidity.subtotal ?? null}
+            state={liquidity.estado}
+            unit={liquidity.unidad}
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-control-meta">
+          <EstadoBadge estado={liquidity.estado} />
+          <span>
+            {overview.liquidityIncluded} incluidas ·{" "}
+            {overview.liquidityExcluded} excluidas
+          </span>
+        </p>
+        <p className="graphite-control-note">
+          {coverageText(liquidity.cobertura)}
+        </p>
+      </div>
+
+      <div className="graphite-control-cell">
+        <p className="graphite-kicker">Gasto y plan</p>
+        <div className="graphite-plan-pair">
+          <div className="graphite-plan-item">
+            <span>Gasto bruto</span>
+            <Amount
+              value={cycle.gasto.valor}
+              subtotal={cycle.gasto.subtotal ?? null}
+              state={cycle.gasto.estado}
+              unit={cycle.gasto.unidad}
+              showNote={false}
+            />
+            <EstadoBadge estado={cycle.gasto.estado} />
+          </div>
+          <div className="graphite-plan-item">
+            <span>Del mes planificado</span>
+            <Amount
+              value={cycle.delMes.valor}
+              subtotal={cycle.delMes.subtotal ?? null}
+              state={cycle.delMes.estado}
+              unit={cycle.delMes.unidad}
+              showNote={false}
+            />
+            <EstadoBadge estado={cycle.delMes.estado} />
+          </div>
+        </div>
+        <p className="graphite-control-note">
+          Lecturas publicadas por separado; sin porcentaje derivado.
+        </p>
+      </div>
+
+      <div className="graphite-control-cell">
+        <p className="graphite-kicker">Margen del plan frente a nómina</p>
+        <div className="graphite-hero-amount graphite-hero-margin">
+          <Amount
+            value={cycle.margenReal.valor}
+            subtotal={cycle.margenReal.subtotal ?? null}
+            state={cycle.margenReal.estado}
+            unit={cycle.margenReal.unidad}
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-control-meta">
+          <EstadoBadge estado={cycle.margenReal.estado} />
+          <span>No es ahorro ejecutado ni margen estructural</span>
+        </p>
+        <dl className="graphite-facts">
+          <div>
+            <dt>Ingresos</dt>
+            <dd>
+              <Amount
+                value={cycle.ingresos.valor}
+                subtotal={cycle.ingresos.subtotal ?? null}
+                state={cycle.ingresos.estado}
+                unit={cycle.ingresos.unidad}
+                showNote={false}
+              />
+            </dd>
+          </div>
+          <div>
+            <dt>Gasto bruto</dt>
+            <dd>
+              <Amount
+                value={cycle.gasto.valor}
+                subtotal={cycle.gasto.subtotal ?? null}
+                state={cycle.gasto.estado}
+                unit={cycle.gasto.unidad}
+                showNote={false}
+              />
+            </dd>
+          </div>
+          <div>
+            <dt>Nómina</dt>
+            <dd>
+              <Amount
+                value={cycle.nomina.valor}
+                subtotal={cycle.nomina.subtotal ?? null}
+                state={cycle.nomina.estado}
+                unit={cycle.nomina.unidad}
+                showNote={false}
+              />
+            </dd>
+          </div>
+        </dl>
+        <p className="graphite-control-link">
+          <InicioLink enlace={cycle.ingresos.enlace} go={go}>
+            Ver flujo mensual
+          </InicioLink>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function GraphiteKpis({ overview }: { overview: InicioOverview }) {
+  const inversion = overview.kpis.inversion;
+  const inversionState: EstadoMetrica = inversion
+    ? estadoDesdeCobertura(inversion.coberturaValoracion)
+    : "No disponible";
+  return (
+    <section
+      className="graphite-kpis"
+      data-inicio-section="kpis"
+      aria-label="Indicadores del ciclo"
+    >
+      <article className="graphite-kpi">
+        <p className="graphite-kicker">Ingresos del ciclo</p>
+        <div className="graphite-kpi-value">
+          <Amount
+            value={overview.kpis.ingresos.valor}
+            subtotal={overview.kpis.ingresos.subtotal ?? null}
+            state={overview.kpis.ingresos.estado}
+            unit={overview.kpis.ingresos.unidad}
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-kpi-meta">
+          <EstadoBadge estado={overview.kpis.ingresos.estado} />
+          <span>{coverageText(overview.kpis.ingresos.cobertura)}</span>
+        </p>
+      </article>
+
+      <article className="graphite-kpi">
+        <p className="graphite-kicker">Gasto bruto</p>
+        <div className="graphite-kpi-value">
+          <Amount
+            value={overview.kpis.gasto.valor}
+            subtotal={overview.kpis.gasto.subtotal ?? null}
+            state={overview.kpis.gasto.estado}
+            unit={overview.kpis.gasto.unidad}
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-kpi-meta">
+          <EstadoBadge estado={overview.kpis.gasto.estado} />
+          <span>{coverageText(overview.kpis.gasto.cobertura)}</span>
+        </p>
+      </article>
+
+      <article className="graphite-kpi">
+        <p className="graphite-kicker">Inversión valorada</p>
+        <div className="graphite-kpi-value">
+          <Amount
+            value={inversion?.valorEur ?? null}
+            state={inversionState}
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-kpi-meta">
+          <EstadoBadge estado={inversionState} />
+          <span>{coverageText(overview.kpis.inversionCoverage)}</span>
+        </p>
+      </article>
+
+      <article className="graphite-kpi">
+        <p className="graphite-kicker">Deuda no hipotecaria</p>
+        <div className="graphite-kpi-value">
+          <Amount
+            value={overview.kpis.deuda.valor}
+            subtotal={overview.kpis.deuda.subtotal ?? null}
+            state={overview.kpis.deuda.estado}
+            showNote={false}
+          />
+        </div>
+        <p className="graphite-kpi-meta">
+          <EstadoBadge estado={overview.kpis.deuda.estado} />
+          <span>{coverageText(overview.kpis.deuda.cobertura)}</span>
+        </p>
+      </article>
+    </section>
+  );
+}
+
 export function Inicio({
   go,
   theme,
@@ -576,6 +819,7 @@ export function Inicio({
   const inversion = secciones.inversion;
   const deuda = secciones.deudaNoHipotecaria;
   const pendientes = secciones.pendientes;
+  const overview = buildInicioOverview(secciones);
   const coste = objetivo.costeEsencialMensual;
   const costeMotivos = motivosSinDuplicar(coste.cobertura.motivos, coste.motivo);
   const costeEstadoValor: EstadoMetrica =
@@ -618,6 +862,13 @@ export function Inicio({
         )}
       </PageHead>
 
+      {theme === "graphite-lime" && (
+        <>
+          <GraphiteHero overview={overview} go={go} />
+          <GraphiteKpis overview={overview} />
+        </>
+      )}
+
       {theme === "casa" && (
         <section className="casa-cover" aria-labelledby="casa-cover-title">
           <div className="casa-cover-head">
@@ -635,16 +886,16 @@ export function Inicio({
               <h2 id="casa-cover-title">Liquidez disponible</h2>
               <p className="casa-cover-amount">
                 <Amount
-                  value={liquidez.metrica.valor}
-                  subtotal={liquidez.metrica.subtotal ?? null}
-                  state={liquidez.metrica.estado}
-                  unit={liquidez.metrica.unidad ?? "EUR"}
+                  value={overview.liquidity.valor}
+                  subtotal={overview.liquidity.subtotal ?? null}
+                  state={overview.liquidity.estado}
+                  unit={overview.liquidity.unidad ?? "EUR"}
                   showNote={false}
                 />
               </p>
               <p className="casa-cover-meta">
-                <EstadoBadge estado={liquidez.metrica.estado} />
-                <span>{coverageText(liquidez.metrica.cobertura)}</span>
+                <EstadoBadge estado={overview.liquidity.estado} />
+                <span>{coverageText(overview.liquidity.cobertura)}</span>
               </p>
             </div>
             <div className="casa-cover-aside">
@@ -652,15 +903,15 @@ export function Inicio({
               <dl className="casa-cover-counts">
                 <div>
                   <dt>Saldos listados</dt>
-                  <dd>{saldos.items.length}</dd>
+                  <dd>{overview.counts.saldos}</dd>
                 </div>
                 <div>
                   <dt>Pendientes visibles</dt>
-                  <dd>{pendientes.items.length}</dd>
+                  <dd>{overview.counts.pendientes}</dd>
                 </div>
                 <div className="casa-cover-coverage">
                   <dt>Cobertura</dt>
-                  <dd>{liquidez.metrica.cobertura.estado}</dd>
+                  <dd>{overview.liquidity.cobertura.estado}</dd>
                 </div>
               </dl>
               <div className="casa-cover-actions">

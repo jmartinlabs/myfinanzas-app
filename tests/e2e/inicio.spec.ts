@@ -206,6 +206,13 @@ const FUNCTIONAL_TEXT_SELECTOR = [
   ".ui-badge",
   ".ui-amount-note",
   ".ui-amount-state",
+  ".graphite-kicker",
+  ".graphite-control-meta",
+  ".graphite-control-note",
+  ".graphite-plan-item > span",
+  ".graphite-facts dt",
+  ".graphite-kpi-meta",
+  ".graphite-control-link",
   "small",
 ].join(",");
 
@@ -626,7 +633,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   expect(objetivoSizes.submetrica).toBeGreaterThanOrEqual(12);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -634,6 +646,25 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    if (theme === "graphite-lime") {
+      const hero = page.locator('[data-inicio-section="hero"]');
+      const kpis = page.locator('[data-inicio-section="kpis"]');
+      await expect(hero).toBeVisible();
+      await expect(kpis).toBeVisible();
+      await expect(hero).toContainText("Liquidez disponible");
+      await expect(hero).toContainText("3.456,40 €");
+      await expect(hero).toContainText("3/4");
+      await expect(hero).toContainText("1.800,00 €");
+      await expect(hero).toContainText("1.900,00 €");
+      await expect(hero).toContainText("NO DISPONIBLE");
+      await expect(kpis).toContainText("2.250,00 €");
+      await expect(kpis).toContainText("1.800,00 €");
+      await expect(kpis).toContainText("1.197,50 €");
+      await expect(kpis).toContainText("1.020,00 €");
+      await expect(kpis).toContainText("2/2");
+      await expect(hero).not.toContainText("%");
+      await expect(kpis).not.toContainText("%");
+    }
     // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
@@ -650,7 +681,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -658,6 +694,25 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    if (theme === "graphite-lime") {
+      const hero = page.locator('[data-inicio-section="hero"]');
+      const kpis = page.locator('[data-inicio-section="kpis"]');
+      await expect(hero).toBeVisible();
+      await expect(kpis).toBeVisible();
+      await expect(hero).toContainText("Liquidez disponible");
+      await expect(hero).toContainText("3.456,40 €");
+      await expect(hero).toContainText("3/4");
+      await expect(hero).toContainText("1.800,00 €");
+      await expect(hero).toContainText("1.900,00 €");
+      await expect(hero).toContainText("NO DISPONIBLE");
+      await expect(kpis).toContainText("2.250,00 €");
+      await expect(kpis).toContainText("1.800,00 €");
+      await expect(kpis).toContainText("1.197,50 €");
+      await expect(kpis).toContainText("1.020,00 €");
+      await expect(kpis).toContainText("2/2");
+      await expect(hero).not.toContainText("%");
+      await expect(kpis).not.toContainText("%");
+    }
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
