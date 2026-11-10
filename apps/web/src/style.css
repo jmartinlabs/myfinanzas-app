@@ -562,6 +562,11 @@ small {
   color: var(--muted);
   border-top: 1px solid var(--border);
 }
+/* Hooks de la capa Graphite G3; inertes en el resto de apariencias. */
+.list-footer-total,
+.movement-new-icon {
+  display: none;
+}
 .list-footer button {
   font-size: var(--text-xs);
   min-height: var(--touch-min);
