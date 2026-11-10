@@ -1,8 +1,8 @@
 # DT7 — Inventario de evidencias para M1, M2, M5 y M8 (2026-11-10)
 
-**Estado:** `[BORRADOR DE PREPARACIÓN]` — **DT7 NO CERRADO. NINGÚN AC EN PASS. NINGUNA
-DECISIÓN APROBADA.** Este documento describe qué evidencia exacta falta para las cuatro
-decisiones de evidencia real, cómo se verificará y qué decide el usuario. No aprueba
+Hoja accionable: [DT7 · decisiones y revisión privada](dt7-decision-sheet-2026-11-10.md).
+**Estado:** `[BORRADOR DE PREPARACIÓN]` — **DT7 NO CERRADO. NINGÚN AC EN PASS. M1
+APROBADA 2026-11-10; M2/M5/M8 SIN DECISIÓN.** Este documento describe qué evidencia exacta falta para M2/M5/M8 (M1 ya decidida), cómo se verificará y qué decide el usuario. No aprueba
 mapping, universo, corte, regularización ni apertura; no cierra DT7; no autoriza DEV,
 datos reales, Excel, importación, P6/P7, SQL, migración, despliegue, push, PR ni merge.
 Los 59 AC de SPEC20 siguen `UNRUN`.
@@ -40,12 +40,12 @@ Los 59 AC de SPEC20 siguen `UNRUN`.
 
 ## 1. Resumen M1 / M2 / M5 / M8
 
-`[CONFIRMADO]` Las cuatro siguen `PENDIENTE DE EVIDENCIA` y solo el usuario las decide
+`[CONFIRMADO]` M1 está aprobada (2026-11-10) y M2/M5/M8 siguen `PENDIENTE DE EVIDENCIA`; solo el usuario decide
 ([cierre §5](dt7-decision-closure-2026-11-05.md)). Este documento no cambia ese estado.
 
 | M | Qué debe acreditar | Evidencia nuclear | Decisión humana | Dependencia E4.5 / `F-DT7` | Si falta |
 | --- | --- | --- | --- | --- | --- |
-| **M1** | Lista cerrada de ejercicios y primero incluido, con cobertura por año | Declaración privada por año + referencia de evidencia; no se deduce de E2.4, archivo ni Movimientos | Lista, primer año y exclusiones; firma del usuario | `estadoUniverso`/`universo`; `F-DT7-11/16/23`; AC-18/24/46/55 | `NoAcreditada`; sin total ni subtotal certificado; G-DT7 no cierra |
+| **M1** | Lista cerrada de ejercicios y primero incluido, con cobertura por año | Declaración privada por año + referencia de evidencia; no se deduce de E2.4, archivo ni Movimientos | **Aprobada 2026-11-10:** 2023–2026; primero 2023; 2019–2022 fuera por alcance | `estadoUniverso`/`universo`; `F-DT7-11/16/23`; AC-18/24/46/55 | `NoAcreditada`; sin total ni subtotal certificado; G-DT7 no cierra |
 | **M2** | Universo cerrado de `PARxxx` y `fuentesEsperadas[]` por ejercicio, con mapping por campo/ID/archivo/apertura/Referencia | Inventario por ejercicio + mapping versionado + conciliación de filas e importes | Aprobar el inventario cerrado y sus faltantes explícitos; no aprueba DEV | `universoPartidas`, `fuentesEsperadas[]`, cobertura; `F-DT7-05/10/13/23`; AC-04/10/46/53/55/58 | `NoAcreditada` o `FuenteAusente`; total `NoVerificable`; mapping no exhaustivo |
 | **M5** | Expediente del registro concreto `Regularizacion2026` de 2026 (checklist M6) | Dossier del registro + evidencia de inclusión/no duplicidad + mapping aprobado | Aprobar con evidencia, mantener pendiente, rechazar o dividir si es separable | `clase=Regularizacion2026`, Q5=A; `F-DT7-08`; AC-20/21/22/52 | `RegularizacionPendiente`; total 2026 `NoVerificable`; no suma |
 | **M8** | Lista cerrada de `Sxxx` con apertura histórica, o «ninguno» explícito | Lista + importe/fecha/procedencia por `Sxxx`; sin `Dxxx` | Aprobar la lista o el «ninguno»; firma del usuario | `AperturaHistorica`/`saldoId`; `F-DT7-07/17`; AC-16/17/37/43 | `aperturas=null`; no bloquea el total de Gastos, pero deja aperturas sin verificar |
@@ -289,7 +289,7 @@ evidencia exigida** sin exponer datos y sin prejuzgar la decisión.
 - Autorización expresa del usuario para revisar con evidencia privada y para el canal; sin
   ella, solo se revisa estructura.
 - P6/P7 sigue siendo un gate separado: este documento **no** lo solicita ni lo concede.
-- La revisión no cierra DT7, no aprueba M1/M2/M5/M8 y no cambia el tablero.
+- La revisión no cierra DT7, no aprueba M2/M5/M8 y no cambia el tablero.
 - Cualquier diferencia, hueco o `NoAplica` se registra como `[PENDIENTE]`, no se rellena
   por defecto.
 
@@ -302,7 +302,7 @@ evidencia exigida** sin exponer datos y sin prejuzgar la decisión.
 evidencia; **no** significa que haya decidido ni que el mapping, el universo o el registro
 estén aprobados.
 
-**Condiciones LPD (las cuatro M):**
+**Condiciones LPD (aplicables a cada M pendiente):**
 
 | ID | Condición |
 | --- | --- |
@@ -317,7 +317,7 @@ estén aprobados.
 
 | M | Estará listo para decisión cuando… | Hoy |
 | --- | --- | --- |
-| M1 | La lista de años, el primero incluido y las exclusiones tengan evidencia por año; la transición esté declarada; el registro de decisión esté redactado. | No: faltan años y evidencia privada |
+| M1 | La lista de años, el primero incluido y las exclusiones tengan evidencia por año; la transición esté declarada; el registro de decisión esté redactado. | **Decidida 2026-11-10**; referencias privadas por año `UNRUN` |
 | M2 | El inventario por ejercicio esté cerrado; el mapping por campo/ID/archivo/apertura/Referencia esté completo; la conciliación de filas e importes dé 0 sin explicación y 0 céntimos; el registro de decisión esté redactado. | No: faltan fuentes, mapping y conciliación |
 | M5 | El checklist M6 esté completo; el dossier del registro y la separabilidad estén acreditados; las opciones estén redactadas. | No: falta el registro concreto |
 | M8 | La lista de `Sxxx` o el «ninguno» esté cerrada; cada apertura tenga importe/fecha/procedencia; no haya `Dxxx`; el registro esté redactado. | No: falta la lista y su evidencia |
@@ -363,7 +363,7 @@ privado, conciliación independiente y firma; DEV E4.5 sigue sin autorización.
 
 ## 8. Límites y verificación
 
-- **No cierra DT7:** M1/M2/M5/M8 siguen `PENDIENTE DE EVIDENCIA`; M4/M7/M15/M16 siguen
+- **No cierra DT7:** M1 aprobada (2026-11-10); M2/M5/M8 siguen `PENDIENTE DE EVIDENCIA`; M4/M7/M15/M16 siguen
   `ACEPTADA COMO PROPUESTA`; M11 mantiene su procedimiento pendiente; M14 sigue sin
   implementación. Los 59 AC siguen `UNRUN`.
 - **No aprueba:** ni universo, ni mapping, ni corte, ni regularización, ni apertura, ni

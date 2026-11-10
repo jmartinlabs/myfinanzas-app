@@ -1,6 +1,7 @@
 # DT7 — Expediente de preparación de la revisión del mapping y del corte (2026-11-09)
 
-**Estado:** `[BORRADOR DE PREPARACIÓN]` — **DT7 NO CERRADO. NINGÚN AC EN PASS.** Este
+**Actualización 2026-11-10:** M1 aprobada (2023–2026); el resto del expediente conserva el
+snapshot 2026-11-09. **DT7 NO CERRADO. NINGÚN AC EN PASS.** Este
 documento ordena la revisión del usuario; no aprueba mapping, corte ni excepción, no
 cierra DT7 y no autoriza DEV, datos reales, Excel, importación, P6/P7, SQL, migración,
 despliegue, push, PR ni merge. Los 59 AC de SPEC20 siguen `UNRUN`.
@@ -53,7 +54,7 @@ Estados copiados sin reinterpretación del
 
 | Bloque | ID | Tema | Estado vigente | Qué falta para cerrarlo |
 | --- | --- | --- | --- | --- |
-| Evidencia real | **M1** | Ejercicios del histórico y primero incluido | `PENDIENTE DE EVIDENCIA` | Lista cerrada por año con evidencia privada; no se infiere |
+| Evidencia real | **M1** | Ejercicios del histórico y primero incluido | `APROBADA (2026-11-10)` | 2023–2026; primero 2023; 2019–2022 fuera por alcance; referencias privadas `UNRUN` |
 | Evidencia real | **M2** | Partidas y fuentes por ejercicio | `PENDIENTE DE EVIDENCIA` | Inventario cerrado `PARxxx`/`fuenteId` con `Presente`/`Ausente`/`NoAplica` y evidencia |
 | Evidencia real | **M5** | Regularización 2026 concreta | `PENDIENTE DE EVIDENCIA` | Expediente del registro concreto: tipo, ejercicio, intervalo, importe/signo, Partida/Referencia, procedencia, representación, no duplicidad, aprobador |
 | Evidencia real | **M8** | Saldos con apertura histórica | `PENDIENTE DE EVIDENCIA` | Lista cerrada de `Sxxx` con importe, fecha, procedencia y evidencia, o «ninguno» explícito |
@@ -70,7 +71,7 @@ Estados copiados sin reinterpretación del
 | Técnica | **M15** | Separación/disyunción de agregado | `ACEPTADA COMO PROPUESTA` | Formalizar aceptar/modificar/rechazar |
 | Técnica | **M16** | Evidencia de fecha económica | `ACEPTADA COMO PROPUESTA` | Formalizar aceptar/modificar/rechazar |
 
-**Lectura correcta:** hay **cuatro decisiones de evidencia real** (M1/M2/M5/M8), **cuatro
+**Lectura correcta:** M1 aprobada; quedan **tres decisiones de evidencia real** (M2/M5/M8), **cuatro
 propuestas técnicas sin decisión formal** (M4/M7/M15/M16), **un procedimiento de custodia
 pendiente** (M11) y **una implementación futura** (M14). Nada de esto se cierra con este
 documento.
@@ -465,7 +466,7 @@ tablero.
 
 ## 9. Límites y verificación
 
-- **No cierra DT7:** M1/M2/M5/M8 siguen `PENDIENTE DE EVIDENCIA`; M4/M7/M15/M16 siguen
+- **No cierra DT7:** M1 aprobada (2026-11-10); M2/M5/M8 siguen `PENDIENTE DE EVIDENCIA`; M4/M7/M15/M16 siguen
   `ACEPTADA COMO PROPUESTA`; M11 mantiene su procedimiento pendiente; M14 sigue sin
   implementación. Los 59 AC siguen `UNRUN`.
 - **No declara PASS:** ni funcional, ni de QA, ni de aceptación financiera, ni de
