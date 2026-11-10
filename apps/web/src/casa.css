@@ -596,3 +596,372 @@
     padding: 18px;
   }
 }
+
+/* ============================================================
+   Casa de cuentas · 1B
+   Composición editorial de Inicio sobre los datos existentes.
+   Solo se renderiza con `theme === "casa"` y todos los selectores
+   quedan bajo `:root[data-theme="casa"]`.
+   ============================================================ */
+
+:root[data-theme="casa"] .inicio-casa {
+  max-width: 1180px;
+}
+
+:root[data-theme="casa"] .inicio-casa .page-head {
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .inicio-casa .page-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 4.4vw, 58px);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="casa"] .inicio-casa .page-head .eyebrow {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+:root[data-theme="casa"] .casa-cover {
+  display: grid;
+  gap: 18px;
+  padding: 30px 0 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .casa-cover-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+:root[data-theme="casa"] .casa-cover-kicker,
+:root[data-theme="casa"] .casa-cover-date,
+:root[data-theme="casa"] .casa-cover-aside-label,
+:root[data-theme="casa"] .casa-cover-counts dt {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .casa-cover-kicker {
+  margin: 0;
+  color: var(--accent);
+}
+
+:root[data-theme="casa"] .casa-cover-date {
+  margin: 0;
+  color: var(--muted);
+  text-align: right;
+}
+
+:root[data-theme="casa"] .casa-cover-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(270px, 0.7fr);
+  align-items: end;
+  gap: 48px;
+}
+
+:root[data-theme="casa"] .casa-cover h2 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .casa-cover-amount {
+  margin: 0;
+}
+
+:root[data-theme="casa"] .casa-cover-amount .ui-amount-value {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(58px, 6.4vw, 92px);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+}
+
+:root[data-theme="casa"] .casa-cover-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .casa-cover-aside {
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .casa-cover-aside-label {
+  margin: 0;
+  color: var(--muted);
+}
+
+:root[data-theme="casa"] .casa-cover-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+
+:root[data-theme="casa"] .casa-cover-counts div {
+  min-width: 0;
+}
+
+:root[data-theme="casa"] .casa-cover-counts dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .casa-cover-counts dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+}
+
+:root[data-theme="casa"] .casa-cover-coverage dd {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+:root[data-theme="casa"] .casa-cover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:root[data-theme="casa"] .casa-cover-actions a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+:root[data-theme="casa"] .casa-cover-primary {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--on-action);
+}
+
+:root[data-theme="casa"] .casa-cover-secondary {
+  background: transparent;
+  color: var(--ink);
+}
+
+:root[data-theme="casa"] .casa-cover-actions a:hover {
+  border-color: var(--accent);
+}
+
+:root[data-theme="casa"] .casa-cover-primary:hover {
+  background: var(--action-hover);
+  color: var(--on-action);
+}
+
+:root[data-theme="casa"] .casa-cover-note {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px dotted var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .inicio-casa .panel {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 24px 0;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context {
+  display: block;
+  margin-top: 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context-head h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 28px;
+  margin: 12px 0;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context-facts div {
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context-facts dt {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-context-facts dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-grid-2,
+:root[data-theme="casa"] .inicio-casa .inicio-grid-4 {
+  gap: 0 40px;
+  align-items: start;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-grid-2 {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-grid-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-section h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-section h3 {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-metric {
+  border: 0;
+  border-left: 2px solid var(--accent-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 0 2px 18px;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-metric .ui-metric-main .ui-amount-value {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 3.2vw, 48px);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-metric-grid {
+  gap: 0 28px;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-metric-grid .inicio-metric {
+  border-left-width: 1px;
+  padding-left: 14px;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-metric-grid .ui-amount-value {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .inicio-casa .inicio-linkrow a {
+  color: var(--action);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  :root[data-theme="casa"] .casa-cover-main {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  :root[data-theme="casa"] .casa-cover-aside {
+    padding: 18px 0 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  :root[data-theme="casa"] .inicio-casa .inicio-grid-2,
+  :root[data-theme="casa"] .inicio-casa .inicio-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  :root[data-theme="casa"] .casa-cover-head {
+    display: block;
+  }
+
+  :root[data-theme="casa"] .casa-cover-date {
+    margin-top: 4px;
+    text-align: left;
+  }
+
+  :root[data-theme="casa"] .casa-cover-amount .ui-amount-value {
+    font-size: 54px;
+  }
+
+  :root[data-theme="casa"] .casa-cover-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme="casa"] .inicio-casa .page-head h1 {
+    font-size: 36px;
+  }
+
+  :root[data-theme="casa"] .inicio-casa .inicio-section h2 {
+    font-size: 24px;
+  }
+
+  :root[data-theme="casa"] .inicio-casa .inicio-context-facts {
+    gap: 10px 16px;
+  }
+}
