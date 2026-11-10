@@ -91,7 +91,32 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
     "rgb(30, 75, 58)",
   );
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
+  await expect(page.locator(".saldos-page")).toBeVisible();
+  await expect(page.locator(".saldos-page .ui-table th").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await expect(
+    page.locator(".saldos-page .position-label").first(),
+  ).toHaveCSS("font-family", /Newsreader/);
   await expectNoOverflow();
+  await page.screenshot({
+    path: "artifacts/theme/casa-saldos-1440.png",
+    fullPage: true,
+  });
+
+  await page.locator(".saldos-page .desktop-list tbody tr a").first().click();
+  await expect(page.locator(".saldo-detail-page")).toBeVisible();
+  await expect(
+    page.locator(".saldo-detail-page .position-panel"),
+  ).toContainText("Saldo actual");
+  await page.screenshot({
+    path: "artifacts/theme/casa-saldo-detalle-1440.png",
+    fullPage: true,
+  });
+  await page.locator(".saldo-detail-page > .back").click();
+  await expect(page.locator(".saldos-page")).toBeVisible();
+
   await page.evaluate(() => document.fonts.ready);
   const headingFont = await page
     .locator(".page-head h1")

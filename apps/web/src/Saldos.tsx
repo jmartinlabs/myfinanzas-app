@@ -124,7 +124,7 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="saldos-page">
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Saldos"
@@ -301,7 +301,7 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
         Los Saldos inactivos conservan su historial. S000 es una contraparte
         técnica protegida.
       </p>
-    </>
+    </div>
   );
 }
 export function SaldoDetail({
@@ -339,7 +339,7 @@ export function SaldoDetail({
     </div>
   );
   return (
-    <>
+    <div className="saldo-detail-page">
       <a
         className="back"
         href="/saldos"
@@ -482,6 +482,6 @@ export function SaldoDetail({
         Revisión {s.revision} · Sin borrado físico ni cambios en las relaciones
         históricas.
       </p>
-    </>
+    </div>
   );
 }
