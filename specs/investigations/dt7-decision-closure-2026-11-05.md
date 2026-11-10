@@ -70,7 +70,7 @@ modifica ninguna decisión de este documento ni cambia estados; DT7 sigue abiert
 ## 2. Recomendaciones técnicas (A)
 
 **Estado tras la revisión:** M3/M6 aceptadas; M4/M7/M15/M16 aceptadas como propuesta de
-decisión; M14 A confirmada como contrato; M9–M13 ratificadas; M1 aprobada 2026-11-10; M2/M5/M8 pendientes de
+decisión; M14 A confirmada como contrato; M9–M13 ratificadas; M1/M2/M5/M8 pendientes de
 evidencia real.
 
 ### M3 — Identidad de fuentes sin ID

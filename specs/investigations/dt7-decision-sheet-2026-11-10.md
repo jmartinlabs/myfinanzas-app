@@ -26,6 +26,10 @@ M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente
 Referencia privada por año y hash: **`UNRUN`** (no verificable desde el repositorio; puede
 existir en privado). El repositorio no contiene importes ni datos privados.
 
+**Texto de la aprobación (usuario, 2026-11-10):** «APRUEBO la delimitación temporal de M1:
+histórico desde 2023.» (mensaje de coordinación del 2026-11-10; revisión financiera con
+Álex).
+
 **Registro M1:** `M1 · APROBADA · 2026-11-10 · usuario (revisión Álex) · alcance 2023–2026 ·
 evidencia: `MyFinanzas2026_v5.11(20261110-134135).xlsx`, privada, UNRUN · efecto: fija el universo, no acredita cobertura,
 importes ni aperturas; M2/M5/M8 sin cambios`.

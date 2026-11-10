@@ -2188,7 +2188,7 @@ DT7 abierto.
   (no por ausencia de datos); posteriores a 2026 fuera del histórico.
 - **Límites:** la inclusión no acredita cobertura anual ni importes. 2023–2025 son histórico
   parcial y 2026 transición. M2 verificará Partidas/fuentes/intervalos; M5 la regularización
-  2026; M8 las aperturas de Saldos de forma independiente. **No se borra nada del Excel** y
+  2026; M8 las aperturas de Saldos de forma independiente de M1 (depende del inventario M2). **No se borra nada del Excel** y
   no se declara `estadoUniverso=Acreditado`.
 - **Siguiente paso:** M2 de 2023 con metadatos estructurales (Partidas, fuentes,
   `intervaloEsperado`, mapping por campo/ID y conciliación en privado), sin importes en el
