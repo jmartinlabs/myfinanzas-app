@@ -20,7 +20,7 @@ no contiene datos reales y no cierra DT7.
 
 **Límites:** 2023–2025 son histórico parcial y 2026 es transición; la inclusión **no**
 acredita cobertura anual, importes ni aperturas. M2 verificará Partidas/fuentes/intervalos;
-M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente. No se borra nada del Excel. No se declara `estadoUniverso=Acreditado`.
+M5 la regularización de 2026; M8 las aperturas de Saldos de forma independiente de M1 (depende del inventario M2). No se borra nada del Excel. No se declara `estadoUniverso=Acreditado`.
 
 **Evidencia de la decisión:** revisión financiera de Álex y el usuario sobre `MyFinanzas2026_v5.11(20261110-134135).xlsx`.
 Referencia privada por año y hash: **`UNRUN`** (no verificable desde el repositorio; puede
