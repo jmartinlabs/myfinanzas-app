@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-10b
+## Identificadores canónicos y etapas — reconciliado 2026-11-10c
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,12 +8,12 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional y visual pendientes | 26 CUBIERTO + 5 CUBIERTO local (AC19/21/23/25/30) + 2 PARCIAL (AC29/AC31); 0 UNRUN; sin PASS funcional |
-| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` + propuestas #339 `4fcee13` | APTO CON RESERVAS por incremento; sin informe QA versionado; 81 pruebas | merged | pending | Enmiendas E45-A1–A4 aprobadas (#345 `bfcd7a0`); motor pendiente de DEV; E45-A2 provisional por DT7 M2/M8; DT7 abierto; 59 AC UNRUN |
+| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` + propuestas #339 `4fcee13` | APTO CON RESERVAS por incremento; QA previa sin informe versionado; DEV 94 pruebas | merged | pending | E45-A1/A3/A4 implementadas `99bfce5` (#348); E45-A2 bloqueada por DT7 M2/M8; 94 pruebas; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` + E2E `bc192cd` (#337) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional pendiente | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL (F-MARGEN sin valor numérico); AC10–15 BLOCKED; AC19 N/A; E2E de foco estabilizado |
 | E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin cierre real ni DT6 | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
 | E4.10 | approved | verified I1–I8; QA-01 `c335ad0` (#333) añade regresión cruzada | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin aceptación financiera real | 23 PASS (fixtures, desde #291) + AC15 PARCIAL; sin aceptación global; DT6/E3.5 abiertos |
-| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado; DEV AC09 `9c857b6`; decisión §18.3.B `0b823d8` (#340); #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | Opción B aprobada (#346 `25fccb6`); AC09-K UNRUN; paquete DEV pendiente de autorización; #327 sin tocar; AC09 PARCIAL |
+| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado; DEV AC09 `9c857b6`; decisión §18.3.B `0b823d8` (#340); #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | Opción B implementada `211f442` (#349); AC09-K cubierto; #327 cerrada por superada; AC09 sigue PARCIAL |
 | E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (expediente `cb1bc8a`, paquete `149c9dd` #341) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | D08 (diseño) y D09–D15 aprobadas (#344 `29869b6`); D04 y D01–D03/D05–D07 pendientes; F1 IN_PROGRESS; AC01–17 UNRUN; B bloqueado |
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
 | DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag correcto en `960c151`; fallo de reinicio SSH con rollback correcto; sin recrear/mover; sin GHCR |
@@ -2119,3 +2119,24 @@ responsable; D01–D03 y D05–D07 pendientes. Registro en
 `specs/investigations/dt7-evidence-inventory-2026-11-10.md` (`#343`, `c3d8ef0`); criterio
 `LISTO PARA DECISIÓN` distinto de aprobado; sin datos reales, canal ni revisor designados;
 DT7 abierto.
+
+
+## DEV 2026-11-10 · AC09 opción B y E4.5 A1/A3/A4
+
+- **E4.11 AC09 `211f442` (#349):** `noDisponibleDeFoto` conserva `bloque`, `estado` y
+  `motivo` aunque el estado no sea canónico; `Parcial` sigue en cobertura; sin
+  `codigoAusencia` sintético; UI con tono neutro y rótulo «estado no reconocido» sin alterar
+  el estado. `AC09-K` y frontera sin motivo; 34 pruebas API y 106 web. Sin migración,
+  esquema ni reescritura. AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; #327 cerrada por
+  superada sin merge.
+- **E4.5 `99bfce5` (#348):** E45-A1 con pruebas (global canónico, item como proyección);
+  E45-A3 con `RegistroFueraDeIntervalosArchivo` y `causa`
+  (`FueraDeIntervalosArchivo`/`CorteExcedido`), mismo bloqueo; E45-A4 acota `sinClasificar`
+  al periodo consultado sin campo ni lista nueva. 94 pruebas; E45-A2 sigue bloqueada por
+  DT7 M2/M8.
+- **Reservas E4.5:** una fuente con `intervalosArchivo: []` sigue permitiendo sumar dentro
+  del corte; si concurren `CorteExcedido` y `FueraDeIntervalosArchivo`, prevalece el motivo
+  de corte; un registro posterior `Ambigua` con `partidaId=null` no se expone (T2, sin
+  campo nuevo). Las tres requieren enmienda/DT7 si se quieren cerrar.
+- **QA:** APTO CON RESERVAS en ambos; CI required y full PASS tras rerun por timeouts
+  ajenos. Sin elevación de AC ni aceptación financiera.
