@@ -246,7 +246,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(detail).toContainText("506,00 €");
     await expect(detail).toContainText("2,00 €");
     await expect(page.getByText(/10\/04\/2026 · Vigente/)).toBeVisible();
-    await expect(page.getByText(/Revisión/).first()).toBeVisible();
+    await expect(detail.getByText(/Revisión/).first()).toBeVisible();
     await page.screenshot({
       path: "artifacts/e4-2/venta-ficha-1440.png",
       fullPage: true,
