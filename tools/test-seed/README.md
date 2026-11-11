@@ -1,4 +1,4 @@
-# FT-1 · seed TEST mínimo (v27)
+# FT-1 · seed TEST mínimo (v28)
 
 Herramienta **test-only**. No se importa desde `apps/api/src/main.ts`, `apps/api/src/app.ts`,
 ni desde el `Containerfile` de producción, y no expone endpoints. Crea datos ficticios con
@@ -7,8 +7,8 @@ auditoría ni idempotencia con SQL crudo.
 
 ## Estado de esta entrega
 
-- Base: esquema **27** y contrato **C27-E411-FOTOS-PERIODO**.
-- Contrato de datos declarado: **e4.11-v27**.
+- Base: esquema **28** y contrato **C28-REPARTO-PENDIENTE-6A31C23**.
+- Contrato de datos declarado: **e36.1-v28**.
 - Dataset: `FT-1`, versión `1`, fichero `dataset/ft1.json`.
 - Comandos: `init`, `apply`, `verify` y `status`.
 - Imagen test-only `infra/Containerfile.seed`, construida por `infra/release.py` desde el
@@ -27,7 +27,7 @@ auditoría ni idempotencia con SQL crudo.
    `AUTH_KEY_PATH=<data-root>/state/auth.key`, ambos absolutos y canónicos.
 5. `<data-root>` y `<data-root>/state` en `0700`, DB y clave en `0600`, mismo UID efectivo,
    sin symlinks. La comprobación no repara permisos.
-6. El esquema debe ser exactamente 27. El seed **no migra** versiones 24/25/26/28 ni repara
+6. El esquema debe ser exactamente 28. El seed **no migra** versiones 24/25/26/27/29 ni repara
    una base desconocida.
 
 ## Operación
@@ -165,12 +165,12 @@ un estado parcial, ajeno o con marcador inválido se rechaza sin reparar. Un fal
 `seed-failure.json` y exige una decisión operativa posterior; no se sustituye por scripts
 destructivos ni por borrado manual del estado.
 
-### v27
+### v28
 
 El preflight verifica identidad productiva, pareja DB/clave y contrato admitido antes de
-abrir la conexión de escritura. La versión debe ser exactamente 27; el seed no migra. El
-manifiesto declara `schema=27`, `schema_contract=C27-E411-FOTOS-PERIODO` con su SHA-256 y
-`data_contract=e4.11-v27`.
+abrir la conexión de escritura. La versión debe ser exactamente 28; el seed no migra. El
+manifiesto declara `schema=28`, `schema_contract=C28-REPARTO-PENDIENTE-6A31C23` con su SHA-256 y
+`data_contract=e36.1-v28`.
 
 ## Manifiesto, marcador y checksums
 

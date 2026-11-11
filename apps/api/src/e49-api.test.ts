@@ -343,7 +343,7 @@ test("E4.9 B: SinPlan closes v1 with app/schema metadata and no live writes", as
   expect(result.status).toBe(201);
   expect(result.data.foto.version).toBe(1);
   expect(result.data.foto.appVersion).toBe("0.0.0-fixture");
-  expect(result.data.foto.schemaVersion).toBe(27);
+  expect(result.data.foto.schemaVersion).toBe(28);
   expect(result.data.foto.plan.estado).toBe("SinPlan");
   expect(result.data.foto.hechos.estado).toBe("Sin hechos");
   expect(result.data.foto.ventana.saldoInicial).toBe("100.00");

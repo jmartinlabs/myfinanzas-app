@@ -20,6 +20,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c26 = "C26-E410-REAPERTURA-V26";
 const c27 = "C27-E411-FOTOS-PERIODO";
+const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
 const fp = "a".repeat(64);
 const otherFp = "b".repeat(64);
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e411-"));
@@ -217,20 +218,20 @@ test("E4.11 I2: C27 is exact and deterministic", () => {
   expect(c27Contract.sha256).toBe(
     "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23",
   );
-  expect(contracts().at(-1)?.id).toBe(c27);
+  expect(contracts().at(-1)?.id).toBe(c28);
   expect(contract(c26).sha256).toBe(
     "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265",
   );
 });
 
-test("E4.11 I2: a fresh schema matches C27 exactly", () => {
+test("E4.11 I2: a fresh schema matches C28 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 27,
+      version: 28,
     });
-    expect(manifest(db)).toEqual(contract(c27).objects);
-    expect(verifyContract(db, 27)).toBe(c27);
+    expect(manifest(db)).toEqual(contract(c28).objects);
+    expect(verifyContract(db, 28)).toBe(c28);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     for (const table of [
       "fotos_periodo",
@@ -274,7 +275,7 @@ test("E4.11 I2: a fresh schema matches C27 exactly", () => {
   }
 });
 
-test("E4.11 I2: v26→v27 is additive and preserves rows, IDs, audit, attempts and triggers", () => {
+test("E4.11 I2: v26→v28 is additive and preserves rows, IDs, audit, attempts and triggers", () => {
   const dir = root();
   try {
     const path = join(dir, "v26.sqlite");
@@ -303,7 +304,7 @@ test("E4.11 I2: v26→v27 is additive and preserves rows, IDs, audit, attempts a
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA recursive_triggers").get()).toEqual({
@@ -335,14 +336,14 @@ test("E4.11 I2: v26→v27 is additive and preserves rows, IDs, audit, attempts a
         ]),
       );
       const current = new Map(
-        contract(c27).objects.map((object) => [
+        contract(c28).objects.map((object) => [
           `${object.type}:${object.name}`,
           object,
         ]),
       );
       for (const [key, object] of previous)
         expect(current.get(key)).toEqual(object);
-      expect(current.size - previous.size).toBe(12);
+      expect(current.size - previous.size).toBe(64);
       for (const table of [
         "fotos_periodo",
         "foto_periodo_componentes",
@@ -649,7 +650,7 @@ test("E4.11 I2: periodo_attempts is keyed for idempotent creation", () => {
   }
 });
 
-test("E4.11 I2: a v27 database reopens without rewriting the aggregate store", () => {
+test("E4.11 I2: a v28 database reopens without rewriting the aggregate store", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
@@ -661,9 +662,9 @@ test("E4.11 I2: a v27 database reopens without rewriting the aggregate store", (
     const reopened = openDatabase(path);
     try {
       expect(reopened.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
-      expect(manifest(reopened)).toEqual(contract(c27).objects);
+      expect(manifest(reopened)).toEqual(contract(c28).objects);
       expect(
         reopened.query("SELECT id,version FROM fotos_periodo").all(),
       ).toEqual([{ id, version: "A1" }]);
@@ -675,20 +676,20 @@ test("E4.11 I2: a v27 database reopens without rewriting the aggregate store", (
   }
 });
 
-test("E4.11 I2: unknown v28 is rejected before mutating", () => {
+test("E4.11 I2: unknown v29 is rejected before mutating", () => {
   const dir = root();
   try {
     const path = join(dir, "v26.sqlite");
     v26(path, false);
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=28");
-      expect(verifyContract(db, 28)).toBeNull();
+      db.exec("UPDATE schema_version SET version=29");
+      expect(verifyContract(db, 29)).toBeNull();
       expect(() => verifyAdmittedContract(db)).toThrow(
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 28,
+        version: 29,
       });
       expect(
         db
@@ -706,7 +707,7 @@ test("E4.11 I2: unknown v28 is rejected before mutating", () => {
     const check = new Database(path);
     try {
       expect(check.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 28,
+        version: 29,
       });
       expect(
         check
