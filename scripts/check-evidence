@@ -115,6 +115,9 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
             'QA evidence belongs to another repository')
     kind, identifier, fragment = parts[2], parts[3], parsed.fragment
 
+    def author(data):
+        return (data.get('user') or {}).get('login') or 'unknown'
+
     if kind == 'pull':
         require(identifier.isdigit() and int(identifier) == pull_request,
                 'QA evidence does not belong to the declared pull request')
@@ -123,17 +126,17 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
             data = api(f'repos/{repository}/pulls/{pull_request}/reviews/{match.group(1)}')
             require(data.get('commit_id') == reviewed,
                     'QA review does not belong to the reviewed commit')
-            require(data.get('state') not in ('CHANGES_REQUESTED', 'DISMISSED'),
-                    'QA review was not favourable')
+            require(data.get('state') in ('APPROVED', 'COMMENTED'),
+                    'QA review must be published as APPROVED or COMMENTED')
             require((data.get('body') or '').strip(), 'QA review body is empty')
-            return 'review:' + match.group(1)
+            return 'review:' + match.group(1), author(data)
         match = DISCUSSION.fullmatch(fragment)
         if match:
             data = api(f'repos/{repository}/pulls/comments/{match.group(1)}')
             require(reviewed in (data.get('commit_id'), data.get('original_commit_id')),
                     'QA review comment does not belong to the reviewed commit')
             require((data.get('body') or '').strip(), 'QA review comment body is empty')
-            return 'review-comment:' + match.group(1)
+            return 'review-comment:' + match.group(1), author(data)
         match = ISSUE_COMMENT.fullmatch(fragment)
         if match:
             data = api(f'repos/{repository}/issues/comments/{match.group(1)}')
@@ -141,8 +144,9 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
                     'QA comment does not belong to the declared pull request')
             body = data.get('body') or ''
             require(body.strip(), 'QA comment body is empty')
-            require(reviewed in body, 'QA comment does not name the reviewed commit')
-            return 'issue-comment:' + match.group(1)
+            require(f'reviewed={reviewed}' in body,
+                    'QA comment must name the reviewed commit as reviewed=<sha>')
+            return 'issue-comment:' + match.group(1), author(data)
         raise ValueError('QA evidence must point to a review, review comment or PR comment')
 
     if kind == 'commit':
@@ -154,7 +158,7 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
         require(data.get('commit_id') == reviewed,
                 'QA commit comment does not belong to the reviewed commit')
         require((data.get('body') or '').strip(), 'QA commit comment body is empty')
-        return 'commit-comment:' + match.group(1)
+        return 'commit-comment:' + match.group(1), author(data)
 
     raise ValueError('QA evidence must be a pull request or commit URL in this repository')
 
@@ -171,7 +175,8 @@ def qa_equivalence(args):
     for value, label in ((integration, 'integration'), (reviewed, 'reviewed')):
         require(commit_exists(root, value), f'{label} commit is unavailable: {value}')
 
-    artifact = check_evidence_artifact(repository, args.pr, reviewed, args.evidence)
+    artifact, evidence_author = check_evidence_artifact(repository, args.pr, reviewed,
+                                                       args.evidence)
     pull = api(f'repos/{repository}/pulls/{args.pr}')
     require(pull.get('merged') is True, f'pull request #{args.pr} is not merged')
     head = (pull.get('head') or {}).get('sha') or ''
@@ -188,7 +193,14 @@ def qa_equivalence(args):
     else:
         parents = commit_parents(root, integration)
         require(bool(parents), 'integration commit has no parent')
-        require(merge_tree(root, parents[0], reviewed) == target,
+        parent = parents[0]
+        # A reviewed commit already contained in the integration base contributes
+        # no deployed content: the merge is trivial and would certify the whole
+        # base with stale evidence.
+        require(not ancestry(root, reviewed, parent),
+                'reviewed commit is already contained in the integration base and '
+                'contributes no deployed content; new independent QA is required')
+        require(merge_tree(root, parent, reviewed) == target,
                 'integration tree is not the reviewed content composed onto its first '
                 'parent; a conflict resolution, extra change or different commit '
                 'requires new independent QA')
@@ -202,6 +214,7 @@ def qa_equivalence(args):
     print('reviewed=' + reviewed)
     print('tree=' + target)
     print('evidence=' + artifact)
+    print('evidence_author=' + evidence_author)
     print('qa_reference=' + reference)
     return 0
 

@@ -207,9 +207,11 @@ class EquivalenceTests(unittest.TestCase):
 
     def bind(self, reviewed, head=None, pr=7, state='COMMENTED', body='QA independiente APTO'):
         self.fake(f'repos/{self.REPOSITORY}/pulls/{pr}',
-                  {'merged': True, 'head': {'sha': head or reviewed}})
+                  {'merged': True, 'head': {'sha': head or reviewed},
+                   'user': {'login': 'pr-author'}})
         self.fake(f'repos/{self.REPOSITORY}/pulls/{pr}/reviews/1',
-                  {'commit_id': reviewed, 'state': state, 'body': body})
+                  {'commit_id': reviewed, 'state': state, 'body': body,
+                   'user': {'login': 'qa-reviewer'}})
         return f'https://github.com/{self.REPOSITORY}/pull/{pr}#pullrequestreview-1'
 
     def check(self, integration, reviewed, evidence, pr=7):
@@ -234,7 +236,9 @@ class EquivalenceTests(unittest.TestCase):
 
     def test_identical_tree_reuses_reviewed_qa(self):
         reviewed = self.feature(('app.txt', 'v2\n'))[0]
-        self.assertPass(self.check(reviewed, reviewed, self.bind(reviewed)), 'tree')
+        result = self.check(reviewed, reviewed, self.bind(reviewed))
+        self.assertPass(result, 'tree')
+        self.assertIn('evidence_author=qa-reviewer', result.stdout)
 
     def test_merge_commit_onto_advanced_base_reuses_qa(self):
         reviewed = self.feature(('app.txt', 'v2\n'))[0]
@@ -327,12 +331,41 @@ class EquivalenceTests(unittest.TestCase):
         self.bind(reviewed)
         self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
                   {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
-                   'body': 'QA independiente APTO'})
-        self.assertFail(self.check(reviewed, reviewed, evidence), 'does not name the reviewed commit')
+                   'body': 'QA independiente APTO', 'user': {'login': 'qa-reviewer'}})
+        self.assertFail(self.check(reviewed, reviewed, evidence), 'must name the reviewed commit')
         self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
                   {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
-                   'body': 'QA independiente APTO sobre ' + reviewed})
+                   'body': 'QA independiente APTO reviewed=' + reviewed,
+                   'user': {'login': 'qa-reviewer'}})
         self.assertPass(self.check(reviewed, reviewed, evidence), 'tree')
+
+    def test_unpublished_review_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, self.bind(reviewed, state='PENDING'))
+        self.assertFail(result, 'must be published as APPROVED or COMMENTED')
+
+    def test_reviewed_commit_already_in_integration_base_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.merge()
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'already contained in the integration base')
+
+    def test_extra_change_after_squash_requires_new_qa(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('merge', '--squash', 'feature')
+        self.commit('squash')
+        self.write('extra.txt', 'extra\n')
+        integration = self.commit('extra')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'requires new independent QA')
 
 
 if __name__ == '__main__':
