@@ -77,7 +77,7 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
       page.screenshot({ path: `artifacts/e2e-comida/${name}.png`, fullPage: true });
     await page.goto("/comida");
     await expect(
-      page.getByRole("heading", { name: "Revisión Comida", exact: true }),
+      page.getByRole("heading", { name: "Comida", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Individual", { exact: false }).first()).toBeVisible();
     await expect(page.getByText("Comida bruto", { exact: true })).toBeVisible();
@@ -233,7 +233,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
       page.screenshot({ path: `artifacts/e2e-dprima/${name}.png`, fullPage: true });
     await page.goto("/dprima");
     await expect(
-      page.getByRole("heading", { name: "Planificación simplificada", exact: true }),
+      page.getByRole("heading", { name: "Partidas", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Maestro de Partidas", { exact: true })).toBeVisible();
     await expect(

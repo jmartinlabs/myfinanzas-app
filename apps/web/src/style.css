@@ -302,12 +302,18 @@ small {
   color: var(--sidebar-muted);
   font-weight: 600;
 }
-.nav-group {
+.nav-legacy-label {
+  margin: var(--space-8) var(--space-2) var(--space-1);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--sidebar-border);
+  color: var(--sidebar-muted);
   font-size: var(--text-xs);
   font-weight: 750;
-  letter-spacing: 1.5px;
-  color: var(--sidebar-muted);
-  margin: var(--space-12) var(--space-2) var(--space-3);
+  letter-spacing: 1.25px;
+  text-transform: uppercase;
+}
+.nav-link.nav-link-legacy {
+  font-weight: 500;
 }
 .nav-group-toggle {
   display: flex;
@@ -363,12 +369,6 @@ small {
 }
 .nav-active .nav-label {
   margin-left: 0;
-}
-.nav-future {
-  font-size: var(--text-xs);
-  line-height: var(--leading-relaxed);
-  color: var(--sidebar-muted);
-  padding: var(--space-5) var(--space-3);
 }
 .sidebar-bottom {
   margin-top: auto;
@@ -1043,12 +1043,6 @@ select[aria-invalid="true"] {
   }
   .sidebar.expanded nav {
     display: block;
-  }
-  .nav-group {
-    margin-top: var(--space-6);
-  }
-  .nav-future {
-    padding-bottom: 0;
   }
   .workspace {
     margin-left: 0;
@@ -5058,9 +5052,6 @@ textarea {
 .nav-section {
   display: block;
 }
-.nav-group {
-  text-transform: uppercase;
-}
 .nav-link,
 .nav-active {
   position: relative;
@@ -5100,15 +5091,6 @@ textarea {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
-}
-.nav-chevron {
-  flex: none;
-  margin-left: auto;
-  font-size: 16px;
-  opacity: 0.55;
-}
-.nav-active .nav-chevron {
-  opacity: 0.9;
 }
 
 /* E4.10 I7 — contrato y UI de reapertura/re-cierre.

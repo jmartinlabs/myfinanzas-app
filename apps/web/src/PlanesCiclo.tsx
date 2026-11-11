@@ -344,7 +344,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="PLANIFICACIÓN"
         title="Plan del ciclo"
-        description="Importes del ciclo y ejecución real por Presupuesto."
+        description="¿Cuánto vas a destinar a cada Presupuesto este ciclo? Compara lo planificado con la ejecución real; la planificación por Partidas sigue en transición."
       />
       <div ref={errorRef} tabIndex={-1}>
         {error && (
