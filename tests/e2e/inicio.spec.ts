@@ -313,13 +313,13 @@ async function expectGraphiteComposition(page: Page) {
   await expect(fact("Nómina")).toContainText("2.000,00 €");
   await expect(fact("Ingresos")).toContainText("PARCIAL");
 
-  // G2b: ciclo publicado, sin duplicar el panel antiguo.
+  // G2b: ciclo publicado; el detalle antiguo se conserva bajo la composición.
   await expect(
     page.getByRole("heading", { name: "Métricas publicadas del ciclo" }),
   ).toBeVisible();
   await expect(
     page.locator("section[aria-labelledby='inicio-ciclo']"),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
   const cycleRows = cycle.locator(".graphite-cycle-desktop tbody tr");
   await expect(cycleRows).toHaveCount(8);
   const row = (label: string) => cycleRows.filter({ hasText: label });
@@ -642,7 +642,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   }
 
   // Taxonomía única: los badges no muestran estados crudos en minúsculas.
-  const badges = page.locator(".ui-badge");
+  const badges = page.locator(".ui-badge[data-estado]");
   expect(await badges.count()).toBeGreaterThan(0);
   for (const badge of await badges.all()) {
     expect([
@@ -719,7 +719,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
 
   // AC-09: enlaces reales y sin importes en la URL.
   const hrefs = await page
-    .locator(".inicio-page a")
+    .locator(".inicio-page section.panel a")
     .evaluateAll((anchors) => anchors.map((anchor) => anchor.getAttribute("href") ?? ""));
   expect(hrefs).toContain("/saldos");
   expect(hrefs).toContain("/flujo-mensual?ciclo=7");
@@ -833,6 +833,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     "dark-s",
     "hybrid-s",
     "graphite-lime",
+    "casa",
   ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
@@ -843,11 +844,9 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expect(
       page.locator("section[aria-labelledby='inicio-ciclo']"),
-    ).toHaveCount(theme === "graphite-lime" ? 0 : 1);
-    if (theme === "graphite-lime") {
-      await expectGraphiteComposition(page);
-      await expectInicioFunctionalText(page);
-    }
+    ).toHaveCount(1);
+    await expectGraphiteComposition(page);
+    await expectInicioFunctionalText(page);
     // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
@@ -873,6 +872,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     "dark-s",
     "hybrid-s",
     "graphite-lime",
+    "casa",
   ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
@@ -883,13 +883,11 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expect(
       page.locator("section[aria-labelledby='inicio-ciclo']"),
-    ).toHaveCount(theme === "graphite-lime" ? 0 : 1);
-    if (theme === "graphite-lime") {
-      await expectGraphiteComposition(page);
-      await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
-      await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
-      await expectInicioFunctionalText(page);
-    }
+    ).toHaveCount(1);
+    await expectGraphiteComposition(page);
+    await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
+    await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
+    await expectInicioFunctionalText(page);
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
@@ -1237,7 +1235,7 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   ).toContainText("3.456,40 €");
 });
 
-test("Casa 1B: portada editorial de Inicio, datos publicados y responsive", async ({
+test("Casa: misma composición de Inicio que el resto de apariencias", async ({
   page,
 }) => {
   mkdirSync("artifacts/ui-casa-1b", { recursive: true });
@@ -1254,30 +1252,15 @@ test("Casa 1B: portada editorial de Inicio, datos publicados y responsive", asyn
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expect(page.locator(".inicio-page")).toHaveClass(/inicio-casa/);
 
-  const cover = page.locator(".casa-cover");
-  await expect(cover).toBeVisible();
-  await expect(cover).toContainText("Casa de cuentas · Ciclo 7");
-  await expect(cover).toContainText("3.456,40 €");
-  await expect(cover).toContainText("3/4");
-  await expect(cover).toContainText("Saldos listados");
-  await expect(cover.locator(".casa-cover-counts dt").first()).toHaveCSS(
-    "font-size",
-    "12px",
-  );
-  await expect(cover.locator(".casa-cover-counts dd").first()).toHaveCSS(
+  const shared = page.locator(".inicio-page .graphite-control");
+  const kpis = page.locator(".inicio-page .graphite-kpis");
+  await expect(shared).toBeVisible();
+  await expect(kpis).toBeVisible();
+  await expect(page.locator(".casa-cover")).toHaveCount(0);
+  await expect(page.locator(".inicio-page .page-head h1")).toHaveCSS(
     "font-family",
     /Newsreader/,
   );
-  await expect(cover.locator(".casa-cover-coverage dd")).toHaveCSS(
-    "font-family",
-    /IBM Plex Sans/,
-  );
-  await expect(
-    cover.getByRole("link", { name: "Registrar movimiento", exact: true }),
-  ).toBeVisible();
-  await expect(
-    cover.getByRole("link", { name: "Ver Movimientos", exact: true }),
-  ).toBeVisible();
   await expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
@@ -1287,9 +1270,11 @@ test("Casa 1B: portada editorial de Inicio, datos publicados y responsive", asyn
   });
 
   await select.selectOption("light-s");
-  await expect(cover).toHaveCount(0);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light-s");
+  await expect(shared).toBeVisible();
+  await expect(kpis).toBeVisible();
   await select.selectOption("casa");
-  await expect(cover).toBeVisible();
+  await expect(shared).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
