@@ -115,12 +115,12 @@
         },
         {
           "id": "prepare",
-          "if": "${{ steps.plan.outputs.profile == 'critical' || steps.plan.outputs.profile == 'full' }}",
-          "name": "Prepare Linux API or full dependencies",
+          "if": "${{ steps.plan.outputs.profile == 'full' }}",
+          "name": "Prepare Linux full dependencies",
           "env": {
             "CI_PROFILE": "${{ steps.plan.outputs.profile }}"
           },
-          "run": "if [ \"$CI_PROFILE\" = full ]; then python3 scripts/ci_prepare_linux.py; else python3 scripts/ci_prepare_linux.py api; fi"
+          "run": "python3 scripts/ci_prepare_linux.py"
         },
         {
           "id": "browser",
