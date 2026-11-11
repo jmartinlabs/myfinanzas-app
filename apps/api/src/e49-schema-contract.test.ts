@@ -29,7 +29,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
 const c25 = "C25-E49-CIERRE-FINANCIERO";
-const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
+const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e49-contract-"));
 const fingerprint = "a".repeat(64);
@@ -165,29 +165,29 @@ test("E4.9 A: C14–C24 stay frozen and registered", () => {
   }
 });
 
-test("E4.10 A: a fresh schema matches C28 exactly", () => {
+test("E4.10 A: a fresh schema matches C29 exactly", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 28,
+      version: 29,
     });
-    expect(manifest(db)).toEqual(contract(c28).objects);
-    expect(verifyContract(db, 28)).toBe(c28);
+    expect(manifest(db)).toEqual(contract(c29).objects);
+    expect(verifyContract(db, 29)).toBe(c29);
   } finally {
     db.close();
   }
 });
 
-test("E4.10 A: the v24→v28 upgrade matches C28 exactly", () => {
+test("E4.10 A: the v24→v29 upgrade matches C29 exactly", () => {
   const dir = root();
   try {
     const path = join(dir, "v24.sqlite");
     materializeContract(path, c24);
     const db = openDatabase(path);
     try {
-      expect(manifest(db)).toEqual(contract(c28).objects);
-      expect(verifyContract(db, 28)).toBe(c28);
+      expect(manifest(db)).toEqual(contract(c29).objects);
+      expect(verifyContract(db, 29)).toBe(c29);
     } finally {
       db.close();
     }
@@ -252,17 +252,17 @@ test("E4.9 A: C25 has no ciclo_id and does not touch E4.1/E4.2/E4.3/E4.8", () =>
   }
 });
 
-test("E4.10 A: unknown v29 contract is rejected without writes", () => {
+test("E4.10 A: unknown v30 contract is rejected without writes", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
-    expect(verifyContract(db, 29)).toBe(null);
-    db.exec("UPDATE schema_version SET version=29");
+    expect(verifyContract(db, 30)).toBe(null);
+    db.exec("UPDATE schema_version SET version=30");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 29,
+      version: 30,
     });
   } finally {
     db.close();
@@ -288,7 +288,7 @@ test("E4.9 A: a physical v25 variant is rejected by the exact contract", () => {
 // publishNewDirectory is Linux-specific (libc.so.6/renameat2); the canonical
 // backup gate runs on Linux CI. On macOS this test is reported as skipped.
 test.skipIf(process.platform !== "linux")(
-  "E4.10 A: v28 backup/manifest/restore keeps the closure, photo, audit and MFA and clears attempts",
+  "E4.10 A: v29 backup/manifest/restore keeps the closure, photo, audit and MFA and clears attempts",
   async () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -322,8 +322,8 @@ test.skipIf(process.platform !== "linux")(
 
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
-        app: "e36.1-v28",
-        schema: 28,
+        app: "e36.3-v29",
+        schema: 29,
         origin: "demo",
       });
 
@@ -331,7 +331,7 @@ test.skipIf(process.platform !== "linux")(
       const copy = openDatabase(restored.database);
       try {
         expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 28,
+          version: 29,
         });
         expect(
           copy
@@ -524,7 +524,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 A: restoring a v29 package fails without a destination",
+  "E4.10 A: restoring a v30 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -545,7 +545,7 @@ test.skipIf(process.platform !== "linux")(
       mkdirSync(corrupt, { mode: 0o700 });
       const plaintext = join(corrupt, "bundle.tmp");
       const altered = structuredClone(bundle);
-      altered.manifest.schema = 29;
+      altered.manifest.schema = 30;
       writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
       cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
       expect(

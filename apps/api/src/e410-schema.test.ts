@@ -19,7 +19,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c25 = "C25-E49-CIERRE-FINANCIERO";
 const c26 = "C26-E410-REAPERTURA-V26";
-const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
+const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e410-"));
 const fingerprint = "a".repeat(64);
 
@@ -157,20 +157,20 @@ test("E4.10 A: C26 is exact and deterministic", () => {
   expect(c26Contract.sha256).toBe(
     "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265",
   );
-  expect(contracts().at(-1)?.id).toBe(c28);
+  expect(contracts().at(-1)?.id).toBe(c29);
   expect(contract(c25).sha256).toBe(
     "5b6b649b2708a35af1fe23dfd63804c18c92c6923cb35065177532f51f8fa140",
   );
 });
 
-test("E4.10 A: a fresh schema matches C28 exactly", () => {
+test("E4.10 A: a fresh schema matches C29 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 28,
+      version: 29,
     });
-    expect(manifest(db)).toEqual(contract(c28).objects);
-    expect(verifyContract(db, 28)).toBe(c28);
+    expect(manifest(db)).toEqual(contract(c29).objects);
+    expect(verifyContract(db, 29)).toBe(c29);
     for (const table of [
       "reaperturas",
       "reapertura_activa",
@@ -189,7 +189,7 @@ test("E4.10 A: a fresh schema matches C28 exactly", () => {
   }
 });
 
-test("E4.10 A: v25→v28 is additive and rewrites no C25 object or row", () => {
+test("E4.10 A: v25→v29 is additive and rewrites no C25 object or row", () => {
   const dir = root();
   try {
     const path = join(dir, "v25.sqlite");
@@ -207,7 +207,7 @@ test("E4.10 A: v25→v28 is additive and rewrites no C25 object or row", () => {
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 28,
+        version: 29,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect({
@@ -235,21 +235,21 @@ test("E4.10 A: v25→v28 is additive and rewrites no C25 object or row", () => {
       expect(c26Objects.size - previous.size).toBe(11);
 
       const current = new Map(
-        contract(c28).objects.map((object) => [
+        contract(c29).objects.map((object) => [
           `${object.type}:${object.name}`,
           object,
         ]),
       );
       for (const [key, object] of c26Objects)
         expect(current.get(key)).toEqual(object);
-      expect(current.size - c26Objects.size).toBe(64);
+      expect(current.size - c26Objects.size).toBe(67);
     } finally {
       db.close();
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-  // Migración v25→v28 real: 5,07 s medidos en CI con carga paralela; el límite
+  // Migración v25→v29 real: 5,07 s medidos en CI con carga paralela; el límite
   // por defecto de 5 s la abortaba. Sin cambios en aserciones ni en el esquema.
 }, 30000);
 
@@ -498,16 +498,16 @@ test("E4.10 A: attempts are keyed per operation", () => {
   }
 });
 
-test("E4.10 A: unknown v29 is rejected without writes", () => {
+test("E4.10 A: unknown v30 is rejected without writes", () => {
   const db = store();
   try {
-    expect(verifyContract(db, 29)).toBe(null);
-    db.exec("UPDATE schema_version SET version=29");
+    expect(verifyContract(db, 30)).toBe(null);
+    db.exec("UPDATE schema_version SET version=30");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 29,
+      version: 30,
     });
   } finally {
     db.close();
