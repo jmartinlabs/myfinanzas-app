@@ -784,6 +784,11 @@ test("E4.9 navegación: shell y /inicio enlazan al cierre sin romper rutas", asy
   try {
     await routeApi(page, port);
     await login(page, dir);
+    const cierreGroup = page
+      .locator(".nav-group-toggle")
+      .filter({ hasText: "Ciclos y cierres" });
+    if ((await cierreGroup.getAttribute("aria-expanded")) === "false")
+      await cierreGroup.click();
     await page
       .getByRole("link", { name: /Cierre/ })
       .first()

@@ -66,7 +66,7 @@ test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios
       await route.fallback();
     });
     mkdirSync("artifacts/e3-3", { recursive: true });
-    await page.getByRole("link", { name: /Vehículos/ }).click();
+    await page.goto("/vehiculos");
     await expect(
       page.getByRole("status").filter({ hasText: "Cargando vehículos…" }),
     ).toBeVisible();

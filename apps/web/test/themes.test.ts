@@ -26,7 +26,7 @@ test("el catálogo conserva las cuatro apariencias y añade Casa al final", () =
   ]);
   expect(themeCatalog.at(-2)).toEqual({
     id: "graphite-lime",
-    label: "Grafito",
+    label: "Graphite Lime",
     colorScheme: "dark",
   });
   expect(themeCatalog.at(-1)).toEqual({
@@ -39,7 +39,7 @@ test("el catálogo conserva las cuatro apariencias y añade Casa al final", () =
   );
 });
 
-test("isThemeId reconoce Grafito y Casa y rechaza valores desconocidos", () => {
+test("isThemeId reconoce Graphite Lime y Casa y rechaza valores desconocidos", () => {
   expect(isThemeId("graphite-lime")).toBe(true);
   expect(isThemeId("casa")).toBe(true);
   for (const id of ["light-s", "dark-s", "hybrid-s"]) {

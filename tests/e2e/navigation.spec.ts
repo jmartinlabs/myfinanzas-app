@@ -7,7 +7,7 @@ import { totp } from "../../apps/api/src/auth";
 /**
  * UI · DEV-03 — navegación.
  *
- * Comprueba que los 23 enlaces previos se conservan sin cambiar sus `href`,
+ * Comprueba que los 24 enlaces se conservan sin cambiar sus `href`,
  * que el enlace autorizado `/fotos` se declara una sola vez, que los grupos y
  * el activo son perceptibles, que el título sigue a la ruta y que el menú móvil
  * funciona con teclado. El servidor es aislado y ficticio.
@@ -105,7 +105,7 @@ async function login(page: Page) {
   ).toBeVisible();
 }
 
-test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y menú móvil accesible", async ({
+test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos y menú móvil accesible", async ({
   page,
 }) => {
   mkdirSync("artifacts/ui-dev-03", { recursive: true });
@@ -123,7 +123,7 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
       ),
     ).toBe(true);
 
-  // Los 23 enlaces previos se conservan y /fotos se declara una sola vez.
+  // Los 24 enlaces se conservan y /fotos se declara una sola vez.
   const hrefs = await nav
     .locator("a")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
@@ -134,28 +134,77 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
   expect(hrefs).not.toContain("/saldos/nuevo");
 
   const expectedGroups = [
-    ["Mi espacio", ["/inicio", "/flujo-mensual", "/pendientes", "/anticipos", "/compartidos"]],
-    ["Patrimonio", ["/saldos", "/clasificacion/partidas", "/inversiones", "/deudas", "/vehiculos", "/referencias"]],
-    ["Operación", ["/movimientos", "/ciclos", "/precierre", "/cierre", "/fotos"]],
-    ["Planificación", ["/dprima", "/comida", "/revision-comida", "/planes-ciclo", "/nomina", "/plan-anual", "/resumen-anual", "/presupuestos"]],
+    ["Resumen y control", ["/flujo-mensual", "/pendientes", "/resumen-anual"]],
+    ["Patrimonio", ["/saldos", "/inversiones", "/deudas"]],
+    ["Presupuestos y planificación", ["/clasificacion/partidas", "/dprima", "/planes-ciclo", "/nomina", "/presupuestos", "/plan-anual"]],
+    ["Casos y gastos especiales", ["/referencias", "/anticipos", "/compartidos", "/vehiculos", "/comida", "/revision-comida"]],
+    ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre", "/fotos"]],
   ];
   const sections = nav.locator(".nav-section");
+  expect(await nav.locator(".nav-group-toggle").count()).toBe(expectedGroups.length);
   expect(await sections.count()).toBe(expectedGroups.length);
   for (const [index, [label, expected]] of expectedGroups.entries()) {
     const section = sections.nth(index);
-    await expect(section.locator(".nav-group")).toHaveText(label);
+    const toggle = section.locator(".nav-group-toggle");
+    await expect(toggle).toContainText(label);
     expect(
-      await section.locator("a").evaluateAll((links) =>
+      await section.locator(".nav-group-body a").evaluateAll((links) =>
         links.map((link) => link.getAttribute("href")),
       ),
     ).toEqual(expected);
   }
 
-  // Cuatro grupos de dominio con etiquetas estables.
-  for (const group of ["Mi espacio", "Patrimonio", "Operación", "Planificación"])
-    await expect(
-      nav.locator(".nav-group").filter({ hasText: group }),
-    ).toHaveCount(1);
+  // Solo las cabeceras llevan chevron; los enlaces no.
+  expect(await nav.locator(".nav-group-chevron").count()).toBe(
+    expectedGroups.length,
+  );
+  expect(await nav.locator("a .nav-chevron").count()).toBe(0);
+
+  // El grupo activo está abierto y los demás contraídos.
+  await expect(
+    nav.locator("#nav-group-patrimonio"),
+  ).toBeVisible();
+  for (const id of ["resumen-control", "presupuestos-planificacion", "casos-gastos", "ciclos-cierres"])
+    await expect(nav.locator(`#nav-group-${id}`)).toBeHidden();
+  await expect(
+    nav.locator('.nav-group-toggle[aria-expanded="true"]'),
+  ).toHaveCount(1);
+
+  // Los grupos no activos se abren y contraen con el botón de cabecera.
+  const resumenToggle = nav
+    .locator(".nav-group-toggle")
+    .filter({ hasText: "Resumen y control" });
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "false");
+  await resumenToggle.click();
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(nav.locator("#nav-group-resumen-control")).toBeVisible();
+  await resumenToggle.click();
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(nav.locator("#nav-group-resumen-control")).toBeHidden();
+
+  // La cabecera también responde a Enter y Space.
+  await resumenToggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Space");
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "false");
+
+  // Partidas conserva su ruta y las entradas heredadas quedan etiquetadas.
+  await expect(nav.locator('a[href="/dprima"]')).toContainText("Partidas");
+  await expect(nav.locator('a[href="/presupuestos"]')).toContainText(
+    "Presupuestos (legado)",
+  );
+  await expect(nav.locator('a[href="/plan-anual"]')).toContainText(
+    "Plan anual (legado)",
+  );
+
+  // Cabecera global fija y selector compacto; etiqueta Graphite Lime.
+  const themeSelect = page.getByLabel("Apariencia");
+  await expect(themeSelect.locator("option").nth(3)).toHaveText("Graphite Lime");
+  await expect(page.locator(".global-header")).toHaveCSS("position", "sticky");
+  expect(
+    await themeSelect.evaluate((element) => element.getBoundingClientRect().width),
+  ).toBeLessThanOrEqual(150);
 
   // Activo: aria-current + barra + peso, no solo color.
   const saldos = nav.getByRole("link", { name: "Saldos", exact: true });
@@ -225,7 +274,7 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
   await expect(first).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(
-    nav.getByRole("link", { name: "Flujo mensual", exact: true }),
+    nav.getByRole("link", { name: "Movimientos", exact: true }),
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -239,12 +288,14 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
   await expect(first).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Escape");
 
-  // Tres temas a 390 con el menú abierto: sin desbordamiento horizontal.
+  // Cinco temas a 390 con el menú abierto: sin desbordamiento horizontal.
   const select = page.getByLabel("Apariencia");
   for (const [id, file] of [
     ["dark-s", "390-dark-s-menu.png"],
     ["light-s", "390-light-s-menu.png"],
     ["hybrid-s", "390-hybrid-s-menu.png"],
+    ["graphite-lime", "390-graphite-lime-menu.png"],
+    ["casa", "390-casa-menu.png"],
   ] as const) {
     await select.selectOption(id);
     await expect(page.locator("html")).toHaveAttribute("data-theme", id);
@@ -252,13 +303,14 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
     await expect(nav).toBeVisible();
     for (const group of [
-      "Mi espacio",
+      "Resumen y control",
       "Patrimonio",
-      "Operación",
-      "Planificación",
+      "Presupuestos y planificación",
+      "Casos y gastos especiales",
+      "Ciclos y cierres",
     ])
       await expect(
-        nav.locator(".nav-group").filter({ hasText: group }),
+        nav.locator(".nav-group-toggle").filter({ hasText: group }),
       ).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
@@ -269,7 +321,7 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
     await expect(nav).toBeHidden();
   }
 
-  // Tres temas a 1440 con la barra lateral completa.
+  // Cinco temas a 1440 con la barra lateral completa.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/saldos");
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
@@ -279,6 +331,8 @@ test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y men�
     ["dark-s", "1440-dark-s.png"],
     ["light-s", "1440-light-s.png"],
     ["hybrid-s", "1440-hybrid-s.png"],
+    ["graphite-lime", "1440-graphite-lime.png"],
+    ["casa", "1440-casa.png"],
   ] as const) {
     await select.selectOption(id);
     await expect(page.locator("html")).toHaveAttribute("data-theme", id);
