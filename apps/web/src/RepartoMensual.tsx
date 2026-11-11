@@ -6,6 +6,7 @@ import {
   type RepartoDTO,
   type RepartoEstado,
   type RepartoLineaDTO,
+  type RepartoLineaPendienteDTO,
   type RepartoMotivoNoCompletar,
   type RepartoPropuestaDTO,
   type RepartoPropuestaItemDTO,
@@ -174,10 +175,31 @@ function responseLine(value: unknown): RepartoLineaDTO | null {
   return asLinea(raw?.linea ?? raw?.item ?? value);
 }
 
+// The line DTO only carries the summary; the operational ficha (origen,
+// destino, revision, hoy…) is merged from the pending list. Detect the full
+// shape by fields the summary never has, never by a defaulted field.
 function isFullPendiente(
   value: NonNullable<RepartoLineaDTO["pendiente"]>,
 ): value is TransferenciaPendienteDTO {
-  return typeof (value as TransferenciaPendienteDTO).cicloOrigen === "string";
+  return "origen" in value && "repartoLinea" in value && "hoy" in value;
+}
+
+function asLineaPendiente(value: unknown): RepartoLineaPendienteDTO | null {
+  const raw = asRecord(value);
+  if (!raw || typeof raw.id !== "number") return null;
+  return {
+    id: raw.id,
+    estado:
+      raw.estado === "Confirmada" || raw.estado === "Cancelada"
+        ? raw.estado
+        : "Pendiente de realizar",
+    importe:
+      typeof raw.importe === "string"
+        ? raw.importe
+        : typeof raw.importe === "number"
+          ? String(raw.importe)
+          : "",
+  };
 }
 
 function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
@@ -255,7 +277,7 @@ function asLinea(value: unknown): RepartoLineaDTO | null {
     motivoExclusion:
       typeof raw.motivoExclusion === "string" ? raw.motivoExclusion : null,
     revision: typeof raw.revision === "number" ? raw.revision : 1,
-    pendiente: asPendiente(pendiente),
+    pendiente: asLineaPendiente(pendiente),
     avisos: Array.isArray(raw.avisos)
       ? raw.avisos.filter((aviso): aviso is string => typeof aviso === "string")
       : [],
@@ -1219,12 +1241,16 @@ export function RepartoMensual({
   }
 
   async function refreshSeguimiento(id: number, estado: RepartoEstado) {
-    if (estado === "Borrador") return;
+    if (estado === "Borrador") {
+      setSeguimiento(null);
+      return;
+    }
     try {
       await cargarSeguimiento(id);
     } catch (e) {
-      // The line was already persisted; surface the stale-panel problem
-      // without pretending the creation failed.
+      // Never leave a stale `puedeCompletar:true` on screen when the refresh
+      // fails: invalidate the panel instead.
+      setSeguimiento(null);
       setError((e as Error).message);
     }
   }
@@ -1354,8 +1380,13 @@ export function RepartoMensual({
       }
     } catch (error) {
       // Whatever was created before the failure is reloaded so the next
-      // attempt can skip it deterministically.
-      await reloadReparto(repartoId).catch(() => null);
+      // attempt can skip it deterministically. The follow-up view is also
+      // refreshed/invalidated: the server may have persisted lines even when
+      // the response was lost.
+      const refreshed = await reloadReparto(repartoId).catch(() => null);
+      const estado = refreshed?.estado ?? reparto?.estado ?? "Borrador";
+      if (estado === "Borrador") setSeguimiento(null);
+      else await refreshSeguimiento(repartoId, estado);
       throw error;
     }
     await reloadReparto(repartoId).catch(() => null);
@@ -1441,6 +1472,11 @@ export function RepartoMensual({
             : `Añadidas ${added} líneas propuestas al borrador.`,
       );
     } catch (e) {
+      const refreshed = await reloadReparto(reparto.id).catch(() => null);
+      await refreshSeguimiento(
+        reparto.id,
+        refreshed?.estado ?? reparto.estado,
+      );
       setError((e as Error).message);
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
@@ -1625,6 +1661,11 @@ export function RepartoMensual({
       });
       setNotice("Transferencia adicional añadida al borrador.");
     } catch (e) {
+      const refreshed = await reloadReparto(reparto.id).catch(() => null);
+      await refreshSeguimiento(
+        reparto.id,
+        refreshed?.estado ?? reparto.estado,
+      );
       setError((e as Error).message);
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {

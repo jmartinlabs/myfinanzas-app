@@ -276,6 +276,86 @@ test("D8 y Generado: avisos por línea, lectura y sin editar/excluir lo generado
   expect(editable).toContain("Excluir línea 3");
 });
 
+test("un pendiente parcial no abre la ficha hasta fusionar la lista completa", () => {
+  const repartoRaw = {
+    id: 10,
+    ciclo: "C1",
+    estado: "Generado",
+    origenComun: saldo("S001", "Cuenta principal"),
+    revision: 3,
+    creado: "",
+    actualizado: "",
+    cicloCerrado: false,
+    puedeEditar: false,
+    puedeAnadirLineas: true,
+    puedeGenerar: true,
+    puedeCompletar: false,
+    motivosNoCompletar: [
+      { code: "PENDIENTE_NO_TERMINAL", pendientes: [7] },
+    ],
+    lineas: [
+      {
+        id: 11,
+        clase: "Presupuesto",
+        presupuesto: presupuesto("PRE-A", "Provisión", "Aportación a saldo"),
+        origen: saldo("S001", "Cuenta principal"),
+        destino: saldo("S002", "Fondo provisión"),
+        importe: "60.00",
+        fechaPrevista: "2026-01-05",
+        concepto: null,
+        nota: null,
+        incluida: true,
+        motivoExclusion: null,
+        revision: 1,
+        pendiente: {
+          id: 7,
+          estado: "Pendiente de realizar",
+          importe: "60.00",
+        },
+        avisos: [],
+        puedeGenerarse: false,
+      },
+    ],
+  };
+  const reparto = normalizeReparto({ reparto: repartoRaw });
+  if (!reparto) throw new Error("El reparto normalizado es obligatorio.");
+  const seguimientoRaw = {
+    reparto: repartoRaw,
+    lineas: repartoRaw.lineas,
+    resumen: {
+      lineas: 1,
+      incluidas: 1,
+      pendientesDeRealizar: 1,
+      confirmadas: 0,
+      canceladas: 0,
+    },
+    puedeCompletar: false,
+    motivosNoCompletar: [
+      { code: "PENDIENTE_NO_TERMINAL", pendientes: [7] },
+    ],
+    avisos: avisosSeguimiento,
+  };
+  const parcial = normalizeSeguimiento(seguimientoRaw);
+  if (!parcial) throw new Error("El seguimiento normalizado es obligatorio.");
+  const parcialHtml = renderToStaticMarkup(
+    <RepartoSeguimientoPanel seguimiento={parcial} />,
+  );
+  expect(parcialHtml).toContain(
+    "Relee el seguimiento para operar desde la ficha.",
+  );
+  expect(parcialHtml).not.toContain("Transferencia pendiente #7");
+  expect(parcialHtml).not.toContain("Confirmar transferencia");
+
+  // Normal path: the full ficha merged from the auxiliary pending list.
+  const completa = normalizeSeguimiento(seguimientoRaw, [pendiente()]);
+  if (!completa) throw new Error("El seguimiento completo es obligatorio.");
+  const completaHtml = renderToStaticMarkup(
+    <RepartoSeguimientoPanel seguimiento={completa} />,
+  );
+  expect(completaHtml).toContain("Transferencia pendiente #7");
+  expect(completaHtml).toContain("Confirmar transferencia");
+});
+
 test("el completado depende de puedeCompletar y muestra los motivos del servidor", () => {
   const seguimiento: RepartoSeguimientoDTO = {
     reparto: {
