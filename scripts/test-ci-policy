@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Behavioral evidence for the shared classifier and supported workflow graph."""
 import copy
+import contextlib
+import io
 import itertools
 import json
 import os
@@ -8,9 +10,11 @@ from pathlib import Path
 import runpy
 import shutil
 import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
@@ -925,7 +929,8 @@ class CiLinuxTests(unittest.TestCase):
     def prepare(self, execute=None, **kwargs):
         return LINUX['prepare'](ROOT, execute or self.execute,
                                 os_release=kwargs.get('os_release', 'ID=ubuntu\nVERSION_ID="24.04"\n'),
-                                machine=kwargs.get('machine', 'x86_64'))
+                                machine=kwargs.get('machine', 'x86_64'),
+                                mode=kwargs.get('mode', 'full'))
 
     def test_present_packages_do_not_touch_apt(self):
         self.assertEqual(self.prepare(), [])
@@ -936,9 +941,12 @@ class CiLinuxTests(unittest.TestCase):
         self.assertEqual(set(self.prepare()), self.missing)
         commands = [c for c in self.calls if c[0] == 'sudo']
         self.assertEqual(len(commands), 2)
-        self.assertEqual(commands[0], ['sudo', 'apt-get', 'update'])
-        self.assertEqual(set(commands[1][6:]), self.missing)
-        self.assertEqual(commands[1][:6], ['sudo', 'apt-get', 'install', '-y', '--no-install-recommends', '--'])
+        self.assertEqual(commands[0], ['sudo', 'apt-get', '-o', 'Acquire::Retries=3',
+                                       '-o', 'DPkg::Lock::Timeout=120', 'update'])
+        self.assertEqual(set(commands[1][10:]), self.missing)
+        self.assertEqual(commands[1][:10], ['sudo', 'apt-get', '-o', 'Acquire::Retries=3',
+                                            '-o', 'DPkg::Lock::Timeout=120', 'install', '-y',
+                                            '--no-install-recommends', '--'])
 
     def test_unsupported_runner_version_inventory_or_installation_fails(self):
         for kwargs in ({'os_release': 'ID=ubuntu\nVERSION_ID=26.04'}, {'machine': 'aarch64'}):
@@ -960,10 +968,67 @@ class CiLinuxTests(unittest.TestCase):
         self.missing = {'age'}
         LINUX['prepare'](ROOT, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64', mode='api')
         self.assertFalse(any(c[0] == 'node' for c in self.calls))
-        installs = [c for c in self.calls if c[:3] == ['sudo','apt-get','install']]
-        self.assertEqual(installs[0][6:], ['age'])
+        installs = [c for c in self.calls if c[:2] == ['sudo', 'apt-get'] and 'install' in c]
+        self.assertEqual(installs[0][10:], ['age'])
         with self.assertRaises(ValueError):
             LINUX['prepare'](ROOT, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64', mode='invalid')
+
+    def test_apt_lock_failure_reports_command_code_and_stderr(self):
+        self.missing = {'age'}
+        lock = 'E: Could not get lock /var/lib/dpkg/lock-frontend'
+        def locked(command):
+            result = self.execute(command)
+            if command[:2] == ['sudo', 'apt-get']:
+                return SimpleNamespace(returncode=100, stdout='', stderr=lock + '\n')
+            return result
+        with self.assertRaises(ValueError) as caught:
+            self.prepare(locked, mode='api')
+        message = str(caught.exception)
+        self.assertIn('sudo apt-get -o Acquire::Retries=3 -o DPkg::Lock::Timeout=120 update', message)
+        self.assertIn('100', message)
+        self.assertIn(lock, message)
+
+    def test_inventory_failure_reports_command_code_and_stderr(self):
+        detail = 'dpkg-query: error: failed to open package info file'
+        def broken(command):
+            result = self.execute(command)
+            if command[:1] == ['dpkg-query']:
+                return SimpleNamespace(returncode=2, stdout='', stderr=detail + '\n')
+            return result
+        with self.assertRaises(ValueError) as caught:
+            self.prepare(broken, mode='api')
+        message = str(caught.exception)
+        self.assertIn('dpkg-query -W -f=${db:Status-Status} age', message)
+        self.assertIn('exited 2', message)
+        self.assertIn(detail, message)
+
+    def test_unexpected_inventory_failure_never_reaches_install(self):
+        def broken(command):
+            result = self.execute(command)
+            if command[:1] == ['dpkg-query']:
+                return SimpleNamespace(returncode=2, stdout='', stderr='inventory unavailable')
+            return result
+        with self.assertRaises(ValueError):
+            self.prepare(broken, mode='api')
+        self.assertFalse(any(c[:2] == ['sudo', 'apt-get'] for c in self.calls))
+
+    def test_main_prints_error_detail_before_generic_failure(self):
+        detail = 'command sudo apt-get update exited 100; stderr: lock'
+        def broken(*args, **kwargs):
+            raise ValueError(detail)
+        original = LINUX['main'].__globals__['prepare']
+        LINUX['main'].__globals__['prepare'] = broken
+        try:
+            with contextlib.redirect_stderr(io.StringIO()) as err, \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    mock.patch.object(sys, 'argv', ['ci_prepare_linux.py', 'api']):
+                status = LINUX['main']()
+        finally:
+            LINUX['main'].__globals__['prepare'] = original
+        lines = err.getvalue().splitlines()
+        self.assertEqual(status, 1)
+        self.assertEqual(lines[0], 'CI Linux preparation detail: ' + detail)
+        self.assertEqual(lines[-1], 'CI Linux preparation failed; browser checks must not be skipped.')
 
     def test_manifest_version_drift_is_rejected_before_install(self):
         with tempfile.TemporaryDirectory() as tmp:
