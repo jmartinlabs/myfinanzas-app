@@ -16,6 +16,7 @@ export type RepartoPlanFuente =
   | "Gasto real"
   | "Aportación a saldo"
   | "No aplica";
+export type RepartoPlanEntityEstado = "Activa" | "Inactiva" | null;
 
 export type RepartoPlanLine = {
   source: RepartoPlanSource;
@@ -29,15 +30,18 @@ export type RepartoPlanLine = {
   pendiente: string | null;
   estado: string | null;
   motivo: string | null;
-  sinPlanificar: boolean;
-  entidadEstado: string | null;
+  sinPlanificar: boolean | null;
+  entidadEstado: RepartoPlanEntityEstado;
+  /** Destino repetido o motivo publicado de atribución ambigua. */
+  atribucionAmbigua: boolean;
   revision: number;
 };
 
 export type RepartoPlan = {
   source: RepartoPlanSource;
   ciclo: string;
-  revision: number;
+  /** Revisión del plan legado; D′ no publica una revisión de plan única. */
+  revision: number | null;
   lines: RepartoPlanLine[];
   /** Destinos repetidos entre líneas de Aportación a saldo del mismo plan. */
   destinosCompartidos: string[];
@@ -46,6 +50,24 @@ export type RepartoPlan = {
 type CyclePlanView = ReturnType<typeof getCyclePlan>;
 type DprimaPlanView = ReturnType<typeof getPlanMensualDprima>;
 type DprimaPartidasView = ReturnType<typeof listDprimaPartidas>;
+
+const FUENTES = new Set<RepartoPlanFuente>([
+  "Gasto real",
+  "Aportación a saldo",
+  "No aplica",
+]);
+
+function fuente(value: string): RepartoPlanFuente {
+  if (!FUENTES.has(value as RepartoPlanFuente))
+    throw new Error(`Fuente de plan no soportada: ${value}`);
+  return value as RepartoPlanFuente;
+}
+
+function entidadEstado(value: string | null | undefined): RepartoPlanEntityEstado {
+  if (value === "Activa" || value === "Activo") return "Activa";
+  if (value === "Inactiva" || value === "Inactivo") return "Inactiva";
+  return null;
+}
 
 function repeatedDestinations(lines: RepartoPlanLine[]) {
   const counts = new Map<string, number>();
@@ -65,7 +87,7 @@ export function normalizePlanCiclo(plan: CyclePlanView): RepartoPlan {
     ciclo: plan.ciclo.id,
     referencia: item.presupuesto.id,
     nombre: item.presupuesto.nombre,
-    fuente: item.presupuesto.fuente as RepartoPlanFuente,
+    fuente: fuente(item.presupuesto.fuente),
     destino: item.presupuesto.destino,
     delMes: item.aTransferir,
     ejecutado: item.ejecutado,
@@ -73,15 +95,21 @@ export function normalizePlanCiclo(plan: CyclePlanView): RepartoPlan {
     estado: item.estado,
     motivo: item.motivo,
     sinPlanificar: item.sinPlanificar,
-    entidadEstado: item.presupuesto.estado,
+    entidadEstado: entidadEstado(item.presupuesto.estado),
+    atribucionAmbigua: false,
     revision: plan.revision,
   }));
+  const destinosCompartidos = repeatedDestinations(lines);
+  for (const line of lines)
+    line.atribucionAmbigua =
+      Boolean(line.destino && destinosCompartidos.includes(line.destino)) ||
+      Boolean(line.motivo?.includes("Destino compartido"));
   return {
     source: "PlanCiclo",
     ciclo: plan.ciclo.id,
     revision: plan.revision,
     lines,
-    destinosCompartidos: repeatedDestinations(lines),
+    destinosCompartidos,
   };
 }
 
@@ -95,23 +123,29 @@ export function normalizeDprima(
     ciclo: plan.ciclo.id,
     referencia: item.raiz,
     nombre: item.nombre,
-    fuente: item.fuente as RepartoPlanFuente,
+    fuente: fuente(item.fuente),
     destino: item.destino,
     delMes: item.delMes,
     ejecutado: item.ejecutado,
     pendiente: item.pendiente,
     estado: item.estado,
     motivo: item.motivo,
-    sinPlanificar: false,
-    entidadEstado: estados.get(item.raiz) ?? null,
+    sinPlanificar: null,
+    entidadEstado: entidadEstado(estados.get(item.raiz)),
+    atribucionAmbigua: false,
     revision: item.revision,
   }));
+  const destinosCompartidos = repeatedDestinations(lines);
+  for (const line of lines)
+    line.atribucionAmbigua =
+      Boolean(line.destino && destinosCompartidos.includes(line.destino)) ||
+      Boolean(line.motivo?.includes("Destino compartido"));
   return {
     source: "Dprima",
     ciclo: plan.ciclo.id,
-    revision: lines.reduce((max, line) => Math.max(max, line.revision), 0),
+    revision: null,
     lines,
-    destinosCompartidos: repeatedDestinations(lines),
+    destinosCompartidos,
   };
 }
 

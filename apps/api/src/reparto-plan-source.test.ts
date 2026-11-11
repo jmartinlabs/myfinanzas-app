@@ -14,6 +14,7 @@ import {
 } from "./planes-ciclo";
 import {
   confirmPartidaConfig,
+  getPlanMensualDprima,
   previewPartidaConfig,
   writeMensual,
 } from "./dprima";
@@ -39,7 +40,7 @@ const legacyView = {
       },
       aTransferir: "100.00",
       ejecutado: "40.00",
-      pendiente: "60.00",
+      pendiente: "999.00",
       estado: "Pendiente",
       motivo: null,
       sinPlanificar: false,
@@ -64,7 +65,7 @@ const legacyView = {
         id: "PRE003",
         nombre: "Segunda aportación",
         fuente: "Aportación a saldo",
-        destino: "S002",
+        destino: "S004",
         estado: "Activo",
       },
       aTransferir: "10.00",
@@ -87,9 +88,9 @@ const dprimaView = {
       destino: "S002",
       delMes: "100.00",
       ejecutado: "40.00",
-      pendiente: "60.00",
+      pendiente: "777.00",
       estado: "Pendiente",
-      motivo: null,
+      motivo: "Destino compartido por varias raíces: atribución automática bloqueada.",
       revision: 3,
     },
     {
@@ -104,6 +105,18 @@ const dprimaView = {
       motivo: null,
       revision: 2,
     },
+    {
+      raiz: "PAR003",
+      nombre: "Segunda aportación D′",
+      fuente: "Aportación a saldo",
+      destino: "S002",
+      delMes: "10.00",
+      ejecutado: "0.00",
+      pendiente: "10.00",
+      estado: "Pendiente",
+      motivo: null,
+      revision: 1,
+    },
   ],
   nota: "Fixture D′",
 } as any;
@@ -112,6 +125,7 @@ const partidasView = {
   raices: [
     { id: "PAR001", estado: "Activa" },
     { id: "PAR002", estado: "Inactiva" },
+    { id: "PAR003", estado: "Activa" },
   ],
   hijasSinRaiz: [],
 } as any;
@@ -132,21 +146,23 @@ test("normaliza PlanCiclo sin mezclar ni recalcular valores publicados", () => {
     destino: "S002",
     delMes: "100.00",
     ejecutado: "40.00",
-    pendiente: "60.00",
+    pendiente: "999.00",
     estado: "Pendiente",
-    entidadEstado: "Activo",
+    entidadEstado: "Activa",
   });
-  expect(plan.destinosCompartidos).toEqual(["S002"]);
+  expect(plan.lines[1].entidadEstado).toBe("Inactiva");
+  expect(plan.destinosCompartidos).toEqual([]);
 });
 
 test("normaliza Dprima sin mezclar ni recalcular valores publicados", () => {
   const plan = normalizeDprima(dprimaView, partidasView);
   expect(plan.source).toBe("Dprima");
   expect(plan.ciclo).toBe("C1");
-  expect(plan.revision).toBe(3);
+  expect(plan.revision).toBeNull();
   expect(plan.lines.map((line) => line.referencia)).toEqual([
     "PAR001",
     "PAR002",
+    "PAR003",
   ]);
   expect(plan.lines.every((line) => line.source === "Dprima")).toBe(true);
   expect(plan.lines[0]).toMatchObject({
@@ -154,22 +170,26 @@ test("normaliza Dprima sin mezclar ni recalcular valores publicados", () => {
     destino: "S002",
     delMes: "100.00",
     ejecutado: "40.00",
-    pendiente: "60.00",
+    pendiente: "777.00",
     estado: "Pendiente",
     entidadEstado: "Activa",
+    atribucionAmbigua: true,
   });
   expect(plan.lines[1]).toMatchObject({
     fuente: "Gasto real",
     entidadEstado: "Inactiva",
-    sinPlanificar: false,
+    sinPlanificar: null,
   });
-  expect(plan.destinosCompartidos).toEqual([]);
+  expect(plan.destinosCompartidos).toEqual(["S002"]);
+  expect(plan.lines[2].atribucionAmbigua).toBe(true);
 });
 
 test("exige un origen explícito y no cae a otro plan", () => {
-  expect(() =>
-    readRepartoPlan({} as Database, "C1", "Otro" as any, now),
-  ).toThrow("Origen de plan no soportado");
+  for (const source of ["Otro", "", undefined, null]) {
+    expect(() =>
+      readRepartoPlan({} as Database, "C1", source as any, now),
+    ).toThrow("Origen de plan no soportado");
+  }
 });
 
 test("lee el Plan del ciclo real sin recalcular sus importes", () => {
@@ -219,13 +239,18 @@ test("lee el Plan del ciclo real sin recalcular sus importes", () => {
     randomUUID(),
     now,
   );
+  const source = getCyclePlan(db, cycle.id, now);
+  const sourceItem = source.items.find((item) => item.presupuesto.id === budget.id)!;
   const plan = readRepartoPlan(db, cycle.id, "PlanCiclo", now);
   expect(plan.source).toBe("PlanCiclo");
   expect(plan.lines).toHaveLength(1);
   expect(plan.lines[0]).toMatchObject({
     referencia: budget.id,
-    delMes: "100.00",
+    delMes: sourceItem.aTransferir,
+    ejecutado: sourceItem.ejecutado,
+    pendiente: sourceItem.pendiente,
     fuente: "Aportación a saldo",
+    entidadEstado: "Activa",
   });
   db.close();
 });
@@ -308,12 +333,16 @@ test("lee el Plan mensual D′ real sin recalcular sus importes", () => {
     randomUUID(),
     now,
   );
+  const source = getPlanMensualDprima(db, cycle.id, now);
+  const sourceItem = source.items.find((item) => item.raiz === root.id)!;
   const plan = readRepartoPlan(db, cycle.id, "Dprima", now);
   expect(plan.source).toBe("Dprima");
   expect(plan.lines).toHaveLength(1);
   expect(plan.lines[0]).toMatchObject({
     referencia: root.id,
-    delMes: "100.00",
+    delMes: sourceItem.delMes,
+    ejecutado: sourceItem.ejecutado,
+    pendiente: sourceItem.pendiente,
     fuente: "Aportación a saldo",
     entidadEstado: "Activa",
   });
