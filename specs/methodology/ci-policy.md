@@ -260,7 +260,8 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   revisado y se reutiliza en el commit de integración solo si
   `scripts/check-evidence --qa-equivalence` demuestra identidad de árbol o composición
   limpia sobre el primer padre, y `qa_reference` resuelve a una review, comentario de PR o
-  comentario de commit del SHA revisado. Cubre merge, squash y rebase; conflicto resuelto,
+  comentario de commit del SHA revisado con veredicto favorable (`APPROVED` o `qa=APTO`).
+  Cubre merge, squash y rebase; conflicto resuelto,
   cambio extra o evidencia insuficiente bloquean. El preflight vive en `rootless.yml`; no
   añade workflow, job ni perfil, ni CI post-merge. La CI `required` full del tag sigue
   ejecutándose sobre el SHA exacto. La equivalencia no es aprobación de QA, ni de merge, ni

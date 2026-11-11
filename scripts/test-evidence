@@ -205,7 +205,7 @@ class EquivalenceTests(unittest.TestCase):
     def fake(self, endpoint, payload):
         self.data[endpoint] = payload
 
-    def bind(self, reviewed, head=None, pr=7, state='COMMENTED', body='QA independiente APTO'):
+    def bind(self, reviewed, head=None, pr=7, state='COMMENTED', body='QA independiente qa=APTO'):
         self.fake(f'repos/{self.REPOSITORY}/pulls/{pr}',
                   {'merged': True, 'head': {'sha': head or reviewed},
                    'user': {'login': 'pr-author'}})
@@ -335,7 +335,8 @@ class EquivalenceTests(unittest.TestCase):
         reviewed = self.feature(('app.txt', 'v2\n'))[0]
         evidence = f'https://github.com/{self.REPOSITORY}/commit/{reviewed}#commitcomment-9'
         self.fake(f'repos/{self.REPOSITORY}/comments/9',
-                  {'commit_id': reviewed, 'body': 'QA independiente APTO'})
+                  {'commit_id': reviewed, 'body': 'QA independiente qa=APTO',
+                   'user': {'login': 'qa-reviewer'}})
         self.bind(reviewed)
         self.assertPass(self.check(reviewed, reviewed, evidence), 'tree')
 
@@ -346,10 +347,14 @@ class EquivalenceTests(unittest.TestCase):
         self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
                   {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
                    'body': 'QA independiente APTO', 'user': {'login': 'qa-reviewer'}})
+        self.assertFail(self.check(reviewed, reviewed, evidence), 'must declare qa=APTO')
+        self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
+                  {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
+                   'body': 'qa=APTO', 'user': {'login': 'qa-reviewer'}})
         self.assertFail(self.check(reviewed, reviewed, evidence), 'must name the reviewed commit')
         self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
                   {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
-                   'body': 'QA independiente APTO reviewed=' + reviewed,
+                   'body': 'qa=APTO reviewed=' + reviewed,
                    'user': {'login': 'qa-reviewer'}})
         self.assertPass(self.check(reviewed, reviewed, evidence), 'tree')
 
@@ -411,10 +416,45 @@ class EquivalenceTests(unittest.TestCase):
         self.bind(reviewed)
         self.fake(f'repos/{self.REPOSITORY}/pulls/comments/3',
                   {'pull_request_url': f'https://api.github.com/repos/{self.REPOSITORY}/pulls/99',
-                   'commit_id': reviewed, 'body': 'QA APTO',
+                   'commit_id': reviewed, 'body': 'qa=APTO',
                    'user': {'login': 'qa-reviewer'}})
         result = self.check(reviewed, reviewed, evidence)
         self.assertFail(result, 'does not belong to the declared pull request')
+
+    def test_tree_identity_with_reviewed_in_parent_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.git('merge', '--ff-only', 'feature')
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'already contained in the integration base')
+
+    def test_tree_identity_without_tree_change_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.git('cherry-pick', '-x', reviewed)
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'does not change the tree')
+
+    def test_review_without_favourable_verdict_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed,
+                            self.bind(reviewed, body='revisado sin veredicto'))
+        self.assertFail(result, 'must be APPROVED or declare qa=APTO')
+
+    def test_negative_verdict_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, self.bind(reviewed, body='qa=NO APTO'))
+        self.assertFail(result, 'must be APPROVED or declare qa=APTO')
+
+    def test_approved_review_without_body_is_accepted(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed,
+                            self.bind(reviewed, state='APPROVED', body=''))
+        self.assertPass(result, 'tree')
 
 
 if __name__ == '__main__':

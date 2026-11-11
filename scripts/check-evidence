@@ -29,6 +29,7 @@ REVIEW = re.compile(r'pullrequestreview-([0-9]+)')
 DISCUSSION = re.compile(r'discussion_r([0-9]+)')
 ISSUE_COMMENT = re.compile(r'issuecomment-([0-9]+)')
 COMMIT_COMMENT = re.compile(r'commitcomment-([0-9]+)')
+VERDICT = 'qa=APTO'
 
 
 def git(root, *args):
@@ -128,7 +129,9 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
                     'QA review does not belong to the reviewed commit')
             require(data.get('state') in ('APPROVED', 'COMMENTED'),
                     'QA review must be published as APPROVED or COMMENTED')
-            require((data.get('body') or '').strip(), 'QA review body is empty')
+            require(data.get('state') == 'APPROVED'
+                    or VERDICT in (data.get('body') or ''),
+                    'QA review must be APPROVED or declare qa=APTO')
             return 'review:' + match.group(1), author(data)
         match = DISCUSSION.fullmatch(fragment)
         if match:
@@ -137,7 +140,8 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
                     'QA review comment does not belong to the declared pull request')
             require(reviewed in (data.get('commit_id'), data.get('original_commit_id')),
                     'QA review comment does not belong to the reviewed commit')
-            require((data.get('body') or '').strip(), 'QA review comment body is empty')
+            require(VERDICT in (data.get('body') or ''),
+                    'QA review comment must declare qa=APTO')
             return 'review-comment:' + match.group(1), author(data)
         match = ISSUE_COMMENT.fullmatch(fragment)
         if match:
@@ -145,7 +149,7 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
             require(str(data.get('issue_url', '')).endswith(f'/issues/{pull_request}'),
                     'QA comment does not belong to the declared pull request')
             body = data.get('body') or ''
-            require(body.strip(), 'QA comment body is empty')
+            require(VERDICT in body, 'QA comment must declare qa=APTO')
             require(f'reviewed={reviewed}' in body,
                     'QA comment must name the reviewed commit as reviewed=<sha>')
             return 'issue-comment:' + match.group(1), author(data)
@@ -159,7 +163,8 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
         data = api(f'repos/{repository}/comments/{match.group(1)}')
         require(data.get('commit_id') == reviewed,
                 'QA commit comment does not belong to the reviewed commit')
-        require((data.get('body') or '').strip(), 'QA commit comment body is empty')
+        require(VERDICT in (data.get('body') or ''),
+                'QA commit comment must declare qa=APTO')
         return 'commit-comment:' + match.group(1), author(data)
 
     raise ValueError('QA evidence must be a pull request or commit URL in this repository')
@@ -190,29 +195,28 @@ def qa_equivalence(args):
             'reviewed commit is not part of the declared pull request')
 
     target = tree_oid(root, integration)
+    parents = commit_parents(root, integration)
     if tree_oid(root, reviewed) == target:
         mode = 'tree'
     else:
-        parents = commit_parents(root, integration)
         require(bool(parents), 'integration commit has no parent')
-        parent = parents[0]
-        # A reviewed commit already contained in the integration base contributes
-        # no deployed content: the merge is trivial and would certify the whole
-        # base with stale evidence.
-        require(not ancestry(root, reviewed, parent),
-                'reviewed commit is already contained in the integration base and '
-                'contributes no deployed content; new independent QA is required')
-        # The same holds when the reviewed patch reached the base by squash or
-        # cherry-pick: a tag commit without tree changes would certify the parent
-        # tree, including content that was never reviewed.
-        require(tree_oid(root, parent) != target,
-                'integration commit does not change the tree and cannot carry the '
-                'reviewed content; new independent QA is required')
-        require(merge_tree(root, parent, reviewed) == target,
+        require(merge_tree(root, parents[0], reviewed) == target,
                 'integration tree is not the reviewed content composed onto its first '
                 'parent; a conflict resolution, extra change or different commit '
                 'requires new independent QA')
         mode = 'merge'
+
+    # These guards apply to both modes: an empty integration commit, or a reviewed
+    # commit that the base already contains, cannot carry the deployed content even
+    # when the trees happen to match.
+    if parents:
+        parent = parents[0]
+        require(not ancestry(root, reviewed, parent),
+                'reviewed commit is already contained in the integration base and '
+                'contributes no deployed content; new independent QA is required')
+        require(tree_oid(root, parent) != target,
+                'integration commit does not change the tree and cannot carry the '
+                'reviewed content; new independent QA is required')
 
     reference = (f'reviewed={reviewed} integration={integration} '
                  f'pr={args.pr} qa={args.evidence}')

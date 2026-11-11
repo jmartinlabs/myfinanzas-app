@@ -141,8 +141,9 @@ Reglas:
   manifiesto de seed, además de
   `qa_reference=reviewed=<SHA40> integration=<SHA40> pr=<N> qa=<URL>`. `reviewed` es el
   commit revisado por QA independiente; `integration` es el commit del tag; `qa` enlaza la
-  evidencia real (review, comentario de PR o comentario de commit) ligada a ambos; en
-  comentarios de PR el cuerpo debe incluir `reviewed=<SHA40>`. El workflow valida `sha=`,
+  evidencia real (review, comentario de PR o comentario de commit) ligada a ambos. La
+  evidencia debe acreditar un resultado favorable —review `APPROVED` o cuerpo con
+  `qa=APTO`—; en comentarios de PR, además `reviewed=<SHA40>`. El workflow valida `sha=`,
   los campos de `qa_reference` y la equivalencia antes de construir la release; versión,
   digest, contrato de esquema y seed se verifican en las fases de release y esquema. La
   autoría de la evidencia se registra, pero la independencia sigue siendo un gate de
@@ -152,7 +153,9 @@ Reglas:
 aceptación funcional. Es una atestación del publicador; el workflow comprueba que el árbol
 del commit del tag se compone exactamente del contenido revisado sobre su primer padre
 (identidad de árbol o merge limpio) y que la referencia QA resuelve a un artefacto de
-GitHub del PR y del commit revisado. La equivalencia de árbol no acredita la calidad de la QA ni sustituye
+GitHub del PR y del commit revisado. La identidad de árbol no exime de las guardas: el
+commit del tag debe cambiar el árbol y el commit revisado no puede estar ya contenido en la
+base. La equivalencia de árbol no acredita la calidad de la QA ni sustituye
 su aprobación: una divergencia, un conflicto resuelto, un cambio extra, un commit de
 integración sin cambio de árbol, un `reviewed` ya contenido en la base de integración o una
 evidencia no verificable exigen QA nueva. (D3 cerrada 2026-11-11.)
