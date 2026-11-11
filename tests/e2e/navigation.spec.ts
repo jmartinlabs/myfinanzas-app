@@ -123,7 +123,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       ),
     ).toBe(true);
 
-  // Los 23 enlaces previos se conservan y /fotos se declara una sola vez.
+  // Los 24 enlaces se conservan y /fotos se declara una sola vez.
   const hrefs = await nav
     .locator("a")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
@@ -281,7 +281,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   await expect(first).toHaveCSS("outline-style", "solid");
   await page.keyboard.press("Escape");
 
-  // Tres temas a 390 con el menú abierto: sin desbordamiento horizontal.
+  // Cinco temas a 390 con el menú abierto: sin desbordamiento horizontal.
   const select = page.getByLabel("Apariencia");
   for (const [id, file] of [
     ["dark-s", "390-dark-s-menu.png"],
@@ -314,7 +314,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     await expect(nav).toBeHidden();
   }
 
-  // Tres temas a 1440 con la barra lateral completa.
+  // Cinco temas a 1440 con la barra lateral completa.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/saldos");
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
