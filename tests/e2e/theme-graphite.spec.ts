@@ -84,7 +84,7 @@ test("Graphite Lime: catálogo, persistencia, colores, contraste y 1440/390", as
 
   await expect(select.locator("option")).toHaveCount(5);
   await expect(select.locator("option").nth(3)).toHaveAttribute("value", "graphite-lime");
-  await expect(select.locator("option").nth(3)).toHaveText("Grafito");
+  await expect(select.locator("option").nth(3)).toHaveText("Graphite Lime");
   await expect(select.locator("option").nth(4)).toHaveAttribute("value", "casa");
   await expect(select.locator("option").nth(4)).toHaveText("Casa");
 
