@@ -78,8 +78,12 @@ unidad y frontend con smoke y rollback automático.
 Gates:
 
 - tag anotado e inmutable, formato SemVer, commit igual al SHA y ancestro de `origin/test`;
-- anotación con `sha=<SHA40>` y `qa_reference=<referencia que contiene el SHA>`; es la
-  evidencia de revisión independiente, distinta del check automático `qa`;
+- anotación con `sha=<SHA40>` y `qa_reference=reviewed=<SHA40> integration=<SHA40>
+  pr=<N> qa=<URL>`; la URL debe resolver a una review, comentario de PR o comentario de
+  commit del commit revisado, y el preflight demuestra con Git que el árbol del tag es ese
+  contenido (merge, squash o rebase); conflicto, divergencia o evidencia insuficiente
+  detienen antes de construir. Es la evidencia de revisión independiente, distinta del
+  check automático `qa`;
 - actor en `MYFINANZAS_DEPLOY_ACTORS`, además del ruleset inmutable de tags;
 - `required`, `qa` y Rootless en `SUCCESS` sobre el SHA exacto;
 - interruptor `MYFINANZAS_TEST_DEPLOY=true`; desactivado, el tag no despliega;

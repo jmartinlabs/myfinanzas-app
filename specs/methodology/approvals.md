@@ -97,6 +97,14 @@ nuevo.
    revisión. Nunca extenderla a otra PR, revisión de spec o despliegue.
 4. Antes de actuar, volver a verificar objeto, estado Git, CI requerida y gates. Un
    cambio material posterior (nuevo SHA, contenido o artefacto) exige nueva aprobación.
+5. **Crédito QA por contenido.** Un SHA de integración nuevo no es por sí mismo un cambio
+   material: la QA independiente de un commit revisado se reutiliza cuando
+   `scripts/check-evidence --qa-equivalence` demuestra que el árbol del commit de
+   integración es exactamente ese contenido (identidad de árbol o merge limpio sobre su
+   primer padre) y que `qa_reference` resuelve a evidencia real de GitHub del PR y del
+   commit revisado. Un conflicto resuelto, un cambio extra, un commit revisado no
+   disponible o una evidencia no verificable exigen QA nueva. La equivalencia de árbol no
+   es aprobación de QA, ni autoriza el merge, ni autoriza el despliegue.
 
 ## Ejemplo de merge de PR
 

@@ -1,6 +1,8 @@
 # 35 — DEPLOY-TAGS-01: despliegue mediante tags de GitHub — Specification
 
-Status: **DISEÑO ACTUALIZADO 2026-11-08 — IMPLEMENTACIÓN NO AUTORIZADA.**
+Status: **DISEÑO ACTUALIZADO 2026-11-11 — D3 CERRADA; IMPLEMENTACIÓN DEL DESPLIEGUE NO
+AUTORIZADA.** Solo el preflight de crédito QA de §3 se implementa por la autorización del
+2026-11-11; las fases 1–6 siguen sin autorización.
 Decisión definitiva 2026-11-08: la creación de un tag `deploy-test-v*` o `deploy-prod-v*`
 por un actor autorizado **es la orden de despliegue**. No hay aprobación por GitHub
 Environments ni segunda aprobación, tampoco en PROD. Un Environment sin Required reviewers
@@ -134,15 +136,22 @@ Reglas:
   commit distinto o un cambio de gates exige un nuevo tag de versión, normalmente un patch.
 - **Un despliegue exitoso por versión y entorno.** `[PROPUESTA]` No se vuelve a desplegar la
   misma versión ya activada; un redespliegue exige decisión y una versión nueva.
-- **Anotación.** `[PROPUESTA]` El tag se crea anotado con un bloque no secreto que incluye
-  versión, SHA, digest del manifiesto, contrato de esquema, referencia de QA y, en TEST, el
-  manifiesto de seed. La forma exacta se decide en D3; el workflow no debe interpretar texto
-  libre sin validación estricta.
+- **Anotación.** `[CONFIRMADO 2026-11-11]` El tag se crea anotado con un bloque no secreto
+  que incluye versión, SHA, digest del manifiesto, contrato de esquema y, en TEST, el
+  manifiesto de seed, además de
+  `qa_reference=reviewed=<SHA40> integration=<SHA40> pr=<N> qa=<URL>`. `reviewed` es el
+  commit revisado por QA independiente; `integration` es el commit del tag; `qa` enlaza la
+  evidencia real (review, comentario de PR o comentario de commit) ligada a ambos. El
+  workflow valida los campos y la equivalencia antes de construir la release; no interpreta
+  texto libre (D3, cerrada 2026-11-11).
 
-`[PROPUESTA]` La creación del tag no es la autorización de merge ni la aceptación funcional.
-Es una atestación del publicador de que la QA aplicable terminó para ese SHA; el workflow
-registra al actor y la referencia, pero no puede demostrar por sí mismo la calidad de la QA
-(D3).
+`[CONFIRMADO 2026-11-11]` La creación del tag no es la autorización de merge ni la
+aceptación funcional. Es una atestación del publicador; el workflow comprueba que el árbol
+del commit del tag es exactamente el contenido revisado (identidad de árbol o merge limpio
+sobre su primer padre) y que la referencia QA resuelve a un artefacto de GitHub del PR y
+del commit revisado. La equivalencia de árbol no acredita la calidad de la QA ni sustituye
+su aprobación: una divergencia, un conflicto resuelto, un cambio extra o una evidencia no
+verificable exigen QA nueva. (D3 cerrada 2026-11-11.)
 
 ## 4. Flujo TEST
 
@@ -162,7 +171,7 @@ registra al actor y la referencia, pero no puede demostrar por sí mismo la cali
 | Gate | Comprobación | Si falta |
 | --- | --- | --- |
 | CI | Check requerido `SUCCESS` sobre el SHA exacto; no se hereda de otro commit | Detener; ejecutar la CI sobre ese SHA y reanudar el mismo run |
-| QA | `qa_reference` en la anotación del tag, que contiene el SHA exacto y es distinta del check automático `qa` | Detener; no convertir un archivo autoemitido en PASS |
+| QA | `qa_reference` con `reviewed=<SHA40>`, `pr=<N>` y `qa=<URL>`; la URL resuelve a una review, comentario de PR o comentario de commit ligado al commit revisado, y `scripts/check-evidence --qa-equivalence` demuestra que el árbol del tag es ese contenido | Detener; publicar la evidencia real del SHA revisado o repetir la revisión independiente |
 | Rootless | Run `SUCCESS` del gate Rootless sobre el SHA exacto y coincidencia con la release | Detener; lanzar `Rootless infrastructure 32` sobre el SHA y reanudar |
 | Release | Manifiesto verificado con `--expected-commit` y `--expected-manifest-sha256`; ID/digest inmutable; frontend del mismo paquete | Detener; no reconstruir silenciosamente otro artefacto |
 | Esquema y seed | Contrato declarado por el manifiesto compatible con el estado TEST; manifiesto de seed y marcador TEST verificados (ver D11) | Detener antes de abrir la base |
@@ -319,7 +328,7 @@ repositorios es opcional y no forma parte de esta entrega.
 | --- | --- | --- | --- |
 | D1 | Mecanismo de protección de tags, actores autorizados, bypass y firma de tags | Ruleset o tag protection verificada; sin bypass ordinario; firma solo si se acuerda su custodia | Fase 2 |
 | D2 | Almacenamiento y transporte privado del paquete de release | Almacén privado direccionado por digest, con manifiesto y retención; revisar la prohibición de artifact de CI del RUNBOOK | Fase 1 |
-| D3 | Formato de la referencia QA y de la anotación del tag | Bloque estructurado y validado; la QA se revisa fuera del workflow y el actor queda registrado | Fase 3 |
+| D3 | Formato de la referencia QA y de la anotación del tag | **CERRADA 2026-11-11:** `reviewed`/`integration`/`pr`/`qa`; verificación de árbol y de evidencia GitHub en el preflight (§3) | — |
 | D4 | Lugar de ejecución y credenciales (runner dedicado, SSH restringido u OIDC) | Mínimos privilegios, sin root, sin comandos arbitrarios; evaluar el modelo de amenaza del host | Fase 2 |
 | D5 | Interruptor de TEST y primera versión | Estado inicial desactivado; habilitar solo con contrato host y copia/restore ensayados | Fase 4 |
 | D6 | Actores autorizados y separación de funciones | Ruleset de tags con allowlist + comprobación `MYFINANZAS_DEPLOY_ACTORS`; sin Required reviewers; Environment opcional solo para secretos (decisión 2026-11-08) | Fase 2 |
@@ -330,8 +339,11 @@ repositorios es opcional y no forma parte de esta entrega.
 | D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` está en v26, el seed propuesto es v25 y el PR #229 se cerró sin merge: nueva propuesta o reapertura autorizada | Fase 1 |
 
 `[CONFIRMADO]` D6 se actualiza el 2026-11-08: no hay revisores; la autorización es el tag
-creado por un actor permitido. Un Environment sin revisores puede aislar secretos. El resto de D1–D11 conserva su
-redacción. D10 se redactó cuando
+creado por un actor permitido. Un Environment sin revisores puede aislar secretos. El resto
+de D1–D2 y D4–D11 conserva su redacción; D3 se cierra el 2026-11-11 con la autorización del
+usuario («Apruebo implementar la solución propuesta mediante una única PR pequeña contra
+`test`… incluyendo el cierre de D3 en SPEC35»), limitada al preflight de crédito QA: no
+habilita las fases 1–6 ni ningún despliegue. D10 se redactó cuando
 `test` era futura; la rama existe y el origen vigente se define en §6, sin cambiar la
 decisión sobre pre-releases y metadatos. La referencia de D11 a v26/v25 y al PR #229 es
 histórica: el estado verificado es v27/C27, SPEC34/testplan reconciliados y seed `FT-1` v27
