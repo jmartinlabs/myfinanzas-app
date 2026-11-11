@@ -2,8 +2,8 @@
 
 The candidate uses JSON (a YAML subset accepted by Actions). This avoids a new YAML
 dependency or pretending a regex is a general Actions expression/YAML interpreter.
-PR runs supersede older candidates; integration-branch pushes retain a fast
-postmerge gate. The integration branches are main and test.
+PR runs supersede older candidates; deploy tag pushes run full on the exact tag
+commit. Integration-branch pushes no longer duplicate merged PR validation.
 """
 import json
 from pathlib import Path
@@ -21,12 +21,16 @@ case "$profile" in docs|fast|critical|full) ;; *) echo "Invalid CI profile" >&2;
 printf 'profile=%s\\n' "$profile" >> "$GITHUB_OUTPUT"
 """
 CONCURRENCY = {
-    # A surviving feature push keeps coalescing with its PR. The test
-    # postmerge gate uses its own namespace so a test -> main promotion PR
-    # can neither cancel nor be cancelled by the test push check.
-    'group': "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.event_name == 'push' && github.ref_name == 'test' && 'test push' || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
-    'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/test' && github.event_name != 'workflow_dispatch' }}",
+    # PRs supersede their own candidate. Deploy tag runs must not cancel each
+    # other so every tag can publish the required/qa evidence the deploy gate
+    # waits for; manual runs are isolated by run_id.
+    'group': "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
+    'cancel-in-progress': "${{ github.event_name == 'pull_request' }}",
 }
+PROFILE_SUMMARY = """profile="$(printf '%s' "$CI_PROFILE" | tr '[:lower:]' '[:upper:]')"
+case "$profile" in DOCS|FAST|CRITICAL|FULL) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
+printf 'Perfil CI: %s\\n' "$profile" >> "$GITHUB_STEP_SUMMARY"
+"""
 
 
 def required_workflow():
@@ -40,14 +44,14 @@ def required_workflow():
     states['CI_PROFILE'] = '${{ steps.plan.outputs.profile }}'
     return {
         'name': 'Validate project',
-        'on': {'push': {'branches': ['main', 'test']},
+        'on': {'push': {'tags': ['deploy-test-v*']},
                'pull_request': {'branches': ['main', 'test'], 'types': [
                    'opened', 'synchronize', 'reopened', 'ready_for_review']},
                'workflow_dispatch': {}},
         'permissions': {'contents': 'read'},
         'concurrency': CONCURRENCY,
         'jobs': {'required': {
-            'runs-on': 'ubuntu-24.04', 'timeout-minutes': 15,
+            'runs-on': 'ubuntu-24.04', 'timeout-minutes': 25,
             'permissions': {'contents': 'read', 'pull-requests': 'read'},
             'steps': [CHECKOUT, PYTHON,
                 {'id': 'context', 'name': 'Resolve integration context',
@@ -55,6 +59,9 @@ def required_workflow():
                 {'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'], 'ref': '${{ steps.context.outputs.ref }}'}},
                 {'id': 'snapshot', 'name': 'Freeze validated checkout', 'env': context, 'run': 'python3 scripts/ci_context.py snapshot'},
                 {'id': 'plan', 'name': 'Select conservative CI execution profile', 'run': CLASSIFY, 'env': context},
+                {'id': 'summary', 'name': 'Publish selected CI profile',
+                 'env': {'CI_PROFILE': '${{ steps.plan.outputs.profile }}'},
+                 'run': PROFILE_SUMMARY},
                 {'id': 'baseline', 'name': 'Repository, project and document checks', 'run': BASELINE, 'env': context},
                 {'id': 'bun', 'if': app_if, **BUN},
                 {'id': 'install', 'if': app_if, 'run': 'bun install --frozen-lockfile'},

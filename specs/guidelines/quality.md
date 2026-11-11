@@ -76,12 +76,15 @@ blobs, sin modificarlos. También detecta secretos borrados en commits posterior
 
 La configuración vigente es [local-first](../methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27):
 PR hacia main o test —incluido `ready_for_review`, sin desactivar el gate en drafts—,
-push solo main o test y manual; un job required Ubuntu24.04 con baseline, selección
-conservadora, tipos/build y API/SQLite independiente en cambios críticos. El push a
-main o test clasifica su rango: solo documentación ejecuta `docs`; el resto, `fast`.
-E2E/regresiones completas se ejecutan localmente con QA independiente; manual CI
-conserva la batería completa. Acciones SHA, historial completo, credenciales no
-persistidas, permisos de lectura y timeout15min permanecen. No configura protecciones.
+push del tag `deploy-test-v*` y manual; un job required Ubuntu24.04 con baseline,
+selección conservadora, tipos/build y API/SQLite independiente en cambios críticos. Ya
+no hay push automático a main/test: la PR ya validó su merge ref. El tag ejecuta `full`
+sobre su commit exacto; la PR solo selecciona `docs`/`fast`/`critical`, y `full` se
+reserva para dispatch o tag. E2E/regresiones completas se ejecutan localmente con QA
+independiente; dispatch y tag conservan la batería completa. Acciones SHA, historial
+completo, credenciales no persistidas, permisos de lectura y timeout25min permanecen.
+El perfil se publica en el step summary; el check obligatorio sigue llamándose
+`required`. No configura protecciones.
 
 No atribuir a GitHub resultados locales: estado de ejecución en [STEP 3](../automated-checks.md).
 Un exit 1 esperado dentro de un test negativo no es un fallo de la suite: demuestra que
@@ -133,15 +136,16 @@ sus suites no sustituyen ni prueban el nuevo grafo. Las regresiones locales prue
 clasificación y gates sin ejecutar cargas financieras ni instalar navegadores.
 
 `ci_context.py` fija el contexto de integración: un PR usa su merge ref y verifica el
-head tras checkout; un push a `main` o `test` usa exactamente el SHA del evento. Una
-base de PR distinta de `main`/`test` se rechaza y un push fuera de esas dos ramas no
-supera `ci_profile`. La clasificación compara el push `before..after` y la PR completa
-mediante merge-base sobre la base probada; un último commit documental no oculta código
-anterior. Full/required usan el SHA fijado por baseline. La concurrencia agrupa cada
-PR por rama y cada push por rama, con namespace propio para el postmerge de `test`:
-las PR superadas del mismo candidato se cancelan, mientras push a `main`/`test`,
-tags, forks y manuales se separan y no se cancelan entre sí. No elimina ejecuciones
-ya completadas.
+head tras checkout; un push de tag usa el ref del tag y verifica que se pela al commit
+exacto del evento. Una base de PR distinta de `main`/`test` se rechaza, igual que un
+push de rama de trabajo o un tag ajeno. La clasificación compara la PR completa mediante
+merge-base sobre la base probada; un último commit documental no oculta código anterior.
+El push de tag `deploy-test-v*` selecciona `full` y full/required usan el SHA fijado por
+baseline. La concurrencia agrupa cada PR por rama: las PR superadas del mismo candidato
+se cancelan, mientras tags y manuales se separan y no se cancelan entre sí. No elimina
+ejecuciones ya completadas. `rootless.yml` ya no reacciona al push de `test`; su `qa`
+conserva solo `bun test apps/web` y el deploy espera `required` y `qa` sobre el commit
+del tag antes de continuar.
 
 Ubuntu24.04 x64: inventario dpkg de los 33 paquetes oficiales tools+chromium de Playwright
 1.64.1 más age. Versión instalada comprobada; una sola actualización/instalación APT

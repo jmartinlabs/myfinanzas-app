@@ -2,9 +2,8 @@
   "name": "Validate project",
   "on": {
     "push": {
-      "branches": [
-        "main",
-        "test"
+      "tags": [
+        "deploy-test-v*"
       ]
     },
     "pull_request": {
@@ -25,13 +24,13 @@
     "contents": "read"
   },
   "concurrency": {
-    "group": "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.event_name == 'push' && github.ref_name == 'test' && 'test push' || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
-    "cancel-in-progress": "${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/test' && github.event_name != 'workflow_dispatch' }}"
+    "group": "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
+    "cancel-in-progress": "${{ github.event_name == 'pull_request' }}"
   },
   "jobs": {
     "required": {
       "runs-on": "ubuntu-24.04",
-      "timeout-minutes": 15,
+      "timeout-minutes": 25,
       "permissions": {
         "contents": "read",
         "pull-requests": "read"
@@ -81,6 +80,14 @@
           "env": {
             "CI_CHECKOUT_REF": "${{ steps.context.outputs.ref }}"
           }
+        },
+        {
+          "id": "summary",
+          "name": "Publish selected CI profile",
+          "env": {
+            "CI_PROFILE": "${{ steps.plan.outputs.profile }}"
+          },
+          "run": "profile=\"$(printf '%s' \"$CI_PROFILE\" | tr '[:lower:]' '[:upper:]')\"\ncase \"$profile\" in DOCS|FAST|CRITICAL|FULL) ;; *) echo \"Invalid CI profile\" >&2; exit 1;; esac\nprintf 'Perfil CI: %s\\n' \"$profile\" >> \"$GITHUB_STEP_SUMMARY\"\n"
         },
         {
           "id": "baseline",

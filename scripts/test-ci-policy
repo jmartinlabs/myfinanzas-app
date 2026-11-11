@@ -361,6 +361,55 @@ class CiClassifierTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             CONTEXT['snapshot'](self.root, 'push', event, head)
 
+    def test_snapshot_peels_annotated_deploy_tag_to_the_event_commit(self):
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        ref = 'refs/tags/deploy-test-v1.2.3'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
+        tag_object = self.git('rev-parse', ref).decode().strip()
+        self.assertNotEqual(tag_object, actual)
+        event = {'ref': ref, 'after': tag_object}
+        # GITHUB_SHA may be the tag object or its peeled commit.
+        self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, actual), actual)
+        self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, tag_object), actual)
+        for forged, checkout in ((None, ref), ('b' * 40, ref), (actual, 'refs/tags/other')):
+            with self.subTest(forged=forged, checkout=checkout), self.assertRaises(ValueError):
+                CONTEXT['snapshot'](self.root, 'push', event, checkout, forged)
+        for malformed in ('refs/tags/deploy-test-v1.2', 'refs/tags/deploy-test-v01.2.3',
+                          'refs/tags/deploy-test-v1.2.3.4'):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                CONTEXT['snapshot'](self.root, 'push',
+                                    {'ref': malformed, 'after': actual}, malformed, actual)
+        # A lightweight deploy tag is rejected before any application checks.
+        light = 'refs/tags/deploy-test-v9.9.9'
+        self.git('tag', 'deploy-test-v9.9.9', actual)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', {'ref': light, 'after': actual}, light, actual)
+        # A rewritten tag ref is no longer an annotated tag object either.
+        self.git('update-ref', ref, actual)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', {'ref': ref, 'after': actual}, ref, tag_object)
+
+    def test_lightweight_deploy_tag_is_rejected_before_full(self):
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        light = 'refs/tags/deploy-test-v9.9.9'
+        self.git('tag', 'deploy-test-v9.9.9', actual)
+        event = {'ref': light, 'after': actual, 'repository': {'default_branch': 'main'}}
+        with self.assertRaises(ValueError):
+            CONTEXT['select_ref']('push', event, 'fixture/project', lambda *_: [], self.root)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', event, light, actual)
+        with self.assertRaises(ValueError):
+            POLICY['ci_profile'](self.root, 'push', event, light)
+        # The annotated SemVer tag is accepted and selects full.
+        annotated = 'refs/tags/deploy-test-v9.9.10'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v9.9.10', '-m', 'fixture', actual)
+        event = {'ref': annotated, 'after': actual, 'repository': {'default_branch': 'main'}}
+        self.assertEqual(CONTEXT['select_ref']('push', event, 'fixture/project',
+                                               lambda *_: [], self.root), annotated)
+        self.assertEqual(POLICY['ci_profile'](self.root, 'push', event, annotated), 'full')
+
     def test_surviving_docs_push_keeps_full_for_accumulated_pr_code(self):
         self.git('switch', '-qc', 'feature')
         self.write('apps/api/code.ts', 'fictional code')
@@ -469,6 +518,39 @@ class CiClassifierTests(unittest.TestCase):
         self.assertEqual(select(self.root, 'workflow_dispatch', {}, code_head), 'full')
         with self.assertRaises(ValueError): select(self.root, 'unknown', {}, code_head)
 
+    def test_ci_profile_deploy_tags_run_full_on_the_exact_tag_commit(self):
+        select = POLICY['ci_profile']
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        ref = 'refs/tags/deploy-test-v1.2.3'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
+        self.assertEqual(select(self.root, 'push', {'ref': ref, 'after': actual}, ref), 'full')
+        # An annotated tag push may expose the tag object as the event SHA.
+        annotated = 'refs/tags/deploy-test-v2.0.0'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v2.0.0', '-m', 'fixture', actual)
+        tag_object = self.git('rev-parse', annotated).decode().strip()
+        self.assertEqual(select(self.root, 'push', {'ref': annotated, 'after': tag_object}, annotated), 'full')
+        # A checked-out commit that differs from the tag commit is refused.
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v3.0.0', '-m', 'fixture', self.base)
+        self.write('specs/backlog/after-tag.md')
+        self.commit()
+        with self.assertRaises(ValueError):
+            select(self.root, 'push', {'ref': 'refs/tags/deploy-test-v3.0.0', 'after': self.base},
+                   'refs/tags/deploy-test-v3.0.0')
+        for event, checkout in (
+                ({'ref': ref, 'after': actual}, actual),           # raw SHA instead of the tag ref
+                ({'ref': ref, 'after': '0' * 40}, ref),            # deleted tag
+                ({'ref': 'refs/tags/v1', 'after': actual}, 'refs/tags/v1'),
+                ({'ref': 'refs/tags/deploy-test-v1.2', 'after': actual},
+                 'refs/tags/deploy-test-v1.2'),
+                ({'ref': 'refs/tags/deploy-test-v01.2.3', 'after': actual},
+                 'refs/tags/deploy-test-v01.2.3'),
+                ({'ref': ref, 'after': actual}, 'refs/heads/main')):
+            with self.subTest(event=event, checkout=checkout), self.assertRaises(ValueError):
+                select(self.root, 'push', event, checkout)
+
     def test_ci_profile_accepts_a_base_that_only_advanced_and_rejects_races(self):
         select = POLICY['ci_profile']
         merge = ('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
@@ -557,13 +639,18 @@ class CiWorkflowTests(unittest.TestCase):
             'draft job skip': lambda w: w['jobs']['required'].update({'if': 'github.event.pull_request.draft == false'}),
             'draft step skip': lambda w: by_id(w, 'verify').update({'if': 'github.event.pull_request.draft == false'}),
             'redundant feature push': lambda w: w['on'].update(push={}),
-            'missing main push': lambda w: w['on'].pop('push'),
-            'missing test push': lambda w: w['on']['push']['branches'].remove('test'),
+            'missing deploy tag push': lambda w: w['on'].pop('push'),
+            'missing deploy tag filter': lambda w: w['on']['push'].pop('tags'),
+            'wrong deploy tag filter': lambda w: w['on']['push'].update(tags=['v*']),
+            'automatic branch push': lambda w: w['on']['push'].update(branches=['main', 'test']),
             'missing test PR base': lambda w: w['on']['pull_request']['branches'].remove('test'),
             'arbitrary PR base': lambda w: w['on']['pull_request']['branches'].append('feature'),
-            'arbitrary push branch': lambda w: w['on']['push']['branches'].append('feature'),
+            'arbitrary push branch': lambda w: w['on']['push'].update(branches=['feature']),
             'test push cancellation allowed': lambda w: w['concurrency'].update(
                 {'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}"}),
+            'missing profile summary': lambda w: w['jobs']['required']['steps'].remove(by_id(w, 'summary')),
+            'summary loses profile': lambda w: by_id(w, 'summary').update(run='echo ok'),
+            'summary trusts declared profile': lambda w: by_id(w, 'summary').pop('env'),
             'privileged event': lambda w: w.update({'on': ['pull_request_target']}),
             'write permissions': lambda w: w.update(permissions={'contents': 'write'}),
             'unpinned action': lambda w: w['jobs']['required']['steps'][0].update(uses='actions/checkout@v4'),
@@ -679,11 +766,21 @@ class CiContextTests(unittest.TestCase):
 
     def test_push_without_pr_main_test_tag_manual_and_pr_keep_validation(self):
         self.assertEqual(self.choose(), self.head)
-        for ref in ('refs/heads/main', 'refs/heads/test', 'refs/tags/v1'):
+        for ref in ('refs/heads/main', 'refs/heads/test'):
             event = {**self.event, 'ref': ref}
             def forbidden(*_):
-                self.fail('integration branches and tags must not need a PR lookup')
+                self.fail('integration branches must not need a PR lookup')
             self.assertEqual(CONTEXT['select_ref']('push', event, self.repository, forbidden), self.head)
+        # Tags keep their ref so an annotated tag is checked out and peeled.
+        tag_event = {**self.event, 'ref': 'refs/tags/deploy-test-v1.2.3'}
+        self.assertEqual(CONTEXT['select_ref']('push', tag_event, self.repository,
+                                               lambda *_: self.fail('tags must not need a PR lookup')),
+                         'refs/tags/deploy-test-v1.2.3')
+        with self.assertRaises(ValueError):
+            CONTEXT['select_ref']('push', {**self.event, 'ref': 'refs/tags/'}, self.repository, lambda *_: [])
+        for malformed in ('refs/tags/deploy-test-v1.2', 'refs/tags/deploy-test-v01.2.3'):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                CONTEXT['select_ref']('push', {**self.event, 'ref': malformed}, self.repository, lambda *_: [])
         self.assertIsNone(self.choose(name='workflow_dispatch'))
         for base in ('main', 'test'):
             event = {'number': 7, 'pull_request': {'base': {'ref': base}, 'head': {'sha': self.head}}}
@@ -728,7 +825,7 @@ class CiContextTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertNotIn(env['GH_TOKEN'].encode(), r.stdout + r.stderr)
 
-    def test_concurrency_coalesces_surviving_push_and_isolates_integration_branches(self):
+    def test_concurrency_cancels_only_superseded_prs_and_isolates_tag_and_manual_runs(self):
         # Evaluate only the expression grammar used by the reviewed recipe; no eval().
         import re
         def value(expression, context):
@@ -764,23 +861,25 @@ class CiContextTests(unittest.TestCase):
         pr = {**push, 'event_name': 'pull_request', 'head_ref': 'feature', 'ref_name': '7/merge',
               'ref': 'refs/pull/7/merge', 'event': {'pull_request': {'head': {'repo': {'full_name': self.repository}}}}}
         promotion = {**pr, 'head_ref': 'test', 'ref_name': '9/merge', 'ref': 'refs/pull/9/merge'}
-        # The surviving push keeps coalescing with its PR; integration branches
-        # keep separate groups and test/main pushes never cancel an active run.
-        self.assertEqual(render(policy['group'], push), render(policy['group'], pr))
+        tag = {**push, 'ref_type': 'tag', 'ref_name': 'deploy-test-v1.2.3',
+               'ref': 'refs/tags/deploy-test-v1.2.3'}
+        # Automatic branch pushes no longer trigger this workflow; PRs keep their
+        # own group and deploy tag/manual runs never cancel or get cancelled.
         self.assertNotEqual(render(policy['group'], main_push), render(policy['group'], test_push))
         self.assertNotEqual(render(policy['group'], test_push), render(policy['group'], pr))
-        self.assertNotEqual(render(policy['group'], test_push), render(policy['group'], promotion))
         fork = copy.deepcopy(pr)
         fork['event']['pull_request']['head']['repo']['full_name'] = 'other/project'
         self.assertNotEqual(render(policy['group'], pr), render(policy['group'], fork))
-        tag = {**push, 'ref_type': 'tag', 'ref': 'refs/tags/feature'}
         self.assertNotEqual(render(policy['group'], push), render(policy['group'], tag))
+        self.assertNotEqual(render(policy['group'], push), render(policy['group'], promotion))
         manual = {**push, 'event_name': 'workflow_dispatch'}
         self.assertNotEqual(render(policy['group'], push), render(policy['group'], manual))
         expr = policy['cancel-in-progress'][4:-3]
         self.assertTrue(value(expr, {'github': pr}))
+        self.assertTrue(value(expr, {'github': promotion}))
         self.assertFalse(value(expr, {'github': main_push}))
         self.assertFalse(value(expr, {'github': test_push}))
+        self.assertFalse(value(expr, {'github': tag}))
         self.assertFalse(value(expr, {'github': manual}))
 
 
