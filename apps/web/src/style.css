@@ -309,6 +309,41 @@ small {
   color: var(--sidebar-muted);
   margin: var(--space-12) var(--space-2) var(--space-3);
 }
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--touch-min);
+  margin: var(--space-6) 0 var(--space-1);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--sidebar-muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 1.5px;
+  text-align: left;
+  text-transform: uppercase;
+}
+.nav-group-toggle:hover {
+  color: var(--sidebar-text);
+}
+.nav-group-chevron {
+  flex: none;
+  margin-left: var(--space-2);
+  font-size: 15px;
+  opacity: 0.7;
+}
+.nav-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-group-body[hidden] {
+  display: none;
+}
 .nav-active {
   display: flex;
   align-items: center;
@@ -326,8 +361,8 @@ small {
   font-size: 20px;
   margin-right: 10px;
 }
-.nav-active span:last-child {
-  margin-left: auto;
+.nav-active .nav-label {
+  margin-left: 0;
 }
 .nav-future {
   font-size: var(--text-xs);
@@ -370,6 +405,9 @@ small {
   flex-direction: column;
 }
 .global-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   min-height: 84px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -408,7 +446,8 @@ small {
   color: var(--muted);
 }
 .theme-picker select {
-  width: auto;
+  width: 9rem;
+  max-width: 100%;
   min-height: var(--control-min);
   padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
@@ -423,6 +462,14 @@ small {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
   color: var(--muted);
+}
+/* Etiqueta del entorno DEMO local: solo la envía la API cuando el modo está
+   validado (identidad demo, sin credenciales, red local). */
+.demo-badge {
+  color: var(--text);
+  border-color: var(--accent-border);
+  background: var(--surface-2);
+  font-weight: 600;
 }
 .content {
   padding: var(--space-8) 38px var(--space-10);

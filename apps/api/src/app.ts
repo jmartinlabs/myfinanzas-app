@@ -251,9 +251,21 @@ import {
   getPendiente,
   type TipoItem,
 } from "./pendientes";
+import {
+  listTransferenciasPendientes,
+  getTransferenciaPendiente,
+  crearTransferenciaPendienteConIntento,
+  editarTransferenciaPendiente,
+  previewImpactoTransferenciaPendiente,
+  confirmarTransferenciaPendiente,
+  cancelarTransferenciaPendiente,
+  candidatosTransferenciaPendiente,
+  vincularTransferenciaPendiente,
+} from "./transferencias-pendientes";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
 import { resumenInicio } from "./resumen-inicio";
 import { resumenAnual } from "./resumen-anual";
+import { assertDemoDatabase, type DemoScope } from "./demo-mode";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
@@ -274,6 +286,8 @@ export type AppOptions = {
    * defecto: sin él, `minimoObjetivo` queda `No disponible`.
    */
   resumenInicio?: { mesesObjetivo?: number | null };
+  /** Alcance DEMO ya validado en el arranque; ausente en TEST y PROD. */
+  demo?: DemoScope;
 };
 export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   if (
@@ -312,7 +326,14 @@ export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   return data as Record<string, unknown>;
 }
 export function createApp(db: Database, options: AppOptions) {
-  const auth = new Auth(db, options.key, options.origin, options.now);
+  if (options.demo) assertDemoDatabase(db, options.demo);
+  const auth = new Auth(
+    db,
+    options.key,
+    options.origin,
+    options.now,
+    options.demo?.origins,
+  );
   const now = options.now ?? Date.now;
   async function handle(req: Request) {
     const headers = new Headers({
@@ -329,7 +350,25 @@ export function createApp(db: Database, options: AppOptions) {
       if (path === "/api/health" && req.method === "GET")
         return reply({ ok: true });
       if (path === "/api/auth/status" && req.method === "GET")
-        return reply({ configured: auth.configured() });
+        return reply({
+          configured: auth.configured(),
+          ...(options.demo ? { demo: true } : {}),
+        });
+      if (
+        options.demo &&
+        req.method === "POST" &&
+        [
+          "/api/auth/enroll",
+          "/api/auth/login",
+          "/api/auth/mfa",
+          "/api/auth/recover",
+        ].includes(path)
+      )
+        throw new Problem(
+          403,
+          "DEMO_MODE",
+          "El modo DEMO no admite credenciales ni segundo factor.",
+        );
       if (
         req.method === "POST" &&
         [
@@ -366,9 +405,21 @@ export function createApp(db: Database, options: AppOptions) {
         const { challenge, ...publicResult } = result;
         return reply(publicResult);
       }
-      const session = auth.session(req);
+      let session: { csrf: string };
+      if (options.demo) {
+        const demo = auth.demoSession(req);
+        if (demo.created)
+          headers.append(
+            "set-cookie",
+            auth.cookie(auth.cookieName, demo.session, 43200),
+          );
+        session = { csrf: demo.csrf };
+      } else session = auth.session(req);
       if (path === "/api/auth/session" && req.method === "GET")
-        return reply({ csrf: session.csrf });
+        return reply({
+          csrf: session.csrf,
+          ...(options.demo ? { demo: true } : {}),
+        });
       if (path === "/api/auth/logout" && req.method === "POST") {
         auth.logout(req);
         headers.append("set-cookie", auth.cookie(auth.cookieName, "", 0));
@@ -429,6 +480,122 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      // SPEC36 I1 — shared Transferencia pendiente. Writes are authenticated
+      // and CSRF-checked by `auth.session`; each one owns one IMMEDIATE tx.
+      const pendingTransfers = path.match(
+        /^\/api\/transferencias-pendientes(?:\/(\d+)(?:\/(impacto|confirmar|cancelar|vincular|candidatos))?)?$/,
+      );
+      if (pendingTransfers) {
+        const [, rawId, action] = pendingTransfers;
+        if (!rawId) {
+          if (req.method === "GET")
+            return reply(
+              listTransferenciasPendientes(
+                db,
+                new URL(req.url).searchParams,
+                now(),
+              ),
+            );
+          if (req.method === "POST") {
+            const item = crearTransferenciaPendienteConIntento(
+              db,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            );
+            headers.set("location", `/api/transferencias-pendientes/${item.id}`);
+            return reply({ item }, 201);
+          }
+          headers.set("allow", "GET, POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "Las Transferencias pendientes se consultan con GET y se crean con POST.",
+          );
+        }
+        const id = Number(rawId);
+        if (!Number.isSafeInteger(id) || id < 1)
+          throw new Problem(404, "NOT_FOUND", "Recurso no encontrado.");
+        if (!action) {
+          if (req.method === "GET")
+            return reply(getTransferenciaPendiente(db, id, now()));
+          if (req.method === "PATCH") {
+            const item = editarTransferenciaPendiente(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            );
+            return reply({ item });
+          }
+          headers.set("allow", "GET, PATCH");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La Transferencia pendiente se consulta con GET y se edita con PATCH.",
+          );
+        }
+        if (action === "candidatos" && req.method === "GET")
+          return reply(candidatosTransferenciaPendiente(db, id));
+        if (action === "candidatos") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "Los candidatos son de solo lectura.",
+          );
+        }
+        if (action === "impacto" && req.method === "POST")
+          return reply(
+            previewImpactoTransferenciaPendiente(
+              db,
+              id,
+              await jsonBody(req),
+              now(),
+              options.movementGuard,
+            ),
+          );
+        if (action === "confirmar" && req.method === "POST")
+          return reply({
+            item: confirmarTransferenciaPendiente(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+              options.movementGuard,
+            ),
+          });
+        if (action === "cancelar" && req.method === "POST")
+          return reply({
+            item: cancelarTransferenciaPendiente(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          });
+        if (action === "vincular" && req.method === "POST")
+          return reply({
+            item: vincularTransferenciaPendiente(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          });
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "Esta acción de la Transferencia pendiente se ejecuta con POST.",
+          );
+        }
+      }
       // E3.6 — solo lectura: sin POST/PATCH/DELETE, sin importes en la URL.
       if (path === "/api/pendientes" && req.method === "GET")
         return reply(listPendientes(db, new URL(req.url).searchParams, now()));

@@ -118,6 +118,29 @@ y una migración del maestro expresamente autorizada**, conservando IDs y valida
 integridad/equivalencia. No se implementan aquí ni se reutiliza una base demo como real.
 No reutilices una base desconocida: se rechazan versiones de esquema incompatibles.
 
+## Entorno DEMO local (datos ficticios, sin login)
+
+Para enseñar la aplicación desde el Mac y desde el iPhone en la misma red Wi-Fi:
+
+```sh
+bun run dev:demo            # prepara .local/demo y arranca API + Vite
+bun run dev:demo --reset    # archiva la base DEMO y crea otra con datos nuevos
+bun run demo:seed           # solo prepara la base, sin arrancar servidores
+```
+
+Abre `http://127.0.0.1:5173` en el Mac o `http://<IP-privada-del-Mac>:5173` en el
+iPhone; el comando imprime las direcciones detectadas. No hay contraseña ni TOTP, y la
+interfaz muestra `DEMO · Datos ficticios`.
+
+El modo no se activa solo con `NODE_ENV`: `apps/api/src/demo-mode.ts` exige además
+`MYFINANZAS_DEMO=1`, base y clave dentro de `.local/demo/`, identidad SQLite `demo`
+sin credenciales y orígenes HTTP de loopback o IPv4 privada, coherentes con
+`API_BIND_HOST`. Cualquier desviación impide arrancar; TEST y producción rechazan la
+configuración. La base DEMO nunca se sobrescribe: si ya existe se reutiliza y, al
+reiniciar, se archiva en `.local/demo/archive/`. Vite escucha en `0.0.0.0` solo con
+`VITE_BIND_HOST=0.0.0.0`, que fija este comando; no se abre nada en el router.
+
+
 Una base local **E1.1/E1.2/E1.3 existente (versión 1/2/3) se actualiza transaccionalmente a versión 4**
 al abrirla, sin borrar/resembrar Saldos ni reiniciar autenticación. No vuelvas a ejecutar
 setup si el usuario ya está configurado. Conserva la clave y realiza/verifica una copia

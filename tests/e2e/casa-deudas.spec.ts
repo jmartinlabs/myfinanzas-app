@@ -67,6 +67,10 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
 
   await page
+    .locator(".nav-group-toggle")
+    .filter({ hasText: "Patrimonio" })
+    .click();
+  await page
     .locator(".sidebar")
     .getByRole("link", { name: "Deudas", exact: true })
     .click();
