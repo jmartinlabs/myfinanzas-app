@@ -279,9 +279,9 @@ export function Comida({ go }: { go: (p: string) => void }) {
   return (
     <>
       <PageHead
-        eyebrow="COMIDA · UN ÚNICO HECHO"
-        title="Revisión Comida"
-        description="Cada compra y devolución nuevas son un Movimiento. Aquí solo se guardan metadatos, atribución y métricas; el histórico agregado y auxiliar se conserva aparte."
+        eyebrow="COMIDA · CONSUMO DEL CICLO"
+        title="Comida"
+        description="¿Cuánto te queda disponible y a qué ritmo estás gastando? El gasto y las devoluciones se consultan aquí; los hechos económicos siguen en Movimientos."
       >
         <select
           aria-label="Ciclo"

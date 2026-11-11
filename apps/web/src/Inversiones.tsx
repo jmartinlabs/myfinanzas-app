@@ -731,7 +731,6 @@ function InstrumentDetail({
       >
         ‹ Volver
       </a>
-      <Tabs active="instrumentos" go={go} />
       <PageHead
         eyebrow={`${instrumento.id} · INSTRUMENTO`}
         title={instrumento.nombre}

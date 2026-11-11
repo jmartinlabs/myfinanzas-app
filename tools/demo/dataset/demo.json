@@ -1,0 +1,1030 @@
+{
+  "format": 1,
+  "id": "DEMO-1",
+  "version": 1,
+  "anchor": "2026-11-01T12:00:00.000Z",
+  "saldos": {
+    "updates": [
+      {
+        "id": "S001",
+        "nombre": "Cuenta corriente",
+        "tipo": "Efectivo",
+        "control": "Movimientos",
+        "finalidad": "Gastos planificados",
+        "liquidez": false,
+        "mostrarComoBolsa": false,
+        "permiteSalidaExterior": true,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "2400.00",
+        "objetivo": null
+      },
+      {
+        "id": "S002",
+        "nombre": "Terminal de cobros",
+        "tipo": "Efectivo",
+        "control": "Terminal",
+        "finalidad": "Gastos planificados",
+        "liquidez": false,
+        "mostrarComoBolsa": false,
+        "permiteSalidaExterior": true,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "150.00",
+        "objetivo": null
+      },
+      {
+        "id": "S003",
+        "nombre": "Efectivo para inversión",
+        "tipo": "Efectivo",
+        "control": "Inversiones",
+        "finalidad": "Inversión",
+        "liquidez": false,
+        "mostrarComoBolsa": false,
+        "permiteSalidaExterior": true,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "1200.00",
+        "objetivo": null
+      },
+      {
+        "id": "S004",
+        "nombre": "Cartera de fondos",
+        "tipo": "Inversión",
+        "control": "Inversiones",
+        "finalidad": "Inversión",
+        "liquidez": false,
+        "mostrarComoBolsa": true,
+        "permiteSalidaExterior": false,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "0.00",
+        "objetivo": null
+      },
+      {
+        "id": "S005",
+        "nombre": "Reserva no controlada",
+        "tipo": "Efectivo",
+        "control": "No controlado",
+        "finalidad": null,
+        "liquidez": false,
+        "mostrarComoBolsa": false,
+        "permiteSalidaExterior": false,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "300.00",
+        "objetivo": null
+      }
+    ],
+    "creates": [
+      {
+        "id": "S006",
+        "nombre": "Cuenta de ahorro",
+        "tipo": "Efectivo",
+        "control": "Movimientos",
+        "finalidad": "Ahorro",
+        "liquidez": false,
+        "mostrarComoBolsa": false,
+        "permiteSalidaExterior": true,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "5000.00",
+        "objetivo": "12000.00"
+      },
+      {
+        "id": "S007",
+        "nombre": "Caja de casa",
+        "tipo": "Efectivo",
+        "control": "Movimientos",
+        "finalidad": "Gastos planificados",
+        "liquidez": true,
+        "mostrarComoBolsa": false,
+        "permiteSalidaExterior": true,
+        "fechaApertura": "2026-01-01",
+        "saldoApertura": "400.00",
+        "objetivo": null
+      }
+    ]
+  },
+  "classifications": {
+    "categorias": [
+      {
+        "id": "CAT001",
+        "nombre": "Ingresos",
+        "grupo": null,
+        "anual": "Ingreso",
+        "mensual": "Ingreso",
+        "referencia": false
+      },
+      {
+        "id": "CAT002",
+        "nombre": "Vivienda",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT003",
+        "nombre": "Alimentación",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT004",
+        "nombre": "Transporte",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT005",
+        "nombre": "Suministros",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT006",
+        "nombre": "Salud",
+        "grupo": "Personal",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT007",
+        "nombre": "Ocio",
+        "grupo": "Personal",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT008",
+        "nombre": "Educación",
+        "grupo": "Personal",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      },
+      {
+        "id": "CAT009",
+        "nombre": "Vehículo",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": true
+      },
+      {
+        "id": "CAT010",
+        "nombre": "Inversión",
+        "grupo": null,
+        "anual": "No aplica",
+        "mensual": "No aplica",
+        "referencia": false
+      },
+      {
+        "id": "CAT011",
+        "nombre": "Viajes",
+        "grupo": "Personal",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": true
+      },
+      {
+        "id": "CAT012",
+        "nombre": "Anticipos",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": true
+      },
+      {
+        "id": "CAT013",
+        "nombre": "Gasto compartido",
+        "grupo": "Hogar",
+        "anual": "Gasto",
+        "mensual": "Gasto compartido neto",
+        "referencia": true
+      },
+      {
+        "id": "CAT014",
+        "nombre": "Eventos",
+        "grupo": "Personal",
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": true
+      }
+    ],
+    "subcategorias": [
+      {
+        "id": "SUB001",
+        "nombre": "Nómina",
+        "padre": "CAT001"
+      },
+      {
+        "id": "SUB002",
+        "nombre": "Vivienda",
+        "padre": "CAT002"
+      },
+      {
+        "id": "SUB003",
+        "nombre": "Alimentación",
+        "padre": "CAT003"
+      },
+      {
+        "id": "SUB004",
+        "nombre": "Transporte",
+        "padre": "CAT004"
+      },
+      {
+        "id": "SUB005",
+        "nombre": "Suministros",
+        "padre": "CAT005"
+      },
+      {
+        "id": "SUB006",
+        "nombre": "Salud",
+        "padre": "CAT006"
+      },
+      {
+        "id": "SUB007",
+        "nombre": "Ocio",
+        "padre": "CAT007"
+      },
+      {
+        "id": "SUB008",
+        "nombre": "Educación",
+        "padre": "CAT008"
+      },
+      {
+        "id": "SUB009",
+        "nombre": "Vehículo",
+        "padre": "CAT009"
+      },
+      {
+        "id": "SUB010",
+        "nombre": "Inversión",
+        "padre": "CAT010"
+      },
+      {
+        "id": "SUB011",
+        "nombre": "Viajes",
+        "padre": "CAT011"
+      },
+      {
+        "id": "SUB012",
+        "nombre": "Anticipos",
+        "padre": "CAT012"
+      },
+      {
+        "id": "SUB013",
+        "nombre": "Gasto compartido",
+        "padre": "CAT013"
+      },
+      {
+        "id": "SUB014",
+        "nombre": "Eventos",
+        "padre": "CAT014"
+      },
+      {
+        "id": "SUB015",
+        "nombre": "Deuda",
+        "padre": "CAT002"
+      }
+    ],
+    "partidas": [
+      {
+        "id": "PAR001",
+        "nombre": "Sueldo mensual",
+        "padre": "SUB001",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR002",
+        "nombre": "Alquiler vivienda",
+        "padre": "SUB002",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR003",
+        "nombre": "Compra semanal",
+        "padre": "SUB003",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR004",
+        "nombre": "Combustible",
+        "padre": "SUB004",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR005",
+        "nombre": "Electricidad",
+        "padre": "SUB005",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR006",
+        "nombre": "Farmacia",
+        "padre": "SUB006",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR007",
+        "nombre": "Restaurantes",
+        "padre": "SUB007",
+        "deuda": null,
+        "presupuesto": "PRE002"
+      },
+      {
+        "id": "PAR008",
+        "nombre": "Cursos",
+        "padre": "SUB008",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR009",
+        "nombre": "Mantenimiento coche",
+        "padre": "SUB009",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR010",
+        "nombre": "Aportación cartera",
+        "padre": "SUB010",
+        "deuda": null,
+        "presupuesto": "PRE003"
+      },
+      {
+        "id": "PAR011",
+        "nombre": "Viaje anual",
+        "padre": "SUB011",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR012",
+        "nombre": "Anticipo reforma",
+        "padre": "SUB012",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR013",
+        "nombre": "Cena compartida",
+        "padre": "SUB013",
+        "deuda": null,
+        "presupuesto": "PRE004"
+      },
+      {
+        "id": "PAR014",
+        "nombre": "Entradas concierto",
+        "padre": "SUB014",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR015",
+        "nombre": "Cuota préstamo",
+        "padre": "SUB015",
+        "deuda": "D001",
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR016",
+        "nombre": "Material de oficina",
+        "padre": "SUB003",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      }
+    ]
+  },
+  "presupuestos": [
+    {
+      "id": "PRE001",
+      "nombre": "Gastos esenciales",
+      "fuente": "Gasto real",
+      "destino": "S001"
+    },
+    {
+      "id": "PRE002",
+      "nombre": "Ocio mensual",
+      "fuente": "Gasto real",
+      "destino": "S001"
+    },
+    {
+      "id": "PRE003",
+      "nombre": "Aportación cartera",
+      "fuente": "Aportación a saldo",
+      "destino": "S004"
+    },
+    {
+      "id": "PRE004",
+      "nombre": "Gastos compartidos",
+      "fuente": "Gasto real",
+      "destino": "S001"
+    }
+  ],
+  "deuda": {
+    "id": "D001",
+    "nombre": "Préstamo coche",
+    "inicioControl": "2026-01-01",
+    "capitalApertura": "9000.00",
+    "tipoDeuda": "No hipotecaria",
+    "tin": "5.250000",
+    "tae": "5.380000",
+    "cuotaContractual": "210.00",
+    "condiciones": "Préstamo ficticio a 48 meses con cuota constante."
+  },
+  "ciclos": [
+    {
+      "id": "1",
+      "inicio": "2026-01-01",
+      "saldoInicialComida": "300.00"
+    },
+    {
+      "id": "2",
+      "inicio": "2026-02-01",
+      "saldoInicialComida": "180.00"
+    },
+    {
+      "id": "3",
+      "inicio": "2026-03-01",
+      "saldoInicialComida": "200.00"
+    },
+    {
+      "id": "4",
+      "inicio": "2026-04-01",
+      "saldoInicialComida": "150.00"
+    },
+    {
+      "id": "5",
+      "inicio": "2026-05-01",
+      "saldoInicialComida": "180.00"
+    },
+    {
+      "id": "6",
+      "inicio": "2026-06-01",
+      "saldoInicialComida": "180.00"
+    },
+    {
+      "id": "7",
+      "inicio": "2026-07-01",
+      "saldoInicialComida": "180.00"
+    },
+    {
+      "id": "8",
+      "inicio": "2026-08-01",
+      "saldoInicialComida": "180.00"
+    },
+    {
+      "id": "9",
+      "inicio": "2026-09-01",
+      "saldoInicialComida": "180.00"
+    },
+    {
+      "id": "10",
+      "inicio": "2026-10-01",
+      "saldoInicialComida": "180.00"
+    }
+  ],
+  "referencias": {
+    "anticipo": {
+      "id": "REF001",
+      "nombre": "Anticipo reforma",
+      "apertura": "2026-01-15",
+      "evidencia": "Justificante ficticio de apertura del anticipo."
+    },
+    "vehiculo": {
+      "id": "REF002",
+      "nombre": "Coche familiar",
+      "tipo": "Vehículo",
+      "vehiculo": {
+        "matricula": "1234ABC",
+        "proximaITV": "2026-12-15",
+        "cita": null
+      }
+    },
+    "compartido": {
+      "id": "REF003",
+      "nombre": "Cena de equipo",
+      "participantes": [
+        {
+          "id": "CP001",
+          "nombre": "Lucía",
+          "rol": "Titular",
+          "partes": 1
+        },
+        {
+          "id": "CP002",
+          "nombre": "Mario",
+          "rol": "Tercero",
+          "partes": 1
+        }
+      ]
+    }
+  },
+  "movimientos": [
+    {
+      "id": "1",
+      "tipo": "Ingreso",
+      "fecha": "2026-01-05",
+      "importe": "2200.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de enero",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "2",
+      "tipo": "Gasto",
+      "fecha": "2026-01-08",
+      "importe": "750.00",
+      "saldo": "S001",
+      "partida": "PAR002",
+      "concepto": "Alquiler de enero",
+      "nota": "Recibo ficticio."
+    },
+    {
+      "id": "3",
+      "tipo": "Gasto",
+      "fecha": "2026-01-12",
+      "importe": "180.00",
+      "saldo": "S001",
+      "partida": "PAR003",
+      "concepto": "Compra semanal",
+      "nota": "Ticket ficticio.",
+      "comida": {
+        "etiqueta": "Comida"
+      }
+    },
+    {
+      "id": "4",
+      "tipo": "Transferencia",
+      "fecha": "2026-01-20",
+      "importe": "400.00",
+      "origen": "S001",
+      "destino": "S006",
+      "concepto": "Ahorro de enero",
+      "nota": "Traspaso ficticio."
+    },
+    {
+      "id": "5",
+      "tipo": "Gasto",
+      "fecha": "2026-01-25",
+      "importe": "45.00",
+      "saldo": "S002",
+      "partida": "PAR007",
+      "concepto": "Cena de enero",
+      "nota": "Pago ficticio con terminal."
+    },
+    {
+      "id": "6",
+      "tipo": "Amortización deuda",
+      "fecha": "2026-01-28",
+      "importe": "210.00",
+      "saldo": "S001",
+      "partida": "PAR015",
+      "concepto": "Cuota del préstamo de enero",
+      "nota": "Amortización ficticia."
+    },
+    {
+      "id": "7",
+      "tipo": "Ingreso",
+      "fecha": "2026-02-05",
+      "importe": "2200.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de febrero",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "8",
+      "tipo": "Gasto",
+      "fecha": "2026-02-09",
+      "importe": "750.00",
+      "saldo": "S001",
+      "partida": "PAR002",
+      "concepto": "Alquiler de febrero",
+      "nota": "Recibo ficticio."
+    },
+    {
+      "id": "9",
+      "tipo": "Gasto",
+      "fecha": "2026-02-14",
+      "importe": "120.00",
+      "saldo": "S007",
+      "partida": "PAR003",
+      "concepto": "Mercado de febrero",
+      "nota": "Compra ficticia en efectivo."
+    },
+    {
+      "id": "10",
+      "tipo": "Transferencia",
+      "fecha": "2026-02-18",
+      "importe": "300.00",
+      "origen": "S001",
+      "destino": "S003",
+      "concepto": "Aportación a inversión de febrero",
+      "nota": "Traspaso ficticio."
+    },
+    {
+      "id": "11",
+      "tipo": "Gasto",
+      "fecha": "2026-02-22",
+      "importe": "260.00",
+      "saldo": "S001",
+      "partida": "PAR009",
+      "referencia": "REF002",
+      "concepto": "Mantenimiento del coche",
+      "nota": "Factura ficticia de taller."
+    },
+    {
+      "id": "12",
+      "tipo": "Amortización deuda",
+      "fecha": "2026-02-27",
+      "importe": "210.00",
+      "saldo": "S001",
+      "partida": "PAR015",
+      "concepto": "Cuota del préstamo de febrero",
+      "nota": "Amortización ficticia."
+    },
+    {
+      "id": "13",
+      "tipo": "Ingreso",
+      "fecha": "2026-03-05",
+      "importe": "2200.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de marzo",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "14",
+      "tipo": "Gasto",
+      "fecha": "2026-03-10",
+      "importe": "95.00",
+      "saldo": "S001",
+      "partida": "PAR005",
+      "concepto": "Electricidad de marzo",
+      "nota": "Recibo ficticio."
+    },
+    {
+      "id": "15",
+      "tipo": "Gasto",
+      "fecha": "2026-03-15",
+      "importe": "90.00",
+      "saldo": "S001",
+      "partida": "PAR013",
+      "referencia": "REF003",
+      "concepto": "Cena compartida de marzo",
+      "nota": "Gasto ficticio del caso compartido."
+    },
+    {
+      "id": "16",
+      "tipo": "Transferencia",
+      "fecha": "2026-03-20",
+      "importe": "45.00",
+      "origen": "S000",
+      "destino": "S001",
+      "referencia": "REF003",
+      "concepto": "Aportación de Mario",
+      "nota": "Aportación ficticia del tercero.",
+      "compartido": {
+        "participante": "CP002",
+        "evidencia": "Transferencia ficticia de Mario al caso compartido.",
+        "procedencia": "Registro del titular"
+      }
+    },
+    {
+      "id": "17",
+      "tipo": "Amortización deuda",
+      "fecha": "2026-03-28",
+      "importe": "210.00",
+      "saldo": "S001",
+      "partida": "PAR015",
+      "concepto": "Cuota del préstamo de marzo",
+      "nota": "Amortización ficticia."
+    },
+    {
+      "id": "18",
+      "tipo": "Ingreso",
+      "fecha": "2026-04-06",
+      "importe": "500.00",
+      "saldo": "S001",
+      "subtipo": "Bonus",
+      "concepto": "Bonus ficticio",
+      "nota": "Variable ficticio."
+    },
+    {
+      "id": "19",
+      "tipo": "Gasto",
+      "fecha": "2026-04-15",
+      "importe": "70.00",
+      "saldo": "S001",
+      "partida": "PAR004",
+      "concepto": "Combustible de abril",
+      "nota": "Repostaje ficticio."
+    },
+    {
+      "id": "20",
+      "tipo": "Ingreso",
+      "fecha": "2026-05-05",
+      "importe": "2250.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de mayo",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "21",
+      "tipo": "Gasto",
+      "fecha": "2026-05-12",
+      "importe": "60.00",
+      "saldo": "S007",
+      "partida": "PAR006",
+      "concepto": "Farmacia",
+      "nota": "Ticket ficticio."
+    },
+    {
+      "id": "22",
+      "tipo": "Ingreso",
+      "fecha": "2026-06-05",
+      "importe": "2250.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de junio",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "23",
+      "tipo": "Gasto",
+      "fecha": "2026-06-15",
+      "importe": "35.00",
+      "saldo": "S001",
+      "partida": "PAR007",
+      "concepto": "Cena de junio",
+      "nota": "Ticket ficticio."
+    },
+    {
+      "id": "24",
+      "tipo": "Ingreso",
+      "fecha": "2026-07-05",
+      "importe": "2250.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de julio",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "25",
+      "tipo": "Ingreso",
+      "fecha": "2026-08-05",
+      "importe": "2250.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de agosto",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "26",
+      "tipo": "Ingreso",
+      "fecha": "2026-09-05",
+      "importe": "2250.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de septiembre",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "27",
+      "tipo": "Ingreso",
+      "fecha": "2026-10-05",
+      "importe": "2250.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Nómina de octubre",
+      "nota": "Abono ficticio de nómina."
+    },
+    {
+      "id": "28",
+      "tipo": "Transferencia",
+      "fecha": "2026-10-20",
+      "importe": "600.00",
+      "origen": "S001",
+      "destino": "S006",
+      "concepto": "Ahorro de octubre",
+      "nota": "Traspaso ficticio."
+    },
+    {
+      "id": "29",
+      "tipo": "Amortización deuda",
+      "fecha": "2026-10-25",
+      "importe": "210.00",
+      "saldo": "S001",
+      "partida": "PAR015",
+      "concepto": "Cuota del préstamo de octubre",
+      "nota": "Amortización ficticia."
+    }
+  ],
+  "inversion": {
+    "instrumento": {
+      "id": "I1001",
+      "nombre": "Fondo índice global",
+      "isin": "ES0000000001",
+      "isinEvidencia": "Ficha ficticia del instrumento.",
+      "divisaReferencia": "EUR"
+    },
+    "compra": {
+      "id": "1",
+      "fecha": "2026-02-20",
+      "instrumento": "I1001",
+      "saldoEfectivo": "S003",
+      "saldoInversion": "S004",
+      "cantidad": "10",
+      "precio": "100.00",
+      "divisa": "EUR",
+      "cambio": null,
+      "importeEur": "1000.00",
+      "comisionEur": "0.00",
+      "concepto": "Compra ficticia de participaciones",
+      "nota": "Orden ficticia."
+    },
+    "venta": {
+      "id": "2",
+      "fecha": "2026-06-20",
+      "instrumento": "I1001",
+      "saldoEfectivo": "S003",
+      "saldoInversion": "S004",
+      "cantidad": "2",
+      "precio": "110.00",
+      "divisa": "EUR",
+      "cambio": null,
+      "importeEur": "220.00",
+      "comisionEur": "0.00",
+      "concepto": "Venta ficticia de participaciones",
+      "nota": "Orden ficticia."
+    }
+  },
+  "nomina": {
+    "paga": {
+      "mes": "2026-01",
+      "tipo": "Ordinaria",
+      "guardia": "No",
+      "devengo": "2200.00",
+      "base": "2200.00",
+      "irpf": "0",
+      "variable": "0",
+      "historico": "2200.00",
+      "documentado": null,
+      "evidencia": "Nómina ficticia de enero.",
+      "evidenciaDocumentado": "",
+      "verificado": true,
+      "documentadoVerificado": false,
+      "nota": "Paga ficticia para la demo."
+    },
+    "reparto": {
+      "movimiento": "1",
+      "importe": "2200.00",
+      "evidencia": "Nómina ficticia abonada en cuenta."
+    }
+  },
+  "gastos_compartidos": {
+    "referencia": "REF003",
+    "aportacion": {
+      "participante": "CP002",
+      "evidencia": "Transferencia ficticia de Mario al caso compartido.",
+      "procedencia": "Registro del titular"
+    }
+  },
+  "planes_ciclo": [
+    {
+      "ciclo": "1",
+      "motivo": "Plan ficticio del ciclo de enero.",
+      "cambios": [
+        {
+          "presupuesto": "PRE001",
+          "base": "1500.00",
+          "esencial": "1400.00",
+          "delMes": "1500.00"
+        },
+        {
+          "presupuesto": "PRE002",
+          "base": "200.00",
+          "esencial": "0.00",
+          "delMes": "200.00"
+        },
+        {
+          "presupuesto": "PRE003",
+          "base": "300.00",
+          "esencial": "300.00",
+          "delMes": "300.00"
+        },
+        {
+          "presupuesto": "PRE004",
+          "base": "100.00",
+          "esencial": "0.00",
+          "delMes": "100.00"
+        }
+      ]
+    },
+    {
+      "ciclo": "2",
+      "motivo": "Plan ficticio del ciclo de febrero.",
+      "cambios": [
+        {
+          "presupuesto": "PRE001",
+          "base": "1500.00",
+          "esencial": "1400.00",
+          "delMes": "1450.00"
+        },
+        {
+          "presupuesto": "PRE002",
+          "base": "200.00",
+          "esencial": "0.00",
+          "delMes": "180.00"
+        },
+        {
+          "presupuesto": "PRE003",
+          "base": "300.00",
+          "esencial": "300.00",
+          "delMes": "300.00"
+        },
+        {
+          "presupuesto": "PRE004",
+          "base": "100.00",
+          "esencial": "0.00",
+          "delMes": "100.00"
+        }
+      ]
+    }
+  ],
+  "plan_anual": {
+    "ejercicio": 2026,
+    "lineas": [
+      {
+        "partida": "PAR002",
+        "cambios": {
+          "presupuesto": "9000.00",
+          "periodo": "12 meses",
+          "esencial": "Sí"
+        }
+      },
+      {
+        "partida": "PAR003",
+        "cambios": {
+          "presupuesto": "2400.00",
+          "periodo": "12 meses",
+          "esencial": "Sí"
+        }
+      },
+      {
+        "partida": "PAR007",
+        "cambios": {
+          "presupuesto": "1200.00",
+          "periodo": "12 meses",
+          "esencial": "No"
+        }
+      }
+    ]
+  },
+  "revision_comida": [
+    {
+      "fecha": "2026-01-12",
+      "concepto": "Compra semanal",
+      "importe": "32.50",
+      "direccion": "Salida",
+      "esDevolucion": false,
+      "clasificacion": "Comida",
+      "evidenciaBancaria": "Ticket ficticio de supermercado.",
+      "cuentaOrigen": "Cuenta corriente"
+    },
+    {
+      "fecha": "2026-02-14",
+      "concepto": "Cena de febrero",
+      "importe": "18.00",
+      "direccion": "Salida",
+      "esDevolucion": false,
+      "clasificacion": "Ocio",
+      "evidenciaBancaria": "Ticket ficticio de restaurante.",
+      "cuentaOrigen": "Cuenta corriente"
+    }
+  ],
+  "dprima": {
+    "padre": "PAR002",
+    "saldo": "S001",
+    "mesInicial": "2026-11-01",
+    "mesFinal": "2027-01-01",
+    "saldoInicial": "0.00",
+    "saldoEvidencia": "Saldo inicial ficticio de la previsión.",
+    "copiarHijas": false
+  }
+}

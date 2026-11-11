@@ -144,6 +144,11 @@ export async function classificationJourney(page: Page) {
     ),
   ).toBe("dark");
   await page.getByRole("button", { name: "Abrir menú" }).click();
+  const classificationGroup = page
+    .locator(".nav-group-toggle")
+    .filter({ hasText: "Presupuestos y planificación" });
+  if ((await classificationGroup.getAttribute("aria-expanded")) === "false")
+    await classificationGroup.click();
   await page.getByRole("link", { name: "Clasificación", exact: false }).click();
   await expect(
     page.getByRole("button", { name: "Abrir menú" }),

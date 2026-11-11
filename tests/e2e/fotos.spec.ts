@@ -1357,7 +1357,9 @@ test("E4.11 UI: estados vacío/carga/error/401/404/422, foco, teclado y regiones
 
     // Teclado: el enlace de navegación enfoca el h1 y el orden natural llega
     // al selector de tipo, ciclo y versión.
-    await page.getByRole("link", { name: /Fotos/ }).first().click();
+    await page
+      .getByRole("link", { name: "Instantáneas financieras", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Fotografías", exact: true }),
     ).toBeFocused();
@@ -1443,11 +1445,15 @@ test("E4.11 UI: estados vacío/carga/error/401/404/422, foco, teclado y regiones
     await expect(
       page.getByText("Código: INTERNAL · HTTP 500", { exact: true }),
     ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.activeElement?.querySelector(".alert") !== null,
-      ),
-    ).toBe(true);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.activeElement?.querySelector(".alert") !== null,
+          ),
+        { timeout: 5000 },
+      )
+      .toBe(true);
     await page.unroute("**/api/fotos/ciclos/1");
     await page
       .getByRole("button", { name: "Reintentar", exact: true })

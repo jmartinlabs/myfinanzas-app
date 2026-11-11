@@ -997,6 +997,207 @@ export function previewMovement(
     .transaction(() => plan(db, body, id, annul, now, guard))
     .immediate();
 }
+export type MovementPlan = ReturnType<typeof plan>;
+
+/**
+ * E1.5 write core shared with confirmed Transferencia pendiente. The caller
+ * owns the transaction and has already previewed/fingerprinted the movement.
+ * `attempt` is only used by the ordinary route; the pending flow records its
+ * own attempt in `transferencia_pendiente_attempts` and never duplicates
+ * `movement_attempts`.
+ */
+function writeMovementCore(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string | null,
+  annul: boolean,
+  now: number,
+  p: MovementPlan,
+  attempt: { key: string; hash: string } | null = null,
+) {
+  const old = id ? find(db, id) : null,
+    time = new Date(now).toISOString();
+  if (!id) {
+    const n = db
+      .query(
+        "UPDATE counters SET next=next+1 WHERE name='movimientos' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) n",
+      )
+      .get() as { n: string } | null;
+    if (!n)
+      throw new Problem(503, "ID_SPACE", "No se pudo reservar identidad.");
+    id = n.n;
+  }
+  const v = p.despues;
+  if (annul)
+    db.run(
+      "UPDATE movimientos SET anulado=1,revision=revision+1,actualizado=? WHERE id=?",
+      [time, id],
+    );
+  else if (old)
+    db.run(
+      "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,referencia=?,concepto=?,nota=?,capital=?,intereses=?,revision=revision+1,actualizado=? WHERE id=?",
+      [
+        v!.fecha,
+        v!.tipo,
+        money(v!.importe)!,
+        v!.origen,
+        v!.destino,
+        v!.subtipo,
+        v!.partida,
+        v!.referencia,
+        v!.concepto,
+        v!.nota,
+        money(v!.capital),
+        money(v!.intereses),
+        time,
+        id,
+      ],
+    );
+  else
+    db.run(
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,capital,intereses,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)",
+      [
+        id,
+        v!.fecha,
+        v!.tipo,
+        money(v!.importe)!,
+        v!.origen,
+        v!.destino,
+        v!.subtipo,
+        v!.partida,
+        v!.referencia,
+        v!.concepto,
+        v!.nota,
+        money(v!.capital),
+        money(v!.intereses),
+        time,
+        time,
+      ],
+    );
+  const stored = find(db, id);
+  if (v && body.comida !== undefined) {
+    if (v.tipo !== "Gasto" && v.tipo !== "Devolución de gasto")
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Los metadatos de Comida solo aplican a una compra o devolución.",
+      );
+    applyComidaMetadata(
+      db,
+      id,
+      stored,
+      body.comida as Record<string, unknown>,
+      now,
+    );
+  }
+  if (v && body.devolucion !== undefined) {
+    if (v.tipo !== "Devolución de gasto")
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La atribución solo aplica a una Devolución de gasto.",
+      );
+    applyComidaDevolucion(
+      db,
+      id,
+      stored,
+      body.devolucion as Record<string, unknown>,
+      now,
+    );
+  }
+  if (old?.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
+  if (stored.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
+  if (stored.tipo === "Devolución de gasto")
+    revalidateDevolucionPropia(db, id, now);
+  storeAnticipo(db, id, v?.anticipo ?? null, now);
+  storeAportacion(
+    db,
+    id,
+    v?.compartido ?? null,
+    now,
+    old && typeof body.motivo === "string" ? body.motivo.trim() : null,
+  );
+  const after = find(db, id);
+  db.run(
+    "INSERT INTO movement_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)",
+    [
+      id,
+      after.revision,
+      p.accion,
+      old ? (body.motivo as string).trim() : null,
+      time,
+      old ? JSON.stringify(auditValue(old)) : null,
+      JSON.stringify(auditValue(after)),
+    ],
+  );
+  db.run(
+    "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
+    [
+      "movimiento:" + id,
+      p.accion,
+      after.revision,
+      JSON.stringify(annul ? ["anulado"] : inputs),
+      time,
+      old?.revision ?? 0,
+      old ? (body.motivo as string).trim() : null,
+    ],
+  );
+  const response = getMovement(db, id);
+  if (attempt)
+    db.run("INSERT INTO movement_attempts VALUES(?,?,?,?)", [
+      attempt.key,
+      attempt.hash,
+      JSON.stringify(response),
+      now + 86400000,
+    ]);
+  return response;
+}
+
+/** Preview E1.5 inside an already open transaction (read-only, no writes). */
+export function previewMovementInTransaction(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string | null = null,
+  annul = false,
+  now = Date.now(),
+  guard?: MovementProtection,
+): MovementPlan {
+  return plan(db, body, id, annul, now, guard);
+}
+
+/**
+ * E1.5 write inside an already open transaction, without its own idempotency.
+ * Used by the pending confirmation so movement, pending resolution and audit
+ * share one IMMEDIATE transaction. Existing callers keep using `writeMovement`.
+ */
+export function writeMovementInTransaction(
+  db: Database,
+  body: Record<string, unknown>,
+  options: {
+    now: number;
+    id?: string | null;
+    annul?: boolean;
+    guard?: MovementProtection;
+    planned?: MovementPlan;
+    attempt?: { key: string; hash: string } | null;
+  },
+) {
+  const id = options.id ?? null,
+    annul = options.annul ?? false,
+    p =
+      options.planned ??
+      plan(db, body, id, annul, options.now, options.guard);
+  return writeMovementCore(
+    db,
+    body,
+    id,
+    annul,
+    options.now,
+    p,
+    options.attempt ?? null,
+  );
+}
+
 export function writeMovement(
   db: Database,
   body: Record<string, unknown>,
@@ -1054,141 +1255,10 @@ export function writeMovement(
           "DUPLICATE_REVIEW",
           "Revisa las coincidencias y confirma si es otro hecho económico real.",
         );
-      const old = id ? find(db, id) : null,
-        time = new Date(now).toISOString();
-      if (!id) {
-        const n = db
-          .query(
-            "UPDATE counters SET next=next+1 WHERE name='movimientos' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) n",
-          )
-          .get() as { n: string } | null;
-        if (!n)
-          throw new Problem(503, "ID_SPACE", "No se pudo reservar identidad.");
-        id = n.n;
-      }
-      const v = p.despues;
-      if (annul)
-        db.run(
-          "UPDATE movimientos SET anulado=1,revision=revision+1,actualizado=? WHERE id=?",
-          [time, id],
-        );
-      else if (old)
-        db.run(
-          "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,referencia=?,concepto=?,nota=?,capital=?,intereses=?,revision=revision+1,actualizado=? WHERE id=?",
-          [
-            v!.fecha,
-            v!.tipo,
-            money(v!.importe)!,
-            v!.origen,
-            v!.destino,
-            v!.subtipo,
-            v!.partida,
-            v!.referencia,
-            v!.concepto,
-            v!.nota,
-            money(v!.capital),
-            money(v!.intereses),
-            time,
-            id,
-          ],
-        );
-      else
-        db.run(
-          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,capital,intereses,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)",
-          [
-            id,
-            v!.fecha,
-            v!.tipo,
-            money(v!.importe)!,
-            v!.origen,
-            v!.destino,
-            v!.subtipo,
-            v!.partida,
-            v!.referencia,
-            v!.concepto,
-            v!.nota,
-            money(v!.capital),
-            money(v!.intereses),
-            time,
-            time,
-          ],
-        );
-      const stored = find(db, id);
-      if (v && body.comida !== undefined) {
-        if (v.tipo !== "Gasto" && v.tipo !== "Devolución de gasto")
-          throw new Problem(
-            422,
-            "VALIDATION",
-            "Los metadatos de Comida solo aplican a una compra o devolución.",
-          );
-        applyComidaMetadata(
-          db,
-          id,
-          stored,
-          body.comida as Record<string, unknown>,
-          now,
-        );
-      }
-      if (v && body.devolucion !== undefined) {
-        if (v.tipo !== "Devolución de gasto")
-          throw new Problem(
-            422,
-            "VALIDATION",
-            "La atribución solo aplica a una Devolución de gasto.",
-          );
-        applyComidaDevolucion(
-          db,
-          id,
-          stored,
-          body.devolucion as Record<string, unknown>,
-          now,
-        );
-      }
-      if (old?.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
-      if (stored.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
-      if (stored.tipo === "Devolución de gasto")
-        revalidateDevolucionPropia(db, id, now);
-      storeAnticipo(db, id, v?.anticipo ?? null, now);
-      storeAportacion(
-        db,
-        id,
-        v?.compartido ?? null,
-        now,
-        old && typeof body.motivo === "string" ? body.motivo.trim() : null,
-      );
-      const after = find(db, id);
-      db.run(
-        "INSERT INTO movement_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)",
-        [
-          id,
-          after.revision,
-          p.accion,
-          old ? (body.motivo as string).trim() : null,
-          time,
-          old ? JSON.stringify(auditValue(old)) : null,
-          JSON.stringify(auditValue(after)),
-        ],
-      );
-      db.run(
-        "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
-        [
-          "movimiento:" + id,
-          p.accion,
-          after.revision,
-          JSON.stringify(annul ? ["anulado"] : inputs),
-          time,
-          old?.revision ?? 0,
-          old ? (body.motivo as string).trim() : null,
-        ],
-      );
-      const response = getMovement(db, id);
-      db.run("INSERT INTO movement_attempts VALUES(?,?,?,?)", [
+      return writeMovementCore(db, body, id, annul, now, p, {
         key,
-        requestHash,
-        JSON.stringify(response),
-        now + 86400000,
-      ]);
-      return response;
+        hash: requestHash,
+      });
     })
     .immediate();
 }

@@ -1,5 +1,5 @@
 /**
- * UI · DEV-03 — configuración única de la navegación.
+ * UI · DEV-03 / UI-01 — configuración única de la navegación.
  *
  * Solo describe los enlaces declarados por la aplicación: no crea rutas por sí
  * mismo. El orden, las etiquetas, los iconos y los grupos viven aquí; `main.tsx`
@@ -14,6 +14,8 @@ export type NavigationItem = {
   readonly icon: string;
   /** Prefijo usado para marcar el enlace activo; por defecto, `href`. */
   readonly activePrefix?: string;
+  /** Acceso heredado: se muestra después de las entradas principales. */
+  readonly legacy?: boolean;
 };
 
 export type NavigationGroup = {
@@ -22,20 +24,25 @@ export type NavigationGroup = {
   readonly items: readonly NavigationItem[];
 };
 
+/** Dos accesos directos, siempre visibles. */
+export const navigationDirect: readonly NavigationItem[] = [
+  { href: "/inicio", label: "Inicio", icon: "◉" },
+  { href: "/movimientos", label: "Movimientos", icon: "↔" },
+];
+
+/** Cinco grupos desplegables; conservan las 22 entradas restantes. */
 export const navigationGroups: readonly NavigationGroup[] = [
   {
-    id: "mi-espacio",
-    label: "Mi espacio",
+    id: "resumen-control",
+    label: "Resumen y control",
     items: [
-      { href: "/inicio", label: "Inicio", icon: "◉" },
       { href: "/flujo-mensual", label: "Flujo mensual", icon: "⇄" },
       {
         href: "/pendientes",
         label: "Pendientes y conciliación",
         icon: "⊙",
       },
-      { href: "/anticipos", label: "Anticipos", icon: "↺" },
-      { href: "/compartidos", label: "Compartidos", icon: "⇌" },
+      { href: "/resumen-anual", label: "Resumen anual", icon: "▨" },
     ],
   },
   {
@@ -43,52 +50,83 @@ export const navigationGroups: readonly NavigationGroup[] = [
     label: "Patrimonio",
     items: [
       { href: "/saldos", label: "Saldos", icon: "▤" },
+      { href: "/inversiones", label: "Inversiones", icon: "↗" },
+      { href: "/deudas", label: "Deudas", icon: "◷" },
+    ],
+  },
+  {
+    id: "presupuestos-planificacion",
+    label: "Presupuestos y planificación",
+    items: [
+      { href: "/dprima", label: "Partidas", icon: "◫" },
+      { href: "/planes-ciclo", label: "Plan del ciclo", icon: "▥" },
+      { href: "/nomina", label: "Nómina", icon: "◈" },
       {
         href: "/clasificacion/partidas",
         label: "Clasificación",
         icon: "≡",
         activePrefix: "/clasificacion",
       },
-      { href: "/inversiones", label: "Inversiones", icon: "↗" },
-      { href: "/deudas", label: "Deudas", icon: "◷" },
-      { href: "/vehiculos", label: "Vehículos", icon: "⌑" },
-      { href: "/referencias", label: "Referencias", icon: "⌗" },
+      {
+        href: "/presupuestos",
+        label: "Presupuestos (legado)",
+        icon: "⊞",
+        legacy: true,
+      },
+      {
+        href: "/plan-anual",
+        label: "Plan anual (legado)",
+        icon: "▧",
+        legacy: true,
+      },
     ],
   },
   {
-    id: "operacion",
-    label: "Operación",
+    id: "casos-gastos",
+    label: "Casos y gastos especiales",
     items: [
-      { href: "/movimientos", label: "Movimientos", icon: "↔" },
+      { href: "/referencias", label: "Referencias", icon: "⌗" },
+      { href: "/anticipos", label: "Anticipos", icon: "↺" },
+      { href: "/compartidos", label: "Compartidos", icon: "⇌" },
+      { href: "/vehiculos", label: "Vehículos", icon: "⌑" },
+      { href: "/comida", label: "Comida", icon: "◍" },
+      {
+        href: "/revision-comida",
+        label: "Revisión Comida",
+        icon: "◎",
+        legacy: true,
+      },
+    ],
+  },
+  {
+    id: "ciclos-cierres",
+    label: "Ciclos y cierres",
+    items: [
       { href: "/ciclos", label: "Ciclos", icon: "▦" },
       { href: "/precierre", label: "Precierre", icon: "◐" },
       { href: "/cierre", label: "Cierre", icon: "▣" },
-      { href: "/fotos", label: "Fotos", icon: "▩" },
-    ],
-  },
-  {
-    id: "planificacion",
-    label: "Planificación",
-    items: [
-      { href: "/dprima", label: "D′ · Partidas", icon: "◫" },
-      { href: "/comida", label: "Comida · hechos", icon: "◍" },
-      { href: "/revision-comida", label: "Revisión Comida", icon: "◎" },
-      { href: "/planes-ciclo", label: "Plan del ciclo", icon: "▥" },
-      { href: "/nomina", label: "Nómina", icon: "◈" },
-      { href: "/plan-anual", label: "Plan anual", icon: "▧" },
-      { href: "/resumen-anual", label: "Resumen anual", icon: "▨" },
-      { href: "/presupuestos", label: "Presupuestos", icon: "⊞" },
+      { href: "/fotos", label: "Instantáneas financieras", icon: "▩" },
     ],
   },
 ];
 
-export const navigationItems: readonly NavigationItem[] = navigationGroups.flatMap(
-  (group) => group.items,
-);
+export const navigationItems: readonly NavigationItem[] = [
+  ...navigationDirect,
+  ...navigationGroups.flatMap((group) => group.items),
+];
 
 export function isNavigationActive(item: NavigationItem, path: string): boolean {
   if (path === "/") return item.href === "/saldos";
   return path.startsWith(item.activePrefix ?? item.href);
+}
+
+/** Grupo que contiene la página activa, para abrirlo automáticamente. */
+export function activeNavigationGroup(path: string): string | null {
+  return (
+    navigationGroups.find((group) =>
+      group.items.some((item) => isNavigationActive(item, path)),
+    )?.id ?? null
+  );
 }
 
 /** Título de documento por ruta, sin introducir rutas nuevas. */
