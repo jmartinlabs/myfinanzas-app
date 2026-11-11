@@ -294,7 +294,9 @@ ningún ensayo local incompatible sustituye evidencia Linux compatible. Focales 
 obligatorios por candidato estable, con revisión/entorno y motivo de repetición.
 QA independiente revisa candidato/diff/evidencia y riesgos; no solo el resumen del autor.
 `python3 scripts/check-evidence` comprueba candidato, base, árbol limpio, logs crudos y
-registro; solo exige Linux/glibc para los logs declarados. No sustituye la lectura de la
+registro; solo exige Linux/glibc para los logs declarados. Su modo
+`--qa-equivalence` demuestra la composición de árbol y la evidencia GitHub del SHA
+revisado —con veredicto favorable— para reutilizar su QA; no sustituye la lectura de la
 salida cruda ni convierte un PASS declarado en evidencia. Al cierre enlazar un checkpoint
 vigente con SHA/PR/evidencias, conservando historia.
 [Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);

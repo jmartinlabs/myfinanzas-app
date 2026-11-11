@@ -260,6 +260,16 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   devolver `tag`; un tag lightweight se rechaza antes de ejecutar `full`. Un
   `workflow_dispatch` manual de `rootless` no sustituye el gate de aplicación; para
   typecheck/build/baseline hay que lanzar `Validate project` full sobre el mismo SHA.
+- **Crédito QA por árbol (2026-11-11):** la QA independiente se registra sobre el commit
+  revisado y se reutiliza en el commit de integración solo si
+  `scripts/check-evidence --qa-equivalence` demuestra identidad de árbol o composición
+  limpia sobre el primer padre, y `qa_reference` resuelve a una review, comentario de PR o
+  comentario de commit del SHA revisado con veredicto favorable (`APPROVED` o `qa=APTO`).
+  Cubre merge, squash y rebase; conflicto resuelto,
+  cambio extra o evidencia insuficiente bloquean. El preflight vive en `rootless.yml`; no
+  añade workflow, job ni perfil, ni CI post-merge. La CI `required` full del tag sigue
+  ejecutándose sobre el SHA exacto. La equivalencia no es aprobación de QA, ni de merge, ni
+  de despliegue.
 - **Focused (no implementado):** si en el futuro se necesita un perfil más estrecho, la
   vía simple es filtrar suites de test por paths de forma explícita y probada (mapa de
   rutas → suites), sin crear un perfil nuevo ni un workflow adicional; requiere su
