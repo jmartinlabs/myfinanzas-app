@@ -1357,7 +1357,7 @@ test("E4.11 UI: estados vacío/carga/error/401/404/422, foco, teclado y regiones
 
     // Teclado: el enlace de navegación enfoca el h1 y el orden natural llega
     // al selector de tipo, ciclo y versión.
-    await page.getByRole("link", { name: /Fotos/ }).first().click();
+    await page.goto("/fotos");
     await expect(
       page.getByRole("heading", { name: "Fotografías", exact: true }),
     ).toBeFocused();

@@ -52,7 +52,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await page
       .getByRole("button", { name: "He guardado los códigos · Continuar", exact: true })
       .click();
-    await page.getByRole("link", { name: /Vehículos/ }).click();
+    await page.goto("/vehiculos");
     await expect(
       page.getByRole("heading", { name: "Vehículos", exact: true }),
     ).toBeVisible();

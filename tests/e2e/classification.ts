@@ -144,6 +144,10 @@ export async function classificationJourney(page: Page) {
     ),
   ).toBe("dark");
   await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page
+    .locator(".nav-group-toggle")
+    .filter({ hasText: "Presupuestos y planificación" })
+    .click();
   await page.getByRole("link", { name: "Clasificación", exact: false }).click();
   await expect(
     page.getByRole("button", { name: "Abrir menú" }),

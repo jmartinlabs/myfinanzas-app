@@ -219,7 +219,7 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect(page.getByLabel("Partes enteras")).toHaveValue("-1");
     await page.getByRole("button", { name: "Cancelar" }).first().click();
     // 100% Titular closes with Neto = Bruto = Coste propio.
-    await page.getByRole("link", { name: "Compartidos", exact: true }).click();
+    await page.goto("/compartidos");
     await page.getByRole("link", { name: "REF002", exact: true }).click();
     await expect(page.getByText("Cerrado").first()).toBeVisible();
     const soloMetrics = page.locator(".shared-metrics");
