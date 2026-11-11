@@ -180,7 +180,11 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
 
   await page.setViewportSize({ width: 820, height: 1000 });
   await page.goto("/saldos");
-  await expect(page.locator(".desktop-list tbody tr").first()).toBeVisible();
+  await expect(page.locator(".saldos-page .desktop-list")).toBeHidden();
+  await expect(page.locator(".saldos-page .mobile-list")).toBeVisible();
+  await expect(
+    page.locator(".saldos-page .mobile-list li").first(),
+  ).toBeVisible();
   await page.locator("h1").blur();
   await page.screenshot({
     path: "artifacts/graphite-g1/saldos-820.png",

@@ -38,7 +38,10 @@ const degraded = scenario === "degradado";
 const auth = scenario === "auth";
 const casa = scenario === "casa";
 const casaMov = scenario === "casa-mov";
-const dir = casaMov
+const g5a = scenario === "g5a";
+const dir = g5a
+  ? ".local/e2e-inicio-g5a"
+  : casaMov
   ? ".local/e2e-inicio-casa-mov"
   : casa
     ? ".local/e2e-inicio-casa"
@@ -49,7 +52,19 @@ const dir = casaMov
       : zero
         ? ".local/e2e-inicio-zero"
         : ".local/e2e-inicio";
-const port = casaMov ? 3019 : casa ? 3018 : auth ? 3017 : degraded ? 3016 : zero ? 3015 : 3014;
+const port = g5a
+  ? 3020
+  : casaMov
+    ? 3019
+    : casa
+      ? 3018
+      : auth
+        ? 3017
+        : degraded
+          ? 3016
+          : zero
+            ? 3015
+            : 3014;
 
 function saveMovement(db: Database, body: Record<string, unknown>) {
   const plan = previewMovement(db, body, null, false, NOW);
