@@ -1687,7 +1687,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     }
   }
   return (
-    <>
+    <div className="deuda-form-page">
       <PageHead
         eyebrow={id ?? "NUEVA DEUDA"}
         title={id ? "Editar deuda" : "Nueva deuda"}
@@ -1947,6 +1947,6 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
           </div>
         </form>
       )}
-    </>
+    </div>
   );
 }

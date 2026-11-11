@@ -276,7 +276,7 @@ export function SaleList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="ventas-page">
       <PageHead
         eyebrow="E4.2 · INVERSIONES"
         title="Ventas de inversión"
@@ -444,7 +444,7 @@ export function SaleList({ go }: { go: (path: string) => void }) {
         )}
         <CoverageNote />
       </section>
-    </>
+    </div>
   );
 }
 
@@ -794,7 +794,7 @@ export function SaleForm({
         (entry) => entry.instrumentos.length === 0,
       );
   return (
-    <>
+    <div className="venta-form-page">
       <a
         className="back"
         href={rectifying ? `${BASE}/ventas/${id}` : `${BASE}/ventas`}
@@ -920,7 +920,7 @@ export function SaleForm({
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -942,7 +942,7 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
   if (!data) return <p role="status">Cargando venta…</p>;
   const venta = data.venta as Compra;
   return (
-    <>
+    <div className="venta-detail-page">
       <a
         className="back"
         href={BASE + "/ventas"}
@@ -1064,7 +1064,7 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
           </ul>
         )}
       </section>
-    </>
+    </div>
   );
 }
 
@@ -1149,7 +1149,7 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
   if (data.venta.estado !== "Vigente")
     return <Alert>La Venta ya está anulada; no se puede rectificar.</Alert>;
   return (
-    <>
+    <div className="venta-annul-page">
       <a
         className="back"
         href={`${BASE}/ventas/${id}`}
@@ -1216,6 +1216,6 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
           </div>
         </FormSection>
       </div>
-    </>
+    </div>
   );
 }
