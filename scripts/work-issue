@@ -51,13 +51,19 @@ DEPENDENCY_RE = re.compile(
     r"(?i)\b(?:depende de|depends on|blocked by|bloquead[ao] por|requiere|requires)\s+#(\d+)")
 DEPENDENCY_LIST_RE = re.compile(
     r"(?i)^\s*(?:\*\*)?(?:dependencias|dependencies)(?:\*\*)?\s*:\s*(.*)$", re.M)
-NEGATION_RE = re.compile(r"(?i)\bno\s+(?:depende|depends|está\s+bloquead[ao]|esta\s+bloquead[ao])\b[^.\n]*$")
+NEGATION_RE = re.compile(r"(?i)\bno\s+(?:depende|depends|est[áa]\s+bloquead[ao])")
+CLAUSE_BOUNDARY_RE = re.compile(r"[.;,\n]|\b(?:pero|sino|however|though)\b", re.I)
 SPEC_RE = re.compile(r"specs/[0-9A-Za-z._/-]+\.md")
 EPIC_RE = re.compile(r"(?i)\b(?:épica|epica|epic)\s*[:·]?\s*([A-Z]?\d+(?:\.\d+)?)")
 ISSUE_REF_RE = re.compile(r"#(\d+)")
 
 CLAIM_MARKER = "<!-- work-issue:claim"
+CLAIM_RE = re.compile(r"<!-- work-issue:claim agent=([a-z0-9_-]+) issue=(\d+) -->")
+BLOCK_MARKER = "<!-- work-issue:block"
+BLOCK_RE = re.compile(r"<!-- work-issue:block agent=([a-z0-9_-]+) issue=(\d+) -->")
 AUTHOR_HEADER = ("Autor", "Rol", "Fase", "Tipo")
+AGENT_IN_PROGRESS = frozenset({"Analysis In Progress", "Specification In Progress",
+                               "Development In Progress"})
 PROJECT_LIMIT = 1000
 PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 PHASE_ORDER = {"development": 0, "specification": 1, "analysis": 2}
@@ -129,12 +135,18 @@ def normalise(raw):
 
 
 def dependencies(body):
-    """Issue numbers named as hard dependencies; negated mentions are not dependencies."""
+    """Issue numbers named as hard dependencies; a negated clause is not a dependency.
+
+    Negation is evaluated per clause (up to the previous boundary) so that
+    "no depende de #7 pero depende de #8" still reports #8.
+    """
     text = body or ""
     found = set()
     for match in DEPENDENCY_RE.finditer(text):
-        if NEGATION_RE.search(text[max(0, match.start() - 30):match.start()]) \
-                or re.search(r"(?i)\bno\s+$", text[max(0, match.start() - 12):match.start()]):
+        start = 0
+        for boundary in CLAUSE_BOUNDARY_RE.finditer(text, 0, match.start()):
+            start = boundary.end()
+        if NEGATION_RE.search(text[start:match.start(1)]):
             continue
         found.add(int(match.group(1)))
     for match in DEPENDENCY_LIST_RE.finditer(text):
@@ -293,6 +305,18 @@ def render(decisions, agent=None, out=print):
         out("PLAN — ninguna Issue elegible para reservar ahora.")
 
 
+def claim_of(body):
+    """(agent, issue) when the comment carries a well-formed claim marker, else None."""
+    match = CLAIM_RE.search(body or "")
+    return (match.group(1), int(match.group(2))) if match else None
+
+
+def block_of(body):
+    """(agent, issue) when the comment carries a well-formed block marker, else None."""
+    match = BLOCK_RE.search(body or "")
+    return (match.group(1), int(match.group(2))) if match else None
+
+
 def validate_transition(current, target, previous_status=None, restore=False):
     """Return None when the agent may perform the move, otherwise the refusal reason.
 
@@ -318,6 +342,8 @@ def validate_transition(current, target, previous_status=None, restore=False):
     if target in HUMAN_ONLY:
         return "transición reservada al usuario: " + target
     if target == "Blocked":
+        if current not in AGENT_IN_PROGRESS:
+            return "solo se bloquea trabajo en curso del agente: " + str(current)
         if not previous_status:
             return "Blocked requiere --previous-status <valor exacto>"
         if previous_status != current:
@@ -386,6 +412,8 @@ def report_body(agent, role, phase, item, target, note=None, previous_status=Non
     lines.append("")
     if note:
         lines += [note.rstrip(), ""]
+    if target == "Blocked":
+        lines.append('%s agent=%s issue=%d -->' % (BLOCK_MARKER, agent, item.number))
     return "\n".join(lines)
 
 
@@ -514,10 +542,9 @@ class Service:
         return problems
 
     def _claim_of(self, number, agent):
-        """Our own claim comment, matched by marker and agent."""
+        """Our own claim comment, matched by the exact marker for this agent and Issue."""
         for entry in self.github.comments(number):
-            body = entry.get("body") or ""
-            if CLAIM_MARKER in body and ("agent=%s " % agent) in body:
+            if claim_of(entry.get("body")) == (agent, number):
                 return entry
         return None
 
@@ -541,7 +568,7 @@ class Service:
                      % (number, item.status, target))
             return EXIT_OK
         earlier = [entry for entry in self.github.comments(number)
-                   if CLAIM_MARKER in (entry.get("body") or "")]
+                   if claim_of(entry.get("body"))]
         if earlier:
             owner = min(earlier, key=lambda entry: entry.get("id") or 0)
             self.out("No reservada #%d: ya existe una toma previa (comentario %s)"
@@ -552,13 +579,21 @@ class Service:
         ours = self._claim_of(number, agent)
         claim_id = ours.get("id") if ours else None
         written = [entry for entry in self.github.comments(number)
-                   if CLAIM_MARKER in (entry.get("body") or "")]
+                   if claim_of(entry.get("body"))]
         competitors = [entry for entry in written if entry.get("id") != claim_id]
         if competitors and (claim_id is None or min(
                 entry.get("id") or 0 for entry in competitors) < (claim_id or 0)):
             problems = self._rollback(number, claim_id)
             self.out("No reservada #%d: colisión con otra toma anterior; la nuestra "
                      "%s" % (number, "se retiró" if not problems else "NO se pudo retirar"))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_REFUSED
+        fresh = self.github.item(number)
+        if fresh.status != item.status:
+            problems = self._rollback(number, claim_id)
+            self.out("No reservada #%d: el Status cambió durante la toma (%s -> %s)"
+                     % (number, item.status, fresh.status))
             for problem in problems:
                 self.out("  escritura pendiente: " + problem)
             return EXIT_REFUSED
@@ -571,7 +606,14 @@ class Service:
             for problem in problems:
                 self.out("  escritura pendiente: " + problem)
             return EXIT_FAILED
-        verified = self.github.item(number)
+        try:
+            verified = self.github.item(number)
+        except WorkIssueError as error:
+            problems = self._rollback(number, claim_id, assigned=True)
+            self.out("No verificada #%d: la relectura falló (%s)" % (number, error))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_FAILED
         if verified.status != target or not verified.assignees:
             problems = self._rollback(number, claim_id, assigned=True)
             self.out("No verificado #%d: Status=%s assignees=%s"
@@ -590,10 +632,14 @@ class Service:
                                  % ", ".join(AGENTS))
         items = self.github.items()
         item = self.github.item(number, items)
+        if previous_status and target != "Blocked" and not restore:
+            self.out("No movida #%d: --previous-status solo se usa al bloquear" % number)
+            return EXIT_REFUSED
         if restore:
-            recorded = self.blocked_previous(number)
+            recorded = self.blocked_previous(number, agent)
             if not recorded:
-                self.out("No movida #%d: no hay Previous Status registrado" % number)
+                self.out("No movida #%d: no hay Previous Status registrado por %s"
+                         % (number, agent))
                 return EXIT_REFUSED
             if target and target != recorded:
                 self.out("No movida #%d: la restauración debe devolver exactamente %s"
@@ -606,8 +652,8 @@ class Service:
             self.out("No movida #%d: %s" % (number, reason))
             return EXIT_REFUSED
         claims = [entry for entry in self.github.comments(number)
-                  if CLAIM_MARKER in (entry.get("body") or "")]
-        if not any(("agent=%s " % agent) in (entry.get("body") or "") for entry in claims):
+                  if claim_of(entry.get("body"))]
+        if not any(claim_of(entry.get("body")) == (agent, number) for entry in claims):
             self.out("No movida #%d: no hay toma registrada de %s; reserva primero con take"
                      % (number, agent))
             return EXIT_REFUSED
@@ -615,12 +661,22 @@ class Service:
             self.out("[dry-run] #%d %s -> %s (comentario + cambio de Status, sin escrituras)"
                      % (number, item.status, target))
             return EXIT_OK
-        phase = READY[item.status][0] if item.status in READY else phase_of(target)
+        fresh = self.github.item(number)
+        if fresh.status != item.status:
+            self.out("No movida #%d: el Status cambió durante la operación (%s -> %s)"
+                     % (number, item.status, fresh.status))
+            return EXIT_REFUSED
+        phase = phase_of(item.status) or phase_of(target)
         self.github.comment(number, report_body(
             agent, self.role, phase, item, target, note, previous_status,
             executor=self.executor))
         self.github.set_status(item, target)
-        verified = self.github.item(number)
+        try:
+            verified = self.github.item(number)
+        except WorkIssueError as error:
+            self.out("No verificado #%d: la relectura falló (%s); el comentario de informe "
+                     "ya está publicado" % (number, error))
+            return EXIT_FAILED
         if verified.status != target:
             self.out("No verificado #%d: Status=%s (el comentario de informe ya está "
                      "publicado)" % (number, verified.status))
@@ -628,10 +684,13 @@ class Service:
         self.out("Movida #%d: %s -> %s" % (number, item.status, target))
         return EXIT_OK
 
-    def blocked_previous(self, number):
+    def blocked_previous(self, number, agent):
+        """Previous Status recorded by our own block comment for this Issue."""
         for entry in reversed(self.github.comments(number)):
-            match = re.search(r"Previous Status:\**\s*(%s)" % "|".join(STATUSES),
-                              entry.get("body") or "")
+            body = entry.get("body") or ""
+            if block_of(body) != (agent, number):
+                continue
+            match = re.search(r"Previous Status:\s*(%s)" % "|".join(STATUSES), body)
             if match:
                 return match.group(1)
         return None
@@ -641,6 +700,9 @@ def build_parser():
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--agent", choices=AGENTS,
                         help="agente propietario de la toma (obligatorio en take/move)")
+    common.add_argument("--role", choices=ROLES)
+    common.add_argument("--executor",
+                        help="ejecutor real cuando difiere del autor del comentario")
     parser = argparse.ArgumentParser(
         prog="work-issue",
         description="Lee el trabajo Ready del Project, lo enruta por etiqueta de agente y "
@@ -650,8 +712,8 @@ def build_parser():
     parser.add_argument("--project", type=int, default=4, help="número del Project (4)")
     parser.add_argument("--owner", default="jmartinlabs")
     parser.add_argument("--repo", default="jmartinlabs/myfinanzas-app")
-    parser.add_argument("--role", choices=ROLES, default=ROLES[0])
-    parser.add_argument("--executor",
+    parser.add_argument("--role", dest="role_global", choices=ROLES)
+    parser.add_argument("--executor", dest="executor_global",
                         help="ejecutor real cuando difiere del autor del comentario")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("inventory", parents=[common],
@@ -676,12 +738,23 @@ def resolve_agent(args):
     return getattr(args, "agent", None) or args.agent_global
 
 
+def resolve_option(args, name):
+    """Options accepted on either side of the subcommand (subcommand wins)."""
+    return getattr(args, name, None) or getattr(args, name + "_global", None)
+
+
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     agent = resolve_agent(args)
+    role = resolve_option(args, "role") or ROLES[0]
+    executor = resolve_option(args, "executor")
+    if args.command in ("take", "move") and not agent:
+        print("No ejecutado: take/move requieren --agent del catálogo (%s)"
+              % ", ".join(AGENTS), file=sys.stderr)
+        return EXIT_REFUSED
     github = Gh(args.owner, args.project, args.repo)
-    service = Service(github, agent, args.role, executor=args.executor)
+    service = Service(github, agent, role, executor=executor)
     try:
         github.preflight()
         if args.command in (None, "inventory"):

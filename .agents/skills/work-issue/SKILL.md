@@ -44,34 +44,41 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
    The label is routing, not authorization and not a reservation.
 4. **Check.** Before reserving, confirm the item is still in the expected Ready status, has no
    other `Assignee`, and has no open or unverifiable dependency (`Depende de #N`,
-   `Blocked by #N`, `Bloqueada por #N`, `Requiere #N`). Re-read immediately before writing.
+   `Blocked by #N`, `Bloqueada por #N`, `Requiere #N`; a negated clause does not count). The
+   `Status` is re-read immediately before writing, and again after reserving; a change aborts
+   the reservation and retracts what was written.
 5. **Reserve.** `scripts/work-issue take --issue N --agent X` publishes the claim comment,
    assigns the Issue and moves it to the matching `{Phase} In Progress`. The claim is
-   best-effort (GitHub has no compare-and-set on Project fields): the comment marker plus the
-   assignee are the evidence. If a competing claim appears, or a write fails, the tool retracts
-   its own comment and assignee before returning; anything it could not undo is reported as a
-   pending write. One coordinator reserves at a time; do not build a lock service for this.
+   best-effort (GitHub has no compare-and-set on Project fields): the marker
+   `<!-- work-issue:claim agent=X issue=N -->` plus the assignee are the evidence. If a
+   competing claim appears, the status drifts, or a write fails, the tool retracts its own
+   comment and assignee before returning; anything it could not undo is reported as a pending
+   write. One coordinator reserves at a time; do not build a lock service for this.
 6. **Communicate.** Every substantive agent comment starts with `Autor`, `Rol`, `Fase` and
    `Tipo`, and distinguishes the author of the comment from the executor of delegated work
-   (`--executor`). The shared GitHub account is not a signature: never present an agent comment
-   as a human approval, and never attribute a historical comment retroactively.
+   (`--executor`). Option flags are accepted on either side of the subcommand. The shared
+   GitHub account is not a signature: never present an agent comment as a human approval, and
+   never attribute a historical comment retroactively.
 7. **Dispatch only what exists.** Hermes cannot start OpenCode or Codex sessions; no proven
    connector does it either. Without a dispatcher, publish the assignment/handoff and say the
    other agent has **not** started. Never claim a session or parallelism that the runtime
    cannot evidence. An Issue other than the one reserved stays untouched.
 8. **Deliver.** Finish the authorized phase, publish evidence and the PR or report, then move
    the Issue to `{Phase} In Review` (`scripts/work-issue move --issue N --to ... --note ...`)
-   and ask for the decision. `move` requires the reservation made by `take`: without a claim
-   owned by the calling agent it refuses. The tool refuses `Backlog`, every `Ready*` and
-   `Done`: those are the user's. A rejected review is returned by the user to the same phase.
-9. **Block and restore.** `move --to Blocked --previous-status <exact current>` records the
-   exact previous status in the comment, because the Project has no field for it; a value that
-   does not match the current status is rejected, so blocking can never rewrite the phase.
-   Restoring (`--restore`) uses only the recorded value and returns to it; if the authorization
-   or scope changed, ask the user first.
-10. **Verify.** Every write is checked by re-reading the item. If the comment, the assignee or
-    the status cannot be written or verified, stop the dependent step, undo what can be undone
-    and report the rest; never assume success from a local intent or a failed call.
+   and ask for the decision. `move` requires the claim published by the calling agent, matched
+   exactly against that marker: without it the tool refuses. The tool refuses `Backlog`, every
+   `Ready*` and `Done`: those are the user's. A rejected review is returned by the user to the
+   same phase.
+9. **Block and restore.** `move --to Blocked --previous-status <exact current>` only works from
+   the agent's own `{Phase} In Progress`, records the exact previous status with a block marker
+   (`<!-- work-issue:block agent=X issue=N -->`) because the Project has no field for it, and
+   rejects any value that does not match the current status. `--previous-status` is rejected
+   outside a block. Restoring (`--restore`) only trusts that recorded block comment — never a
+   `Previous Status` line quoted in another note — and returns to it; if the authorization or
+   scope changed, ask the user first.
+10. **Verify.** Every write is checked by re-reading the item, and a failed verification read
+    is handled like a failed write: undo what can be undone and report the rest; never assume
+    success from a local intent or a failed call.
 
 ## Status protocol (Project field `Status`)
 
@@ -81,7 +88,7 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
 | `Ready Analysis` / `Ready Specification` / `Ready Development` | Agent (pick up) | Only that phase is authorized. |
 | `Analysis` / `Specification` / `Development` `In Progress` | Agent | Work, tests and PR; no merge. |
 | `… In Review` | User | Accepts, rejects to the same phase, or authorizes the next one. |
-| `Blocked` | Agent records; user unblocks | `Previous Status` exact, reason, owner, exit condition. |
+| `Blocked` | Agent records (only from its own `{Phase} In Progress`); user unblocks | `Previous Status` exact, reason, owner, exit condition. |
 | `Done` | User | Accepted explicitly; a merge is not acceptance. |
 
 `phase:analysis` / `phase:implementation` labels are informative metadata only: they never
@@ -101,10 +108,10 @@ scripts/work-issue move --issue 406 --agent hermes --to Blocked \
 scripts/work-issue move --issue 406 --agent hermes --restore   # vuelve al Previous Status registrado
 ```
 
-`inventory` and every `--dry-run` are read-only. `take`/`move` require `--agent`, and `move`
-requires the claim published by `take`. Exit codes: `0` ok, `2` refused by the protocol
-(nothing changed, or the tool's own writes were retracted), `3` blocked or failed write — the
-receipt lists any write that could not be undone.
+`inventory` and every `--dry-run` are read-only. `take`/`move` require `--agent`; without it the
+tool refuses with exit `2` before touching GitHub. `move` requires the claim published by `take`.
+Exit codes: `0` ok, `2` refused by the protocol (nothing changed, or the tool's own writes were
+retracted), `3` blocked or failed write — the receipt lists any write that could not be undone.
 
 ## Stop conditions
 Stop and report — without writing — when the Project or its permissions are unavailable, the

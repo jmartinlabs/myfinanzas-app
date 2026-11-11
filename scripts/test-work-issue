@@ -52,11 +52,15 @@ def fixture_item(number, items=None):
 class FakeGh:
     """GitHub adapter double: records writes and mutates its own copy of the project."""
 
-    def __init__(self, items=None, fail=(), claims=None, race=False, truncated=False):
+    def __init__(self, items=None, fail=(), claims=None, race=False, truncated=False,
+                 drift_status=None, fail_item_after=None):
         self.data = copy.deepcopy(items if items is not None else load_items())
         self.fail = set(fail)
         self.race = race
         self.truncated = truncated
+        self.drift_status = drift_status
+        self.fail_item_after = fail_item_after
+        self.item_reads = 0
         self.calls = []
         self.next_id = 1000
         self.comments_store = {item.number: [dict(entry) for entry in (claims or {}).get(item.number, [])]
@@ -72,11 +76,17 @@ class FakeGh:
         return copy.deepcopy(self.data)
 
     def item(self, number, items=None):
+        self.item_reads += 1
         if "item" in self.fail:
+            raise WorkIssueError("relectura falló")
+        if self.fail_item_after is not None and self.item_reads > self.fail_item_after:
             raise WorkIssueError("relectura falló")
         for entry in self.data:
             if entry.number == number:
-                return copy.deepcopy(entry)
+                clone = copy.deepcopy(entry)
+                if self.drift_status and self.item_reads > 1:
+                    clone.status = self.drift_status
+                return clone
         raise WorkIssueError("la Issue #%d no está en el Project" % number)
 
     def comments(self, number):
@@ -316,13 +326,15 @@ class MoveTests(unittest.TestCase):
         self.assertIn("Condición", body)
 
     def test_restore_uses_the_recorded_previous_status(self):
-        github = self.in_progress("Blocked")
-        github.comments_store[400].append(
-            {"id": 7, "body": "Previous Status: Development In Progress"})
-        self.assertEqual(service(github).move(400, "Development In Progress", restore=True), EXIT_OK)
+        github = self.in_progress()
+        svc = service(github)
+        self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
+                                  note="Motivo: decisión pendiente."), EXIT_OK)
+        blocked = github.comments_store[400][-1]["body"]
+        self.assertIn("Fase: Development", blocked)
+        self.assertIn("<!-- work-issue:block agent=hermes issue=400 -->", blocked)
+        self.assertEqual(svc.move(400, "Development In Progress", restore=True), EXIT_OK)
         self.assertIn(("status", 400, "Development In Progress"), github.calls)
-        body = github.comments_store[400][-1]["body"]
-        self.assertIn("Fase: Development", body)
 
     def test_restore_without_a_record_is_refused(self):
         github = self.in_progress("Blocked")
@@ -331,10 +343,10 @@ class MoveTests(unittest.TestCase):
         self.assertEqual(github.calls, [])
 
     def test_restore_cannot_jump_to_another_status(self):
-        github = self.in_progress("Blocked")
-        github.comments_store[400] = [{"id": 7, "body": "Previous Status: Development In Progress"}]
-        self.assertEqual(service(github).move(400, "Development In Review", restore=True),
-                         EXIT_REFUSED)
+        github = self.in_progress()
+        svc = service(github)
+        svc.move(400, "Blocked", previous_status="Development In Progress", note="motivo")
+        self.assertEqual(svc.move(400, "Development In Review", restore=True), EXIT_REFUSED)
 
     def test_transition_validation_rejects_unknown_status(self):
         self.assertIsNotNone(validate_transition("Development In Progress", "Doing"))
@@ -542,6 +554,82 @@ class RegressionTests(unittest.TestCase):
         Service(github, "hermes", "Coordinador funcional", lambda line: None,
                 executor="OpenCode").take(406)
         self.assertIn("Ejecutor: OpenCode", github.comments_store[406][-1]["body"])
+
+
+class SecondRoundTests(unittest.TestCase):
+    """Defects found by the second independent QA round (candidate 8a6f20c)."""
+
+    def claimed(self, status="Development In Progress", agent="hermes"):
+        items = load_items()
+        fixture_item(400, items).status = status
+        claim = claim_body(agent, "Coordinador funcional", "development",
+                           fixture_item(400, items))
+        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+
+    def test_previous_status_is_rejected_outside_a_block(self):
+        github = self.claimed()
+        self.assertEqual(service(github).move(400, "Development In Review",
+                                              previous_status="Development In Progress",
+                                              note="x"), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_restore_ignores_a_previous_status_written_in_a_plain_note(self):
+        github = self.claimed()
+        svc = service(github)
+        self.assertEqual(svc.move(400, "Development In Review",
+                                  note="Previous Status: Analysis In Progress"), EXIT_OK)
+        fixture_item(400, github.data).status = "Blocked"   # el usuario bloquea sin comentario
+        self.assertEqual(svc.move(400, "Analysis In Progress", restore=True), EXIT_REFUSED)
+        self.assertNotIn(("status", 400, "Analysis In Progress"), github.calls)
+
+    def test_blocked_only_from_agent_in_progress(self):
+        for status in ("Done", "Backlog", "Ready Development"):
+            github = self.claimed(status)
+            self.assertEqual(service(github).move(400, "Blocked",
+                                                  previous_status=status), EXIT_REFUSED, status)
+            self.assertEqual(github.calls, [], status)
+
+    def test_take_aborts_when_the_status_changed_underneath(self):
+        github = FakeGh(drift_status="Backlog")
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertIn(("retract", 1001), github.calls)
+        self.assertNotIn(("assign", 406), github.calls)
+        self.assertEqual(fixture_item(406, github.data).status, "Ready Development")
+
+    def test_verification_read_failure_reports_pending_writes(self):
+        github = FakeGh(fail_item_after=2)
+        lines = []
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertIn(("unassign", 406), github.calls)
+        self.assertIn("relectura", "\n".join(lines))
+
+    def test_options_after_the_subcommand_are_accepted(self):
+        parser = MODULE["build_parser"]()
+        args = parser.parse_args(["take", "--issue", "406", "--agent", "hermes",
+                                  "--executor", "OpenCode", "--role", "Ejecutor"])
+        self.assertEqual(MODULE["resolve_option"](args, "executor"), "OpenCode")
+        self.assertEqual(MODULE["resolve_option"](args, "role"), "Ejecutor")
+
+    def test_missing_agent_is_a_protocol_refusal(self):
+        self.assertEqual(MODULE["main"](["take", "--issue", "406"]), EXIT_REFUSED)
+        self.assertEqual(MODULE["main"](["move", "--issue", "406", "--to", "Blocked"]),
+                         EXIT_REFUSED)
+
+    def test_claim_ownership_is_exact_not_a_substring(self):
+        items = load_items()
+        fixture_item(400, items).status = "Development In Progress"
+        forged = {"id": 9, "body": claim_body("opencode", "Coordinador funcional",
+                                              "development", fixture_item(400, items))
+                  + "\n\nNota: agent=hermes no participó."}
+        github = FakeGh(items=items, claims={400: [forged]})
+        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_negation_does_not_swallow_a_later_dependency(self):
+        self.assertEqual(MODULE["dependencies"]("No depende de #7 pero depende de #8."), [8])
+        self.assertEqual(MODULE["dependencies"](
+            "No está bloqueada por #7, está bloqueada por #8."), [8])
 
 
 class ParserTests(unittest.TestCase):
