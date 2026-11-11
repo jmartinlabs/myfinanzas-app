@@ -912,7 +912,6 @@ export function editarTransferenciaPendiente(
       );
     requirePendiente(row);
     requireRevision(row, body.revision);
-    const l = row.reparto_linea ? line(db, row.reparto_linea) : null;
     const changes: Record<string, string | number> = {};
     if (body.fechaPrevista !== undefined) {
       const value = civilField(body.fechaPrevista, "fechaPrevista");
@@ -959,11 +958,18 @@ export function editarTransferenciaPendiente(
         changes[side] = value;
       }
     }
-    if (body.origen !== undefined && body.destino !== undefined) {
+    if (body.origen !== undefined || body.destino !== undefined) {
+      // Compare effective values: a single side may collide with the other
+      // current value and would otherwise hit the SQLite CHECK as a 500.
       const origin = (changes.origen ?? row.origen) as string;
       const destination = (changes.destino ?? row.destino) as string;
       if (origin === destination)
-        throw new Problem(422, "VALIDATION", "Origen y destino deben ser distintos.");
+        throw new Problem(
+          422,
+          "VALIDATION",
+          "Origen y destino deben ser distintos.",
+          { origen: "El origen y el destino efectivos deben ser distintos." },
+        );
     }
     if (!Object.keys(changes).length)
       throw new Problem(422, "VALIDATION", "No hay cambios que guardar.");
