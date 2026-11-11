@@ -6,6 +6,9 @@
   ],
   "scripts": {
     "dev": "bun run --parallel --filter '*' dev",
+    "dev:demo": "bun tools/demo/cli.ts",
+    "demo:reset": "bun tools/demo/cli.ts --reset",
+    "demo:seed": "bun tools/demo/cli.ts --seed-only",
     "typecheck": "tsc --noEmit",
     "build": "bun run --filter @myfinanzas/web build",
     "test": "NODE_ENV=${NODE_ENV:-test} bun test apps/api",

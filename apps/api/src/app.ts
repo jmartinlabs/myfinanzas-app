@@ -254,6 +254,7 @@ import {
 import { conciliacionCiclo } from "./conciliacion-ciclos";
 import { resumenInicio } from "./resumen-inicio";
 import { resumenAnual } from "./resumen-anual";
+import { assertDemoDatabase, type DemoScope } from "./demo-mode";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
@@ -274,6 +275,8 @@ export type AppOptions = {
    * defecto: sin él, `minimoObjetivo` queda `No disponible`.
    */
   resumenInicio?: { mesesObjetivo?: number | null };
+  /** Alcance DEMO ya validado en el arranque; ausente en TEST y PROD. */
+  demo?: DemoScope;
 };
 export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   if (
@@ -312,7 +315,14 @@ export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   return data as Record<string, unknown>;
 }
 export function createApp(db: Database, options: AppOptions) {
-  const auth = new Auth(db, options.key, options.origin, options.now);
+  if (options.demo) assertDemoDatabase(db, options.demo);
+  const auth = new Auth(
+    db,
+    options.key,
+    options.origin,
+    options.now,
+    options.demo?.origins,
+  );
   const now = options.now ?? Date.now;
   async function handle(req: Request) {
     const headers = new Headers({
@@ -329,7 +339,25 @@ export function createApp(db: Database, options: AppOptions) {
       if (path === "/api/health" && req.method === "GET")
         return reply({ ok: true });
       if (path === "/api/auth/status" && req.method === "GET")
-        return reply({ configured: auth.configured() });
+        return reply({
+          configured: auth.configured(),
+          ...(options.demo ? { demo: true } : {}),
+        });
+      if (
+        options.demo &&
+        req.method === "POST" &&
+        [
+          "/api/auth/enroll",
+          "/api/auth/login",
+          "/api/auth/mfa",
+          "/api/auth/recover",
+        ].includes(path)
+      )
+        throw new Problem(
+          403,
+          "DEMO_MODE",
+          "El modo DEMO no admite credenciales ni segundo factor.",
+        );
       if (
         req.method === "POST" &&
         [
@@ -366,9 +394,21 @@ export function createApp(db: Database, options: AppOptions) {
         const { challenge, ...publicResult } = result;
         return reply(publicResult);
       }
-      const session = auth.session(req);
+      let session: { csrf: string };
+      if (options.demo) {
+        const demo = auth.demoSession(req);
+        if (demo.created)
+          headers.append(
+            "set-cookie",
+            auth.cookie(auth.cookieName, demo.session, 43200),
+          );
+        session = { csrf: demo.csrf };
+      } else session = auth.session(req);
       if (path === "/api/auth/session" && req.method === "GET")
-        return reply({ csrf: session.csrf });
+        return reply({
+          csrf: session.csrf,
+          ...(options.demo ? { demo: true } : {}),
+        });
       if (path === "/api/auth/logout" && req.method === "POST") {
         auth.logout(req);
         headers.append("set-cookie", auth.cookie(auth.cookieName, "", 0));
