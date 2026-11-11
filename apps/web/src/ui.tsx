@@ -165,6 +165,8 @@ export type TableProps<Row> = {
   rowKey?: (row: Row, index: number) => string | number;
   /** Clase opcional de la fila (p. ej. `annulled`); no altera celdas. */
   rowClassName?: (row: Row, index: number) => string | undefined;
+  /** Acción de fila; los controles internos conservan su propia activación. */
+  onRowClick?: (row: Row, index: number) => void;
   /** Muestra el `caption` a la vista en lugar de ocultarlo. */
   captionVisible?: boolean;
   empty?: ReactNode;
@@ -182,6 +184,7 @@ export function Table<Row>({
   rows,
   rowKey,
   rowClassName,
+  onRowClick,
   captionVisible = false,
   empty = "Sin datos",
   className,
@@ -225,6 +228,21 @@ export function Table<Row>({
                 <tr
                   key={rowKey ? rowKey(row, index) : index}
                   className={rowClassName?.(row, index)}
+                  data-row-clickable={onRowClick ? "true" : undefined}
+                  onClick={
+                    onRowClick
+                      ? (event) => {
+                          const target = event.target as HTMLElement;
+                          if (
+                            target.closest(
+                              "a,button,input,select,textarea,label",
+                            )
+                          )
+                            return;
+                          onRowClick(row, index);
+                        }
+                      : undefined
+                  }
                 >
                   {columns.map((column) => (
                     <td
@@ -251,7 +269,8 @@ export type DataListProps<Row> = {
   rowKey?: (row: Row, index: number) => string | number;
   /** Clase opcional de la tarjeta (p. ej. `annulled`); no altera celdas. */
   rowClassName?: (row: Row, index: number) => string | undefined;
-  /** Nombre accesible opcional de la lista de tarjetas. */
+  /** Acción de tarjeta; los controles internos conservan su activación. */
+  onItemClick?: (row: Row, index: number) => void;
   label?: string;
   empty?: ReactNode;
   /** Clases de la lista; conserva hooks como `mobile-list`. */
@@ -269,6 +288,7 @@ export function DataList<Row>({
   rows,
   rowKey,
   rowClassName,
+  onItemClick,
   label,
   empty = "Sin datos",
   className,
@@ -290,6 +310,19 @@ export function DataList<Row>({
             <li
               key={rowKey ? rowKey(row, index) : index}
               className={`ui-data-list-item${rowClass ? ` ${rowClass}` : ""}`}
+              data-row-clickable={onItemClick ? "true" : undefined}
+              onClick={
+                onItemClick
+                  ? (event) => {
+                      const target = event.target as HTMLElement;
+                      if (
+                        target.closest("a,button,input,select,textarea,label")
+                      )
+                        return;
+                      onItemClick(row, index);
+                    }
+                  : undefined
+              }
             >
               {cardColumns.map((column) => {
                 const fieldLabel = tableColumnLabel(column);
