@@ -19,9 +19,9 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from release import ReleaseError  # noqa: E402
 
-# The reviewed migration dispatched through PREVIOUS_REF is 26 -> 27. Update
+# The reviewed migration dispatched through PREVIOUS_REF is 27 -> 28. Update
 # this guard together with the next authorized migration manifest.
-PREVIOUS_REF_SCHEMA = 26
+PREVIOUS_REF_SCHEMA = 27
 
 
 class ProbeError(Exception):
@@ -83,10 +83,10 @@ def e14_diagnostics(stderr):
 def resolve_previous_ref(source):
     """Select the previous release without weakening the ordinary merge-base path.
 
-    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 26 -> 27
+    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 27 -> 28
     migration against an ancestor commit while the integration branch already
-    carries v27. The default base is CI_BASE_REF (test or main); an explicit
-    value must resolve to an ancestor whose source declares schema 26.
+    carries v28. The default base is CI_BASE_REF (test or main); an explicit
+    value must resolve to an ancestor whose source declares schema 27.
     """
     override = os.environ.get('PREVIOUS_REF', '').strip()
     if not override:

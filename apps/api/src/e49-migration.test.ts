@@ -13,7 +13,7 @@ process.env.NODE_ENV = "test";
 
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
-const c27 = "C27-E411-FOTOS-PERIODO";
+const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e49-"));
 
 /** Genuine v24 contract plus fictional rows covering every preserved area. */
@@ -259,7 +259,7 @@ function store() {
   return db;
 }
 
-test("E4.10 A: v24→v27 is additive, preserves IDs/audit/MFA and exposes the exact C27 contract", () => {
+test("E4.10 A: v24→v28 is additive, preserves IDs/audit/MFA and exposes the exact C28 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v24.sqlite");
@@ -271,13 +271,13 @@ test("E4.10 A: v24→v27 is additive, preserves IDs/audit/MFA and exposes the ex
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 27)).toBe(c27);
-      expect(manifest(db)).toEqual(contract(c27).objects);
+      expect(verifyContract(db, 28)).toBe(c28);
+      expect(manifest(db)).toEqual(contract(c28).objects);
       expect(counts(db)).toEqual({
         cierres: 0,
         fotos_cierre: 0,
@@ -371,7 +371,7 @@ test("E4.10 A: inconsistent foreign keys reject without a partial v26 base and r
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -459,7 +459,7 @@ test("E4.9 A: a failure inside the v25 DDL rolls back the created tables", () =>
   }
 });
 
-for (const unknown of [28, 999]) {
+for (const unknown of [29, 999]) {
   test(`E4.9 A: unknown schema version ${unknown} stays intact`, () => {
     const dir = root();
     try {
@@ -511,7 +511,7 @@ test("E4.9 A: two starts are idempotent", () => {
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(manifest(second)).toEqual(firstManifest);
       expect(snapshot(second)).toEqual(firstData);

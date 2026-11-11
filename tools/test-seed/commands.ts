@@ -25,7 +25,7 @@ import {
 } from "./checksum";
 import {
   assertFreshState,
-  assertSchema27,
+  assertSchema28,
   expectedInitMarker,
   failurePath,
   freshStateProblem,
@@ -133,7 +133,7 @@ function readConnection(config: ProductionConfig) {
   } catch {
     throw new SeedError(
       2,
-      "El estado productivo no supera identidad, pareja DB/clave o contrato 27.",
+      "El estado productivo no supera identidad, pareja DB/clave o contrato 28.",
       "schema",
     );
   }
@@ -145,7 +145,7 @@ function writeConnection(config: ProductionConfig) {
   } catch {
     throw new SeedError(
       2,
-      "El estado productivo no supera identidad, pareja DB/clave o contrato 27.",
+      "El estado productivo no supera identidad, pareja DB/clave o contrato 28.",
       "schema",
     );
   }
@@ -262,7 +262,7 @@ export function initSeed(parsed: ParsedArguments): SeedResult {
   assertNoManifest(root);
   const { db } = readConnection(config);
   try {
-    assertSchema27(db);
+    assertSchema28(db);
     assertFreshState(db);
   } finally {
     db.close();
@@ -359,7 +359,7 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
   const readDb = readConnection(config).db;
   let state: ApplyState;
   try {
-    assertSchema27(readDb);
+    assertSchema28(readDb);
     state = applyState(readDb, root, commit, parsed.seedImage);
   } finally {
     readDb.close();
@@ -375,7 +375,7 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
 
   const { db } = writeConnection(config);
   try {
-    assertSchema27(db);
+    assertSchema28(db);
     const current = applyState(db, root, commit, parsed.seedImage);
     if (current.manifestSha256 !== null)
       return {
@@ -449,7 +449,7 @@ export function verifySeed(parsed: ParsedArguments): SeedResult {
   const { root, config } = loadSeedConfig(parsed.dataRoot);
   const { db } = readConnection(config);
   try {
-    assertSchema27(db);
+    assertSchema28(db);
     const marker = markerOrThrow(root);
     const manifest = optionalPrivateJson<SeedManifest>(
       manifestPath(root),
