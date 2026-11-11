@@ -919,10 +919,10 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       });
     });
     await navigate("/movimientos");
-    await expect(page.getByRole("status")).toHaveText("Cargando Movimientos…");
+    await expect(page.locator(".movements-list").getByRole("status")).toHaveText("Cargando Movimientos…");
     for (const theme of THEMES) {
       await themeSelect.selectOption(theme);
-      await expect(page.getByRole("status")).toHaveText("Cargando Movimientos…");
+      await expect(page.locator(".movements-list").getByRole("status")).toHaveText("Cargando Movimientos…");
       if (theme === "graphite-lime")
         await expect(page.locator(".movement-status-dot")).toHaveAttribute(
           "data-state",

@@ -7,14 +7,11 @@ import { totp } from "../../apps/api/src/auth";
 /**
  * SPEC36 · incremento 2 — reparto mensual asistido.
  *
- * UNRUN por dependencia de la rama hermana `feat/spec36-reparto-api`: la API
- * `GET /api/ciclos/{ciclo}/reparto/propuesta`, `POST/GET /api/ciclos/{ciclo}/reparto`,
- * `PATCH /api/repartos/{id}` y `POST /api/repartos/{id}/generar` todavía no
- * existe en esta base. El escenario se conserva completo y se activará cuando
- * la API se integre, sin cambiar el contrato de UI ni los textos.
+ * Escenario real con servidor API aislado, MFA real y SQLite; depende del
+ * mecanismo de Transferencia pendiente de #391 y de la API de reparto.
  */
-test.fixme(
-  "reparto mensual: propuesta, borrador, generación y pendientes separados de Movimientos (UNRUN: API hermana pendiente)",
+test(
+  "reparto mensual: propuesta, borrador, generación y pendientes separados de Movimientos",
   async ({ page, request }) => {
     const child = spawn(
       process.env.BUN_BIN ?? "bun",
@@ -90,11 +87,19 @@ test.fixme(
         );
       const context = await get("/ciclos/contexto");
       const cycle = await post("/ciclos", {
-        inicio: "2026-01-01",
+        inicio: "2026-11-01",
         saldoInicialComida: "0",
         contextRevision: context.revision,
       });
       expect(cycle.status).toBe(201);
+      // Un segundo Ciclo cierra temporalmente el primero y hace verificable su periodo.
+      const context2 = await get("/ciclos/contexto");
+      const second = await post("/ciclos", {
+        inicio: "2026-12-01",
+        saldoInicialComida: "0",
+        contextRevision: context2.revision,
+      });
+      expect(second.status).toBe(201);
       const origin = (
         await post("/saldos", {
           nombre: "Cuenta ficticia origen",
@@ -154,6 +159,8 @@ test.fixme(
         ).status,
       ).toBe(200);
 
+      // La lista de Ciclos se cargó antes de crear el Ciclo sintético.
+      await page.goto("/planes-ciclo");
       await page
         .getByLabel("Ciclo del plan", { exact: true })
         .selectOption(cycle.data.ciclo.id);
@@ -163,9 +170,12 @@ test.fixme(
           exact: true,
         })
         .click();
+      const propuesta = page.getByRole("region", {
+        name: "Tabla de propuesta de reparto",
+      });
       await expect(page.getByText("Propuesta E2.3", { exact: false })).toBeVisible();
-      await expect(page.getByText("Mantener en origen", { exact: true })).toBeVisible();
-      await expect(page.getByText("Sin propuesta", { exact: true })).toBeVisible();
+      await expect(propuesta.getByText("Mantener en origen", { exact: true })).toBeVisible();
+      await expect(propuesta.getByText("Sin propuesta", { exact: true })).toBeVisible();
       await page
         .getByLabel("Origen común", { exact: true })
         .selectOption(origin.id);
@@ -189,6 +199,12 @@ test.fixme(
       await expect(
         page.getByRole("region", { name: "Pendientes de confirmar" }),
       ).toBeVisible();
+      await page
+        .getByRole("checkbox", {
+          name: "Pendientes de confirmar",
+          exact: true,
+        })
+        .check();
       await expect(
         page.getByText("No suman en totales, balances ni ejecución", {
           exact: true,

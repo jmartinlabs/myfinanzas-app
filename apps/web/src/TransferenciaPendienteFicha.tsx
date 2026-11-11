@@ -576,26 +576,11 @@ export function PendientesDeConfirmar({ go }: { go?: (path: string) => void }) {
 
   return (
     <section
-      className="panel movements-list"
+      className="panel pending-transfers"
       aria-label="Pendientes de confirmar"
     >
       <h2>Pendientes de confirmar</h2>
-      <div className="list-toolbar">
-        <p ref={statusRef} role="status">
-          <span
-            className="movement-status-dot"
-            aria-hidden="true"
-            data-state={loading ? "loading" : error ? "error" : "ready"}
-          />
-          {loading
-            ? "Cargando pendientes de confirmar…"
-            : error
-              ? "Pendientes no disponibles"
-              : `Pendientes de confirmar: ${items.length} · Requieren atención: ${attention.length}`}
-        </p>
-        <span>No suman en totales, balances ni ejecución</span>
-      </div>
-      <div className="filters">
+      <div className="pending-filters">
         <label className="checkbox">
           <input
             type="checkbox"
@@ -613,15 +598,27 @@ export function PendientesDeConfirmar({ go }: { go?: (path: string) => void }) {
           Requieren atención ({attention.length})
         </label>
       </div>
+      {visible && (
+        <>
+      <div className="list-toolbar">
+        <p ref={statusRef} role="status">
+          <span
+            className="pending-status-dot"
+            aria-hidden="true"
+            data-state={loading ? "loading" : error ? "error" : "ready"}
+          />
+          {loading
+            ? "Cargando pendientes de confirmar…"
+            : error
+              ? "Pendientes no disponibles"
+              : `Pendientes de confirmar: ${items.length} · Requieren atención: ${attention.length}`}
+        </p>
+        <span>No suman en totales, balances ni ejecución</span>
+      </div>
       {error ? (
         <Alert retry={() => setRetry((value) => value + 1)}>{error}</Alert>
       ) : loading ? (
         <Skeleton lines={2} label="Cargando pendientes de confirmar" />
-      ) : !visible ? (
-        <p className="help">
-          La sección está oculta. Los pendientes siguen existiendo y no se han
-          convertido en Movimientos.
-        </p>
       ) : shown.length === 0 ? (
         <EmptyState
           title={
@@ -662,7 +659,7 @@ export function PendientesDeConfirmar({ go }: { go?: (path: string) => void }) {
                 <span className="ui-data-list-label">Estado</span>
                 <div className="ui-data-list-value">
                   <span
-                    className="movement-status-dot"
+                    className="pending-status-dot"
                     aria-hidden="true"
                     data-state="ready"
                   />{" "}
@@ -700,6 +697,14 @@ export function PendientesDeConfirmar({ go }: { go?: (path: string) => void }) {
             </li>
           ))}
         </ul>
+      )}
+        </>
+      )}
+      {!visible && (
+        <p className="help">
+          La sección está oculta. Los pendientes siguen existiendo y no se han
+          convertido en Movimientos.
+        </p>
       )}
     </section>
   );
