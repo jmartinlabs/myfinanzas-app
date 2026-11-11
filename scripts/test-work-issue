@@ -22,6 +22,7 @@ FIXTURE = ROOT / "scripts" / "fixtures" / "work-issue-project.json"
 MODULE = runpy.run_path(str(SCRIPT))
 normalise = MODULE["normalise"]
 plan = MODULE["plan"]
+classify = MODULE["classify"]
 render = MODULE["render"]
 Service = MODULE["Service"]
 Gh = MODULE["Gh"]
@@ -51,10 +52,11 @@ def fixture_item(number, items=None):
 class FakeGh:
     """GitHub adapter double: records writes and mutates its own copy of the project."""
 
-    def __init__(self, items=None, fail=(), claims=None, race=False):
+    def __init__(self, items=None, fail=(), claims=None, race=False, truncated=False):
         self.data = copy.deepcopy(items if items is not None else load_items())
         self.fail = set(fail)
         self.race = race
+        self.truncated = truncated
         self.calls = []
         self.next_id = 1000
         self.comments_store = {item.number: [dict(entry) for entry in (claims or {}).get(item.number, [])]
@@ -101,6 +103,22 @@ class FakeGh:
         for entry in self.data:
             if entry.number == number:
                 entry.assignees = ["jmartinlabs"]
+
+    def unassign(self, number):
+        if "unassign" in self.fail:
+            raise WorkIssueError("retirada del assignee falló")
+        self.calls.append(("unassign", number))
+        for entry in self.data:
+            if entry.number == number:
+                entry.assignees = []
+
+    def retract_comment(self, comment_id):
+        if "retract" in self.fail:
+            raise WorkIssueError("retirada del comentario falló")
+        self.calls.append(("retract", comment_id))
+        for number, entries in self.comments_store.items():
+            self.comments_store[number] = [entry for entry in entries
+                                           if entry.get("id") != comment_id]
 
     def set_status(self, item, status):
         if "status" in self.fail:
@@ -241,9 +259,9 @@ class TakeTests(unittest.TestCase):
 
     def test_take_does_not_claim_success_when_a_write_fails(self):
         github = FakeGh(fail={"assign"})
-        with self.assertRaises(WorkIssueError):
-            service(github).take(406)
+        self.assertEqual(service(github).take(406), EXIT_FAILED)
         self.assertNotIn(("status", 406, "Development In Progress"), github.calls)
+        self.assertIn(("retract", 1001), github.calls)
 
     def test_take_stops_when_the_project_cannot_be_read(self):
         github = FakeGh(fail={"items"})
@@ -256,10 +274,12 @@ class TakeTests(unittest.TestCase):
 
 
 class MoveTests(unittest.TestCase):
-    def in_progress(self, status="Development In Progress"):
+    def in_progress(self, status="Development In Progress", agent="hermes"):
         items = load_items()
         fixture_item(400, items).status = status
-        return FakeGh(items=items)
+        claim = claim_body(agent, "Coordinador funcional", "development",
+                           fixture_item(400, items))
+        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
 
     def test_agent_may_deliver_to_review(self):
         github = self.in_progress()
@@ -297,9 +317,12 @@ class MoveTests(unittest.TestCase):
 
     def test_restore_uses_the_recorded_previous_status(self):
         github = self.in_progress("Blocked")
-        github.comments_store[400] = [{"id": 7, "body": "Previous Status: Development In Progress"}]
+        github.comments_store[400].append(
+            {"id": 7, "body": "Previous Status: Development In Progress"})
         self.assertEqual(service(github).move(400, "Development In Progress", restore=True), EXIT_OK)
         self.assertIn(("status", 400, "Development In Progress"), github.calls)
+        body = github.comments_store[400][-1]["body"]
+        self.assertIn("Fase: Development", body)
 
     def test_restore_without_a_record_is_refused(self):
         github = self.in_progress("Blocked")
@@ -421,6 +444,106 @@ class AdapterTests(unittest.TestCase):
         self.assertNotIn("INVENTARIO", proc.stdout)
 
 
+class RegressionTests(unittest.TestCase):
+    """Defects found by independent QA on the first candidate."""
+
+    def test_blocking_requires_the_exact_current_status(self):
+        self.assertIsNotNone(validate_transition(
+            "Analysis In Progress", "Blocked", "Development In Progress"))
+        self.assertIsNotNone(validate_transition(
+            "Analysis In Progress", "Blocked", "Done"))
+        self.assertIsNone(validate_transition(
+            "Analysis In Progress", "Blocked", "Analysis In Progress"))
+
+    def test_block_then_restore_cannot_skip_a_phase(self):
+        items = load_items()
+        fixture_item(402, items).status = "Analysis In Progress"
+        claim = claim_body("hermes", "Coordinador funcional", "analysis",
+                           fixture_item(402, items))
+        github = FakeGh(items=items, claims={402: [{"id": 3, "body": claim}]})
+        svc = service(github)
+        self.assertEqual(svc.move(402, "Blocked", previous_status="Development In Progress"),
+                         EXIT_REFUSED)
+        self.assertEqual(svc.move(402, "Blocked", previous_status="Analysis In Progress",
+                                  note="motivo"), EXIT_OK)
+        self.assertEqual(svc.move(402, "Development In Progress", restore=True), EXIT_REFUSED)
+        self.assertNotIn(("status", 402, "Development In Progress"), github.calls)
+
+    def test_move_without_a_claim_is_refused(self):
+        items = load_items()
+        fixture_item(400, items).status = "Development In Progress"
+        github = FakeGh(items=items)
+        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_move_without_agent_is_an_error_not_a_comment(self):
+        items = load_items()
+        fixture_item(400, items).status = "Development In Progress"
+        with self.assertRaises(WorkIssueError):
+            Service(FakeGh(items=items), None).move(400, "Development In Review")
+
+    def test_failed_status_write_rolls_back_the_claim_and_the_assignee(self):
+        github = FakeGh(fail={"status"})
+        self.assertEqual(service(github).take(406), EXIT_FAILED)
+        self.assertIn(("assign", 406), github.calls)
+        self.assertIn(("unassign", 406), github.calls)
+        self.assertIn(("retract", 1001), github.calls)
+        self.assertEqual(github.comments_store.get(406, []), [])
+        self.assertEqual(fixture_item(406, github.data).assignees, [])
+
+    def test_collision_retracts_our_comment_and_allows_a_retry(self):
+        github = FakeGh(race=True)
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertIn(("retract", 1001), github.calls)
+        self.assertNotIn(("assign", 406), github.calls)
+        self.assertEqual([entry["id"] for entry in github.comments_store[406]], [500])
+
+    def test_inventory_shows_priority_and_dependencies(self):
+        lines = []
+        render(plan(load_items()), None, lines.append)
+        text = "\n".join(lines)
+        self.assertIn("Pri", text)
+        self.assertIn("P0", text)
+        self.assertIn("Deps", text)
+        self.assertIn("#406", text)
+
+    def test_namespaced_agent_labels_route_or_fail_closed(self):
+        item = fixture_item(402)
+        item.labels = ["to:hermes"]
+        self.assertEqual(classify(item, "hermes").route, "hermes")
+        item.labels = ["to:claude"]
+        self.assertEqual(classify(item, "hermes").kind, "unknown-agent")
+
+    def test_negated_dependencies_are_ignored(self):
+        self.assertEqual(MODULE["dependencies"]("No depende de #7 ni de nada."), [])
+        self.assertEqual(MODULE["dependencies"]("Depends on #3."), [3])
+        self.assertEqual(MODULE["dependencies"]("Dependencias: #4, #5."), [4, 5])
+
+    def test_relations_are_recovered_from_the_body(self):
+        related = MODULE["relations"](
+            "Épica E4.4 · SPEC specs/36-reparto.md · ver #391 y #406")
+        self.assertEqual(related["epics"], ["E4.4"])
+        self.assertEqual(related["specs"], ["specs/36-reparto.md"])
+        self.assertIn(391, related["issues"])
+        self.assertIn(406, related["issues"])
+
+    def test_truncated_project_refuses_to_reserve(self):
+        with self.assertRaises(WorkIssueError):
+            service(FakeGh(truncated=True)).take(406)
+
+    def test_inventory_warns_when_the_project_was_truncated(self):
+        lines = []
+        Service(FakeGh(truncated=True), "hermes", "Coordinador funcional",
+                lines.append).inventory()
+        self.assertIn("límite de lectura", "\n".join(lines))
+
+    def test_executor_is_distinguished_from_the_author(self):
+        github = FakeGh()
+        Service(github, "hermes", "Coordinador funcional", lambda line: None,
+                executor="OpenCode").take(406)
+        self.assertIn("Ejecutor: OpenCode", github.comments_store[406][-1]["body"])
+
+
 class ParserTests(unittest.TestCase):
     def test_agent_flag_works_before_and_after_the_subcommand(self):
         parser = MODULE["build_parser"]()
@@ -433,10 +556,21 @@ class ParserTests(unittest.TestCase):
             ["--agent", "hermes", "inventory"])), "hermes")
         self.assertIsNone(resolve(parser.parse_args(["inventory"])))
 
-    def test_move_requires_a_target_status(self):
-        with self.assertRaises(SystemExit):
-            with contextlib.redirect_stderr(io.StringIO()):
-                MODULE["build_parser"]().parse_args(["move", "--issue", "406"])
+    def test_move_without_target_is_refused_unless_restoring(self):
+        class FakeGitHub:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def preflight(self):
+                pass
+
+        original = MODULE["Gh"]
+        MODULE["Gh"] = FakeGitHub
+        try:
+            code = MODULE["main"](["move", "--issue", "406", "--agent", "hermes"])
+        finally:
+            MODULE["Gh"] = original
+        self.assertEqual(code, 2)
 
 
 class ContractTests(unittest.TestCase):

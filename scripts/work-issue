@@ -47,15 +47,18 @@ TRANSITIONS = {
 HUMAN_ONLY = frozenset({"Backlog", "Ready Analysis", "Ready Specification",
                         "Ready Development", "Done"})
 
-DEPENDENCY_PATTERNS = (
-    re.compile(r"(?i)\bdepende de\s+#(\d+)"),
-    re.compile(r"(?i)\b(?:blocked by|bloquead[ao] por)\s+#(\d+)"),
-    re.compile(r"(?i)\brequiere\s+#(\d+)"),
-)
-DEPENDENCY_PREFIX = re.compile(r"(?i)^\s*(?:\*\*)?(?:depende de|blocked by|bloquead[ao] por|requiere)(?:\*\*)?\s*:\s*(.*)$", re.M)
+DEPENDENCY_RE = re.compile(
+    r"(?i)\b(?:depende de|depends on|blocked by|bloquead[ao] por|requiere|requires)\s+#(\d+)")
+DEPENDENCY_LIST_RE = re.compile(
+    r"(?i)^\s*(?:\*\*)?(?:dependencias|dependencies)(?:\*\*)?\s*:\s*(.*)$", re.M)
+NEGATION_RE = re.compile(r"(?i)\bno\s+(?:depende|depends|está\s+bloquead[ao]|esta\s+bloquead[ao])\b[^.\n]*$")
+SPEC_RE = re.compile(r"specs/[0-9A-Za-z._/-]+\.md")
+EPIC_RE = re.compile(r"(?i)\b(?:épica|epica|epic)\s*[:·]?\s*([A-Z]?\d+(?:\.\d+)?)")
+ISSUE_REF_RE = re.compile(r"#(\d+)")
 
 CLAIM_MARKER = "<!-- work-issue:claim"
 AUTHOR_HEADER = ("Autor", "Rol", "Fase", "Tipo")
+PROJECT_LIMIT = 1000
 PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 PHASE_ORDER = {"development": 0, "specification": 1, "analysis": 2}
 
@@ -126,26 +129,42 @@ def normalise(raw):
 
 
 def dependencies(body):
-    """Issue numbers named as hard dependencies; empty when none is declared."""
+    """Issue numbers named as hard dependencies; negated mentions are not dependencies."""
+    text = body or ""
     found = set()
-    for pattern in DEPENDENCY_PATTERNS:
-        found.update(int(number) for number in pattern.findall(body or ""))
-    for match in DEPENDENCY_PREFIX.finditer(body or ""):
-        found.update(int(number) for number in re.findall(r"#(\d+)", match.group(1)))
+    for match in DEPENDENCY_RE.finditer(text):
+        if NEGATION_RE.search(text[max(0, match.start() - 30):match.start()]) \
+                or re.search(r"(?i)\bno\s+$", text[max(0, match.start() - 12):match.start()]):
+            continue
+        found.add(int(match.group(1)))
+    for match in DEPENDENCY_LIST_RE.finditer(text):
+        found.update(int(number) for number in ISSUE_REF_RE.findall(match.group(1)))
     return sorted(found)
 
 
-def agent_routing(labels, agents=AGENTS):
-    """Return (known, unknown): the single routing label and unknown `agent:<name>` ones.
+def relations(body):
+    """Épica / SPEC / Issue references already present in the Issue body."""
+    text = body or ""
+    specs = sorted({path.rstrip(".,;") for path in SPEC_RE.findall(text)})
+    epics = sorted({epic for epic in EPIC_RE.findall(text)})
+    issues = sorted({int(number) for number in ISSUE_REF_RE.findall(text)})
+    return {"specs": specs, "epics": epics, "issues": issues}
 
-    Only catalogue labels route work. A namespaced label is the explicit way to declare
-    an agent this catalogue does not know, so it fails closed instead of being ignored.
+
+def agent_routing(labels, agents=AGENTS):
+    """Return (known, unknown): routing labels and namespaced ones outside the catalogue.
+
+    Only catalogue labels route work. Namespaced labels (`agent:X`, `to:X`) are honoured
+    when X is in the catalogue and fail closed when it is not: a routing hint must never
+    be silently ignored while the item is still taken.
     """
     known, unknown = [], []
     for label in labels:
         name = label.strip().lower()
-        if name.startswith("agent:"):
-            unknown.append(name.split(":", 1)[1] or "<empty>")
+        namespaced = re.match(r"^(?:agent|to)[:·](.+)$", name)
+        if namespaced:
+            value = namespaced.group(1).strip() or "<empty>"
+            (known if value in agents else unknown).append(value)
         elif name in agents:
             known.append(name)
     return sorted(set(known)), sorted(set(unknown))
@@ -238,14 +257,23 @@ def render(decisions, agent=None, out=print):
         out("Sin Issues en Ready Analysis, Ready Specification o Ready Development.")
         return
     out("INVENTARIO — Ready Analysis / Ready Specification / Ready Development")
-    out("%-5s %-26s %-10s %-18s %s" % ("#", "Status", "Agente", "Clase", "Siguiente acción"))
+    out("%-5s %-26s %-4s %-10s %-12s %-20s %s" % (
+        "#", "Status", "Pri", "Agente", "Deps", "Clase", "Siguiente acción"))
     for decision in decisions:
         item = decision.item
-        out("%-5s %-26s %-10s %-18s %s" % (
-            "#%d" % item.number, item.status, decision.route or "libre",
-            decision.kind, next_action(decision)))
+        deps = ", ".join("#%d" % number for number in decision.dependencies) or "—"
+        out("%-5s %-26s %-4s %-10s %-12s %-20s %s" % (
+            "#%d" % item.number, item.status, item.priority or "—",
+            decision.route or "libre", deps, decision.kind, next_action(decision)))
         if decision.reason:
             out("      motivo: " + decision.reason)
+        related = relations(item.body)
+        if related["specs"] or related["epics"] or related["issues"]:
+            out("      relación: %s%s%s" % (
+                ("épica " + ", ".join(related["epics"]) + "; ") if related["epics"] else "",
+                ("SPEC " + ", ".join(related["specs"]) + "; ") if related["specs"] else "",
+                "issues " + ", ".join("#%d" % n for n in related["issues"])
+                if related["issues"] else ""))
     out("")
     buckets = {}
     for decision in decisions:
@@ -266,32 +294,43 @@ def render(decisions, agent=None, out=print):
 
 
 def validate_transition(current, target, previous_status=None, restore=False):
-    """Return None when the agent may perform the move, otherwise the refusal reason."""
+    """Return None when the agent may perform the move, otherwise the refusal reason.
+
+    A caller-supplied Previous Status documents a block; it never rewrites history, so it
+    must match the current status exactly and can only be restored to that same status.
+    """
     if target not in STATUSES:
         return "Status desconocido: " + target
+    if current not in STATUSES:
+        return "Status actual desconocido: " + str(current)
     if current == target:
         return "el Status ya es " + target
     if current == "Blocked":
         if not restore:
-            return "solo se restaura el Status anterior con --restore y Previous Status verificado"
+            return "solo se restaura el Status anterior con --restore"
         if not previous_status:
-            return "falta --previous-status para restaurar desde Blocked"
-        if previous_status not in STATUSES or previous_status in HUMAN_ONLY or previous_status == "Blocked":
+            return "no hay Previous Status registrado que restaurar"
+        if previous_status in HUMAN_ONLY or previous_status in ("Blocked", "Done"):
             return "Previous Status no restaurable por el agente: " + str(previous_status)
         if target != previous_status:
             return "la restauración debe devolver exactamente %s" % previous_status
         return None
     if target in HUMAN_ONLY:
         return "transición reservada al usuario: " + target
+    if target == "Blocked":
+        if not previous_status:
+            return "Blocked requiere --previous-status <valor exacto>"
+        if previous_status != current:
+            return ("Previous Status debe ser exactamente el Status actual (%s), no %s"
+                    % (current, previous_status))
+        return None
     allowed = TRANSITIONS.get(current, set())
     if target not in allowed:
         return "transición no permitida al agente: %s -> %s" % (current, target)
-    if target == "Blocked" and not previous_status:
-        return "Blocked requiere --previous-status <valor exacto>"
     return None
 
 
-def claim_body(agent, role, phase, item, note=None):
+def claim_body(agent, role, phase, item, note=None, executor=None):
     """Operative comment header required by the protocol, plus the claim marker."""
     lines = [
         "Autor: %s" % agent,
@@ -303,7 +342,7 @@ def claim_body(agent, role, phase, item, note=None):
         "",
         "- **Issue:** #%d — %s" % (item.number, item.title),
         "- **Status previo:** %s" % item.status,
-        "- **Ejecutor:** %s" % agent,
+        "- Ejecutor: %s" % (executor or agent),
         "",
     ]
     if note:
@@ -326,7 +365,8 @@ def phase_of(status):
     return None
 
 
-def report_body(agent, role, phase, item, target, note=None, previous_status=None):
+def report_body(agent, role, phase, item, target, note=None, previous_status=None,
+                executor=None):
     lines = [
         "Autor: %s" % agent,
         "Rol: %s" % role,
@@ -339,6 +379,8 @@ def report_body(agent, role, phase, item, target, note=None, previous_status=Non
         "- De: %s" % item.status,
         "- A: %s" % target,
     ]
+    if executor:
+        lines.append("- Ejecutor: %s" % executor)
     if previous_status:
         lines.append("- Previous Status: %s" % previous_status)
     lines.append("")
@@ -355,6 +397,7 @@ class Gh:
         self.number = number
         self.repo = repo
         self.runner = runner or self._run
+        self.truncated = False
 
     def _run(self, argv):
         proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
@@ -376,7 +419,7 @@ class Gh:
 
     def items(self):
         out = self._call(["gh", "project", "item-list", str(self.number), "--owner", self.owner,
-                          "--format", "json", "--limit", "1000"], "lectura del Project")
+                          "--format", "json", "--limit", str(PROJECT_LIMIT)], "lectura del Project")
         try:
             raw = json.loads(out or "{}")
         except ValueError as error:
@@ -384,7 +427,10 @@ class Gh:
         entries = raw.get("items")
         if not isinstance(entries, list):
             raise WorkIssueError("el Project no devolvió una lista de items")
-        return [normalise(entry) for entry in entries]
+        self.truncated = len(entries) >= PROJECT_LIMIT
+        # Draft issues carry no number and cannot be taken or moved.
+        return [normalise(entry) for entry in entries
+                if (entry.get("content") or {}).get("type") in (None, "Issue", "PullRequest")]
 
     def item(self, number, items=None):
         for candidate in items if items is not None else self.items():
@@ -419,6 +465,15 @@ class Gh:
         self._call(["gh", "issue", "edit", str(number), "--repo", self.repo,
                     "--add-assignee", "@me"], "asignación de la Issue")
 
+    def unassign(self, number):
+        self._call(["gh", "issue", "edit", str(number), "--repo", self.repo,
+                    "--remove-assignee", "@me"], "retirada del assignee")
+
+    def retract_comment(self, comment_id):
+        self._call(["gh", "api", "-X", "DELETE",
+                    "repos/%s/issues/comments/%s" % (self.repo, comment_id)],
+                   "retirada del comentario %s" % comment_id)
+
     def set_status(self, item, status):
         self._call(["gh", "project", "item-edit", str(self.number), "--owner", self.owner,
                     "--url", item.url, "--field", "Status", "--value", status],
@@ -428,16 +483,43 @@ class Gh:
 class Service:
     """Orchestration shared by the CLI and the tests; the GitHub adapter is injected."""
 
-    def __init__(self, github, agent=None, role=ROLES[0], out=print):
+    def __init__(self, github, agent=None, role=ROLES[0], out=print, executor=None):
         self.github = github
         self.agent = agent
         self.role = role
         self.out = out
+        self.executor = executor
 
     def inventory(self, agent=None):
         decisions = plan(self.github.items(), agent if agent is not None else self.agent)
         render(decisions, agent if agent is not None else self.agent, self.out)
+        if getattr(self.github, "truncated", False):
+            self.out("Aviso: el Project supera el límite de lectura de %d items; el inventario "
+                     "puede estar incompleto y no se reserva." % PROJECT_LIMIT)
         return decisions
+
+    def _rollback(self, number, claim_id=None, assigned=False):
+        """Undo the writes already made; returns what could not be undone."""
+        problems = []
+        if assigned:
+            try:
+                self.github.unassign(number)
+            except WorkIssueError as error:
+                problems.append("assignee no retirado (%s)" % error)
+        if claim_id is not None:
+            try:
+                self.github.retract_comment(claim_id)
+            except WorkIssueError as error:
+                problems.append("comentario %s no retirado (%s)" % (claim_id, error))
+        return problems
+
+    def _claim_of(self, number, agent):
+        """Our own claim comment, matched by marker and agent."""
+        for entry in self.github.comments(number):
+            body = entry.get("body") or ""
+            if CLAIM_MARKER in body and ("agent=%s " % agent) in body:
+                return entry
+        return None
 
     def take(self, number, agent=None, dry_run=False):
         agent = agent or self.agent
@@ -445,6 +527,9 @@ class Service:
             raise WorkIssueError("agente no reconocido: %s (catálogo: %s)"
                                  % (agent, ", ".join(AGENTS)))
         items = self.github.items()
+        if getattr(self.github, "truncated", False):
+            raise WorkIssueError("el Project supera el límite de lectura de %d items; "
+                                 "un inventario truncado no puede reservar" % PROJECT_LIMIT)
         item = self.github.item(number, items)
         decision = classify(item, agent, {entry.number: entry for entry in items})
         if not decision.eligible:
@@ -462,21 +547,37 @@ class Service:
             self.out("No reservada #%d: ya existe una toma previa (comentario %s)"
                      % (number, owner.get("id")))
             return EXIT_REFUSED
-        self.github.comment(number, claim_body(agent, self.role, phase, item))
-        after = [entry for entry in self.github.comments(number)
-                 if CLAIM_MARKER in (entry.get("body") or "")]
-        if len(after) > 1:
-            first = min(after, key=lambda entry: entry.get("id") or 0)
-            if ("agent=%s " % agent) not in (first.get("body") or ""):
-                self.out("No reservada #%d: colisión, otra toma anterior (%s)"
-                         % (number, first.get("id")))
-                return EXIT_REFUSED
-        self.github.assign(number)
-        self.github.set_status(item, target)
+        self.github.comment(number, claim_body(agent, self.role, phase, item,
+                                               executor=self.executor))
+        ours = self._claim_of(number, agent)
+        claim_id = ours.get("id") if ours else None
+        written = [entry for entry in self.github.comments(number)
+                   if CLAIM_MARKER in (entry.get("body") or "")]
+        competitors = [entry for entry in written if entry.get("id") != claim_id]
+        if competitors and (claim_id is None or min(
+                entry.get("id") or 0 for entry in competitors) < (claim_id or 0)):
+            problems = self._rollback(number, claim_id)
+            self.out("No reservada #%d: colisión con otra toma anterior; la nuestra "
+                     "%s" % (number, "se retiró" if not problems else "NO se pudo retirar"))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_REFUSED
+        try:
+            self.github.assign(number)
+            self.github.set_status(item, target)
+        except WorkIssueError as error:
+            problems = self._rollback(number, claim_id, assigned=True)
+            self.out("No verificada #%d: la escritura falló (%s)" % (number, error))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_FAILED
         verified = self.github.item(number)
         if verified.status != target or not verified.assignees:
+            problems = self._rollback(number, claim_id, assigned=True)
             self.out("No verificado #%d: Status=%s assignees=%s"
                      % (number, verified.status, verified.assignees or "ninguno"))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
             return EXIT_FAILED
         self.out("Tomada #%d (%s -> %s) por %s" % (number, item.status, target, agent))
         return EXIT_OK
@@ -484,31 +585,45 @@ class Service:
     def move(self, number, target, previous_status=None, note=None,
              dry_run=False, restore=False):
         agent = self.agent
+        if not agent or agent not in AGENTS:
+            raise WorkIssueError("move requiere --agent del catálogo: %s"
+                                 % ", ".join(AGENTS))
         items = self.github.items()
         item = self.github.item(number, items)
-        if restore and not previous_status:
-            previous_status = self.blocked_previous(number)
+        if restore:
+            recorded = self.blocked_previous(number)
+            if not recorded:
+                self.out("No movida #%d: no hay Previous Status registrado" % number)
+                return EXIT_REFUSED
+            if target and target != recorded:
+                self.out("No movida #%d: la restauración debe devolver exactamente %s"
+                         % (number, recorded))
+                return EXIT_REFUSED
+            target = recorded
+            previous_status = recorded
         reason = validate_transition(item.status, target, previous_status, restore)
         if reason:
             self.out("No movida #%d: %s" % (number, reason))
             return EXIT_REFUSED
         claims = [entry for entry in self.github.comments(number)
                   if CLAIM_MARKER in (entry.get("body") or "")]
-        if claims and not any(("agent=%s " % agent) in (entry.get("body") or "")
-                              for entry in claims):
-            self.out("No movida #%d: la toma registrada es de otro agente" % number)
+        if not any(("agent=%s " % agent) in (entry.get("body") or "") for entry in claims):
+            self.out("No movida #%d: no hay toma registrada de %s; reserva primero con take"
+                     % (number, agent))
             return EXIT_REFUSED
         if dry_run:
             self.out("[dry-run] #%d %s -> %s (comentario + cambio de Status, sin escrituras)"
                      % (number, item.status, target))
             return EXIT_OK
-        phase = READY[item.status][0] if item.status in READY else phase_of(item.status)
+        phase = READY[item.status][0] if item.status in READY else phase_of(target)
         self.github.comment(number, report_body(
-            agent, self.role, phase, item, target, note, previous_status))
+            agent, self.role, phase, item, target, note, previous_status,
+            executor=self.executor))
         self.github.set_status(item, target)
         verified = self.github.item(number)
         if verified.status != target:
-            self.out("No verificado #%d: Status=%s" % (number, verified.status))
+            self.out("No verificado #%d: Status=%s (el comentario de informe ya está "
+                     "publicado)" % (number, verified.status))
             return EXIT_FAILED
         self.out("Movida #%d: %s -> %s" % (number, item.status, target))
         return EXIT_OK
@@ -525,7 +640,7 @@ class Service:
 def build_parser():
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--agent", choices=AGENTS,
-                        help="filtro de agente (etiqueta simple)")
+                        help="agente propietario de la toma (obligatorio en take/move)")
     parser = argparse.ArgumentParser(
         prog="work-issue",
         description="Lee el trabajo Ready del Project, lo enruta por etiqueta de agente y "
@@ -536,6 +651,8 @@ def build_parser():
     parser.add_argument("--owner", default="jmartinlabs")
     parser.add_argument("--repo", default="jmartinlabs/myfinanzas-app")
     parser.add_argument("--role", choices=ROLES, default=ROLES[0])
+    parser.add_argument("--executor",
+                        help="ejecutor real cuando difiere del autor del comentario")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("inventory", parents=[common],
                         help="inventario completo de las tres Ready (solo lectura)")
@@ -545,7 +662,8 @@ def build_parser():
     move = commands.add_parser("move", parents=[common],
                                help="transición de fase permitida al agente")
     move.add_argument("--issue", type=int, required=True)
-    move.add_argument("--to", required=True, choices=STATUSES)
+    move.add_argument("--to", choices=STATUSES,
+                      help="Status destino (obligatorio salvo con --restore)")
     move.add_argument("--previous-status")
     move.add_argument("--note")
     move.add_argument("--restore", action="store_true")
@@ -563,7 +681,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     agent = resolve_agent(args)
     github = Gh(args.owner, args.project, args.repo)
-    service = Service(github, agent, args.role)
+    service = Service(github, agent, args.role, executor=args.executor)
     try:
         github.preflight()
         if args.command in (None, "inventory"):
@@ -571,6 +689,10 @@ def main(argv=None):
             return EXIT_OK
         if args.command == "take":
             return service.take(args.issue, agent, dry_run=args.dry_run)
+        if not args.to and not args.restore:
+            print("No movida #%d: falta --to (o --restore con Previous Status registrado)"
+                  % args.issue, file=sys.stderr)
+            return EXIT_REFUSED
         return service.move(args.issue, args.to, args.previous_status, args.note,
                             dry_run=args.dry_run, restore=args.restore)
     except WorkIssueError as error:
