@@ -19926,9 +19926,9 @@
       },
       {
         "type": "index",
-        "name": "transferencia_pendiente_linea",
+        "name": "transferencia_pendiente_linea_unica",
         "tbl_name": "transferencia_pendiente",
-        "sql": "CREATE INDEX transferencia_pendiente_linea\n      ON transferencia_pendiente(reparto_linea)"
+        "sql": "CREATE UNIQUE INDEX transferencia_pendiente_linea_unica\n      ON transferencia_pendiente(reparto_linea) WHERE reparto_linea IS NOT NULL"
       },
       {
         "type": "index",
@@ -21911,6 +21911,6 @@
         "sql": "CREATE TRIGGER valoracion_update_correction\n      BEFORE UPDATE ON valoracion_inversion\n      WHEN NEW.revision!=OLD.revision+1\n        OR NEW.motivo_correccion IS NULL\n        OR length(trim(NEW.motivo_correccion))=0\n      BEGIN SELECT RAISE(ABORT,'correction requires next revision and motive'); END"
       }
     ],
-    "sha256": "408b8caf130980653d0dcaadcecb9e9713697c493c9750dddbd4cbb6cb910d1a"
+    "sha256": "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c"
   }
 ]

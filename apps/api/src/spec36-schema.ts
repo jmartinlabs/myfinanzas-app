@@ -195,8 +195,8 @@ export function repartoMensualSchemaV28(db: Database) {
       ON transferencia_pendiente(movimiento) WHERE movimiento IS NOT NULL;
     CREATE INDEX transferencia_pendiente_ciclo_estado
       ON transferencia_pendiente(ciclo_origen,estado);
-    CREATE INDEX transferencia_pendiente_linea
-      ON transferencia_pendiente(reparto_linea);
+    CREATE UNIQUE INDEX transferencia_pendiente_linea_unica
+      ON transferencia_pendiente(reparto_linea) WHERE reparto_linea IS NOT NULL;
     CREATE INDEX transferencia_pendiente_gasto
       ON transferencia_pendiente(gasto);
 

@@ -19,7 +19,7 @@
     "commit": "<SHA-40 del commit del artefacto>",
     "schema": 28,
     "schema_contract": "C28-REPARTO-PENDIENTE-6A31C23",
-    "schema_contract_sha256": "408b8caf130980653d0dcaadcecb9e9713697c493c9750dddbd4cbb6cb910d1a",
+    "schema_contract_sha256": "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
     "data_contract": "e36.1-v28",
     "bun": "1.4.3",
     "seed_image": "sha256:<64 hex del ID inmutable de la imagen seed>"

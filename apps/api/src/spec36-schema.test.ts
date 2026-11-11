@@ -324,7 +324,7 @@ test("SPEC36 v28: C28 is exact and deterministic", () => {
   expect(c.sourceCommit).toBe("6a31c23");
   expect(c.objects).toHaveLength(372);
   expect(c.sha256).toBe(
-    "408b8caf130980653d0dcaadcecb9e9713697c493c9750dddbd4cbb6cb910d1a",
+    "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
   );
   expect(contracts().at(-1)?.id).toBe(c28);
   expect(contract(c27).sha256).toBe(
@@ -361,7 +361,7 @@ test("SPEC36 v28: a fresh schema matches C28 exactly", () => {
       "reparto_lineas_reparto",
       "transferencia_pendiente_movimiento_unico",
       "transferencia_pendiente_ciclo_estado",
-      "transferencia_pendiente_linea",
+      "transferencia_pendiente_linea_unica",
       "transferencia_pendiente_gasto",
       "reparto_audit_revision_unica",
       "transferencia_pendiente_audit_revision_unica",
@@ -719,6 +719,35 @@ test("SPEC36 v28: one reparto per cycle and a line frozen by generation or pendi
       ]),
     ).toThrow("reparto line is frozen");
     expect(repartoId).toBeGreaterThan(0);
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v28: one pending per reparto line and distinct lines stay allowed", () => {
+  const db = store();
+  try {
+    cycle(db);
+    budget(db);
+    reparto(db);
+    const firstLine = line(db);
+    const secondLine = line(db);
+    generate(db);
+
+    const firstPending = pending(db, { reparto_linea: firstLine });
+    expect(firstPending).toBeGreaterThan(0);
+    expect(() => pending(db, { reparto_linea: firstLine })).toThrow();
+    expect(() => pending(db, { reparto_linea: secondLine })).not.toThrow();
+    expect(
+      db
+        .query(
+          "SELECT reparto_linea FROM transferencia_pendiente ORDER BY reparto_linea",
+        )
+        .all(),
+    ).toEqual([
+      { reparto_linea: firstLine },
+      { reparto_linea: secondLine },
+    ]);
   } finally {
     db.close();
   }
