@@ -181,9 +181,22 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Ver", exact: true }).first().click();
+  const purchaseUrl = page.url();
   await expect(page.locator(".compra-detail-page")).toBeVisible();
   await expect(page.locator(".compra-detail-page .detail-grid > div")).toHaveCount(10);
   await capture("compra-ficha-graphite", 1440, 1000);
+  await capture("compra-ficha-graphite", 820, 1000);
+  await capture("compra-ficha-graphite", 390, 844);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(purchaseUrl + "/anular");
+  await expect(page.locator(".compra-annul-page")).toBeVisible();
+  await expect(page.locator(".compra-annul-page .panel")).toHaveCount(1);
+  await capture("compra-anulacion-graphite", 1440, 1000);
+  await capture("compra-anulacion-graphite", 390, 844);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(purchaseUrl);
   await page.getByRole("button", { name: "Rectificar", exact: true }).click();
   await expect(page.locator(".compra-form-page")).toBeVisible();
   await expect(page.locator(".compra-form-page .ui-form-section")).toHaveCount(4);
@@ -202,9 +215,19 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Ver", exact: true }).first().click();
+  const saleUrl = page.url();
   await expect(page.locator(".venta-detail-page")).toBeVisible();
   await expect(page.locator(".venta-detail-page .detail-grid > div")).toHaveCount(10);
   await capture("venta-ficha-graphite", 1440, 1000);
+  await capture("venta-ficha-graphite", 820, 1000);
+  await capture("venta-ficha-graphite", 390, 844);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(saleUrl + "/anular");
+  await expect(page.locator(".venta-annul-page")).toBeVisible();
+  await expect(page.locator(".venta-annul-page .ui-form-section")).toHaveCount(1);
+  await capture("venta-anulacion-graphite", 1440, 1000);
+  await capture("venta-anulacion-graphite", 390, 844);
 
   await page.goto("/inversiones/ventas/nueva");
   await expect(page.locator(".venta-form-page")).toBeVisible();
@@ -263,6 +286,7 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   await expect(page.locator(".deuda-form-page")).toBeVisible();
   await expect(page.locator(".deuda-form-page .form-grid")).toHaveCount(2);
   await capture("deuda-formulario-graphite", 1440, 1000);
+  await capture("deuda-formulario-graphite", 820, 1000);
   await capture("deuda-formulario-graphite", 390, 844);
 
   /* Misma fixture en Casa ---------------------------------------------- */
