@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { planDeltaEntries } from "./plan-delta";
+import { RepartoMensual } from "./RepartoMensual";
 import {
   Alert,
   DataList,
@@ -485,6 +486,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
                 ))}
             </details>
           )}
+          <RepartoMensual ciclo={plan.ciclo} go={go} />
           {(edit || copy) && (
             <div ref={editorRef}>
               <FormSection

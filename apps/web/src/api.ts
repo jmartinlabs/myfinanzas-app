@@ -228,6 +228,260 @@ export type SharedHistorical = {
   revision: number;
   concepto: string;
 };
+// SPEC36 — wire contract for Transferencia pendiente and reparto mensual.
+// The browser never imports server modules; these shapes mirror the JSON DTOs.
+export type SaldoResumenDTO = {
+  id: string;
+  nombre: string;
+  tipo: string;
+  control: string;
+  estado: string;
+};
+
+export type TransferenciaPendienteEstado =
+  | "Pendiente de realizar"
+  | "Confirmada"
+  | "Cancelada";
+
+export type TransferenciaPendienteDTO = {
+  id: number;
+  estado: TransferenciaPendienteEstado;
+  importe: string;
+  origen: SaldoResumenDTO | null;
+  destino: SaldoResumenDTO | null;
+  cicloOrigen: string;
+  fechaPrevista: string;
+  fechaEfectiva: string | null;
+  concepto: string;
+  nota: string;
+  origenTipo: "Reparto" | "RegistroCoordinado";
+  repartoLinea: {
+    id: number;
+    reparto: number;
+    clase: "Presupuesto" | "Adicional";
+    presupuesto: string | null;
+    incluida: boolean;
+    motivoExclusion: string | null;
+  } | null;
+  reparto: {
+    id: number;
+    ciclo: string;
+    estado: RepartoEstado;
+    revision: number;
+  } | null;
+  presupuesto: {
+    id: string;
+    nombre: string;
+    fuente: string;
+    destino: string | null;
+    estado: string;
+  } | null;
+  gasto: string | null;
+  anticipo: string | null;
+  movimiento: {
+    id: string;
+    fecha: string;
+    tipo: string;
+    importe: string;
+    origen: string;
+    destino: string;
+    referencia: string | null;
+    anulado: boolean;
+    revision: number;
+  } | null;
+  motivoCancelacion: string | null;
+  revision: number;
+  creado: string;
+  actualizado: string;
+  requiereRevision: boolean;
+  motivosRevision: string[];
+  hoy: string;
+};
+
+export type TransferenciaPendienteListaDTO = {
+  items: TransferenciaPendienteDTO[];
+  total: number;
+  page: number;
+};
+
+export type TransferenciaPendienteImpactoDTO = {
+  estado: TransferenciaPendienteEstado;
+  revision: number;
+  pendiente: number;
+  fechaReal: string;
+  cicloFechaReal: { id: string; inicio: string; fin: string | null } | null;
+  condiciones: { requiereRevision: boolean; motivos: string[] };
+  efectoPresupuestario: {
+    aplica: boolean;
+    presupuesto: string | null;
+    fuente: string | null;
+    destino: string | null;
+    motivo: string;
+  };
+  movimiento: {
+    tipo?: string;
+    fecha?: string;
+    importe?: string;
+    origen?: string;
+    destino?: string;
+    concepto?: string;
+    nota?: string;
+    fingerprint?: string;
+    duplicados?: { id: string; fecha: string; importe: string }[];
+  } | null;
+  duplicados: { id: string; fecha: string; importe: string }[];
+  fingerprint: string;
+  hoy: string;
+  motivoNoDisponible?: string;
+};
+
+export type RepartoEstado = "Borrador" | "Generado" | "Completado";
+
+// Server-decided completion blockers; the client only renders them.
+export type RepartoMotivoNoCompletar = {
+  code: string;
+  lineas?: number[];
+  pendientes?: number[];
+};
+
+// Line-level pending summary returned inside a reparto. The full ficha is
+// merged separately from the pending list by `normalizeSeguimiento`.
+export type RepartoLineaPendienteDTO = {
+  id: number;
+  estado: TransferenciaPendienteEstado;
+  importe: string;
+};
+
+export type RepartoLineaDTO = {
+  id: number;
+  clase: "Presupuesto" | "Adicional";
+  presupuesto: {
+    id: string;
+    nombre: string;
+    fuente: string;
+    destino: string | null;
+    estado: string;
+  } | null;
+  origen: SaldoResumenDTO | null;
+  destino: SaldoResumenDTO | null;
+  importe: string | null;
+  fechaPrevista: string;
+  concepto: string | null;
+  nota: string | null;
+  incluida: boolean;
+  motivoExclusion: string | null;
+  revision: number;
+  pendiente: RepartoLineaPendienteDTO | null;
+  avisos: string[];
+  puedeGenerarse: boolean;
+};
+
+export type RepartoDTO = {
+  id: number;
+  ciclo: { id: string; inicio: string; fin: string | null };
+  estado: RepartoEstado;
+  origenComun: SaldoResumenDTO | null;
+  revision: number;
+  lineas: RepartoLineaDTO[];
+  creado: string;
+  actualizado: string;
+  cicloCerrado: boolean;
+  puedeEditar: boolean;
+  puedeAnadirLineas: boolean;
+  puedeGenerar: boolean;
+  puedeCompletar: boolean;
+  motivosNoCompletar: RepartoMotivoNoCompletar[];
+};
+
+// Raw JSON shapes. `RepartoDTO` is the normalized view (cycle object and full
+// ficha); these types reflect exactly what the API writes on the wire.
+export type RepartoWireLineaDTO = Omit<RepartoLineaDTO, "pendiente"> & {
+  pendiente: RepartoLineaPendienteDTO | null;
+};
+
+export type RepartoWireDTO = Omit<RepartoDTO, "ciclo" | "lineas"> & {
+  ciclo: string;
+  lineas: RepartoWireLineaDTO[];
+};
+
+export type RepartoPropuestaItemDTO = {
+  presupuesto: {
+    id: string;
+    nombre: string;
+    fuente: string;
+    destino: string | null;
+    estado: string;
+  };
+  delMes: string | null;
+  ejecutado: string | null;
+  pendiente: string | null;
+  estado: string | null;
+  motivo: string | null;
+  sinPlanificar: boolean;
+  elegible: boolean;
+  motivoNoElegible: string | null;
+  propuesta: {
+    clase: "Presupuesto" | "Adicional";
+    origen: string | null;
+    destino: string | null;
+    importe: string;
+    fechaPrevista: string;
+  } | null;
+  mantenerEnOrigen: boolean;
+  sinPropuesta: boolean;
+  efectoAcumulado: string | null;
+  restante: string | null;
+  excedePendiente: boolean;
+};
+
+export type RepartoPropuestaDTO = {
+  ciclo: { id: string; inicio: string; fin: string | null };
+  revision: number;
+  contextRevision: string;
+  sinPlan: boolean;
+  periodo: {
+    inicio: string;
+    fin: string | null;
+    corte: string | null;
+    motivo: string | null;
+  };
+  origenComunSugerido: SaldoResumenDTO | null;
+  motivoOrigen: string | null;
+  origenes: SaldoResumenDTO[];
+  items: RepartoPropuestaItemDTO[];
+};
+
+export type RepartoSeguimientoDTO = {
+  reparto: RepartoDTO;
+  resumen: {
+    lineas: number;
+    incluidas: number;
+    pendientes: number;
+    confirmadas: number;
+    canceladas: number;
+    importePendiente: string | null;
+    importeConfirmado: string | null;
+  };
+  lineas: RepartoLineaDTO[];
+  puedeCompletar: boolean;
+  motivosNoCompletar: RepartoMotivoNoCompletar[];
+  avisos: {
+    d8: { linea: number; presupuesto: string | null; motivo: string }[];
+    d6: {
+      pendientes: number;
+      incluidosEnFoto: boolean;
+      bloquea: boolean;
+      motivo: string;
+    };
+    contexto: {
+      linea: number;
+      presupuesto: string | null;
+      motivos: string[];
+    }[];
+    cicloCerrado: boolean;
+  };
+};
+
 export type SharedCase = {
   referencia: {
     id: string;
