@@ -48,7 +48,7 @@ html[data-theme="graphite-lime"] .brand small {
   letter-spacing: 1.55px;
 }
 
-html[data-theme="graphite-lime"] .nav-group {
+html[data-theme="graphite-lime"] .nav-legacy-label {
   color: var(--sidebar-muted);
   letter-spacing: 1.7px;
 }

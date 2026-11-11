@@ -302,12 +302,18 @@ small {
   color: var(--sidebar-muted);
   font-weight: 600;
 }
-.nav-group {
+.nav-legacy-label {
+  margin: var(--space-8) var(--space-2) var(--space-1);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--sidebar-border);
+  color: var(--sidebar-muted);
   font-size: var(--text-xs);
   font-weight: 750;
-  letter-spacing: 1.5px;
-  color: var(--sidebar-muted);
-  margin: var(--space-12) var(--space-2) var(--space-3);
+  letter-spacing: 1.25px;
+  text-transform: uppercase;
+}
+.nav-link.nav-link-legacy {
+  font-weight: 500;
 }
 .nav-group-toggle {
   display: flex;
@@ -363,12 +369,6 @@ small {
 }
 .nav-active .nav-label {
   margin-left: 0;
-}
-.nav-future {
-  font-size: var(--text-xs);
-  line-height: var(--leading-relaxed);
-  color: var(--sidebar-muted);
-  padding: var(--space-5) var(--space-3);
 }
 .sidebar-bottom {
   margin-top: auto;
@@ -1044,12 +1044,6 @@ select[aria-invalid="true"] {
   .sidebar.expanded nav {
     display: block;
   }
-  .nav-group {
-    margin-top: var(--space-6);
-  }
-  .nav-future {
-    padding-bottom: 0;
-  }
   .workspace {
     margin-left: 0;
   }
@@ -1440,6 +1434,27 @@ textarea {
 .movements-list .filters {
   grid-template-columns: minmax(180px, 2fr) 1fr 1.4fr 1fr;
 }
+.pending-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 22px 22px 18px;
+  background: var(--surface);
+}
+.pending-filters label {
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.pending-status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.pending-status-dot[data-state="loading"] { background: var(--warning); }
+.pending-status-dot[data-state="error"] { background: var(--negative); }
 .movements-list th:nth-child(1) {
   width: 14%;
 }
@@ -5037,9 +5052,6 @@ textarea {
 .nav-section {
   display: block;
 }
-.nav-group {
-  text-transform: uppercase;
-}
 .nav-link,
 .nav-active {
   position: relative;
@@ -5079,15 +5091,6 @@ textarea {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
-}
-.nav-chevron {
-  flex: none;
-  margin-left: auto;
-  font-size: 16px;
-  opacity: 0.55;
-}
-.nav-active .nav-chevron {
-  opacity: 0.9;
 }
 
 /* E4.10 I7 — contrato y UI de reapertura/re-cierre.
@@ -6537,4 +6540,25 @@ a.back {
  * Este override deja intactas las reglas base y las variantes de E4.4. */
 textarea {
   border-color: var(--control-border);
+}
+
+/* SPEC36 I2 — reparto y pendientes. Reutiliza tokens vigentes; solo evita
+ * desbordamiento horizontal y permite que las acciones se envuelvan a 390 px. */
+.reparto-panel,
+.reparto-seguimiento,
+.reparto-seguimiento > .panel {
+  min-width: 0;
+}
+.reparto-panel .ui-form-section-head,
+.reparto-panel .actions,
+.movements-list .ui-form-section-head,
+.movements-list .actions {
+  flex-wrap: wrap;
+}
+.reparto-seguimiento {
+  display: grid;
+  gap: var(--space);
+}
+.reparto-seguimiento .ui-form-section {
+  margin: 0;
 }

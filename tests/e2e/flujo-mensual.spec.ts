@@ -62,7 +62,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
       })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Flujo mensual base", exact: true }),
+      page.getByRole("heading", { name: "Flujo mensual", exact: true }),
     ).toBeVisible();
     const select = page.getByLabel("Ciclo financiado", { exact: true });
     await expect(select).toHaveValue("1");

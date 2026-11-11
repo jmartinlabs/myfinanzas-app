@@ -170,9 +170,9 @@ export function Dprima({ go }: { go: (p: string) => void }) {
   return (
     <>
       <PageHead
-        eyebrow="D′ · PARTIDAS Y PREVISIÓN"
-        title="Planificación simplificada"
-        description="Maestro de Partidas con raíces e hijas, Gastos Previstos y apertura. Presupuestos y Plan Anual se conservan como histórico consultable; nada se migra automáticamente."
+        eyebrow="PRESUPUESTOS Y PLANIFICACIÓN"
+        title="Partidas"
+        description="¿En qué organizas tus gastos y aportaciones? El maestro y los Gastos Previstos comparten esta pantalla; Presupuestos y Plan anual siguen accesibles como histórico."
       >
         <button type="button" className="secondary" onClick={() => go("/presupuestos")}>
           Ver Presupuestos legado
@@ -248,7 +248,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         )}
       </section>
 
-      <section className="panel" aria-label="Gastos Previstos">
+      <section className="panel" id="gastos-previstos" aria-label="Gastos Previstos">
         <h2>Gastos Previstos</h2>
         <p className="muted">
           Etiquetas de mes financiado y líneas por hija. Los importes son

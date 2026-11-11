@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { planDeltaEntries } from "./plan-delta";
+import { RepartoMensual } from "./RepartoMensual";
 import {
   Alert,
   DataList,
@@ -343,7 +344,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="PLANIFICACIÓN"
         title="Plan del ciclo"
-        description="Importes del ciclo y ejecución real por Presupuesto."
+        description="¿Cuánto vas a destinar a cada Presupuesto este ciclo? Compara lo planificado con la ejecución real; la planificación por Partidas sigue en transición."
       />
       <div ref={errorRef} tabIndex={-1}>
         {error && (
@@ -485,6 +486,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
                 ))}
             </details>
           )}
+          <RepartoMensual ciclo={plan.ciclo} go={go} />
           {(edit || copy) && (
             <div ref={editorRef}>
               <FormSection
