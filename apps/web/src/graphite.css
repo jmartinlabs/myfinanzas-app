@@ -2218,21 +2218,6 @@ html[data-theme="graphite-lime"] .saldo-form-page .ui-form-section-head {
   border-bottom: 1px solid var(--graphite-card-border);
 }
 
-html[data-theme="graphite-lime"] .saldo-form-page .ui-form-step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--accent-border);
-  border-radius: 8px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0.5px;
-}
-
 html[data-theme="graphite-lime"] .saldo-form-page .ui-form-section-title {
   font-size: 15px;
 }
