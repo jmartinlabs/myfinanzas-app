@@ -2415,9 +2415,9 @@ html[data-theme="graphite-lime"] :is(.inversiones-page, .compras-page, .ventas-p
 html[data-theme="graphite-lime"] :is(.inversiones-page, .compras-page, .ventas-page, .deudas-page, .inversion-detail-page, .inversion-form-page, .compra-detail-page, .compra-form-page, .compra-annul-page, .venta-detail-page, .venta-form-page, .venta-annul-page, .debt-detail, .deuda-form-page) > .page-head .eyebrow {
   margin-bottom: 5px;
   color: var(--accent);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
-  letter-spacing: 1.7px;
+  letter-spacing: 1.4px;
 }
 
 html[data-theme="graphite-lime"] :is(.inversiones-page, .compras-page, .ventas-page, .deudas-page, .inversion-detail-page, .inversion-form-page, .compra-detail-page, .compra-form-page, .compra-annul-page, .venta-detail-page, .venta-form-page, .venta-annul-page, .debt-detail, .deuda-form-page) > .page-head h1 {
@@ -2494,6 +2494,10 @@ html[data-theme="graphite-lime"] .inversiones-cash .panel-head h2 {
 }
 
 html[data-theme="graphite-lime"] .inversiones-cash .panel-head a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
   color: var(--accent);
   font-size: 12px;
   font-weight: 650;

@@ -114,6 +114,10 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
     "font-size",
     "12px",
   );
+  await expect(page.locator(".inversiones-page .filters")).toHaveCSS(
+    "background-image",
+    /linear-gradient/,
+  );
   await expect(page.locator(".inversiones-page .ui-table tbody tr")).toHaveCount(2);
   await expect(page.locator(".inversiones-page")).toContainText("Fondo índice demo");
   await expect(page.locator(".inversiones-page")).toContainText("Acción demo");
@@ -158,6 +162,10 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
     "12px",
   );
   await expect(page.locator(".compras-page .ui-table td").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await expect(page.locator(".compras-page .ui-table .tag").first()).toHaveCSS(
     "font-size",
     "12px",
   );
@@ -301,6 +309,14 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
     await expect(
       page.locator(".inversiones-page .classification-tabs"),
     ).not.toHaveCSS("border-radius", "10px");
+    await expect(page.locator(".inversiones-page .filters")).toHaveCSS(
+      "background-image",
+      "none",
+    );
+    await page.goto("/deudas");
+    await expect(
+      page.locator(".deudas-page .debt-open").first(),
+    ).not.toHaveCSS("min-height", "44px");
   }
 
   expect(errors).toEqual([]);
