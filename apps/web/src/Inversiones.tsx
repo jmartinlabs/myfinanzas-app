@@ -1028,7 +1028,7 @@ function InstrumentForm({
   }
   if (!loaded) return <p role="status">Cargando instrumento…</p>;
   return (
-    <>
+    <div className="inversion-form-page">
       <a
         className="back"
         href={id ? `${BASE}/instrumentos/${id}` : BASE}
@@ -1126,7 +1126,7 @@ function InstrumentForm({
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }
 function PurchaseList({ go }: { go: (path: string) => void }) {
@@ -1265,7 +1265,7 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="compras-page">
       <PageHead
         eyebrow="E4.1 · INVERSIONES"
         title="Compras de inversión"
@@ -1409,7 +1409,7 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }
 function PurchaseFields({
@@ -1765,7 +1765,7 @@ function PurchaseForm({
   if (!loaded) return <p role="status">Cargando compra…</p>;
   const noCash = options && options.saldosEfectivo.length === 0;
   return (
-    <>
+    <div className="compra-form-page">
       <a
         className="back"
         href={rectifying ? `${BASE}/compras/${id}` : `${BASE}/compras`}
@@ -1866,7 +1866,7 @@ function PurchaseForm({
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 }
 function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) {
@@ -1887,7 +1887,7 @@ function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) 
   if (!data) return <p role="status">Cargando compra…</p>;
   const compra = data.compra as Compra;
   return (
-    <>
+    <div className="compra-detail-page">
       <a
         className="back"
         href={BASE + "/compras"}
@@ -1997,7 +1997,7 @@ function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) 
           </ul>
         )}
       </section>
-    </>
+    </div>
   );
 }
 export function AnnulPurchaseMotivo({
@@ -2078,7 +2078,7 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
   if (data.compra.estado !== "Vigente")
     return <Alert>La Compra ya está anulada; no se puede rectificar.</Alert>;
   return (
-    <>
+    <div className="compra-annul-page">
       <a
         className="back"
         href={`${BASE}/compras/${id}`}
@@ -2132,6 +2132,6 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }
