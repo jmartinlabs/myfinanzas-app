@@ -214,7 +214,8 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   ejecutan todas. La selección se recalcula dentro del paso `baseline` con el
   mismo `ci_profile` y el contexto verificado; sin contexto, evento inválido o
   error de clasificación ejecuta la batería completa. No hay skip de workflow ni
-  estado nuevo en `ci-result`. `fast` añade tipos/build; `critical` añade la suite
+  estado nuevo en `ci-result`. `fast` añade tipos/build y la suite web
+  (`bun test apps/web`); `critical` añade la suite
   API/SQLite Linux **excepto** las pruebas que dependen de `age`; `full` añade esas
   pruebas y E2E. PR compara todo el rango
   mediante merge-base sobre la base probada (`main` o `test`) y solo puede seleccionar
@@ -266,12 +267,13 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   evalúa antes de clasificar. El nombre `required` no configura por sí solo la
   protección de rama.
 - **Deploy por tag (2026-11-11):** `rootless.yml` conserva PR por paths, tags
-  `deploy-test-v*` y manual, sin push de `test`. El job `qa` mantiene solo la cobertura
-  exclusiva `bun test apps/web`; tipos, build y baseline ya los ejecuta `required` full
-  sobre el mismo commit. Antes de desplegar se conservan las guardas de tag, actor,
+  `deploy-test-v*` y manual, sin push de `test`. No ejecuta suites de aplicación: el job
+  `qa` se retiró porque `bun test apps/web` pertenece a los perfiles canónicos, así que el
+  tag la ejecuta dentro de `required` full sobre el mismo commit y no se repite aparte.
+  Antes de desplegar se conservan las guardas de tag, actor,
   ancestro en `origin/test`, anotación `sha`/`qa_reference` y SHA exacto, y se espera
-  hasta 35 minutos a que `required` y `qa` figuren en `success` sobre `TAG_SHA`; un
-  fallo terminal conocido o el timeout detienen el deploy. No se debilita ningún control
+  hasta 35 minutos a que el `required` del propio tag figure en `success` sobre `TAG_SHA`;
+  un fallo terminal conocido o el timeout detienen el deploy. No se debilita ningún control
   por esperar. El tag debe ser **anotado**: `git cat-file -t refs/tags/<tag>` tiene que
   devolver `tag`; un tag lightweight se rechaza antes de ejecutar `full`. Un
   `workflow_dispatch` manual de `rootless` no sustituye el gate de aplicación; para

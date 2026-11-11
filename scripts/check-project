@@ -36,6 +36,8 @@ def validate(root, workflow_path=None):
         errors.extend(policy['validate_workflow'](active))
         # The inactive fixture and active graph must independently satisfy the recipe.
         errors.extend(policy['validate_workflow'](root / 'scripts/fixtures/ci-policy.workflow.json'))
+        # Deploy graph: application suites live in canonical profiles, not here.
+        errors.extend(policy['validate_rootless_workflow'](root / '.github/workflows/rootless.yml'))
         for path in (root / 'apps/web/src').rglob('*'):
             if path.suffix not in ('.ts', '.tsx', '.js', '.jsx'):
                 continue
