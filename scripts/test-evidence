@@ -295,6 +295,20 @@ class EquivalenceTests(unittest.TestCase):
         result = self.check(reviewed, reviewed, 'https://example.com/qa')
         self.assertFail(result, 'https://github.com URL')
 
+    def test_evidence_from_another_repository_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.bind(reviewed)
+        evidence = 'https://github.com/other/repo/pull/7#pullrequestreview-1'
+        result = self.check(reviewed, reviewed, evidence)
+        self.assertFail(result, 'belongs to another repository')
+
+    def test_evidence_url_must_match_the_declared_pr(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.bind(reviewed)
+        evidence = f'https://github.com/{self.REPOSITORY}/pull/99#pullrequestreview-1'
+        result = self.check(reviewed, reviewed, evidence)
+        self.assertFail(result, 'does not belong to the declared pull request')
+
     def test_evidence_for_another_commit_is_rejected(self):
         reviewed = self.feature(('app.txt', 'v2\n'))[0]
         result = self.check(reviewed, reviewed, self.bind(self.base))

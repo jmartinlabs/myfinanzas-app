@@ -150,9 +150,9 @@ Reglas:
 
 `[CONFIRMADO 2026-11-11]` La creación del tag no es la autorización de merge ni la
 aceptación funcional. Es una atestación del publicador; el workflow comprueba que el árbol
-del commit del tag es exactamente el contenido revisado (identidad de árbol o merge limpio
-sobre su primer padre) y que la referencia QA resuelve a un artefacto de GitHub del PR y
-del commit revisado. La equivalencia de árbol no acredita la calidad de la QA ni sustituye
+del commit del tag se compone exactamente del contenido revisado sobre su primer padre
+(identidad de árbol o merge limpio) y que la referencia QA resuelve a un artefacto de
+GitHub del PR y del commit revisado. La equivalencia de árbol no acredita la calidad de la QA ni sustituye
 su aprobación: una divergencia, un conflicto resuelto, un cambio extra, un commit de
 integración sin cambio de árbol, un `reviewed` ya contenido en la base de integración o una
 evidencia no verificable exigen QA nueva. (D3 cerrada 2026-11-11.)
