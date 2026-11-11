@@ -1630,3 +1630,219 @@
     font-size: 54px;
   }
 }
+
+/* ============================================================
+   Casa de cuentas · 1F
+   Inversiones y Deudas · listados y fichas.
+   Solo estilos y wrappers; sin cambios de datos ni acciones.
+   ============================================================ */
+
+:root[data-theme="casa"] .inversiones-page,
+:root[data-theme="casa"] .inversion-detail-page,
+:root[data-theme="casa"] .deudas-page,
+:root[data-theme="casa"] .debt-detail {
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+:root[data-theme="casa"] .inversiones-page > .page-head,
+:root[data-theme="casa"] .inversion-detail-page > .page-head,
+:root[data-theme="casa"] .deudas-page > .page-head,
+:root[data-theme="casa"] .debt-detail > .page-head {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="casa"] .inversiones-page > .page-head h1,
+:root[data-theme="casa"] .inversion-detail-page > .page-head h1,
+:root[data-theme="casa"] .deudas-page > .page-head h1,
+:root[data-theme="casa"] .debt-detail > .page-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 4.4vw, 58px);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="casa"] .inversiones-page .classification-tabs,
+:root[data-theme="casa"] .inversion-detail-page .classification-tabs {
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+:root[data-theme="casa"] .inversiones-page .classification-tabs a,
+:root[data-theme="casa"] .inversion-detail-page .classification-tabs a {
+  min-height: 44px;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .inversiones-page .inversiones-cash,
+:root[data-theme="casa"] .inversiones-page .inversiones-list,
+:root[data-theme="casa"] .inversion-detail-page > .panel,
+:root[data-theme="casa"] .deudas-page .catalog-panel,
+:root[data-theme="casa"] .debt-detail > .panel {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 22px 0;
+}
+
+:root[data-theme="casa"] .inversiones-page .filters,
+:root[data-theme="casa"] .deudas-page .debt-filters {
+  grid-template-columns: minmax(250px, 2fr) repeat(3, minmax(130px, 1fr));
+  gap: 14px 22px;
+  padding: 20px 0 18px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+:root[data-theme="casa"] .inversiones-page .filters label,
+:root[data-theme="casa"] .deudas-page .debt-filters label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .inversiones-page .filters input,
+:root[data-theme="casa"] .inversiones-page .filters select,
+:root[data-theme="casa"] .deudas-page .debt-filters input,
+:root[data-theme="casa"] .deudas-page .debt-filters select {
+  margin-top: 5px;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+:root[data-theme="casa"] .inversiones-page .list-toolbar,
+:root[data-theme="casa"] .deudas-page .list-toolbar {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .inversiones-page .ui-table th,
+:root[data-theme="casa"] .inversion-detail-page .ui-table th,
+:root[data-theme="casa"] .deudas-page .ui-table th,
+:root[data-theme="casa"] .debt-detail .ui-table th {
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .inversiones-page .ui-table td,
+:root[data-theme="casa"] .inversion-detail-page .ui-table td,
+:root[data-theme="casa"] .deudas-page .ui-table td,
+:root[data-theme="casa"] .debt-detail .ui-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-size: 13px;
+}
+
+:root[data-theme="casa"] .inversiones-page .list-footer,
+:root[data-theme="casa"] .deudas-page .list-footer {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+:root[data-theme="casa"] .inversiones-page .mobile-list > li,
+:root[data-theme="casa"] .deudas-page .debt-cards > li {
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme="casa"] .inversiones-page .panel-head h2,
+:root[data-theme="casa"] .inversion-detail-page .panel-head h2,
+:root[data-theme="casa"] .debt-detail .panel-head h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme="casa"] .inversion-detail-page .detail-grid > div,
+:root[data-theme="casa"] .debt-detail .detail-grid > div {
+  padding: 10px 0;
+  border-top: 1px dotted var(--border);
+}
+
+:root[data-theme="casa"] .inversion-detail-page dt,
+:root[data-theme="casa"] .debt-detail dt {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="casa"] .inversion-detail-page dd,
+:root[data-theme="casa"] .debt-detail dd {
+  font-size: 14px;
+}
+
+:root[data-theme="casa"] .deudas-page .e44-section {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+:root[data-theme="casa"] .deudas-page .e44-section-title,
+:root[data-theme="casa"] .debt-detail .e44-section-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  :root[data-theme="casa"] .inversiones-page .filters,
+  :root[data-theme="casa"] .deudas-page .debt-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :root[data-theme="casa"] .inversiones-page .filters .search,
+  :root[data-theme="casa"] .deudas-page .debt-filters .search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  :root[data-theme="casa"] .inversiones-page > .page-head h1,
+  :root[data-theme="casa"] .inversion-detail-page > .page-head h1,
+  :root[data-theme="casa"] .deudas-page > .page-head h1,
+  :root[data-theme="casa"] .debt-detail > .page-head h1 {
+    font-size: 36px;
+  }
+
+  :root[data-theme="casa"] .inversiones-page .filters,
+  :root[data-theme="casa"] .deudas-page .debt-filters {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px 0;
+  }
+}

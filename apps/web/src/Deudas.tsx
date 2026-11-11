@@ -395,7 +395,7 @@ function List({ go }: { go: (p: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="deudas-page">
       <PageHead
         eyebrow="CAPITAL Y PAGOS"
         title="Deudas"
@@ -522,7 +522,7 @@ function List({ go }: { go: (p: string) => void }) {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 
