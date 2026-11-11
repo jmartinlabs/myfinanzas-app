@@ -726,9 +726,33 @@ test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => 
       expect(
         current.get("trigger:reparto_audit_revision"),
       ).toEqual(previous.get("trigger:reparto_audit_revision"));
-      expect(current.has("trigger:reparto_fuente_inmutable")).toBe(true);
-      expect(current.has("trigger:reparto_linea_fuente_insert")).toBe(true);
-      expect(current.has("trigger:reparto_linea_fuente_update")).toBe(true);
+      const addedTriggers = [...current.keys()]
+        .filter((key) => key.startsWith("trigger:") && !previous.has(key))
+        .sort();
+      expect(addedTriggers).toEqual([
+        "trigger:reparto_fuente_inmutable",
+        "trigger:reparto_linea_fuente_insert",
+        "trigger:reparto_linea_fuente_update",
+      ]);
+      const removedTriggers = [...previous.keys()]
+        .filter((key) => key.startsWith("trigger:") && !current.has(key))
+        .sort();
+      expect(removedTriggers).toEqual([]);
+      const modifiedTriggers = [...previous.entries()]
+        .filter(
+          ([key, object]) =>
+            key.startsWith("trigger:") &&
+            current.has(key) &&
+            JSON.stringify(current.get(key)) !== JSON.stringify(object),
+        )
+        .map(([key]) => key)
+        .sort();
+      expect(modifiedTriggers).toEqual([
+        "trigger:reparto_linea_presupuesto_destino_insert",
+        "trigger:reparto_linea_presupuesto_destino_update",
+        "trigger:transferencia_pendiente_linea_reparto",
+        "trigger:transferencia_pendiente_linea_reparto_update",
+      ]);
       expect(current.size - previous.size).toBe(3);
     } finally {
       db.close();
@@ -986,6 +1010,86 @@ test("SPEC36 v29: D8 rejects a new pending without an active D′ line", () => {
         reparto_linea: second,
         destino: "S002",
       }),
+    ).toThrow("pending must match an included line of its cycle");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: reparto_linea_fuente_update rejects a class change", () => {
+  const db = store();
+  try {
+    cycle(db);
+    budget(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    const lineId = line(db, {
+      reparto: dprima,
+      clase: "Adicional",
+      presupuesto: null,
+    });
+    expect(() =>
+      db.run(
+        `UPDATE reparto_lineas SET clase='Presupuesto',presupuesto='PRE0001',
+           destino='S002',revision=revision+1,actualizado=? WHERE id=?`,
+        [t2, lineId],
+      ),
+    ).toThrow("reparto line class must match plan source");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: reparto_linea_presupuesto_destino_update rejects a Partida destination", () => {
+  const db = store();
+  try {
+    cycle(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    const lineId = line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    expect(() =>
+      db.run(
+        `UPDATE reparto_lineas SET destino='S003',revision=revision+1,
+           actualizado=? WHERE id=?`,
+        [t2, lineId],
+      ),
+    ).toThrow("reparto line must match its budget destination");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: transferencia_pendiente_linea_reparto_update rejects a Partida mismatch", () => {
+  const db = store();
+  try {
+    cycle(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    generate(db, dprima);
+    const pendingId = pending(db, { ciclo_origen: "1", reparto_linea: 1 });
+    expect(() =>
+      db.run(
+        `UPDATE transferencia_pendiente SET destino='S003',
+           revision=revision+1,actualizado=? WHERE id=?`,
+        [t2, pendingId],
+      ),
     ).toThrow("pending must match an included line of its cycle");
   } finally {
     db.close();
