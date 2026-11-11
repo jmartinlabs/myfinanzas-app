@@ -159,10 +159,10 @@ test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
   await page.getByRole("button", { name: "Editar Saldo", exact: true }).click();
   await expect(page).toHaveURL(/\/saldos\/S\d+\/editar$/);
   await expect(page.locator(".saldo-form-page")).toBeVisible();
-  await expect(page.locator(".saldo-form-page .ui-form-step")).toHaveCount(3);
+  await expect(page.locator(".saldo-form-page .ui-form-section")).toHaveCount(3);
   await expect(
-    page.locator(".saldo-form-page .ui-form-step").first(),
-  ).toHaveText("01");
+    page.locator(".saldo-form-page .ui-form-section-title").first(),
+  ).toBeVisible();
   await expect(page.locator("#nombre")).toBeVisible();
   await expect(page.locator(".saldo-form-page .ui-field-label").first()).toHaveCSS(
     "text-transform",

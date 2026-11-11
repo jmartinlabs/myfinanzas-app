@@ -27,8 +27,12 @@ HARNESS_SUITES = frozenset((
     'test-agent-usage', 'test-auto-agent-usage', 'test-release', 'test-work-issue'))
 APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),
                ('build', ['bun', 'run', 'build'], None),
+               ('web', ['bun', 'test', 'apps/web'], 'bun'),
                ('api', ['bun', 'run', 'test'], 'bun'),
                ('e2e', ['bun', 'run', 'test:e2e'], 'playwright'))
+# fast accepts documentation and CSS only, and the CSS tests read the very files
+# it accepts, so the web suite belongs to that profile too.
+FAST_APPLICATION = ('typecheck', 'build', 'web')
 LEGACY_BRANCH = 'feat/07-ciclos-operacion'
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 
@@ -118,6 +122,7 @@ def baseline_profile():
         return 'full'
 
 def application_checks(profile='full'):
+    """Canonical application set; the profile only narrows or widens it."""
     if profile == 'critical':
         api = ['bun', 'test', 'apps/api', '--test-name-pattern',
                POLICY['full_only_pattern'](), '--pass-with-no-tests']
@@ -125,11 +130,19 @@ def application_checks(profile='full'):
     else:
         api = ['bun', 'run', 'test']
         filtered = 0
-    checks = [('typecheck', ['bun', 'run', 'typecheck'], None),
-              ('build', ['bun', 'run', 'build'], None),
-              ('api', api, 'bun', filtered),
-              ('e2e', ['bun', 'run', 'test:e2e'], 'playwright')]
-    if legacy_required():
+    checks = []
+    for name, command, reporter in APPLICATION:
+        if name != 'api':
+            checks.append((name, command, reporter))
+        elif profile == 'critical':
+            checks.append((name, api, reporter, filtered))
+        else:
+            checks.append((name, api, reporter))
+    if profile == 'fast':
+        checks = [check for check in checks if check[0] in FAST_APPLICATION]
+    elif profile == 'critical':
+        checks = [check for check in checks if check[0] != 'e2e']
+    if legacy_required() and profile != 'fast':
         # Preserve explicit historical acceptance repeats, not duplicate core suites.
         legacy = [('legacy-ac23-' + str(i), ['bun', 'test', 'apps/api/src/movimientos.test.ts',
                    '--test-name-pattern', '04 AC22/23/28: dos procesos'], 'bun') for i in range(1, 6)]
@@ -199,12 +212,7 @@ def main(argv=None):
         if profile == 'docs':
             print('INTENTIONALLY SKIPPED application checks: docs profile; local QA evidence is separate.')
             return 0
-        if profile == 'full':
-            checks = application_checks('full')
-        elif profile == 'critical':
-            checks = [check for check in application_checks('critical') if check[0] != 'e2e']
-        else:
-            checks = list(APPLICATION[:2])
+        checks = application_checks(profile)
         tools = ('bun', 'node', 'age', 'git') if profile == 'full' else (
             ('bun', 'node', 'git') if profile == 'critical' else ('bun', 'git'))
         ok = run_checks(checks, tools)
