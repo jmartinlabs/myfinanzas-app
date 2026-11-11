@@ -2272,7 +2272,7 @@ html[data-theme="graphite-lime"] .saldo-form-page .switch-row {
   font-size: 13px;
 }
 
-html[data-theme="graphite-lime"] .saldo-form-page .switch-row > span {
+html[data-theme="graphite-lime"] .saldo-form-page .switch-row > span:not(.unknown) {
   color: var(--text);
   font-weight: 600;
 }

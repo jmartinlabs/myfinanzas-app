@@ -117,7 +117,12 @@ test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
   await expect(page.locator(".saldos-page .desktop-list")).toBeHidden();
   await expect(page.locator(".saldos-page .mobile-list")).toBeVisible();
   await capture("saldos-graphite", 390, 844);
-  await expect(page.locator(".saldos-page .mobile-list li")).not.toHaveCount(0);
+  await expect(
+    page.locator(".saldos-page .mobile-list .ui-data-list-item"),
+  ).not.toHaveCount(0);
+  await expect(page.locator(".saldos-page .mobile-list")).toContainText(
+    "Cuenta cotidiana demo",
+  );
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page
@@ -191,6 +196,10 @@ test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
   await page.getByRole("button", { name: "Editar Saldo", exact: true }).click();
   await expect(page.locator(".saldo-form-page")).toBeVisible();
   await capture("saldo-formulario-casa", 1440, 1000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoOverflow();
+  await expect(page.locator("#nombre")).toBeVisible();
+  await capture("saldo-formulario-casa", 390, 844);
 
   expect(errors).toEqual([]);
 });
