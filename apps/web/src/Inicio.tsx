@@ -849,7 +849,7 @@ function GraphiteCycleTable({ overview }: { overview: InicioOverview }) {
         className="mobile-list graphite-cycle-cards"
       />
       <p className="graphite-cycle-note">
-        El saldo operativo y el margen se publican tal como los entrega E2.6.
+        El saldo operativo y el margen se publican tal como los entrega el flujo mensual.
         Un subtotal parcial no se convierte en total, no se fabrica un margen y
         no se resta la deuda ni los pendientes.
       </p>
@@ -1658,7 +1658,7 @@ export function Inicio({
             </p>
           )}
           <p className="inicio-note">
-            El saldo operativo y el margen se publican tal como los entrega E2.6.
+            El saldo operativo y el margen se publican tal como los entrega el flujo mensual.
             Un subtotal parcial no se convierte en total, no se fabrica un margen
             y no se resta la deuda ni los pendientes.
           </p>
@@ -2117,7 +2117,7 @@ export function Inicio({
         <p className="inicio-metric-motivo">{pendientes.metrica.motivo}</p>
         {pendientes.fuenteFallos.length > 0 && (
           <div className="inicio-degradado" role="status">
-            <strong>Estado degradado:</strong> hay fuentes de E3.6 no
+            <strong>Estado degradado:</strong> hay fuentes de pendientes no
             verificables; el bloque no se presenta como vacío ni como conteo
             cero.
             <ul className="inicio-metric-coverage">

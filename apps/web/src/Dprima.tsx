@@ -181,6 +181,11 @@ export function Dprima({ go }: { go: (p: string) => void }) {
           Ver Plan Anual legado
         </button>
       </PageHead>
+      <nav className="dprima-subnav" aria-label="Secciones de Partidas">
+        <a href="#partidas-maestro">Partidas</a>
+        <a href="#gastos-previstos">Gastos previstos</a>
+        <a href="#plan-mensual-dprima">Plan mensual D′</a>
+      </nav>
       {error && (
         <div tabIndex={-1} ref={alert}>
           <Alert retry={() => setReload((n) => n + 1)}>{error}</Alert>
@@ -192,7 +197,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         </p>
       )}
 
-      <section className="panel" aria-label="Maestro de Partidas">
+      <section className="panel" id="partidas-maestro" aria-label="Maestro de Partidas">
         <h2>Maestro de Partidas</h2>
         <p className="muted">
           La jerarquía raíz/hija es independiente de Categoría/Subcategoría. Si
@@ -353,7 +358,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         )}
       </section>
 
-      <section className="panel" aria-label="Plan Mensual D′">
+      <section className="panel" id="plan-mensual-dprima" aria-label="Plan Mensual D′">
         <h2>Plan Mensual por raíz</h2>
         <select
           aria-label="Ciclo del plan mensual"
@@ -403,7 +408,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         )}
       </section>
 
-      <section className="panel" aria-label="Mapping de Presupuestos">
+      <section className="panel dprima-technical" aria-label="Mapping de Presupuestos">
         <h2>Mapping Presupuestos → Partidas</h2>
         <p className="muted">
           Propuesta de diagnóstico. Un Presupuesto con varias Partidas exige una
