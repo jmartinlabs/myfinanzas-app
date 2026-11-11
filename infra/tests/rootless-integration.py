@@ -452,7 +452,7 @@ def main():
         stage = 'final-image-api-regressions'
         suite = root / 'suite'
         suite.mkdir(mode=0o700)
-        for prefix in ('apps/api/src', 'apps/api/test-support', 'apps/web/src', 'tools/test-seed'):
+        for prefix in ('apps/api/src', 'apps/api/test-support', 'apps/web/src', 'tools/test-seed', 'tools/demo'):
             for relative in run(['git', 'ls-tree', '-r', '--name-only', 'HEAD', '--', prefix]).splitlines():
                 # API tests import shared web modules; runtime JSON manifests
                 # are imported by TS modules and must travel with the suite.
