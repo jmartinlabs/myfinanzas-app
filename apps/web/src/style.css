@@ -463,6 +463,14 @@ small {
   border-radius: var(--radius-pill);
   color: var(--muted);
 }
+/* Etiqueta del entorno DEMO local: solo la envía la API cuando el modo está
+   validado (identidad demo, sin credenciales, red local). */
+.demo-badge {
+  color: var(--text);
+  border-color: var(--accent-border);
+  background: var(--surface-2);
+  font-weight: 600;
+}
 .content {
   padding: var(--space-8) 38px var(--space-10);
   flex: 1;

@@ -18,6 +18,7 @@ import {
 import { dirname } from "node:path";
 import { TOTP, Secret } from "otpauth";
 import { Problem } from "./saldos";
+import { isLoopbackHost, isPrivateHost } from "./local-network";
 
 export const digest = (s: string) =>
   createHash("sha256").update(s).digest("hex");
@@ -109,21 +110,34 @@ export class Auth {
   readonly challengeName: string;
   readonly origin: string;
   readonly secure: boolean;
+  readonly origins: ReadonlySet<string>;
   constructor(
     readonly db: Database,
     readonly key: Buffer,
     origin = "http://127.0.0.1:5173",
     readonly now = Date.now,
+    demoOrigins: readonly string[] = [],
   ) {
-    const u = new URL(origin);
-    if (
-      u.protocol !== "https:" &&
-      !(
-        u.protocol === "http:" &&
-        ["127.0.0.1", "localhost", "[::1]"].includes(u.hostname)
-      )
-    )
-      throw new Error("HTTP solo permitido en loopback.");
+    const candidates = [origin, ...demoOrigins].map((value) => new URL(value));
+    // HTTP sin TLS solo en loopback. La red privada (RFC 1918) es una excepción
+    // exclusiva del alcance DEMO: sin orígenes DEMO validados no se admite.
+    const demo = demoOrigins.length > 0;
+    for (const u of candidates) {
+      const allowed =
+        u.protocol === "https:" ||
+        (u.protocol === "http:" &&
+          (isLoopbackHost(u.hostname) ||
+            (demo && isPrivateHost(u.hostname))) &&
+          u.origin === u.href.replace(/\/$/, ""));
+      if (!allowed)
+        throw new Error(
+          demo
+            ? "HTTP solo permitido en loopback o red privada DEMO."
+            : "HTTP solo permitido en loopback.",
+        );
+    }
+    const u = candidates[0];
+    this.origins = new Set(candidates.map((candidate) => candidate.origin));
     this.origin = u.origin;
     this.secure = u.protocol === "https:";
     this.cookieName = this.secure ? "__Host-mf_session" : "mf_local_session";
@@ -156,8 +170,59 @@ export class Auth {
     );
   }
   sameOrigin(req: Request) {
-    if (req.headers.get("origin") !== this.origin)
+    if (!this.origins.has(req.headers.get("origin") ?? ""))
       throw new Problem(403, "ORIGIN", "Origen de la petición no autorizado.");
+  }
+  /**
+   * Sesión automática del modo DEMO: sin contraseña ni TOTP, pero con el mismo
+   * cookie HttpOnly y token CSRF que una sesión normal. Solo un GET/HEAD puede
+   * estrenar sesión; una escritura sin sesión válida se rechaza como siempre
+   * para no abrir un camino que evite el CSRF.
+   */
+  demoSession(req: Request): {
+    session: string;
+    csrf: string;
+    created: boolean;
+  } {
+    const safe = req.method === "GET" || req.method === "HEAD";
+    const raw = this.readCookie(req, this.cookieName);
+    if (raw) {
+      try {
+        const current = this.session(req);
+        return { session: raw, csrf: current.csrf, created: false };
+      } catch (error) {
+        // Solo se rota una sesión caducada o ajena (Problem); un fallo real no
+        // se enmascara creando otra.
+        if (!safe || !(error instanceof Problem)) throw error;
+      }
+    }
+    if (!safe)
+      throw new Problem(
+        401,
+        "AUTH_REQUIRED",
+        "Vuelve a abrir la aplicación DEMO para continuar.",
+      );
+    const now = this.now(),
+      session = token(),
+      csrf = token();
+    this.db
+      .transaction(() => {
+        this.db.run("DELETE FROM sessions WHERE created<? OR seen<?", [
+          now - 43200000,
+          now - 1800000,
+        ]);
+        this.db.run(
+          "DELETE FROM sessions WHERE hash IN(SELECT hash FROM sessions ORDER BY created DESC,hash LIMIT -1 OFFSET 19)",
+        );
+        this.db.run("INSERT INTO sessions VALUES(?,?,?,?)", [
+          digest(session),
+          csrf,
+          now,
+          now,
+        ]);
+      })
+      .immediate();
+    return { session, csrf, created: true };
   }
   session(req: Request) {
     const raw = this.readCookie(req, this.cookieName),

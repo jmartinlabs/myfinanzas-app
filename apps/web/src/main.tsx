@@ -58,6 +58,7 @@ function App() {
     [revision, setRevision] = useState(0),
     [notice, setNotice] = useState(""),
     [expired, setExpired] = useState(false),
+    [demo, setDemo] = useState(false),
     [openGroups, setOpenGroups] = useState<string[]>(() => {
       const id = activeNavigationGroup(location.pathname + location.search);
       return id ? [id] : [];
@@ -66,8 +67,11 @@ function App() {
   const mainNavRef = useRef<HTMLElement>(null);
   const check = () => {
     setAuth("loading");
-    api("/auth/session")
-      .then(() => setAuth("ready"))
+    api<{ csrf?: string; demo?: boolean }>("/auth/session")
+      .then((data) => {
+        setDemo(data.demo === true);
+        setAuth("ready");
+      })
       .catch((e) => setAuth(e.status === 401 ? "login" : "error"));
   };
   useEffect(check, []);
@@ -295,7 +299,11 @@ function App() {
         </nav>
         <div className="sidebar-bottom">
           <span className="local-dot" />{" "}
-          {localEnvironment ? "Local · Datos ficticios" : "Datos ficticios"}
+          {demo
+            ? "DEMO · Datos ficticios"
+            : localEnvironment
+              ? "Local · Datos ficticios"
+              : "Datos ficticios"}
           <small>Excel v5.11 sigue como maestro</small>
         </div>
       </aside>
@@ -317,12 +325,16 @@ function App() {
                 ))}
               </select>
             </label>
-            {environment && (
-              <span className="local-badge">{environment}</span>
+            {(demo || environment) && (
+              <span className={"local-badge" + (demo ? " demo-badge" : "")}>
+                {demo ? "DEMO · Datos ficticios" : environment}
+              </span>
             )}
-            <button className="text-button" onClick={logout}>
-              Cerrar sesión
-            </button>
+            {!demo && (
+              <button className="text-button" onClick={logout}>
+                Cerrar sesión
+              </button>
+            )}
           </div>
         </header>
         <main id="main" tabIndex={-1} className="content">
