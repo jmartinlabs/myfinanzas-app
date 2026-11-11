@@ -231,10 +231,11 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
 - **Separación por dependencia de `age` (2026-11-11):** `age` y las pruebas de
   backup/restore cifrado son exclusivos de `full`. `critical` ejecuta la suite API con
   un filtro negativo construido desde `scripts/ci_policy.py` (`FULL_ONLY_TESTS`, 33
-  nombres exactos en 21 archivos) y **no** instala `age` ni ejecuta el paso `prepare`
+  nombres exactos más los 3 casos generados de `31 S3`; 36 filtradas en total, 21
+  archivos) y **no** instala `age` ni ejecuta el paso `prepare`
   (contrato `prepare=skipped`). `full` conserva la suite completa, `age`, Chromium y E2E;
   el tag de despliegue sigue exigiendo `full`. El filtro es fail-closed:
-  `scripts/verify` exige que Bun informe exactamente 33 pruebas filtradas (ni una más ni
+  `scripts/verify` exige que Bun informe exactamente 36 pruebas filtradas (ni una más ni
   una menos), un test de política comprueba que cada nombre existe literalmente en la
   suite, y la ejecución real sin `age` demuestra que ninguna prueba dependiente quedó
   fuera. Las rutas sensibles de backup/restore, migraciones, base de datos, esquema,

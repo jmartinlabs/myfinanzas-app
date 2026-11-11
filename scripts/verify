@@ -121,7 +121,7 @@ def application_checks(profile='full'):
     if profile == 'critical':
         api = ['bun', 'test', 'apps/api', '--test-name-pattern',
                POLICY['full_only_pattern'](), '--pass-with-no-tests']
-        filtered = len(POLICY['FULL_ONLY_TESTS'])
+        filtered = POLICY['full_only_expected']()
     else:
         api = ['bun', 'run', 'test']
         filtered = 0

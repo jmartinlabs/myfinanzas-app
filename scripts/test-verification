@@ -39,7 +39,7 @@ with open(os.environ['VERIFY_FIXTURE_CALLS'],'a') as f: f.write(json.dumps(name)
 if os.getenv('VERIFY_FIXTURE_FAIL')==name: sys.exit(7)
 if name in ('api','legacy'):
     print(os.getenv('VERIFY_FIXTURE_API_REPORT','2 pass\\n0 fail\\n8 expect() calls'))
-    if '--pass-with-no-tests' in args: print('33 filtered out')
+    if '--pass-with-no-tests' in args: print('36 filtered out')
 if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
 '''
         (self.bin / 'bun').write_text(bun); (self.bin / 'bun').chmod(0o755)

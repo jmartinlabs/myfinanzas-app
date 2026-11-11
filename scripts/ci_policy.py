@@ -73,6 +73,13 @@ FULL_ONLY_TESTS = (
     'E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and revoke sessions',
 )
 
+# 31 S3 is generated in a loop with three database/key names, so its resolved
+# title cannot be listed literally. The prefix covers all three executions.
+FULL_ONLY_PREFIXES = (
+    '31 S3: reserved-name rejection / encrypted restore for ',
+)
+FULL_ONLY_DYNAMIC = 3
+
 # Persistence, migration and recovery surfaces: a PR touching them runs FULL
 # before merge so the encrypted backup/restore tests cannot be bypassed.
 SENSITIVE = re.compile(
@@ -83,7 +90,13 @@ SENSITIVE = re.compile(
 
 
 def full_only_pattern():
-    return '^(?!(?:' + '|'.join(re.escape(name) for name in FULL_ONLY_TESTS) + ')$).*$'
+    alternatives = [re.escape(name) + '$' for name in FULL_ONLY_TESTS]
+    alternatives += [re.escape(prefix) for prefix in FULL_ONLY_PREFIXES]
+    return '^(?!(' + '|'.join(alternatives) + ')).*$'
+
+
+def full_only_expected():
+    return len(FULL_ONLY_TESTS) + FULL_ONLY_DYNAMIC
 
 
 def sensitive_path(path):

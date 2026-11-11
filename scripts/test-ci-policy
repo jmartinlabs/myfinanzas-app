@@ -764,11 +764,17 @@ class FullOnlyTests(unittest.TestCase):
         for name in names:
             self.assertIn(name, texts)
         self.assertEqual(len(names), 33)
+        self.assertEqual(POLICY['full_only_expected'](), 36)
+        for prefix in POLICY['FULL_ONLY_PREFIXES']:
+            self.assertIn(prefix, texts)
 
     def test_pattern_excludes_every_full_only_test_and_keeps_a_control(self):
         pattern = POLICY['full_only_pattern']()
         for name in POLICY['FULL_ONLY_TESTS']:
             self.assertIsNone(re.fullmatch(pattern, name))
+        for suffix in ('bundle.tmp/auth.key', 'database.sqlite/bundle.tmp', 'database #?.sqlite/key #?.bin'):
+            self.assertIsNone(re.fullmatch(
+                pattern, '31 S3: reserved-name rejection / encrypted restore for ' + suffix))
         self.assertIsNotNone(re.fullmatch(pattern, 'AC01: a regular critical test'))
 
 
