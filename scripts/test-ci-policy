@@ -1080,5 +1080,54 @@ class CiLinuxTests(unittest.TestCase):
             self.assertEqual(self.calls, [])
 
 
+class RootlessWorkflowTests(unittest.TestCase):
+    """The deploy workflow may only build and deploy; suites live in the profiles."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.source = (ROOT / '.github/workflows/rootless.yml').read_text()
+
+    def errors(self, text):
+        path = self.root / 'rootless.yml'
+        path.write_text(text)
+        return WORKFLOW['validate_rootless_workflow'](path)
+
+    def test_actual_workflow_is_reviewed_and_has_no_application_job(self):
+        self.assertEqual(self.errors(self.source), [])
+        self.assertEqual(WORKFLOW['validate_rootless_workflow'](
+            ROOT / '.github/workflows/rootless.yml'), [])
+
+    def test_reject_reintroduced_application_jobs_and_weakened_guards(self):
+        replacements = {
+            're-added qa job': ('  deploy:\n', '  qa:\n    needs: capability\n    steps:\n'
+                                              '      - run: bun test apps/web\n\n  deploy:\n'),
+            'weakened dependency': ('needs: [capability]', 'needs: [capability, qa]'),
+            'removed smoke': ('infra/smoke.py', 'echo smoke'),
+            'removed evidence': ('--qa-equivalence', '--check-evidence'),
+            'removed tag wait': ("Wait for the tag's own required FULL validation", 'echo wait'),
+            'unpinned action': ('actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
+                                'actions/checkout@v4'),
+            'postmerge push': ("  push:\n    tags:\n", "  push:\n    branches:\n      - test\n    tags:\n"),
+            'allowed failure': ('    timeout-minutes: 60\n',
+                                '    timeout-minutes: 60\n    continue-on-error: true\n'),
+            'persisted credentials': ('persist-credentials: false',
+                                      'persist-credentials: true'),
+            'narrowed paths': ("      - 'bun.lock'\n", ''),
+            'external environment': ('environment: test', 'environment: production'),
+        }
+        for name, (old, new) in replacements.items():
+            with self.subTest(name=name):
+                self.assertIn(old, self.source)
+                self.assertTrue(self.errors(self.source.replace(old, new, 1)))
+
+    def test_unreadable_workflow_fails_visibly(self):
+        self.assertEqual(WORKFLOW['validate_rootless_workflow'](self.root / 'missing'),
+                         ['rootless: unreadable workflow'])
+        (self.root / 'empty.yml').write_text('name: Empty\n')
+        self.assertTrue(WORKFLOW['validate_rootless_workflow'](self.root / 'empty.yml'))
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

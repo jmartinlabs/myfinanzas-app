@@ -7,6 +7,7 @@ commit. Integration-branch pushes no longer duplicate merged PR validation.
 """
 import json
 from pathlib import Path
+import re
 
 CHECKOUT = {'uses': 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
             'with': {'fetch-depth': 0, 'persist-credentials': False}}
@@ -96,6 +97,111 @@ def no_duplicates(pairs):
             raise ValueError('duplicate workflow key')
         result[key] = value
     return result
+
+
+ROOTLESS_JOBS = ('capability', 'deploy')
+ROOTLESS_CAPABILITY = (
+    'python3 infra/tests/rootless-preflight.py',
+    'python3 infra/tests/rootless-integration.py',
+    'apt-get install -y podman',
+)
+ROOTLESS_DEPLOY = (
+    'environment: test',
+    '--qa-equivalence',
+    'Wait for the tag\'s own required FULL validation',
+    'infra/release.py build',
+    '--single-build',
+    'infra/smoke.py',
+    'deploy:$ACTOR:$version',
+    'StrictHostKeyChecking=yes',
+)
+
+
+def deeper_block(lines, index):
+    """Lines indented deeper than the mapping key on `lines[index]`."""
+    indent = len(lines[index]) - len(lines[index].lstrip(' '))
+    block = []
+    for line in lines[index + 1:]:
+        if line.strip() and len(line) - len(line.lstrip(' ')) <= indent:
+            break
+        block.append(line)
+    return block
+
+
+def validate_rootless_workflow(path):
+    """Bounded review of the rootless/deploy graph; block YAML is not interpreted.
+
+    The canonical profiles own the application suites, so this workflow may only
+    build and deploy: an extra test job, a weakened dependency, an unpinned action
+    or a removed guard fails visibly instead of shipping with the deploy.
+    """
+    try:
+        lines = Path(path).read_text().splitlines()
+    except (OSError, UnicodeError):
+        return ['rootless: unreadable workflow']
+    if 'jobs:' not in lines:
+        return ['rootless: missing jobs']
+    start = lines.index('jobs:') + 1
+    names = []
+    for line in lines[start:]:
+        if line and not line.startswith(' '):
+            break
+        match = re.fullmatch(r'  ([a-z][a-z0-9_-]*):\s*', line)
+        if match:
+            names.append(match.group(1))
+    errors = []
+    if tuple(names) != ROOTLESS_JOBS:
+        errors.append('rootless: only the capability and deploy jobs are reviewed; '
+                      'application suites belong to the canonical profiles')
+    blocks = {}
+    for name in names:
+        header = start + next((offset for offset, line in enumerate(lines[start:])
+                               if line == '  ' + name + ':'), -1)
+        if header >= start:
+            blocks[name] = '\n'.join(deeper_block(lines, header))
+    capability, deploy = blocks.get('capability', ''), blocks.get('deploy', '')
+    for needle in ROOTLESS_CAPABILITY:
+        if needle not in capability:
+            errors.append('rootless: capability lost ' + needle)
+    if not re.search(r'(?m)^    needs: \[capability\]\s*$', deploy):
+        errors.append('rootless: deploy must depend only on capability')
+    for needle in ROOTLESS_DEPLOY:
+        if needle not in deploy:
+            errors.append('rootless: deploy lost ' + needle)
+    for line in lines:
+        if 'continue-on-error' in line or re.search(r'\bif:\s*false\s*$', line):
+            errors.append('rootless: disabled controls or allowed failures are not reviewed')
+            break
+    for match in re.finditer(r'uses:\s*(\S+)', '\n'.join(lines)):
+        if not re.fullmatch(r'[\w.-]+/[\w./-]+@[0-9a-f]{40}', match.group(1)):
+            errors.append('rootless: every action must be pinned to a commit SHA')
+            break
+    if '\n'.join(lines).count('fetch-depth: 0') < len(ROOTLESS_JOBS):
+        errors.append('rootless: every job needs complete history')
+    if '\n'.join(lines).count('persist-credentials: false') < len(ROOTLESS_JOBS):
+        errors.append('rootless: every checkout must avoid persisted credentials')
+    if re.search(r'(?m)^\s+[\w-]+: write\s*$', '\n'.join(lines)):
+        errors.append('rootless: read-only permissions only')
+    try:
+        push = deeper_block(lines, lines.index('  push:'))
+    except ValueError:
+        errors.append('rootless: deploy tag trigger required')
+    else:
+        pushed = '\n'.join(push)
+        if not re.search(r'(?m)^    tags:\s*\n      - \'deploy-test-v\*\'$', pushed):
+            errors.append('rootless: only deploy-test tags trigger the workflow')
+        if re.search(r'(?m)^    branches:', pushed):
+            errors.append('rootless: no postmerge branch push')
+    try:
+        pull = '\n'.join(deeper_block(lines, lines.index('  pull_request:')))
+    except ValueError:
+        errors.append('rootless: pull request trigger required')
+    else:
+        for needle in ("'.github/workflows/rootless.yml'", "'infra/**'", "'bun.lock'",
+                       "'package.json'", "'!infra/**/*.md'", "'!infra/**/.*.md'"):
+            if needle not in pull:
+                errors.append('rootless: pull request paths lost ' + needle)
+    return errors
 
 
 def validate_workflow(path):
