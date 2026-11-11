@@ -9,10 +9,10 @@ export const SEED_FORMAT = 1;
 export const SEED_DATASET = "FT-1";
 export const SEED_DATASET_VERSION = 1;
 export const SEED_BUN = "1.4.3";
-export const SEED_DATA_CONTRACT = "e4.11-v27";
+export const SEED_DATA_CONTRACT = "e36.1-v28";
 export const SEED_SCHEMA_VERSION = schemaVersion;
-export const SEED_SCHEMA_CONTRACT = admitted[27];
-export const SEED_SCHEMA_CONTRACT_SHA256 = contract(admitted[27]).sha256;
+export const SEED_SCHEMA_CONTRACT = admitted[28];
+export const SEED_SCHEMA_CONTRACT_SHA256 = contract(admitted[28]).sha256;
 
 export const DATABASE_RELATIVE = "state/database.sqlite";
 export const KEY_RELATIVE = "state/auth.key";

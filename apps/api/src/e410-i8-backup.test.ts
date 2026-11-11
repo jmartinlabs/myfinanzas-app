@@ -10,7 +10,7 @@ import { getReaperturaEstado, reabrirCierre } from "./e410";
 import { Problem } from "./problem";
 
 /**
- * E4.10 I8 — regresión de backup/restore v27 con una ventana activa.
+ * E4.10 I8 — regresión de backup/restore v28 con una ventana activa.
  *
  * El paquete de copia incluye `reaperturas` y `reapertura_activa`; restaurar
  * no es una ruta de reapertura y no debe duplicar la ventana ni crear una
@@ -87,7 +87,7 @@ function counts(db: Database) {
 }
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 I8: backup/restore v27 (fixture v26) conserva la ventana y no la reabre ni duplica",
+  "E4.10 I8: backup/restore v28 (fixture v26) conserva la ventana y no la reabre ni duplica",
   () => {
   // `publishNewDirectory` usa `renameat2` vía `dlopen("libc.so.6")`, exclusivo
   // de Linux; en macOS la publicación falla con `libc.so.6`. La prueba queda
@@ -141,7 +141,7 @@ test.skipIf(process.platform !== "linux")(
     const copy = openDatabase(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(counts(copy)).toEqual({
         cierres: { n: 1 },
