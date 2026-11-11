@@ -625,8 +625,8 @@ sintéticos.
 | AC-23 | Revisar estados y transiciones del pendiente | Solo tres estados; «Requiere revisión» es condición; ambos flujos consumen el mismo registro y confirmación | F36-PLAN | Backlog §7 Estados; §11.3 T10; §6 |
 | AC-24 | Comparar el reparto con el origen activo y con el Plan anual | El reparto parte del «Del mes» del origen activo (`PlanCiclo`/E2.3 o `Dprima`/Plan mensual), no del Plan anual completo; no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
 | AC-25 | Cerrar y reabrir un borrador antes de generar | Conserva líneas, origen, importe y fecha prevista; no crea pendientes ni efectos; tras generar, reabrir y añadir solo crea los pendientes nuevos | F36-PLAN | §7; AC-17 |
-| AC-26 | Preparar un Ciclo con ambos orígenes disponibles | Cada reparto declara un único `fuente_plan`; no mezcla Presupuesto y Partida; no cambia de origen tras generar pendientes; el adaptador devuelve solo líneas del origen elegido | F36-PLAN | Enmienda C; §0.1 |
-| AC-27 | Leer una línea inactiva o con destino inactivo/no elegible | La línea histórica permanece visible con su motivo; no se genera un pendiente nuevo; el adaptador no recalcula Del mes, Ejecutado ni Pendiente | F36-PRE | Enmienda C; D8 |
+| AC-26 | Preparar un Ciclo con ambos orígenes disponibles | Cada reparto declara un único `fuente_plan`; no mezcla Presupuesto y Partida; no cambia de origen tras generar pendientes; el adaptador devuelve solo líneas del origen elegido | F36-PLAN, F36-DPRIMA | Enmienda C; §0.1 |
+| AC-27 | Leer una línea inactiva o con destino inactivo/no elegible | La línea histórica permanece visible con su motivo; no se genera un pendiente nuevo; el adaptador no recalcula Del mes, Ejecutado ni Pendiente | F36-PRE, F36-DPRIMA | Enmienda C; D8 |
 
 ### 16.1 Anexo técnico — alcance físico mínimo para dos orígenes (no implementado)
 
@@ -635,7 +635,8 @@ sintéticos.
 - `repartos` no identifica el origen del plan.
 - `reparto_lineas.clase` solo admite `Presupuesto` y `Adicional`; `presupuesto` exige
   valor para la clase `Presupuesto` y no existe columna `partida`.
-- `transferencia_pendiente` es genérica y no requiere cambios para ambos orígenes.
+- `transferencia_pendiente` conserva tabla, estados e idempotencia; solo se ajustan los
+  triggers que la relacionan con las líneas de reparto en v29.
 
 `[PROPUESTA]` v29, **solo cuando se autorice el motor de reparto**. No es un `ALTER`
 trivial:
@@ -643,7 +644,8 @@ trivial:
 1. **Reconstrucción de `repartos`** para añadir `fuente_plan TEXT NOT NULL
    CHECK(fuente_plan IN ('PlanCiclo','Dprima'))` y backfill de filas v28 a `PlanCiclo`.
    Un `ADD COLUMN ... NOT NULL` sin `DEFAULT` no es válido en SQLite; se conserva la
-   identidad, el índice `repartos_ciclo_unico` y las referencias existentes.
+   identidad, el índice `repartos_ciclo_unico`, las referencias existentes y se recrean
+   los triggers de `repartos` y `reparto_audit_revision` que dependan de la tabla.
 2. **Reconstrucción de `reparto_lineas`** porque SQLite no permite modificar el `CHECK`
    que hoy limita `clase` a `Presupuesto|Adicional`. La nueva tabla debe:
    - admitir `clase='Partida'` y `partida TEXT REFERENCES partidas(id)`;
