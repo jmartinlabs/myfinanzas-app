@@ -35,6 +35,9 @@
         "contents": "read",
         "pull-requests": "read"
       },
+      "outputs": {
+        "profile": "${{ steps.plan.outputs.profile }}"
+      },
       "steps": [
         {
           "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
@@ -148,6 +151,22 @@
             "CI_PROFILE": "${{ steps.plan.outputs.profile }}"
           },
           "run": "python3 scripts/verify ci-result"
+        }
+      ]
+    },
+    "profile": {
+      "name": "CI profile: ${{ needs.required.outputs.profile || 'UNKNOWN' }}",
+      "needs": "required",
+      "if": "${{ always() }}",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 5,
+      "steps": [
+        {
+          "name": "Record selected CI profile",
+          "env": {
+            "CI_PROFILE": "${{ needs.required.outputs.profile || 'UNKNOWN' }}"
+          },
+          "run": "printf 'CI profile: %s\\n' \"$CI_PROFILE\"\n"
         }
       ]
     }

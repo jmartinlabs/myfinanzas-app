@@ -31,6 +31,12 @@ PROFILE_SUMMARY = """profile="$(printf '%s' "$CI_PROFILE" | tr '[:lower:]' '[:up
 case "$profile" in DOCS|FAST|CRITICAL|FULL) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
 printf 'Perfil CI: %s\\n' "$profile" >> "$GITHUB_STEP_SUMMARY"
 """
+# The required check keeps a fixed name for branch protection. A metadata-only
+# job carries the selected profile in its check name, without relying on the
+# checks API or running any verification again.
+PROFILE_JOB = 'profile'
+PROFILE_NAME = "CI profile: ${{ needs.required.outputs.profile || 'UNKNOWN' }}"
+PROFILE_LOG = "printf 'CI profile: %s\\n' \"$CI_PROFILE\"\n"
 
 
 def required_workflow():
@@ -53,6 +59,7 @@ def required_workflow():
         'jobs': {'required': {
             'runs-on': 'ubuntu-24.04', 'timeout-minutes': 25,
             'permissions': {'contents': 'read', 'pull-requests': 'read'},
+            'outputs': {'profile': '${{ steps.plan.outputs.profile }}'},
             'steps': [CHECKOUT, PYTHON,
                 {'id': 'context', 'name': 'Resolve integration context',
                  'env': {'GH_TOKEN': '${{ github.token }}'}, 'run': 'python3 scripts/ci_context.py'},
@@ -73,6 +80,12 @@ def required_workflow():
                 {'name': 'Reject failed, cancelled or unexpectedly skipped phases', 'if': '${{ always() }}',
                  'env': states, 'run': 'python3 scripts/verify ci-result'},
             ],
+        }, PROFILE_JOB: {
+            'name': PROFILE_NAME, 'needs': 'required', 'if': '${{ always() }}',
+            'runs-on': 'ubuntu-24.04', 'timeout-minutes': 5,
+            'steps': [{'name': 'Record selected CI profile',
+                       'env': {'CI_PROFILE': "${{ needs.required.outputs.profile || 'UNKNOWN' }}"},
+                       'run': PROFILE_LOG}],
         }},
     }
 
@@ -110,7 +123,7 @@ def validate_workflow(path):
                 errors.append(f'ci: unsupported {key}; reviewed events/concurrency/read-only permissions required')
         jobs = value['jobs']
         if not isinstance(jobs, dict) or jobs.keys() != expected['jobs'].keys():
-            errors.append('ci: one required job must be present, without extras')
+            errors.append('ci: required and profile jobs must be present exactly, without extras')
         else:
             for job, recipe in expected['jobs'].items():
                 if not same(jobs[job], recipe):
