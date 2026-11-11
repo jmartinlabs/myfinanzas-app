@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3030;
+const PORT = 3050;
 const STATE = ".local/e2e-vehiculos-g5c";
 let child: ReturnType<typeof spawn> | undefined;
 
@@ -120,6 +120,10 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
     "Coche principal",
   );
   await capture("vehiculos-listado-graphite", 390, 844);
+  await expect(page.locator(".vehiculos-page .vehicle-cards .ui-data-list-item")).toHaveCount(4);
+  await expect(page.locator(".vehiculos-page .vehicle-cards")).toContainText(
+    "Coche principal",
+  );
 
   /* Ficha --------------------------------------------------------------- */
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -174,6 +178,10 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
     await expect(page.locator(".vehicle-table")).not.toHaveCSS(
       "border-radius",
       "10px",
+    );
+    await expect(page.locator(".vehiculos-page .plan-controls")).toHaveCSS(
+      "box-shadow",
+      "none",
     );
   }
 
