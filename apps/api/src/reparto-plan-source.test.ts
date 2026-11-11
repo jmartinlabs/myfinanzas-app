@@ -184,6 +184,33 @@ test("normaliza Dprima sin mezclar ni recalcular valores publicados", () => {
   expect(plan.lines[2].atribucionAmbigua).toBe(true);
 });
 
+test("marca ambigüedad D′ solo por motivo publicado sin destino repetido", () => {
+  const plan = normalizeDprima(
+    {
+      ciclo: { id: "C1" },
+      items: [
+        {
+          raiz: "PAR001",
+          nombre: "Raíz sin destino",
+          fuente: "Aportación a saldo",
+          destino: null,
+          delMes: "100.00",
+          ejecutado: null,
+          pendiente: null,
+          estado: "No disponible",
+          motivo:
+            "Destino compartido por varias raíces: atribución automática bloqueada.",
+          revision: 1,
+        },
+      ],
+      nota: "Fixture D′",
+    } as any,
+    { raices: [{ id: "PAR001", estado: "Activa" }], hijasSinRaiz: [] } as any,
+  );
+  expect(plan.destinosCompartidos).toEqual([]);
+  expect(plan.lines[0].atribucionAmbigua).toBe(true);
+});
+
 test("exige un origen explícito y no cae a otro plan", () => {
   for (const source of ["Otro", "", undefined, null]) {
     expect(() =>

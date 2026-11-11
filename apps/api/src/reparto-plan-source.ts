@@ -43,7 +43,11 @@ export type RepartoPlan = {
   /** Revisión del plan legado; D′ no publica una revisión de plan única. */
   revision: number | null;
   lines: RepartoPlanLine[];
-  /** Destinos repetidos entre líneas de Aportación a saldo del mismo plan. */
+  /**
+   * Destinos repetidos entre líneas de Aportación a saldo del mismo plan.
+   * Para D′, la ambigüedad publicada que no identifica un destino concreto se
+   * expone por línea en `atribucionAmbigua`.
+   */
   destinosCompartidos: string[];
 };
 
