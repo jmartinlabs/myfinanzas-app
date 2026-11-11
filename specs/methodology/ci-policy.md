@@ -214,17 +214,33 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   ejecutan todas. La selección se recalcula dentro del paso `baseline` con el
   mismo `ci_profile` y el contexto verificado; sin contexto, evento inválido o
   error de clasificación ejecuta la batería completa. No hay skip de workflow ni
-  estado nuevo en `ci-result`. `fast` añade tipos/build; `critical` añade **toda**
-  la suite API/SQLite Linux; `full` añade además E2E. PR compara todo el rango
+  estado nuevo en `ci-result`. `fast` añade tipos/build; `critical` añade la suite
+  API/SQLite Linux **excepto** las pruebas que dependen de `age`; `full` añade esas
+  pruebas y E2E. PR compara todo el rango
   mediante merge-base sobre la base probada (`main` o `test`) y solo puede seleccionar
-  `docs`, `fast` o `critical`: **`full` no se selecciona automáticamente en una PR**,
-  solo por `workflow_dispatch` expreso o por push del tag `deploy-test-v*`. El tag se
+  `docs`, `fast`, `critical` o `full` por rutas sensibles: **`full` no se selecciona por
+  tamaño de diff**, solo por dispatch expreso, por push del tag `deploy-test-v*` o por un
+  cambio en las rutas sensibles de persistencia, migraciones, esquema, identidad y
+  recuperación. El tag se
   valida sobre el commit exacto (un tag anotado se pela a su commit) y ejecuta `full`.
   Si GitHub reconstruye el merge ref sobre una base más nueva antes del checkout, esa
   misma ejecución es la repetición y solo omite aplicación cuando el diff propio de la
   PR es documental; un merge ref anterior al evento falla y debe relanzarse. Un merge
   de alto riesgo se valida con un dispatch full o con el tag de deploy, no con un
   `critical` automático adicional.
+- **Separación por dependencia de `age` (2026-11-11):** `age` y las pruebas de
+  backup/restore cifrado son exclusivos de `full`. `critical` ejecuta la suite API con
+  un filtro negativo construido desde `scripts/ci_policy.py` (`FULL_ONLY_TESTS`, 33
+  nombres exactos más los 3 casos generados de `31 S3`; 36 filtradas en total, 21
+  archivos) y **no** instala `age` ni ejecuta el paso `prepare`
+  (contrato `prepare=skipped`). `full` conserva la suite completa, `age`, Chromium y E2E;
+  el tag de despliegue sigue exigiendo `full`. El filtro es fail-closed:
+  `scripts/verify` exige que Bun informe exactamente 36 pruebas filtradas (ni una más ni
+  una menos), un test de política comprueba que cada nombre existe literalmente en la
+  suite, y la ejecución real sin `age` demuestra que ninguna prueba dependiente quedó
+  fuera. Las rutas sensibles de backup/restore, migraciones, base de datos, esquema,
+  identidad y recuperación promocionan la PR a `full` antes de su aceptación, igual que
+  cualquier test de `apps/api/src` que contenga una prueba de esa lista.
 - **Flujo de integración `feature/* → test → main` (TEST-BOOTSTRAP-01, 2026-11-07):**
   `test` es la base de integración: los PR de trabajo apuntan a `test` y ejecutan el
   gate según el diff; `main` conserva su ruleset y recibe la promoción. Se promueve el

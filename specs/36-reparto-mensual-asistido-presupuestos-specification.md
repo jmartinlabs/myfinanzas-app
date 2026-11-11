@@ -2,12 +2,15 @@
 
 Status: **APROBADA PARA DESARROLLO — 2026-11-11.** D1–D10 aprobadas con las
 precisiones D8/D3; autorizados los incrementos 1 (mecanismo compartido de Transferencia
-pendiente) y 2 (reparto mensual asistido). SPEC37 sigue sin autorización de DEV. La
-aprobación no convierte cada `[PROPUESTA]` en contrato cerrado ni autoriza datos reales,
-migraciones operativas o despliegue.
+pendiente) y 2 (reparto mensual asistido). **Enmienda C aprobada el 2026-11-11:** origen
+de plan sustituible `PlanCiclo`/`Dprima`, adaptador de solo lectura y un único motor;
+sustituye solo el acoplamiento exclusivo a E2.3. SPEC37 sigue sin autorización de DEV.
+La aprobación no convierte cada `[PROPUESTA]` en contrato cerrado ni autoriza datos
+reales, migraciones operativas o despliegue.
 Approval source/date: **2026-11-11 — usuario**, aprobación explícita e identificable de
-D1–D10 y autorización de los incrementos 1–2 (texto en §0). v28/C28 autorizados
-condicionalmente y confirmados por la comprobación física.
+D1–D10, de los incrementos 1–2 y de la alternativa C (texto en §0 y §0.1). v28/C28
+autorizados condicionalmente y confirmados por la comprobación física. La enmienda C no
+autoriza el motor de reparto ni v29.
 Context and brainstorming: [backlog de reparto mensual](backlog/reparto-mensual-asistido-presupuestos.md),
 [backlog de registro coordinado](backlog/registro-coordinado-gastos.md),
 [SPEC09 Plan del ciclo](09-plan-ciclo-specification.md),
@@ -51,20 +54,48 @@ procede v28 con C28; el esquema se entregó en el incremento 1 (PR #388). Límit
 aprobación: sin datos reales, sin despliegue, sin migración operativa, sin SPEC37 y sin
 convertir la aceptación con fixtures en aceptación funcional.
 
+### 0.1 Enmienda C — origen de plan sustituible (2026-11-11)
+
+`[CONFIRMADO 2026-11-11 — usuario]` «Apruebo la alternativa C, con adaptador mínimo de
+lectura, un solo motor de reparto y un único mecanismo de Transferencias pendientes».
+La enmienda sustituye **únicamente** el acoplamiento exclusivo de esta spec al Plan del
+ciclo/E2.3. No reabre D1–D10.
+
+- **Origen explícito por Ciclo:** `PlanCiclo` (Presupuesto/E2.3) o `Dprima` (Partida raíz y
+  Plan mensual D′). No se mezclan orígenes en un mismo reparto ni se cambia la procedencia
+  después de generar pendientes.
+- **D′ no se activa automáticamente:** el legado sigue operativo mientras D′ no tenga
+  paridad y aceptación. La selección de D′ requiere decisión explícita.
+- **Adaptador de solo lectura:** normaliza los resultados publicados del plan activo. No
+  recalcula Del mes, Ejecutado, Pendiente ni fórmulas de financiación.
+- **D8 se aplica a la entidad del origen activo:** Presupuesto inactivo para `PlanCiclo`;
+  Partida inactiva para `Dprima`. En ambos casos se conserva la línea histórica visible,
+  pero no se genera un pendiente nuevo hacia una entidad o Saldo destino inactivo o no
+  elegible.
+- **Un solo mecanismo:** `transferencia_pendiente`, sus estados, idempotencia, auditoría y
+  confirmación atómica mediante Movimiento real no cambian. `origen_tipo='Reparto'` sirve
+  para ambos orígenes.
+- **Sin duplicar maestros ni cálculos:** una cabecera de reparto, un motor de reglas y una
+  tabla de líneas; el adaptador solo traduce la fuente.
+- **Límites:** esta enmienda no autoriza el motor de reparto, la activación general de D′,
+  migraciones de datos reales, retirada del legado, merge ni despliegue.
+
 ## 1. Objetivo y alcance
 
 `[PROPUESTA]` Permitir que el usuario prepare, una vez por Ciclo, un **reparto asistido**
-de las Transferencias que financian el plan mensual. El reparto parte exclusivamente del
-**equivalente mensual de E2.3 («Del mes») por Presupuesto**, no del Plan anual completo ni
-de un prorrateo de E2.4. Genera registros operativos de **Transferencia pendiente** que el
-usuario confirma individualmente cuando verifica su ejecución bancaria. La realidad
-financiera ejecutada sigue siendo exclusivamente la de Movimientos.
+de las Transferencias que financian el plan mensual. El reparto parte de la **línea del
+plan activo del Ciclo**, identificada explícitamente: E2.3 por Presupuesto (`PlanCiclo`,
+legado) o Plan mensual D′ por Partida raíz (`Dprima`, objetivo). No parte del Plan anual
+completo ni de un prorrateo de E2.4. Genera registros operativos de **Transferencia
+pendiente** que el usuario confirma individualmente cuando verifica su ejecución bancaria.
+La realidad financiera ejecutada sigue siendo exclusivamente la de Movimientos.
 
 Incluye:
 
 1. Una acción «Preparar reparto del ciclo» dentro del Plan del ciclo.
-2. La lectura de las líneas del plan E2.3 y de la configuración E2.2, sin recalcularlas.
-3. La propuesta de importes para Presupuestos de fuente Aportación a saldo.
+2. La selección explícita del origen del plan por Ciclo y la lectura de sus líneas
+   publicadas, sin recalcularlas.
+3. La propuesta de importes para líneas de fuente Aportación a saldo.
 4. La edición de un borrador, la generación atómica de pendientes y su seguimiento.
 5. El mecanismo compartido de Transferencia pendiente que también consume
    [SPEC37](37-registro-coordinado-gastos-specification.md).
@@ -75,8 +106,9 @@ No incluye:
 - Ejecutar Transferencias bancarias ni integración bancaria.
 - Crear Gastos, Ingresos, Partidas, Presupuestos, Referencias, Anticipos o maestros
   paralelos.
-- Modificar Del mes, Base, Esencial, fuente, destino o vínculos del Presupuesto.
+- Modificar Del mes, Base, Esencial, fuente, destino o vínculos de la línea del plan.
 - Crear una segunda lógica de plan mensual o anual.
+- Activar D′ como origen general mientras no exista paridad funcional y aceptación.
 - Convertir un pendiente en liquidez, reserva, ejecución presupuestaria, hecho de cierre
   o dato de informes.
 - Implementar API, SQLite, migraciones o UI en esta fase.
@@ -137,23 +169,24 @@ financiero ni aparece en informes, fotos o ejecución.
 
 ## 4. Entradas y lectura del plan
 
-Para cada Presupuesto del plan del Ciclo se muestra, cuando sea verificable:
+Para cada línea del plan activo del Ciclo se muestra, cuando sea verificable:
 
-- ID y nombre estable del Presupuesto.
+- Origen explícito del plan: `PlanCiclo` (Presupuesto) o `Dprima` (Partida raíz).
+- ID y nombre estable de la entidad del origen.
 - Fuente de ejecución: Gasto real, Aportación a saldo o No aplica.
-- Destino configurado, solo lectura.
+- Destino configurado en la línea, solo lectura.
 - Del mes.
 - Ejecutado.
-- Pendiente y Estado E2.3.
+- Pendiente y Estado publicados por el origen.
 - Cobertura y motivo cuando falte un dato.
 
 `[CONFIRMADO]` No se muestran cifras derivadas si falta el periodo/corte verificable, el
 Del mes o la cobertura de la fuente. Se muestra el motivo, nunca un cero sustitutivo.
 «Sin plan» no inventa líneas ni importes.
 
-`[PROPUESTA]` La lista se ordena por ID de Presupuesto y conserva los filtros de la
-pantalla de plan. Un Presupuesto inactivo con línea histórica permanece visible y se
-marca como no elegible para nuevas propuestas.
+`[PROPUESTA]` La lista se ordena por ID de Presupuesto o Partida según el origen y
+conserva los filtros de la pantalla de plan. Una entidad inactiva con línea histórica
+permanece visible y se marca como no elegible para nuevas propuestas.
 
 ## 5. Reglas de reparto propuestas
 
@@ -163,10 +196,12 @@ Las cifras de los ejemplos son sintéticas y no representan datos reales.
 
 `[PROPUESTA]` Para una línea de fuente Aportación a saldo:
 
-1. Proponer una Transferencia ordinaria hacia el Saldo destino exacto del Presupuesto.
-2. Sugerir el **Pendiente positivo verificable** de E2.3: `Del mes − Ejecutado`, solo si
-   la fuente es comparable, el periodo/corte es verificable, el Del mes está informado y
-   el resultado es mayor que cero.
+1. Proponer una Transferencia ordinaria hacia el Saldo destino exacto de la línea del
+   plan activo.
+2. Sugerir el **Pendiente positivo verificable publicado por el origen**: en `PlanCiclo`,
+   el de E2.3 (`Del mes − Ejecutado`); en `Dprima`, el `pendiente` ya calculado por el
+   Plan mensual D′. Solo si la fuente es comparable, el periodo/corte es verificable, el
+   Del mes está informado y el resultado es mayor que cero.
 3. Permitir editar el importe. Un importe superior al Pendiente puede producir Estado
    Excedido; se muestra el efecto y no se trunca el Pendiente negativo a cero.
 4. Permitir varias Transferencias parciales hacia la misma línea presupuestaria como
@@ -176,9 +211,9 @@ Las cifras de los ejemplos son sintéticas y no representan datos reales.
    usuario añade una Referencia operativa admitida (D10) o cambia el destino, la línea deja
    de ejecutar esa Aportación a saldo; se explica antes de confirmar. No se admite
    Referencia de Anticipo en esta mejora.
-6. Obtener el destino del Presupuesto, sin editarlo en la línea. Si el destino está
-   inactivo o ya no es elegible, no se propone automáticamente y se muestra el motivo.
-7. No modificar Del mes, Base, Esencial, Fuente, destino ni vínculos del Presupuesto.
+6. Obtener el destino de la línea del plan, sin editarlo en el reparto. Si el destino
+   está inactivo o ya no es elegible, no se propone automáticamente y se muestra el motivo.
+7. No modificar Del mes, Base, Esencial, Fuente, destino ni vínculos de la línea del plan.
 
 ### 5.2 Gasto real
 
@@ -187,8 +222,8 @@ Las cifras de los ejemplos son sintéticas y no representan datos reales.
 - Mostrar por defecto «Mantener en origen», normalmente la cuenta receptora de la nómina
   cuando pueda identificarse de forma fiable.
 - No crear Transferencia automática.
-- No presentar el Saldo destino obligatorio del Presupuesto como reserva, objetivo de
-  financiación o dinero que deba enviarse. La ejecución se imputa por Partida.
+- No presentar el Saldo destino de la línea como reserva, objetivo de financiación o
+  dinero que deba enviarse. La ejecución se imputa por Partida.
 - Si el usuario decide añadir una línea manual hacia ese destino, será una Transferencia
   ordinaria adicional; no ejecutará la fuente Gasto real ni alterará su Ejecutado.
 - Si no hay un único candidato fiable de cuenta de nómina, exigir selección explícita de
@@ -222,15 +257,16 @@ ejecución.
   solo si hay un candidato único fiable y su base es visible.
 - El selector común actúa como valor por defecto; cada línea conserva el origen
   finalmente resuelto. Cambiar el valor común no reescribe líneas ya configuradas.
-- El destino de las líneas presupuestarias procede del Presupuesto y no es editable.
+- El destino de la línea del plan procede de su origen (Presupuesto o Partida raíz) y no
+  es editable en el reparto.
 - «Añadir transferencia» permite origen, destino, importe, fecha prevista y
   descripción o contexto. Se reutilizan Concepto/Nota de E1.5; no se crea un maestro de
   descripciones.
 - Las líneas adicionales son Transferencias internas entre Saldos activos, distintos y
   elegibles. No se admite S000 ni Exterior en ningún extremo.
 - Si una línea adicional usa el destino de una Aportación a saldo y es una Transferencia
-  ordinaria, ejecutará ese Presupuesto al confirmarse, aunque no se haya generado desde
-  su línea de plan. La interfaz debe mostrarlo; la línea no es financieramente neutral.
+  ordinaria, ejecutará esa línea del plan al confirmarse, aunque no se haya generado desde
+  su línea de reparto. La interfaz debe mostrarlo; la línea no es financieramente neutral.
 - Si usa el destino de un Gasto real, no ejecutará su fuente.
 - Una Referencia admitida en una línea adicional se rige por E1.5 y no convierte la línea
   en ejecución de Aportación a saldo. En esta primera propuesta no se habilitan Anticipos
@@ -333,8 +369,8 @@ aprobación; no se crea un maestro financiero ni un estado ficticio en Movimient
 
 `[PROPUESTA]`
 
-1. **Inicio manual.** Abrir, iniciar o cerrar un Ciclo, cambiar el plan o modificar un
-   Presupuesto no crea un reparto automáticamente.
+1. **Inicio manual.** Abrir, iniciar o cerrar un Ciclo, cambiar el plan o modificar una
+   entidad del origen (Presupuesto o Partida) no crea un reparto automáticamente.
 2. **Un reparto por ID de Ciclo.** La unicidad es técnica, por Ciclo, no por contenido.
 3. **Borrador reabrible.** Mientras no se genere, el usuario puede cerrar y continuar.
    Si ya existen pendientes, las líneas nuevas generan solo sus propios pendientes; no se
@@ -362,13 +398,14 @@ Al confirmar:
 
 1. Validar datos y fecha efectiva. La fecha real no puede ser futura según el día civil
    de España; no se usa la fecha prevista como fecha efectiva.
-2. Revalidar contexto, Saldos elegibles, destino, configuración del Presupuesto,
+2. Revalidar contexto, Saldos elegibles, destino y configuración de la entidad del origen
+   (Presupuesto o Partida),
    Referencia cuando corresponda, advertencia de duplicados y revisión/concurrencia.
 3. Registrar la Transferencia como Movimiento financiero ejecutado mediante los
    contratos de E1.4/E1.5, con su fecha real.
 4. Reflejar el efecto en las posiciones calculadas de los Saldos; no escribir un saldo
    acumulado paralelo.
-5. Recalcular la ejecución de los Presupuestos afectados según su Fuente. Para
+5. Recalcular la ejecución de las líneas afectadas según su Fuente. Para
    Aportación a saldo, solo si la Transferencia es ordinaria, sin Referencia, sin origen
    Exterior y hacia el destino exacto.
 6. Mantener evidencia de confirmación, actor y momento, y resolver el pendiente en la
@@ -405,10 +442,14 @@ no es un cuarto estado, no reabre la línea y no duplica el hecho.
 
 `[PROPUESTA]`
 
-- **Fuente mensual E2.3.** El reparto parte del «Del mes» de cada Presupuesto en el Plan
-  del ciclo, que es el equivalente mensual aprobado. No parte del Plan anual completo. El
-  reparto no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual.
-  Sin Del mes no hay importe sugerido.
+- **Origen del plan.** El reparto usa una sola fuente por Ciclo, explícita: `PlanCiclo`
+  (E2.3 por Presupuesto) o `Dprima` (Plan mensual por Partida raíz). D′ es el objetivo,
+  pero no se activa como origen general hasta tener paridad funcional y aceptación. No se
+  mezclan líneas ni se cambia la procedencia tras generar pendientes.
+- **Fuente mensual E2.3.** En `PlanCiclo`, el reparto parte del «Del mes» de cada
+  Presupuesto en el Plan del ciclo. En `Dprima`, parte del «Del mes» publicado por el Plan
+  mensual D′. En ambos casos no parte del Plan anual completo, no lo divide ni lo prorratea;
+  SPEC10 conserva su equivalente esencial mensual. Sin Del mes no hay importe sugerido.
 - **Plan anual E2.4.** Es una decisión anual por Partida y ejercicio, independiente del
   reparto. No se usa como fuente, objetivo ni importe de respaldo; el reparto no lo lee
   para calcular líneas. Esta relación no contradice SPEC10 ni crea una segunda lógica de
@@ -501,7 +542,7 @@ Condiciones técnicas propuestas:
 | Situación | Comportamiento observable |
 | --- | --- |
 | Ciclo sin plan | «Sin plan»; no se inventan líneas ni importes |
-| Sin presupuestos elegibles | Explicar la causa; no usar S000 ni destinos inactivos |
+| Sin líneas elegibles | Explicar la causa; no usar S000 ni destinos inactivos |
 | Sin cobertura de periodo/corte | Mantener Del mes visible si existe; Ejecutado/Pendiente/Estado con motivo |
 | Sin candidato único de nómina | Exigir selección explícita de origen; mostrar la base de la propuesta |
 | Destino inactivo o no elegible | No proponer automáticamente; motivo visible |
@@ -548,6 +589,7 @@ Los fixtures son ficticios y se usarán solo en pruebas futuras autorizadas.
 | F36-PRE | PRE-A Aportación a S002; PRE-G Gasto real a S003; PRE-N No aplica |
 | F36-PAR | PAR-1 vinculada a PRE-A; PAR-2 vinculada a PRE-G |
 | F36-PLAN | Líneas Del mes 100,00 / 200,00 / 50,00; Ejecutado 40,00 / 120,00 / — |
+| F36-DPRIMA | Raíces PAR-A (Aportación a S002) y PAR-G (Gasto real); Plan mensual D′ con Del mes/Ejecutado/Pendiente publicados; una raíz y un destino compartido para AC-26/27 |
 | F36-NOM | Ingreso Nómina ficticio en S001 con una única cuenta receptora |
 | F36-USR | Usuario único ficticio con MFA |
 
@@ -581,8 +623,52 @@ sintéticos.
 | AC-21 | Completar un reparto y cambiar el plan después | No se crea otro reparto automáticamente; la vía es el registro ordinario salvo D5 | F36-PLAN | Backlog AC21; §7 |
 | AC-22 | Inspeccionar la aplicación y los mensajes | No ejecuta Transferencias bancarias ni afirma haberlas ejecutado; solo registra hechos confirmados | F36-USR | Backlog AC22; §1 |
 | AC-23 | Revisar estados y transiciones del pendiente | Solo tres estados; «Requiere revisión» es condición; ambos flujos consumen el mismo registro y confirmación | F36-PLAN | Backlog §7 Estados; §11.3 T10; §6 |
-| AC-24 | Comparar el reparto con E2.3 y con el Plan anual | El reparto parte del «Del mes» mensual de E2.3, no del Plan anual completo; el reparto no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
+| AC-24 | Comparar el reparto con el origen activo y con el Plan anual | El reparto parte del «Del mes» del origen activo (`PlanCiclo`/E2.3 o `Dprima`/Plan mensual), no del Plan anual completo; no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
 | AC-25 | Cerrar y reabrir un borrador antes de generar | Conserva líneas, origen, importe y fecha prevista; no crea pendientes ni efectos; tras generar, reabrir y añadir solo crea los pendientes nuevos | F36-PLAN | §7; AC-17 |
+| AC-26 | Preparar un Ciclo con ambos orígenes disponibles | Cada reparto declara un único `fuente_plan`; no mezcla Presupuesto y Partida; no cambia de origen tras generar pendientes; el adaptador devuelve solo líneas del origen elegido | F36-PLAN, F36-DPRIMA | Enmienda C; §0.1 |
+| AC-27 | Leer una línea inactiva o con destino inactivo/no elegible | La línea histórica permanece visible con su motivo; no se genera un pendiente nuevo; el adaptador no recalcula Del mes, Ejecutado ni Pendiente | F36-PRE, F36-DPRIMA | Enmienda C; D8 |
+
+### 16.1 Anexo técnico — alcance físico mínimo para dos orígenes (no implementado)
+
+`[CONFIRMADO]` Comprobación física de v28:
+
+- `repartos` no identifica el origen del plan.
+- `reparto_lineas.clase` solo admite `Presupuesto` y `Adicional`; `presupuesto` exige
+  valor para la clase `Presupuesto` y no existe columna `partida`.
+- `transferencia_pendiente` conserva tabla, estados e idempotencia; solo se ajustan los
+  triggers que la relacionan con las líneas de reparto en v29.
+
+`[PROPUESTA]` v29, **solo cuando se autorice el motor de reparto**. No es un `ALTER`
+trivial:
+
+1. **Reconstrucción de `repartos`** para añadir `fuente_plan TEXT NOT NULL
+   CHECK(fuente_plan IN ('PlanCiclo','Dprima'))` y backfill de filas v28 a `PlanCiclo`.
+   Un `ADD COLUMN ... NOT NULL` sin `DEFAULT` no es válido en SQLite; se conserva la
+   identidad, el índice `repartos_ciclo_unico`, las referencias existentes y se recrean
+   los triggers de `repartos` y `reparto_audit_revision` que dependan de la tabla.
+2. **Reconstrucción de `reparto_lineas`** porque SQLite no permite modificar el `CHECK`
+   que hoy limita `clase` a `Presupuesto|Adicional`. La nueva tabla debe:
+   - admitir `clase='Partida'` y `partida TEXT REFERENCES partidas(id)`;
+   - mantener `presupuesto` nullable y exigir exactamente una referencia según la clase;
+   - copiar IDs y filas v28 sin reinterpretarlas;
+   - recrear `reparto_lineas_reparto` y los índices/triggers de la tabla;
+   - conservar la FK `transferencia_pendiente.reparto_linea`.
+3. **Triggers que deben recrearse o ampliarse** (no basta con dejar la tabla
+   `transferencia_pendiente` intacta):
+   - `reparto_linea_presupuesto_destino_insert/update`: validar el destino de la línea
+     `Partida` contra el Plan mensual D′ y su entidad activa;
+   - `transferencia_pendiente_linea_reparto(_update)`: comprobar entidad activa para
+     `Presupuesto` **y** para `Partida`; con la condición actual, una línea `Partida`
+     pasaría sin la comprobación D8;
+   - triggers de auditoría e idempotencia de `reparto_lineas` que dependan de la tabla
+     reconstruida.
+4. `transferencia_pendiente` conserva su tabla, estados, idempotencia y confirmación por
+   Movimiento; solo se ajustan los triggers que la relacionan con líneas de reparto.
+
+El primer incremento de la **enmienda C** es solo el **adaptador de lectura**; no requiere
+v29 y no debe incrementar el esquema por inercia. v29 se entregará con su migración,
+contrato C29, backup/restore, pruebas de triggers y gate rootless cuando el motor de
+reparto esté autorizado.
 
 ## 17. Decisiones aprobadas
 
@@ -599,11 +685,15 @@ en que cada decisión estaba pendiente; no describe el estado actual.
 | D5 | Ampliación de un reparto completado | No automática; Transferencias posteriores por el procedimiento ordinario | Aprobación funcional |
 | D6 | Precierre y pendientes | Avisar, no convertir ni incluir en la foto; decidir si además bloquea | Aprobación con E4.8/E4.9 |
 | D7 | Pendiente ya registrado por otro flujo | Vincular explícitamente o cancelar con motivo; nunca segundo Movimiento | Aprobación funcional |
-| D8 | Presupuesto inactivo | Sin propuesta automática; decidir si se admite línea manual histórica | Aprobación funcional |
+| D8 | Entidad inactiva | Sin propuesta automática; se admite línea histórica visible. Enmienda C: aplica a Presupuesto (`PlanCiclo`) o Partida (`Dprima`); nunca pendiente nuevo hacia entidad o Saldo destino inactivo/no elegible | Aprobación funcional |
 | D9 | Origen de nómina | Solo candidato único fiable y con base visible; sin inferencia por nombre o banco | Aprobación funcional |
 | D10 | Referencias en líneas adicionales | No habilitar Anticipos ni Compartidos en esta mejora; decidir Viaje/Evento | Aprobación funcional |
 
 ## 18. Trazabilidad y próximo gate
+
+- **Enmienda C (2026-11-11):** aprobada; solo cambia el origen del plan y la lectura de
+  D8. Próximo gate técnico: adaptador de lectura y pruebas, sin v29 ni motor de reparto.
+- **v29:** diseñada en §16.1; no autorizada hasta que se autorice el motor de reparto.
 
 - Backlog de origen: [reparto mensual asistido](backlog/reparto-mensual-asistido-presupuestos.md),
   casos §13 y tensiones §11.3.
