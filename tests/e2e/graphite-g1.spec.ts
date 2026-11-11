@@ -183,7 +183,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.locator(".saldos-page .desktop-list")).toBeHidden();
   await expect(page.locator(".saldos-page .mobile-list")).toBeVisible();
   await expect(
-    page.locator(".saldos-page .mobile-list li").first(),
+    page.locator(".saldos-page .mobile-list .ui-data-list-item").first(),
   ).toBeVisible();
   await page.locator("h1").blur();
   await page.screenshot({
