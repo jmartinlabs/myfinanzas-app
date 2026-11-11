@@ -524,7 +524,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 A: restoring a v28 package fails without a destination",
+  "E4.10 A: restoring a v29 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -545,7 +545,7 @@ test.skipIf(process.platform !== "linux")(
       mkdirSync(corrupt, { mode: 0o700 });
       const plaintext = join(corrupt, "bundle.tmp");
       const altered = structuredClone(bundle);
-      altered.manifest.schema = 28;
+      altered.manifest.schema = 29;
       writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
       cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
       expect(
@@ -571,7 +571,7 @@ test.skipIf(process.platform !== "linux")(
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-    // Backup v24 + paquete v28 corrupto con age real: mismo criterio que el
+    // Backup v24 + paquete v29 corrupto con age real: mismo criterio que el
     // histórico v24; 30 s solo amplía el margen, sin cambiar las aserciones.
   },
   30000,

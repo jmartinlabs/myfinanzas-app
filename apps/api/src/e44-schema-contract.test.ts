@@ -305,7 +305,7 @@ test.skipIf(process.platform !== "linux")(
     mkdirSync(corrupt, { mode: 0o700 });
     const plaintext = join(corrupt, "bundle.tmp");
     const altered = structuredClone(bundle);
-    altered.manifest.schema = 28;
+    altered.manifest.schema = 29;
     writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
     cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
     expect(

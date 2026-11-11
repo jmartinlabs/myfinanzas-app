@@ -17,14 +17,17 @@ import type { Database } from "bun:sqlite";
  * distribution service and UI belong to increment 2. SPEC37 consumes the same
  * pending record and is not implemented here.
  *
- * `sourceCommit` of C28 is `6a31c23`. `fecha_prevista` is mandatory; amount is
- * an exact integer in cents and `concepto`/`nota` follow the E1.5 Movimientos
- * nullability (both required, empty text allowed).
+ * `sourceCommit` of C28 is `6a31c23`. `fecha_prevista` is mandatory and the
+ * amount is an exact integer in cents. In `reparto_lineas`, `concepto` and
+ * `nota` are nullable draft fields; in `transferencia_pendiente` both are
+ * NOT NULL and accept empty text, matching E1.5 Movimientos.
  *
  * D8: a line that references a historically inactive Presupuesto is allowed,
- * but no new pending may be generated towards an inactive destination or an
- * ineligible Saldo. The check is enforced when the pending is inserted and
- * when its origin/destination are edited, never by rewriting the line.
+ * but no new pending may be generated for that inactive Presupuesto. D8 does
+ * not make the Saldo destino historical: ordinary E1.5 eligibility (active,
+ * non-Exterior Saldos) is checked independently. The D8 check is enforced
+ * when the pending is inserted and on the fields that affect its line
+ * provenance, never by rewriting the line.
  *
  * Immutability: identities are immutable; DELETE is refused on every entity;
  * terminal states are immutable; `revision` advances by exactly one. A line is

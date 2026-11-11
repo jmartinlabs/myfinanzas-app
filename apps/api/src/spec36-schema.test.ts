@@ -713,11 +713,20 @@ test("SPEC36 v28: one reparto per cycle and a line frozen by generation or pendi
     ).toThrow("reparto line is frozen");
     const pendingId = pending(db);
     expect(pendingId).toBeGreaterThan(0);
+    // §7.3: a new line may be added after generation; it only creates its
+    // own pending. It is born frozen because the reparto left Borrador.
+    const lateLine = line(db);
+    expect(lateLine).toBeGreaterThan(lineId);
     expect(() =>
-      db.run("UPDATE reparto_lineas SET concepto='otra',revision=revision+1 WHERE id=?", [
-        lineId,
+      db.run("UPDATE reparto_lineas SET concepto='tarde',revision=revision+1 WHERE id=?", [
+        lateLine,
       ]),
     ).toThrow("reparto line is frozen");
+    db.run(
+      "UPDATE repartos SET estado='Completado',revision=revision+1,actualizado=? WHERE id=?",
+      [t3, repartoId],
+    );
+    expect(() => line(db)).toThrow("invalid initial reparto line");
     expect(repartoId).toBeGreaterThan(0);
   } finally {
     db.close();
