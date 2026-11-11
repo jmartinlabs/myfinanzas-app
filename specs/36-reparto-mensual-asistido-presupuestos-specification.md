@@ -1,7 +1,13 @@
 # 36 — REPARTO-MENSUAL: reparto mensual asistido de presupuestos — Specification
 
-Status: **DRAFT [PROPUESTA] — 2026-11-10. NO APROBADA; NO AUTORIZA DESARROLLO, API NI SQLITE.**
-Approval source/date: PENDING — no existe aprobación del usuario para esta especificación.
+Status: **APROBADA PARA DESARROLLO — 2026-11-11.** D1–D10 aprobadas con las
+precisiones D8/D3; autorizados los incrementos 1 (mecanismo compartido de Transferencia
+pendiente) y 2 (reparto mensual asistido). SPEC37 sigue sin autorización de DEV. La
+aprobación no convierte cada `[PROPUESTA]` en contrato cerrado ni autoriza datos reales,
+migraciones operativas o despliegue.
+Approval source/date: **2026-11-11 — usuario**, aprobación explícita e identificable de
+D1–D10 y autorización de los incrementos 1–2 (texto en §0). v28/C28 autorizados
+condicionalmente y confirmados por la comprobación física.
 Context and brainstorming: [backlog de reparto mensual](backlog/reparto-mensual-asistido-presupuestos.md),
 [backlog de registro coordinado](backlog/registro-coordinado-gastos.md),
 [SPEC09 Plan del ciclo](09-plan-ciclo-specification.md),
@@ -15,7 +21,35 @@ Base documental: `test` `82b9dc3`; redacción exclusivamente documental, sin có
 Las marcas `[CONFIRMADO]`, `[PROPUESTA]` y `[PENDIENTE]` distinguen contratos vigentes,
 diseño propuesto y cuestiones sin decisión. Ninguna marca convierte una propuesta en
 autorización. Este documento no reabre decisiones de las specs base, no cambia sus AC,
-no crea tablas ni rutas y no declara ninguna prueba ejecutada.
+no crea tablas ni rutas por sí mismo y no declara ninguna prueba ejecutada.
+
+## 0. Registro de aprobación — 2026-11-11
+
+`[CONFIRMADO]` El usuario aprobó el **2026-11-11** las decisiones D1–D10 de esta SPEC y
+autorizó el desarrollo incremental. Texto sustantivo de la aprobación:
+
+> «Apruebo las decisiones **D1–D10 de SPEC36**, con las siguientes precisiones:
+> - D8: se permite conservar o mostrar una línea manual histórica de presupuesto inactivo
+>   con aviso, pero nunca generar una Transferencia pendiente nueva hacia un destino
+>   inactivo o no elegible.
+> - D3: apruebo la persistencia de borradores y Transferencias pendientes. Autorizo **v28,
+>   migración y C28** si la comprobación de la estructura física confirma que no puede
+>   resolverse reutilizando correctamente las entidades existentes. No duplicar maestros
+>   ni motores.
+>
+> **Autorizo iniciar el desarrollo incremental de SPEC36:**
+> 1. Implementar primero el mecanismo operativo compartido de Transferencia pendiente, con
+>    persistencia mínima, estados, idempotencia, concurrencia, auditoría y confirmación
+>    atómica mediante Movimiento real.
+> 2. Incorporar después el reparto mensual asistido, reutilizando E2.3 sin recalcular sus
+>    métricas.
+> 3. Preparar SPEC37 como siguiente consumidor. Sus decisiones propias D1–D10 siguen
+>    pendientes de aprobación; no iniciar su DEV todavía.»
+
+`[CONFIRMADO]` La comprobación física concluyó que no existe entidad reutilizable y que
+procede v28 con C28; el esquema se entregó en el incremento 1 (PR #388). Límites de esta
+aprobación: sin datos reales, sin despliegue, sin migración operativa, sin SPEC37 y sin
+convertir la aceptación con fixtures en aceptación funcional.
 
 ## 1. Objetivo y alcance
 
@@ -576,8 +610,12 @@ sintéticos.
 - Mecanismo compartido: §6 de este documento, consumido por
   [SPEC37](37-registro-coordinado-gastos-specification.md).
 - Roadmap y tablero: sin cambios; esta spec no crea entrega ni estado de tablero.
-- Próximo gate: revisión del usuario de D1–D10 y del mecanismo compartido. Después,
-  autorización separada para desarrollo, API o SQLite.
+- Gate superado el 2026-11-11: D1–D10 aprobadas y desarrollo incremental 1–2 autorizado
+  (§0). El incremento 1 entrega esquema, servicio y API del mecanismo compartido; el
+  incremento 2 entrega el reparto asistido y su UI.
+- Siguiente gate: aprobación de las decisiones D1–D10 de SPEC37 antes de su DEV. Sin esa
+  aprobación, SPEC37 no se inicia.
 
-Este documento es una propuesta documental. No aprueba desarrollo, no ejecuta pruebas, no
-modifica AC existentes y no autoriza merge ni despliegue.
+Este documento queda aprobado para el desarrollo incremental 1–2 en el alcance del §0. No
+autoriza SPEC37, datos reales, migraciones operativas ni despliegue, y no declara ninguna
+prueba ejecutada ni aceptación funcional.
