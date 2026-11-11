@@ -344,6 +344,14 @@ export type RepartoMotivoNoCompletar = {
   pendientes?: number[];
 };
 
+// Line-level pending summary returned inside a reparto. The full ficha is
+// merged separately from the pending list by `normalizeSeguimiento`.
+export type RepartoLineaPendienteDTO = {
+  id: number;
+  estado: TransferenciaPendienteEstado;
+  importe: string;
+};
+
 export type RepartoLineaDTO = {
   id: number;
   clase: "Presupuesto" | "Adicional";
@@ -363,7 +371,7 @@ export type RepartoLineaDTO = {
   incluida: boolean;
   motivoExclusion: string | null;
   revision: number;
-  pendiente: TransferenciaPendienteDTO | null;
+  pendiente: RepartoLineaPendienteDTO | null;
   avisos: string[];
   puedeGenerarse: boolean;
 };
@@ -383,6 +391,17 @@ export type RepartoDTO = {
   puedeGenerar: boolean;
   puedeCompletar: boolean;
   motivosNoCompletar: RepartoMotivoNoCompletar[];
+};
+
+// Raw JSON shapes. `RepartoDTO` is the normalized view (cycle object and full
+// ficha); these types reflect exactly what the API writes on the wire.
+export type RepartoWireLineaDTO = Omit<RepartoLineaDTO, "pendiente"> & {
+  pendiente: RepartoLineaPendienteDTO | null;
+};
+
+export type RepartoWireDTO = Omit<RepartoDTO, "ciclo" | "lineas"> & {
+  ciclo: string;
+  lineas: RepartoWireLineaDTO[];
 };
 
 export type RepartoPropuestaItemDTO = {

@@ -197,7 +197,44 @@ test(
       ).toBeVisible();
       expect(await page.getByText("Ejecutar", { exact: true }).count()).toBe(0);
 
-      // A4: after generating, new lines may be added; existing ones stay frozen.
+      // Confirm the generated pending with its real bank date and explicit act.
+      await page
+        .getByRole("button", { name: "Confirmar transferencia", exact: true })
+        .first()
+        .click();
+      const realDate = page.getByRole("textbox", {
+        name: "Fecha real del banco",
+        exact: true,
+      });
+      await expect(realDate).toBeVisible();
+      // Fixed date inside the synthetic cycle: never depend on today().
+      await realDate.fill(cycle.data.ciclo.inicio);
+      await page
+        .getByRole("button", { name: "Revisar confirmación", exact: true })
+        .click();
+      await expect(
+        page.getByRole("region", { name: "Vista previa de confirmación" }),
+      ).toBeVisible();
+      await page
+        .getByRole("checkbox", { name: "Transferencia realizada", exact: true })
+        .check();
+      await page
+        .getByRole("button", {
+          name: "Confirmar transferencia realizada",
+          exact: true,
+        })
+        .click();
+      await expect(
+        page.getByText("Movimiento confirmado", { exact: true }),
+      ).toBeVisible();
+      const complete = page.getByRole("button", {
+        name: "Completar reparto",
+        exact: true,
+      });
+      await expect(complete).toBeEnabled();
+
+      // A4/R1: after generating, new lines may be added; existing ones stay
+      // frozen and the old "puedeCompletar:true" must not survive the alta.
       await expect(
         page.getByText("Generada · no editable", { exact: true }).first(),
       ).toBeVisible();
@@ -221,38 +258,18 @@ test(
           exact: true,
         }),
       ).toBeVisible();
+      await expect(complete).toBeDisabled();
+      await expect(
+        page.getByText(/Faltan pendientes para las líneas/),
+      ).toBeVisible();
       await page
         .getByRole("button", { name: "Generar 1 pendiente", exact: true })
         .click();
+      await expect(complete).toBeDisabled();
       await expect(
-        page.getByRole("button", { name: "Cancelar pendiente", exact: true }),
-      ).toHaveCount(2);
-
-      // Confirm one pending with its real bank date and the explicit act.
-      await page
-        .getByRole("button", { name: "Confirmar transferencia", exact: true })
-        .first()
-        .click();
-      await expect(
-        page.getByRole("textbox", { name: "Fecha real del banco", exact: true }),
-      ).toBeVisible();
-      await page
-        .getByRole("button", { name: "Revisar confirmación", exact: true })
-        .click();
-      await expect(
-        page.getByRole("region", { name: "Vista previa de confirmación" }),
-      ).toBeVisible();
-      await page
-        .getByRole("checkbox", { name: "Transferencia realizada", exact: true })
-        .check();
-      await page
-        .getByRole("button", {
-          name: "Confirmar transferencia realizada",
+        page.getByText("Hay pendientes sin confirmar o cancelar: #2.", {
           exact: true,
-        })
-        .click();
-      await expect(
-        page.getByText("Movimiento confirmado", { exact: true }),
+        }),
       ).toBeVisible();
 
       // Cancel the remaining pending with a mandatory motive.
@@ -271,12 +288,8 @@ test(
       await expect(
         page.getByText("Cancelada", { exact: true }).first(),
       ).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Completar reparto", exact: true }),
-      ).toBeEnabled();
-      await page
-        .getByRole("button", { name: "Completar reparto", exact: true })
-        .click();
+      await expect(complete).toBeEnabled();
+      await complete.click();
       await expect(
         page.getByText(
           "Reparto completado. Conserva el seguimiento de sus líneas.",

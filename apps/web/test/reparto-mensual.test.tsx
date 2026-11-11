@@ -667,7 +667,10 @@ test("los normalizadores aceptan el contrato real del incremento 2", () => {
   expect(seguimiento?.puedeCompletar).toBe(false);
   expect(seguimiento?.motivosNoCompletar).toEqual([]);
   expect(seguimiento?.avisos.cicloCerrado).toBe(false);
-  expect(seguimiento?.lineas[0].pendiente?.origen?.id).toBe("S001");
+  expect(
+    (seguimiento?.lineas[0].pendiente as TransferenciaPendienteDTO | null)
+      ?.origen?.id,
+  ).toBe("S001");
 
   // No client fallback: a terminal-looking summary never enables completion
   // when the server says it is blocked.

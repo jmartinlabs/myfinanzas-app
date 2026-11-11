@@ -10,6 +10,7 @@ import {
   type RepartoPropuestaDTO,
   type RepartoPropuestaItemDTO,
   type RepartoSeguimientoDTO,
+  type RepartoWireDTO,
   type SaldoResumenDTO,
   type TransferenciaPendienteDTO,
 } from "./api";
@@ -171,6 +172,12 @@ function asPresupuesto(
 function responseLine(value: unknown): RepartoLineaDTO | null {
   const raw = asRecord(value);
   return asLinea(raw?.linea ?? raw?.item ?? value);
+}
+
+function isFullPendiente(
+  value: NonNullable<RepartoLineaDTO["pendiente"]>,
+): value is TransferenciaPendienteDTO {
+  return typeof (value as TransferenciaPendienteDTO).cicloOrigen === "string";
 }
 
 function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
@@ -1052,12 +1059,19 @@ export function RepartoSeguimientoPanel({
                 </p>
               )}
               {line.pendiente ? (
-                <TransferenciaPendienteFicha
-                  pendiente={line.pendiente}
-                  go={go}
-                  onChanged={onChanged}
-                  onReload={onReload}
-                />
+                isFullPendiente(line.pendiente) ? (
+                  <TransferenciaPendienteFicha
+                    pendiente={line.pendiente}
+                    go={go}
+                    onChanged={onChanged}
+                    onReload={onReload}
+                  />
+                ) : (
+                  <p className="help">
+                    Pendiente #{line.pendiente.id} · {line.pendiente.estado}.
+                    Relee el seguimiento para operar desde la ficha.
+                  </p>
+                )
               ) : line.incluida ? (
                 <p className="help">
                   Sin pendiente generado para esta línea. Añadir líneas nuevas no
@@ -1151,6 +1165,7 @@ export function RepartoMensual({
   });
   const [createKey, setCreateKey] = useState(() => crypto.randomUUID());
   const [generateKey, setGenerateKey] = useState(() => crypto.randomUUID());
+  const [addKey, setAddKey] = useState(() => crypto.randomUUID());
   const [generationErrors, setGenerationErrors] = useState<GeneracionError[]>(
     [],
   );
@@ -1171,6 +1186,7 @@ export function RepartoMensual({
     setAdding(false);
     setCreateKey(crypto.randomUUID());
     setGenerateKey(crypto.randomUUID());
+    setAddKey(crypto.randomUUID());
     setGenerationErrors([]);
   }, [ciclo.id]);
 
@@ -1202,6 +1218,17 @@ export function RepartoMensual({
     setSeguimiento(normalizeSeguimiento(data, items));
   }
 
+  async function refreshSeguimiento(id: number, estado: RepartoEstado) {
+    if (estado === "Borrador") return;
+    try {
+      await cargarSeguimiento(id);
+    } catch (e) {
+      // The line was already persisted; surface the stale-panel problem
+      // without pretending the creation failed.
+      setError((e as Error).message);
+    }
+  }
+
   async function cargar() {
     const current = ++request.current;
     setLoading(true);
@@ -1211,7 +1238,7 @@ export function RepartoMensual({
       const [propuestaResult, repartoResult, saldosResult] =
         await Promise.allSettled([
           api(`/ciclos/${ciclo.id}/reparto/propuesta`),
-          api(`/ciclos/${ciclo.id}/reparto`),
+          api<{ reparto: RepartoWireDTO }>(`/ciclos/${ciclo.id}/reparto`),
           api("/saldos?estado=Activa&page=1"),
         ]);
       if (current !== request.current) return;
@@ -1279,6 +1306,13 @@ export function RepartoMensual({
     setNotice("");
   }
 
+  function updateAdditional(patch: Partial<typeof additional>) {
+    setAdditional((value) => ({ ...value, ...patch }));
+    // A changed draft is a new intent: its retry must not replay the previous
+    // key/payload pair.
+    setAddKey(crypto.randomUUID());
+  }
+
   function propuestaLineas(origen: string): ProposalLine[] {
     return (propuesta?.items ?? [])
       .filter((item) => item.elegible && item.propuesta)
@@ -1329,7 +1363,9 @@ export function RepartoMensual({
   }
 
   async function reloadReparto(id: number) {
-    const data = await api(`/ciclos/${ciclo.id}/reparto`);
+    const data = await api<{ reparto: RepartoWireDTO }>(
+      `/ciclos/${ciclo.id}/reparto`,
+    );
     const r = normalizeReparto(data, propuesta?.ciclo);
     if (r) setReparto(r);
     return r;
@@ -1392,7 +1428,11 @@ export function RepartoMensual({
     resetFieldErrors();
     try {
       const added = await createProposalLines(reparto.id, origenComun);
-      await reloadReparto(reparto.id);
+      const refreshed = await reloadReparto(reparto.id);
+      await refreshSeguimiento(
+        reparto.id,
+        refreshed?.estado ?? reparto.estado,
+      );
       setNotice(
         added === 0
           ? "No hay líneas propuestas nuevas que añadir: ya existían o el origen común coincide con su destino."
@@ -1560,14 +1600,21 @@ export function RepartoMensual({
           concepto: additional.concepto || null,
           nota: additional.nota || null,
         },
-        { "idempotency-key": crypto.randomUUID() },
+        // Stable until success: a lost response can be retried without
+        // duplicating the line. Renewed after success or when the form closes.
+        { "idempotency-key": addKey },
       );
       const line = responseLine(data);
       const updatedReparto = normalizeReparto(data, propuesta?.ciclo);
       if (updatedReparto) setReparto(updatedReparto);
       else if (line)
         setReparto({ ...reparto, lineas: [...reparto.lineas, line] });
+      await refreshSeguimiento(
+        reparto.id,
+        updatedReparto?.estado ?? reparto.estado,
+      );
       setAdding(false);
+      setAddKey(crypto.randomUUID());
       setAdditional({
         origen: "",
         destino: "",
@@ -1923,7 +1970,9 @@ export function RepartoMensual({
                       className="secondary"
                       disabled={busy || !puedeAnadirLineas}
                       onClick={() => {
-                        setAdding((value) => !value);
+                        setAdding(!adding);
+                        // Opening or closing the form starts a new attempt.
+                        setAddKey(crypto.randomUUID());
                         setEditing(null);
                         setExcluding(null);
                         resetFieldErrors();
@@ -2134,10 +2183,7 @@ export function RepartoMensual({
                           <select
                             value={additional.origen}
                             onChange={(e) =>
-                              setAdditional((value) => ({
-                                ...value,
-                                origen: e.target.value,
-                              }))
+                              updateAdditional({ origen: e.target.value })
                             }
                           >
                             <option value="">Seleccionar origen</option>
@@ -2157,10 +2203,7 @@ export function RepartoMensual({
                           <select
                             value={additional.destino}
                             onChange={(e) =>
-                              setAdditional((value) => ({
-                                ...value,
-                                destino: e.target.value,
-                              }))
+                              updateAdditional({ destino: e.target.value })
                             }
                           >
                             <option value="">Seleccionar destino</option>
@@ -2183,10 +2226,7 @@ export function RepartoMensual({
                             inputMode="decimal"
                             value={additional.importe}
                             onChange={(e) =>
-                              setAdditional((value) => ({
-                                ...value,
-                                importe: e.target.value,
-                              }))
+                              updateAdditional({ importe: e.target.value })
                             }
                           />
                         </Field>
@@ -2200,10 +2240,7 @@ export function RepartoMensual({
                             type="date"
                             value={additional.fechaPrevista}
                             onChange={(e) =>
-                              setAdditional((value) => ({
-                                ...value,
-                                fechaPrevista: e.target.value,
-                              }))
+                              updateAdditional({ fechaPrevista: e.target.value })
                             }
                           />
                         </Field>
@@ -2216,10 +2253,7 @@ export function RepartoMensual({
                             maxLength={500}
                             value={additional.concepto}
                             onChange={(e) =>
-                              setAdditional((value) => ({
-                                ...value,
-                                concepto: e.target.value,
-                              }))
+                              updateAdditional({ concepto: e.target.value })
                             }
                           />
                         </Field>
@@ -2233,10 +2267,7 @@ export function RepartoMensual({
                             maxLength={2000}
                             value={additional.nota}
                             onChange={(e) =>
-                              setAdditional((value) => ({
-                                ...value,
-                                nota: e.target.value,
-                              }))
+                              updateAdditional({ nota: e.target.value })
                             }
                           />
                         </Field>

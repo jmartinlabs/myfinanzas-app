@@ -1218,6 +1218,113 @@ test("R-13 importe fuera del rango seguro de céntimos se rechaza sin redondear"
   expect(maxSafe.data.item.importe).toBe("90071992547409.91");
 });
 
+test("R-15 una línea nueva tras generar bloquea el completado hasta generar su pendiente", async () => {
+  const { db, c1, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1)).data.reparto.id;
+  const first = (await presetLine(api.request, reparto, preA, "20.00")).data.item;
+  const generated = await generate(api.request, reparto, 1);
+  expect(generated.status).toBe(200);
+  const pending = generated.data.creados[0];
+  await confirmPending(api.request, pending);
+
+  const terminal = await api.request(`/api/repartos/${reparto}/seguimiento`);
+  expect(terminal.data.puedeCompletar).toBe(true);
+  expect(terminal.data.motivosNoCompletar).toEqual([]);
+
+  const newLine = (await presetLine(api.request, reparto, preA, "15.00", {
+    concepto: "Parcial posterior al cierre de pendientes",
+  })).data.item;
+  const open = await api.request(`/api/repartos/${reparto}/seguimiento`);
+  expect(open.data.puedeCompletar).toBe(false);
+  expect(open.data.motivosNoCompletar).toContainEqual({
+    code: "LINEA_SIN_PENDIENTE",
+    lineas: [newLine.id],
+  });
+
+  // The UI must not keep the previous `puedeCompletar:true` after the alta.
+  const revive = await generate(api.request, reparto, 2, [newLine.id]);
+  expect(revive.status).toBe(200);
+  expect(revive.data.creados).toHaveLength(1);
+  const withPending = await api.request(`/api/repartos/${reparto}/seguimiento`);
+  expect(withPending.data.puedeCompletar).toBe(false);
+  expect(withPending.data.motivosNoCompletar[0].code).toBe(
+    "PENDIENTE_NO_TERMINAL",
+  );
+  expect(first.id).toBeNumber();
+});
+
+test("R-16 error no-Problem no filtra SQL ni constraints al cliente", async () => {
+  const { db, c1, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1)).data.reparto.id;
+  await presetLine(api.request, reparto, preA, "10.00");
+  db.run(
+    `CREATE TRIGGER test_reparto_fail BEFORE INSERT ON transferencia_pendiente
+     BEGIN SELECT RAISE(ABORT,'sql-detail-secret'); END`,
+  );
+  const logged: unknown[][] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => {
+    logged.push(args);
+  };
+  try {
+    const failed = await generate(api.request, reparto, 1);
+    expect(failed.status).toBe(409);
+    expect(failed.data.code).toBe("GENERACION_INCOMPLETA");
+    expect(failed.data.errores[0]).toMatchObject({
+      code: "INTERNAL",
+      message: "No se pudo generar la Transferencia pendiente.",
+    });
+    expect(JSON.stringify(failed.data)).not.toContain("sql-detail-secret");
+    // The internal log keeps the real error detail.
+    const detail = logged[0]?.[2];
+    expect(detail).toBeInstanceOf(Error);
+    expect((detail as Error).message).toContain("sql-detail-secret");
+  } finally {
+    console.error = original;
+    db.run("DROP TRIGGER test_reparto_fail");
+  }
+});
+
+test("R-17 una clave de idempotencia estable evita duplicar la línea al reintentar", async () => {
+  const { db, c1 } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1)).data.reparto.id;
+  const body = {
+    clase: "Adicional",
+    origen: "S003",
+    destino: "S005",
+    importe: "12.34",
+    fechaPrevista: "2026-01-08",
+    concepto: "Adicional idempotente",
+  };
+  const key = randomUUID();
+  const first = await addLine(api.request, reparto, body, key);
+  expect(first.status).toBe(201);
+  const retry = await addLine(api.request, reparto, body, key);
+  expect(retry.status).toBe(201);
+  expect(retry.data.item.id).toBe(first.data.item.id);
+  expect(
+    (
+      db.query("SELECT count(*) n FROM reparto_lineas WHERE reparto=?").get(
+        reparto,
+      ) as { n: number }
+    ).n,
+  ).toBe(1);
+  const conflict = await addLine(
+    api.request,
+    reparto,
+    { ...body, importe: "99.00" },
+    key,
+  );
+  expect(conflict.status).toBe(409);
+  expect(conflict.data.code).toBe("IDEMPOTENCY_CONFLICT");
+});
+
 test("R-14 propuesta sin destino no es elegible ni propone automáticamente", async () => {
   const { db, c1, preA } = setup();
   const api = http(db);
