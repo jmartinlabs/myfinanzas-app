@@ -1907,3 +1907,467 @@ html[data-theme="graphite-lime"] .movement-form-page .form-footer .primary {
     white-space: normal;
   }
 }
+
+/* G5a · Saldos: catálogo, ficha y formulario ---------------------------- */
+
+html[data-theme="graphite-lime"] .saldos-page .context-note {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .context-note > span {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .filters {
+  background:
+    linear-gradient(180deg, rgb(215 255 94 / 0.025), transparent 60%),
+    var(--surface);
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .filters label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .filters input,
+html[data-theme="graphite-lime"] .saldos-page .filters select {
+  min-height: 44px;
+  margin-top: 7px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-toolbar {
+  background: #0e110e;
+  border-block-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-toolbar p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-toolbar p::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgb(215 255 94 / 0.55);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-toolbar .separator {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-toolbar .checkbox {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .ui-table th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .ui-table tbody tr:hover td:first-child,
+html[data-theme="graphite-lime"] .saldos-page .ui-table tbody tr:focus-within td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .ui-table td:first-child a {
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .position-label {
+  display: inline-block;
+  color: var(--text);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .ui-table-amount .table-id {
+  max-width: 34ch;
+  margin-left: auto;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .tag {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .tag.inactive {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-footer {
+  background: #0e110e;
+  border-top-color: var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-footer .text-button {
+  padding: 0 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-footer .text-button:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .saldos-page .list-footer .text-button:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+/* Ficha ---------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .saldo-detail-page > .back,
+html[data-theme="graphite-lime"] .saldo-form-page > .back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: var(--touch-min);
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page > .back:hover,
+html[data-theme="graphite-lime"] .saldo-form-page > .back:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .position-panel {
+  border-color: var(--graphite-card-border);
+  background-image: linear-gradient(160deg, #1a1f16 0%, #111411 100%);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .position-panel .eyebrow {
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 1.6px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .position-panel h2 {
+  color: var(--text);
+  font-size: 18px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .position-placeholder {
+  margin: 18px 0 14px;
+  padding: 14px 0;
+  border-block: 1px solid var(--graphite-card-border);
+  color: var(--muted);
+  font-size: clamp(38px, 4vw, 48px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .position-placeholder.calculated {
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .position-panel .muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section {
+  border-color: var(--graphite-card-border);
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section-head {
+  position: relative;
+  margin-bottom: 4px;
+  padding-bottom: 12px;
+  padding-left: 14px;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section-head::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 0;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section-title {
+  font-size: 14px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section dl {
+  margin: 0;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 10px 0;
+  border-bottom: 1px solid #1e221d;
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section dl > div:last-child {
+  border-bottom: 0;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section dt {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  text-align: right;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section .help {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .lifecycle {
+  border-color: var(--graphite-card-border);
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .lifecycle h2 {
+  font-size: 16px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .lifecycle p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .confirmation {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .confirmation p {
+  color: var(--warning);
+}
+
+html[data-theme="graphite-lime"] .saldo-detail-page .page-foot {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Formulario ----------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .saldo-form-page .saldo-form > .ui-form-section {
+  border-color: var(--graphite-card-border);
+  background-color: var(--surface);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-form-section-head {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-form-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-form-section-title {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-field-required {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-field-help,
+html[data-theme="graphite-lime"] .saldo-form-page .help {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page input,
+html[data-theme="graphite-lime"] .saldo-form-page select {
+  min-height: 44px;
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .ui-field-error,
+html[data-theme="graphite-lime"] .saldo-form-page .field-error {
+  color: var(--negative);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .switch-row {
+  border-bottom-color: #1e221d;
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .switch-row > span:not(.unknown) {
+  color: var(--text);
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .form-footer {
+  margin-top: var(--space-2);
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .form-footer p {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .saldo-form-page .form-footer .primary {
+  min-width: 170px;
+}
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .saldos-page .desktop-list {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    list-style: none;
+    margin: 0;
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list .ui-data-list-item {
+    border: 1px solid var(--graphite-card-border);
+    border-radius: 12px;
+    background-color: var(--surface);
+    background-image: var(--graphite-card-bg);
+    box-shadow: var(--graphite-card-shadow);
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list .ui-data-list-label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list .ui-data-list-value a {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list .ui-data-list-value a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list .position-label {
+    font-size: 18px;
+  }
+
+  html[data-theme="graphite-lime"] .saldos-page .mobile-list .ui-data-list-value {
+    text-align: right;
+  }
+
+  html[data-theme="graphite-lime"] .saldo-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .saldo-form-page .form-footer {
+    flex-wrap: wrap;
+    row-gap: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .saldo-form-page .form-footer .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  html[data-theme="graphite-lime"] .saldo-form-page .form-footer .primary {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .saldo-detail-page .position-placeholder {
+    font-size: clamp(34px, 10vw, 44px);
+  }
+
+  html[data-theme="graphite-lime"] .saldo-detail-page .ui-form-section dt {
+    max-width: 52%;
+    white-space: normal;
+  }
+
+  html[data-theme="graphite-lime"] .saldo-form-page .saldo-form > .ui-form-section {
+    padding: var(--space-4);
+  }
+}

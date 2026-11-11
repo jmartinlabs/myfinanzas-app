@@ -104,7 +104,7 @@ export function SaldoForm({
     }
   }
   return (
-    <>
+    <div className="saldo-form-page">
       <a
         className="back"
         href={saldo ? `/saldos/${saldo.id}` : "/saldos"}
@@ -300,6 +300,6 @@ export function SaldoForm({
           </div>
         </div>
       </form>
-    </>
+    </div>
   );
 }
