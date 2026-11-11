@@ -61,6 +61,7 @@ async function authenticate(page: Page) {
 }
 
 test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ page }) => {
+  test.setTimeout(180000);
   mkdirSync("artifacts/g5b", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -101,6 +102,18 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   await expect(
     page.locator(".inversiones-page .classification-tabs a[aria-current='page']"),
   ).toHaveCSS("color", "rgb(215, 255, 94)");
+  await expect(page.locator(".inversiones-page .classification-tabs")).toHaveCSS(
+    "border-radius",
+    "10px",
+  );
+  expect(
+    (await page.locator(".inversiones-page .classification-tabs a").first().boundingBox())!
+      .height,
+  ).toBeGreaterThanOrEqual(44);
+  await expect(page.locator(".inversiones-page .ui-table th").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
   await expect(page.locator(".inversiones-page .ui-table tbody tr")).toHaveCount(2);
   await expect(page.locator(".inversiones-page")).toContainText("Fondo índice demo");
   await expect(page.locator(".inversiones-page")).toContainText("Acción demo");
@@ -140,6 +153,20 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   await expect(page.locator(".compras-page")).toBeVisible();
   await expect(page.locator(".compras-page .ui-table tbody tr")).toHaveCount(2);
   await expect(page.locator(".compras-page")).toContainText("I1001 · Fondo índice demo");
+  await expect(page.locator(".compras-page .ui-table th").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await expect(page.locator(".compras-page .ui-table td").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  const actionBox = (await page
+    .getByRole("button", { name: "Ver", exact: true })
+    .first()
+    .boundingBox())!;
+  expect(actionBox.width).toBeGreaterThanOrEqual(44);
+  expect(actionBox.height).toBeGreaterThanOrEqual(44);
   await capture("compras-listado-graphite", 1440, 1000);
   await capture("compras-listado-graphite", 820, 1000);
   await capture("compras-listado-graphite", 390, 844);
@@ -188,10 +215,22 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   );
   await expect(page.locator(".deudas-page .ui-table tbody tr")).not.toHaveCount(0);
   await expect(page.locator(".deudas-page")).toContainText("Préstamo demo");
+  await expect(page.locator(".deudas-page .ui-table th").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  const debtOpenBox = (await page
+    .getByRole("button", { name: "Ver ficha", exact: true })
+    .first()
+    .boundingBox())!;
+  expect(debtOpenBox.height).toBeGreaterThanOrEqual(44);
   await capture("deudas-listado-graphite", 1440, 1000);
   await capture("deudas-listado-graphite", 820, 1000);
   await expect(page.locator(".deudas-page .desktop-list")).toBeHidden();
   await expect(page.locator(".deudas-page .ui-data-list")).toBeVisible();
+  await expect(
+    page.locator(".deudas-page .debt-cards .debt-open").first(),
+  ).toBeHidden();
   await capture("deudas-listado-graphite", 390, 844);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -200,6 +239,13 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   await expect(page.locator(".debt-detail")).toBeVisible();
   await expect(page.locator(".debt-detail .e44-section")).toHaveCount(5);
   await expect(page.locator(".debt-detail")).toContainText("Deuda viva");
+  await expect(page.locator(".debt-detail .e44-facts dt").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await expect(
+    page.locator(".debt-detail .e44-history-desktop th").last(),
+  ).toHaveCSS("font-size", "12px");
   await capture("deuda-ficha-graphite", 1440, 1000);
   await capture("deuda-ficha-graphite", 820, 1000);
   await capture("deuda-ficha-graphite", 390, 844);
@@ -217,6 +263,14 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   await page.getByLabel("Apariencia").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expect(page.locator(".inversiones-page .ui-table tbody tr")).toHaveCount(2);
+  await expect(page.locator(".inversiones-page .classification-tabs")).toHaveCSS(
+    "border-radius",
+    "0px",
+  );
+  await expect(page.locator(".inversiones-page .inversiones-cash")).toHaveCSS(
+    "box-shadow",
+    "none",
+  );
   await capture("inversiones-listado-casa", 1440, 1000);
   await page.getByRole("link", { name: "Fondo índice demo", exact: true }).first().click();
   await expect(page.locator(".inversion-detail-page")).toBeVisible();
@@ -238,6 +292,16 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   await page.getByRole("button", { name: "Editar deuda" }).click();
   await expect(page.locator(".deuda-form-page")).toBeVisible();
   await capture("deuda-formulario-casa", 1440, 1000);
+
+  /* Graphite no se filtra a Claro, Oscuro ni Mixto. */
+  for (const theme of ["light-s", "dark-s", "hybrid-s"]) {
+    await page.goto("/inversiones");
+    await page.getByLabel("Apariencia").selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(
+      page.locator(".inversiones-page .classification-tabs"),
+    ).not.toHaveCSS("border-radius", "10px");
+  }
 
   expect(errors).toEqual([]);
 });
