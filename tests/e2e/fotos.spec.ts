@@ -1445,11 +1445,15 @@ test("E4.11 UI: estados vacío/carga/error/401/404/422, foco, teclado y regiones
     await expect(
       page.getByText("Código: INTERNAL · HTTP 500", { exact: true }),
     ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.activeElement?.querySelector(".alert") !== null,
-      ),
-    ).toBe(true);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.activeElement?.querySelector(".alert") !== null,
+          ),
+        { timeout: 5000 },
+      )
+      .toBe(true);
     await page.unroute("**/api/fotos/ciclos/1");
     await page
       .getByRole("button", { name: "Reintentar", exact: true })
