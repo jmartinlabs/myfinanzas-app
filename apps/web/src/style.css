@@ -6538,3 +6538,24 @@ a.back {
 textarea {
   border-color: var(--control-border);
 }
+
+/* SPEC36 I2 — reparto y pendientes. Reutiliza tokens vigentes; solo evita
+ * desbordamiento horizontal y permite que las acciones se envuelvan a 390 px. */
+.reparto-panel,
+.reparto-seguimiento,
+.reparto-seguimiento > .panel {
+  min-width: 0;
+}
+.reparto-panel .ui-form-section-head,
+.reparto-panel .actions,
+.movements-list .ui-form-section-head,
+.movements-list .actions {
+  flex-wrap: wrap;
+}
+.reparto-seguimiento {
+  display: grid;
+  gap: var(--space);
+}
+.reparto-seguimiento .ui-form-section {
+  margin: 0;
+}
