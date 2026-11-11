@@ -72,7 +72,7 @@ def main():
         mode = sys.argv[1] if len(sys.argv) == 2 else 'full' if len(sys.argv) == 1 else ''
         prepare(ROOT, mode=mode)
         return 0
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f'CI Linux preparation failed; browser checks must not be skipped: {exc}', file=sys.stderr)
         return 1
 
