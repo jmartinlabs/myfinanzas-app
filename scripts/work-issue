@@ -1,0 +1,582 @@
+#!/usr/bin/env python3
+"""work-issue: read Ready work from the GitHub Project, route it and reserve it safely.
+
+Read-only by default. The only writes are the agent claim comment, the assignee and
+the phase transition the protocol grants the agent. The tool never approves, merges,
+closes, deploys or moves an item into a human-owned status.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
+
+AGENTS = ("opencode", "hermes", "codex")
+ROLES = ("Coordinador funcional", "Ejecutor", "Revisor")
+
+STATUSES = (
+    "Backlog", "Ready Analysis", "Analysis In Progress", "Analysis In Review",
+    "Ready Specification", "Specification In Progress", "Specification In Review",
+    "Ready Development", "Development In Progress", "Development In Review",
+    "Blocked", "Done",
+)
+
+# Ready status -> (phase, agent-owned In Progress status)
+READY = {
+    "Ready Analysis": ("analysis", "Analysis In Progress"),
+    "Ready Specification": ("specification", "Specification In Progress"),
+    "Ready Development": ("development", "Development In Progress"),
+}
+
+# Transitions the agent may perform on its own. Human-owned statuses (Backlog, every
+# Ready*, Done) and review rejections are never written by this tool.
+TRANSITIONS = {
+    "Ready Analysis": {"Analysis In Progress"},
+    "Ready Specification": {"Specification In Progress"},
+    "Ready Development": {"Development In Progress"},
+    "Analysis In Progress": {"Analysis In Review", "Blocked"},
+    "Specification In Progress": {"Specification In Review", "Blocked"},
+    "Development In Progress": {"Development In Review", "Blocked"},
+}
+
+HUMAN_ONLY = frozenset({"Backlog", "Ready Analysis", "Ready Specification",
+                        "Ready Development", "Done"})
+
+DEPENDENCY_PATTERNS = (
+    re.compile(r"(?i)\bdepende de\s+#(\d+)"),
+    re.compile(r"(?i)\b(?:blocked by|bloquead[ao] por)\s+#(\d+)"),
+    re.compile(r"(?i)\brequiere\s+#(\d+)"),
+)
+DEPENDENCY_PREFIX = re.compile(r"(?i)^\s*(?:\*\*)?(?:depende de|blocked by|bloquead[ao] por|requiere)(?:\*\*)?\s*:\s*(.*)$", re.M)
+
+CLAIM_MARKER = "<!-- work-issue:claim"
+AUTHOR_HEADER = ("Autor", "Rol", "Fase", "Tipo")
+PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
+PHASE_ORDER = {"development": 0, "specification": 1, "analysis": 2}
+
+EXIT_OK = 0
+EXIT_REFUSED = 2
+EXIT_FAILED = 3
+
+
+class WorkIssueError(Exception):
+    """Fatal condition: the requested action cannot be completed safely."""
+
+
+@dataclass
+class Item:
+    number: int
+    title: str
+    status: str
+    labels: list = field(default_factory=list)
+    assignees: list = field(default_factory=list)
+    body: str = ""
+    item_id: str = ""
+    url: str = ""
+    priority: str = ""
+
+    @property
+    def phase(self):
+        return READY[self.status][0] if self.status in READY else None
+
+
+@dataclass
+class Decision:
+    item: Item
+    kind: str
+    route: str = ""
+    reason: str = ""
+    dependencies: list = field(default_factory=list)
+    pending: list = field(default_factory=list)
+    unverified: list = field(default_factory=list)
+
+    @property
+    def eligible(self):
+        return self.kind == "eligible"
+
+
+def login(value):
+    """Normalise an assignee entry: gh may report a login string or an object."""
+    if isinstance(value, dict):
+        return str(value.get("login") or value.get("name") or "")
+    return str(value)
+
+
+def normalise(raw):
+    """Convert one `gh project item-list` entry into an Item."""
+    content = raw.get("content") or {}
+    labels = [str(label) for label in (raw.get("labels") or [])]
+    assignees = [entry for entry in (login(value) for value in (raw.get("assignees") or [])) if entry]
+    return Item(
+        number=int(content.get("number") or 0),
+        title=str(content.get("title") or raw.get("title") or ""),
+        status=str(raw.get("status") or ""),
+        labels=labels,
+        assignees=assignees,
+        body=str(content.get("body") or ""),
+        item_id=str(raw.get("id") or ""),
+        url=str(content.get("url") or ""),
+        priority=str(raw.get("priority") or ""),
+    )
+
+
+def dependencies(body):
+    """Issue numbers named as hard dependencies; empty when none is declared."""
+    found = set()
+    for pattern in DEPENDENCY_PATTERNS:
+        found.update(int(number) for number in pattern.findall(body or ""))
+    for match in DEPENDENCY_PREFIX.finditer(body or ""):
+        found.update(int(number) for number in re.findall(r"#(\d+)", match.group(1)))
+    return sorted(found)
+
+
+def agent_routing(labels, agents=AGENTS):
+    """Return (known, unknown): the single routing label and unknown `agent:<name>` ones.
+
+    Only catalogue labels route work. A namespaced label is the explicit way to declare
+    an agent this catalogue does not know, so it fails closed instead of being ignored.
+    """
+    known, unknown = [], []
+    for label in labels:
+        name = label.strip().lower()
+        if name.startswith("agent:"):
+            unknown.append(name.split(":", 1)[1] or "<empty>")
+        elif name in agents:
+            known.append(name)
+    return sorted(set(known)), sorted(set(unknown))
+
+
+def classify(item, agent=None, by_number=None, agents=AGENTS):
+    """Decide whether the agent may take this item, and why not when it may not."""
+    by_number = by_number or {}
+    decision = Decision(item=item, kind="eligible")
+    if item.status not in READY:
+        decision.kind = "not-ready"
+        decision.reason = "el Status no es un Ready de fase"
+        return decision
+    known, unknown = agent_routing(item.labels, agents)
+    decision.dependencies = dependencies(item.body)
+    for number in decision.dependencies:
+        dependency = by_number.get(number)
+        if dependency is None:
+            decision.unverified.append(number)
+        elif dependency.status != "Done":
+            decision.pending.append(number)
+    if unknown:
+        decision.kind = "unknown-agent"
+        decision.reason = "etiqueta de agente desconocida: " + ", ".join(unknown)
+        return decision
+    if len(known) > 1:
+        decision.kind = "label-conflict"
+        decision.reason = "dos etiquetas de agente: " + ", ".join(known)
+        return decision
+    decision.route = known[0] if known else ""
+    if agent and decision.route and decision.route != agent:
+        decision.kind = "other-agent"
+        decision.reason = "dirigida a " + decision.route
+        return decision
+    if agent and not decision.route and agents and agent not in agents:
+        decision.kind = "unknown-agent"
+        decision.reason = "agente no reconocido: " + agent
+        return decision
+    if item.assignees:
+        decision.kind = "taken"
+        decision.reason = "ya tiene assignee: " + ", ".join(item.assignees)
+        return decision
+    if decision.pending:
+        decision.kind = "blocked-dependency"
+        decision.reason = "dependencia abierta: " + ", ".join("#%d" % n for n in decision.pending)
+        return decision
+    if decision.unverified:
+        decision.kind = "unverified-dependency"
+        decision.reason = ("dependencia no verificable en el Project: "
+                           + ", ".join("#%d" % n for n in decision.unverified))
+        return decision
+    return decision
+
+
+def sort_key(decision):
+    item = decision.item
+    return (
+        PRIORITY_ORDER.get(item.priority, 9),
+        PHASE_ORDER.get(item.phase or "", 9),
+        0 if decision.eligible else 1,
+        item.number,
+    )
+
+
+def plan(items, agent=None, agents=AGENTS):
+    """Every Ready item with its routing decision, ordered by priority and phase."""
+    by_number = {item.number: item for item in items if item.number}
+    decisions = [classify(item, agent, by_number, agents)
+                 for item in items if item.status in READY]
+    return sorted(decisions, key=sort_key)
+
+
+def next_action(decision):
+    if decision.eligible:
+        return "tomar y mover a " + READY[decision.item.status][1]
+    if decision.kind == "taken":
+        return "esperar: reservada por otro ejecutor"
+    if decision.kind in ("blocked-dependency", "unverified-dependency"):
+        return "no despachar hasta resolver la dependencia"
+    if decision.kind in ("label-conflict", "unknown-agent"):
+        return "no reservar: resolver la etiqueta de agente"
+    if decision.kind == "other-agent":
+        return "no es de este agente"
+    return "revisar el Status"
+
+
+def render(decisions, agent=None, out=print):
+    """Inventory plus a per-agent distribution proposal. Never writes anything."""
+    if not decisions:
+        out("Sin Issues en Ready Analysis, Ready Specification o Ready Development.")
+        return
+    out("INVENTARIO — Ready Analysis / Ready Specification / Ready Development")
+    out("%-5s %-26s %-10s %-18s %s" % ("#", "Status", "Agente", "Clase", "Siguiente acción"))
+    for decision in decisions:
+        item = decision.item
+        out("%-5s %-26s %-10s %-18s %s" % (
+            "#%d" % item.number, item.status, decision.route or "libre",
+            decision.kind, next_action(decision)))
+        if decision.reason:
+            out("      motivo: " + decision.reason)
+    out("")
+    buckets = {}
+    for decision in decisions:
+        if not decision.eligible:
+            continue
+        buckets.setdefault(decision.route or "cualquier agente", []).append(decision.item.number)
+    if agent:
+        out("PLAN — agente %s: %s" % (
+            agent,
+            ", ".join("#%d" % n for n in sorted(
+                number for numbers in buckets.values() for number in numbers)) or "nada elegible"))
+    elif buckets:
+        out("PLAN — reparto propuesto (una reserva por Issue, no todo a la vez):")
+        for route in sorted(buckets):
+            out("  %-18s %s" % (route, ", ".join("#%d" % n for n in sorted(buckets[route]))))
+    else:
+        out("PLAN — ninguna Issue elegible para reservar ahora.")
+
+
+def validate_transition(current, target, previous_status=None, restore=False):
+    """Return None when the agent may perform the move, otherwise the refusal reason."""
+    if target not in STATUSES:
+        return "Status desconocido: " + target
+    if current == target:
+        return "el Status ya es " + target
+    if current == "Blocked":
+        if not restore:
+            return "solo se restaura el Status anterior con --restore y Previous Status verificado"
+        if not previous_status:
+            return "falta --previous-status para restaurar desde Blocked"
+        if previous_status not in STATUSES or previous_status in HUMAN_ONLY or previous_status == "Blocked":
+            return "Previous Status no restaurable por el agente: " + str(previous_status)
+        if target != previous_status:
+            return "la restauración debe devolver exactamente %s" % previous_status
+        return None
+    if target in HUMAN_ONLY:
+        return "transición reservada al usuario: " + target
+    allowed = TRANSITIONS.get(current, set())
+    if target not in allowed:
+        return "transición no permitida al agente: %s -> %s" % (current, target)
+    if target == "Blocked" and not previous_status:
+        return "Blocked requiere --previous-status <valor exacto>"
+    return None
+
+
+def claim_body(agent, role, phase, item, note=None):
+    """Operative comment header required by the protocol, plus the claim marker."""
+    lines = [
+        "Autor: %s" % agent,
+        "Rol: %s" % role,
+        "Fase: %s" % (phase or "?").capitalize(),
+        "Tipo: Inicio",
+        "",
+        "## Toma de la Issue",
+        "",
+        "- **Issue:** #%d — %s" % (item.number, item.title),
+        "- **Status previo:** %s" % item.status,
+        "- **Ejecutor:** %s" % agent,
+        "",
+    ]
+    if note:
+        lines += [note.rstrip(), ""]
+    lines += [
+        "Reserva best-effort: comentario de toma + assignee, con relectura posterior. "
+        "La etiqueta de agente es enrutamiento, no autorización.",
+        "",
+        '%s agent=%s issue=%d -->' % (CLAIM_MARKER, agent, item.number),
+    ]
+    return "\n".join(lines)
+
+
+def phase_of(status):
+    """Phase a status belongs to, so a comment header never prints an unknown phase."""
+    lowered = (status or "").lower()
+    for phase in PHASE_ORDER:
+        if phase in lowered:
+            return phase
+    return None
+
+
+def report_body(agent, role, phase, item, target, note=None, previous_status=None):
+    lines = [
+        "Autor: %s" % agent,
+        "Rol: %s" % role,
+        "Fase: %s" % (phase or "?").capitalize(),
+        "Tipo: %s" % ("Bloqueo" if target == "Blocked" else "Informe"),
+        "",
+        "## Cambio de estado",
+        "",
+        "- Issue: #%d" % item.number,
+        "- De: %s" % item.status,
+        "- A: %s" % target,
+    ]
+    if previous_status:
+        lines.append("- Previous Status: %s" % previous_status)
+    lines.append("")
+    if note:
+        lines += [note.rstrip(), ""]
+    return "\n".join(lines)
+
+
+class Gh:
+    """Thin GitHub CLI adapter. Every write is verified by a later read."""
+
+    def __init__(self, owner, number, repo, runner=None):
+        self.owner = owner
+        self.number = number
+        self.repo = repo
+        self.runner = runner or self._run
+
+    def _run(self, argv):
+        proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+        return proc.returncode, proc.stdout, proc.stderr
+
+    def _call(self, argv, what):
+        code, out, err = self.runner(argv)
+        if code:
+            raise WorkIssueError("%s falló (%d): %s" % (what, code, (err or out).strip()))
+        return out
+
+    def preflight(self):
+        code, out, err = self.runner(["gh", "auth", "status"])
+        text = (out or "") + (err or "")
+        if code:
+            raise WorkIssueError("gh no está autenticado: " + text.strip())
+        if "project" not in text:
+            raise WorkIssueError("el token de gh no tiene el scope 'project'")
+
+    def items(self):
+        out = self._call(["gh", "project", "item-list", str(self.number), "--owner", self.owner,
+                          "--format", "json", "--limit", "1000"], "lectura del Project")
+        try:
+            raw = json.loads(out or "{}")
+        except ValueError as error:
+            raise WorkIssueError("respuesta ilegible del Project: %s" % error)
+        entries = raw.get("items")
+        if not isinstance(entries, list):
+            raise WorkIssueError("el Project no devolvió una lista de items")
+        return [normalise(entry) for entry in entries]
+
+    def item(self, number, items=None):
+        for candidate in items if items is not None else self.items():
+            if candidate.number == number:
+                item = candidate
+                break
+        else:
+            raise WorkIssueError("la Issue #%d no está en el Project" % number)
+        if not item.body:
+            payload = self._call(["gh", "api", "repos/%s/issues/%d" % (self.repo, number),
+                                  "--jq", ".body"], "lectura de la Issue #%d" % number)
+            item.body = payload or ""
+        return item
+
+    def comments(self, number):
+        out = self._call(["gh", "api", "--paginate",
+                          "repos/%s/issues/%d/comments" % (self.repo, number),
+                          "--jq", ".[] | @json"], "lectura de comentarios")
+        return [json.loads(line) for line in out.splitlines() if line.strip()]
+
+    def comment(self, number, body):
+        handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8")
+        try:
+            handle.write(body)
+            handle.close()
+            self._call(["gh", "issue", "comment", str(number), "--repo", self.repo,
+                        "--body-file", handle.name], "publicación del comentario")
+        finally:
+            Path(handle.name).unlink(missing_ok=True)
+
+    def assign(self, number):
+        self._call(["gh", "issue", "edit", str(number), "--repo", self.repo,
+                    "--add-assignee", "@me"], "asignación de la Issue")
+
+    def set_status(self, item, status):
+        self._call(["gh", "project", "item-edit", str(self.number), "--owner", self.owner,
+                    "--url", item.url, "--field", "Status", "--value", status],
+                   "cambio de Status")
+
+
+class Service:
+    """Orchestration shared by the CLI and the tests; the GitHub adapter is injected."""
+
+    def __init__(self, github, agent=None, role=ROLES[0], out=print):
+        self.github = github
+        self.agent = agent
+        self.role = role
+        self.out = out
+
+    def inventory(self, agent=None):
+        decisions = plan(self.github.items(), agent if agent is not None else self.agent)
+        render(decisions, agent if agent is not None else self.agent, self.out)
+        return decisions
+
+    def take(self, number, agent=None, dry_run=False):
+        agent = agent or self.agent
+        if not agent or agent not in AGENTS:
+            raise WorkIssueError("agente no reconocido: %s (catálogo: %s)"
+                                 % (agent, ", ".join(AGENTS)))
+        items = self.github.items()
+        item = self.github.item(number, items)
+        decision = classify(item, agent, {entry.number: entry for entry in items})
+        if not decision.eligible:
+            self.out("No reservada #%d: %s (%s)" % (number, decision.kind, decision.reason))
+            return EXIT_REFUSED
+        phase, target = READY[item.status]
+        if dry_run:
+            self.out("[dry-run] #%d %s -> %s (comentario de toma + assignee, sin escrituras)"
+                     % (number, item.status, target))
+            return EXIT_OK
+        earlier = [entry for entry in self.github.comments(number)
+                   if CLAIM_MARKER in (entry.get("body") or "")]
+        if earlier:
+            owner = min(earlier, key=lambda entry: entry.get("id") or 0)
+            self.out("No reservada #%d: ya existe una toma previa (comentario %s)"
+                     % (number, owner.get("id")))
+            return EXIT_REFUSED
+        self.github.comment(number, claim_body(agent, self.role, phase, item))
+        after = [entry for entry in self.github.comments(number)
+                 if CLAIM_MARKER in (entry.get("body") or "")]
+        if len(after) > 1:
+            first = min(after, key=lambda entry: entry.get("id") or 0)
+            if ("agent=%s " % agent) not in (first.get("body") or ""):
+                self.out("No reservada #%d: colisión, otra toma anterior (%s)"
+                         % (number, first.get("id")))
+                return EXIT_REFUSED
+        self.github.assign(number)
+        self.github.set_status(item, target)
+        verified = self.github.item(number)
+        if verified.status != target or not verified.assignees:
+            self.out("No verificado #%d: Status=%s assignees=%s"
+                     % (number, verified.status, verified.assignees or "ninguno"))
+            return EXIT_FAILED
+        self.out("Tomada #%d (%s -> %s) por %s" % (number, item.status, target, agent))
+        return EXIT_OK
+
+    def move(self, number, target, previous_status=None, note=None,
+             dry_run=False, restore=False):
+        agent = self.agent
+        items = self.github.items()
+        item = self.github.item(number, items)
+        if restore and not previous_status:
+            previous_status = self.blocked_previous(number)
+        reason = validate_transition(item.status, target, previous_status, restore)
+        if reason:
+            self.out("No movida #%d: %s" % (number, reason))
+            return EXIT_REFUSED
+        claims = [entry for entry in self.github.comments(number)
+                  if CLAIM_MARKER in (entry.get("body") or "")]
+        if claims and not any(("agent=%s " % agent) in (entry.get("body") or "")
+                              for entry in claims):
+            self.out("No movida #%d: la toma registrada es de otro agente" % number)
+            return EXIT_REFUSED
+        if dry_run:
+            self.out("[dry-run] #%d %s -> %s (comentario + cambio de Status, sin escrituras)"
+                     % (number, item.status, target))
+            return EXIT_OK
+        phase = READY[item.status][0] if item.status in READY else phase_of(item.status)
+        self.github.comment(number, report_body(
+            agent, self.role, phase, item, target, note, previous_status))
+        self.github.set_status(item, target)
+        verified = self.github.item(number)
+        if verified.status != target:
+            self.out("No verificado #%d: Status=%s" % (number, verified.status))
+            return EXIT_FAILED
+        self.out("Movida #%d: %s -> %s" % (number, item.status, target))
+        return EXIT_OK
+
+    def blocked_previous(self, number):
+        for entry in reversed(self.github.comments(number)):
+            match = re.search(r"Previous Status:\**\s*(%s)" % "|".join(STATUSES),
+                              entry.get("body") or "")
+            if match:
+                return match.group(1)
+        return None
+
+
+def build_parser():
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--agent", choices=AGENTS,
+                        help="filtro de agente (etiqueta simple)")
+    parser = argparse.ArgumentParser(
+        prog="work-issue",
+        description="Lee el trabajo Ready del Project, lo enruta por etiqueta de agente y "
+                    "reserva dentro del gate. Solo lectura salvo take/move.")
+    parser.add_argument("--agent", dest="agent_global", choices=AGENTS,
+                        help="filtro de agente (admite también ir tras el subcomando)")
+    parser.add_argument("--project", type=int, default=4, help="número del Project (4)")
+    parser.add_argument("--owner", default="jmartinlabs")
+    parser.add_argument("--repo", default="jmartinlabs/myfinanzas-app")
+    parser.add_argument("--role", choices=ROLES, default=ROLES[0])
+    commands = parser.add_subparsers(dest="command")
+    commands.add_parser("inventory", parents=[common],
+                        help="inventario completo de las tres Ready (solo lectura)")
+    take = commands.add_parser("take", parents=[common], help="reserva una Issue elegible")
+    take.add_argument("--issue", type=int, required=True)
+    take.add_argument("--dry-run", action="store_true")
+    move = commands.add_parser("move", parents=[common],
+                               help="transición de fase permitida al agente")
+    move.add_argument("--issue", type=int, required=True)
+    move.add_argument("--to", required=True, choices=STATUSES)
+    move.add_argument("--previous-status")
+    move.add_argument("--note")
+    move.add_argument("--restore", action="store_true")
+    move.add_argument("--dry-run", action="store_true")
+    return parser
+
+
+def resolve_agent(args):
+    """The agent filter, accepted before or after the subcommand."""
+    return getattr(args, "agent", None) or args.agent_global
+
+
+def main(argv=None):
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    agent = resolve_agent(args)
+    github = Gh(args.owner, args.project, args.repo)
+    service = Service(github, agent, args.role)
+    try:
+        github.preflight()
+        if args.command in (None, "inventory"):
+            service.inventory(agent)
+            return EXIT_OK
+        if args.command == "take":
+            return service.take(args.issue, agent, dry_run=args.dry_run)
+        return service.move(args.issue, args.to, args.previous_status, args.note,
+                            dry_run=args.dry_run, restore=args.restore)
+    except WorkIssueError as error:
+        print("Bloqueado: %s" % error, file=sys.stderr)
+        return EXIT_FAILED
+
+
+if __name__ == "__main__":
+    sys.exit(main())

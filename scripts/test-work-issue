@@ -1,0 +1,454 @@
+#!/usr/bin/env python3
+"""Positive and negative cases for work-issue. No network, no GitHub, no real Issues."""
+from __future__ import annotations
+
+import contextlib
+import copy
+import io
+import json
+import os
+import runpy
+import stat
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "work-issue"
+FIXTURE = ROOT / "scripts" / "fixtures" / "work-issue-project.json"
+
+MODULE = runpy.run_path(str(SCRIPT))
+normalise = MODULE["normalise"]
+plan = MODULE["plan"]
+render = MODULE["render"]
+Service = MODULE["Service"]
+Gh = MODULE["Gh"]
+WorkIssueError = MODULE["WorkIssueError"]
+validate_transition = MODULE["validate_transition"]
+claim_body = MODULE["claim_body"]
+CLAIM_MARKER = MODULE["CLAIM_MARKER"]
+STATUSES = MODULE["STATUSES"]
+HUMAN_ONLY = MODULE["HUMAN_ONLY"]
+EXIT_OK = MODULE["EXIT_OK"]
+EXIT_REFUSED = MODULE["EXIT_REFUSED"]
+EXIT_FAILED = MODULE["EXIT_FAILED"]
+
+
+def load_items():
+    raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    return [normalise(entry) for entry in raw["items"]]
+
+
+def fixture_item(number, items=None):
+    for item in items if items is not None else load_items():
+        if item.number == number:
+            return item
+    raise AssertionError("fixture has no #%d" % number)
+
+
+class FakeGh:
+    """GitHub adapter double: records writes and mutates its own copy of the project."""
+
+    def __init__(self, items=None, fail=(), claims=None, race=False):
+        self.data = copy.deepcopy(items if items is not None else load_items())
+        self.fail = set(fail)
+        self.race = race
+        self.calls = []
+        self.next_id = 1000
+        self.comments_store = {item.number: [dict(entry) for entry in (claims or {}).get(item.number, [])]
+                               for item in self.data}
+
+    # reads
+    def preflight(self):
+        self.calls.append(("preflight",))
+
+    def items(self):
+        if "items" in self.fail:
+            raise WorkIssueError("lectura del Project falló")
+        return copy.deepcopy(self.data)
+
+    def item(self, number, items=None):
+        if "item" in self.fail:
+            raise WorkIssueError("relectura falló")
+        for entry in self.data:
+            if entry.number == number:
+                return copy.deepcopy(entry)
+        raise WorkIssueError("la Issue #%d no está en el Project" % number)
+
+    def comments(self, number):
+        if "comments" in self.fail:
+            raise WorkIssueError("lectura de comentarios falló")
+        return [dict(entry) for entry in self.comments_store.setdefault(number, [])]
+
+    # writes
+    def comment(self, number, body):
+        if "comment" in self.fail:
+            raise WorkIssueError("publicación del comentario falló")
+        self.calls.append(("comment", number))
+        self.next_id += 1
+        self.comments_store.setdefault(number, []).append({"id": self.next_id, "body": body})
+        if self.race:
+            rival = claim_body("opencode", "Coordinador funcional", "development",
+                               fixture_item(number))
+            self.comments_store[number].insert(0, {"id": 500, "body": rival})
+
+    def assign(self, number):
+        if "assign" in self.fail:
+            raise WorkIssueError("asignación falló")
+        self.calls.append(("assign", number))
+        for entry in self.data:
+            if entry.number == number:
+                entry.assignees = ["jmartinlabs"]
+
+    def set_status(self, item, status):
+        if "status" in self.fail:
+            raise WorkIssueError("cambio de Status falló")
+        self.calls.append(("status", item.number, status))
+        for entry in self.data:
+            if entry.number == item.number:
+                entry.status = status
+
+
+def service(github, agent="hermes", out=None):
+    return Service(github, agent, "Coordinador funcional", out or (lambda line: None))
+
+
+class DiscoveryTests(unittest.TestCase):
+    def test_inventory_reaches_all_three_ready_statuses(self):
+        decisions = plan(load_items())
+        statuses = {decision.item.status for decision in decisions}
+        self.assertEqual(statuses, {"Ready Analysis", "Ready Specification", "Ready Development"})
+        numbers = {decision.item.number for decision in decisions}
+        self.assertNotIn(405, numbers)   # Backlog
+        self.assertNotIn(400, numbers)   # ya en In Progress
+
+    def test_free_item_is_eligible_without_agent(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 402][0]
+        self.assertEqual(decision.kind, "eligible")
+        self.assertEqual(decision.route, "")
+
+    def test_single_label_routes_the_item(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 410][0]
+        self.assertEqual((decision.kind, decision.route), ("eligible", "hermes"))
+
+    def test_two_labels_are_not_dispatched(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 412][0]
+        self.assertEqual(decision.kind, "label-conflict")
+
+    def test_unknown_namespaced_label_fails_closed(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 413][0]
+        self.assertEqual(decision.kind, "unknown-agent")
+
+    def test_assignee_is_not_authorization_and_blocks_take(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 414][0]
+        self.assertEqual(decision.kind, "taken")
+
+    def test_agent_filter_keeps_own_label_and_free_items(self):
+        decisions = {d.item.number: d for d in plan(load_items(), "hermes")}
+        self.assertEqual(decisions[410].kind, "eligible")   # dirigida a hermes
+        self.assertEqual(decisions[402].kind, "eligible")   # libre
+        self.assertEqual(decisions[411].kind, "other-agent")
+        self.assertEqual(decisions[406].kind, "eligible")
+
+    def test_open_dependency_blocks_dispatch(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 415][0]
+        self.assertEqual(decision.kind, "blocked-dependency")
+        self.assertEqual(decision.pending, [406])
+
+    def test_unverifiable_dependency_blocks_dispatch(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 416][0]
+        self.assertEqual(decision.kind, "unverified-dependency")
+        self.assertEqual(decision.unverified, [9999])
+
+    def test_priority_orders_the_plan(self):
+        decisions = plan(load_items())
+        self.assertEqual(decisions[0].item.number, 417)   # único P0
+
+    def test_render_prints_inventory_and_distribution(self):
+        lines = []
+        render(plan(load_items()), None, lines.append)
+        text = "\n".join(lines)
+        self.assertIn("INVENTARIO", text)
+        self.assertIn("PLAN", text)
+        self.assertIn("#406", text)
+
+    def test_render_reports_an_empty_project(self):
+        lines = []
+        render([], None, lines.append)
+        self.assertIn("Sin Issues en Ready", "\n".join(lines))
+
+
+class TakeTests(unittest.TestCase):
+    def test_take_publishes_claim_assigns_and_moves_in_order(self):
+        github = FakeGh()
+        code = service(github).take(406)
+        self.assertEqual(code, EXIT_OK)
+        self.assertEqual(github.calls, [("comment", 406), ("assign", 406),
+                                        ("status", 406, "Development In Progress")])
+        after = fixture_item(406, github.data)
+        self.assertEqual(after.status, "Development In Progress")
+        self.assertEqual(after.assignees, ["jmartinlabs"])
+
+    def test_take_comment_carries_identity_header_and_marker(self):
+        github = FakeGh()
+        service(github).take(406)
+        body = github.comments_store[406][-1]["body"]
+        for field in ("Autor: hermes", "Rol: Coordinador funcional", "Fase: Development",
+                      "Tipo: Inicio"):
+            self.assertIn(field, body)
+        self.assertIn("<!-- work-issue:claim agent=hermes issue=406 -->", body)
+
+    def test_dry_run_writes_nothing(self):
+        github = FakeGh()
+        self.assertEqual(service(github).take(406, dry_run=True), EXIT_OK)
+        self.assertEqual(github.calls, [])
+
+    def test_take_refuses_item_routed_to_another_agent(self):
+        github = FakeGh()
+        self.assertEqual(service(github).take(411), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_take_refuses_ambiguous_labels(self):
+        github = FakeGh()
+        self.assertEqual(service(github).take(412), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_take_refuses_unknown_agent_label(self):
+        github = FakeGh()
+        self.assertEqual(service(github).take(413), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_take_refuses_item_with_assignee(self):
+        github = FakeGh()
+        self.assertEqual(service(github).take(414), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_take_refuses_existing_claim(self):
+        item = fixture_item(406)
+        prior = {"id": 10, "body": claim_body("opencode", "Coordinador funcional",
+                                              "development", item)}
+        github = FakeGh(claims={406: [prior]})
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_take_aborts_when_a_competing_claim_appears(self):
+        github = FakeGh(race=True)
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertNotIn(("assign", 406), github.calls)
+        self.assertNotIn(("status", 406, "Development In Progress"), github.calls)
+
+    def test_take_does_not_claim_success_when_a_write_fails(self):
+        github = FakeGh(fail={"assign"})
+        with self.assertRaises(WorkIssueError):
+            service(github).take(406)
+        self.assertNotIn(("status", 406, "Development In Progress"), github.calls)
+
+    def test_take_stops_when_the_project_cannot_be_read(self):
+        github = FakeGh(fail={"items"})
+        with self.assertRaises(WorkIssueError):
+            service(github).take(406)
+
+    def test_take_rejects_an_agent_outside_the_catalogue(self):
+        with self.assertRaises(WorkIssueError):
+            Service(FakeGh(), "claude").take(406)
+
+
+class MoveTests(unittest.TestCase):
+    def in_progress(self, status="Development In Progress"):
+        items = load_items()
+        fixture_item(400, items).status = status
+        return FakeGh(items=items)
+
+    def test_agent_may_deliver_to_review(self):
+        github = self.in_progress()
+        code = service(github).move(400, "Development In Review", note="PR #999 y pruebas")
+        self.assertEqual(code, EXIT_OK)
+        self.assertEqual(github.calls, [("comment", 400), ("status", 400, "Development In Review")])
+        body = github.comments_store[400][-1]["body"]
+        self.assertIn("De: Development In Progress", body)
+        self.assertIn("A: Development In Review", body)
+
+    def test_agent_never_moves_work_into_a_human_status(self):
+        for target in sorted(HUMAN_ONLY):
+            github = self.in_progress()
+            self.assertEqual(service(github).move(400, target), EXIT_REFUSED, target)
+            self.assertEqual(github.calls, [], target)
+
+    def test_review_rejection_is_human_only(self):
+        github = self.in_progress("Development In Review")
+        self.assertEqual(service(github).move(400, "Development In Progress"), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_blocked_requires_the_previous_status(self):
+        github = self.in_progress()
+        self.assertEqual(service(github).move(400, "Blocked", note="falta decisión"), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_blocked_records_previous_status_and_note(self):
+        github = self.in_progress()
+        code = service(github).move(400, "Blocked", previous_status="Development In Progress",
+                                    note="Motivo: decisión pendiente. Condición: respuesta del usuario.")
+        self.assertEqual(code, EXIT_OK)
+        body = github.comments_store[400][-1]["body"]
+        self.assertIn("Previous Status: Development In Progress", body)
+        self.assertIn("Condición", body)
+
+    def test_restore_uses_the_recorded_previous_status(self):
+        github = self.in_progress("Blocked")
+        github.comments_store[400] = [{"id": 7, "body": "Previous Status: Development In Progress"}]
+        self.assertEqual(service(github).move(400, "Development In Progress", restore=True), EXIT_OK)
+        self.assertIn(("status", 400, "Development In Progress"), github.calls)
+
+    def test_restore_without_a_record_is_refused(self):
+        github = self.in_progress("Blocked")
+        self.assertEqual(service(github).move(400, "Development In Progress", restore=True),
+                         EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_restore_cannot_jump_to_another_status(self):
+        github = self.in_progress("Blocked")
+        github.comments_store[400] = [{"id": 7, "body": "Previous Status: Development In Progress"}]
+        self.assertEqual(service(github).move(400, "Development In Review", restore=True),
+                         EXIT_REFUSED)
+
+    def test_transition_validation_rejects_unknown_status(self):
+        self.assertIsNotNone(validate_transition("Development In Progress", "Doing"))
+        self.assertIsNone(validate_transition("Development In Progress", "Development In Review"))
+
+    def test_move_dry_run_writes_nothing(self):
+        github = self.in_progress()
+        self.assertEqual(service(github).move(400, "Development In Review", dry_run=True), EXIT_OK)
+        self.assertEqual(github.calls, [])
+
+    def test_move_refuses_when_another_agent_holds_the_claim(self):
+        items = load_items()
+        github = FakeGh(items=items,
+                        claims={400: [{"id": 11, "body": claim_body(
+                            "opencode", "Coordinador funcional", "development",
+                            fixture_item(400, items))}]})
+        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_move_allows_the_agent_that_published_the_claim(self):
+        items = load_items()
+        github = FakeGh(items=items,
+                        claims={400: [{"id": 11, "body": claim_body(
+                            "hermes", "Coordinador funcional", "development",
+                            fixture_item(400, items))}]})
+        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_OK)
+
+
+class AdapterTests(unittest.TestCase):
+    def runner(self, auth="Token scopes: 'repo', 'project'", items=None, items_code=0):
+        def run(argv):
+            if argv[:3] == ["gh", "auth", "status"]:
+                return 0, "", auth
+            if argv[:3] == ["gh", "project", "item-list"]:
+                return items_code, json.dumps(items if items is not None else
+                                              json.loads(FIXTURE.read_text(encoding="utf-8"))), "fallo"
+            return 1, "", "inesperado: " + " ".join(argv)
+        return run
+
+    def test_preflight_requires_the_project_scope(self):
+        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app",
+                    runner=self.runner(auth="Token scopes: 'repo'"))
+        with self.assertRaises(WorkIssueError):
+            github.preflight()
+
+    def test_missing_project_is_a_blocker_not_an_empty_inventory(self):
+        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app",
+                    runner=self.runner(items_code=1))
+        with self.assertRaises(WorkIssueError):
+            github.items()
+
+    def test_items_are_normalised(self):
+        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app", runner=self.runner())
+        items = github.items()
+        self.assertEqual(len(items), len(load_items()))
+        self.assertEqual(fixture_item(406, items).status, "Ready Development")
+
+    def test_cli_inventory_runs_read_only_through_a_fake_gh(self):
+        state = tempfile.mkdtemp(prefix="work-issue-cli-")
+        self.addCleanup(lambda: subprocess.run(["rm", "-rf", state]))
+        fake = Path(state) / "gh"
+        fake.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, sys\n"
+            "args = sys.argv[1:]\n"
+            "open(os.path.join(%r, 'calls.log'), 'a').write(' '.join(args) + '\\n')\n"
+            "if args[:2] == ['auth', 'status']:\n"
+            "    print(\"Token scopes: 'repo', 'project'\")\n"
+            "    sys.exit(0)\n"
+            "if args[:2] == ['project', 'item-list']:\n"
+            "    sys.stdout.write(open(os.path.join(%r, 'items.json')).read())\n"
+            "    sys.exit(0)\n"
+            "sys.exit(1)\n" % (state, state), encoding="utf-8")
+        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+        Path(state, "items.json").write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+        env = dict(os.environ, PATH=state + os.pathsep + os.environ.get("PATH", ""))
+        proc = subprocess.run([sys.executable, str(SCRIPT), "inventory"], capture_output=True,
+                              text=True, encoding="utf-8", env=env)
+        self.assertEqual(proc.returncode, EXIT_OK, proc.stderr)
+        self.assertIn("INVENTARIO", proc.stdout)
+        self.assertIn("#406", proc.stdout)
+        calls = Path(state, "calls.log").read_text(encoding="utf-8").splitlines()
+        self.assertTrue(all(line.startswith(("auth status", "project item-list"))
+                            for line in calls), calls)
+        self.assertFalse(any(line.startswith(("issue", "project item-edit"))
+                             for line in calls), calls)
+
+    def test_cli_reports_a_blocker_when_the_project_cannot_be_read(self):
+        state = tempfile.mkdtemp(prefix="work-issue-cli-")
+        self.addCleanup(lambda: subprocess.run(["rm", "-rf", state]))
+        fake = Path(state) / "gh"
+        fake.write_text(
+            "#!/usr/bin/env python3\n"
+            "import sys\n"
+            "args = sys.argv[1:]\n"
+            "if args[:2] == ['auth', 'status']:\n"
+            "    print(\"Token scopes: 'repo', 'project'\")\n"
+            "    sys.exit(0)\n"
+            "sys.stderr.write('HTTP 404: Could not resolve to a Project')\n"
+            "sys.exit(1)\n", encoding="utf-8")
+        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+        env = dict(os.environ, PATH=state + os.pathsep + os.environ.get("PATH", ""))
+        proc = subprocess.run([sys.executable, str(SCRIPT), "inventory"], capture_output=True,
+                              text=True, encoding="utf-8", env=env)
+        self.assertEqual(proc.returncode, EXIT_FAILED)
+        self.assertIn("Bloqueado", proc.stderr)
+        self.assertNotIn("INVENTARIO", proc.stdout)
+
+
+class ParserTests(unittest.TestCase):
+    def test_agent_flag_works_before_and_after_the_subcommand(self):
+        parser = MODULE["build_parser"]()
+        resolve = MODULE["resolve_agent"]
+        self.assertEqual(resolve(parser.parse_args(
+            ["take", "--issue", "406", "--agent", "hermes"])), "hermes")
+        self.assertEqual(resolve(parser.parse_args(
+            ["--agent", "hermes", "take", "--issue", "406"])), "hermes")
+        self.assertEqual(resolve(parser.parse_args(
+            ["--agent", "hermes", "inventory"])), "hermes")
+        self.assertIsNone(resolve(parser.parse_args(["inventory"])))
+
+    def test_move_requires_a_target_status(self):
+        with self.assertRaises(SystemExit):
+            with contextlib.redirect_stderr(io.StringIO()):
+                MODULE["build_parser"]().parse_args(["move", "--issue", "406"])
+
+
+class ContractTests(unittest.TestCase):
+    def test_statuses_match_the_project_definition(self):
+        self.assertEqual(len(STATUSES), 12)
+        self.assertEqual(len(set(STATUSES)), 12)
+
+    def test_human_only_statuses_are_never_agent_transitions(self):
+        for status in STATUSES:
+            for target in HUMAN_ONLY:
+                self.assertIsNotNone(validate_transition(status, target), (status, target))
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
