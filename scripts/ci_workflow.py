@@ -42,7 +42,6 @@ PROFILE_LOG = "printf 'CI profile: %s\\n' \"$CI_PROFILE\"\n"
 def required_workflow():
     """One required runner; strict reviewed phases retain failure/skip propagation."""
     app_if = "${{ steps.plan.outputs.profile != 'docs' }}"
-    api_if = "${{ steps.plan.outputs.profile == 'critical' || steps.plan.outputs.profile == 'full' }}"
     full_if = "${{ steps.plan.outputs.profile == 'full' }}"
     context = {'CI_CHECKOUT_REF': '${{ steps.context.outputs.ref }}'}
     states = {name: '${{ steps.' + name[3:].lower() + '.outcome }}' for name in (
@@ -72,9 +71,9 @@ def required_workflow():
                 {'id': 'baseline', 'name': 'Repository, project and document checks', 'run': BASELINE, 'env': context},
                 {'id': 'bun', 'if': app_if, **BUN},
                 {'id': 'install', 'if': app_if, 'run': 'bun install --frozen-lockfile'},
-                {'id': 'prepare', 'if': api_if, 'name': 'Prepare Linux API or full dependencies',
+                {'id': 'prepare', 'if': full_if, 'name': 'Prepare Linux full dependencies',
                  'env': {'CI_PROFILE': '${{ steps.plan.outputs.profile }}'},
-                 'run': 'if [ "$CI_PROFILE" = full ]; then python3 scripts/ci_prepare_linux.py; else python3 scripts/ci_prepare_linux.py api; fi'},
+                 'run': 'python3 scripts/ci_prepare_linux.py'},
                 {'id': 'browser', 'if': full_if, 'run': 'node node_modules/@playwright/test/cli.js install chromium'},
                 {'id': 'verify', 'name': 'Canonical CI application verification', 'env': context, 'run': 'python3 scripts/verify ci'},
                 {'name': 'Reject failed, cancelled or unexpectedly skipped phases', 'if': '${{ always() }}',

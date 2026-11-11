@@ -30,10 +30,16 @@ class VerificationTests(unittest.TestCase):
             (self.root / 'scripts' / name).write_text(stub)
         bun = '#!' + sys.executable + '\n' + '''import json,os,sys
 args=sys.argv[1:]
-name={'typecheck':'typecheck','build':'build','test':'api','test:e2e':'e2e'}.get(args[1] if args[:1]==['run'] else '', 'legacy')
+if args[:2] == ['run','typecheck']: name='typecheck'
+elif args[:2] == ['run','build']: name='build'
+elif args[:2] == ['run','test:e2e']: name='e2e'
+elif args[:2] == ['run','test'] or args[:2] == ['test','apps/api']: name='api'
+else: name='legacy'
 with open(os.environ['VERIFY_FIXTURE_CALLS'],'a') as f: f.write(json.dumps(name)+'\\n')
 if os.getenv('VERIFY_FIXTURE_FAIL')==name: sys.exit(7)
-if name in ('api','legacy'): print(os.getenv('VERIFY_FIXTURE_API_REPORT','2 pass\\n0 fail\\n8 expect() calls'))
+if name in ('api','legacy'):
+    print(os.getenv('VERIFY_FIXTURE_API_REPORT','2 pass\\n0 fail\\n8 expect() calls'))
+    if '--pass-with-no-tests' in args: print('33 filtered out')
 if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
 '''
         (self.bin / 'bun').write_text(bun); (self.bin / 'bun').chmod(0o755)
@@ -428,6 +434,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
     def test_ci_result_real_cli_rejects_all_missing_failed_and_cancelled_phases(self):
         names=('context','snapshot','plan','baseline','verify','bun','install','prepare','browser')
         extra={'CI_PROFILE':'critical',**{'CI_'+name.upper():'success' for name in names}}
+        extra['CI_PREPARE']='skipped'
         extra['CI_BROWSER']='skipped'
         result=self.run_entry('ci-result',extra=extra); self.assertEqual(result.returncode,0,result.stdout)
         for name in names:

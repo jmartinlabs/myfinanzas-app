@@ -77,10 +77,13 @@ blobs, sin modificarlos. También detecta secretos borrados en commits posterior
 La configuración vigente es [local-first](../methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27):
 PR hacia main o test —incluido `ready_for_review`, sin desactivar el gate en drafts—,
 push del tag `deploy-test-v*` y manual; un job required Ubuntu24.04 con baseline,
-selección conservadora, tipos/build y API/SQLite independiente en cambios críticos. Ya
+selección conservadora, tipos/build y API/SQLite independiente en cambios críticos, sin
+`age` ni backup/restore cifrado (reservados a full). Ya
 no hay push automático a main/test: la PR ya validó su merge ref. El tag ejecuta `full`
-sobre su commit exacto; la PR solo selecciona `docs`/`fast`/`critical`, y `full` se
-reserva para dispatch o tag. E2E/regresiones completas se ejecutan localmente con QA
+sobre su commit exacto; la PR selecciona `docs`/`fast`/`critical` y promociona a `full`
+cuando el diff toca persistencia, migraciones, esquema, identidad, recuperación o sus
+tests; `full`
+también se reserva para dispatch. E2E/regresiones completas se ejecutan localmente con QA
 independiente; dispatch y tag conservan la batería completa. Acciones SHA, historial
 completo, credenciales no persistidas, permisos de lectura y timeout25min permanecen.
 El perfil se publica en el step summary; el check obligatorio sigue llamándose

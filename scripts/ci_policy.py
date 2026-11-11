@@ -32,6 +32,74 @@ PROMPT_BACKUP = re.compile(r'prompt_backup.*\.md$')
 DEPLOY_TAG = re.compile(
     r'refs/tags/deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
 
+# Tests that spawn `age`/`age-keygen` or exercise encrypted backup/restore.
+# They are excluded from the CRITICAL execution profile so it never needs apt
+# packages; FULL runs the whole suite. Names must exist verbatim in
+# apps/api/src/*.test.ts (scripts/test-ci-policy enforces it), so a rename is a
+# visible failure instead of a silent coverage change.
+FULL_ONLY_TESTS = (
+    'AC24–26: backup WAL consistente/cifrado, restauración aislada, antigüedad y fallos',
+    'AC24: snapshot de archivo WAL mientras otro proceso confirma escrituras',
+    'AC26: fallo simulado ENOSPC en cifrado limpia temporales y conserva copia anterior',
+    '03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v2/v5',
+    '02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y backup v1/v5',
+    '07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deuda/hechos/MFA, age9 y restore',
+    'D5 AC-01: encrypted v18 restore preserves accreditation, evidence and revokes attempts',
+    '06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia y age7/MFA',
+    'E4.10 I8: backup/restore v28 (fixture v26) conserva la ventana y no la reabre ni duplica',
+    'E4.3 AC-24: v28 backup/manifest/restore keeps the valuation, audit and MFA and clears attempts',
+    'E4.3 AC-24: historical v23 backups keep e4.4-v23 and restore unchanged',
+    'E4.3 AC-24: restoring a v29 package fails without a destination',
+    'E4.4 AC-24: v28 backup/manifest/restore keeps new fields, reconciliation and MFA',
+    'E4.4 AC-24: historical v22 backups keep e35-v22 and restore; unadmitted versions fail',
+    'E4.10 A: v28 backup/manifest/restore keeps the closure, photo, audit and MFA and clears attempts',
+    'E4.9 A: historical v24 backups keep e4.3-v24 and restore unchanged',
+    'E4.10 A: restoring a v29 package fails without a destination',
+    'E4.1-AC-33(j): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo',
+    'E4.1-AC-33(j): copia 14 desconocida no se publica',
+    '04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y restore aislado',
+    'P11 genuine v9 demo/production migration retains MFA/key; encrypted v12 restore revokes cycle/annual/payroll attempts and retains delta audit',
+    '08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno',
+    '31 P6 AC24–29: encrypted production identity roundtrip and crossing rejection',
+    '31 P9 AC09/24/28/29: malformed markers and encrypted manifest/key corruption fail closed',
+    '05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age v4/v5',
+    '05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema',
+    'RESTORE-19/20: v19 cifrado conserva Comida y migra a v21',
+    'RESTORE-19/20: v20 cifrado conserva D′ y revoca accesos',
+    'RESTORE-19/20: negativos no publican destino parcial',
+    'AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones, vínculos, evidencias y auditoría',
+    '31 S6: restore sync failures leave either no target or a complete validated pair',
+    'SPEC36 v28: encrypted backup/restore preserves v28 and clears pending attempts',
+    'E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and revoke sessions',
+)
+
+# Persistence, migration and recovery surfaces: a PR touching them runs FULL
+# before merge so the encrypted backup/restore tests cannot be bypassed.
+SENSITIVE = re.compile(
+    r'^(?:apps/api/src/(?:backup|backup-cli|private-state|database|database-schema|'
+    r'database-identity|schema-contract|sqlite[^/]*)\.ts|'
+    r'apps/api/src/[^/]*-schema\.ts|'
+    r'infra/(?:migrations/[^/]+|compatibility\.py|release\.py|smoke\.py))$')
+
+
+def full_only_pattern():
+    return '^(?!(?:' + '|'.join(re.escape(name) for name in FULL_ONLY_TESTS) + ')$).*$'
+
+
+def sensitive_path(path):
+    return isinstance(path, str) and SENSITIVE.fullmatch(path) is not None
+
+
+def full_only_file(path):
+    """A test edit must run the tests it changes; age tests are filtered from critical."""
+    if not isinstance(path, str) or not path.startswith('apps/api/src/') or not path.endswith('.test.ts'):
+        return False
+    try:
+        text = (ROOT / path).read_text(encoding='utf-8')
+    except OSError:
+        return False
+    return any(name in text for name in FULL_ONLY_TESTS)
+
 
 def docs_path(path):
     # Documentation Markdown in any directory, except operational/harness files
@@ -164,6 +232,8 @@ def profile_records(data):
     paths = record_paths(data)
     if not paths:
         return 'critical'
+    if any(sensitive_path(p) or full_only_file(p) for p in paths):
+        return 'full'
     if all(docs_path(p) for p in paths):
         return 'docs'
     return 'fast' if all(fast_path(p) for p in paths) else 'critical'
@@ -256,7 +326,7 @@ def ci_result_ok(profile, states):
         return False
     expected = {name: 'success' for name in ('context', 'snapshot', 'plan', 'baseline', 'verify')}
     expected.update({name: 'success' if profile != 'docs' else 'skipped' for name in ('bun', 'install')})
-    expected['prepare'] = 'success' if profile in ('critical', 'full') else 'skipped'
+    expected['prepare'] = 'success' if profile == 'full' else 'skipped'
     expected['browser'] = 'success' if profile == 'full' else 'skipped'
     return states == expected
 
