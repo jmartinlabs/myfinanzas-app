@@ -182,6 +182,13 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   await expect(resumenToggle).toHaveAttribute("aria-expanded", "false");
   await expect(nav.locator("#nav-group-resumen-control")).toBeHidden();
 
+  // La cabecera también responde a Enter y Space.
+  await resumenToggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Space");
+  await expect(resumenToggle).toHaveAttribute("aria-expanded", "false");
+
   // Partidas conserva su ruta y las entradas heredadas quedan etiquetadas.
   await expect(nav.locator('a[href="/dprima"]')).toContainText("Partidas");
   await expect(nav.locator('a[href="/presupuestos"]')).toContainText(

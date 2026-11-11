@@ -79,10 +79,7 @@ function App() {
   }, [path]);
   useEffect(() => {
     const active = activeNavigationGroup(path);
-    if (!active) return;
-    setOpenGroups((current) =>
-      current.includes(active) ? current : [...current, active],
-    );
+    setOpenGroups(active ? [active] : []);
   }, [path]);
   const toggleGroup = (id: string) =>
     setOpenGroups((current) =>
