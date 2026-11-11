@@ -16,6 +16,12 @@ def run(command):
                           env={**os.environ, 'LC_ALL': 'C'}, check=False)
 
 
+def summarize(result):
+    text = (result.stderr or result.stdout or '').replace('\x1b', '')
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return ' / '.join(lines[-4:])[:500] or 'sin salida'
+
+
 def prepare(root, execute=run, os_release=None, machine=None, mode='full'):
     root = Path(root)
     info = dict(line.split('=', 1) for line in
@@ -56,7 +62,7 @@ def prepare(root, execute=run, os_release=None, machine=None, mode='full'):
                         ['sudo', 'apt-get', 'install', '-y', '--no-install-recommends', '--', *missing]):
             result = execute(command)
             if result.returncode:
-                raise ValueError('approved package installation failed')
+                raise ValueError(f'approved package installation failed ({result.returncode}): {summarize(result)}')
     print(f'CI Linux packages: {len(packages) - len(missing)} present, {len(missing)} installed.')
     return missing
 
@@ -67,7 +73,7 @@ def main():
         prepare(ROOT, mode=mode)
         return 0
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        print('CI Linux preparation failed; browser checks must not be skipped.', file=sys.stderr)
+        print(f'CI Linux preparation failed; browser checks must not be skipped: {exc}', file=sys.stderr)
         return 1
 
 
