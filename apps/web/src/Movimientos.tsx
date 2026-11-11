@@ -671,13 +671,17 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
   if (!data) return <p role="status">Cargando Movimiento…</p>;
   const m = data.movimiento,
     field = (label: string, v: ReactNode) => (
-      <div>
+      <div data-label={label}>
         <dt>{label}</dt>
         <dd>{v}</dd>
       </div>
     );
   return (
-    <div className="movement-detail">
+    <div
+      className="movement-detail"
+      data-flow={movementFlow(m)}
+      data-anulado={m.anulado || undefined}
+    >
       {back}
       <PageHead
         eyebrow={"MOVIMIENTO #" + m.id}
