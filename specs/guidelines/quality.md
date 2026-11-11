@@ -12,6 +12,7 @@ CLI age/age-keygen es obligatoria para pruebas de copia/restauración.
 | bun run typecheck | TypeScript sin errores en apps, pruebas y configuraciones |
 | bun run build | Cliente estático en apps/web/dist; no despliega ni empaqueta servidor |
 | bun run test | Integración Saldos/acceso/copias/concurrencia; cifra vigente en testplan |
+| bun test apps/web | Lógica de cliente: formato, temas/tokens CSS, formularios y estados; gate de fast/critical/full |
 | bun run test:e2e | Recorrido E1.1/E1.2/E1.3 real a 390/1440, MFA y restauración aislada |
 | ./scripts/validate-template | Estructura y contratos documentales válidos |
 | ./scripts/test-validator | Regresiones positivas y negativas del validador |
@@ -80,11 +81,11 @@ push del tag `deploy-test-v*` y manual; un job required Ubuntu24.04 con baseline
 selección conservadora, tipos/build y API/SQLite independiente en cambios críticos, sin
 `age` ni backup/restore cifrado (reservados a full). Ya
 no hay push automático a main/test: la PR ya validó su merge ref. El tag ejecuta `full`
-sobre su commit exacto; la PR selecciona `docs`/`fast`/`critical` y promociona a `full`
-cuando el diff toca persistencia, migraciones, esquema, identidad, recuperación o sus
-tests; `full`
-también se reserva para dispatch. E2E/regresiones completas se ejecutan localmente con QA
-independiente; dispatch y tag conservan la batería completa. Acciones SHA, historial
+sobre su commit exacto; la PR selecciona `docs`/`fast`/`critical` y, desde el reparto por
+dependencia de `age` (#398), también **`full` automáticamente** cuando el diff toca
+persistencia, migraciones, base de datos, esquema, identidad, recuperación o sus tests;
+`full` sigue reservado además para dispatch. E2E/regresiones completas se ejecutan
+localmente con QA independiente; dispatch y tag conservan la batería completa. Acciones SHA, historial
 completo, credenciales no persistidas, permisos de lectura y timeout25min permanecen.
 El perfil se publica en el step summary; el check obligatorio sigue llamándose
 `required`. No configura protecciones.
@@ -130,9 +131,12 @@ Baseline documental obligatoria en CI `docs`: `check-repository`, `check-project
 `git show --format= --check --first-parent HEAD`. `fast`, `critical`, `full` y
 `--full` local añaden `test-checks`, `test-validator`, `test-agent-usage`,
 `test-auto-agent-usage`, `test-verification`, `test-evidence` y `test-release`. Para full: `bun install --frozen-lockfile`,
-`bun run typecheck`, `bun run build`, `bun run test`, `python3 scripts/ci_prepare_linux.py`,
+`bun run typecheck`, `bun run build`, `bun test apps/web`, `bun run test`,
+`python3 scripts/ci_prepare_linux.py`,
 `node node_modules/@playwright/test/cli.js install chromium` y `bun run test:e2e`;
-gate adicional AC23 conserva su condición actual de rama.
+gate adicional AC23 conserva su condición actual de rama. La suite web
+(`bun test apps/web`) pertenece a los tres perfiles CI: es la única cobertura de la
+lógica de cliente y `fast` acepta precisamente CSS, cuyos tests la leen.
 Ninguna comprobación de aplicación se declara inaplicable a full: MyFinanzas tiene
 web/API/SQLite. En esta entrega del harness no cambia código de aplicación, SQL ni UI;
 sus suites no sustituyen ni prueban el nuevo grafo. Las regresiones locales prueban
@@ -146,9 +150,18 @@ merge-base sobre la base probada; un último commit documental no oculta código
 El push de tag `deploy-test-v*` selecciona `full` y full/required usan el SHA fijado por
 baseline. La concurrencia agrupa cada PR por rama: las PR superadas del mismo candidato
 se cancelan, mientras tags y manuales se separan y no se cancelan entre sí. No elimina
-ejecuciones ya completadas. `rootless.yml` ya no reacciona al push de `test`; su `qa`
-conserva solo `bun test apps/web` y el deploy espera `required` y `qa` sobre el commit
-del tag antes de continuar.
+ejecuciones ya completadas. `rootless.yml` ya no reacciona al push de `test` y no ejecuta
+suites de aplicación: no hay job `qa` ni equivalente, porque esa cobertura vive en los
+perfiles canónicos; el deploy espera el `required` del propio tag sobre su commit exacto
+antes de continuar.
+
+Repeticiones intencionales, medidas y no reducibles sin revisión: (1) `capability` ejecuta
+la suite API completa dentro de la imagen Debian endurecida aunque `required` ya la
+ejecutara en Ubuntu; son entornos distintos y [ci-policy](../methodology/ci-policy.md) no
+acepta Ubuntu como equivalencia Debian/glibc. (2) `deploy` reconstruye la release del tag
+con `--single-build` porque el artefacto que se envía debe nacer en el job que lo envía;
+compartirlo exigiría artifacts y no añade ninguna garantía. (3) Un PR de promoción
+`test → main` revalida contra `main` por la decisión de flujo vigente.
 
 Ubuntu24.04 x64: inventario dpkg de los 33 paquetes oficiales tools+chromium de Playwright
 1.64.1 más age. Versión instalada comprobada; una sola actualización/instalación APT
