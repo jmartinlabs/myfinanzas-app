@@ -133,6 +133,8 @@ def check_evidence_artifact(repository, pull_request, reviewed, url):
         match = DISCUSSION.fullmatch(fragment)
         if match:
             data = api(f'repos/{repository}/pulls/comments/{match.group(1)}')
+            require(str(data.get('pull_request_url', '')).endswith(f'/pulls/{pull_request}'),
+                    'QA review comment does not belong to the declared pull request')
             require(reviewed in (data.get('commit_id'), data.get('original_commit_id')),
                     'QA review comment does not belong to the reviewed commit')
             require((data.get('body') or '').strip(), 'QA review comment body is empty')
@@ -200,6 +202,12 @@ def qa_equivalence(args):
         require(not ancestry(root, reviewed, parent),
                 'reviewed commit is already contained in the integration base and '
                 'contributes no deployed content; new independent QA is required')
+        # The same holds when the reviewed patch reached the base by squash or
+        # cherry-pick: a tag commit without tree changes would certify the parent
+        # tree, including content that was never reviewed.
+        require(tree_oid(root, parent) != target,
+                'integration commit does not change the tree and cannot carry the '
+                'reviewed content; new independent QA is required')
         require(merge_tree(root, parent, reviewed) == target,
                 'integration tree is not the reviewed content composed onto its first '
                 'parent; a conflict resolution, extra change or different commit '

@@ -367,6 +367,41 @@ class EquivalenceTests(unittest.TestCase):
         result = self.check(integration, reviewed, self.bind(reviewed))
         self.assertFail(result, 'requires new independent QA')
 
+    def test_empty_integration_commit_after_squash_is_rejected(self):
+        reviewed, head = self.feature(('app.txt', 'v2\n'), ('secret.txt', 'unreviewed\n'))
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('merge', '--squash', 'feature')
+        self.commit('squash')
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed, head=head))
+        self.assertFail(result, 'does not change the tree')
+
+    def test_empty_integration_commit_after_rebase_is_rejected(self):
+        reviewed, head = self.feature(('app.txt', 'v2\n'), ('secret.txt', 'unreviewed\n'))
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('checkout', '-qb', 'rebased', 'main')
+        self.git('cherry-pick', reviewed, head)
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed, head=head))
+        self.assertFail(result, 'does not change the tree')
+
+    def test_review_comment_must_belong_to_the_declared_pr(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        evidence = f'https://github.com/{self.REPOSITORY}/pull/7#discussion_r3'
+        self.bind(reviewed)
+        self.fake(f'repos/{self.REPOSITORY}/pulls/comments/3',
+                  {'pull_request_url': f'https://api.github.com/repos/{self.REPOSITORY}/pulls/99',
+                   'commit_id': reviewed, 'body': 'QA APTO',
+                   'user': {'login': 'qa-reviewer'}})
+        result = self.check(reviewed, reviewed, evidence)
+        self.assertFail(result, 'does not belong to the declared pull request')
+
 
 if __name__ == '__main__':
     unittest.main()

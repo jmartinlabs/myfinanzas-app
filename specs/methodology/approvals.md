@@ -102,9 +102,9 @@ nuevo.
    `scripts/check-evidence --qa-equivalence` demuestra que el árbol del commit de
    integración es exactamente ese contenido (identidad de árbol o merge limpio sobre su
    primer padre) y que `qa_reference` resuelve a evidencia real de GitHub del PR y del
-   commit revisado. Un conflicto resuelto, un cambio extra, un `reviewed` ya contenido en
-   la base de integración, un commit revisado no disponible o una evidencia no verificable
-   exigen QA nueva. La equivalencia de árbol no
+   commit revisado. Un conflicto resuelto, un cambio extra, un commit de integración sin
+   cambio de árbol, un `reviewed` ya contenido en la base de integración, un commit revisado
+   no disponible o una evidencia no verificable exigen QA nueva. La equivalencia de árbol no
    es aprobación de QA, ni autoriza el merge, ni autoriza el despliegue. La autoría de la
    evidencia se registra para trazabilidad; la independencia real sigue siendo un gate de
    proceso, no una propiedad demostrable por GitHub con una cuenta compartida.

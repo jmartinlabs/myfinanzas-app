@@ -153,9 +153,9 @@ aceptación funcional. Es una atestación del publicador; el workflow comprueba 
 del commit del tag es exactamente el contenido revisado (identidad de árbol o merge limpio
 sobre su primer padre) y que la referencia QA resuelve a un artefacto de GitHub del PR y
 del commit revisado. La equivalencia de árbol no acredita la calidad de la QA ni sustituye
-su aprobación: una divergencia, un conflicto resuelto, un cambio extra, un `reviewed` ya
-contenido en la base de integración o una evidencia no verificable exigen QA nueva. (D3
-cerrada 2026-11-11.)
+su aprobación: una divergencia, un conflicto resuelto, un cambio extra, un commit de
+integración sin cambio de árbol, un `reviewed` ya contenido en la base de integración o una
+evidencia no verificable exigen QA nueva. (D3 cerrada 2026-11-11.)
 
 ## 4. Flujo TEST
 
