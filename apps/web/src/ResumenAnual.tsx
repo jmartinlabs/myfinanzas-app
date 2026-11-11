@@ -982,7 +982,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
         <section className="panel e47-lane" aria-labelledby="e47-realidad">
           <LaneHead
             title="Realidad"
-            motor="E2.6 + E3.6 · por Ciclo"
+            motor="Flujo mensual y pendientes · por Ciclo"
             lane={realidad}
           />
           <p className="e47-note">
@@ -1136,14 +1136,14 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
       <section className="panel e47-lane" aria-labelledby="e47-margenes">
         <LaneHead
           title="Márgenes del plan"
-          motor="E2.6 · márgenes existentes"
+          motor="Márgenes existentes"
           lane={{
             estado: data.margenes.estado,
             motivo: data.margenes.nota,
             cobertura: {
               estado:
                 data.margenes.estado === "Parcial" ? "Parcial" : "NoDisponible",
-              fuente: "E2.6 monthlyFlow",
+              fuente: "Flujo mensual",
               detalle: "Solo margen estructural y margen frente a nómina real.",
               incluidos: data.margenes.publicados.length,
               excluidos: data.margenes.noDefinidos.length,

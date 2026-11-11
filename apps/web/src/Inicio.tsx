@@ -849,7 +849,7 @@ function GraphiteCycleTable({ overview }: { overview: InicioOverview }) {
         className="mobile-list graphite-cycle-cards"
       />
       <p className="graphite-cycle-note">
-        El saldo operativo y el margen se publican tal como los entrega E2.6.
+        El saldo operativo y el margen se publican tal como los entrega el flujo mensual.
         Un subtotal parcial no se convierte en total, no se fabrica un margen y
         no se resta la deuda ni los pendientes.
       </p>
@@ -1269,7 +1269,7 @@ export function Inicio({
         )}
       </PageHead>
 
-      {theme === "graphite-lime" && (
+      {(
         <>
           <GraphiteHero overview={overview} go={go} />
           <GraphiteKpis overview={overview} />
@@ -1304,82 +1304,6 @@ export function Inicio({
             </p>
           </div>
         </>
-      )}
-
-      {theme === "casa" && (
-        <section className="casa-cover" aria-labelledby="casa-cover-title">
-          <div className="casa-cover-head">
-            <p className="casa-cover-kicker">
-              Casa de cuentas · {ciclo ? `Ciclo ${ciclo.id}` : "Sin ciclo actual"}
-            </p>
-            <p className="casa-cover-date">
-              {ciclo
-                ? `${formatDate(ciclo.inicio)} — ${ciclo.fin ? formatDate(ciclo.fin) : "Abierto"}`
-                : "Referencia actual sin ciclo"}
-            </p>
-          </div>
-          <div className="casa-cover-main">
-            <div className="casa-cover-amount-block">
-              <h2 id="casa-cover-title">Liquidez disponible</h2>
-              <p className="casa-cover-amount">
-                <Amount
-                  value={overview.liquidity.valor}
-                  subtotal={overview.liquidity.subtotal ?? null}
-                  state={overview.liquidity.estado}
-                  unit={overview.liquidity.unidad ?? "EUR"}
-                  showNote={false}
-                />
-              </p>
-              <p className="casa-cover-meta">
-                <EstadoBadge estado={overview.liquidity.estado} />
-                <span>{coverageText(overview.liquidity.cobertura)}</span>
-              </p>
-            </div>
-            <div className="casa-cover-aside">
-              <p className="casa-cover-aside-label">Posición del ciclo</p>
-              <dl className="casa-cover-counts">
-                <div>
-                  <dt>Saldos listados</dt>
-                  <dd>{overview.counts.saldos}</dd>
-                </div>
-                <div>
-                  <dt>Pendientes visibles</dt>
-                  <dd>{overview.counts.pendientes}</dd>
-                </div>
-                <div className="casa-cover-coverage">
-                  <dt>Cobertura</dt>
-                  <dd>{overview.liquidity.cobertura.estado}</dd>
-                </div>
-              </dl>
-              <div className="casa-cover-actions">
-                <a
-                  className="casa-cover-primary"
-                  href="/movimientos/nuevo"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    go("/movimientos/nuevo");
-                  }}
-                >
-                  Registrar movimiento
-                </a>
-                <a
-                  className="casa-cover-secondary"
-                  href="/movimientos"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    go("/movimientos");
-                  }}
-                >
-                  Ver Movimientos
-                </a>
-              </div>
-            </div>
-          </div>
-          <p className="casa-cover-note">
-            No es un total patrimonial. Cada cifra conserva su motor y su
-            cobertura; las posiciones sin información se muestran como ND.
-          </p>
-        </section>
       )}
 
       <section
@@ -1626,7 +1550,7 @@ export function Inicio({
         </section>
       </div>
 
-      {theme !== "graphite-lime" && (
+      {(
         <section className="panel inicio-section" aria-labelledby="inicio-ciclo">
           <h2 id="inicio-ciclo">
             {ciclo ? `Ciclo ${ciclo.id} · REAL vs PLAN` : "Ciclo · REAL vs PLAN"}
@@ -1658,7 +1582,7 @@ export function Inicio({
             </p>
           )}
           <p className="inicio-note">
-            El saldo operativo y el margen se publican tal como los entrega E2.6.
+            El saldo operativo y el margen se publican tal como los entrega el flujo mensual.
             Un subtotal parcial no se convierte en total, no se fabrica un margen
             y no se resta la deuda ni los pendientes.
           </p>
@@ -2117,7 +2041,7 @@ export function Inicio({
         <p className="inicio-metric-motivo">{pendientes.metrica.motivo}</p>
         {pendientes.fuenteFallos.length > 0 && (
           <div className="inicio-degradado" role="status">
-            <strong>Estado degradado:</strong> hay fuentes de E3.6 no
+            <strong>Estado degradado:</strong> hay fuentes de pendientes no
             verificables; el bloque no se presenta como vacío ni como conteo
             cero.
             <ul className="inicio-metric-coverage">

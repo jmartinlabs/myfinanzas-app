@@ -267,12 +267,14 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
                 columns={columns}
                 rows={data.saldos}
                 rowKey={(s) => s.id}
+                onRowClick={(s) => go(`/saldos/${s.id}`)}
               />
             </div>
             <DataList
               columns={columns}
               rows={data.saldos}
               rowKey={(s) => s.id}
+              onItemClick={(s) => go(`/saldos/${s.id}`)}
               className="mobile-list"
             />
             <div className="list-footer">
