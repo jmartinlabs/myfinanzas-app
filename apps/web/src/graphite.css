@@ -2488,7 +2488,6 @@ html[data-theme="graphite-lime"] .vehicle-table {
   background-color: var(--surface);
   background-image: var(--graphite-card-bg);
   box-shadow: var(--graphite-card-shadow);
-  overflow-x: auto;
 }
 
 html[data-theme="graphite-lime"] .vehicle-table table {
@@ -2533,7 +2532,9 @@ html[data-theme="graphite-lime"] .vehicle-table tbody tr:focus-within td:first-c
 html[data-theme="graphite-lime"] .vehicle-table td a {
   color: var(--text);
   font-weight: 650;
+  text-decoration: underline;
   text-decoration-color: var(--accent-border);
+  text-underline-offset: 3px;
 }
 
 html[data-theme="graphite-lime"] .vehicle-table td a:hover {

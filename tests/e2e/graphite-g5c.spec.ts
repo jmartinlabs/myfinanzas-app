@@ -4,7 +4,8 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3009;
+const PORT = 3030;
+const STATE = ".local/e2e-vehiculos-g5c";
 let child: ReturnType<typeof spawn> | undefined;
 
 test.beforeAll(async ({ request }) => {
@@ -13,7 +14,12 @@ test.beforeAll(async ({ request }) => {
     ["apps/api/test-support/vehiculos-server.ts"],
     {
       stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test" },
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        VEHICULOS_PORT: String(PORT),
+        VEHICULOS_STATE: STATE,
+      },
     },
   );
   await expect
@@ -43,7 +49,7 @@ async function authenticate(page: Page) {
   await page.goto("/vehiculos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-vehiculos/bootstrap.txt", "utf8"));
+    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Graphite vehículos " + randomUUID(),
   );
@@ -109,6 +115,10 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   await capture("vehiculos-listado-graphite", 820, 1000);
   await expect(page.locator(".vehiculos-page .vehicle-table")).toBeHidden();
   await expect(page.locator(".vehiculos-page .vehicle-cards")).toBeVisible();
+  await expect(page.locator(".vehiculos-page .vehicle-cards .ui-data-list-item")).toHaveCount(4);
+  await expect(page.locator(".vehiculos-page .vehicle-cards")).toContainText(
+    "Coche principal",
+  );
   await capture("vehiculos-listado-graphite", 390, 844);
 
   /* Ficha --------------------------------------------------------------- */
@@ -133,6 +143,7 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
     "uppercase",
   );
   await capture("vehiculo-formulario-graphite", 1440, 1000);
+  await capture("vehiculo-formulario-graphite", 820, 1000);
   await capture("vehiculo-formulario-graphite", 390, 844);
 
   /* Integridad ---------------------------------------------------------- */
@@ -141,6 +152,7 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   await expect(page.locator(".vehicle-integrity-page")).toBeVisible();
   await expect(page.locator(".vehicle-integrity-page .integrity-list")).toBeVisible();
   await capture("vehiculos-integridad-graphite", 1440, 1000);
+  await capture("vehiculos-integridad-graphite", 820, 1000);
   await capture("vehiculos-integridad-graphite", 390, 844);
 
   /* Misma fixture en Casa ---------------------------------------------- */
@@ -153,6 +165,17 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   await page.getByRole("link", { name: "Coche principal", exact: true }).first().click();
   await expect(page.locator(".vehicle-detail-page")).toBeVisible();
   await capture("vehiculo-ficha-casa", 1440, 1000);
+
+  /* Graphite no se filtra a Claro, Oscuro ni Mixto. */
+  for (const theme of ["light-s", "dark-s", "hybrid-s"]) {
+    await page.goto("/vehiculos");
+    await page.getByLabel("Apariencia").selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(page.locator(".vehicle-table")).not.toHaveCSS(
+      "border-radius",
+      "10px",
+    );
+  }
 
   expect(errors).toEqual([]);
 });
