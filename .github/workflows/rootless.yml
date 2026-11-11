@@ -153,7 +153,8 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$RELEASE_SHA" ]]
-          deadline=$((SECONDS + 1200))
+          # Cover required (25 min) and qa (30 min) before failing the deploy.
+          deadline=$((SECONDS + 2100))
           while true; do
             payload="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" 2>/dev/null || true)"
             if printf '%s' "$payload" | jq -e '

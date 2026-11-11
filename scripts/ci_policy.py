@@ -29,6 +29,8 @@ FUNCTIONAL_PREFIXES = (
     'build/', 'dist/',
 )
 PROMPT_BACKUP = re.compile(r'prompt_backup.*\.md$')
+DEPLOY_TAG = re.compile(
+    r'refs/tags/deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
 
 
 def docs_path(path):
@@ -180,6 +182,8 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             # Deploy tags always run full over the exact tagged commit. The tag
             # ref (not the raw event SHA, which may be a tag object) is the
             # verified checkout ref, so resolve both to the same commit.
+            if not DEPLOY_TAG.fullmatch(ref):
+                raise ValueError('malformed deploy tag')
             if checkout_ref != ref:
                 raise ValueError('deploy tag checkout differs from the event')
             try:

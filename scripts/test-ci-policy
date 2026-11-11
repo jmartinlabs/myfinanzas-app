@@ -364,14 +364,27 @@ class CiClassifierTests(unittest.TestCase):
     def test_snapshot_peels_annotated_deploy_tag_to_the_event_commit(self):
         actual = self.git('rev-parse', 'HEAD').decode().strip()
         ref = 'refs/tags/deploy-test-v1.2.3'
-        self.git('tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
         tag_object = self.git('rev-parse', ref).decode().strip()
         self.assertNotEqual(tag_object, actual)
         event = {'ref': ref, 'after': tag_object}
+        # GITHUB_SHA may be the tag object or its peeled commit.
         self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, actual), actual)
+        self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, tag_object), actual)
+        # Some checkouts rewrite the tag ref to the bare commit; the tag object
+        # supplied as GITHUB_SHA still identifies the same commit.
+        self.git('update-ref', ref, actual)
+        self.assertEqual(CONTEXT['snapshot'](self.root, 'push',
+                                             {'ref': ref, 'after': actual}, ref, tag_object), actual)
         for forged, checkout in ((None, ref), ('b' * 40, ref), (actual, 'refs/tags/other')):
             with self.subTest(forged=forged, checkout=checkout), self.assertRaises(ValueError):
                 CONTEXT['snapshot'](self.root, 'push', event, checkout, forged)
+        for malformed in ('refs/tags/deploy-test-v1.2', 'refs/tags/deploy-test-v01.2.3',
+                          'refs/tags/deploy-test-v1.2.3.4'):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                CONTEXT['snapshot'](self.root, 'push',
+                                    {'ref': malformed, 'after': actual}, malformed, actual)
 
     def test_surviving_docs_push_keeps_full_for_accumulated_pr_code(self):
         self.git('switch', '-qc', 'feature')
@@ -489,7 +502,8 @@ class CiClassifierTests(unittest.TestCase):
         self.assertEqual(select(self.root, 'push', {'ref': ref, 'after': actual}, ref), 'full')
         # An annotated tag push may expose the tag object as the event SHA.
         annotated = 'refs/tags/deploy-test-v2.0.0'
-        self.git('tag', '-a', 'deploy-test-v2.0.0', '-m', 'fixture', actual)
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v2.0.0', '-m', 'fixture', actual)
         tag_object = self.git('rev-parse', annotated).decode().strip()
         self.assertEqual(select(self.root, 'push', {'ref': annotated, 'after': tag_object}, annotated), 'full')
         # A checked-out commit that differs from the tag commit is refused.
@@ -503,6 +517,10 @@ class CiClassifierTests(unittest.TestCase):
                 ({'ref': ref, 'after': actual}, actual),           # raw SHA instead of the tag ref
                 ({'ref': ref, 'after': '0' * 40}, ref),            # deleted tag
                 ({'ref': 'refs/tags/v1', 'after': actual}, 'refs/tags/v1'),
+                ({'ref': 'refs/tags/deploy-test-v1.2', 'after': actual},
+                 'refs/tags/deploy-test-v1.2'),
+                ({'ref': 'refs/tags/deploy-test-v01.2.3', 'after': actual},
+                 'refs/tags/deploy-test-v01.2.3'),
                 ({'ref': ref, 'after': actual}, 'refs/heads/main')):
             with self.subTest(event=event, checkout=checkout), self.assertRaises(ValueError):
                 select(self.root, 'push', event, checkout)
@@ -734,6 +752,9 @@ class CiContextTests(unittest.TestCase):
                          'refs/tags/deploy-test-v1.2.3')
         with self.assertRaises(ValueError):
             CONTEXT['select_ref']('push', {**self.event, 'ref': 'refs/tags/'}, self.repository, lambda *_: [])
+        for malformed in ('refs/tags/deploy-test-v1.2', 'refs/tags/deploy-test-v01.2.3'):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                CONTEXT['select_ref']('push', {**self.event, 'ref': malformed}, self.repository, lambda *_: [])
         self.assertIsNone(self.choose(name='workflow_dispatch'))
         for base in ('main', 'test'):
             event = {'number': 7, 'pull_request': {'base': {'ref': base}, 'head': {'sha': self.head}}}

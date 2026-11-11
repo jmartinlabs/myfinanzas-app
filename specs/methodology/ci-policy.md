@@ -250,7 +250,7 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   exclusiva `bun test apps/web`; tipos, build y baseline ya los ejecuta `required` full
   sobre el mismo commit. Antes de desplegar se conservan las guardas de tag, actor,
   ancestro en `origin/test`, anotación `sha`/`qa_reference` y SHA exacto, y se espera
-  hasta 20 minutos a que `required` y `qa` figuren en `success` sobre `TAG_SHA`; un
+  hasta 35 minutos a que `required` y `qa` figuren en `success` sobre `TAG_SHA`; un
   fallo terminal conocido o el timeout detienen el deploy. No se debilita ningún control
   por esperar.
 - **Focused (no implementado):** si en el futuro se necesita un perfil más estrecho, la

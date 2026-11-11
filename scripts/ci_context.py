@@ -8,6 +8,9 @@ import sys
 import urllib.parse
 import urllib.request
 
+DEPLOY_TAG = re.compile(
+    r'refs/tags/deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
+
 
 def sha(value):
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{40}', value) and value != '0' * 40
@@ -47,6 +50,8 @@ def select_ref(event_name, event, repository, list_pulls):
     if ref.startswith('refs/tags/'):
         if not ref[len('refs/tags/'):]:
             raise ValueError('invalid tag')
+        if ref.startswith('refs/tags/deploy-test-v') and not DEPLOY_TAG.fullmatch(ref):
+            raise ValueError('malformed deploy tag')
         return ref
     if not ref.startswith('refs/heads/') or not ref[len('refs/heads/'):]:
         raise ValueError('invalid branch')
@@ -88,16 +93,34 @@ def snapshot(root, event_name, event, checkout_ref, manual_sha=None):
     if not sha(expected) or not sha(actual):
         raise ValueError('invalid checkout snapshot')
     if isinstance(checkout_ref, str) and checkout_ref.startswith('refs/tags/'):
-        # A tag push checks out the tag ref. GITHUB_SHA is its peeled commit,
-        # so verify the tag still resolves to that exact commit.
+        # A tag push checks out the tag ref. GITHUB_SHA may be the tag object or
+        # its peeled commit, so accept either while always comparing commits.
+        if checkout_ref.startswith('refs/tags/deploy-test-v') and not DEPLOY_TAG.fullmatch(checkout_ref):
+            raise ValueError('malformed deploy tag')
         if event.get('ref') != checkout_ref or not sha(manual_sha):
             raise ValueError('invalid tag checkout snapshot')
         try:
-            tagged = rev(checkout_ref + '^{commit}')
+            tag_ref = rev(checkout_ref)
+            tag_commit = rev(checkout_ref + '^{commit}')
+            event_commit = rev(expected + '^{commit}')
+            manual_commit = rev(manual_sha + '^{commit}')
         except subprocess.SubprocessError:
             raise ValueError('tag ref is unavailable')
-        if tagged != manual_sha or actual != manual_sha:
+        if event_commit != tag_commit:
+            raise ValueError('tag event does not match the tag ref')
+        if manual_commit != tag_commit or actual != tag_commit:
             raise ValueError('tag checkout does not match the event')
+        if manual_sha not in (tag_ref, tag_commit, expected):
+            # Some checkouts rewrite the tag ref to the bare commit; a tag
+            # object supplied as GITHUB_SHA is still valid if it peels here.
+            try:
+                manual_kind = subprocess.check_output(
+                    ['git', '-C', str(root), 'cat-file', '-t', manual_sha],
+                    stderr=subprocess.PIPE).strip()
+            except subprocess.SubprocessError:
+                raise ValueError('GITHUB_SHA is unavailable')
+            if manual_kind != b'tag':
+                raise ValueError('GITHUB_SHA does not identify the tag')
         return actual
     if isinstance(checkout_ref, str) and re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref):
         # The merge ref may move between API lookup and checkout. Never classify an
