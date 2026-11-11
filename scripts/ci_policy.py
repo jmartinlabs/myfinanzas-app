@@ -184,6 +184,12 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             # verified checkout ref, so resolve both to the same commit.
             if not DEPLOY_TAG.fullmatch(ref):
                 raise ValueError('malformed deploy tag')
+            try:
+                tag_kind = git(root, 'cat-file', '-t', ref).strip()
+            except (OSError, subprocess.SubprocessError):
+                raise ValueError('deploy tag is unavailable')
+            if tag_kind != b'tag':
+                raise ValueError('deploy tag must be annotated')
             if checkout_ref != ref:
                 raise ValueError('deploy tag checkout differs from the event')
             try:

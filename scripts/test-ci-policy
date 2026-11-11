@@ -372,11 +372,6 @@ class CiClassifierTests(unittest.TestCase):
         # GITHUB_SHA may be the tag object or its peeled commit.
         self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, actual), actual)
         self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, tag_object), actual)
-        # Some checkouts rewrite the tag ref to the bare commit; the tag object
-        # supplied as GITHUB_SHA still identifies the same commit.
-        self.git('update-ref', ref, actual)
-        self.assertEqual(CONTEXT['snapshot'](self.root, 'push',
-                                             {'ref': ref, 'after': actual}, ref, tag_object), actual)
         for forged, checkout in ((None, ref), ('b' * 40, ref), (actual, 'refs/tags/other')):
             with self.subTest(forged=forged, checkout=checkout), self.assertRaises(ValueError):
                 CONTEXT['snapshot'](self.root, 'push', event, checkout, forged)
@@ -385,6 +380,35 @@ class CiClassifierTests(unittest.TestCase):
             with self.subTest(malformed=malformed), self.assertRaises(ValueError):
                 CONTEXT['snapshot'](self.root, 'push',
                                     {'ref': malformed, 'after': actual}, malformed, actual)
+        # A lightweight deploy tag is rejected before any application checks.
+        light = 'refs/tags/deploy-test-v9.9.9'
+        self.git('tag', 'deploy-test-v9.9.9', actual)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', {'ref': light, 'after': actual}, light, actual)
+        # A rewritten tag ref is no longer an annotated tag object either.
+        self.git('update-ref', ref, actual)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', {'ref': ref, 'after': actual}, ref, tag_object)
+
+    def test_lightweight_deploy_tag_is_rejected_before_full(self):
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        light = 'refs/tags/deploy-test-v9.9.9'
+        self.git('tag', 'deploy-test-v9.9.9', actual)
+        event = {'ref': light, 'after': actual, 'repository': {'default_branch': 'main'}}
+        with self.assertRaises(ValueError):
+            CONTEXT['select_ref']('push', event, 'fixture/project', lambda *_: [], self.root)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', event, light, actual)
+        with self.assertRaises(ValueError):
+            POLICY['ci_profile'](self.root, 'push', event, light)
+        # The annotated SemVer tag is accepted and selects full.
+        annotated = 'refs/tags/deploy-test-v9.9.10'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v9.9.10', '-m', 'fixture', actual)
+        event = {'ref': annotated, 'after': actual, 'repository': {'default_branch': 'main'}}
+        self.assertEqual(CONTEXT['select_ref']('push', event, 'fixture/project',
+                                               lambda *_: [], self.root), annotated)
+        self.assertEqual(POLICY['ci_profile'](self.root, 'push', event, annotated), 'full')
 
     def test_surviving_docs_push_keeps_full_for_accumulated_pr_code(self):
         self.git('switch', '-qc', 'feature')
@@ -498,7 +522,8 @@ class CiClassifierTests(unittest.TestCase):
         select = POLICY['ci_profile']
         actual = self.git('rev-parse', 'HEAD').decode().strip()
         ref = 'refs/tags/deploy-test-v1.2.3'
-        self.git('tag', 'deploy-test-v1.2.3', actual)
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
         self.assertEqual(select(self.root, 'push', {'ref': ref, 'after': actual}, ref), 'full')
         # An annotated tag push may expose the tag object as the event SHA.
         annotated = 'refs/tags/deploy-test-v2.0.0'
@@ -507,7 +532,8 @@ class CiClassifierTests(unittest.TestCase):
         tag_object = self.git('rev-parse', annotated).decode().strip()
         self.assertEqual(select(self.root, 'push', {'ref': annotated, 'after': tag_object}, annotated), 'full')
         # A checked-out commit that differs from the tag commit is refused.
-        self.git('tag', 'deploy-test-v3.0.0', self.base)
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v3.0.0', '-m', 'fixture', self.base)
         self.write('specs/backlog/after-tag.md')
         self.commit()
         with self.assertRaises(ValueError):

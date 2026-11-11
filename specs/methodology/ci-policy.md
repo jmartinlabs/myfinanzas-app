@@ -252,7 +252,10 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   ancestro en `origin/test`, anotación `sha`/`qa_reference` y SHA exacto, y se espera
   hasta 35 minutos a que `required` y `qa` figuren en `success` sobre `TAG_SHA`; un
   fallo terminal conocido o el timeout detienen el deploy. No se debilita ningún control
-  por esperar.
+  por esperar. El tag debe ser **anotado**: `git cat-file -t refs/tags/<tag>` tiene que
+  devolver `tag`; un tag lightweight se rechaza antes de ejecutar `full`. Un
+  `workflow_dispatch` manual de `rootless` no sustituye el gate de aplicación; para
+  typecheck/build/baseline hay que lanzar `Validate project` full sobre el mismo SHA.
 - **Focused (no implementado):** si en el futuro se necesita un perfil más estrecho, la
   vía simple es filtrar suites de test por paths de forma explícita y probada (mapa de
   rutas → suites), sin crear un perfil nuevo ni un workflow adicional; requiere su

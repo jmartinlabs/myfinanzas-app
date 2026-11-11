@@ -359,7 +359,8 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(self.calls(),[])
 
     def test_ci_deploy_tag_runs_full_on_the_exact_commit(self):
-        self.git('tag','deploy-test-v1.2.3',self.head)
+        self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid',
+                 'tag','-a','deploy-test-v1.2.3','-m','fixture',self.head)
         tag='refs/tags/deploy-test-v1.2.3'
         event=self.home/'tag-push.json'
         event.write_text(json.dumps({'ref':tag,'before':'0'*40,'after':self.head}))
@@ -373,6 +374,15 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         for frozen in (self.head, 'refs/tags/v1'):
             result=self.run_entry('ci-plan',extra={**extra,'CI_CHECKOUT_REF':frozen})
             self.assertNotEqual(result.returncode,0,result.stdout)
+        # A lightweight deploy tag is rejected before running any application check.
+        self.git('tag','deploy-test-v2.0.0',self.head)
+        light='refs/tags/deploy-test-v2.0.0'
+        light_event=self.home/'light-tag-push.json'
+        light_event.write_text(json.dumps({'ref':light,'before':'0'*40,'after':self.head}))
+        result=self.run_entry('ci-plan',extra={'GITHUB_EVENT_NAME':'push',
+                                               'GITHUB_EVENT_PATH':str(light_event),
+                                               'CI_CHECKOUT_REF':light})
+        self.assertNotEqual(result.returncode,0,result.stdout)
         self.assertEqual(self.calls(),[])
 
     def test_ci_test_integration_base_and_push_profiles(self):
