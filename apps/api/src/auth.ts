@@ -18,7 +18,7 @@ import {
 import { dirname } from "node:path";
 import { TOTP, Secret } from "otpauth";
 import { Problem } from "./saldos";
-import { isLocalHttpHost } from "./local-network";
+import { isLoopbackHost, isPrivateHost } from "./local-network";
 
 export const digest = (s: string) =>
   createHash("sha256").update(s).digest("hex");
@@ -119,18 +119,22 @@ export class Auth {
     demoOrigins: readonly string[] = [],
   ) {
     const candidates = [origin, ...demoOrigins].map((value) => new URL(value));
-    // HTTP sin TLS solo en loopback o IPv4 privada. El modo DEMO añade orígenes
-    // de red local, nunca un origen público, y cada uno se valida aquí.
+    // HTTP sin TLS solo en loopback. La red privada (RFC 1918) es una excepción
+    // exclusiva del alcance DEMO: sin orígenes DEMO validados no se admite.
+    const demo = demoOrigins.length > 0;
     for (const u of candidates) {
-      if (
-        u.protocol !== "https:" &&
-        !(
-          u.protocol === "http:" &&
-          isLocalHttpHost(u.hostname) &&
-          u.origin === u.href.replace(/\/$/, "")
-        )
-      )
-        throw new Error("HTTP solo permitido en loopback o red privada.");
+      const allowed =
+        u.protocol === "https:" ||
+        (u.protocol === "http:" &&
+          (isLoopbackHost(u.hostname) ||
+            (demo && isPrivateHost(u.hostname))) &&
+          u.origin === u.href.replace(/\/$/, ""));
+      if (!allowed)
+        throw new Error(
+          demo
+            ? "HTTP solo permitido en loopback o red privada DEMO."
+            : "HTTP solo permitido en loopback.",
+        );
     }
     const u = candidates[0];
     this.origins = new Set(candidates.map((candidate) => candidate.origin));

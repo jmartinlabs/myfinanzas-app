@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createApp } from "./app";
+import { Auth } from "./auth";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import { keyHash } from "./database-identity";
@@ -287,6 +288,70 @@ describe("modo DEMO en la API", () => {
       expect(response.status).toBe(401);
     } finally {
       h.close();
+    }
+  });
+});
+
+describe("Auth: la red privada es exclusiva del alcance DEMO", () => {
+  function authDb() {
+    return openDatabase(":memory:");
+  }
+
+  test("sin orígenes DEMO, HTTP solo se admite en loopback", () => {
+    const db = authDb();
+    try {
+      const key = randomBytes(32);
+      expect(() => new Auth(db, key, "http://127.0.0.1:5173")).not.toThrow();
+      expect(() => new Auth(db, key, "http://localhost:5173")).not.toThrow();
+      // La barra final se normaliza al mismo origen loopback.
+      expect(() => new Auth(db, key, "http://127.0.0.1:5173/")).not.toThrow();
+      for (const origin of [
+        "http://192.168.1.50:5173",
+        "http://10.0.0.7:5173",
+        "http://172.16.1.9:5173",
+        "http://127.0.0.1:5173/inicio",
+        "http://8.8.8.8:5173",
+      ])
+        expect(() => new Auth(db, randomBytes(32), origin)).toThrow(
+          "HTTP solo permitido en loopback.",
+        );
+    } finally {
+      db.close();
+    }
+  });
+
+  test("con orígenes DEMO se admite la IPv4 privada declarada y nada más", () => {
+    const db = authDb();
+    try {
+      const auth = new Auth(
+        db,
+        randomBytes(32),
+        "http://127.0.0.1:5173",
+        Date.now,
+        ["http://192.168.1.50:5173"],
+      );
+      expect([...auth.origins].sort()).toEqual([
+        "http://127.0.0.1:5173",
+        "http://192.168.1.50:5173",
+      ]);
+      const sameOrigin = (value: string) =>
+        auth.sameOrigin(
+          new Request("http://127.0.0.1:5173/api/saldos", {
+            method: "POST",
+            headers: { origin: value },
+          }),
+        );
+      expect(() => sameOrigin("http://192.168.1.50:5173")).not.toThrow();
+      expect(() => sameOrigin("http://192.168.1.60:5173")).toThrow();
+      // Un origen público sigue rechazado incluso dentro del alcance DEMO.
+      expect(
+        () =>
+          new Auth(db, randomBytes(32), "http://127.0.0.1:5173", Date.now, [
+            "http://8.8.8.8:5173",
+          ]),
+      ).toThrow("HTTP solo permitido");
+    } finally {
+      db.close();
     }
   });
 });
