@@ -27,6 +27,7 @@ import {
   type TableColumn,
 } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
+import { PendientesDeConfirmar } from "./TransferenciaPendienteFicha";
 type Related = { id: string; nombre: string; estado?: string };
 type Partida = Related & {
   deuda: string | null;
@@ -624,6 +625,7 @@ function MovementList({
           </div>
         </div>
       </section>
+      <PendientesDeConfirmar go={go} />
       <p className="page-foot">
         Los anulados se conservan para consulta y no computan. Los filtros no
         modifican la posición general de Saldos.

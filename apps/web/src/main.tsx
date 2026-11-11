@@ -19,7 +19,7 @@ import { Referencias } from "./Referencias";
 import { Vehiculos } from "./Vehiculos";
 import { Inversiones } from "./Inversiones";
 import { Movimientos } from "./Movimientos";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Saldo } from "./api";
 import {
@@ -272,24 +272,30 @@ function App() {
                   </span>
                 </button>
                 <div id={groupBodyId} className="nav-group-body" hidden={!open}>
-                  {group.items.map((item) => {
+                  {group.items.map((item, index) => {
                     const active = isNavigationActive(item, path);
+                    const startsLegacy =
+                      item.legacy && !group.items[index - 1]?.legacy;
                     return (
-                      <a
-                        key={item.href}
-                        className={active ? "nav-active" : "nav-link"}
-                        href={item.href}
-                        aria-current={active ? "page" : undefined}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          go(item.href);
-                        }}
-                      >
-                        <span className="nav-icon" aria-hidden="true">
-                          {item.icon}
-                        </span>
-                        <span className="nav-label">{item.label}</span>
-                      </a>
+                      <Fragment key={item.href}>
+                        {startsLegacy && (
+                          <p className="nav-legacy-label">Heredado</p>
+                        )}
+                        <a
+                          className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}`}
+                          href={item.href}
+                          aria-current={active ? "page" : undefined}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            go(item.href);
+                          }}
+                        >
+                          <span className="nav-icon" aria-hidden="true">
+                            {item.icon}
+                          </span>
+                          <span className="nav-label">{item.label}</span>
+                        </a>
+                      </Fragment>
                     );
                   })}
                 </div>

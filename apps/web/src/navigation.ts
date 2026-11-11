@@ -14,6 +14,8 @@ export type NavigationItem = {
   readonly icon: string;
   /** Prefijo usado para marcar el enlace activo; por defecto, `href`. */
   readonly activePrefix?: string;
+  /** Acceso heredado: se muestra después de las entradas principales. */
+  readonly legacy?: boolean;
 };
 
 export type NavigationGroup = {
@@ -56,21 +58,27 @@ export const navigationGroups: readonly NavigationGroup[] = [
     id: "presupuestos-planificacion",
     label: "Presupuestos y planificación",
     items: [
+      { href: "/dprima", label: "Partidas", icon: "◫" },
+      { href: "/planes-ciclo", label: "Plan del ciclo", icon: "▥" },
+      { href: "/nomina", label: "Nómina", icon: "◈" },
       {
         href: "/clasificacion/partidas",
         label: "Clasificación",
         icon: "≡",
         activePrefix: "/clasificacion",
       },
-      { href: "/dprima", label: "Partidas", icon: "◫" },
-      { href: "/planes-ciclo", label: "Plan del ciclo", icon: "▥" },
-      { href: "/nomina", label: "Nómina", icon: "◈" },
       {
         href: "/presupuestos",
         label: "Presupuestos (legado)",
         icon: "⊞",
+        legacy: true,
       },
-      { href: "/plan-anual", label: "Plan anual (legado)", icon: "▧" },
+      {
+        href: "/plan-anual",
+        label: "Plan anual (legado)",
+        icon: "▧",
+        legacy: true,
+      },
     ],
   },
   {
@@ -81,8 +89,13 @@ export const navigationGroups: readonly NavigationGroup[] = [
       { href: "/anticipos", label: "Anticipos", icon: "↺" },
       { href: "/compartidos", label: "Compartidos", icon: "⇌" },
       { href: "/vehiculos", label: "Vehículos", icon: "⌑" },
-      { href: "/comida", label: "Comida · hechos", icon: "◍" },
-      { href: "/revision-comida", label: "Revisión Comida", icon: "◎" },
+      { href: "/comida", label: "Comida", icon: "◍" },
+      {
+        href: "/revision-comida",
+        label: "Revisión Comida",
+        icon: "◎",
+        legacy: true,
+      },
     ],
   },
   {

@@ -133,7 +133,6 @@ export function SaldoForm({
           </div>
         )}
         <FormSection
-          step="01"
           title="Identificación"
           description="Un nombre reconocible para tu Saldo."
         >
@@ -179,7 +178,6 @@ export function SaldoForm({
           </p>
         </FormSection>
         <FormSection
-          step="02"
           title="Configuración económica"
           description="La apertura es una posición inicial, no un Movimiento."
         >
@@ -238,7 +236,6 @@ export function SaldoForm({
           </p>
         </FormSection>
         <FormSection
-          step="03"
           title="Atributos de control"
           description="Independientes entre sí, del Tipo y del Control."
         >

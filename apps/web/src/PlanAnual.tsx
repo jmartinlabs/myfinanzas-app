@@ -327,7 +327,7 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="PLANIFICACIÓN"
         title="Plan anual"
-        description="Una línea por Partida y ejercicio natural. Importes manuales, ejecución por Fecha real."
+        description="Plan anual vigente por Partida y ejercicio. Se conserva el histórico; Gastos previstos no lo sustituye todavía."
       />
       <div ref={errorRef} tabIndex={-1}>
         {error && (

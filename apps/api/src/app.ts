@@ -262,6 +262,17 @@ import {
   candidatosTransferenciaPendiente,
   vincularTransferenciaPendiente,
 } from "./transferencias-pendientes";
+import {
+  actualizarLineaReparto,
+  actualizarReparto,
+  completarReparto,
+  crearLineaReparto,
+  crearReparto,
+  generarReparto,
+  getRepartoPorCiclo,
+  getSeguimientoReparto,
+  previewReparto,
+} from "./repartos";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
 import { resumenInicio } from "./resumen-inicio";
 import { resumenAnual } from "./resumen-anual";
@@ -595,6 +606,153 @@ export function createApp(db: Database, options: AppOptions) {
             "Esta acción de la Transferencia pendiente se ejecuta con POST.",
           );
         }
+      }
+      // SPEC36 I2 — reparto mensual asistido. Authenticated by `auth.session`;
+      // every write owns one IMMEDIATE transaction through `repartos.ts`.
+      const cycleReparto = path.match(
+        /^\/api\/ciclos\/([^/]+)\/reparto(?:\/(propuesta))?$/,
+      );
+      if (cycleReparto) {
+        let cicloId: string;
+        try {
+          cicloId = decodeURIComponent(cycleReparto[1]);
+        } catch {
+          throw new Problem(422, "VALIDATION", "ID de ciclo inválido.");
+        }
+        if (cycleReparto[2] === "propuesta") {
+          if (req.method !== "GET") {
+            headers.set("allow", "GET");
+            throw new Problem(
+              405,
+              "METHOD_NOT_ALLOWED",
+              "La propuesta de reparto es de solo lectura.",
+            );
+          }
+          return reply(previewReparto(db, cicloId, now()));
+        }
+        if (req.method === "GET")
+          return reply(getRepartoPorCiclo(db, cicloId, now()));
+        if (req.method === "POST") {
+          const result = crearReparto(
+            db,
+            cicloId,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          );
+          if (result.creado)
+            headers.set("location", `/api/repartos/${result.reparto.id}`);
+          return reply(result, result.creado ? 201 : 200);
+        }
+        headers.set("allow", "GET, POST");
+        throw new Problem(
+          405,
+          "METHOD_NOT_ALLOWED",
+          "El reparto del Ciclo se consulta con GET y se abre con POST.",
+        );
+      }
+      const repartoItem = path.match(/^\/api\/repartos\/(\d+)$/);
+      if (repartoItem) {
+        const id = Number(repartoItem[1]);
+        if (req.method !== "PATCH") {
+          headers.set("allow", "PATCH");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El reparto se actualiza con PATCH.",
+          );
+        }
+        return reply(
+          actualizarReparto(
+            db,
+            id,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      }
+      const repartoLinea = path.match(
+        /^\/api\/repartos\/(\d+)\/lineas\/(\d+)$/,
+      );
+      if (repartoLinea) {
+        if (req.method !== "PATCH") {
+          headers.set("allow", "PATCH");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La línea del reparto se actualiza con PATCH.",
+          );
+        }
+        return reply(
+          actualizarLineaReparto(
+            db,
+            Number(repartoLinea[1]),
+            Number(repartoLinea[2]),
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      }
+      const repartoAction = path.match(
+        /^\/api\/repartos\/(\d+)\/(lineas|generar|seguimiento|completar)$/,
+      );
+      if (repartoAction) {
+        const id = Number(repartoAction[1]);
+        const action = repartoAction[2];
+        if (action === "seguimiento") {
+          if (req.method !== "GET") {
+            headers.set("allow", "GET");
+            throw new Problem(
+              405,
+              "METHOD_NOT_ALLOWED",
+              "El seguimiento del reparto es de solo lectura.",
+            );
+          }
+          return reply(getSeguimientoReparto(db, id, now()));
+        }
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            `La acción ${action} del reparto se ejecuta con POST.`,
+          );
+        }
+        if (action === "lineas") {
+          const result = crearLineaReparto(
+            db,
+            id,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          );
+          headers.set(
+            "location",
+            `/api/repartos/${id}/lineas/${result.item.id}`,
+          );
+          return reply(result, 201);
+        }
+        if (action === "generar")
+          return reply(
+            generarReparto(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+        return reply(
+          completarReparto(
+            db,
+            id,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
       }
       // E3.6 — solo lectura: sin POST/PATCH/DELETE, sin importes en la URL.
       if (path === "/api/pendientes" && req.method === "GET")
