@@ -38,7 +38,7 @@ conservan las etiquetas con las que se escribieron; no se reescriben.
   lectura de D8; D1–D7, D9 y D10 no se reabren.
 - **Límites:** sin datos reales, migración operativa ni despliegue; v28 se entrega en PR
   independiente y no se aplica a TEST v0.1.2. La aceptación con fixtures no es aceptación
-  funcional. v29 y el motor de reparto no están autorizados.
+  funcional. v29 y el motor de reparto quedan autorizados el 2026-11-11 (§0.2 de SPEC36); su implementación y QA siguen por PRs separados, sin datos reales ni despliegue.
 
 ## UI · Graphite Lime · frontera documental (2026-11-10)
 

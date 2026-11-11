@@ -601,7 +601,7 @@ una lista vacía.
 
 ## 14. Exclusiones
 
-- Implementación, código, API, SQLite, migraciones, UI o despliegue.
+- Implementación, código, API, SQLite, migraciones, UI o despliegue **no se derivan de esta sección**: la autorización vigente del incremento 3 es §0.2 y se ejecuta en PRs separados.
 - Ejecución de Transferencias bancarias o integración con banco.
 - Nuevos Tipos de Movimiento, estados ficticios en Movimientos o maestros paralelos.
 - Cálculo de liquidez, reservas, objetivos de financiación o límites de fondos.
