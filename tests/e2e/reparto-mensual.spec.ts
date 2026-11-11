@@ -192,8 +192,113 @@ test(
       await expect(
         page.getByRole("region", { name: "Seguimiento del reparto" }),
       ).toBeVisible();
-      await expect(page.getByText("Cancelar pendiente", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText("Cancelar pendiente", { exact: true }).first(),
+      ).toBeVisible();
       expect(await page.getByText("Ejecutar", { exact: true }).count()).toBe(0);
+
+      // A4: after generating, new lines may be added; existing ones stay frozen.
+      await expect(
+        page.getByText("Generada · no editable", { exact: true }).first(),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Añadir transferencia", exact: true })
+        .click();
+      await page
+        .getByRole("combobox", { name: "Origen", exact: true })
+        .selectOption(origin.id);
+      await page
+        .getByRole("combobox", { name: "Destino", exact: true })
+        .selectOption(destination.id);
+      await page
+        .getByRole("textbox", { name: "Importe (€)", exact: true })
+        .fill("25");
+      await page
+        .getByRole("button", { name: "Añadir línea adicional", exact: true })
+        .click();
+      await expect(
+        page.getByText("Transferencia adicional añadida al borrador.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Generar 1 pendiente", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Cancelar pendiente", exact: true }),
+      ).toHaveCount(2);
+
+      // Confirm one pending with its real bank date and the explicit act.
+      await page
+        .getByRole("button", { name: "Confirmar transferencia", exact: true })
+        .first()
+        .click();
+      await expect(
+        page.getByRole("textbox", { name: "Fecha real del banco", exact: true }),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Revisar confirmación", exact: true })
+        .click();
+      await expect(
+        page.getByRole("region", { name: "Vista previa de confirmación" }),
+      ).toBeVisible();
+      await page
+        .getByRole("checkbox", { name: "Transferencia realizada", exact: true })
+        .check();
+      await page
+        .getByRole("button", {
+          name: "Confirmar transferencia realizada",
+          exact: true,
+        })
+        .click();
+      await expect(
+        page.getByText("Movimiento confirmado", { exact: true }),
+      ).toBeVisible();
+
+      // Cancel the remaining pending with a mandatory motive.
+      await page
+        .getByRole("button", { name: "Cancelar pendiente", exact: true })
+        .click();
+      await page
+        .getByRole("textbox", { name: "Motivo de cancelación", exact: true })
+        .fill("No se ejecutó finalmente");
+      await page
+        .getByRole("button", { name: "Confirmar cancelación", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "Cancelar pendiente", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText("Cancelada", { exact: true }).first(),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Completar reparto", exact: true }),
+      ).toBeEnabled();
+      await page
+        .getByRole("button", { name: "Completar reparto", exact: true })
+        .click();
+      await expect(
+        page.getByText(
+          "Reparto completado. Conserva el seguimiento de sus líneas.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await expect(
+        page.getByRole("region", { name: "Seguimiento del reparto" }),
+      ).toBeVisible();
+      const closeReparto = page.getByRole("button", {
+        name: "Cerrar reparto",
+        exact: true,
+      });
+      await closeReparto.focus();
+      await expect(closeReparto).toBeFocused();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
 
       await page.goto("/movimientos");
       await expect(

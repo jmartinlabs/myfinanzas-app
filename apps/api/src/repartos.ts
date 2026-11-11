@@ -134,6 +134,16 @@ function optionalText(value: unknown, field: string, max: number): string {
   return text(value, field, max);
 }
 
+/**
+ * SQLite stores cents as a signed 64-bit integer, but the current service
+ * contract still converts them to a JavaScript number before writing
+ * (`Number(cents)`). Values above `Number.MAX_SAFE_INTEGER` would be rounded
+ * silently, so they are rejected instead of stored altered. Removing this
+ * ceiling requires moving the whole chain (API, wire, UI) to bigint or string
+ * amounts and is intentionally out of this increment.
+ */
+const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER);
+
 function amount(value: unknown, field = "importe"): { cents: bigint; text: string } {
   if (typeof value !== "string" || !value)
     throw new Problem(
@@ -145,13 +155,14 @@ function amount(value: unknown, field = "importe"): { cents: bigint; text: strin
   try {
     const value_ = money(value);
     if (value_ === null || value_ <= 0n) throw new Error("non-positive");
+    if (value_ > MAX_SAFE_CENTS) throw new Error("out-of-safe-range");
     return { cents: value_, text: decimal(value_)! };
   } catch {
     throw new Problem(
       422,
       "VALIDATION",
-      "Indica un importe EUR exacto mayor que cero, hasta dos decimales.",
-      { [field]: "Importe exacto en euros con céntimos." },
+      "Indica un importe EUR exacto mayor que cero, hasta dos decimales y dentro del rango admitido.",
+      { [field]: "Importe exacto en euros con céntimos, hasta 90.071.992.547.409,91 €." },
     );
   }
 }
@@ -291,6 +302,55 @@ function audit(
   );
 }
 
+/**
+ * Line-level trace. `reparto_audit` keeps covering header transitions only;
+ * draft-line changes are recorded in the generic `audit` table under
+ * `reparto-linea:{id}`, reusing the existing audit infrastructure without a
+ * new table or migration.
+ */
+function auditLinea(
+  db: Database,
+  line: LineRow,
+  accion: "alta" | "edición" | "exclusión",
+  revisionPrevia: number,
+  campos: Record<string, unknown>,
+  now: number,
+  motivo: string | null = null,
+) {
+  db.run(
+    `INSERT INTO audit(
+       entidad,accion,revision,campos,instante,revision_previa,actor,motivo
+     ) VALUES(?,?,?,?,?,?,'usuario-unico',?)`,
+    [
+      `reparto-linea:${line.id}`,
+      accion,
+      line.revision,
+      JSON.stringify(campos),
+      new Date(now).toISOString(),
+      revisionPrevia,
+      motivo,
+    ],
+  );
+}
+
+function lineSnapshot(line: LineRow) {
+  return {
+    id: line.id,
+    reparto: line.reparto,
+    clase: line.clase,
+    presupuesto: line.presupuesto,
+    origen: line.origen,
+    destino: line.destino,
+    importe: decimal(line.importe === null ? null : String(line.importe)),
+    fechaPrevista: line.fecha_prevista,
+    concepto: line.concepto,
+    nota: line.nota,
+    incluida: line.incluida === 1,
+    motivoExclusion: line.motivo_exclusion,
+    revision: line.revision,
+  };
+}
+
 function requireRevision(current: number, value: unknown, what: "reparto" | "linea") {
   if (!Number.isSafeInteger(value) || value !== current)
     throw new Problem(
@@ -397,7 +457,10 @@ function repartoDto(db: Database, row: RepartoRow) {
       canceladas: pendings.filter((pending) => pending.estado === "Cancelada")
         .length,
     },
+    cicloCerrado: cycleClosed(db, row.ciclo),
     puedeEditar: row.estado === "Borrador" && !cycleClosed(db, row.ciclo),
+    puedeAnadirLineas:
+      row.estado !== "Completado" && !cycleClosed(db, row.ciclo),
     puedeGenerar:
       row.estado !== "Completado" &&
       !cycleClosed(db, row.ciclo) &&
@@ -538,7 +601,8 @@ export function previewReparto(
         else motivos.push("NO_APLICA");
       } else {
         if (budget.estado !== "Activo") motivos.push("PRESUPUESTO_INACTIVO");
-        if (budget.destino && ineligibleReason(db, budget.destino))
+        if (!budget.destino) motivos.push("SIN_DESTINO");
+        else if (ineligibleReason(db, budget.destino))
           motivos.push("SALDO_DESTINO_NO_ELEGIBLE");
         if (!importeSugerido) motivos.push("SIN_PENDIENTE_VERIFICABLE");
       }
@@ -569,7 +633,8 @@ export function previewReparto(
           budget.estado === "Activo" &&
           budget.fuente === "Aportación a saldo" &&
           importeSugerido !== null &&
-          !(budget.destino && ineligibleReason(db, budget.destino)),
+          budget.destino !== null &&
+          !ineligibleReason(db, budget.destino),
         motivos,
         lineasExistentes,
         efectoAcumulado: decimal(acumulado)!,
@@ -815,6 +880,7 @@ export function crearLineaReparto(
         ],
       );
       const line = lineRow(db, id, Number(result.lastInsertRowid))!;
+      auditLinea(db, line, "alta", 0, lineSnapshot(line), now);
       return {
         item: lineDto(db, line),
         reparto: repartoDto(db, repartoRow(db, id)!),
@@ -967,8 +1033,20 @@ export function actualizarLineaReparto(
           "REVISION_CONFLICT",
           "La línea del reparto ha cambiado. Revisa y vuelve a intentarlo.",
         );
+      const updated = lineRow(db, id, line.id)!;
+      auditLinea(
+        db,
+        updated,
+        changes.incluida === 0 ? "exclusión" : "edición",
+        line.revision,
+        { cambios: changes, linea: lineSnapshot(updated) },
+        now,
+        typeof changes.motivo_exclusion === "string"
+          ? changes.motivo_exclusion
+          : null,
+      );
       return {
-        item: lineDto(db, lineRow(db, id, line.id)!),
+        item: lineDto(db, updated),
         reparto: repartoDto(db, repartoRow(db, id)!),
       };
     },
@@ -1126,6 +1204,10 @@ export function generarReparto(
           db.run("ROLLBACK TO SAVEPOINT reparto_generacion_linea");
           db.run("RELEASE SAVEPOINT reparto_generacion_linea");
           const problem = error instanceof Problem ? error : null;
+          if (!problem)
+            // Internal detail (possibly SQL/constraint text) stays in the
+            // server log; the wire response never echoes it.
+            console.error("reparto:generar", line.id, error);
           const code = problem
             ? ["PRESUPUESTO_DESTINO", "FUENTE_NO_APORTACION"].includes(problem.code)
               ? "CONTEXT_CHANGED"
@@ -1134,10 +1216,9 @@ export function generarReparto(
           errores.push({
             lineaId: line.id,
             code,
-            message:
-              error instanceof Error
-                ? error.message
-                : "No se pudo generar la Transferencia pendiente.",
+            message: problem
+              ? problem.message
+              : "No se pudo generar la Transferencia pendiente.",
           });
         }
       }

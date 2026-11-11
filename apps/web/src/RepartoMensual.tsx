@@ -6,6 +6,7 @@ import {
   type RepartoDTO,
   type RepartoEstado,
   type RepartoLineaDTO,
+  type RepartoMotivoNoCompletar,
   type RepartoPropuestaDTO,
   type RepartoPropuestaItemDTO,
   type RepartoSeguimientoDTO,
@@ -47,6 +48,36 @@ const lineLabel = (linea: RepartoLineaDTO) =>
     ? `${linea.presupuesto.nombre} · ${linea.presupuesto.id}`
     : "Transferencia adicional";
 
+type ProposalLine = {
+  clase: "Presupuesto";
+  presupuesto: string;
+  origen: string;
+  destino: string | null;
+  importe: string;
+  fechaPrevista: string;
+};
+
+// Identity of a proposal line for "do not duplicate" checks (A5): same class,
+// Presupuesto, amount and destination. Existing lines are never recreated.
+const proposalIdentity = (line: {
+  clase: string;
+  presupuesto: string | null;
+  importe: string | null;
+  destino: string | null;
+}) =>
+  `${line.clase}|${line.presupuesto ?? ""}|${line.importe ?? ""}|${line.destino ?? ""}`;
+
+// Deterministic per-line idempotency key: a retry after a partial failure
+// replays the same attempt instead of inserting a duplicate.
+function proposalKey(repartoId: number, line: ProposalLine) {
+  const raw =
+    `${repartoId}-${line.presupuesto}-${line.importe}-${line.destino ?? ""}`.replace(
+      /[^a-zA-Z0-9-]/g,
+      "",
+    );
+  return `reparto-prop-${raw}`.slice(0, 100);
+}
+
 const avisoLabels: Record<string, string> = {
   PRESUPUESTO_INACTIVO: "Histórico · no se generará un pendiente nuevo.",
   PRESUPUESTO_NO_DISPONIBLE: "El Presupuesto no está disponible.",
@@ -56,6 +87,37 @@ const avisoLabels: Record<string, string> = {
   SALDO_DESTINO_NO_ELEGIBLE: "El Saldo de destino ya no es elegible.",
 };
 const avisoTexto = (aviso: string) => avisoLabels[aviso] ?? aviso;
+const motivoTexto = (motivo: RepartoMotivoNoCompletar) => {
+  if (motivo.code === "SIN_PENDIENTES")
+    return "Todavía no hay Transferencias pendientes generadas.";
+  if (motivo.code === "LINEA_SIN_PENDIENTE")
+    return `Faltan pendientes para las líneas ${(motivo.lineas ?? []).join(", ")}.`;
+  if (motivo.code === "PENDIENTE_NO_TERMINAL")
+    return `Hay pendientes sin confirmar o cancelar: ${(motivo.pendientes ?? [])
+      .map((id) => `#${id}`)
+      .join(", ")}.`;
+  return motivo.code;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : null;
+
+type GeneracionError = { lineaId: number; code: string; message: string };
+
+function asGeneracionError(value: unknown): GeneracionError | null {
+  const raw = asRecord(value);
+  if (!raw || typeof raw.lineaId !== "number") return null;
+  return {
+    lineaId: raw.lineaId,
+    code: typeof raw.code === "string" ? raw.code : "INTERNAL",
+    message:
+      typeof raw.message === "string"
+        ? raw.message
+        : "No se pudo generar la Transferencia pendiente.",
+  };
+}
 
 function asSaldo(value: unknown): SaldoResumenDTO | null {
   if (typeof value === "string") {
@@ -67,8 +129,8 @@ function asSaldo(value: unknown): SaldoResumenDTO | null {
       estado: "Activa",
     };
   }
-  if (value && typeof value === "object") {
-    const raw = value as Record<string, unknown>;
+  const raw = asRecord(value);
+  if (raw) {
     if (typeof raw.id !== "string") return null;
     return {
       id: raw.id,
@@ -106,9 +168,14 @@ function asPresupuesto(
   return null;
 }
 
+function responseLine(value: unknown): RepartoLineaDTO | null {
+  const raw = asRecord(value);
+  return asLinea(raw?.linea ?? raw?.item ?? value);
+}
+
 function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
-  if (!value || typeof value !== "object") return null;
-  const raw = value as Record<string, any>;
+  const raw = asRecord(value);
+  if (!raw) return null;
   if (typeof raw.id !== "number") return null;
   return {
     id: raw.id,
@@ -135,12 +202,14 @@ function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
       raw.origenTipo === "RegistroCoordinado"
         ? "RegistroCoordinado"
         : "Reparto",
-    repartoLinea: raw.repartoLinea ?? null,
-    reparto: raw.reparto ?? null,
+    repartoLinea:
+      (raw.repartoLinea as TransferenciaPendienteDTO["repartoLinea"]) ?? null,
+    reparto: (raw.reparto as TransferenciaPendienteDTO["reparto"]) ?? null,
     presupuesto: asPresupuesto(raw.presupuesto),
     gasto: typeof raw.gasto === "string" ? raw.gasto : null,
     anticipo: typeof raw.anticipo === "string" ? raw.anticipo : null,
-    movimiento: raw.movimiento ?? null,
+    movimiento:
+      (raw.movimiento as TransferenciaPendienteDTO["movimiento"]) ?? null,
     motivoCancelacion:
       typeof raw.motivoCancelacion === "string"
         ? raw.motivoCancelacion
@@ -157,8 +226,8 @@ function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
 }
 
 function asLinea(value: unknown): RepartoLineaDTO | null {
-  if (!value || typeof value !== "object") return null;
-  const raw = value as Record<string, any>;
+  const raw = asRecord(value);
+  if (!raw) return null;
   if (typeof raw.id !== "number") return null;
   const pendiente = raw.pendiente;
   return {
@@ -180,7 +249,11 @@ function asLinea(value: unknown): RepartoLineaDTO | null {
       typeof raw.motivoExclusion === "string" ? raw.motivoExclusion : null,
     revision: typeof raw.revision === "number" ? raw.revision : 1,
     pendiente: asPendiente(pendiente),
-    avisos: Array.isArray(raw.avisos) ? raw.avisos : [],
+    avisos: Array.isArray(raw.avisos)
+      ? raw.avisos.filter((aviso): aviso is string => typeof aviso === "string")
+      : [],
+    // Server-owned decision; never recomputed from avisos in the browser.
+    puedeGenerarse: raw.puedeGenerarse === true,
   };
 }
 
@@ -188,19 +261,16 @@ export function normalizeReparto(
   value: unknown,
   cicloFallback?: { id: string; inicio: string; fin: string | null },
 ): RepartoDTO | null {
-  if (!value || typeof value !== "object") return null;
-  const outer = value as Record<string, any>;
+  const outer = asRecord(value);
+  if (!outer) return null;
   const raw =
-    outer.reparto && typeof outer.reparto === "object"
-      ? outer.reparto
-      : outer.item && typeof outer.item === "object"
-        ? outer.item
-        : outer;
+    asRecord(outer.reparto) ?? asRecord(outer.item) ?? outer;
   if (typeof raw.id !== "number") return null;
-  const ciclo = raw.ciclo;
+  const cicloValue = raw.ciclo;
+  const ciclo = asRecord(cicloValue);
   const cicloId =
-    typeof ciclo === "string"
-      ? ciclo
+    typeof cicloValue === "string"
+      ? cicloValue
       : typeof ciclo?.id === "string"
         ? ciclo.id
         : "";
@@ -230,23 +300,29 @@ export function normalizeReparto(
       : [],
     creado: typeof raw.creado === "string" ? raw.creado : "",
     actualizado: typeof raw.actualizado === "string" ? raw.actualizado : "",
+    cicloCerrado: raw.cicloCerrado === true,
+    puedeEditar: raw.puedeEditar === true,
+    puedeAnadirLineas: raw.puedeAnadirLineas === true,
+    puedeGenerar: raw.puedeGenerar === true,
+    puedeCompletar: raw.puedeCompletar === true,
+    motivosNoCompletar: Array.isArray(raw.motivosNoCompletar)
+      ? raw.motivosNoCompletar.filter(
+          (motivo): motivo is RepartoMotivoNoCompletar =>
+            !!asRecord(motivo) && typeof asRecord(motivo)?.code === "string",
+        )
+      : [],
   };
 }
 
 function asPropuestaItem(value: unknown): RepartoPropuestaItemDTO | null {
-  if (!value || typeof value !== "object") return null;
-  const raw = value as Record<string, any>;
+  const raw = asRecord(value);
+  if (!raw) return null;
   const presupuesto = asPresupuesto(raw.presupuesto);
   if (!presupuesto) return null;
   const motivos: string[] = Array.isArray(raw.motivos)
-    ? raw.motivos.filter((motivo: unknown) => typeof motivo === "string")
+    ? raw.motivos.filter((motivo): motivo is string => typeof motivo === "string")
     : [];
-  const propuestaRaw =
-    raw.propuesta && typeof raw.propuesta === "object"
-      ? raw.propuesta
-      : raw.sugerencia && typeof raw.sugerencia === "object"
-        ? raw.sugerencia
-        : null;
+  const propuestaRaw = asRecord(raw.propuesta) ?? asRecord(raw.sugerencia);
   // The increment-2 contract returns `propuestaAutomatica` + `importeSugerido`
   // instead of a nested proposal object. The origin is intentionally absent:
   // only the common selector can resolve it.
@@ -291,11 +367,13 @@ function asPropuestaItem(value: unknown): RepartoPropuestaItemDTO | null {
     presupuesto.fuente === "No aplica";
   const motivoNoElegible = inactivo
     ? "Histórico · no se generará un pendiente nuevo"
-    : motivos.includes("SALDO_DESTINO_NO_ELEGIBLE")
-      ? "El destino del Presupuesto está inactivo o no es elegible; no se propone automáticamente."
-      : typeof raw.motivoNoElegible === "string"
-        ? raw.motivoNoElegible
-        : null;
+    : motivos.includes("SIN_DESTINO")
+      ? "El Presupuesto no tiene destino configurado; no se propone automáticamente."
+      : motivos.includes("SALDO_DESTINO_NO_ELEGIBLE")
+        ? "El destino del Presupuesto está inactivo o no es elegible; no se propone automáticamente."
+        : typeof raw.motivoNoElegible === "string"
+          ? raw.motivoNoElegible
+          : null;
   return {
     presupuesto,
     delMes:
@@ -318,10 +396,12 @@ function asPropuestaItem(value: unknown): RepartoPropuestaItemDTO | null {
           ? raw.motivo
           : null,
     sinPlanificar: raw.sinPlanificar === true,
+    // Server-owned: prefer the explicit flag and only derive it for older
+    // payloads that predate the field.
     elegible:
-      !inactivo &&
-      propuesta !== null &&
-      raw.elegible !== false,
+      typeof raw.elegible === "boolean"
+        ? raw.elegible
+        : !inactivo && propuesta !== null,
     motivoNoElegible,
     propuesta,
     mantenerEnOrigen,
@@ -339,27 +419,22 @@ function asPropuestaItem(value: unknown): RepartoPropuestaItemDTO | null {
 }
 
 export function normalizePropuesta(value: unknown): RepartoPropuestaDTO {
-  const raw = (value && typeof value === "object" ? value : {}) as Record<
-    string,
-    any
-  >;
-  const ciclo = raw.ciclo;
+  const raw = asRecord(value) ?? {};
+  const cicloValue = raw.ciclo;
+  const ciclo = asRecord(cicloValue);
   const cicloId =
-    typeof ciclo === "string"
-      ? ciclo
+    typeof cicloValue === "string"
+      ? cicloValue
       : typeof ciclo?.id === "string"
         ? ciclo.id
         : "";
-  const rawItems = Array.isArray(raw.items)
-    ? raw.items
-    : Array.isArray(raw)
-      ? raw
-      : [];
+  const rawItems = Array.isArray(raw.items) ? raw.items : [];
   const rawSaldos = Array.isArray(raw.origenes)
     ? raw.origenes
     : Array.isArray(raw.saldos)
       ? raw.saldos
       : [];
+  const periodo = asRecord(raw.periodo);
   return {
     ciclo: {
       id: cicloId,
@@ -372,21 +447,19 @@ export function normalizePropuesta(value: unknown): RepartoPropuestaDTO {
     sinPlan: raw.sinPlan === true,
     periodo: {
       inicio:
-        typeof raw.periodo?.inicio === "string"
-          ? raw.periodo.inicio
+        typeof periodo?.inicio === "string"
+          ? periodo.inicio
           : typeof ciclo?.inicio === "string"
             ? ciclo.inicio
             : "",
       fin:
-        typeof raw.periodo?.fin === "string"
-          ? raw.periodo.fin
+        typeof periodo?.fin === "string"
+          ? periodo.fin
           : typeof ciclo?.fin === "string"
             ? ciclo.fin
             : null,
-      corte:
-        typeof raw.periodo?.corte === "string" ? raw.periodo.corte : null,
-      motivo:
-        typeof raw.periodo?.motivo === "string" ? raw.periodo.motivo : null,
+      corte: typeof periodo?.corte === "string" ? periodo.corte : null,
+      motivo: typeof periodo?.motivo === "string" ? periodo.motivo : null,
     },
     origenComunSugerido: asSaldo(raw.origenComunSugerido),
     motivoOrigen:
@@ -404,14 +477,40 @@ export function normalizePropuesta(value: unknown): RepartoPropuestaDTO {
   };
 }
 
+function asMotivosNoCompletar(value: unknown): RepartoMotivoNoCompletar[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const raw = asRecord(entry);
+    if (!raw || typeof raw.code !== "string") return [];
+    return [
+      {
+        code: raw.code,
+        ...(Array.isArray(raw.lineas)
+          ? {
+              lineas: raw.lineas.filter(
+                (linea): linea is number => typeof linea === "number",
+              ),
+            }
+          : {}),
+        ...(Array.isArray(raw.pendientes)
+          ? {
+              pendientes: raw.pendientes.filter(
+                (pendiente): pendiente is number =>
+                  typeof pendiente === "number",
+              ),
+            }
+          : {}),
+      },
+    ];
+  });
+}
+
 export function normalizeSeguimiento(
   value: unknown,
   pendientesCompletos: TransferenciaPendienteDTO[] = [],
 ): RepartoSeguimientoDTO | null {
-  const raw = (value && typeof value === "object" ? value : {}) as Record<
-    string,
-    any
-  >;
+  const raw = asRecord(value);
+  if (!raw) return null;
   const reparto = normalizeReparto(raw);
   if (!reparto) return null;
   const lineas = Array.isArray(raw.lineas)
@@ -435,7 +534,9 @@ export function normalizeSeguimiento(
   const canceladas = items.filter(
     (line) => line.pendiente?.estado === "Cancelada",
   ).length;
-  const resumenRaw = raw.resumen ?? {};
+  const resumenRaw = asRecord(raw.resumen) ?? {};
+  const avisosRaw = asRecord(raw.avisos) ?? {};
+  const d6 = asRecord(avisosRaw.d6) ?? {};
   return {
     reparto,
     lineas: items,
@@ -470,11 +571,57 @@ export function normalizeSeguimiento(
         typeof resumenRaw.importeConfirmado === "string"
           ? resumenRaw.importeConfirmado
           : null,
-      todasTerminales:
-        raw.puedeCompletar === true ||
-        resumenRaw.todasTerminales === true ||
-        (pendientes === 0 &&
-          items.some((line) => line.incluida && line.pendiente)),
+    },
+    // Completion is decided by the server; no client-side fallback may enable
+    // a completion the API would reject.
+    puedeCompletar: raw.puedeCompletar === true,
+    motivosNoCompletar: asMotivosNoCompletar(raw.motivosNoCompletar),
+    avisos: {
+      d8: Array.isArray(avisosRaw.d8)
+        ? avisosRaw.d8.flatMap((entry) => {
+            const value = asRecord(entry);
+            if (!value || typeof value.linea !== "number") return [];
+            return [
+              {
+                linea: value.linea,
+                presupuesto:
+                  typeof value.presupuesto === "string"
+                    ? value.presupuesto
+                    : null,
+                motivo:
+                  typeof value.motivo === "string" ? value.motivo : "",
+              },
+            ];
+          })
+        : [],
+      d6: {
+        pendientes:
+          typeof d6.pendientes === "number" ? d6.pendientes : pendientes,
+        incluidosEnFoto: d6.incluidosEnFoto === true,
+        bloquea: d6.bloquea === true,
+        motivo: typeof d6.motivo === "string" ? d6.motivo : "",
+      },
+      contexto: Array.isArray(avisosRaw.contexto)
+        ? avisosRaw.contexto.flatMap((entry) => {
+            const value = asRecord(entry);
+            if (!value || typeof value.linea !== "number") return [];
+            return [
+              {
+                linea: value.linea,
+                presupuesto:
+                  typeof value.presupuesto === "string"
+                    ? value.presupuesto
+                    : null,
+                motivos: Array.isArray(value.motivos)
+                  ? value.motivos.filter(
+                      (motivo): motivo is string => typeof motivo === "string",
+                    )
+                  : [],
+              },
+            ];
+          })
+        : [],
+      cicloCerrado: avisosRaw.cicloCerrado === true,
     },
   };
 }
@@ -664,6 +811,7 @@ const borradorColumns = (
   onExclude: (line: RepartoLineaDTO) => void,
   onInclude: (line: RepartoLineaDTO) => void,
   busy: boolean,
+  puedeEditar: boolean,
 ): TableColumn<RepartoLineaDTO>[] => [
   {
     id: "linea",
@@ -701,17 +849,34 @@ const borradorColumns = (
   {
     id: "estado",
     header: "Borrador",
-    cell: (line) =>
-      line.incluida ? (
-        <Tag>Incluida</Tag>
-      ) : (
-        <>
-          <Tag inactive>Excluida</Tag>
-          {line.motivoExclusion && (
-            <p className="help">{line.motivoExclusion}</p>
-          )}
-        </>
-      ),
+    cell: (line) => (
+      <>
+        {line.incluida ? (
+          <Tag>Incluida</Tag>
+        ) : (
+          <>
+            <Tag inactive>Excluida</Tag>
+            {line.motivoExclusion && (
+              <p className="help">{line.motivoExclusion}</p>
+            )}
+          </>
+        )}
+        {line.pendiente ? (
+          <Tag inactive>Pendiente #{line.pendiente.id}</Tag>
+        ) : line.puedeGenerarse ? (
+          <Tag>Lista para generar</Tag>
+        ) : line.incluida ? (
+          <p className="help">
+            No se generará mientras existan avisos de contexto.
+          </p>
+        ) : null}
+        {line.avisos.length > 0 && (
+          <p className="help">
+            {line.avisos.map(avisoTexto).join(" ")}
+          </p>
+        )}
+      </>
+    ),
   },
   {
     id: "acciones",
@@ -719,7 +884,11 @@ const borradorColumns = (
     kind: "actions",
     cell: (line) => (
       <div className="actions">
-        {line.incluida ? (
+        {line.pendiente ? (
+          <span className="help">Generada · no editable</span>
+        ) : !puedeEditar ? (
+          <span className="help">Solo lectura</span>
+        ) : line.incluida ? (
           <>
             <button
               className="secondary"
@@ -756,14 +925,22 @@ export function RepartoBorradorTabla({
   onExclude,
   onInclude,
   busy = false,
+  puedeEditar = false,
 }: {
   lineas: RepartoLineaDTO[];
   onEdit: (line: RepartoLineaDTO) => void;
   onExclude: (line: RepartoLineaDTO) => void;
   onInclude: (line: RepartoLineaDTO) => void;
   busy?: boolean;
+  puedeEditar?: boolean;
 }) {
-  const columns = borradorColumns(onEdit, onExclude, onInclude, busy);
+  const columns = borradorColumns(
+    onEdit,
+    onExclude,
+    onInclude,
+    busy,
+    puedeEditar,
+  );
   return (
     <>
       <div className="desktop-list">
@@ -803,7 +980,7 @@ export function RepartoSeguimientoPanel({
   onCompletar?: () => void;
   busy?: boolean;
 }) {
-  const { resumen, reparto } = seguimiento;
+  const { resumen, reparto, avisos } = seguimiento;
   return (
     <section className="panel" aria-label="Seguimiento del reparto">
       <h3>Seguimiento del reparto · {reparto.estado}</h3>
@@ -812,6 +989,29 @@ export function RepartoSeguimientoPanel({
         {resumen.pendientes} pendientes · {resumen.confirmadas} confirmadas ·{" "}
         {resumen.canceladas} canceladas.
       </p>
+      {avisos.cicloCerrado && (
+        <Alert>
+          El Ciclo tiene un cierre financiero: no admite cambios de reparto. La
+          lectura, la cancelación de pendientes y el completado permitido siguen
+          disponibles.
+        </Alert>
+      )}
+      {avisos.d8.length > 0 && (
+        <Alert>
+          <strong>Línea histórica.</strong>{" "}
+          {avisos.d8.map((aviso) => aviso.motivo).join(" ")} No se crea un
+          pendiente nuevo hacia un Presupuesto inactivo.
+        </Alert>
+      )}
+      {avisos.contexto.length > 0 && (
+        <Alert>
+          Contexto cambiado en {avisos.contexto.length} línea(s):{" "}
+          {avisos.contexto
+            .flatMap((aviso) => aviso.motivos)
+            .map(avisoTexto)
+            .join(" ")}
+        </Alert>
+      )}
       {(resumen.importePendiente !== null ||
         resumen.importeConfirmado !== null) && (
         <p>
@@ -877,16 +1077,27 @@ export function RepartoSeguimientoPanel({
         <div className="actions">
           <button
             className="primary"
-            disabled={busy || !resumen.todasTerminales}
+            disabled={busy || !seguimiento.puedeCompletar}
             onClick={onCompletar}
           >
             Completar reparto
           </button>
-          {!resumen.todasTerminales && (
-            <span className="help">
-              Solo se completa cuando todas las líneas generadas están
-              Confirmadas o Canceladas.
-            </span>
+          {!seguimiento.puedeCompletar && (
+            <div className="help" role="status">
+              <p>
+                Solo se completa cuando todas las líneas generadas están
+                Confirmadas o Canceladas.
+              </p>
+              {seguimiento.motivosNoCompletar.length > 0 && (
+                <ul>
+                  {seguimiento.motivosNoCompletar.map((motivo) => (
+                    <li key={`${motivo.code}:${(motivo.lineas ?? motivo.pendientes ?? []).join(",")}`}>
+                      {motivoTexto(motivo)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -940,6 +1151,9 @@ export function RepartoMensual({
   });
   const [createKey, setCreateKey] = useState(() => crypto.randomUUID());
   const [generateKey, setGenerateKey] = useState(() => crypto.randomUUID());
+  const [generationErrors, setGenerationErrors] = useState<GeneracionError[]>(
+    [],
+  );
   const rootRef = useRef<HTMLElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const request = useRef(0);
@@ -957,6 +1171,7 @@ export function RepartoMensual({
     setAdding(false);
     setCreateKey(crypto.randomUUID());
     setGenerateKey(crypto.randomUUID());
+    setGenerationErrors([]);
   }, [ciclo.id]);
 
   useEffect(() => {
@@ -978,8 +1193,9 @@ export function RepartoMensual({
           }),
       ),
     ]);
-    const items = Array.isArray((pendientesData as any)?.items)
-      ? ((pendientesData as any).items as unknown[])
+    const pendingList = asRecord(pendientesData)?.items;
+    const items = Array.isArray(pendingList)
+      ? pendingList
           .map(asPendiente)
           .filter((item): item is TransferenciaPendienteDTO => !!item)
       : [];
@@ -1002,9 +1218,12 @@ export function RepartoMensual({
       if (propuestaResult.status === "rejected")
         throw propuestaResult.reason;
       const p = normalizePropuesta(propuestaResult.value);
-      const origenes =
+      const saldosRaw =
         saldosResult.status === "fulfilled"
-          ? (((saldosResult.value as any)?.saldos ?? []) as unknown[])
+          ? asRecord(saldosResult.value)?.saldos
+          : null;
+      const origenes = Array.isArray(saldosRaw)
+        ? saldosRaw
               .map(asSaldo)
               .filter(
                 (saldo): saldo is SaldoResumenDTO =>
@@ -1060,7 +1279,7 @@ export function RepartoMensual({
     setNotice("");
   }
 
-  function propuestaLineas(origen: string) {
+  function propuestaLineas(origen: string): ProposalLine[] {
     return (propuesta?.items ?? [])
       .filter((item) => item.elegible && item.propuesta)
       .map((item) => ({
@@ -1074,22 +1293,38 @@ export function RepartoMensual({
   }
 
   async function createProposalLines(repartoId: number, origen: string) {
+    // Read the persisted state first: a previous partial attempt may already
+    // have created some lines.
+    const fresh = (await reloadReparto(repartoId).catch(() => null)) ?? reparto;
     const existing = new Set(
-      (reparto?.lineas ?? [])
-        .filter((line) => line.clase === "Presupuesto" && line.presupuesto)
-        .map((line) => line.presupuesto!.id),
+      (fresh?.lineas ?? []).map((line) =>
+        proposalIdentity({
+          clase: line.clase,
+          presupuesto: line.presupuesto?.id ?? null,
+          importe: line.importe,
+          destino: line.destino?.id ?? null,
+        }),
+      ),
     );
-    const lineas = propuestaLineas(origen).filter(
-      (line) => !existing.has(line.presupuesto),
-    );
-    for (const line of lineas) {
-      await api(
-        `/repartos/${repartoId}/lineas`,
-        "POST",
-        line,
-        { "idempotency-key": crypto.randomUUID() },
-      );
+    const lineas = propuestaLineas(origen).filter((line) => {
+      // The server rejects origin === destination; never attempt it and let
+      // the panel explain why the proposal is skipped.
+      if (!line.destino || line.destino === origen) return false;
+      return !existing.has(proposalIdentity(line));
+    });
+    try {
+      for (const line of lineas) {
+        await api(`/repartos/${repartoId}/lineas`, "POST", line, {
+          "idempotency-key": proposalKey(repartoId, line),
+        });
+      }
+    } catch (error) {
+      // Whatever was created before the failure is reloaded so the next
+      // attempt can skip it deterministically.
+      await reloadReparto(repartoId).catch(() => null);
+      throw error;
     }
+    await reloadReparto(repartoId).catch(() => null);
     return lineas.length;
   }
 
@@ -1111,7 +1346,7 @@ export function RepartoMensual({
         { origenComun: origenComun || null },
         { "idempotency-key": createKey },
       );
-      const creado = (data as any)?.creado !== false;
+      const creado = asRecord(data)?.creado !== false;
       const r = normalizeReparto(data, propuesta.ciclo);
       if (!r) throw new Error("El servidor no devolvió el reparto creado.");
       setCreateKey(crypto.randomUUID());
@@ -1130,7 +1365,9 @@ export function RepartoMensual({
         origenComun
           ? added === 1
             ? "Borrador preparado con 1 línea propuesta. Revísala antes de generar."
-            : `Borrador preparado con ${added} líneas propuestas. Revísalas antes de generar.`
+            : added === 0
+              ? "No se añadieron líneas nuevas: ya existían o el origen común coincide con su destino."
+              : `Borrador preparado con ${added} líneas propuestas. Revísalas antes de generar.`
           : "Borrador creado sin líneas. Selecciona un origen común y añade las líneas propuestas o una transferencia manual.",
       );
       if (!refreshed) setReparto(r);
@@ -1143,7 +1380,7 @@ export function RepartoMensual({
   }
 
   async function addProposals() {
-    if (!reparto || !propuesta) return;
+    if (!reparto?.puedeAnadirLineas || !propuesta) return;
     if (!origenComun) {
       setFieldErrors({
         origenComun: "Selecciona un origen común para las líneas propuestas.",
@@ -1158,7 +1395,7 @@ export function RepartoMensual({
       await reloadReparto(reparto.id);
       setNotice(
         added === 0
-          ? "No hay líneas propuestas nuevas que añadir."
+          ? "No hay líneas propuestas nuevas que añadir: ya existían o el origen común coincide con su destino."
           : added === 1
             ? "Añadida 1 línea propuesta al borrador."
             : `Añadidas ${added} líneas propuestas al borrador.`,
@@ -1172,7 +1409,7 @@ export function RepartoMensual({
   }
 
   async function guardarBorrador() {
-    if (!reparto) return;
+    if (!reparto?.puedeEditar) return;
     if ((reparto.origenComun?.id ?? "") === origenComun) {
       setNotice("Sin cambios en el borrador.");
       return;
@@ -1198,6 +1435,7 @@ export function RepartoMensual({
   }
 
   function beginEdit(line: RepartoLineaDTO) {
+    if (!reparto?.puedeEditar || line.pendiente) return;
     setEditing(line);
     setDraft({
       importe: line.importe ?? "",
@@ -1212,7 +1450,7 @@ export function RepartoMensual({
   }
 
   async function saveEdit() {
-    if (!reparto || !editing) return;
+    if (!reparto?.puedeEditar || !editing || editing.pendiente) return;
     setBusy(true);
     resetFieldErrors();
     try {
@@ -1229,7 +1467,7 @@ export function RepartoMensual({
         },
         { "idempotency-key": crypto.randomUUID() },
       );
-      const line = asLinea((data as any)?.linea ?? (data as any)?.item ?? data);
+      const line = responseLine(data);
       const updatedReparto = normalizeReparto(data, propuesta?.ciclo);
       if (updatedReparto) setReparto(updatedReparto);
       else if (line) {
@@ -1260,7 +1498,7 @@ export function RepartoMensual({
   }
 
   async function toggleLine(line: RepartoLineaDTO, incluida: boolean) {
-    if (!reparto) return;
+    if (!reparto?.puedeEditar || line.pendiente) return;
     if (!incluida && !exclusion.trim()) return;
     setBusy(true);
     resetFieldErrors();
@@ -1275,9 +1513,7 @@ export function RepartoMensual({
         },
         { "idempotency-key": crypto.randomUUID() },
       );
-      const updated = asLinea(
-        (data as any)?.linea ?? (data as any)?.item ?? data,
-      );
+      const updated = responseLine(data);
       const updatedReparto = normalizeReparto(data, propuesta?.ciclo);
       if (updatedReparto) setReparto(updatedReparto);
       else
@@ -1308,7 +1544,7 @@ export function RepartoMensual({
   }
 
   async function addLine() {
-    if (!reparto) return;
+    if (!reparto?.puedeAnadirLineas) return;
     setBusy(true);
     resetFieldErrors();
     try {
@@ -1326,7 +1562,7 @@ export function RepartoMensual({
         },
         { "idempotency-key": crypto.randomUUID() },
       );
-      const line = asLinea((data as any)?.linea ?? (data as any)?.item ?? data);
+      const line = responseLine(data);
       const updatedReparto = normalizeReparto(data, propuesta?.ciclo);
       if (updatedReparto) setReparto(updatedReparto);
       else if (line)
@@ -1351,15 +1587,17 @@ export function RepartoMensual({
 
   async function generar() {
     if (!reparto) return;
+    // Only server-approved, included and warning-free lines are sent.
     const lineas = reparto.lineas
-      .filter((line) => line.incluida && !line.pendiente)
+      .filter((line) => line.puedeGenerarse)
       .map((line) => line.id);
     if (lineas.length === 0) {
-      setNotice("No hay líneas incluidas sin pendiente que generar.");
+      setNotice("No hay líneas generables sin pendiente.");
       return;
     }
     setBusy(true);
     resetFieldErrors();
+    setGenerationErrors([]);
     try {
       const result = await api(
         `/repartos/${reparto.id}/generar`,
@@ -1368,6 +1606,10 @@ export function RepartoMensual({
         { "idempotency-key": generateKey },
       );
       setGenerateKey(crypto.randomUUID());
+      const createdRaw = asRecord(result)?.creados;
+      const created = Array.isArray(createdRaw)
+        ? createdRaw.length
+        : lineas.length;
       const r =
         normalizeReparto(result, propuesta?.ciclo) ??
         (await reloadReparto(reparto.id)) ??
@@ -1375,13 +1617,26 @@ export function RepartoMensual({
       setReparto(r);
       await cargarSeguimiento(reparto.id);
       setNotice(
-        lineas.length === 1
+        created === 1
           ? "Generado 1 pendiente. No se ha ejecutado ningún pago."
-          : `Generados ${lineas.length} pendientes. No se ha ejecutado ningún pago.`,
+          : `Generados ${created} pendientes. No se ha ejecutado ningún pago.`,
       );
     } catch (e) {
+      if (e instanceof ApiError) {
+        const rawErrors = asRecord(e.data)?.errores;
+        setGenerationErrors(
+          Array.isArray(rawErrors)
+            ? rawErrors
+                .map(asGeneracionError)
+                .filter((error): error is GeneracionError => !!error)
+            : [],
+        );
+        setFieldErrors(e.fields);
+      }
       setError((e as Error).message);
-      if (e instanceof ApiError) setFieldErrors(e.fields);
+      // The generation transaction rolled back, but reloading keeps the panel
+      // aligned with the persisted draft after any failure.
+      await reloadReparto(reparto.id).catch(() => null);
     } finally {
       setBusy(false);
     }
@@ -1414,22 +1669,44 @@ export function RepartoMensual({
   }
 
   const saldos = propuesta?.origenes ?? [];
-  const incluidasSinPendiente =
-    reparto?.lineas.filter((line) => line.incluida && !line.pendiente) ?? [];
-  const presupuestosEnReparto = new Set(
-    (reparto?.lineas ?? [])
-      .filter((line) => line.clase === "Presupuesto" && line.presupuesto)
-      .map((line) => line.presupuesto!.id),
+  const generables =
+    reparto?.lineas.filter((line) => line.puedeGenerarse) ?? [];
+  const existingLineIdentities = new Set(
+    (reparto?.lineas ?? []).map((line) =>
+      proposalIdentity({
+        clase: line.clase,
+        presupuesto: line.presupuesto?.id ?? null,
+        importe: line.importe,
+        destino: line.destino?.id ?? null,
+      }),
+    ),
   );
-  const propuestasPendientes =
-    propuesta?.items.filter(
-      (item) =>
-        item.elegible &&
-        item.propuesta &&
-        !presupuestosEnReparto.has(item.presupuesto.id),
-    ).length ?? 0;
+  const propuestasCandidatas = (propuesta?.items ?? []).filter(
+    (item) => item.elegible && item.propuesta,
+  );
+  const propuestasDisponibles = propuestasCandidatas.filter((item) => {
+    const destino = item.presupuesto.destino;
+    if (!destino || destino === origenComun) return false;
+    return !existingLineIdentities.has(
+      proposalIdentity({
+        clase: "Presupuesto",
+        presupuesto: item.presupuesto.id,
+        importe: item.propuesta!.importe,
+        destino,
+      }),
+    );
+  });
+  const colisionesOrigen =
+    origenComun === ""
+      ? []
+      : propuestasCandidatas.filter(
+          (item) => item.presupuesto.destino === origenComun,
+        );
+  const propuestasPendientes = propuestasDisponibles.length;
   const estado: RepartoEstado = reparto?.estado ?? "Borrador";
   const borrador = !!reparto && estado === "Borrador";
+  const puedeEditarReparto = reparto?.puedeEditar === true;
+  const puedeAnadirLineas = reparto?.puedeAnadirLineas === true;
 
   return (
     <section
@@ -1475,6 +1752,19 @@ export function RepartoMensual({
           <div ref={errorRef} tabIndex={-1}>
             {error && <Alert retry={cargar}>{error}</Alert>}
           </div>
+          {generationErrors.length > 0 && (
+            <Alert>
+              <strong>No se generó ningún pendiente.</strong> El borrador se
+              conserva. Revisa estas líneas:
+              <ul>
+                {generationErrors.map((failure) => (
+                  <li key={`${failure.lineaId}:${failure.code}`}>
+                    Línea {failure.lineaId} · {failure.code}: {failure.message}
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          )}
           {notice && <p role="status">{notice}</p>}
           {loading ? (
             <Skeleton lines={4} label="Cargando reparto mensual" />
@@ -1551,19 +1841,35 @@ export function RepartoMensual({
                 </section>
               )}
 
-              {borrador && reparto && (
+              {reparto && (
                 <FormSection
-                  title="Borrador del reparto"
-                  description="Edita o excluye antes de generar. Excluir no crea pendiente y queda registrado con motivo. Generar no ejecuta ningún pago."
+                  title={borrador ? "Borrador del reparto" : "Líneas del reparto"}
+                  description={
+                    borrador
+                      ? "Edita o excluye antes de generar. Excluir no crea pendiente y queda registrado con motivo. Generar no ejecuta ningún pago."
+                      : "Las líneas ya generadas no se editan ni excluyen. Puedes añadir líneas nuevas y generar solo sus pendientes; no se regeneran los existentes."
+                  }
                 >
+                  {reparto.cicloCerrado && (
+                    <Alert>
+                      El Ciclo tiene un cierre financiero. La lectura, la
+                      cancelación de pendientes y el completado permitido siguen
+                      disponibles, pero no se edita, añade ni genera.
+                    </Alert>
+                  )}
                   <Field
                     id="reparto-origen-comun-borrador"
                     label="Origen común"
-                    help="Solo actúa como valor por defecto de líneas nuevas; no reescribe las ya configuradas."
+                    help={
+                      borrador
+                        ? "Solo actúa como valor por defecto de líneas nuevas; no reescribe las ya configuradas."
+                        : "El origen común guardado no se modifica tras generar; esta selección solo se usa para las líneas nuevas."
+                    }
                     error={fieldErrors.origenComun}
                   >
                     <select
                       value={origenComun}
+                      disabled={!puedeAnadirLineas}
                       onChange={(e) => setOrigenComun(e.target.value)}
                     >
                       <option value="">Seleccionar origen</option>
@@ -1574,9 +1880,20 @@ export function RepartoMensual({
                       ))}
                     </select>
                   </Field>
+                  {colisionesOrigen.length > 0 && (
+                    <Alert>
+                      El origen común coincide con el destino de{" "}
+                      {colisionesOrigen
+                        .map((item) => item.presupuesto.nombre)
+                        .join(", ")}
+                      . Esas líneas no se crean porque origen y destino deben ser
+                      distintos.
+                    </Alert>
+                  )}
                   <RepartoBorradorTabla
                     lineas={reparto.lineas}
                     busy={busy}
+                    puedeEditar={puedeEditarReparto}
                     onEdit={beginEdit}
                     onExclude={(line) => {
                       setExcluding(line);
@@ -1590,7 +1907,12 @@ export function RepartoMensual({
                   <div className="actions">
                     <button
                       className="secondary"
-                      disabled={busy || !origenComun || propuestasPendientes === 0}
+                      disabled={
+                        busy ||
+                        !puedeAnadirLineas ||
+                        !origenComun ||
+                        propuestasPendientes === 0
+                      }
                       onClick={addProposals}
                     >
                       {propuestasPendientes === 1
@@ -1599,7 +1921,7 @@ export function RepartoMensual({
                     </button>
                     <button
                       className="secondary"
-                      disabled={busy}
+                      disabled={busy || !puedeAnadirLineas}
                       onClick={() => {
                         setAdding((value) => !value);
                         setEditing(null);
@@ -1611,23 +1933,26 @@ export function RepartoMensual({
                     </button>
                     <button
                       className="secondary"
-                      disabled={busy}
+                      disabled={busy || !puedeEditarReparto}
                       onClick={guardarBorrador}
                     >
                       Guardar borrador
                     </button>
                     <button
                       className="primary"
-                      disabled={busy || incluidasSinPendiente.length === 0}
+                      disabled={
+                        busy || !reparto.puedeGenerar || generables.length === 0
+                      }
                       onClick={generar}
                     >
-                      {generarEtiqueta(incluidasSinPendiente.length)}
+                      {generarEtiqueta(generables.length)}
                     </button>
                   </div>
-                  {incluidasSinPendiente.length === 0 && (
+                  {generables.length === 0 && (
                     <p className="help">
-                      Incluye al menos una línea con origen, destino, importe y
-                      fecha prevista para generar pendientes.
+                      {reparto.puedeGenerar
+                        ? "Ninguna línea nueva es generable. Revisa los avisos de contexto."
+                        : "No hay líneas generables en este momento. Incluye una línea completa con origen, destino, importe y fecha prevista, sin avisos."}
                     </p>
                   )}
 

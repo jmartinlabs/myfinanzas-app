@@ -206,7 +206,7 @@ function financialSnapshot(db: Database) {
     ),
     audit: db
       .query(
-        "SELECT * FROM audit WHERE entidad NOT LIKE 'transferencia-pendiente:%' ORDER BY rowid",
+        "SELECT * FROM audit WHERE entidad NOT LIKE 'transferencia-pendiente:%' AND entidad NOT LIKE 'reparto-linea:%' ORDER BY rowid",
       )
       .all(),
   };
@@ -1120,4 +1120,126 @@ test("R-11 tras generar, una línea nueva solo genera su pendiente", async () =>
   );
   expect(frozen.status).toBe(409);
   expect(frozen.data.code).toBe("LINEA_CONGELADA");
+});
+
+test("R-12 auditoría de línea en audit: alta, edición y exclusión", async () => {
+  const { db, c1, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1)).data.reparto.id;
+  const line = (await presetLine(api.request, reparto, preA, "20.00")).data.item;
+  const edited = await api.request(
+    `/api/repartos/${reparto}/lineas/${line.id}`,
+    "PATCH",
+    { revision: 1, concepto: "Concepto revisado" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(edited.status).toBe(200);
+  const excluded = await api.request(
+    `/api/repartos/${reparto}/lineas/${line.id}`,
+    "PATCH",
+    {
+      revision: 2,
+      incluida: 0,
+      motivoExclusion: "No se financia este mes",
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(excluded.status).toBe(200);
+
+  const rows = db
+    .query(
+      `SELECT accion,revision,revision_previa,actor,instante,campos,motivo
+       FROM audit WHERE entidad=? ORDER BY id`,
+    )
+    .all(`reparto-linea:${line.id}`) as {
+    accion: string;
+    revision: number;
+    revision_previa: number;
+    actor: string;
+    instante: string;
+    campos: string;
+    motivo: string | null;
+  }[];
+  expect(rows.map((row) => row.accion)).toEqual([
+    "alta",
+    "edición",
+    "exclusión",
+  ]);
+  expect(rows.map((row) => row.revision)).toEqual([1, 2, 3]);
+  expect(rows.map((row) => row.revision_previa)).toEqual([0, 1, 2]);
+  expect(rows.every((row) => row.actor === "usuario-unico")).toBe(true);
+  expect(
+    rows.every((row) => row.instante === new Date(now).toISOString()),
+  ).toBe(true);
+  expect(JSON.parse(rows[0].campos)).toMatchObject({
+    presupuesto: preA,
+    importe: "20.00",
+    incluida: true,
+  });
+  expect(JSON.parse(rows[1].campos)).toMatchObject({
+    cambios: { concepto: "Concepto revisado" },
+  });
+  expect(rows[2].motivo).toBe("No se financia este mes");
+  expect(JSON.parse(rows[2].campos)).toMatchObject({
+    linea: { incluida: false, motivoExclusion: "No se financia este mes" },
+  });
+  // `reparto_audit` keeps covering header transitions only.
+  expect(
+    (
+      db
+        .query("SELECT count(*) n FROM reparto_audit WHERE reparto=?")
+        .get(reparto) as { n: number }
+    ).n,
+  ).toBe(1);
+});
+
+test("R-13 importe fuera del rango seguro de céntimos se rechaza sin redondear", async () => {
+  const { db, c1, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1)).data.reparto.id;
+  const tooBig = await presetLine(
+    api.request,
+    reparto,
+    preA,
+    "90071992547409.92",
+  );
+  expect(tooBig.status).toBe(422);
+  expect(tooBig.data.code).toBe("VALIDATION");
+  expect(tooBig.data.fields.importe).toContain("90.071.992.547.409,91");
+  const maxSafe = await presetLine(
+    api.request,
+    reparto,
+    preA,
+    "90071992547409.91",
+  );
+  expect(maxSafe.status).toBe(201);
+  expect(maxSafe.data.item.importe).toBe("90071992547409.91");
+});
+
+test("R-14 propuesta sin destino no es elegible ni propone automáticamente", async () => {
+  const { db, c1, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  // Defensive path: an Aportación row without destination cannot be created
+  // through the API, but preview must still refuse it if legacy data has it.
+  db.run("PRAGMA ignore_check_constraints=ON");
+  try {
+    db.run(
+      "UPDATE presupuestos SET destino=NULL,revision=revision+1,actualizado=? WHERE id=?",
+      [stamp, preA],
+    );
+  } finally {
+    db.run("PRAGMA ignore_check_constraints=OFF");
+  }
+  const response = await api.request(`/api/ciclos/${c1}/reparto/propuesta`);
+  expect(response.status).toBe(200);
+  const item = response.data.items.find(
+    (entry: any) => entry.presupuesto.id === preA,
+  );
+  expect(item.motivos).toContain("SIN_DESTINO");
+  expect(item.elegible).toBe(false);
+  expect(item.propuestaAutomatica).toBe(false);
+  expect(item.importeSugerido).toBe("100.00");
 });

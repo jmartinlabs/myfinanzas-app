@@ -124,8 +124,30 @@ const linea = (
   revision: 1,
   pendiente: null,
   avisos: [],
+  puedeGenerarse: true,
   ...overrides,
 });
+
+const repartoFlags = {
+  cicloCerrado: false,
+  puedeEditar: true,
+  puedeAnadirLineas: true,
+  puedeGenerar: true,
+  puedeCompletar: false,
+  motivosNoCompletar: [],
+};
+
+const avisosSeguimiento = {
+  d8: [],
+  d6: {
+    pendientes: 0,
+    incluidosEnFoto: false,
+    bloquea: false,
+    motivo: "El precierre solo avisa.",
+  },
+  contexto: [],
+  cicloCerrado: false,
+};
 
 test("la propuesta distingue Aportación, Gasto real, No aplica, histórico y parcial", () => {
   const html = renderToStaticMarkup(
@@ -202,6 +224,7 @@ test("el borrador permite editar y excluir antes de generar", () => {
           motivoExclusion: "No se realizará este mes",
         }),
       ]}
+      puedeEditar
       onEdit={() => {}}
       onExclude={() => {}}
       onInclude={() => {}}
@@ -217,6 +240,82 @@ test("el borrador permite editar y excluir antes de generar", () => {
   expect(html).not.toContain("Ejecutar");
 });
 
+test("D8 y Generado: avisos por línea, lectura y sin editar/excluir lo generado", () => {
+  const readOnly = renderToStaticMarkup(
+    <RepartoBorradorTabla
+      lineas={[
+        linea({
+          avisos: ["PRESUPUESTO_INACTIVO"],
+          puedeGenerarse: false,
+        }),
+        linea({ id: 4, pendiente: pendiente() }),
+      ]}
+      onEdit={() => {}}
+      onExclude={() => {}}
+      onInclude={() => {}}
+    />,
+  );
+  expect(readOnly).toContain("Histórico · no se generará un pendiente nuevo.");
+  expect(readOnly).toContain("No se generará mientras existan avisos");
+  expect(readOnly).toContain("Generada · no editable");
+  expect(readOnly).toContain("Solo lectura");
+  expect(readOnly).not.toContain("Editar línea 3");
+  expect(readOnly).not.toContain("Excluir línea 4");
+
+  const editable = renderToStaticMarkup(
+    <RepartoBorradorTabla
+      lineas={[linea({ avisos: ["PRESUPUESTO_INACTIVO"], puedeGenerarse: false })]}
+      puedeEditar
+      onEdit={() => {}}
+      onExclude={() => {}}
+      onInclude={() => {}}
+    />,
+  );
+  // D8 keeps the historical line editable but never generable.
+  expect(editable).toContain("Editar línea 3");
+  expect(editable).toContain("Excluir línea 3");
+});
+
+test("el completado depende de puedeCompletar y muestra los motivos del servidor", () => {
+  const seguimiento: RepartoSeguimientoDTO = {
+    reparto: {
+      id: 1,
+      ciclo: { id: "C1", inicio: "2026-01-01", fin: "2026-01-31" },
+      estado: "Generado",
+      origenComun: saldo("S001", "Cuenta principal"),
+      revision: 2,
+      lineas: [],
+      creado: "",
+      actualizado: "",
+      ...repartoFlags,
+      puedeEditar: false,
+      puedeCompletar: false,
+      motivosNoCompletar: [
+        { code: "LINEA_SIN_PENDIENTE", lineas: [4] },
+      ],
+    },
+    resumen: {
+      lineas: 2,
+      incluidas: 2,
+      pendientes: 0,
+      confirmadas: 1,
+      canceladas: 0,
+      importePendiente: "0.00",
+      importeConfirmado: "60.00",
+    },
+    lineas: [],
+    puedeCompletar: false,
+    motivosNoCompletar: [{ code: "LINEA_SIN_PENDIENTE", lineas: [4] }],
+    avisos: { ...avisosSeguimiento, cicloCerrado: true },
+  };
+  const html = renderToStaticMarkup(
+    <RepartoSeguimientoPanel seguimiento={seguimiento} />,
+  );
+  expect(html).toContain("cierre financiero");
+  expect(html).toContain("Faltan pendientes para las líneas 4.");
+  expect(html).toMatch(/<button[^>]*disabled[^>]*>Completar reparto/);
+});
+
 test("el seguimiento no ofrece editar/excluir y conserva la cancelación con motivo", () => {
   const seguimiento: RepartoSeguimientoDTO = {
     reparto: {
@@ -228,6 +327,12 @@ test("el seguimiento no ofrece editar/excluir y conserva la cancelación con mot
       lineas: [],
       creado: "2026-01-01T00:00:00.000Z",
       actualizado: "2026-01-01T00:00:00.000Z",
+      ...repartoFlags,
+      puedeEditar: false,
+      puedeCompletar: false,
+      motivosNoCompletar: [
+        { code: "PENDIENTE_NO_TERMINAL", pendientes: [7] },
+      ],
     },
     resumen: {
       lineas: 2,
@@ -237,8 +342,10 @@ test("el seguimiento no ofrece editar/excluir y conserva la cancelación con mot
       canceladas: 0,
       importePendiente: "60.00",
       importeConfirmado: "40.00",
-      todasTerminales: false,
     },
+    puedeCompletar: false,
+    motivosNoCompletar: [{ code: "PENDIENTE_NO_TERMINAL", pendientes: [7] }],
+    avisos: { ...avisosSeguimiento, d6: { ...avisosSeguimiento.d6, pendientes: 1 } },
     lineas: [
       linea({ pendiente: pendiente() }),
       linea({
@@ -291,6 +398,11 @@ test("un reparto completado se presenta como terminal", () => {
           lineas: [],
           creado: "",
           actualizado: "",
+          ...repartoFlags,
+          puedeEditar: false,
+          puedeAnadirLineas: false,
+          puedeGenerar: false,
+          puedeCompletar: true,
         },
         resumen: {
           lineas: 1,
@@ -300,8 +412,10 @@ test("un reparto completado se presenta como terminal", () => {
           canceladas: 0,
           importePendiente: null,
           importeConfirmado: "60.00",
-          todasTerminales: true,
         },
+        puedeCompletar: true,
+        motivosNoCompletar: [],
+        avisos: avisosSeguimiento,
         lineas: [
           linea({
             pendiente: pendiente({
@@ -471,6 +585,27 @@ test("los normalizadores aceptan el contrato real del incremento 2", () => {
   expect(propuesta.items[1].mantenerEnOrigen).toBe(true);
   expect(propuesta.items[2].sinPropuesta).toBe(true);
 
+  const sinDestino = normalizePropuesta({
+    items: [
+      {
+        presupuesto: {
+          ...presupuesto("PRE-D", "Sin destino", "Aportación a saldo"),
+          destino: null,
+        },
+        delMes: "100.00",
+        pendiente: "60.00",
+        importeSugerido: "60.00",
+        propuestaAutomatica: false,
+        elegible: false,
+        motivos: ["SIN_DESTINO"],
+      },
+    ],
+  });
+  expect(sinDestino.items[0].elegible).toBe(false);
+  expect(sinDestino.items[0].motivoNoElegible).toContain(
+    "no tiene destino configurado",
+  );
+
   const reparto = normalizeReparto({
     creado: false,
     reparto: {
@@ -479,6 +614,12 @@ test("los normalizadores aceptan el contrato real del incremento 2", () => {
       estado: "Borrador",
       origenComun: saldo("S001", "Cuenta principal"),
       revision: 1,
+      cicloCerrado: false,
+      puedeEditar: true,
+      puedeAnadirLineas: true,
+      puedeGenerar: true,
+      puedeCompletar: false,
+      motivosNoCompletar: [{ code: "SIN_PENDIENTES" }],
       lineas: [
         {
           id: 4,
@@ -492,6 +633,7 @@ test("los normalizadores aceptan el contrato real del incremento 2", () => {
           revision: 1,
           pendiente: { id: 7, estado: "Pendiente de realizar", importe: "60.00" },
           avisos: [],
+          puedeGenerarse: false,
         },
       ],
     },
@@ -500,6 +642,11 @@ test("los normalizadores aceptan el contrato real del incremento 2", () => {
   expect(reparto?.ciclo.id).toBe("C1");
   expect(reparto?.lineas[0].pendiente?.id).toBe(7);
   expect(reparto?.lineas[0].incluida).toBe(true);
+  expect(reparto?.lineas[0].puedeGenerarse).toBe(false);
+  expect(reparto?.puedeEditar).toBe(true);
+  expect(reparto?.puedeAnadirLineas).toBe(true);
+  expect(reparto?.puedeGenerar).toBe(true);
+  expect(reparto?.motivosNoCompletar).toEqual([{ code: "SIN_PENDIENTES" }]);
 
   const seguimiento = normalizeSeguimiento(
     {
@@ -517,6 +664,30 @@ test("los normalizadores aceptan el contrato real del incremento 2", () => {
     [pendiente()],
   );
   expect(seguimiento?.resumen.pendientes).toBe(1);
-  expect(seguimiento?.resumen.todasTerminales).toBe(false);
+  expect(seguimiento?.puedeCompletar).toBe(false);
+  expect(seguimiento?.motivosNoCompletar).toEqual([]);
+  expect(seguimiento?.avisos.cicloCerrado).toBe(false);
   expect(seguimiento?.lineas[0].pendiente?.origen?.id).toBe("S001");
+
+  // No client fallback: a terminal-looking summary never enables completion
+  // when the server says it is blocked.
+  const blocked = normalizeSeguimiento({
+    reparto,
+    lineas: [],
+    resumen: {
+      lineas: 1,
+      incluidas: 0,
+      pendientesDeRealizar: 0,
+      confirmadas: 0,
+      canceladas: 0,
+    },
+    puedeCompletar: false,
+    motivosNoCompletar: [{ code: "SIN_PENDIENTES" }],
+    avisos: {
+      cicloCerrado: false,
+      d6: { pendientes: 0, incluidosEnFoto: false, bloquea: false },
+    },
+  });
+  expect(blocked?.puedeCompletar).toBe(false);
+  expect(blocked?.motivosNoCompletar).toEqual([{ code: "SIN_PENDIENTES" }]);
 });

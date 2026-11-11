@@ -337,6 +337,13 @@ export type TransferenciaPendienteImpactoDTO = {
 
 export type RepartoEstado = "Borrador" | "Generado" | "Completado";
 
+// Server-decided completion blockers; the client only renders them.
+export type RepartoMotivoNoCompletar = {
+  code: string;
+  lineas?: number[];
+  pendientes?: number[];
+};
+
 export type RepartoLineaDTO = {
   id: number;
   clase: "Presupuesto" | "Adicional";
@@ -358,6 +365,7 @@ export type RepartoLineaDTO = {
   revision: number;
   pendiente: TransferenciaPendienteDTO | null;
   avisos: string[];
+  puedeGenerarse: boolean;
 };
 
 export type RepartoDTO = {
@@ -369,6 +377,12 @@ export type RepartoDTO = {
   lineas: RepartoLineaDTO[];
   creado: string;
   actualizado: string;
+  cicloCerrado: boolean;
+  puedeEditar: boolean;
+  puedeAnadirLineas: boolean;
+  puedeGenerar: boolean;
+  puedeCompletar: boolean;
+  motivosNoCompletar: RepartoMotivoNoCompletar[];
 };
 
 export type RepartoPropuestaItemDTO = {
@@ -428,9 +442,25 @@ export type RepartoSeguimientoDTO = {
     canceladas: number;
     importePendiente: string | null;
     importeConfirmado: string | null;
-    todasTerminales: boolean;
   };
   lineas: RepartoLineaDTO[];
+  puedeCompletar: boolean;
+  motivosNoCompletar: RepartoMotivoNoCompletar[];
+  avisos: {
+    d8: { linea: number; presupuesto: string | null; motivo: string }[];
+    d6: {
+      pendientes: number;
+      incluidosEnFoto: boolean;
+      bloquea: boolean;
+      motivo: string;
+    };
+    contexto: {
+      linea: number;
+      presupuesto: string | null;
+      motivos: string[];
+    }[];
+    cicloCerrado: boolean;
+  };
 };
 
 export type SharedCase = {
