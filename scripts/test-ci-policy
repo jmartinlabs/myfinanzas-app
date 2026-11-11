@@ -623,6 +623,19 @@ class CiWorkflowTests(unittest.TestCase):
         legacy.write_text('name: Legacy\non: [push, pull_request]\njobs: {}\n')
         self.assertTrue(WORKFLOW['validate_workflow'](legacy))
 
+    def test_required_check_name_is_stable_and_profile_job_publishes_the_profile(self):
+        required = self.candidate['jobs']['required']
+        # No job-level name: the protected check keeps the fixed id `required`.
+        self.assertNotIn('name', required)
+        self.assertEqual(required['outputs'], {'profile': '${{ steps.plan.outputs.profile }}'})
+        profile = self.candidate['jobs']['profile']
+        self.assertEqual(profile['name'],
+                         "CI profile: ${{ needs.required.outputs.profile || 'UNKNOWN' }}")
+        self.assertEqual(profile['needs'], 'required')
+        self.assertEqual(profile['if'], '${{ always() }}')
+        self.assertEqual(len(profile['steps']), 1)
+        self.assertNotIn('scripts/verify', profile['steps'][0]['run'])
+
     def test_reject_semantic_mutations(self):
         mutations = {
             'missing selector': lambda w: w['jobs']['required']['steps'].remove(by_id(w, 'plan')),
@@ -673,6 +686,16 @@ class CiWorkflowTests(unittest.TestCase):
             'skip Linux setup': lambda w: by_id(w, 'prepare').update({'if': False}),
             'system browser substitution': lambda w: w['jobs']['required'].update(env={'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': '/usr/bin/chromium'}),
             'application skipped': lambda w: by_id(w, 'verify').update({'if': False}),
+            'profile job removed': lambda w: w['jobs'].pop('profile'),
+            'profile check name loses profile': lambda w: w['jobs']['profile'].update(
+                {'name': 'CI profile'}),
+            'profile job loses dependency': lambda w: w['jobs']['profile'].pop('needs'),
+            'profile job can be skipped': lambda w: w['jobs']['profile'].pop('if'),
+            'required loses profile output': lambda w: w['jobs']['required'].pop('outputs'),
+            'profile job runs verification': lambda w: w['jobs']['profile']['steps'][0].update(
+                run='python3 scripts/verify baseline'),
+            'extra job': lambda w: w['jobs'].update(
+                extra={'runs-on': 'ubuntu-24.04', 'steps': [{'run': 'echo extra'}]}),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name):

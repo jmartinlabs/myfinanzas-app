@@ -186,9 +186,11 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   no es `docs`; una comparación `docs` omite aplicación y regresiones del harness.
   `--full` fuerza toda la cobertura local (baseline, tipos/build, API/SQLite y E2E).
   La excepción histórica AC23 sigue limitada a su rama.
-- CI usa un único job `required`: `ci-plan`, baseline, preparación y `ci`, más
-  `ci-result` siempre. Este último rechaza fases ausentes, fallidas, canceladas o
-  con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
+- CI usa un único job de ejecución `required`: `ci-plan`, baseline, preparación y
+  `ci`, más `ci-result` siempre. Un job adicional `profile` (solo metadatos, sin pasos
+  de verificación) depende de `required` y publica el perfil en el nombre del check.
+  `ci-result` rechaza fases ausentes, fallidas, canceladas o con skips fuera de la
+  matriz; no concede un PASS local ni una aprobación de merge.
 - Eventos (revisión 2026-11-11): PR hacia `main` o `test` —incluido
   `ready_for_review` para que un draft que pasa a listo reciba validación—, push del
   tag `deploy-test-v*` y manual completo. Ya **no** hay push automático a `main` ni a
@@ -239,12 +241,14 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   conserva su texto aprobado (`feature/* → main`) hasta que su dueño lo actualice: este
   apartado posee solo la mecánica de CI y no reescribe esa decisión funcional.
 - **Visibilidad del perfil (2026-11-11):** el job obligatorio conserva el nombre fijo
-  `required`; el perfil seleccionado se publica como `Perfil CI: DOCS|FAST|CRITICAL|FULL`
-  en el step summary. El nombre del run no puede mostrar el perfil porque se evalúa antes
-  de clasificar. Listar los checks de una PR con sus nombres exigiría permisos
-  `checks: read` y un paso adicional; no se añade, y la visibilidad queda limitada a
-  Actions y al step summary. El nombre `required` no configura por sí solo la protección
-  de rama.
+  `required` (sin `name`, el check se llama como el id) y su step summary publica
+  `Perfil CI: DOCS|FAST|CRITICAL|FULL`. Un job adicional `profile`, dependiente de
+  `required` con `always()` y sin pasos de verificación, lleva el perfil en el nombre
+  del check: `CI profile: docs|fast|critical|full` (`UNKNOWN` si falta el output). Así
+  la lista de checks de la PR muestra el perfil sin permisos `checks: read` ni un paso
+  extra que consulte la API. El nombre del run no puede mostrar el perfil porque se
+  evalúa antes de clasificar. El nombre `required` no configura por sí solo la
+  protección de rama.
 - **Deploy por tag (2026-11-11):** `rootless.yml` conserva PR por paths, tags
   `deploy-test-v*` y manual, sin push de `test`. El job `qa` mantiene solo la cobertura
   exclusiva `bun test apps/web`; tipos, build y baseline ya los ejecuta `required` full
