@@ -81,9 +81,9 @@ No incluye:
   o dato de informes.
 - Implementar API, SQLite, migraciones o UI en esta fase.
 
-`[PENDIENTE]` La interpretación de E2.3 que permite «preparar» sin «automatizar
-Transferencias» ni «ejecutar el plan» requiere aprobación explícita. Sin ella, este
-documento no habilita desarrollo. Se detalla en §17 (D1).
+`[CONFIRMADO 2026-11-11]` La interpretación de E2.3 que permite «preparar» sin
+«automatizar Transferencias» ni «ejecutar el plan» fue aprobada explícitamente como D1
+(§0 y §17). Preparar pendientes no ejecuta pagos ni da el plan por ejecutado.
 
 ## 2. Autoridad y dependencias
 
@@ -584,7 +584,11 @@ sintéticos.
 | AC-24 | Comparar el reparto con E2.3 y con el Plan anual | El reparto parte del «Del mes» mensual de E2.3, no del Plan anual completo; el reparto no divide ni prorratea el anual; SPEC10 conserva su equivalente esencial mensual; no hay segunda lógica de plan | F36-PLAN | SPEC09/SPEC10; §9 |
 | AC-25 | Cerrar y reabrir un borrador antes de generar | Conserva líneas, origen, importe y fecha prevista; no crea pendientes ni efectos; tras generar, reabrir y añadir solo crea los pendientes nuevos | F36-PLAN | §7; AC-17 |
 
-## 17. Decisiones que requieren aprobación
+## 17. Decisiones aprobadas
+
+`[CONFIRMADO 2026-11-11]` D1–D10 fueron aprobadas por el usuario con las precisiones D8 y
+D3 registradas en §0. La columna «Gate» se conserva como referencia histórica del momento
+en que cada decisión estaba pendiente; no describe el estado actual.
 
 | # | Decisión | Propuesta de esta spec | Gate |
 | --- | --- | --- | --- |
