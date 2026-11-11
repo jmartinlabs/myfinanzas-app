@@ -22,7 +22,7 @@ conservan las etiquetas con las que se escribieron; no se reescriben.
 | INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
 | DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag correcto en `960c151`; fallo de reinicio SSH con rollback correcto; sin recrear/mover; sin GHCR |
 | UI | approved (enmienda Graphite 2026-11-10; 1A integrado) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera. Graphite 1A integrado en `test` (`bff714e`, #356); integración visual premium pendiente |
-| SPEC36 | approved 2026-11-11 (D1–D10; precisiones D8/D3) | inc1: esquema v28 #388 en revisión + servicio/API en rama `6d9d340`; inc2 pendiente | schema QA técnico APTO; registro de aprobación en este commit | n/a | n/a | v28/C28 autorizados y comprobados; SPEC37 no autorizada; sin datos reales ni despliegue |
+| SPEC36 | approved 2026-11-11 (D1–D10; precisiones D8/D3; enmienda C) | inc1: v28 #388 integrado + servicio/API en rama `6d9d340`; adaptador de lectura en preparación; inc2 pendiente | schema QA técnico APTO; enmienda C aprobada | n/a | n/a | v28/C28 integrados; enmienda C sustituye solo el acoplamiento a E2.3; v29/motor no autorizados; SPEC37 no autorizada; sin datos reales ni despliegue |
 
 ## SPEC36 · autorización 2026-11-11
 
@@ -32,9 +32,13 @@ conservan las etiquetas con las que se escribieron; no se reescriben.
   Texto y alcance en [SPEC36 §0](36-reparto-mensual-asistido-presupuestos-specification.md#0-registro-de-aprobación--2026-11-11).
 - **Secuencia autorizada:** (1) mecanismo compartido de Transferencia pendiente; (2) reparto
   mensual asistido; SPEC37 queda como consumidor posterior y **no** tiene DEV autorizado.
+- **Enmienda C (2026-11-11):** origen de plan explícito por Ciclo (`PlanCiclo`/`Dprima`),
+  adaptador de solo lectura y un único motor/pendiente; D′ es objetivo pero no se activa
+  hasta paridad y aceptación. Solo se enmienda el acoplamiento exclusivo a E2.3 y la
+  lectura de D8; D1–D7, D9 y D10 no se reabren.
 - **Límites:** sin datos reales, migración operativa ni despliegue; v28 se entrega en PR
   independiente y no se aplica a TEST v0.1.2. La aceptación con fixtures no es aceptación
-  funcional.
+  funcional. v29 y el motor de reparto no están autorizados.
 
 ## UI · Graphite Lime · frontera documental (2026-11-10)
 
