@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3020;
+const PORT = 3028;
 let child: ReturnType<typeof spawn> | undefined;
 
 test.beforeAll(async ({ request }) => {
