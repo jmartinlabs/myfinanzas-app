@@ -5,21 +5,45 @@ This is deliberately a checker, not a second evidence registry. The coordinator
 records the command, environment and raw logs in the existing testplan/checkpoint;
 this program only refuses stale, dirty or incomplete evidence. It cannot prove
 that a log is authentic: independent QA still inspects the raw output.
+
+The --qa-equivalence mode is a different check: it proves that the integration
+commit contains exactly the content of an independently reviewed commit and that
+the declared QA reference is a real GitHub artifact bound to that commit and its
+pull request. Reusing QA evidence this way never substitutes independent QA,
+merge approval or deployment authorization.
 """
 import argparse
 import hashlib
+import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 SHA = re.compile(r'[0-9a-f]{40}')
+REPOSITORY = re.compile(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+')
+REVIEW = re.compile(r'pullrequestreview-([0-9]+)')
+DISCUSSION = re.compile(r'discussion_r([0-9]+)')
+ISSUE_COMMENT = re.compile(r'issuecomment-([0-9]+)')
+COMMIT_COMMENT = re.compile(r'commitcomment-([0-9]+)')
 
 
 def git(root, *args):
     return subprocess.run(['git', '-C', str(root), *args], text=True,
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def full_sha(value, label):
+    require(SHA.fullmatch(value or '') is not None, f'{label} must be a full commit SHA')
+    return value
 
 
 def pairs(values, label):
@@ -34,16 +58,166 @@ def pairs(values, label):
     return result
 
 
-def require(condition, message):
-    if not condition:
-        raise ValueError(message)
+def commit_exists(root, sha):
+    return git(root, 'cat-file', '-e', sha + '^{commit}').returncode == 0
+
+
+def tree_oid(root, sha):
+    result = git(root, 'rev-parse', sha + '^{tree}')
+    require(result.returncode == 0, f'cannot resolve the tree of {sha}')
+    return result.stdout.strip()
+
+
+def commit_parents(root, sha):
+    result = git(root, 'rev-list', '--parents', '-n', '1', sha)
+    require(result.returncode == 0, f'cannot resolve the parents of {sha}')
+    return result.stdout.split()[1:]
+
+
+def ancestry(root, ancestor, descendant):
+    result = git(root, 'merge-base', '--is-ancestor', ancestor, descendant)
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    raise ValueError(f'cannot resolve ancestry between {ancestor} and {descendant}')
+
+
+def merge_tree(root, base, other):
+    """Return the clean merge tree of both commits, or None when it conflicts."""
+    result = git(root, 'merge-tree', '--write-tree', base, other)
+    if result.returncode != 0:
+        return None
+    value = result.stdout.split()
+    if not value or SHA.fullmatch(value[0]) is None:
+        return None
+    return value[0]
+
+
+def api(endpoint):
+    result = subprocess.run(['gh', 'api', endpoint], text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    require(result.returncode == 0,
+            'QA evidence lookup failed for ' + endpoint + '; publish real evidence first')
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise ValueError('QA evidence lookup returned invalid JSON: ' + str(error))
+
+
+def check_evidence_artifact(repository, pull_request, reviewed, url):
+    """Require a real GitHub artifact bound to the reviewed commit and its PR."""
+    parsed = urlparse(url)
+    require(parsed.scheme == 'https' and parsed.netloc == 'github.com',
+            'QA evidence must be an https://github.com URL')
+    parts = [part for part in parsed.path.split('/') if part]
+    require(len(parts) >= 4 and parts[0] + '/' + parts[1] == repository,
+            'QA evidence belongs to another repository')
+    kind, identifier, fragment = parts[2], parts[3], parsed.fragment
+
+    if kind == 'pull':
+        require(identifier.isdigit() and int(identifier) == pull_request,
+                'QA evidence does not belong to the declared pull request')
+        match = REVIEW.fullmatch(fragment)
+        if match:
+            data = api(f'repos/{repository}/pulls/{pull_request}/reviews/{match.group(1)}')
+            require(data.get('commit_id') == reviewed,
+                    'QA review does not belong to the reviewed commit')
+            require(data.get('state') not in ('CHANGES_REQUESTED', 'DISMISSED'),
+                    'QA review was not favourable')
+            require((data.get('body') or '').strip(), 'QA review body is empty')
+            return 'review:' + match.group(1)
+        match = DISCUSSION.fullmatch(fragment)
+        if match:
+            data = api(f'repos/{repository}/pulls/comments/{match.group(1)}')
+            require(reviewed in (data.get('commit_id'), data.get('original_commit_id')),
+                    'QA review comment does not belong to the reviewed commit')
+            require((data.get('body') or '').strip(), 'QA review comment body is empty')
+            return 'review-comment:' + match.group(1)
+        match = ISSUE_COMMENT.fullmatch(fragment)
+        if match:
+            data = api(f'repos/{repository}/issues/comments/{match.group(1)}')
+            require(str(data.get('issue_url', '')).endswith(f'/issues/{pull_request}'),
+                    'QA comment does not belong to the declared pull request')
+            body = data.get('body') or ''
+            require(body.strip(), 'QA comment body is empty')
+            require(reviewed in body, 'QA comment does not name the reviewed commit')
+            return 'issue-comment:' + match.group(1)
+        raise ValueError('QA evidence must point to a review, review comment or PR comment')
+
+    if kind == 'commit':
+        require(identifier.lower() == reviewed,
+                'QA evidence commit differs from the reviewed commit')
+        match = COMMIT_COMMENT.fullmatch(fragment)
+        require(match is not None, 'QA evidence must point to a commit comment')
+        data = api(f'repos/{repository}/comments/{match.group(1)}')
+        require(data.get('commit_id') == reviewed,
+                'QA commit comment does not belong to the reviewed commit')
+        require((data.get('body') or '').strip(), 'QA commit comment body is empty')
+        return 'commit-comment:' + match.group(1)
+
+    raise ValueError('QA evidence must be a pull request or commit URL in this repository')
+
+
+def qa_equivalence(args):
+    """Reuse QA of a reviewed commit when the integration tree contains it exactly."""
+    root = args.root.resolve()
+    integration = full_sha(args.integration, 'integration')
+    reviewed = full_sha(args.reviewed, 'reviewed')
+    require(args.pr is not None and args.pr > 0, 'a positive --pr is required')
+    require(bool(args.evidence), '--evidence is required')
+    repository = args.repository or os.getenv('GITHUB_REPOSITORY', '')
+    require(REPOSITORY.fullmatch(repository) is not None, 'repository owner/name is required')
+    for value, label in ((integration, 'integration'), (reviewed, 'reviewed')):
+        require(commit_exists(root, value), f'{label} commit is unavailable: {value}')
+
+    artifact = check_evidence_artifact(repository, args.pr, reviewed, args.evidence)
+    pull = api(f'repos/{repository}/pulls/{args.pr}')
+    require(pull.get('merged') is True, f'pull request #{args.pr} is not merged')
+    head = (pull.get('head') or {}).get('sha') or ''
+    require(SHA.fullmatch(head) is not None,
+            f'pull request #{args.pr} head SHA is unavailable')
+    require(commit_exists(root, head),
+            f'pull request head {head} is unavailable; fetch refs/pull/{args.pr}/head first')
+    require(ancestry(root, reviewed, head),
+            'reviewed commit is not part of the declared pull request')
+
+    target = tree_oid(root, integration)
+    if tree_oid(root, reviewed) == target:
+        mode = 'tree'
+    else:
+        parents = commit_parents(root, integration)
+        require(bool(parents), 'integration commit has no parent')
+        require(merge_tree(root, parents[0], reviewed) == target,
+                'integration tree is not the reviewed content composed onto its first '
+                'parent; a conflict resolution, extra change or different commit '
+                'requires new independent QA')
+        mode = 'merge'
+
+    reference = (f'reviewed={reviewed} integration={integration} '
+                 f'pr={args.pr} qa={args.evidence}')
+    print('QA equivalence PASS')
+    print('mode=' + mode)
+    print('integration=' + integration)
+    print('reviewed=' + reviewed)
+    print('tree=' + target)
+    print('evidence=' + artifact)
+    print('qa_reference=' + reference)
+    return 0
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--candidate', required=True)
-    parser.add_argument('--base', required=True)
-    parser.add_argument('--environment', required=True,
+    parser.add_argument('--qa-equivalence', action='store_true',
+                        help='reuse QA of --reviewed when --integration contains it exactly')
+    parser.add_argument('--integration', help='commit that will be tagged and deployed')
+    parser.add_argument('--reviewed', help='independently reviewed commit SHA')
+    parser.add_argument('--pr', type=int, help='pull request number of the reviewed commit')
+    parser.add_argument('--evidence', help='GitHub URL of the independent QA evidence')
+    parser.add_argument('--repository', help='owner/name of the GitHub repository')
+    parser.add_argument('--candidate')
+    parser.add_argument('--base')
+    parser.add_argument('--environment',
                         help='tested environment, for example linux-debian13-glibc')
     parser.add_argument('--base-ref', help='optional ref that must equal --base')
     parser.add_argument('--linux-required', default='',
@@ -54,6 +228,10 @@ def main(argv=None):
     parser.add_argument('--root', type=Path, default=ROOT)
     args = parser.parse_args(argv)
     try:
+        if args.qa_equivalence:
+            return qa_equivalence(args)
+        require(args.candidate and args.base and args.environment,
+                'candidate, base and environment are required')
         root = args.root.resolve()
         require(SHA.fullmatch(args.candidate or '') is not None, 'candidate must be a full commit SHA')
         require(SHA.fullmatch(args.base or '') is not None, 'base must be a full commit SHA')
