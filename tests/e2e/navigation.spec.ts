@@ -136,7 +136,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   const expectedGroups = [
     ["Resumen y control", ["/flujo-mensual", "/pendientes", "/resumen-anual"]],
     ["Patrimonio", ["/saldos", "/inversiones", "/deudas"]],
-    ["Presupuestos y planificación", ["/clasificacion/partidas", "/dprima", "/planes-ciclo", "/nomina", "/presupuestos", "/plan-anual"]],
+    ["Presupuestos y planificación", ["/dprima", "/planes-ciclo", "/nomina", "/clasificacion/partidas", "/presupuestos", "/plan-anual"]],
     ["Casos y gastos especiales", ["/referencias", "/anticipos", "/compartidos", "/vehiculos", "/comida", "/revision-comida"]],
     ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre", "/fotos"]],
   ];
@@ -153,6 +153,29 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       ),
     ).toEqual(expected);
   }
+
+  // Las entradas heredadas quedan visualmente separadas y Comida es única.
+  const presupuestos = sections.filter({ hasText: "Presupuestos y planificación" });
+  await presupuestos.locator(".nav-group-toggle").click();
+  await expect(
+    presupuestos.locator(".nav-legacy-label"),
+  ).toContainText("Heredado");
+  await expect(
+    presupuestos.locator(".nav-link-legacy").first(),
+  ).toContainText("Presupuestos (legado)");
+  const casos = sections.filter({ hasText: "Casos y gastos especiales" });
+  await casos.locator(".nav-group-toggle").click();
+  await expect(casos.getByRole("link", { name: "Comida", exact: true })).toBeVisible();
+  await expect(
+    casos.getByRole("link", { name: "Comida · hechos", exact: true }),
+  ).toHaveCount(0);
+  mkdirSync("artifacts/ui-02", { recursive: true });
+  await page.screenshot({
+    path: "artifacts/ui-02/nav-legacy-1440.png",
+    fullPage: true,
+  });
+  await presupuestos.locator(".nav-group-toggle").click();
+  await casos.locator(".nav-group-toggle").click();
 
   // Solo las cabeceras llevan chevron; los enlaces no.
   expect(await nav.locator(".nav-group-chevron").count()).toBe(
