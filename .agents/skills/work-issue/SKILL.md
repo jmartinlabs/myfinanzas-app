@@ -11,10 +11,27 @@ ownership and QA remain in [orchestrate](../orchestrate/SKILL.md); this Skill on
 *which* Issue an agent may take and records it. Implementation: `scripts/work-issue`;
 regression suite: `scripts/test-work-issue`.
 
+## Skill and tool — two different things
+
+- **`$work-issue` (this Skill)** is the *procedure*: when an Issue may be taken, in which
+  order, what evidence must be published, how the session continues across Issues and when it
+  ends. It is not a program and does nothing by itself: it runs only inside an agent that
+  reads it and follows it.
+- **`scripts/work-issue`** is the *command-line tool* that procedure uses for the mechanical
+  part: `inventory` (read the Project), `next` (compute the agent's queue, read-only),
+  `context` (recover context and publish the receipt), `take` (reserve) and `move` (the one
+  transition a phase permits). It creates no branch, PR, merge or approval, executes no phase
+  and has no session or memory of its own between calls.
+- Therefore `@work-issue opencode` asks the **agent** to run a session over that agent's
+  queue, while `scripts/work-issue next --agent opencode` is one read-only call inside that
+  session. Naming the agent in the Skill invocation names the queue; the tool needs
+  `--agent` on `next`/`take`/`move` only because it cannot carry a session.
+
 ## Inputs
-- An explicit request to take work (`work-issue`, `coge una Issue Ready`, or the equivalent
-  from the coordinator), the Project number/owner and the agent identity (`opencode`,
-  `hermes`, `codex`).
+- An explicit request to take work (`work-issue`, `@work-issue opencode`, `coge una Issue
+  Ready`, or the equivalent from the coordinator), the Project number/owner and the agent
+  identity (`opencode`, `hermes`, `codex`). Naming the agent is naming the queue the session
+  works until it is exhausted.
 - `$work-issue` on its own is already a complete instruction. It does not need the user to
   name an Issue, choose one, ask to read the Ready ones, ask for a distribution or ask for a
   PR: everything in this Skill is the method, not extra user input.
@@ -25,23 +42,77 @@ regression suite: `scripts/test-work-issue`.
 
 ## Outputs
 An inventory of every Ready Issue with phase, label routing, dependencies and next action;
-optionally one reservation (`claim comment + assignee + In Progress`) or one permitted
-transition; and a short receipt.
+one reservation per Issue the session works (`claim comment + assignee + In Progress`), its
+context receipt and the transitions each phase permits; and a short session ledger.
 
 The **tool** writes nothing else: no branch, no PR, no merge, no approval. The
-**coordinator** that invoked `$work-issue` does not stop at the inventory: once an Issue is
-reserved and its `Status` authorizes a phase, it continues in that phase with the Skill that
-owns it (`spec`, `dev`, `task`, `tweak`) in the same session and delivers branch, PR and
-evidence. Publishing is ordinary work under
+**coordinator** that invoked `$work-issue` does not stop at the inventory nor after one
+Issue: it works the agent's whole eligible queue in the same session, continues each reserved
+Issue in the phase its `Status` authorizes with the Skill that owns it (`spec`, `dev`, `task`,
+`tweak`) and delivers branch, PR and evidence. Publishing is ordinary work under
 [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); merge still
 needs the user's explicit approval.
+
+## Session continuity — one invocation, the whole eligible queue
+
+`@work-issue <agent>` is a **session** of that agent, not a single reservation and not the CLI
+on its own. For as long as the session is active, that one invocation keeps
+taking the agent's eligible Issues in *Selection order* until the queue is empty or a real
+blocker appears. Delivering one Issue, leaving another in review or asking whether to
+continue never ends the session: **the turn yields only when no eligible work remains**, not
+after a single Issue.
+
+Each round:
+
+1. **Recompute the queue** with `scripts/work-issue next --agent X [--exclude a,b]`. It
+   re-reads the Project, so an Issue already delivered has left the queue through its
+   `Status`; nothing is remembered locally and there is no second state to reconcile.
+2. **Recover context and reserve** the Issue it returns, exactly as *Context recovery* and
+   *Reserve* require (a receipt bound to the current fingerprint). Continuity lowers no
+   evidence and opens no gate: one receipt and one reservation per Issue, still one
+   reservation at a time.
+3. **Execute the authorized phase** with the Skill that owns it and deliver the branch, PR
+   and evidence into `test` (`Refs #N`, linked per *PR ↔ Issue linkage*).
+4. **Move it to `{Phase} In Review`** and, in the same turn, go back to step 1.
+5. **Add one ledger line** (below). A human decision keeps that Issue in review and out of
+   the queue; it never stops the round and never blocks a different Issue. An Issue the user
+   returns from review to its phase re-enters the queue in priority order and is resumed with
+   its existing claim — never re-claimed as a second reservation. `next` marks it
+   `· reanudación` so the round knows it is continuing an existing reservation.
+
+Only a declared, open or unverifiable dependency, another agent's ownership, a foreign
+repository, a history over the read limit or a failed precondition removes an Issue from the
+queue — never the fact that a different Issue is waiting for the user. Those blockers are per
+Issue: the session records them and continues with the next one. Hard dependencies keep their
+meaning: an Issue whose dependency is not `Done` stays out even after that dependency reached
+review.
+
+The session ends only when `next` reports no eligible work, every remaining candidate is
+blocked/taken/foreign/routed elsewhere, a real blocker appears (Project or permissions
+unavailable, history over the read limit, truncated inventory), the user stops it, or the
+runtime session itself ends. Nothing schedules this loop: no cron, webhook, bot or
+login hook, and no queue survives the session — the Project is the queue.
+
+### Session ledger (closing report)
+
+One compact table in the reply — never a new document or a second board:
+
+| Issue | Fase | Resultado |
+| --- | --- | --- |
+| #N | development | entregada en PR #M; `Development In Review` |
+| #N | analysis | en revisión: falta decisión sobre X |
+| #N | development | no tomada: depende de #M |
+
+Then the Issues left untouched with their reason, the next eligible work if any, and who must
+act. The ledger reports the session; it authorizes nothing and replaces no `Status`.
 
 ## Selection order
 
 Gates first, priority last:
 
-1. **Candidates.** Only Issues in a real `Ready*` status, unassigned and without an open or
-   unverifiable dependency. A truncated Project read, an item from another repository, an
+1. **Candidates.** Only Issues in a real `Ready*` status, unassigned — or assigned solely to
+   this agent's own existing reservation, which `next` and `take` resume — and without an open
+   or unverifiable dependency. A truncated Project read, an item from another repository, an
    ambiguous label or missing permission removes the candidate.
 2. **Ownership and dependencies beat priority.** A P0 that is blocked, already reserved or
    routed to another agent is not selected merely because it is P0.
@@ -138,9 +209,11 @@ agent, not verdicts: the semantic reading and the decision to stop are the agent
 1. **Read.** Load the Project items with their real `Status`, priority, declared dependencies
    and the Épica/SPEC/Issue references already present in the body. `work-issue` without
    arguments lists **all** Issues in `Ready Analysis`, `Ready Specification` and
-   `Ready Development` — routed and unlabelled — with a proposed distribution. Never assume
-   everything must run at once, and never treat "propose" as "dispatch". A truncated Project
-   reading is reported and cannot be reserved from.
+   `Ready Development` — routed and unlabelled — with a proposed distribution. `next
+   --agent X` reduces that reading to the agent's queue in work order. Never reserve the
+   whole inventory at once: the queue is consumed sequentially, one Issue at a time, by the
+   session. Never treat "propose" as "dispatch". A truncated Project reading is reported and
+   cannot be reserved from, nor consumed as a queue.
 2. **Authorize.** The `Status` is the only phase gate: `Ready {Phase}` means the user
    authorized that phase only. Approving analysis never authorizes specification;
    approving a SPEC never authorizes development. A comment, a label or an `Assignee` is
@@ -179,13 +252,15 @@ agent, not verdicts: the semantic reading and the decision to stop are the agent
 7. **Dispatch only what exists.** Hermes cannot start OpenCode or Codex sessions; no proven
    connector does it either. Without a dispatcher, publish the assignment/handoff and say the
    other agent has **not** started. Never claim a session or parallelism that the runtime
-   cannot evidence. An Issue other than the one reserved stays untouched.
-8. **Deliver.** Finish the authorized phase, publish evidence and the PR or report, then move
-   the Issue to `{Phase} In Review` (`scripts/work-issue move --issue N --to ... --note ...`)
-   and ask for the decision. `move` requires the claim published by the calling agent, matched
-   exactly against that marker, and never performs the initial reservation: `Ready*` only moves
-   through `take`. The tool refuses `Backlog`, every `Ready*` and `Done`: those are the user's.
-   A rejected review is returned by the user to the same phase.
+   cannot evidence. An Issue outside the agent's eligible queue stays untouched.
+8. **Deliver and continue.** Finish the authorized phase, publish evidence and the PR or
+   report, then move the Issue to `{Phase} In Review` (`scripts/work-issue move --issue N --to
+   ... --note ...`) and return to the queue (`next`) for the next eligible Issue instead of
+   waiting for that decision. `move` requires the claim published by the calling agent,
+   matched exactly against that marker, and never performs the initial reservation: `Ready*`
+   only moves through `take`. The tool refuses `Backlog`, every `Ready*` and `Done`: those are
+   the user's. A rejected review is returned by the user to the same phase and re-enters the
+   queue as an eligible Issue for the same agent.
 9. **Block and restore.** `move --to Blocked --previous-status <exact current>` only works from
    the agent's own `{Phase} In Progress` and records the transition inside a delimited record
    (`<!-- work-issue:record -->`), together with `Tipo: Bloqueo` and
@@ -220,6 +295,8 @@ authorize a phase and never replace the `Status`.
 ```bash
 scripts/work-issue                      # full inventory of the three Ready groups
 scripts/work-issue --agent hermes       # own label + unlabelled only
+scripts/work-issue next --agent opencode             # siguiente Issue + cola completa (lectura)
+scripts/work-issue next --agent opencode --exclude 418,420   # ya gestionadas en la sesión
 scripts/work-issue take --issue 406 --agent hermes --dry-run
 scripts/work-issue take --issue 406 --agent hermes
 scripts/work-issue move --issue 406 --agent hermes --to "Development In Review" --note "PR #N y pruebas"
@@ -248,10 +325,13 @@ gh api graphql -f query='query{ repository(owner:"jmartinlabs",name:"myfinanzas-
   pullRequest(number:433){ closingIssuesReferences(first:5){ nodes{ number } } } } }'
 ```
 
-`inventory` and every `--dry-run` are read-only. `take`/`move` require `--agent`; without it the
-tool refuses with exit `2` before touching GitHub. `move` requires the claim published by `take`.
-Exit codes: `0` ok, `2` refused by the protocol (nothing changed, or the tool's own writes were
-retracted), `3` blocked or failed write — the receipt lists any write that could not be undone.
+`inventory`, `next` and every `--dry-run` are read-only. `take`/`move`/`next` require `--agent`;
+without it the tool refuses with exit `2` before touching GitHub. `move` requires the claim
+published by `take`. Exit codes: `0` ok, `2` refused by the protocol (nothing changed, or the
+tool's own writes were retracted), `3` blocked or failed write — the receipt lists any write that
+could not be undone — `4` the agent's queue is empty (nothing to reserve; the session ends).
+`next` prints the whole queue and the one Issue to work, and each round re-reads the Project:
+its exit `4` is the loop's terminal condition, never a verdict on the Issues themselves.
 
 ## Limits of the evidence (declare, do not overclaim)
 - **Markers are not authenticated.** Every agent publishes with the same GitHub account, so a
@@ -265,6 +345,11 @@ retracted), `3` blocked or failed write — the receipt lists any write that cou
   wrote; the tool cannot prove the agent read the sources.
 - **Reservation is best-effort.** GitHub has no compare-and-set on Project fields: there is a
   read-then-write window. Reserve one at a time and verify by re-reading, as the tool does.
+- **Continuity is session-scoped.** The loop belongs to the active session: nothing resumes it
+  after the session ends and no local queue exists to resume from — the Project is the only
+  queue and `next` re-reads it every round. The tool selects and orders the work; it does not
+  execute phases, so continuity of delivery is the coordinator's behaviour, checked by the
+  session ledger.
 - **No deployment of this protocol is automatic.** No cron, webhook or bot dispatches work;
   the study in #406 is analysis only.
 
@@ -273,4 +358,6 @@ Stop and report — without writing — when the Project or its permissions are 
 agent identity is not in the catalogue, the routing label is ambiguous or unknown, the item is
 assigned or already claimed, a dependency is open or unverifiable, or the requested status
 belongs to the user. Never force a transition, never fabricate a dispatch, never act on a
-different Issue to "unblock" this one.
+different Issue to "unblock" this one. Stopping one Issue never stops the session: record the
+reason, keep it out of the queue and continue with the next eligible Issue. Only an empty
+queue or a condition that affects every candidate ends the session.
