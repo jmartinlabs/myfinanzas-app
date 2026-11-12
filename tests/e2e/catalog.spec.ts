@@ -6,14 +6,18 @@ import { totp } from "../../apps/api/src/auth";
 import { cycleJourney } from "./ciclos";
 import { classificationJourney } from "./classification";
 
+const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
+
 test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración responsive", async ({
   page,
   request,
 }) => {
+  test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const password = "Contraseña ficticia de navegador " + randomUUID();
   mkdirSync("artifacts/e1-1", { recursive: true });
+  mkdirSync("artifacts/dev-06-i3", { recursive: true });
   const shot = async (name: string) => {
     expect(
       await page.evaluate(
@@ -25,10 +29,29 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       fullPage: true,
     });
   };
+  // UI DEV-06 I3: evidencia de ficha/formulario sin recortar y sin overflow.
+  const evidence = async (name: string) => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `artifacts/dev-06-i3/${name}.png`,
+      fullPage: true,
+    });
+  };
   expect((await request.get("/api/saldos")).status()).toBe(401);
   await page.goto("/saldos");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(".local/e2e/bootstrap.txt", "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
@@ -45,6 +68,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(
     page.getByRole("heading", { name: "Saldos", exact: true }),
   ).toBeVisible();
+  const themeSelect = page.getByLabel("Apariencia");
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
   await expect(
     page.getByRole("region", { name: "Catálogo de Saldos" }),
@@ -112,7 +136,21 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(
     page.getByText("Indica un nombre sin caracteres de control."),
   ).toBeVisible();
+  // UI DEV-06 I3: el primer campo inválido recibe el foco y se anuncia.
+  await expect(page.getByLabel("Nombre *", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("Nombre *", { exact: true })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
   await shot("validation-mobile");
+  // 3 capturas críticas del error de validación, una por tema.
+  for (const theme of THEMES) {
+    await themeSelect.selectOption(theme);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence(`validacion-${theme}-390`);
+  }
+  await themeSelect.selectOption("dark-s");
+  await page.setViewportSize({ width: 390, height: 844 });
   await page
     .getByLabel("Nombre *", { exact: true })
     .fill("Reserva ficticia E1.1");
@@ -137,6 +175,46 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   expect(id).toBe("S006");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await shot("detail-desktop");
+  // UI DEV-06 I3: la posición actual es la lectura principal y ocupa el ancho
+  // completo; identificación, configuración y atributos quedan subordinados.
+  const detailLayout = await page
+    .locator(".saldo-detail-grid")
+    .evaluate((grid) => {
+      const position = grid.querySelector<HTMLElement>(".position-panel")!;
+      const firstSection =
+        grid.querySelector<HTMLElement>(".ui-form-section")!;
+      const gridBox = grid.getBoundingClientRect();
+      const positionBox = position.getBoundingClientRect();
+      const sectionBox = firstSection.getBoundingClientRect();
+      return {
+        columns: getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+        positionWidth: positionBox.width,
+        gridWidth: gridBox.width,
+        positionTop: positionBox.top,
+        sectionTop: sectionBox.top,
+        positionFont: parseFloat(getComputedStyle(position).fontSize),
+        amountFont: parseFloat(
+          getComputedStyle(position.querySelector(".position-placeholder")!)
+            .fontSize,
+        ),
+      };
+    });
+  expect(detailLayout.columns).toBe(2);
+  expect(detailLayout.positionWidth).toBeGreaterThan(
+    detailLayout.gridWidth * 0.9,
+  );
+  expect(detailLayout.positionTop).toBeLessThan(detailLayout.sectionTop);
+  expect(detailLayout.amountFont).toBeGreaterThan(detailLayout.positionFont);
+  // 6 capturas base de la ficha (3 temas × 1440/390).
+  for (const theme of THEMES) {
+    await themeSelect.selectOption(theme);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await evidence(`ficha-${theme}-1440`);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence(`ficha-${theme}-390`);
+  }
+  await themeSelect.selectOption("dark-s");
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Editar Saldo" }).click();
   await expect(
     page.getByRole("heading", { name: "Editar Saldo", exact: true }),
@@ -145,6 +223,31 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
     page.getByRole("switch", { name: "Liquidez", exact: true }),
   ).toHaveAttribute("aria-checked", "true");
   await shot("form-desktop");
+  // UI DEV-06 I3: la rejilla de campos conserva 2 columnas y pasa a 1 a 760.
+  const formGrid = page.locator(".saldo-form .ui-form-grid").first();
+  await page.setViewportSize({ width: 761, height: 1000 });
+  expect(
+    await formGrid.evaluate(
+      (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+    ),
+  ).toBe(2);
+  await page.setViewportSize({ width: 760, height: 1000 });
+  expect(
+    await formGrid.evaluate(
+      (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+    ),
+  ).toBe(1);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  // 6 capturas base del formulario (3 temas × 1440/390).
+  for (const theme of THEMES) {
+    await themeSelect.selectOption(theme);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await evidence(`formulario-${theme}-1440`);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence(`formulario-${theme}-390`);
+  }
+  await themeSelect.selectOption("dark-s");
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByLabel("Objetivo (€)").fill("0");
   await page
     .getByRole("switch", { name: "Mostrar como bolsa", exact: true })
@@ -252,6 +355,17 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(
     page.getByText("Contraparte técnica protegida.", { exact: false }),
   ).toBeVisible();
+  // UI DEV-06 I3: S000 conserva el tratamiento protegido y su posición no
+  // convencional no se convierte en cero; 3 capturas críticas, una por tema.
+  await expect(page.locator(".position-panel")).toContainText("No aplicable");
+  await expect(page.locator(".position-placeholder")).toHaveText("—");
+  for (const theme of THEMES) {
+    await themeSelect.selectOption(theme);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence(`s000-${theme}-390`);
+  }
+  await themeSelect.selectOption("dark-s");
+  await page.setViewportSize({ width: 390, height: 844 });
   // Future-import absence is an isolated fictitious fixture, not a new import feature.
   execFileSync(process.env.BUN_BIN ?? "bun", [
     "-e",

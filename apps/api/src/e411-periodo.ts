@@ -133,12 +133,23 @@ export type ValoresPeriodoDto = {
   porCiclo: ValorCicloDto[];
 };
 
+export type CodigoAusencia =
+  | "NULO_EXPLICITO"
+  | "MOTIVO_AUSENTE"
+  | "NO_DISPONIBLE_AUSENTE";
+
 export type NoDisponiblePeriodoDto = {
   ciclo: string;
   versionFoto: number;
   bloque: string;
   estado: string;
   motivo: string | null;
+  /**
+   * Only synthetic rows created from an absent/null container, a null entry or
+   * a `No disponible` object without motive carry this code. Persisted motives
+   * (canonical or not) are never given a synthetic code.
+   */
+  codigoAusencia?: CodigoAusencia;
 };
 
 export type SeleccionVersionDto = {
@@ -171,7 +182,12 @@ export type FotoPeriodoDto = {
   composicion: ComponentePeriodoDto[];
   cobertura: CoberturaPeriodoDto;
   valores: ValoresPeriodoDto;
-  noDisponible: NoDisponiblePeriodoDto[];
+  /**
+   * New aggregates always persist an array. A legacy aggregate read from
+   * `no_disponible` JSON `null` keeps `null` (absence not certified); it is
+   * never normalised to `[]` and no sentinel is injected on read.
+   */
+  noDisponible: NoDisponiblePeriodoDto[] | null;
 };
 
 export type PeriodoOptions = {
@@ -471,75 +487,201 @@ function fotoUltimaConsistente(db: Database, ciclo: string, ultima: number) {
   return foto;
 }
 
-function coberturaFoto(photo: { cobertura: unknown }) {
-  const raw = photo.cobertura;
-  if (!raw || typeof raw !== "object")
-    return { estado: "NoDisponible", motivos: [] as string[] };
-  const estado =
-    typeof (raw as { estado?: unknown }).estado === "string"
-      ? ((raw as { estado: string }).estado as string)
-      : "NoDisponible";
-  const motivos: string[] = [];
-  const totales = (raw as { totales?: unknown }).totales;
-  if (totales && typeof totales === "object")
-    for (const [bloque, value] of Object.entries(
-      totales as Record<string, unknown>,
-    )) {
-      if (!value || typeof value !== "object") continue;
-      const item = value as { estado?: unknown; motivo?: unknown };
-      if (item.estado !== "Completo")
-        motivos.push(
-          typeof item.motivo === "string" && item.motivo
-            ? `${bloque}: ${item.motivo}`
-            : bloque,
-        );
-    }
-  return { estado, motivos };
+/**
+ * AC09: an absent block or an absent source keeps an explicit motive. It is
+ * never dropped from `motivos` and never turned into `Completo` or `0`.
+ *
+ * The canonical block set is iterated as a union with the keys actually
+ * present in the photo (SPEC29 §18.2/§18.3): a canonical key missing from
+ * `cobertura.totales` is declared as absent, while non-canonical keys are
+ * preserved instead of filtered out.
+ */
+const MOTIVO_BLOQUE_AUSENTE = "Bloque no disponible en la foto";
+const MOTIVO_CLAVE_AUSENTE = "Bloque ausente en la foto";
+const MOTIVO_MOTIVO_AUSENTE = "Motivo no informado en la foto";
+const MOTIVO_COBERTURA_AUSENTE = "Cobertura no disponible en la foto";
+const MOTIVO_NO_DISPONIBLE_NULO = "No disponible nulo en la foto";
+const MOTIVO_NO_DISPONIBLE_AUSENTE = "No disponible ausente en la foto";
+
+const BLOQUES_COBERTURA_CANONICOS = [
+  "movimientos",
+  "efectivo",
+  "posiciones",
+  "plan",
+  "e35",
+  "deuda",
+  "valoracion",
+  "anticipos",
+] as const;
+
+const BLOQUES_NO_DISPONIBLE_CANONICOS = [
+  "valoracion",
+  "deudaCompleta",
+  "conciliaciones",
+] as const;
+
+const ESTADOS_NO_DISPONIBLE = new Set(["No disponible", "NoDisponible"]);
+
+function esObjeto(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-function noDisponibleDeFoto(
+function motivoTextual(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function coberturaFoto(photo: { cobertura: unknown }) {
+  const raw = photo.cobertura;
+  const conMotivo = new Set<string>();
+  if (!esObjeto(raw))
+    return {
+      estado: "NoDisponible",
+      motivos: [MOTIVO_COBERTURA_AUSENTE],
+      conMotivo,
+    };
+  const estado =
+    typeof raw.estado === "string" ? raw.estado : "NoDisponible";
+  const motivos: string[] = [];
+  const totales = raw.totales;
+  if (!esObjeto(totales)) {
+    // The source of the blocks is absent: declare it instead of losing the motive.
+    motivos.push(MOTIVO_COBERTURA_AUSENTE);
+    return { estado, motivos, conMotivo };
+  }
+  const claves: string[] = [
+    ...BLOQUES_COBERTURA_CANONICOS,
+    ...Object.keys(totales).filter(
+      (bloque) =>
+        !(BLOQUES_COBERTURA_CANONICOS as readonly string[]).includes(bloque),
+    ),
+  ];
+  for (const bloque of claves) {
+    if (!(bloque in totales)) {
+      // AC09-B: a canonical key that the photo does not declare is evidence
+      // missing, not an empty/complete block.
+      motivos.push(`${bloque}: ${MOTIVO_CLAVE_AUSENTE}`);
+      continue;
+    }
+    const value = totales[bloque];
+    if (!esObjeto(value)) {
+      motivos.push(`${bloque}: ${MOTIVO_BLOQUE_AUSENTE}`);
+      conMotivo.add(bloque);
+      continue;
+    }
+    const item = value as { estado?: unknown; motivo?: unknown };
+    if (item.estado !== "Completo") {
+      motivos.push(
+        `${bloque}: ${motivoTextual(item.motivo) ?? MOTIVO_MOTIVO_AUSENTE}`,
+      );
+      conMotivo.add(bloque);
+    }
+  }
+  return { estado, motivos, conMotivo };
+}
+
+export type NoDisponibleCompuesto = {
+  entries: NoDisponiblePeriodoDto[];
+  /** `Parcial` entries in `noDisponible`: declared in coverage, never emitted. */
+  parciales: { bloque: string; motivo: string }[];
+};
+
+/**
+ * Projects the photo `noDisponible` map/array to the aggregate rows.
+ *
+ * - `{}` and `[]` are declared empty containers: no rows and no sentinels;
+ * - a missing key, `null` container, `null`/non-object entry or an
+ *   `No disponible` object without motive creates a synthetic row with
+ *   `codigoAusencia`;
+ * - an entry with a persisted non-empty motive keeps `bloque`/`estado`/`motivo`
+ *   and never receives a synthetic code, even when the key is non-canonical or
+ *   the state is not `No disponible`/`NoDisponible`;
+ * - a `Parcial` entry is not emitted here; it is declared in coverage.
+ */
+export function noDisponibleDeFoto(
   ciclo: string,
   version: number,
   value: unknown,
-): NoDisponiblePeriodoDto[] {
+): NoDisponibleCompuesto {
   const entries: NoDisponiblePeriodoDto[] = [];
+  const parciales: { bloque: string; motivo: string }[] = [];
+  const sintetica = (
+    bloque: string,
+    motivo: string,
+    codigoAusencia: CodigoAusencia,
+  ) => {
+    entries.push({
+      ciclo,
+      versionFoto: version,
+      bloque,
+      estado: "No disponible",
+      motivo,
+      codigoAusencia,
+    });
+  };
+  const agregar = (bloque: string, item: unknown) => {
+    if (!esObjeto(item)) {
+      // AC09-A/D2: a null/non-object entry keeps its block and is declared.
+      sintetica(bloque, MOTIVO_BLOQUE_AUSENTE, "NULO_EXPLICITO");
+      return;
+    }
+    const row = item as { estado?: unknown; motivo?: unknown };
+    const estado =
+      typeof row.estado === "string" ? row.estado : "No disponible";
+    const motivo = motivoTextual(row.motivo);
+    if (estado === "Parcial") {
+      // AC09-C2: a partial entry belongs to coverage, not to noDisponible[].
+      parciales.push({ bloque, motivo: motivo ?? MOTIVO_MOTIVO_AUSENTE });
+      return;
+    }
+    // AC09-K (decisión 2026-11-10): un motivo persistido se conserva con su
+    // estado aunque no sea canónico; solo se descarta un estado desconocido
+    // sin motivo.
+    if (motivo === null && !ESTADOS_NO_DISPONIBLE.has(estado)) return;
+    entries.push({
+      ciclo,
+      versionFoto: version,
+      bloque,
+      estado,
+      motivo: motivo ?? MOTIVO_MOTIVO_AUSENTE,
+      ...(motivo === null ? { codigoAusencia: "MOTIVO_AUSENTE" as const } : {}),
+    });
+  };
+
   if (Array.isArray(value)) {
-    for (const [index, item] of value.entries()) {
-      if (!item || typeof item !== "object") continue;
-      const row = item as {
-        bloque?: unknown;
-        estado?: unknown;
-        motivo?: unknown;
-      };
-      entries.push({
-        ciclo,
-        versionFoto: version,
-        bloque:
-          typeof row.bloque === "string" ? row.bloque : String(index),
-        estado:
-          typeof row.estado === "string" ? row.estado : "No disponible",
-        motivo: typeof row.motivo === "string" ? row.motivo : null,
-      });
+    value.forEach((item, index) => {
+      const bloque =
+        esObjeto(item) && typeof item.bloque === "string"
+          ? item.bloque
+          : String(index);
+      agregar(bloque, item);
+    });
+  } else if (esObjeto(value)) {
+    const claves = [
+      ...BLOQUES_NO_DISPONIBLE_CANONICOS,
+      ...Object.keys(value).filter(
+        (bloque) =>
+          !(BLOQUES_NO_DISPONIBLE_CANONICOS as readonly string[]).includes(
+            bloque,
+          ),
+      ),
+    ];
+    for (const bloque of claves) {
+      if (!(bloque in value)) continue;
+      agregar(bloque, value[bloque]);
     }
-  } else if (value && typeof value === "object") {
-    for (const [bloque, item] of Object.entries(
-      value as Record<string, unknown>,
-    )) {
-      if (!item || typeof item !== "object") continue;
-      const row = item as { estado?: unknown; motivo?: unknown };
-      entries.push({
-        ciclo,
-        versionFoto: version,
-        bloque,
-        estado:
-          typeof row.estado === "string" ? row.estado : "No disponible",
-        motivo: typeof row.motivo === "string" ? row.motivo : null,
-      });
-    }
+  } else if (value === null) {
+    // AC09-D2: only when composing a new aggregate, a null container is an
+    // uncertified absence and keeps a defensive sentinel.
+    sintetica("no_disponible", MOTIVO_NO_DISPONIBLE_NULO, "NULO_EXPLICITO");
+  } else if (value === undefined) {
+    // AC09-D1: fixture/defensive only; impossible in `TEXT NOT NULL`.
+    sintetica(
+      "no_disponible",
+      MOTIVO_NO_DISPONIBLE_AUSENTE,
+      "NO_DISPONIBLE_AUSENTE",
+    );
   }
-  return entries.filter(
-    (entry) => entry.estado === "No disponible" || entry.estado === "NoDisponible",
-  );
+  return { entries, parciales };
 }
 
 type Compuesto = {
@@ -730,13 +872,24 @@ function componer(
       noDisponible: foto.noDisponible,
     });
     const fotoCobertura = coberturaFoto(foto);
+    const fotoNoDisponible = noDisponibleDeFoto(
+      ciclo.id,
+      version,
+      foto.noDisponible,
+    );
+    // AC09-C2: a `Parcial` entry from `noDisponible` is declared in coverage.
+    // If `cobertura.totales` already declared the same block, emit it once.
+    for (const parcial of fotoNoDisponible.parciales) {
+      if (fotoCobertura.conMotivo.has(parcial.bloque)) continue;
+      fotoCobertura.motivos.push(`${parcial.bloque}: ${parcial.motivo}`);
+    }
     bloques.push({
       ciclo: ciclo.id,
       versionFoto: version,
       estado: fotoCobertura.estado,
       motivos: fotoCobertura.motivos,
     });
-    noDisponible.push(...noDisponibleDeFoto(ciclo.id, version, foto.noDisponible));
+    noDisponible.push(...fotoNoDisponible.entries);
   }
 
   if (incluidos > 0) motivos.add("SIN_REGLA_ADITIVA");
@@ -1008,6 +1161,16 @@ function parseSeleccion(value: string) {
   } as SeleccionAplicadaDto;
 }
 
+function parseNoDisponiblePersistido(
+  value: string,
+): NoDisponiblePeriodoDto[] | null {
+  const parsed = JSON.parse(value) as unknown;
+  // AC09-H: a persisted JSON `null` is an uncertified absence, not `[]`.
+  // Arrays (including `[]`) are returned unchanged: no sentinels, no rewrite.
+  if (parsed === null) return null;
+  return parsed as NoDisponiblePeriodoDto[];
+}
+
 function filaADto(
   db: Database,
   row: PeriodoRow,
@@ -1074,7 +1237,7 @@ function filaADto(
     composicion,
     cobertura: JSON.parse(row.cobertura) as CoberturaPeriodoDto,
     valores: JSON.parse(row.valores) as ValoresPeriodoDto,
-    noDisponible: JSON.parse(row.no_disponible) as NoDisponiblePeriodoDto[],
+    noDisponible: parseNoDisponiblePersistido(row.no_disponible),
   };
 }
 
@@ -1200,7 +1363,11 @@ export function getFotoPeriodo(
   return filaADto(db, row, version === null);
 }
 
-/** Reads one persisted aggregate by identity. Never recomputes composition. */
+/**
+ * Reads one persisted aggregate by identity. Never recomputes composition.
+ * The identity is an explicit reference to a persisted aggregate, so it is not
+ * an automatic "latest" selection even when it points to the newest version.
+ */
 export function getFotoPeriodoPorId(
   db: Database,
   id: number,
@@ -1212,5 +1379,5 @@ export function getFotoPeriodoPorId(
     .get(id) as PeriodoRow | null;
   if (!row)
     throw new Problem(404, "NOT_FOUND", "Agregado de periodo no encontrado.");
-  return filaADto(db, row, true);
+  return filaADto(db, row, false);
 }

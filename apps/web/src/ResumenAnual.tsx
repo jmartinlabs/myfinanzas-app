@@ -301,6 +301,22 @@ function contextText(contexto: ContextoMetrica) {
   return `corte ${formatDate(contexto.fecha)}`;
 }
 
+/** Fuente compacta para tablas: motor, IDs y contexto sin ocultar la trazabilidad. */
+function sourceSummary(fuente: Fuente, contexto?: ContextoMetrica) {
+  const parts = [fuente.motor];
+  if (fuente.ids.length > 0) parts.push(`IDs: ${fuente.ids.join(", ")}`);
+  if (fuente.revision !== null)
+    parts.push(`revisión ${fuente.revision.slice(0, 8)}…`);
+  if (fuente.intervalo)
+    parts.push(
+      `intervalo ${formatDate(fuente.intervalo.desde)}–${formatDate(
+        fuente.intervalo.hasta,
+      )}`,
+    );
+  if (contexto) parts.push(`contexto ${contextText(contexto)}`);
+  return parts.join(" · ");
+}
+
 function estadoCorteLabel(estado: "disponible" | "parcial" | "no_disponible") {
   if (estado === "disponible") return "Disponible";
   if (estado === "parcial") return "Parcial";
@@ -488,7 +504,9 @@ function MetricTableRow({ metrica }: { metrica: Metrica }) {
       <th scope="row">{metrica.etiqueta}</th>
       <td>
         <MetricAmount metrica={metrica} />
-        <small className="e47-table-source">{metrica.fuente.motor}</small>
+        <small className="e47-table-source">
+          {sourceSummary(metrica.fuente, metrica.contexto)}
+        </small>
       </td>
       <td>
         <EstadoBadge estado={metrica.estado} />
@@ -835,10 +853,10 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         <td>
                           <MetricAmount metrica={item.ejecutado} />
                           <small className="e47-table-source">
-                            {item.ejecutado.fuente.motor}
-                            {item.ejecutado.fuente.ids.length > 0
-                              ? ` · IDs: ${item.ejecutado.fuente.ids.join(", ")}`
-                              : ""}
+                            {sourceSummary(
+                              item.ejecutado.fuente,
+                              item.ejecutado.contexto,
+                            )}
                           </small>
                         </td>
                         <td>
@@ -853,7 +871,15 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                               }
                             />
                           ) : (
-                            <MetricAmount metrica={item.diferencia} />
+                            <>
+                              <MetricAmount metrica={item.diferencia} />
+                              <small className="e47-table-source">
+                                {sourceSummary(
+                                  item.diferencia.fuente,
+                                  item.diferencia.contexto,
+                                )}
+                              </small>
+                            </>
                           )}
                         </td>
                         <td>
@@ -956,7 +982,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
         <section className="panel e47-lane" aria-labelledby="e47-realidad">
           <LaneHead
             title="Realidad"
-            motor="E2.6 + E3.6 · por Ciclo"
+            motor="Flujo mensual y pendientes · por Ciclo"
             lane={realidad}
           />
           <p className="e47-note">
@@ -1013,6 +1039,13 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         ) : (
                           formatDecimal(ciclo.ajusteCompartidos.gNeto, "EUR")
                         )}
+                        <small className="e47-table-source">
+                          {sourceSummary(ciclo.ajusteCompartidos.fuente, {
+                            tipo: "ciclo",
+                            cicloId: ciclo.cicloId,
+                            corte: ciclo.corte,
+                          })}
+                        </small>
                       </td>
                       <td>
                         <EstadoBadge estado={ciclo.ajusteCompartidos.estado} />
@@ -1034,6 +1067,13 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         ) : (
                           formatDecimal(ciclo.ajusteCompartidos.sAjustado, "EUR")
                         )}
+                        <small className="e47-table-source">
+                          {sourceSummary(ciclo.ajusteCompartidos.fuente, {
+                            tipo: "ciclo",
+                            cicloId: ciclo.cicloId,
+                            corte: ciclo.corte,
+                          })}
+                        </small>
                       </td>
                       <td>
                         <EstadoBadge estado={ciclo.ajusteCompartidos.estado} />
@@ -1096,14 +1136,14 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
       <section className="panel e47-lane" aria-labelledby="e47-margenes">
         <LaneHead
           title="Márgenes del plan"
-          motor="E2.6 · márgenes existentes"
+          motor="Márgenes existentes"
           lane={{
             estado: data.margenes.estado,
             motivo: data.margenes.nota,
             cobertura: {
               estado:
                 data.margenes.estado === "Parcial" ? "Parcial" : "NoDisponible",
-              fuente: "E2.6 monthlyFlow",
+              fuente: "Flujo mensual",
               detalle: "Solo margen estructural y margen frente a nómina real.",
               incluidos: data.margenes.publicados.length,
               excluidos: data.margenes.noDefinidos.length,
@@ -1130,21 +1170,27 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
               </tr>
             </thead>
             <tbody>
-              {data.margenes.publicados.map((margen) => (
-                <tr key={`${margen.cicloId}-${margen.clave}`}>
-                  <th scope="row">{margen.cicloId}</th>
-                  <td>{margen.etiqueta}</td>
-                  <td>
-                    <MetricAmount metrica={margenMetrica(margen)} />
-                  </td>
-                  <td>
-                    <EstadoBadge estado={margen.estado} />
-                  </td>
-                  <td>
-                    <CoberturaBadge valor={margen.cobertura.estado} />
-                  </td>
-                </tr>
-              ))}
+              {data.margenes.publicados.map((margen) => {
+                const metrica = margenMetrica(margen);
+                return (
+                  <tr key={`${margen.cicloId}-${margen.clave}`}>
+                    <th scope="row">{margen.cicloId}</th>
+                    <td>{margen.etiqueta}</td>
+                    <td>
+                      <MetricAmount metrica={metrica} />
+                      <small className="e47-table-source">
+                        {sourceSummary(metrica.fuente, metrica.contexto)}
+                      </small>
+                    </td>
+                    <td>
+                      <EstadoBadge estado={margen.estado} />
+                    </td>
+                    <td>
+                      <CoberturaBadge valor={margen.cobertura.estado} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1272,6 +1318,10 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           {data.pendientesDelModelo.map((pendiente) => (
             <li key={pendiente}>{pendiente}</li>
           ))}
+          <li>
+            D8-Z: No aplica mesesCubiertos ni cocientes anuales; E4.7 no los
+            publica ni divide por cero.
+          </li>
         </ul>
         <ul className="e47-coverage-motivos">
           {data.cobertura.motivos.map((motivo) => (

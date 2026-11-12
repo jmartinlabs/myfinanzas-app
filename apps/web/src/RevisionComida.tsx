@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  focusFirstInvalidField,
+  type TableColumn,
+} from "./ui";
 
 type Clasificacion =
   | "Comida"
@@ -582,7 +593,7 @@ function OperationList({ go }: { go: (p: string) => void }) {
   return (
     <>
       <PageHead
-        eyebrow="E3.4 · REVISIÓN BANCARIA"
+        eyebrow="REVISIÓN BANCARIA"
         title="Revisión Comida"
         description="Operaciones bancarias individuales con clasificación, evidencia y vínculo opcional."
       >
@@ -796,7 +807,7 @@ function ReposList({ go }: { go: (p: string) => void }) {
   return (
     <>
       <PageHead
-        eyebrow="E3.4 · REPOSICIONES"
+        eyebrow="REPOSICIONES"
         title="Reposiciones"
         description="Operaciones bancarias reales de entrada con evidencia propia."
       >
@@ -893,7 +904,9 @@ function OperationDetail({
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [fields, setFields] = useState<Record<string, string>>({}),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    linkRef = useRef<HTMLDivElement>(null),
+    annulRef = useRef<HTMLDivElement>(null);
   const endpoint = (tipo === "Reposicion" ? reposBase : base) + "/" + id;
   const actualEndpoint = data
     ? (data.operacion.tipo === "Reposicion" ? reposBase : base) + "/" + id
@@ -950,7 +963,10 @@ function OperationDetail({
       const err = e as ApiError;
       setError(err.message);
       setFields(err.fields ?? {});
-      requestAnimationFrame(() => alert.current?.focus());
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(linkRef.current))
+          alert.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -975,7 +991,10 @@ function OperationDetail({
       const err = e as ApiError;
       setError(err.message);
       setFields(err.fields ?? {});
-      requestAnimationFrame(() => alert.current?.focus());
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(annulRef.current))
+          alert.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -1013,7 +1032,7 @@ function OperationDetail({
   return (
     <>
       <PageHead
-        eyebrow="E3.4 · FICHA"
+        eyebrow="FICHA"
         title={`Operación ${o.id}`}
         description={`${o.concepto} · ${date(o.fecha)}`}
       >
@@ -1177,21 +1196,22 @@ function OperationDetail({
           )}
         </div>
         {annulOpen && (
-          <div className="panel">
+          <div className="panel" ref={annulRef}>
             <h3>Anulación lógica</h3>
             <p>
               No se borra el registro. Se conservan ID, vínculo, evidencia y
               auditoría; dejará de computar.
             </p>
-            <label>
-              Motivo
+            <Field
+              id="annul-motivo"
+              label="Motivo"
+              error={fields.motivo}
+            >
               <input
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                aria-invalid={!!fields.motivo}
               />
-            </label>
-            {fields.motivo && <p className="field-error">{fields.motivo}</p>}
+            </Field>
             <div className="actions">
               <button className="primary" disabled={busy} onClick={submitAnnul}>
                 Confirmar anulación
@@ -1203,14 +1223,17 @@ function OperationDetail({
           </div>
         )}
         {linkOpen && (
-          <div className="panel">
+          <div className="panel" ref={linkRef}>
             <h3>Vínculo con Movimiento</h3>
             <p>
               Solo trazabilidad verificada. No copia fecha/importe, no reparte el
               importe y no cambia el Movimiento.
             </p>
-            <label>
-              Movimiento elegible
+            <Field
+              id="link-movimiento"
+              label="Movimiento elegible"
+              error={fields.movimiento}
+            >
               <select
                 value={movement}
                 onChange={(e) => setMovement(e.target.value)}
@@ -1223,9 +1246,12 @@ function OperationDetail({
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
-              Tipo de vínculo
+            </Field>
+            <Field
+              id="link-tipoVinculo"
+              label="Tipo de vínculo"
+              error={fields.tipoVinculo}
+            >
               <select
                 value={tipoVinculo}
                 onChange={(e) => setTipoVinculo(e.target.value)}
@@ -1233,27 +1259,23 @@ function OperationDetail({
                 <option>Individual</option>
                 {tipo === "Detalle" && <option>Agregado terminal</option>}
               </select>
-            </label>
-            <label>
-              Evidencia del vínculo
+            </Field>
+            <Field
+              id="link-evidenciaVinculo"
+              label="Evidencia del vínculo"
+              error={fields.evidenciaVinculo}
+            >
               <input
                 value={evidence}
                 onChange={(e) => setEvidence(e.target.value)}
-                aria-invalid={!!fields.evidenciaVinculo}
               />
-            </label>
-            {fields.evidenciaVinculo && (
-              <p className="field-error">{fields.evidenciaVinculo}</p>
-            )}
-            <label>
-              Motivo
+            </Field>
+            <Field id="link-motivo" label="Motivo" error={fields.motivo}>
               <input
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                aria-invalid={!!fields.motivo}
               />
-            </label>
-            {fields.motivo && <p className="field-error">{fields.motivo}</p>}
+            </Field>
             <div className="actions">
               <button className="primary" disabled={busy} onClick={() => submitLink(false)}>
                 Guardar vínculo
@@ -1363,10 +1385,14 @@ function OperationForm({
     } | null>(null),
     attempt = useRef(crypto.randomUUID()),
     alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLDivElement>(null),
     initialized = useRef(false);
   useEffect(() => {
-    if (error) alert.current?.focus();
-  }, [error]);
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
+  }, [error, fields]);
   useEffect(() => {
     if (!id) return;
     let live = true;
@@ -1452,32 +1478,17 @@ function OperationForm({
       const err = e as ApiError;
       setError(err.message);
       setFields(err.fields ?? {});
-      requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
     }
   }
-  const field = (
-    key: keyof Form,
-    label: string,
-    input: React.ReactNode,
-    errorKey = key,
-  ) => (
-    <label key={key}>
-      {label}
-      {input}
-      {fields[errorKey] && (
-        <span className="field-error">{fields[errorKey]}</span>
-      )}
-    </label>
-  );
   if (loading) return <p role="status">Cargando operación…</p>;
   if (id && !old && error)
     return <Alert retry={() => go(endpoint)}>{error}</Alert>;
   return (
     <>
       <PageHead
-        eyebrow={id ? "E3.4 · RECTIFICACIÓN" : "E3.4 · ALTA"}
+        eyebrow={id ? "RECTIFICACIÓN" : "ALTA"}
         title={
           id
             ? `Editar ${tipo === "Reposicion" ? "reposición" : "operación"} ${id}`
@@ -1529,156 +1540,167 @@ function OperationForm({
           </button>
         </div>
       )}
-      <section className="panel">
-        <div className="form-grid">
-          {field(
-            "fecha",
-            "Fecha de operación",
-            <input
-              type="date"
-              value={form.fecha}
-              aria-invalid={!!fields.fecha}
-              onChange={(e) => change("fecha", e.target.value)}
-            />,
-          )}
-          {field(
-            "concepto",
-            "Concepto",
-            <input
-              value={form.concepto}
-              aria-invalid={!!fields.concepto}
-              onChange={(e) => change("concepto", e.target.value)}
-            />,
-          )}
-          {field(
-            "importe",
-            "Importe EUR",
-            <input
-              inputMode="decimal"
-              value={form.importe}
-              aria-invalid={!!fields.importe}
-              onChange={(e) => change("importe", e.target.value)}
-            />,
-          )}
-          {tipo === "Detalle" &&
-            field(
-              "direccion",
-              "Dirección",
-              <select
-                value={form.direccion}
-                aria-invalid={!!fields.direccion}
-                onChange={(e) => change("direccion", e.target.value)}
-              >
-                <option>Salida</option>
-                <option>Entrada</option>
-              </select>,
-            )}
-          {tipo === "Detalle" &&
-            field(
-              "esDevolucion",
-              "Devolución identificada expresamente",
-              <select
-                value={form.esDevolucion}
-                aria-invalid={!!fields.esDevolucion}
-                onChange={(e) => change("esDevolucion", e.target.value)}
-              >
-                <option value="false">No</option>
-                <option value="true">Sí</option>
-              </select>,
-            )}
-          {tipo === "Detalle" &&
-            field(
-              "clasificacion",
-              "Clasificación",
-              <select
-                value={form.clasificacion}
-                aria-invalid={!!fields.clasificacion}
-                onChange={(e) => change("clasificacion", e.target.value)}
-              >
-                {[
-                  "Comida",
-                  "Pendiente revisar",
-                  "Ocio",
-                  "Niños",
-                  "Otros",
-                  "Fuera presupuesto",
-                ].map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
-              </select>,
-            )}
-          {field(
-            "evidenciaBancaria",
-            tipo === "Reposicion"
-              ? "Evidencia bancaria (obligatoria)"
-              : "Evidencia bancaria",
-            <input
-              value={form.evidenciaBancaria}
-              aria-invalid={!!fields.evidenciaBancaria}
-              onChange={(e) => change("evidenciaBancaria", e.target.value)}
-            />,
-          )}
-          {tipo === "Detalle" &&
-            field(
-              "evidenciaRelacionCompra",
-              "Relación con compra (opcional)",
+      <div ref={formRef}>
+        <FormSection title="Datos de la operación">
+          <FormGrid>
+            <Field
+              id="fecha"
+              label="Fecha de operación"
+              error={fields.fecha}
+            >
               <input
-                value={form.evidenciaRelacionCompra}
-                aria-invalid={!!fields.evidenciaRelacionCompra}
-                onChange={(e) =>
-                  change("evidenciaRelacionCompra", e.target.value)
-                }
-              />,
+                type="date"
+                value={form.fecha}
+                onChange={(e) => change("fecha", e.target.value)}
+              />
+            </Field>
+            <Field id="concepto" label="Concepto" error={fields.concepto}>
+              <input
+                value={form.concepto}
+                onChange={(e) => change("concepto", e.target.value)}
+              />
+            </Field>
+            <Field id="importe" label="Importe EUR" error={fields.importe}>
+              <input
+                inputMode="decimal"
+                value={form.importe}
+                onChange={(e) => change("importe", e.target.value)}
+              />
+            </Field>
+            {tipo === "Detalle" && (
+              <Field
+                id="direccion"
+                label="Dirección"
+                error={fields.direccion}
+              >
+                <select
+                  value={form.direccion}
+                  onChange={(e) => change("direccion", e.target.value)}
+                >
+                  <option>Salida</option>
+                  <option>Entrada</option>
+                </select>
+              </Field>
             )}
-          {field(
-            "cuentaOrigen",
-            "Cuenta/origen descriptiva",
-            <input
-              value={form.cuentaOrigen}
-              onChange={(e) => change("cuentaOrigen", e.target.value)}
-            />,
+            {tipo === "Detalle" && (
+              <Field
+                id="esDevolucion"
+                label="Devolución identificada expresamente"
+                error={fields.esDevolucion}
+              >
+                <select
+                  value={form.esDevolucion}
+                  onChange={(e) => change("esDevolucion", e.target.value)}
+                >
+                  <option value="false">No</option>
+                  <option value="true">Sí</option>
+                </select>
+              </Field>
+            )}
+            {tipo === "Detalle" && (
+              <Field
+                id="clasificacion"
+                label="Clasificación"
+                error={fields.clasificacion}
+              >
+                <select
+                  value={form.clasificacion}
+                  onChange={(e) => change("clasificacion", e.target.value)}
+                >
+                  {[
+                    "Comida",
+                    "Pendiente revisar",
+                    "Ocio",
+                    "Niños",
+                    "Otros",
+                    "Fuera presupuesto",
+                  ].map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            <Field
+              id="evidenciaBancaria"
+              label={
+                tipo === "Reposicion"
+                  ? "Evidencia bancaria (obligatoria)"
+                  : "Evidencia bancaria"
+              }
+              error={fields.evidenciaBancaria}
+            >
+              <input
+                value={form.evidenciaBancaria}
+                onChange={(e) => change("evidenciaBancaria", e.target.value)}
+              />
+            </Field>
+            {tipo === "Detalle" && (
+              <Field
+                id="evidenciaRelacionCompra"
+                label="Relación con compra (opcional)"
+                error={fields.evidenciaRelacionCompra}
+              >
+                <input
+                  value={form.evidenciaRelacionCompra}
+                  onChange={(e) =>
+                    change("evidenciaRelacionCompra", e.target.value)
+                  }
+                />
+              </Field>
+            )}
+            <Field
+              id="cuentaOrigen"
+              label="Cuenta/origen descriptiva"
+              error={fields.cuentaOrigen}
+            >
+              <input
+                value={form.cuentaOrigen}
+                onChange={(e) => change("cuentaOrigen", e.target.value)}
+              />
+            </Field>
+          </FormGrid>
+          {tipo === "Detalle" && form.direccion === "Entrada" && (
+            <p className="help">
+              Una entrada de detalle solo es válida como devolución identificada
+              expresamente. No se infiere por dirección, fecha, importe ni
+              concepto.
+            </p>
           )}
-        </div>
-        {tipo === "Detalle" && form.direccion === "Entrada" && (
+          {tipo === "Reposicion" && (
+            <p className="help">
+              La reposición es una entrada real, no una devolución. Su asignación
+              y cobertura pertenecen a E3.5.
+            </p>
+          )}
+          {id && (
+            <Field
+              id="motivo"
+              label="Motivo de rectificación"
+              error={fields.motivo}
+            >
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </Field>
+          )}
           <p className="help">
-            Una entrada de detalle solo es válida como devolución identificada
-            expresamente. No se infiere por dirección, fecha, importe ni
-            concepto.
+            No crea ni modifica Movimientos, Saldos, Gastos ni ejecución
+            presupuestaria. No se aceptan campos calculados por el cliente.
           </p>
-        )}
-        {tipo === "Reposicion" && (
-          <p className="help">
-            La reposición es una entrada real, no una devolución. Su asignación y
-            cobertura pertenecen a E3.5.
-          </p>
-        )}
-        {id && (
-          <label>
-            Motivo de rectificación
-            <input
-              value={reason}
-              aria-invalid={!!fields.motivo}
-              onChange={(e) => setReason(e.target.value)}
-            />
-            {fields.motivo && <span className="field-error">{fields.motivo}</span>}
-          </label>
-        )}
-        <p className="help">
-          No crea ni modifica Movimientos, Saldos, Gastos ni ejecución
-          presupuestaria. No se aceptan campos calculados por el cliente.
-        </p>
-        <div className="actions">
-          <button className="primary" disabled={busy} onClick={submit}>
-            {id ? "Guardar rectificación" : "Guardar"}
-          </button>
-          <button
-            className="secondary"
-            onClick={() => go(tipo === "Reposicion" ? reposBase : base)}
-          >
-            Cancelar
-          </button>
-        </div>
-      </section>
+          <div className="actions">
+            <button className="primary" disabled={busy} onClick={submit}>
+              {id ? "Guardar rectificación" : "Guardar"}
+            </button>
+            <button
+              className="secondary"
+              onClick={() => go(tipo === "Reposicion" ? reposBase : base)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </FormSection>
+      </div>
     </>
   );
 }

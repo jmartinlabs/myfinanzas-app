@@ -15,7 +15,7 @@ BASELINE_NAMES = [name for name, _, _ in ENTRY['BASELINE'] if name not in ('work
 DOC_BASELINE_NAMES = [name for name, _, _ in ENTRY['baseline_checks']('docs')
                       if name not in ('working-whitespace', 'commit-whitespace')]
 HARNESS_NAMES = sorted(ENTRY['HARNESS_SUITES'])
-APP_NAMES = ['typecheck', 'build', 'api', 'e2e']
+APP_NAMES = ['typecheck', 'build', 'web', 'api', 'e2e']
 
 class VerificationTests(unittest.TestCase):
     def setUp(self):
@@ -30,10 +30,18 @@ class VerificationTests(unittest.TestCase):
             (self.root / 'scripts' / name).write_text(stub)
         bun = '#!' + sys.executable + '\n' + '''import json,os,sys
 args=sys.argv[1:]
-name={'typecheck':'typecheck','build':'build','test':'api','test:e2e':'e2e'}.get(args[1] if args[:1]==['run'] else '', 'legacy')
+if args[:2] == ['run','typecheck']: name='typecheck'
+elif args[:2] == ['run','build']: name='build'
+elif args[:2] == ['run','test:e2e']: name='e2e'
+elif args[:2] == ['run','test'] or args[:2] == ['test','apps/api']: name='api'
+elif args[:2] == ['test','apps/web']: name='web'
+else: name='legacy'
 with open(os.environ['VERIFY_FIXTURE_CALLS'],'a') as f: f.write(json.dumps(name)+'\\n')
 if os.getenv('VERIFY_FIXTURE_FAIL')==name: sys.exit(7)
-if name in ('api','legacy'): print(os.getenv('VERIFY_FIXTURE_API_REPORT','2 pass\\n0 fail\\n8 expect() calls'))
+if name in ('api','legacy'):
+    print(os.getenv('VERIFY_FIXTURE_API_REPORT','2 pass\\n0 fail\\n8 expect() calls'))
+    if '--pass-with-no-tests' in args: print('36 filtered out')
+if name=='web': print(os.getenv('VERIFY_FIXTURE_WEB_REPORT','3 pass\\n0 fail\\n12 expect() calls'))
 if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
 '''
         (self.bin / 'bun').write_text(bun); (self.bin / 'bun').chmod(0o755)
@@ -42,7 +50,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             (self.bin / name).write_text('#!/bin/sh\nexit 0\n'); (self.bin / name).chmod(0o755)
         self.env = {**os.environ, 'PATH': str(self.bin), 'VERIFY_FIXTURE_CALLS': str(self.record),
                     'GITHUB_HEAD_REF':'', 'GITHUB_REF_NAME':''}
-        for name in ('GITHUB_EVENT_PATH','GITHUB_EVENT_NAME','CI_CHECKOUT_REF','VERIFY_FIXTURE_FAIL','VERIFY_FIXTURE_API_REPORT','VERIFY_FIXTURE_E2E_REPORT','VERIFY_FIXTURE_UNIT_REPORT'):
+        for name in ('GITHUB_EVENT_PATH','GITHUB_EVENT_NAME','CI_CHECKOUT_REF','VERIFY_FIXTURE_FAIL','VERIFY_FIXTURE_API_REPORT','VERIFY_FIXTURE_WEB_REPORT','VERIFY_FIXTURE_E2E_REPORT','VERIFY_FIXTURE_UNIT_REPORT'):
             self.env.pop(name, None)
         self.git('init','-q','--initial-branch=main'); self.base = self.commit()
         (self.root / 'specs/backlog').mkdir(parents=True)
@@ -235,7 +243,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         for classification,baseline,full in (('docs','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
             result=self.run_entry('result',extra={'CI_CLASS':classification,'CI_BASELINE':baseline,'CI_FULL':full})
             self.assertEqual(result.returncode==0,(classification,baseline,full) in (('docs','success','skipped'),('full','success','success')))
-    def integration_event(self, path, text='fixture\n', branch='fixture-feature'):
+    def integration_event(self, path, text='fixture\n', branch='fixture-feature', base_ref='main'):
         self.git('switch', '-qc', branch)
         target = self.root / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(text)
         head = self.commit()
@@ -244,7 +252,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false',
                  'merge','--no-ff','-qm','integration',branch)
         event = self.home / (branch + '-event.json')
-        event.write_text(json.dumps({'pull_request': {'base': {'sha': base,'ref':'main'}, 'head': {'sha': head}}}))
+        event.write_text(json.dumps({'pull_request': {'base': {'sha': base,'ref':base_ref}, 'head': {'sha': head}}}))
         return {'GITHUB_EVENT_NAME':'pull_request','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':'refs/pull/7/merge'}
 
     def test_ci_selector_and_application_recompute_profile_without_trusting_declared_pass(self):
@@ -253,7 +261,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(plan.returncode, 0, plan.stdout); self.assertEqual(plan.stdout.strip(), 'critical')
         result = self.run_entry('ci', extra={**extra,'CI_PROFILE':'docs','LOCAL_QA':'PASS'})
         self.assertEqual(result.returncode,0,result.stdout)
-        self.assertEqual(self.calls(), ['typecheck','build','api'])
+        self.assertEqual(self.calls(), ['typecheck','build','web','api'])
         self.clear(); result = self.run_entry('ci',extra={**extra,'VERIFY_FIXTURE_FAIL':'api'})
         self.assertNotEqual(result.returncode,0,result.stdout); self.assertNotIn('CI profile critical: PASS',result.stdout)
         result = self.run_entry('ci',extra={**extra,'VERIFY_FIXTURE_API_REPORT':'0 pass\n0 fail'})
@@ -264,12 +272,30 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
     def test_ci_css_fast_and_dirty_input_cannot_keep_fast_profile(self):
         extra = self.integration_event('apps/web/src/style.css')
         result = self.run_entry('ci', extra=extra)
-        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build'])
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build','web'])
         (self.root/'unknown.ts').write_text('dirty financial input\n'); self.clear()
         result = self.run_entry('ci-plan', extra=extra)
         self.assertEqual(result.stdout.strip(),'critical')
         result = self.run_entry('ci', extra=extra)
-        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build','api'])
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build','web','api'])
+
+    def test_application_profiles_always_include_the_web_suite(self):
+        expected = {'fast': ['typecheck', 'build', 'web'],
+                    'critical': ['typecheck', 'build', 'web', 'api'],
+                    'full': ['typecheck', 'build', 'web', 'api', 'e2e'],
+                    'unknown': ['typecheck', 'build', 'web', 'api', 'e2e']}
+        for profile, names in expected.items():
+            with self.subTest(profile=profile):
+                checks = ENTRY['application_checks'](profile)
+                self.assertEqual([check[0] for check in checks], names)
+                web = next(check for check in checks if check[0] == 'web')
+                # The suite is the canonical command and carries its own coverage check.
+                self.assertEqual(tuple(web[:3]), ('web', ['bun', 'test', 'apps/web'], 'bun'))
+        self.assertEqual(tuple(ENTRY['FAST_APPLICATION']), ('typecheck', 'build', 'web'))
+        critical = {check[0]: check for check in ENTRY['application_checks']('critical')}
+        full = {check[0]: check for check in ENTRY['application_checks']('full')}
+        self.assertEqual(len(critical['api']), 4)
+        self.assertEqual(len(full['api']), 3)
 
     def test_ci_docs_profile_intentionally_omits_application_without_pass_claim(self):
         extra = self.integration_event('specs/backlog/next.md')
@@ -339,7 +365,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(plan.returncode, 0, plan.stdout); self.assertEqual(plan.stdout.strip(), 'critical')
         result = self.run_entry('ci', extra=extra)
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertEqual(self.calls(), ['typecheck','build','api'])
+        self.assertEqual(self.calls(), ['typecheck','build','web','api'])
 
     def test_ci_main_docs_fast_manual_full_and_invalid_event(self):
         event=self.home/'event.json'; event.write_text(json.dumps({'ref':'refs/heads/main','before':self.base,'after':self.head}))
@@ -350,7 +376,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         code=self.commit(); event.write_text(json.dumps({'ref':'refs/heads/main','before':self.head,'after':code}))
         extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':code}
         result=self.run_entry('ci',extra=extra)
-        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build'])
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build','web'])
         self.clear(); result=self.run_entry('ci',extra={**extra,'GITHUB_EVENT_NAME':'workflow_dispatch'})
         self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),APP_NAMES)
         self.clear(); event.write_text(json.dumps({'ref':'refs/heads/feature','after':code}))
@@ -358,9 +384,77 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             result=self.run_entry(mode,extra=extra); self.assertNotEqual(result.returncode,0,result.stdout)
         self.assertEqual(self.calls(),[])
 
+    def test_ci_deploy_tag_runs_full_on_the_exact_commit(self):
+        self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid',
+                 'tag','-a','deploy-test-v1.2.3','-m','fixture',self.head)
+        tag='refs/tags/deploy-test-v1.2.3'
+        event=self.home/'tag-push.json'
+        event.write_text(json.dumps({'ref':tag,'before':'0'*40,'after':self.head}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':tag}
+        plan=self.run_entry('ci-plan',extra=extra)
+        self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'full')
+        result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),APP_NAMES)
+        # A non-tag checkout or a non-deploy tag never borrows full coverage.
+        self.clear()
+        for frozen in (self.head, 'refs/tags/v1'):
+            result=self.run_entry('ci-plan',extra={**extra,'CI_CHECKOUT_REF':frozen})
+            self.assertNotEqual(result.returncode,0,result.stdout)
+        # A lightweight deploy tag is rejected before running any application check.
+        self.git('tag','deploy-test-v2.0.0',self.head)
+        light='refs/tags/deploy-test-v2.0.0'
+        light_event=self.home/'light-tag-push.json'
+        light_event.write_text(json.dumps({'ref':light,'before':'0'*40,'after':self.head}))
+        result=self.run_entry('ci-plan',extra={'GITHUB_EVENT_NAME':'push',
+                                               'GITHUB_EVENT_PATH':str(light_event),
+                                               'CI_CHECKOUT_REF':light})
+        self.assertNotEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),[])
+
+    def test_ci_test_integration_base_and_push_profiles(self):
+        cases = (('apps/web/src/style.css','fast',['typecheck','build','web']),
+                 ('specs/backlog/test-base.md','docs',[]))
+        for index,(path,profile,calls) in enumerate(cases):
+            with self.subTest(path=path):
+                extra=self.integration_event(path, branch='fixture-test-' + str(index), base_ref='test')
+                plan=self.run_entry('ci-plan',extra=extra)
+                self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),profile)
+                self.clear(); result=self.run_entry('ci',extra=extra)
+                self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),calls)
+                self.clear()
+        # An arbitrary PR base is rejected before any check runs.
+        extra=self.integration_event('specs/backlog/arbitrary-base.md', branch='fixture-arbitrary', base_ref='feature')
+        for mode in ('ci-plan','ci'):
+            result=self.run_entry(mode,extra=extra)
+            self.assertNotEqual(result.returncode,0,result.stdout)
+            self.assertIn('CI context/profile unavailable',result.stdout)
+        self.assertEqual(self.calls(),[])
+        # A push to test keeps the conservative postmerge profile.
+        self.git('reset', '--hard', self.head)
+        event=self.home/'test-push.json'
+        event.write_text(json.dumps({'ref':'refs/heads/test','before':self.base,'after':self.head}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':self.head}
+        plan=self.run_entry('ci-plan',extra=extra)
+        self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'docs')
+        self.clear(); result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),[])
+        (self.root/'apps/web/src/test-push.ts').parent.mkdir(parents=True,exist_ok=True)
+        (self.root/'apps/web/src/test-push.ts').write_text('export const total = 2;')
+        code=self.commit(); event.write_text(json.dumps({'ref':'refs/heads/test','before':self.head,'after':code}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':code}
+        self.clear(); plan=self.run_entry('ci-plan',extra=extra)
+        self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'fast')
+        result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build','web'])
+        self.clear(); event.write_text(json.dumps({'ref':'refs/heads/feature','before':code,'after':code}))
+        for mode in ('ci-plan','ci'):
+            result=self.run_entry(mode,extra=extra); self.assertNotEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),[])
+
     def test_ci_result_real_cli_rejects_all_missing_failed_and_cancelled_phases(self):
         names=('context','snapshot','plan','baseline','verify','bun','install','prepare','browser')
         extra={'CI_PROFILE':'critical',**{'CI_'+name.upper():'success' for name in names}}
+        extra['CI_PREPARE']='skipped'
         extra['CI_BROWSER']='skipped'
         result=self.run_entry('ci-result',extra=extra); self.assertEqual(result.returncode,0,result.stdout)
         for name in names:

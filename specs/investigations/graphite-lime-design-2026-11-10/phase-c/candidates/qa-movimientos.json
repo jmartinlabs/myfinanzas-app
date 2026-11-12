@@ -1,0 +1,1206 @@
+{
+  "pages": [
+    {
+      "key": "movimientos-1440-graphite-lime",
+      "theme": "graphite-lime",
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1216
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-orange/orange": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-filter-label/card": 6.69,
+        "local-input-text/input": 17.43,
+        "local-chip/chip-bg": 13.21,
+        "local-table-head/head": 7.6,
+        "local-table-cell/card": 11,
+        "local-selected-concept/selected": 14.38,
+        "local-detail-title/detail": 15.54,
+        "local-detail-label/detail": 6.46,
+        "local-detail-note/note": 6.43,
+        "local-detail-btn/button": 16.1,
+        "local-page-btn/button": 10.47,
+        "local-mobile-title/mobile-card": 16.93,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 16.96,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success-title/positive-soft": 13.86,
+        "local-state-success-amount/positive-soft": 7.52,
+        "local-state-success-meta/positive-soft": 5.16
+      },
+      "computed": {
+        "filterLabel": {
+          "color": "rgb(143, 152, 139)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Buscar"
+        },
+        "tableHead": {
+          "color": "rgb(157, 167, 150)",
+          "background": "rgb(14, 17, 14)",
+          "size": "12px",
+          "text": "Fecha"
+        },
+        "tableCell": {
+          "color": "rgb(194, 200, 188)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "13px",
+          "text": "08/11/2026"
+        },
+        "selected": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "14px",
+          "text": "07/11/2026\n                GastoOrdinario\n"
+        },
+        "detailTitle": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16px",
+          "text": "Gasto · Ordinario"
+        },
+        "detailNote": {
+          "color": "rgb(152, 161, 146)",
+          "background": "rgb(25, 28, 23)",
+          "size": "12px",
+          "text": "Compra ordinaria de alimentación. Hecho si"
+        },
+        "mobileCard": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16.38px",
+          "text": "Nómina noviembre"
+        },
+        "stateHeading": null,
+        "stateInput": null,
+        "stateSuccess": null
+      },
+      "fontCount": 0,
+      "smallControlCount": 7,
+      "smallControls": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32,
+          "label": "Planificación"
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6,
+          "label": "Cerrar sesión"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6,
+          "label": "Limpiar filtros"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "btn btn-secondary",
+          "h": 38,
+          "label": "Abrir ficha completa"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Anterior"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Siguiente"
+        }
+      ]
+    },
+    {
+      "key": "movimientos-1440-color-finance",
+      "theme": "color-finance",
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1221
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 15.22,
+        "text/bg": 13.88,
+        "muted/surface": 6.3,
+        "accent-ink/surface": 6.62,
+        "on-orange/orange": 6.26,
+        "positive/surface": 6.29,
+        "negative/surface": 6.39,
+        "warning/surface": 5.56,
+        "error/surface": 6.41,
+        "sidebar-text/sidebar": 12.61,
+        "sidebar-muted/sidebar": 5.32,
+        "text/input": 15.22,
+        "muted/table-head": 5.62,
+        "positive/soft": 5.51,
+        "warning/soft": 5.02,
+        "negative/soft": 5.51,
+        "error/soft": 5.6,
+        "local-filter-label/card": 5.75,
+        "local-input-text/input": 15.22,
+        "local-chip/chip-bg": 5.66,
+        "local-table-head/head": 5.62,
+        "local-table-cell/card": 9.27,
+        "local-selected-concept/selected": 13.02,
+        "local-detail-title/detail": 13.82,
+        "local-detail-label/detail": 5.72,
+        "local-detail-note/note": 5.76,
+        "local-detail-btn/button": 15.22,
+        "local-page-btn/button": 9.27,
+        "local-mobile-title/mobile-card": 15.22,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 13.82,
+        "local-state-label/card": 6.3,
+        "local-state-input/input": 15.22,
+        "local-state-error/error-soft": 5.6,
+        "local-state-success-title/positive-soft": 13.33,
+        "local-state-success-amount/positive-soft": 5.6,
+        "local-state-success-meta/positive-soft": 5.52
+      },
+      "computed": {
+        "filterLabel": {
+          "color": "rgb(99, 92, 109)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Buscar"
+        },
+        "tableHead": {
+          "color": "rgb(99, 92, 109)",
+          "background": "rgb(244, 238, 248)",
+          "size": "12px",
+          "text": "Fecha"
+        },
+        "tableCell": {
+          "color": "rgb(73, 68, 81)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "13px",
+          "text": "08/11/2026"
+        },
+        "selected": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "14px",
+          "text": "07/11/2026\n                GastoOrdinario\n"
+        },
+        "detailTitle": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16px",
+          "text": "Gasto · Ordinario"
+        },
+        "detailNote": {
+          "color": "rgb(99, 92, 109)",
+          "background": "rgb(246, 241, 252)",
+          "size": "12px",
+          "text": "Compra ordinaria de alimentación. Hecho si"
+        },
+        "mobileCard": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16.38px",
+          "text": "Nómina noviembre"
+        },
+        "stateHeading": null,
+        "stateInput": null,
+        "stateSuccess": null
+      },
+      "fontCount": 0,
+      "smallControlCount": 7,
+      "smallControls": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32,
+          "label": "Planificación"
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6,
+          "label": "Cerrar sesión"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6,
+          "label": "Limpiar filtros"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "btn btn-secondary",
+          "h": 38,
+          "label": "Abrir ficha completa"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Anterior"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Siguiente"
+        }
+      ]
+    },
+    {
+      "key": "movimientos-1440-pastel-editorial",
+      "theme": "pastel-editorial",
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1252
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 17.83,
+        "text/bg": 16,
+        "muted/surface": 6.66,
+        "accent-ink/surface": 17.27,
+        "on-orange/orange": 15.06,
+        "positive/surface": 6.2,
+        "negative/surface": 6.39,
+        "warning/surface": 6.74,
+        "error/surface": 7.26,
+        "sidebar-text/sidebar": 13.03,
+        "sidebar-muted/sidebar": 5.42,
+        "active-text/active": 15.06,
+        "text/input": 17.83,
+        "muted/table-head": 5.86,
+        "positive/soft": 5.32,
+        "warning/soft": 5.92,
+        "negative/soft": 5.35,
+        "error/soft": 6.24,
+        "local-filter-label/card": 6.66,
+        "local-input-text/input": 17.83,
+        "local-chip/chip-bg": 15.23,
+        "local-table-head/head": 8.45,
+        "local-table-cell/card": 11.33,
+        "local-selected-concept/selected": 14.2,
+        "local-detail-title/detail": 12.94,
+        "local-detail-label/detail": 5.66,
+        "local-detail-note/note": 9.68,
+        "local-detail-btn/button": 17.83,
+        "local-page-btn/button": 17.83,
+        "local-mobile-title/mobile-card": 17.83,
+        "local-mobile-meta/mobile-card": 6.66,
+        "local-sheet-title/sheet": 12.94,
+        "local-state-label/card": 6.66,
+        "local-state-input/input": 17.83,
+        "local-state-error/error-soft": 6.24,
+        "local-state-success-title/positive-soft": 15.3,
+        "local-state-success-amount/positive-soft": 5.48,
+        "local-state-success-meta/positive-soft": 5.71
+      },
+      "computed": {
+        "filterLabel": {
+          "color": "rgb(97, 88, 104)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Buscar"
+        },
+        "tableHead": {
+          "color": "rgb(81, 73, 88)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Fecha"
+        },
+        "tableCell": {
+          "color": "rgb(61, 55, 66)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "13px",
+          "text": "08/11/2026"
+        },
+        "selected": {
+          "color": "rgb(23, 21, 26)",
+          "background": "rgb(233, 224, 246)",
+          "size": "14px",
+          "text": "07/11/2026\n                GastoOrdinario\n"
+        },
+        "detailTitle": {
+          "color": "rgb(23, 21, 26)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "19px",
+          "text": "Gasto · Ordinario"
+        },
+        "detailNote": {
+          "color": "rgb(61, 55, 66)",
+          "background": "rgb(248, 236, 180)",
+          "size": "12px",
+          "text": "Compra ordinaria de alimentación. Hecho si"
+        },
+        "mobileCard": {
+          "color": "rgb(23, 21, 26)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16.38px",
+          "text": "Nómina noviembre"
+        },
+        "stateHeading": null,
+        "stateInput": null,
+        "stateSuccess": null
+      },
+      "fontCount": 0,
+      "smallControlCount": 7,
+      "smallControls": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32,
+          "label": "Planificación"
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6,
+          "label": "Cerrar sesión"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6,
+          "label": "Limpiar filtros"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "btn btn-secondary",
+          "h": 38,
+          "label": "Abrir ficha completa"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Anterior"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Siguiente"
+        }
+      ]
+    },
+    {
+      "key": "movimientos-820-graphite-lime",
+      "theme": "graphite-lime",
+      "layout": {
+        "scrollWidth": 820,
+        "clientWidth": 820,
+        "scrollHeight": 1736
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-orange/orange": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-filter-label/card": 6.69,
+        "local-input-text/input": 17.43,
+        "local-chip/chip-bg": 13.21,
+        "local-table-head/head": 7.6,
+        "local-table-cell/card": 11,
+        "local-selected-concept/selected": 14.38,
+        "local-detail-title/detail": 15.54,
+        "local-detail-label/detail": 6.46,
+        "local-detail-note/note": 6.43,
+        "local-detail-btn/button": 16.1,
+        "local-page-btn/button": 10.47,
+        "local-mobile-title/mobile-card": 16.93,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 16.96,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success-title/positive-soft": 13.86,
+        "local-state-success-amount/positive-soft": 7.52,
+        "local-state-success-meta/positive-soft": 5.16
+      },
+      "computed": {
+        "filterLabel": {
+          "color": "rgb(143, 152, 139)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Buscar"
+        },
+        "tableHead": {
+          "color": "rgb(157, 167, 150)",
+          "background": "rgb(14, 17, 14)",
+          "size": "12px",
+          "text": "Fecha"
+        },
+        "tableCell": {
+          "color": "rgb(194, 200, 188)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "13px",
+          "text": "08/11/2026"
+        },
+        "selected": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "14px",
+          "text": "07/11/2026\n                GastoOrdinario\n"
+        },
+        "detailTitle": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16px",
+          "text": "Gasto · Ordinario"
+        },
+        "detailNote": {
+          "color": "rgb(152, 161, 146)",
+          "background": "rgb(25, 28, 23)",
+          "size": "12px",
+          "text": "Compra ordinaria de alimentación. Hecho si"
+        },
+        "mobileCard": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16.38px",
+          "text": "Nómina noviembre"
+        },
+        "stateHeading": null,
+        "stateInput": null,
+        "stateSuccess": null
+      },
+      "fontCount": 0,
+      "smallControlCount": 5,
+      "smallControls": [
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6,
+          "label": "Limpiar filtros"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "btn btn-secondary",
+          "h": 38,
+          "label": "Abrir ficha completa"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Anterior"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36,
+          "label": "Siguiente"
+        }
+      ]
+    },
+    {
+      "key": "movimientos-390-graphite-lime",
+      "theme": "graphite-lime",
+      "layout": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 3007
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-orange/orange": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-filter-label/card": 6.69,
+        "local-input-text/input": 17.43,
+        "local-chip/chip-bg": 13.21,
+        "local-table-head/head": 7.6,
+        "local-table-cell/card": 11,
+        "local-selected-concept/selected": 14.38,
+        "local-detail-title/detail": 15.54,
+        "local-detail-label/detail": 6.46,
+        "local-detail-note/note": 6.43,
+        "local-detail-btn/button": 16.1,
+        "local-page-btn/button": 10.47,
+        "local-mobile-title/mobile-card": 16.93,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 16.96,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success-title/positive-soft": 13.86,
+        "local-state-success-amount/positive-soft": 7.52,
+        "local-state-success-meta/positive-soft": 5.16
+      },
+      "computed": {
+        "filterLabel": {
+          "color": "rgb(143, 152, 139)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Buscar"
+        },
+        "tableHead": {
+          "color": "rgb(157, 167, 150)",
+          "background": "rgb(14, 17, 14)",
+          "size": "12px",
+          "text": "Fecha"
+        },
+        "tableCell": {
+          "color": "rgb(194, 200, 188)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "13px",
+          "text": "08/11/2026"
+        },
+        "selected": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "14px",
+          "text": "07/11/2026\n                GastoOrdinario\n"
+        },
+        "detailTitle": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16px",
+          "text": "Gasto · Ordinario"
+        },
+        "detailNote": {
+          "color": "rgb(152, 161, 146)",
+          "background": "rgb(25, 28, 23)",
+          "size": "12px",
+          "text": "Compra ordinaria de alimentación. Hecho si"
+        },
+        "mobileCard": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "15px",
+          "text": "Nómina noviembre"
+        },
+        "stateHeading": null,
+        "stateInput": null,
+        "stateSuccess": null
+      },
+      "fontCount": 0,
+      "smallControlCount": 0
+    },
+    {
+      "key": "movimientos-390-color-finance",
+      "theme": "color-finance",
+      "layout": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 3011
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 15.22,
+        "text/bg": 13.88,
+        "muted/surface": 6.3,
+        "accent-ink/surface": 6.62,
+        "on-orange/orange": 6.26,
+        "positive/surface": 6.29,
+        "negative/surface": 6.39,
+        "warning/surface": 5.56,
+        "error/surface": 6.41,
+        "sidebar-text/sidebar": 12.61,
+        "sidebar-muted/sidebar": 5.32,
+        "text/input": 15.22,
+        "muted/table-head": 5.62,
+        "positive/soft": 5.51,
+        "warning/soft": 5.02,
+        "negative/soft": 5.51,
+        "error/soft": 5.6,
+        "local-filter-label/card": 5.75,
+        "local-input-text/input": 15.22,
+        "local-chip/chip-bg": 5.66,
+        "local-table-head/head": 5.62,
+        "local-table-cell/card": 9.27,
+        "local-selected-concept/selected": 13.02,
+        "local-detail-title/detail": 13.82,
+        "local-detail-label/detail": 5.72,
+        "local-detail-note/note": 5.76,
+        "local-detail-btn/button": 15.22,
+        "local-page-btn/button": 9.27,
+        "local-mobile-title/mobile-card": 15.22,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 13.82,
+        "local-state-label/card": 6.3,
+        "local-state-input/input": 15.22,
+        "local-state-error/error-soft": 5.6,
+        "local-state-success-title/positive-soft": 13.33,
+        "local-state-success-amount/positive-soft": 5.6,
+        "local-state-success-meta/positive-soft": 5.52
+      },
+      "computed": {
+        "filterLabel": {
+          "color": "rgb(99, 92, 109)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "12px",
+          "text": "Buscar"
+        },
+        "tableHead": {
+          "color": "rgb(99, 92, 109)",
+          "background": "rgb(244, 238, 248)",
+          "size": "12px",
+          "text": "Fecha"
+        },
+        "tableCell": {
+          "color": "rgb(73, 68, 81)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "13px",
+          "text": "08/11/2026"
+        },
+        "selected": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "14px",
+          "text": "07/11/2026\n                GastoOrdinario\n"
+        },
+        "detailTitle": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "16px",
+          "text": "Gasto · Ordinario"
+        },
+        "detailNote": {
+          "color": "rgb(99, 92, 109)",
+          "background": "rgb(246, 241, 252)",
+          "size": "12px",
+          "text": "Compra ordinaria de alimentación. Hecho si"
+        },
+        "mobileCard": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "15px",
+          "text": "Nómina noviembre"
+        },
+        "stateHeading": null,
+        "stateInput": null,
+        "stateSuccess": null
+      },
+      "fontCount": 0,
+      "smallControlCount": 0
+    },
+    {
+      "key": "estados-1440-graphite-lime",
+      "theme": "graphite-lime",
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 2467
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-orange/orange": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-filter-label/card": 6.69,
+        "local-input-text/input": 17.43,
+        "local-chip/chip-bg": 13.21,
+        "local-table-head/head": 7.6,
+        "local-table-cell/card": 11,
+        "local-selected-concept/selected": 14.38,
+        "local-detail-title/detail": 15.54,
+        "local-detail-label/detail": 6.46,
+        "local-detail-note/note": 6.43,
+        "local-detail-btn/button": 16.1,
+        "local-page-btn/button": 10.47,
+        "local-mobile-title/mobile-card": 16.93,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 16.96,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success-title/positive-soft": 13.86,
+        "local-state-success-amount/positive-soft": 7.52,
+        "local-state-success-meta/positive-soft": 5.16
+      },
+      "computed": {
+        "filterLabel": null,
+        "tableHead": null,
+        "tableCell": null,
+        "selected": null,
+        "detailTitle": null,
+        "detailNote": null,
+        "mobileCard": null,
+        "stateHeading": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "17px",
+          "text": "Consultando el registro"
+        },
+        "stateInput": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgb(12, 14, 12)",
+          "size": "13px",
+          "text": ""
+        },
+        "stateSuccess": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgb(29, 39, 32)",
+          "size": "14px",
+          "text": "Compra semanal10/11/2026 · Gasto · Aliment"
+        }
+      },
+      "fontCount": 0,
+      "smallControlCount": 3,
+      "smallControls": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32,
+          "label": "Planificación"
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6,
+          "label": "Cerrar sesión"
+        }
+      ]
+    },
+    {
+      "key": "estados-1440-color-finance",
+      "theme": "color-finance",
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 2470
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 15.22,
+        "text/bg": 13.88,
+        "muted/surface": 6.3,
+        "accent-ink/surface": 6.62,
+        "on-orange/orange": 6.26,
+        "positive/surface": 6.29,
+        "negative/surface": 6.39,
+        "warning/surface": 5.56,
+        "error/surface": 6.41,
+        "sidebar-text/sidebar": 12.61,
+        "sidebar-muted/sidebar": 5.32,
+        "text/input": 15.22,
+        "muted/table-head": 5.62,
+        "positive/soft": 5.51,
+        "warning/soft": 5.02,
+        "negative/soft": 5.51,
+        "error/soft": 5.6,
+        "local-filter-label/card": 5.75,
+        "local-input-text/input": 15.22,
+        "local-chip/chip-bg": 5.66,
+        "local-table-head/head": 5.62,
+        "local-table-cell/card": 9.27,
+        "local-selected-concept/selected": 13.02,
+        "local-detail-title/detail": 13.82,
+        "local-detail-label/detail": 5.72,
+        "local-detail-note/note": 5.76,
+        "local-detail-btn/button": 15.22,
+        "local-page-btn/button": 9.27,
+        "local-mobile-title/mobile-card": 15.22,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 13.82,
+        "local-state-label/card": 6.3,
+        "local-state-input/input": 15.22,
+        "local-state-error/error-soft": 5.6,
+        "local-state-success-title/positive-soft": 13.33,
+        "local-state-success-amount/positive-soft": 5.6,
+        "local-state-success-meta/positive-soft": 5.52
+      },
+      "computed": {
+        "filterLabel": null,
+        "tableHead": null,
+        "tableCell": null,
+        "selected": null,
+        "detailTitle": null,
+        "detailNote": null,
+        "mobileCard": null,
+        "stateHeading": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "17px",
+          "text": "Consultando el registro"
+        },
+        "stateInput": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgb(255, 253, 249)",
+          "size": "13px",
+          "text": ""
+        },
+        "stateSuccess": {
+          "color": "rgb(38, 35, 43)",
+          "background": "rgb(229, 241, 234)",
+          "size": "14px",
+          "text": "Compra semanal10/11/2026 · Gasto · Aliment"
+        }
+      },
+      "fontCount": 0,
+      "smallControlCount": 3,
+      "smallControls": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32,
+          "label": "Planificación"
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6,
+          "label": "Cerrar sesión"
+        }
+      ]
+    },
+    {
+      "key": "estados-1440-pastel-editorial",
+      "theme": "pastel-editorial",
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 2526
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 17.83,
+        "text/bg": 16,
+        "muted/surface": 6.66,
+        "accent-ink/surface": 17.27,
+        "on-orange/orange": 15.06,
+        "positive/surface": 6.2,
+        "negative/surface": 6.39,
+        "warning/surface": 6.74,
+        "error/surface": 7.26,
+        "sidebar-text/sidebar": 13.03,
+        "sidebar-muted/sidebar": 5.42,
+        "active-text/active": 15.06,
+        "text/input": 17.83,
+        "muted/table-head": 5.86,
+        "positive/soft": 5.32,
+        "warning/soft": 5.92,
+        "negative/soft": 5.35,
+        "error/soft": 6.24,
+        "local-filter-label/card": 6.66,
+        "local-input-text/input": 17.83,
+        "local-chip/chip-bg": 15.23,
+        "local-table-head/head": 8.45,
+        "local-table-cell/card": 11.33,
+        "local-selected-concept/selected": 14.2,
+        "local-detail-title/detail": 12.94,
+        "local-detail-label/detail": 5.66,
+        "local-detail-note/note": 9.68,
+        "local-detail-btn/button": 17.83,
+        "local-page-btn/button": 17.83,
+        "local-mobile-title/mobile-card": 17.83,
+        "local-mobile-meta/mobile-card": 6.66,
+        "local-sheet-title/sheet": 12.94,
+        "local-state-label/card": 6.66,
+        "local-state-input/input": 17.83,
+        "local-state-error/error-soft": 6.24,
+        "local-state-success-title/positive-soft": 15.3,
+        "local-state-success-amount/positive-soft": 5.48,
+        "local-state-success-meta/positive-soft": 5.71
+      },
+      "computed": {
+        "filterLabel": null,
+        "tableHead": null,
+        "tableCell": null,
+        "selected": null,
+        "detailTitle": null,
+        "detailNote": null,
+        "mobileCard": null,
+        "stateHeading": {
+          "color": "rgb(23, 21, 26)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "20px",
+          "text": "Consultando el registro"
+        },
+        "stateInput": {
+          "color": "rgb(23, 21, 26)",
+          "background": "rgb(255, 253, 248)",
+          "size": "13px",
+          "text": ""
+        },
+        "stateSuccess": {
+          "color": "rgb(23, 21, 26)",
+          "background": "rgb(226, 239, 230)",
+          "size": "14px",
+          "text": "Compra semanal10/11/2026 · Gasto · Aliment"
+        }
+      },
+      "fontCount": 0,
+      "smallControlCount": 3,
+      "smallControls": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32,
+          "label": "Planificación"
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32,
+          "label": "Tema candidato"
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6,
+          "label": "Cerrar sesión"
+        }
+      ]
+    },
+    {
+      "key": "estados-390-graphite-lime",
+      "theme": "graphite-lime",
+      "layout": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "scrollHeight": 4576
+      },
+      "errors": [],
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-orange/orange": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-filter-label/card": 6.69,
+        "local-input-text/input": 17.43,
+        "local-chip/chip-bg": 13.21,
+        "local-table-head/head": 7.6,
+        "local-table-cell/card": 11,
+        "local-selected-concept/selected": 14.38,
+        "local-detail-title/detail": 15.54,
+        "local-detail-label/detail": 6.46,
+        "local-detail-note/note": 6.43,
+        "local-detail-btn/button": 16.1,
+        "local-page-btn/button": 10.47,
+        "local-mobile-title/mobile-card": 16.93,
+        "local-mobile-meta/mobile-card": 6.3,
+        "local-sheet-title/sheet": 16.96,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success-title/positive-soft": 13.86,
+        "local-state-success-amount/positive-soft": 7.52,
+        "local-state-success-meta/positive-soft": 5.16
+      },
+      "computed": {
+        "filterLabel": null,
+        "tableHead": null,
+        "tableCell": null,
+        "selected": null,
+        "detailTitle": null,
+        "detailNote": null,
+        "mobileCard": null,
+        "stateHeading": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgba(0, 0, 0, 0)",
+          "size": "17px",
+          "text": "Consultando el registro"
+        },
+        "stateInput": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgb(12, 14, 12)",
+          "size": "13px",
+          "text": ""
+        },
+        "stateSuccess": {
+          "color": "rgb(241, 244, 236)",
+          "background": "rgb(29, 39, 32)",
+          "size": "14px",
+          "text": "Compra semanal10/11/2026 · Gasto · Aliment"
+        }
+      },
+      "fontCount": 0,
+      "smallControlCount": 0
+    }
+  ],
+  "fonts": [],
+  "interactions": [
+    {
+      "test": "movimientos-selector-escritorio",
+      "switches": [
+        {
+          "option": "graphite-lime",
+          "theme": "graphite-lime",
+          "sw": 1440,
+          "cw": 1440,
+          "ok": true
+        },
+        {
+          "option": "color-finance",
+          "theme": "color-finance",
+          "sw": 1440,
+          "cw": 1440,
+          "ok": true
+        },
+        {
+          "option": "pastel-editorial",
+          "theme": "pastel-editorial",
+          "sw": 1440,
+          "cw": 1440,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "test": "movimientos-movil",
+      "sheetOpen": true,
+      "concept": "Nómina noviembre",
+      "sheetClosed": true,
+      "filtersOpen": true,
+      "tipoVisible": true,
+      "options": [
+        "graphite-lime",
+        "color-finance",
+        "pastel-editorial"
+      ],
+      "ok": true
+    },
+    {
+      "test": "estados-selector-y-formulario",
+      "switches": [
+        {
+          "option": "graphite-lime",
+          "theme": "graphite-lime",
+          "sw": 1440,
+          "cw": 1440,
+          "ok": true
+        },
+        {
+          "option": "color-finance",
+          "theme": "color-finance",
+          "sw": 1440,
+          "cw": 1440,
+          "ok": true
+        },
+        {
+          "option": "pastel-editorial",
+          "theme": "pastel-editorial",
+          "sw": 1440,
+          "cw": 1440,
+          "ok": true
+        }
+      ],
+      "formFields": 9,
+      "ok": true
+    }
+  ]
+}

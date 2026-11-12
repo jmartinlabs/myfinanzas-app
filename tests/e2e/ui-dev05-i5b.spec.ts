@@ -61,7 +61,7 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
   const password = "Contraseña ficticia UI DEV-05 I5b " + randomUUID();
   await page.goto("/inversiones/instrumentos/nuevo");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
@@ -95,7 +95,7 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
       ),
     ).toBe(true);
   const selectTheme = async (theme: (typeof THEMES)[number]) => {
-    await page.getByLabel("Tema visual").selectOption(theme);
+    await page.getByLabel("Apariencia").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const screens = [

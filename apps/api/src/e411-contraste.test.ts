@@ -7,7 +7,7 @@ import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { Problem } from "./problem";
 import { monthlyFixture } from "../test-support/monthly-fixture";
-import { getFotoCiclo } from "./e411";
+import { getFotoCiclo, getVersionesFotoCiclo } from "./e411";
 import {
   ETIQUETA_CONTRASTE,
   MOTOR_CONTRASTE,
@@ -91,6 +91,7 @@ function seedClosure(
   inicio: string,
   fin: string,
   saldoInicial: number,
+  clasificacion: unknown = fotoClasificacion,
 ) {
   const creado = "2026-08-01T00:00:00.000Z";
   db.transaction(() => {
@@ -129,7 +130,7 @@ function seedClosure(
         saldoInicial,
         JSON.stringify(fotoHechos),
         JSON.stringify(fotoPlan),
-        JSON.stringify(fotoClasificacion),
+        JSON.stringify(clasificacion),
         JSON.stringify(fotoInversion),
         JSON.stringify(fotoAuxiliares),
         JSON.stringify(fotoCobertura),
@@ -289,6 +290,7 @@ test("E4.11 I4: T2 real por API (plan vivo) deja la foto intacta y cambia solo e
     noEsHistorico: true,
   });
   expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
   expect(vivoDespues.noEsHistorico).toBe(true);
   expect(JSON.stringify(fotoDespues)).not.toContain("1500.00");
   expect(JSON.stringify(vivoDespues)).not.toContain(noDisponibleMotivo);
@@ -332,7 +334,230 @@ test("E4.11 I4: T3 real por API (renombrado) deja la foto y los valores vivos in
     vivoAntes.metricas.gasto.subtotal,
   );
   expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
   expect(vivoDespues.noEsHistorico).toBe(true);
+  expect(snapshotE411(f.db)).toEqual(beforeE411);
+});
+
+test("E4.11 I4: T2 real por API (clasificación/referencias) deja foto y versión intactas y cambia la vista viva", async () => {
+  const clasificacionOriginal = {
+    categorias: [
+      { id: "CAT001", nombre: "Gastos fixture", revision: 1 },
+    ],
+    subcategorias: [
+      {
+        id: "SUB001",
+        nombre: "Sub fixture",
+        padre: "CAT001",
+        revision: 1,
+      },
+    ],
+    partidas: [
+      {
+        id: "PAR001",
+        nombre: "Gasto sin plan",
+        padre: "SUB001",
+        revision: 1,
+      },
+    ],
+    referencias: [],
+  };
+  const f = fixture();
+  seedClosure(
+    f.db,
+    "1",
+    1,
+    "2026-06-20",
+    "2026-07-19",
+    0,
+    clasificacionOriginal,
+  );
+  await f.enroll();
+
+  // Fixture-only catalog branch used as the T2 destination. It is not created
+  // through the API so the test stays focused on the rectification flow.
+  f.db.run(
+    `INSERT INTO subcategorias(id,nombre,padre,estado,revision,creado,actualizado)
+     VALUES('SUB411','Sub alternativa T2','CAT001','Activa',1,'f','f')`,
+  );
+
+  const fotoAntes = getFotoCiclo(f.db, "1");
+  const versionesAntes = getVersionesFotoCiclo(f.db, "1");
+  const rawAntes = f.db
+    .query(
+      "SELECT clasificacion,cobertura,no_disponible,fingerprint FROM fotos_cierre WHERE ciclo='1' AND version=1",
+    )
+    .get();
+  const vivoAntes = getContraste(f.db, "1", now);
+  const beforeE411 = snapshotE411(f.db);
+
+  expect(fotoAntes.foto?.clasificacion).toEqual(clasificacionOriginal);
+
+  const current = await f.request("/api/clasificacion/partidas/PAR001");
+  expect(current.status).toBe(200);
+  expect(current.data.item).toMatchObject({
+    id: "PAR001",
+    padre: "SUB001",
+    revision: 1,
+  });
+
+  const cambios = {
+    revision: current.data.item.revision,
+    padre: "SUB411",
+  };
+  const preview = await f.request(
+    "/api/clasificacion/partidas/PAR001/impacto",
+    "POST",
+    cambios,
+  );
+  expect(preview.status).toBe(200);
+  expect(preview.data.changed).toEqual(["padre"]);
+  expect(preview.data.economic).toEqual(["padre"]);
+  expect(preview.data.used).toBe(true);
+  expect(preview.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  const confirmed = await f.request(
+    "/api/clasificacion/partidas/PAR001/rectificar",
+    "POST",
+    {
+      cambios,
+      fingerprint: preview.data.fingerprint,
+      motivo: "T2 ficticio de clasificación E4.11",
+    },
+  );
+  expect(confirmed.status).toBe(200);
+  expect(confirmed.data.item).toMatchObject({
+    id: "PAR001",
+    padre: "SUB411",
+    revision: 2,
+    subcategoria: { id: "SUB411", nombre: "Sub alternativa T2" },
+    categoria: { id: "CAT001" },
+  });
+
+  // The live DTOs that reflect the T2 change: the catalog itself, the movement
+  // the closed photo captured and the live contrast revision. The numeric
+  // metrics are classification-independent and stay identical.
+  const live = await f.request("/api/clasificacion/partidas/PAR001");
+  expect(live.status).toBe(200);
+  expect(live.data.item).toMatchObject({ padre: "SUB411", revision: 2 });
+
+  const movement = await f.request("/api/movimientos/106");
+  expect(movement.status).toBe(200);
+  expect(movement.data.movimiento.partida).toMatchObject({
+    id: "PAR001",
+    padre: "SUB411",
+    subcategoria: { id: "SUB411" },
+    categoria: { id: "CAT001" },
+  });
+
+  const vivoDespues = getContraste(f.db, "1", now);
+  expect(vivoDespues.revision).not.toBe(vivoAntes.revision);
+  expect(vivoDespues.metricas).toEqual(vivoAntes.metricas);
+  expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
+  expect(vivoDespues.noEsHistorico).toBe(true);
+
+  // Photo, version metadata and raw persisted JSON stay byte-identical: no
+  // recalculation and no new closure version.
+  expect(getFotoCiclo(f.db, "1")).toEqual(fotoAntes);
+  expect(getFotoCiclo(f.db, "1").foto?.clasificacion).toEqual(
+    clasificacionOriginal,
+  );
+  expect(getVersionesFotoCiclo(f.db, "1")).toEqual(versionesAntes);
+  expect(
+    f.db
+      .query(
+        "SELECT clasificacion,cobertura,no_disponible,fingerprint FROM fotos_cierre WHERE ciclo='1' AND version=1",
+      )
+      .get(),
+  ).toEqual(rawAntes);
+  expect(snapshotE411(f.db)).toEqual(beforeE411);
+  expect(vivoAntes.origen).toBe("CalculoVivo");
+});
+
+test("E4.11 I4: T2 real por API (referencias) deja foto y versión intactas y cambia la vista viva", async () => {
+  const clasificacionOriginal = {
+    categorias: [],
+    subcategorias: [],
+    partidas: [],
+    referencias: [
+      { id: "REF0001", nombre: "Viaje fixture", tipo: "Viaje", revision: 1 },
+    ],
+  };
+  const f = fixture();
+  seedClosure(
+    f.db,
+    "1",
+    1,
+    "2026-06-20",
+    "2026-07-19",
+    0,
+    clasificacionOriginal,
+  );
+  // Fixture-only reference captured by the photo; no movement uses it, so the
+  // T2 type change is a pure catalog rectification with impact + motive.
+  f.db.run(
+    `INSERT INTO referencias(id,nombre,tipo,estado,revision,creado,actualizado)
+     VALUES('REF0001','Viaje fixture','Viaje','Activa',1,'f','f')`,
+  );
+  await f.enroll();
+
+  const fotoAntes = getFotoCiclo(f.db, "1");
+  const versionesAntes = getVersionesFotoCiclo(f.db, "1");
+  const rawAntes = f.db
+    .query(
+      "SELECT clasificacion,cobertura,no_disponible,fingerprint FROM fotos_cierre WHERE ciclo='1' AND version=1",
+    )
+    .get();
+  const vivoAntes = getContraste(f.db, "1", now);
+  const beforeE411 = snapshotE411(f.db);
+
+  const current = await f.request("/api/referencias/REF0001");
+  expect(current.status).toBe(200);
+  expect(current.data.item).toMatchObject({ tipo: "Viaje", revision: 1 });
+
+  const cambios = { revision: current.data.item.revision, tipo: "Evento" };
+  const preview = await f.request(
+    "/api/referencias/REF0001/impacto",
+    "POST",
+    cambios,
+  );
+  expect(preview.status).toBe(200);
+  expect(preview.data.cambios).toEqual(["tipo"]);
+  expect(preview.data.economico).toEqual(["tipo"]);
+  expect(preview.data.usos).toEqual([]);
+  expect(preview.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  const updated = await f.request("/api/referencias/REF0001", "PATCH", {
+    ...cambios,
+    motivo: "T2 ficticio de Referencias E4.11",
+    fingerprint: preview.data.fingerprint,
+  });
+  expect(updated.status).toBe(200);
+  expect(updated.data.item).toMatchObject({ tipo: "Evento", revision: 2 });
+
+  const live = await f.request("/api/referencias/REF0001");
+  expect(live.status).toBe(200);
+  expect(live.data.item).toMatchObject({ tipo: "Evento", revision: 2 });
+
+  const vivoDespues = getContraste(f.db, "1", now);
+  expect(vivoDespues.revision).not.toBe(vivoAntes.revision);
+  expect(vivoDespues.metricas).toEqual(vivoAntes.metricas);
+  expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.motor).toBe(MOTOR_CONTRASTE);
+
+  expect(getFotoCiclo(f.db, "1")).toEqual(fotoAntes);
+  expect(getFotoCiclo(f.db, "1").foto?.clasificacion).toEqual(
+    clasificacionOriginal,
+  );
+  expect(getVersionesFotoCiclo(f.db, "1")).toEqual(versionesAntes);
+  expect(
+    f.db
+      .query(
+        "SELECT clasificacion,cobertura,no_disponible,fingerprint FROM fotos_cierre WHERE ciclo='1' AND version=1",
+      )
+      .get(),
+  ).toEqual(rawAntes);
   expect(snapshotE411(f.db)).toEqual(beforeE411);
 });
 

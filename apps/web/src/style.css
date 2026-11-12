@@ -1,3 +1,7 @@
+/* Graphite Lime · G1 · capa visual aislada por data-theme. */
+@import "./graphite.css";
+@import "./inicio-shared.css";
+
 :root {
   font-family:
     Inter,
@@ -299,12 +303,53 @@ small {
   color: var(--sidebar-muted);
   font-weight: 600;
 }
-.nav-group {
+.nav-legacy-label {
+  margin: var(--space-8) var(--space-2) var(--space-1);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--sidebar-border);
+  color: var(--sidebar-muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 1.25px;
+  text-transform: uppercase;
+}
+.nav-link.nav-link-legacy {
+  font-weight: 500;
+}
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--touch-min);
+  margin: var(--space-6) 0 var(--space-1);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--sidebar-muted);
   font-size: var(--text-xs);
   font-weight: 750;
   letter-spacing: 1.5px;
-  color: var(--sidebar-muted);
-  margin: var(--space-12) var(--space-2) var(--space-3);
+  text-align: left;
+  text-transform: uppercase;
+}
+.nav-group-toggle:hover {
+  color: var(--sidebar-text);
+}
+.nav-group-chevron {
+  flex: none;
+  margin-left: var(--space-2);
+  font-size: 15px;
+  opacity: 0.7;
+}
+.nav-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-group-body[hidden] {
+  display: none;
 }
 .nav-active {
   display: flex;
@@ -323,14 +368,8 @@ small {
   font-size: 20px;
   margin-right: 10px;
 }
-.nav-active span:last-child {
-  margin-left: auto;
-}
-.nav-future {
-  font-size: var(--text-xs);
-  line-height: var(--leading-relaxed);
-  color: var(--sidebar-muted);
-  padding: var(--space-5) var(--space-3);
+.nav-active .nav-label {
+  margin-left: 0;
 }
 .sidebar-bottom {
   margin-top: auto;
@@ -367,6 +406,9 @@ small {
   flex-direction: column;
 }
 .global-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   min-height: 84px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -405,7 +447,8 @@ small {
   color: var(--muted);
 }
 .theme-picker select {
-  width: auto;
+  width: 9rem;
+  max-width: 100%;
   min-height: var(--control-min);
   padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
@@ -420,6 +463,14 @@ small {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
   color: var(--muted);
+}
+/* Etiqueta del entorno DEMO local: solo la envía la API cuando el modo está
+   validado (identidad demo, sin credenciales, red local). */
+.demo-badge {
+  color: var(--text);
+  border-color: var(--accent-border);
+  background: var(--surface-2);
+  font-weight: 600;
 }
 .content {
   padding: var(--space-8) 38px var(--space-10);
@@ -558,6 +609,11 @@ small {
   font-size: var(--text-xs);
   color: var(--muted);
   border-top: 1px solid var(--border);
+}
+/* Hooks de la capa Graphite G3; inertes en el resto de apariencias. */
+.list-footer-total,
+.movement-new-icon {
+  display: none;
 }
 .list-footer button {
   font-size: var(--text-xs);
@@ -703,6 +759,7 @@ select[aria-invalid="true"] {
 }
 .switch.on {
   background: var(--positive);
+  color: var(--on-accent);
   justify-content: flex-start;
   padding: 3px 3px 3px 10px;
 }
@@ -867,6 +924,27 @@ select[aria-invalid="true"] {
   font-size: 12px;
   user-select: all;
 }
+/*
+ * QR del alta TOTP. El fondo blanco es fijo, no un token de tema: el contraste
+ * negro/blanco es requisito de escaneo y no debe adaptarse a dark/hybrid.
+ */
+/* Fondo blanco fijo: el QR debe escanearse igual en los tres temas;
+   no es un color de interfaz y no se sustituye por tokens. */
+.totp-qr {
+  display: block;
+  width: min(100%, 220px);
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.totp-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
 .auth-foot {
   text-align: center;
   font-size: var(--text-xs);
@@ -966,12 +1044,6 @@ select[aria-invalid="true"] {
   }
   .sidebar.expanded nav {
     display: block;
-  }
-  .nav-group {
-    margin-top: var(--space-6);
-  }
-  .nav-future {
-    padding-bottom: 0;
   }
   .workspace {
     margin-left: 0;
@@ -1363,6 +1435,27 @@ textarea {
 .movements-list .filters {
   grid-template-columns: minmax(180px, 2fr) 1fr 1.4fr 1fr;
 }
+.pending-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 22px 22px 18px;
+  background: var(--surface);
+}
+.pending-filters label {
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.pending-status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.pending-status-dot[data-state="loading"] { background: var(--warning); }
+.pending-status-dot[data-state="error"] { background: var(--negative); }
 .movements-list th:nth-child(1) {
   width: 14%;
 }
@@ -4960,9 +5053,6 @@ textarea {
 .nav-section {
   display: block;
 }
-.nav-group {
-  text-transform: uppercase;
-}
 .nav-link,
 .nav-active {
   position: relative;
@@ -5002,15 +5092,6 @@ textarea {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
-}
-.nav-chevron {
-  flex: none;
-  margin-left: auto;
-  font-size: 16px;
-  opacity: 0.55;
-}
-.nav-active .nav-chevron {
-  opacity: 0.9;
 }
 
 /* E4.10 I7 — contrato y UI de reapertura/re-cierre.
@@ -5260,6 +5341,10 @@ textarea {
   font-size: var(--text-sm);
   vertical-align: middle;
   overflow-wrap: anywhere;
+}
+.ui-table tbody tr[data-row-clickable="true"],
+.ui-data-list-item[data-row-clickable="true"] {
+  cursor: pointer;
 }
 .ui-table tbody tr:hover {
   background: var(--surface-2);
@@ -5738,4 +5823,774 @@ textarea {
 }
 .classification-optional-field {
   margin-top: var(--space-5);
+}
+
+/* UI · DEV-06 I1 — Inicio
+ * Sección aditiva: jerarquía, tipografía, espaciado y rejilla de /inicio.
+ * Conserva cifras, estados, fuentes, secciones, orden y comportamiento; solo
+ * consume tokens no cromáticos y no reescribe reglas previas ni temas.
+ */
+.inicio-page {
+  gap: var(--space-4);
+}
+.inicio-context {
+  gap: var(--space-3);
+}
+.inicio-context-head,
+.inicio-section-head {
+  gap: var(--space-3);
+}
+.inicio-grid-2,
+.inicio-grid-4 {
+  gap: var(--space-4);
+}
+.inicio-metric-grid {
+  gap: var(--space-3);
+}
+.inicio-context-facts,
+.inicio-counts,
+.inicio-objetivo-facts,
+.inicio-nd-list {
+  gap: var(--space-2) var(--space-4);
+}
+.inicio-section > h2 {
+  margin-bottom: var(--space-3);
+}
+.inicio-section h3 {
+  margin: var(--space-4) 0 var(--space-2);
+}
+.inicio-metric {
+  padding: var(--space-3);
+}
+.inicio-metric-head {
+  gap: var(--space-2);
+}
+.inicio-metric-main {
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+}
+.inicio-detail {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+}
+.inicio-detail-grid {
+  gap: var(--space-3);
+}
+.inicio-submetric {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+}
+.inicio-note {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+}
+.inicio-linkrow {
+  margin-top: var(--space-3);
+  gap: var(--space-2) var(--space-4);
+}
+.inicio-readonly {
+  padding: var(--space-1) var(--space-2);
+}
+.inicio-ref-coverage {
+  gap: var(--space-1) var(--space-4);
+}
+.inicio-metric-meta,
+.inicio-metric-motivo,
+.inicio-source {
+  margin-top: var(--space-2);
+}
+.inicio-zona {
+  margin-top: var(--space-2);
+}
+.inicio-metric-coverage {
+  margin-top: var(--space-2);
+}
+
+/* Texto funcional a partir de 12 px, incluidos metadatos y estados. */
+.inicio-page .ui-badge,
+.inicio-page .ui-metric-class,
+.inicio-page .inicio-readonly,
+.inicio-page .inicio-clase,
+.inicio-page .inicio-estado,
+.inicio-page .inicio-metric-meta,
+.inicio-page .inicio-metric-motivo,
+.inicio-page .inicio-source,
+.inicio-page .inicio-note,
+.inicio-page .inicio-ref-coverage,
+.inicio-page .inicio-item-meta,
+.inicio-page .inicio-value-note,
+.inicio-page .inicio-metric-coverage,
+.inicio-page .inicio-zona,
+.inicio-page .inicio-context-facts dt,
+.inicio-page .inicio-counts dt,
+.inicio-page .inicio-objetivo-facts dt,
+.inicio-page .inicio-nd-list dt,
+.inicio-page .inicio-detail h4,
+.inicio-page .inicio-submetric h4,
+.inicio-page .ui-amount-note {
+  font-size: var(--text-xs);
+}
+.inicio-page .inicio-item-value {
+  font-size: var(--text-sm);
+}
+
+/* Objetivo R6: el coste esencial manda; las submétricas se subordinan. */
+.inicio-submetric .ui-amount-value {
+  font-size: var(--text-md);
+  letter-spacing: 0;
+}
+.inicio-submetric .ui-amount-state {
+  font-size: var(--text-sm);
+}
+
+/* Rejilla 4/2/1: el salto a dos columnas se adelanta para que las tarjetas
+ * sigan siendo legibles con el texto funcional a 12 px. */
+@media (max-width: 1200px) {
+  .inicio-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .inicio-grid-2,
+  .inicio-grid-4,
+  .inicio-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page {
+    gap: var(--space-3);
+  }
+  .inicio-context,
+  .inicio-section {
+    padding: var(--space-4);
+  }
+}
+
+/* UI · DEV-06 I2 — Movimientos (catálogo/listado)
+ * Sección aditiva: composición de cabecera, filtros, «Más filtros», toolbar,
+ * estados, tabla/cartas y paginación de /movimientos. Conserva íntegramente
+ * filtros, consulta, orden, columnas, importes, acciones y textos; solo
+ * consume tokens existentes, no reescribe reglas previas ni toca temas.
+ */
+.movements-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.movements-page > .page-head,
+.movements-page > .page-foot {
+  margin: 0;
+}
+.movements-page > .alert {
+  margin-bottom: 0;
+}
+.movements-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Filtros principales: cinco controles en una lectura, sin perder etiquetas. */
+.movements-list .filters {
+  grid-template-columns: minmax(220px, 1.8fr) repeat(4, minmax(118px, 1fr));
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-5) var(--space-6) var(--space-4);
+}
+.movements-list .filters label {
+  min-width: 0;
+}
+.movements-list .filters input,
+.movements-list .filters select {
+  width: 100%;
+}
+
+/* «Más filtros»: fila de acción con 44 px y revelado secundario. */
+.movements-list .movement-filters {
+  padding: 0 var(--space-6);
+  border-top: 1px solid var(--border);
+}
+.movements-list .movement-filters summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  padding: var(--space-3) 0;
+  color: var(--text);
+  list-style: none;
+}
+.movements-list .movement-filters summary::-webkit-details-marker {
+  display: none;
+}
+.movements-list .movement-filters summary::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 120ms ease;
+}
+.movements-list .movement-filters[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+.movements-list .movement-filters[open] summary::after {
+  transform: rotate(225deg);
+}
+.movements-list .movement-filters .form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4) 0 var(--space-5);
+}
+
+/* Toolbar: el recuento es la lectura y el orden queda subordinado. */
+.movements-list .list-toolbar {
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface-2);
+}
+.movements-list .list-toolbar p {
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.movements-list .list-toolbar > span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+/* Tabla: una fila, un hecho y un importe; metadatos secundarios agrupados. */
+.movements-list .ui-table th {
+  padding: var(--space-3) var(--space-4);
+}
+.movements-list .ui-table td {
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+}
+.movements-list .ui-table th:first-child,
+.movements-list .ui-table td:first-child {
+  padding-left: var(--space-6);
+}
+.movements-list .ui-table th:last-child,
+.movements-list .ui-table td:last-child {
+  padding-right: var(--space-6);
+}
+.movements-list .ui-table td.ui-table-amount {
+  font-size: var(--text-base);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.movements-list .ui-table-amount strong {
+  font-weight: 700;
+}
+.movements-list .table-id {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* Estados de carga, vacío por filtros y error dentro del panel. */
+.movements-list > .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 240px;
+  margin: 0;
+  padding: var(--space-10) var(--space-6);
+}
+.movements-list > .empty h2 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.movements-list > .empty p {
+  max-width: 46ch;
+  margin: 0;
+  font-size: var(--text-xs);
+}
+.movements-list > .empty .secondary {
+  margin-top: var(--space-2);
+}
+.movements-list > .alert {
+  margin: var(--space-4) var(--space-6);
+}
+
+/* Paginación: misma semántica y botones de 44 px. */
+.movements-list .list-footer {
+  margin-top: auto;
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface-2);
+}
+.movements-list .list-footer > span {
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.movements-list .list-footer .actions {
+  gap: var(--space-5);
+}
+.movements-list .list-footer button {
+  min-height: var(--touch-min);
+  font-size: var(--text-xs);
+}
+
+/* Cartas móviles: misma información y enlaces que la tabla. El concepto y el
+ * importe ordenan la lectura; fecha, tipo, saldo y partida quedan debajo. */
+.movements-list .movements-cards {
+  display: none;
+  gap: 0;
+  padding: 0;
+}
+.movements-list .movements-cards .ui-data-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+.movements-list .movements-cards .ui-data-list-item:last-child {
+  border-bottom: 0;
+}
+.movements-list .movements-cards .ui-data-list-item.annulled {
+  background: var(--surface-2);
+}
+.movements-list .movements-cards .ui-data-list-field {
+  padding: var(--space-1) 0;
+  border-top: 0;
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Concepto"] {
+  order: 1;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--surface-2);
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Concepto"] .ui-data-list-value {
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Concepto"] a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+.movements-list .movements-cards .ui-data-list-field[data-kind="amount"] {
+  order: 2;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-block: 1px solid var(--surface-2);
+}
+.movements-list .movements-cards .ui-data-list-field[data-kind="amount"] .ui-data-list-label {
+  font-weight: 700;
+}
+.movements-list .movements-cards .ui-data-list-field[data-kind="amount"] .ui-data-list-value {
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Fecha"] {
+  order: 3;
+  padding-top: var(--space-2);
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Tipo / Subtipo"] {
+  order: 4;
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Saldo"] {
+  order: 5;
+}
+.movements-list .movements-cards .ui-data-list-field[data-label="Partida"] {
+  order: 6;
+}
+.movements-list .movements-cards .ui-data-list-label {
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 1120px) {
+  .movements-list .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .movements-list .filters label:first-child {
+    grid-column: 1 / -1;
+  }
+  .movements-list .movement-filters .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .movements-page {
+    gap: var(--space-3);
+  }
+  .movements-list .filters {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-4);
+  }
+  .movements-list .filters label:first-child {
+    grid-column: auto;
+  }
+  .movements-list .movement-filters {
+    padding: 0 var(--space-4);
+  }
+  .movements-list .movement-filters .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-3) 0 var(--space-4);
+  }
+  .movements-list .list-toolbar {
+    padding: var(--space-3) var(--space-4);
+  }
+  .movements-list > .empty {
+    padding: var(--space-8) var(--space-4);
+  }
+  .movements-list > .alert {
+    margin: var(--space-3) var(--space-4);
+  }
+  .movements-list .list-footer {
+    padding: var(--space-3) var(--space-4);
+  }
+  .movements-list .movements-cards {
+    display: grid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .movements-list .movement-filters summary::after {
+    transition: none;
+  }
+}
+
+/* UI · DEV-06 I3 — Saldos (ficha y alta/edición)
+ * Sección aditiva: la posición actual pasa a ser la lectura principal de la
+ * ficha y las secciones de identificación, configuración y atributos se
+ * ordenan bajo ella. El formulario refuerza la jerarquía de sus tres
+ * secciones y conserva campos, IDs, etiquetas, ayuda, error, foco, validación
+ * y rejilla 2→1. Solo consume tokens existentes; no reescribe reglas previas,
+ * no toca `.detail-grid` global ni temas.
+ */
+.saldo-detail-grid > .position-panel {
+  grid-column: 1 / -1;
+}
+.saldo-detail-grid > .ui-form-section:last-child {
+  grid-column: 1 / -1;
+}
+.saldo-detail-grid .position-panel .eyebrow {
+  margin-bottom: var(--space-1);
+}
+.saldo-detail-grid .position-panel h2 {
+  margin-bottom: var(--space-1);
+}
+.saldo-detail-grid .position-panel > p {
+  max-width: 78ch;
+}
+.saldo-detail-grid .position-panel > p.muted {
+  margin-bottom: 0;
+}
+.saldo-detail-grid .position-placeholder {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) 0;
+  font-size: clamp(34px, 4vw, 44px);
+  line-height: var(--leading-tight);
+}
+.saldo-detail-grid .ui-form-section-head {
+  margin-bottom: var(--space-3);
+}
+
+.saldo-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.saldo-form > .ui-form-section,
+.saldo-form > .form-footer {
+  margin: 0;
+}
+.saldo-form .ui-form-section-head {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.saldo-form .ui-form-section-title {
+  font-size: var(--text-md);
+}
+.saldo-form .ui-form-section-description {
+  max-width: 74ch;
+}
+.saldo-form .ui-form-step {
+  width: 32px;
+  height: 32px;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+.saldo-form .ui-field-help {
+  margin-top: var(--space-1);
+}
+.saldo-form .ui-field[data-invalid="true"] .ui-field-label {
+  color: var(--error);
+}
+.saldo-form > .ui-form-section > .help {
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 760px) {
+  .saldo-detail-grid .position-placeholder {
+    font-size: clamp(30px, 9vw, 38px);
+  }
+  .saldo-detail-grid .ui-form-section-head {
+    margin-bottom: var(--space-4);
+  }
+  .saldo-form {
+    gap: var(--space-4);
+  }
+  .saldo-form > .ui-form-section {
+    padding: var(--space-4);
+  }
+  .saldo-form .ui-form-section-head {
+    padding-bottom: var(--space-2);
+  }
+}
+
+/* UI · DEV-06 I4 — Cierre E4.9
+ * Presentación E4.9 (estado, gates, totales, cobertura, confirmación y foto).
+ * Bloque aditivo y aislado con prefijo cierre-e49-*: no redefine reglas de
+ * E4.10 (e410-*), no toca tokens cromáticos y consume solo tokens existentes.
+ */
+
+/* Una lectura principal: el estado manda sobre el resto de métricas. */
+.cierre-e49-status .cierre-e49-metrics .metric:first-child {
+  grid-column: span 2;
+  border-color: var(--accent-border);
+  background: var(--section);
+}
+.cierre-e49-status .cierre-e49-metrics .metric:first-child dd {
+  font-size: clamp(20px, 2.2vw, 28px);
+}
+.cierre-e49-status .cierre-e49-metrics .metric:first-child .cierre-badge {
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: var(--leading-tight);
+  font-weight: 750;
+}
+
+/* Totales y cobertura: mismas columnas en tabla y tarjetas, importes alineados. */
+.cierre-e49-desktop {
+  min-width: 0;
+}
+.cierre-e49-table th {
+  white-space: nowrap;
+}
+.cierre-e49-table th[data-kind="status"],
+.cierre-e49-table td[data-kind="status"] {
+  width: 1%;
+  white-space: nowrap;
+}
+.cierre-e49-table .cierre-badge {
+  white-space: nowrap;
+}
+.cierre-e49-table .ui-table-amount,
+.cierre-e49-cards .ui-data-list-field[data-kind="amount"] .ui-data-list-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.cierre-e49-cards {
+  margin: var(--space-2) 0 0;
+}
+.cierre-e49-cards .ui-data-list-item {
+  background: var(--surface);
+}
+
+/* Gates: conserva .table/.shared-table-scroll y su transformación móvil. */
+.cierre-e49-gates .shared-table-scroll {
+  margin-top: var(--space-2);
+}
+.cierre-e49-gates-table td:last-child {
+  overflow-wrap: anywhere;
+}
+
+/* Confirmación: una acción primaria y el bloqueo explícito. */
+.cierre-e49-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cierre-e49-confirm h2 {
+  margin-bottom: 0;
+}
+.cierre-e49-confirm .cierre-readonly {
+  margin-bottom: 0;
+}
+.cierre-e49-confirm .actions {
+  margin-top: var(--space-2);
+}
+.cierre-e49-confirm .actions .primary {
+  min-width: 180px;
+}
+.cierre-e49-blocked {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--error);
+  border-radius: var(--radius-sm);
+  background: var(--error-soft);
+  color: var(--error);
+  overflow-wrap: anywhere;
+}
+
+/* Foto: jerarquía y espaciado sin tocar su estructura ni el bloque reopened. */
+.cierre-e49-photo .cierre-photo-head {
+  margin-bottom: var(--space-3);
+}
+.cierre-e49-photo .cierre-e49-photo-metrics {
+  margin: var(--space-3) 0 var(--space-4);
+}
+.cierre-e49-photo .cierre-e49-photo-grid {
+  margin-top: var(--space-2);
+}
+.cierre-e49-photo .cierre-e49-desktop {
+  margin: var(--space-2) 0 var(--space-3);
+}
+.cierre-e49-photo h3 {
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-2);
+}
+.cierre-e49-photo .cierre-e49-photo-backup {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 1050px) {
+  .cierre-e49-status .cierre-e49-metrics .metric:first-child {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 760px) {
+  .cierre-e49-status .cierre-e49-metrics .metric:first-child {
+    grid-column: auto;
+  }
+  .cierre-e49-desktop {
+    display: none;
+  }
+  .cierre-e49-cards {
+    display: grid;
+    margin-top: 0;
+  }
+  .cierre-e49-confirm .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cierre-e49-confirm .actions .primary {
+    min-width: 0;
+    width: 100%;
+  }
+  .cierre-e49-photo h3 {
+    margin-top: var(--space-4);
+  }
+}
+
+/* UI · DEV-07 — temas y AA
+ * Sección aditiva del incremento I2: corrige el foco del sidebar, el tamaño
+ * del texto funcional y los objetivos táctiles sin reescribir reglas previas.
+ * Solo consume tokens existentes (--sidebar-focus, --text-xs, --touch-min);
+ * no define colores ni tokens, no toca temas, marcado, textos, cifras,
+ * estados, contratos ni lógica.
+ */
+
+/* 1. Foco del sidebar y del menú móvil. En hybrid-s el anillo global
+ * (--focus) queda en 2,83:1 sobre el sidebar; --sidebar-focus ya está
+ * definido para ese fondo y alcanza 6,66:1. En light-s y dark-s ambos
+ * tokens coinciden, por lo que su aspecto no cambia. */
+.sidebar :focus-visible {
+  outline-color: var(--sidebar-focus);
+}
+
+/* 2. Texto funcional a 12 px. Los badges de estado (11 px) y las huellas
+ * (11,52 px) del cierre crecen manteniendo la envoltura ya declarada y una
+ * altura de línea explícita, para no recortar ni desbordar a 390. Los
+ * overrides de mayor especificidad (badge principal del estado y nowrap de
+ * la tabla de escritorio) se conservan. */
+.cierre-badge {
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+.cierre-fingerprint {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+/* 3. Objetivos táctiles ≥ 44 px. Solo amplía el área interactiva; no
+ * cambia textos, orden, rejilla ni cifras. La marca gana altura en móvil
+ * (40 → 44) y «Volver» y los enlaces de las listas de Inicio pasan de una
+ * línea de 18 px a una caja de 44 px. */
+.brand {
+  min-height: var(--touch-min);
+}
+a.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+.inicio-item-list li > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+/* 4. El movimiento reducido se mantiene como guarda: la única transición
+ * sigue dentro de @media (prefers-reduced-motion: no-preference) y el
+ * despliegue de filtros ya se anula con reduce. No se añaden animaciones. */
+
+/* 5. Límite de los campos de formulario. `textarea` conservaba `--border`
+ * (1,38–1,50:1), un separador decorativo que no identifica el control; el
+ * resto de campos ya usa `--control-border` (3,24–3,65:1). Se unifica el
+ * borde con el token existente, sin cambiar relleno, tamaño, fondo ni texto.
+ * Este override deja intactas las reglas base y las variantes de E4.4. */
+textarea {
+  border-color: var(--control-border);
+}
+
+/* SPEC36 I2 — reparto y pendientes. Reutiliza tokens vigentes; solo evita
+ * desbordamiento horizontal y permite que las acciones se envuelvan a 390 px. */
+.reparto-panel,
+.reparto-seguimiento,
+.reparto-seguimiento > .panel {
+  min-width: 0;
+}
+.reparto-panel .ui-form-section-head,
+.reparto-panel .actions,
+.movements-list .ui-form-section-head,
+.movements-list .actions {
+  flex-wrap: wrap;
+}
+.reparto-seguimiento {
+  display: grid;
+  gap: var(--space);
+}
+.reparto-seguimiento .ui-form-section {
+  margin: 0;
+}
+
+/* UI-03 — separación visual de las experiencias de Partidas. */
+.panel[id] {
+  scroll-margin-top: 96px;
+}
+.dprima-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+.dprima-subnav a {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.dprima-subnav a:hover {
+  border-color: var(--accent);
+}
+.dprima-technical {
+  border-style: dashed;
 }

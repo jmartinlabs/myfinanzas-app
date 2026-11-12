@@ -801,6 +801,27 @@ type CycleImpact = {
   contextoAntes: Context;
   contextoDespues: Context;
 };
+export function CycleOperationMotivo({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  error?: string;
+}) {
+  return (
+    <Field id="motivo" label="Motivo *" error={error}>
+      <textarea
+        aria-label="Motivo *"
+        value={value}
+        onChange={onChange}
+        maxLength={1000}
+      />
+    </Field>
+  );
+}
+
 function CycleOperationForm({
   id,
   go,
@@ -989,14 +1010,14 @@ function CycleOperationForm({
                 />
               </Field>
             </FormGrid>
-            <Field id="motivo" label="Motivo *">
-              <textarea
-                aria-label="Motivo *"
-                value={motivo}
-                onChange={change(setMotivo)}
-                maxLength={1000}
-              />
-            </Field>
+            <CycleOperationMotivo
+              value={motivo}
+              error={fields.motivo}
+              onChange={(event) => {
+                change(setMotivo)(event);
+                setFields((current) => ({ ...current, motivo: "" }));
+              }}
+            />
             <p className="help">
               Importe manual explícito: cero y negativos válidos. No se copia un
               cierre ni se modifica la apertura del siguiente ciclo.

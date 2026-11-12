@@ -601,3 +601,25 @@ test("El CSS de DEV-05 define Field, secciones y rejilla 2→1 con tokens", () =
   expect(section).toContain("var(--muted)");
   expect(section).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
 });
+
+test("Table y DataList permiten fila clicable sin sustituir los controles internos", () => {
+  const table = renderToStaticMarkup(
+    <Table
+      caption="Filas"
+      label="Filas"
+      columns={saldoColumns}
+      rows={saldoRows}
+      onRowClick={() => undefined}
+    />,
+  );
+  expect(table).toContain('data-row-clickable="true"');
+
+  const list = renderToStaticMarkup(
+    <DataList
+      columns={saldoColumns}
+      rows={saldoRows}
+      onItemClick={() => undefined}
+    />,
+  );
+  expect(list).toContain('data-row-clickable="true"');
+});

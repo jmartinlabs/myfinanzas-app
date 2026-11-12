@@ -10,63 +10,74 @@ import { materializeContract } from "../test-support/inversiones-schema";
 const t = "2026-01-01T00:00:00.000Z";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e44-"));
 
-/** Genuine v22 contract plus fictional rows covering every preserved area. */
+/** Fictional rows covering every preserved area, valid for both v21 and v22. */
+function preservedRows(db: Database) {
+  db.run(
+    `INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
+     VALUES('S000','Exterior técnico','Exterior','Exterior','Activa',1,?,?),
+           ('S001','Banco ficticio','Efectivo','Movimientos','Activa',1,?,?)`,
+    [t, t, t, t],
+  );
+  db.run(
+    `INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado)
+     VALUES('D001','Deuda histórica ficticia','2026-10-01',100000,'Activa',1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO categorias(id,nombre,anual,mensual,referencia,estado,revision,creado,actualizado)
+     VALUES('CAT001','Gasto ficticio','Gasto','Gasto',0,'Activa',1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO subcategorias(id,nombre,padre,estado,revision,creado,actualizado)
+     VALUES('SUB001','Sub ficticia','CAT001','Activa',1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda)
+     VALUES('PAR001','Cuota ficticia','SUB001','Activa',1,?,?,'D001')`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,partida,concepto,nota,anulado,revision,creado,actualizado,capital,intereses)
+     VALUES('1','2026-10-01','Gasto',10000,'S001','S000','PAR001','Cuota ficticia','',0,1,?,?,8000,2000)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO movement_audit(id,revision,accion,motivo,instante,actor,anterior,posterior)
+     VALUES('1',1,'alta',NULL,?,'usuario-unico',NULL,'{}')`,
+    [t],
+  );
+  db.run(
+    `INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado)
+     VALUES('1','2026-06-20',0,?,1,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo)
+     VALUES('D001','alta',1,'{}',?,0,'usuario-unico',NULL)`,
+    [t],
+  );
+  db.run(
+    "INSERT INTO owner(id,password,secret,enabled,last_step) VALUES(1,'hash','sealed',1,0)",
+  );
+  db.run("INSERT INTO sessions(hash,csrf,created,seen) VALUES('sesion','csrf',1,1)");
+  db.run("INSERT INTO auth_limits(id,failures,window,blocked) VALUES(1,0,0,0)");
+  db.run("INSERT INTO debt_attempts VALUES('intento','hash','{}',1)");
+  db.run("INSERT INTO counters(name,next) VALUES('deudas',2)");
+}
+
+/** Genuine v21 contract plus the preserved fictional rows. */
+function v21(path: string, rows = true) {
+  materializeContract(path, "C21-VENTAS-E42", (db) => {
+    if (rows) preservedRows(db);
+  });
+}
+
+/** Genuine v22 contract plus the preserved fictional rows. */
 function v22(path: string, rows = true) {
   materializeContract(path, "C22-E35-FIN-NETA", (db) => {
-    if (!rows) return;
-    db.run(
-      `INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
-       VALUES('S000','Exterior técnico','Exterior','Exterior','Activa',1,?,?),
-             ('S001','Banco ficticio','Efectivo','Movimientos','Activa',1,?,?)`,
-      [t, t, t, t],
-    );
-    db.run(
-      `INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado)
-       VALUES('D001','Deuda v22 ficticia','2026-10-01',100000,'Activa',1,?,?)`,
-      [t, t],
-    );
-    db.run(
-      `INSERT INTO categorias(id,nombre,anual,mensual,referencia,estado,revision,creado,actualizado)
-       VALUES('CAT001','Gasto ficticio','Gasto','Gasto',0,'Activa',1,?,?)`,
-      [t, t],
-    );
-    db.run(
-      `INSERT INTO subcategorias(id,nombre,padre,estado,revision,creado,actualizado)
-       VALUES('SUB001','Sub ficticia','CAT001','Activa',1,?,?)`,
-      [t, t],
-    );
-    db.run(
-      `INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda)
-       VALUES('PAR001','Cuota ficticia','SUB001','Activa',1,?,?,'D001')`,
-      [t, t],
-    );
-    db.run(
-      `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,partida,concepto,nota,anulado,revision,creado,actualizado,capital,intereses)
-       VALUES('1','2026-10-01','Gasto',10000,'S001','S000','PAR001','Cuota ficticia','',0,1,?,?,8000,2000)`,
-      [t, t],
-    );
-    db.run(
-      `INSERT INTO movement_audit(id,revision,accion,motivo,instante,actor,anterior,posterior)
-       VALUES('1',1,'alta',NULL,?,'usuario-unico',NULL,'{}')`,
-      [t],
-    );
-    db.run(
-      `INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado)
-       VALUES('1','2026-06-20',0,?,1,?)`,
-      [t, t],
-    );
-    db.run(
-      `INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo)
-       VALUES('D001','alta',1,'{}',?,0,'usuario-unico',NULL)`,
-      [t],
-    );
-    db.run(
-      "INSERT INTO owner(id,password,secret,enabled,last_step) VALUES(1,'hash','sealed',1,0)",
-    );
-    db.run("INSERT INTO sessions(hash,csrf,created,seen) VALUES('sesion','csrf',1,1)");
-    db.run("INSERT INTO auth_limits(id,failures,window,blocked) VALUES(1,0,0,0)");
-    db.run("INSERT INTO debt_attempts VALUES('intento','hash','{}',1)");
-    db.run("INSERT INTO counters(name,next) VALUES('deudas',2)");
+    if (rows) preservedRows(db);
   });
 }
 
@@ -98,7 +109,7 @@ function deudaColumns(db: Database) {
   );
 }
 
-test("E4.4 AC-23: v22→v27 is additive, preserves IDs/audit/MFA and exposes the exact C27 contract", () => {
+test("E4.4 AC-23: v22→v28 is additive, preserves IDs/audit/MFA and exposes the exact C28 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v22.sqlite");
@@ -110,13 +121,13 @@ test("E4.4 AC-23: v22→v27 is additive, preserves IDs/audit/MFA and exposes the
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 27)).toBe("C27-E411-FOTOS-PERIODO");
-      expect(manifest(db)).toEqual(contract("C27-E411-FOTOS-PERIODO").objects);
+      expect(verifyContract(db, 28)).toBe("C28-REPARTO-PENDIENTE-6A31C23");
+      expect(manifest(db)).toEqual(contract("C28-REPARTO-PENDIENTE-6A31C23").objects);
       expect(
         db
           .query(
@@ -178,6 +189,90 @@ test("E4.4 AC-23: v22→v27 is additive, preserves IDs/audit/MFA and exposes the
   }
 });
 
+test("E4.4 AC-23: v21→v28 preserves IDs/audit/MFA and leaves the new fields null", () => {
+  const dir = root();
+  try {
+    const path = join(dir, "v21.sqlite");
+    v21(path);
+    const source = new Database(path);
+    const before = snapshot(source);
+    source.close();
+
+    const db = openDatabase(path);
+    let firstManifest: ReturnType<typeof manifest>;
+    let firstData: ReturnType<typeof snapshot>;
+    try {
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({
+        version: 28,
+      });
+      expect(snapshot(db)).toEqual(before);
+      expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
+      expect(verifyContract(db, 28)).toBe("C28-REPARTO-PENDIENTE-6A31C23");
+      expect(deudaColumns(db)).toHaveLength(23);
+      for (const [type, name] of [
+        ["table", "conciliaciones_deuda"],
+        ["table", "conciliaciones_deuda_audit"],
+        ["table", "conciliacion_attempts"],
+        ["index", "conciliacion_vigente_unica"],
+      ] as const)
+        expect(
+          db
+            .query(
+              "SELECT COUNT(*) n FROM sqlite_master WHERE type=? AND name=?",
+            )
+            .get(type, name),
+        ).toEqual({ n: 1 });
+      expect(
+        db
+          .query(
+            `SELECT tipo_deuda,tin,tae,cuota_contractual,condiciones,capital_inicial,
+                    capital_amortizado_historico,amortizacion_extra_historica,
+                    capital_historico_cuotas,intereses_historicos,total_pagado_historico,
+                    precontrol_cuotas,precontrol_capital,precontrol_amortizacion_extra,
+                    precontrol_ejercicio
+             FROM deudas WHERE id='D001'`,
+          )
+          .get(),
+      ).toEqual({
+        tipo_deuda: null,
+        tin: null,
+        tae: null,
+        cuota_contractual: null,
+        condiciones: null,
+        capital_inicial: null,
+        capital_amortizado_historico: null,
+        amortizacion_extra_historica: null,
+        capital_historico_cuotas: null,
+        intereses_historicos: null,
+        total_pagado_historico: null,
+        precontrol_cuotas: null,
+        precontrol_capital: null,
+        precontrol_amortizacion_extra: null,
+        precontrol_ejercicio: null,
+      });
+      firstManifest = manifest(db);
+      firstData = snapshot(db);
+    } finally {
+      db.close();
+    }
+
+    const second = openDatabase(path);
+    try {
+      expect(second.query("SELECT version FROM schema_version").get()).toEqual({
+        version: 28,
+      });
+      expect(manifest(second)).toEqual(firstManifest!);
+      expect(snapshot(second)).toEqual(firstData!);
+      expect(second.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally {
+      second.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("E4.4 AC-23: inconsistent foreign keys reject without a partial v26 base and reopen with FK active", () => {
   const dir = root();
   try {
@@ -222,7 +317,7 @@ test("E4.4 AC-23: inconsistent foreign keys reject without a partial v26 base an
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -351,7 +446,7 @@ test("E4.4 AC-23: unknown versions stay intact and two starts are idempotent", (
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 28,
       });
       expect(manifest(second)).toEqual(firstManifest);
       expect(snapshot(second)).toEqual(firstData);

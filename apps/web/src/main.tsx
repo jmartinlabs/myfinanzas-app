@@ -19,15 +19,18 @@ import { Referencias } from "./Referencias";
 import { Vehiculos } from "./Vehiculos";
 import { Inversiones } from "./Inversiones";
 import { Movimientos } from "./Movimientos";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Saldo } from "./api";
 import {
+  activeNavigationGroup,
   isNavigationActive,
+  navigationDirect,
   navigationGroups,
   navigationTitle,
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
+import { environmentLabel } from "./environment";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
@@ -40,7 +43,10 @@ import {
   type ThemeId,
 } from "./themes";
 import "./style.css";
+import "./casa.css";
 function App() {
+  const environment = environmentLabel();
+  const localEnvironment = environment === "Entorno local";
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
@@ -51,13 +57,21 @@ function App() {
     [error, setError] = useState(""),
     [revision, setRevision] = useState(0),
     [notice, setNotice] = useState(""),
-    [expired, setExpired] = useState(false);
+    [expired, setExpired] = useState(false),
+    [demo, setDemo] = useState(false),
+    [openGroups, setOpenGroups] = useState<string[]>(() => {
+      const id = activeNavigationGroup(location.pathname + location.search);
+      return id ? [id] : [];
+    });
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const mainNavRef = useRef<HTMLElement>(null);
   const check = () => {
     setAuth("loading");
-    api("/auth/session")
-      .then(() => setAuth("ready"))
+    api<{ csrf?: string; demo?: boolean }>("/auth/session")
+      .then((data) => {
+        setDemo(data.demo === true);
+        setAuth("ready");
+      })
       .catch((e) => setAuth(e.status === 401 ? "login" : "error"));
   };
   useEffect(check, []);
@@ -67,6 +81,16 @@ function App() {
   useEffect(() => {
     document.title = `${navigationTitle(path)} · MyFinanzas`;
   }, [path]);
+  useEffect(() => {
+    const active = activeNavigationGroup(path);
+    setOpenGroups(active ? [active] : []);
+  }, [path]);
+  const toggleGroup = (id: string) =>
+    setOpenGroups((current) =>
+      current.includes(id)
+        ? current.filter((entry) => entry !== id)
+        : [...current, id],
+    );
   useEffect(() => {
     const expired = () => setExpired(true);
     addEventListener("session-expired", expired);
@@ -210,40 +234,82 @@ function App() {
           <span aria-hidden="true">☰</span>
         </button>
         <nav id="main-nav" aria-label="Secciones" ref={mainNavRef}>
-          {navigationGroups.map((group) => (
-            <div className="nav-section" key={group.id}>
-              <p className="nav-group">{group.label}</p>
-              {group.items.map((item) => {
-                const active = isNavigationActive(item, path);
-                return (
-                  <a
-                    key={item.href}
-                    className={active ? "nav-active" : "nav-link"}
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      go(item.href);
-                    }}
-                  >
-                    <span className="nav-icon" aria-hidden="true">
-                      {item.icon}
-                    </span>
-                    <span className="nav-label">{item.label}</span>
-                    <span className="nav-chevron" aria-hidden="true">
-                      ›
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
-          ))}
-          <div className="nav-future">
-            Las siguientes entregas ampliarán tu espacio financiero.
-          </div>
+          {navigationDirect.map((item) => {
+            const active = isNavigationActive(item, path);
+            return (
+              <a
+                key={item.href}
+                className={active ? "nav-active" : "nav-link"}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  go(item.href);
+                }}
+              >
+                <span className="nav-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </a>
+            );
+          })}
+          {navigationGroups.map((group) => {
+            const groupBodyId = `nav-group-${group.id}`;
+            const open = openGroups.includes(group.id);
+            return (
+              <div className="nav-section" key={group.id}>
+                <button
+                  type="button"
+                  className="nav-group-toggle"
+                  aria-expanded={open}
+                  aria-controls={groupBodyId}
+                  onClick={() => toggleGroup(group.id)}
+                >
+                  <span>{group.label}</span>
+                  <span className="nav-group-chevron" aria-hidden="true">
+                    {open ? "⌃" : "⌄"}
+                  </span>
+                </button>
+                <div id={groupBodyId} className="nav-group-body" hidden={!open}>
+                  {group.items.map((item, index) => {
+                    const active = isNavigationActive(item, path);
+                    const startsLegacy =
+                      item.legacy && !group.items[index - 1]?.legacy;
+                    return (
+                      <Fragment key={item.href}>
+                        {startsLegacy && (
+                          <p className="nav-legacy-label">Heredado</p>
+                        )}
+                        <a
+                          className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}`}
+                          href={item.href}
+                          aria-current={active ? "page" : undefined}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            go(item.href);
+                          }}
+                        >
+                          <span className="nav-icon" aria-hidden="true">
+                            {item.icon}
+                          </span>
+                          <span className="nav-label">{item.label}</span>
+                        </a>
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </nav>
         <div className="sidebar-bottom">
-          <span className="local-dot" /> Local · Datos ficticios
+          <span className="local-dot" />{" "}
+          {demo
+            ? "DEMO · Datos ficticios"
+            : localEnvironment
+              ? "Local · Datos ficticios"
+              : "Datos ficticios"}
           <small>Excel v5.11 sigue como maestro</small>
         </div>
       </aside>
@@ -252,9 +318,9 @@ function App() {
           <CycleHeader path={path} />
           <div className="header-actions">
             <label className="theme-picker">
-              Tema
+              Apariencia
               <select
-                aria-label="Tema visual"
+                aria-label="Apariencia"
                 value={theme}
                 onChange={(event) => setTheme(event.target.value as ThemeId)}
               >
@@ -265,10 +331,16 @@ function App() {
                 ))}
               </select>
             </label>
-            <span className="local-badge">Entorno local</span>
-            <button className="text-button" onClick={logout}>
-              Cerrar sesión
-            </button>
+            {(demo || environment) && (
+              <span className={"local-badge" + (demo ? " demo-badge" : "")}>
+                {demo ? "DEMO · Datos ficticios" : environment}
+              </span>
+            )}
+            {!demo && (
+              <button className="text-button" onClick={logout}>
+                Cerrar sesión
+              </button>
+            )}
           </div>
         </header>
         <main id="main" tabIndex={-1} className="content">
@@ -287,7 +359,7 @@ function App() {
             </p>
           )}
           {path.startsWith("/inicio") ? (
-            <Inicio go={go} />
+            <Inicio go={go} theme={theme} />
           ) : path.startsWith("/dprima") ? (
             <Dprima go={go} />
           ) : path.startsWith("/comida") ? (

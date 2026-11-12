@@ -27,6 +27,7 @@ import {
   type TableColumn,
 } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
+import { PendientesDeConfirmar } from "./TransferenciaPendienteFicha";
 type Related = { id: string; nombre: string; estado?: string };
 type Partida = Related & {
   deuda: string | null;
@@ -134,6 +135,13 @@ const base = "/movimientos";
 const date = (v: string) => v.split("-").reverse().join("/");
 const cycle = (v: Cycle | null) =>
   v ? monthLabel(v.mesFinanciado) : "Sin ciclo asignable";
+/** Dirección visual del hecho; el importe publicado no se altera. */
+const movementFlow = (m: Movement) =>
+  m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
+    ? "inflow"
+    : m.tipo === "Gasto" || m.tipo === "Amortización deuda"
+      ? "outflow"
+      : "neutral";
 const amount = (v: string | null) => (v === null ? "No disponible" : eur(v));
 function Link({
   to,
@@ -333,10 +341,13 @@ function MovementList({
       header: "Tipo / Subtipo",
       label: "Tipo / Subtipo",
       cell: (m) => (
-        <>
-          {m.tipo}
-          <small className="table-id">{m.subtipo ?? ""}</small>
-        </>
+        <span className="movement-type" data-tipo={m.tipo}>
+          <span className="movement-type-icon" aria-hidden="true" />
+          <span className="movement-type-copy">
+            {m.tipo}
+            <small className="table-id">{m.subtipo ?? ""}</small>
+          </span>
+        </span>
       ),
     },
     {
@@ -380,17 +391,22 @@ function MovementList({
       id: "importe",
       header: "Importe",
       kind: "amount",
-      cell: (m) => <strong>{eur(m.importe)}</strong>,
+      cell: (m) => (
+        <strong className="movement-amount" data-flow={movementFlow(m)}>
+          {eur(m.importe)}
+        </strong>
+      ),
     },
   ];
   return (
-    <>
+    <div className="movements-page">
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Movimientos"
         description="Hechos ejecutados · Ingresos, Gastos, Transferencias, amortizaciones y devoluciones de gasto"
       >
         <button className="primary" onClick={() => go(base + "/nuevo")}>
+          <span className="movement-new-icon" aria-hidden="true" />
           Nuevo movimiento
         </button>
       </PageHead>
@@ -404,13 +420,16 @@ function MovementList({
         aria-label="Registro de Movimientos"
       >
         <div className="filters">
-          <label>
+          <label className="search">
             Buscar Concepto, Nota o ID
-            <input
-              type="search"
-              value={filters.q}
-              onChange={(e) => change("q", e.target.value)}
-            />
+            <span className="movement-search">
+              <span className="movement-search-icon" aria-hidden="true" />
+              <input
+                type="search"
+                value={filters.q}
+                onChange={(e) => change("q", e.target.value)}
+              />
+            </span>
           </label>
           {select("Tipo", "tipo", [
             { id: "Ingreso", nombre: "Ingreso" },
@@ -499,6 +518,11 @@ function MovementList({
         </details>
         <div className="list-toolbar">
           <p role="status">
+            <span
+              className="movement-status-dot"
+              aria-hidden="true"
+              data-state={loading ? "loading" : error ? "error" : "ready"}
+            />
             {loading
               ? "Cargando Movimientos…"
               : error
@@ -562,18 +586,29 @@ function MovementList({
                 rows={data.movimientos}
                 rowKey={(m) => m.id}
                 rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
+                onRowClick={(m) => go(`${base}/${m.id}`)}
               />
             </div>
             <DataList
               columns={columns}
               rows={data.movimientos}
               rowKey={(m) => m.id}
-              className="mobile-list"
+              rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
+              onItemClick={(m) => go(`${base}/${m.id}`)}
+              label="Tarjetas de Movimientos"
+              className="mobile-list movements-cards"
             />
           </>
         )}
         <div className="list-footer">
-          <span>Página {page}</span>
+          <span className="list-footer-pages">
+            <span>Página {page}</span>
+            {data && (
+              <span className="list-footer-total">
+                de {Math.max(1, Math.ceil(data.total / 100))} · 100 por página
+              </span>
+            )}
+          </span>
           <div className="actions">
             <button
               className="text-button"
@@ -592,11 +627,12 @@ function MovementList({
           </div>
         </div>
       </section>
+      <PendientesDeConfirmar go={go} />
       <p className="page-foot">
         Los anulados se conservan para consulta y no computan. Los filtros no
         modifican la posición general de Saldos.
       </p>
-    </>
+    </div>
   );
 }
 function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
@@ -639,13 +675,17 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
   if (!data) return <p role="status">Cargando Movimiento…</p>;
   const m = data.movimiento,
     field = (label: string, v: ReactNode) => (
-      <div>
+      <div data-label={label}>
         <dt>{label}</dt>
         <dd>{v}</dd>
       </div>
     );
   return (
-    <div className="movement-detail">
+    <div
+      className="movement-detail"
+      data-flow={movementFlow(m)}
+      data-anulado={m.anulado || undefined}
+    >
       {back}
       <PageHead
         eyebrow={"MOVIMIENTO #" + m.id}
@@ -1279,7 +1319,7 @@ function MovementForm({
         ? "Revisar transferencia"
         : "Registrar movimiento";
   return (
-    <>
+    <div className="movement-form-page">
       <Link to={base} go={go}>
         Volver a Movimientos
       </Link>
@@ -1926,6 +1966,6 @@ function MovementForm({
           </div>
         </form>
       )}
-    </>
+    </div>
   );
 }

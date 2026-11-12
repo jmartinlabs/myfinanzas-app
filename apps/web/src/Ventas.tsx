@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 import {
   BASE,
   CashLines,
@@ -265,7 +276,7 @@ export function SaleList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="ventas-page">
       <PageHead
         eyebrow="E4.2 · INVERSIONES"
         title="Ventas de inversión"
@@ -433,7 +444,7 @@ export function SaleList({ go }: { go: (path: string) => void }) {
         )}
         <CoverageNote />
       </section>
-    </>
+    </div>
   );
 }
 
@@ -458,25 +469,24 @@ function SaleFields({
     reference = localReference(form),
     difference = localDifference(form);
   return (
-    <section className="panel">
-      <div className="form-grid">
-        <label>
-          Fecha *
+    <FormSection title="Datos de la venta">
+      <FormGrid>
+        <Field id="fecha" label="Fecha *" error={errors.fecha}>
           <input
             type="date"
             value={form.fecha}
             onChange={(event) => change("fecha", event.target.value)}
-            aria-invalid={Boolean(errors.fecha)}
             required
           />
-          {errors.fecha && <small className="field-error">{errors.fecha}</small>}
-        </label>
-        <label>
-          Saldo de efectivo *
+        </Field>
+        <Field
+          id="saldoEfectivo"
+          label="Saldo de efectivo *"
+          error={errors.saldoEfectivo}
+        >
           <select
             value={form.saldoEfectivo}
             onChange={(event) => change("saldoEfectivo", event.target.value)}
-            aria-invalid={Boolean(errors.saldoEfectivo)}
             disabled={locked}
             required
           >
@@ -487,19 +497,18 @@ function SaleFields({
               </option>
             ))}
           </select>
-          {errors.saldoEfectivo && (
-            <small className="field-error">{errors.saldoEfectivo}</small>
-          )}
-        </label>
-        <label>
-          Saldo de inversión *
+        </Field>
+        <Field
+          id="saldoInversion"
+          label="Saldo de inversión *"
+          error={errors.saldoInversion}
+        >
           <select
             value={form.saldoInversion}
             onChange={(event) => {
               change("saldoInversion", event.target.value);
               change("instrumento", "");
             }}
-            aria-invalid={Boolean(errors.saldoInversion)}
             disabled={locked}
             required
           >
@@ -510,16 +519,11 @@ function SaleFields({
               </option>
             ))}
           </select>
-          {errors.saldoInversion && (
-            <small className="field-error">{errors.saldoInversion}</small>
-          )}
-        </label>
-        <label>
-          Instrumento *
+        </Field>
+        <Field id="instrumento" label="Instrumento *" error={errors.instrumento}>
           <select
             value={form.instrumento}
             onChange={(event) => change("instrumento", event.target.value)}
-            aria-invalid={Boolean(errors.instrumento)}
             disabled={locked || !form.saldoInversion}
             required
           >
@@ -536,40 +540,27 @@ function SaleFields({
               </option>
             ))}
           </select>
-          {errors.instrumento && (
-            <small className="field-error">{errors.instrumento}</small>
-          )}
-        </label>
-        <label>
-          Cantidad *
+        </Field>
+        <Field id="cantidad" label="Cantidad *" error={errors.cantidad}>
           <input
             value={form.cantidad}
             onChange={(event) => change("cantidad", event.target.value)}
-            aria-invalid={Boolean(errors.cantidad)}
             inputMode="decimal"
             required
           />
-          {errors.cantidad && (
-            <small className="field-error">{errors.cantidad}</small>
-          )}
-        </label>
-        <label>
-          Precio unitario *
+        </Field>
+        <Field id="precio" label="Precio unitario *" error={errors.precio}>
           <input
             value={form.precio}
             onChange={(event) => change("precio", event.target.value)}
-            aria-invalid={Boolean(errors.precio)}
             inputMode="decimal"
             required
           />
-          {errors.precio && <small className="field-error">{errors.precio}</small>}
-        </label>
-        <label>
-          Divisa *
+        </Field>
+        <Field id="divisa" label="Divisa *" error={errors.divisa}>
           <select
             value={form.divisa}
             onChange={(event) => change("divisa", event.target.value)}
-            aria-invalid={Boolean(errors.divisa)}
             required
           >
             {options?.divisas.map((divisa) => (
@@ -578,66 +569,59 @@ function SaleFields({
               </option>
             ))}
           </select>
-          {errors.divisa && <small className="field-error">{errors.divisa}</small>}
-        </label>
-        <label>
-          Cambio histórico {form.divisa === "EUR" ? "(EUR = 1 o vacío)" : "*"}
+        </Field>
+        <Field
+          id="cambio"
+          label={`Cambio histórico ${
+            form.divisa === "EUR" ? "(EUR = 1 o vacío)" : "*"
+          }`}
+          error={errors.cambio}
+        >
           <input
             value={form.cambio}
             onChange={(event) => change("cambio", event.target.value)}
-            aria-invalid={Boolean(errors.cambio)}
             inputMode="decimal"
             disabled={form.divisa === "EUR" && form.cambio === ""}
             required={form.divisa !== "EUR"}
           />
-          {errors.cambio && <small className="field-error">{errors.cambio}</small>}
-        </label>
-        <label>
-          EUR cobrado *
+        </Field>
+        <Field id="importeEur" label="EUR cobrado *" error={errors.importeEur}>
           <input
             value={form.importeEur}
             onChange={(event) => change("importeEur", event.target.value)}
-            aria-invalid={Boolean(errors.importeEur)}
             inputMode="decimal"
             required
           />
-          {errors.importeEur && (
-            <small className="field-error">{errors.importeEur}</small>
-          )}
-        </label>
-        <label>
-          Comisión EUR (incluida)
+        </Field>
+        <Field
+          id="comisionEur"
+          label="Comisión EUR (incluida)"
+          error={errors.comisionEur}
+        >
           <input
             value={form.comisionEur}
             onChange={(event) => change("comisionEur", event.target.value)}
-            aria-invalid={Boolean(errors.comisionEur)}
             inputMode="decimal"
           />
-          {errors.comisionEur && (
-            <small className="field-error">{errors.comisionEur}</small>
-          )}
-        </label>
-        <label>
-          Concepto
+        </Field>
+        <Field id="concepto" label="Concepto" error={errors.concepto}>
           <input
             value={form.concepto}
             onChange={(event) => change("concepto", event.target.value)}
-            aria-invalid={Boolean(errors.concepto)}
           />
-          {errors.concepto && (
-            <small className="field-error">{errors.concepto}</small>
-          )}
-        </label>
-        <label>
-          Nota
+        </Field>
+        <Field
+          id="nota"
+          label="Nota"
+          className="ui-form-span"
+          error={errors.nota}
+        >
           <textarea
             value={form.nota}
             onChange={(event) => change("nota", event.target.value)}
-            aria-invalid={Boolean(errors.nota)}
           />
-          {errors.nota && <small className="field-error">{errors.nota}</small>}
-        </label>
-      </div>
+        </Field>
+      </FormGrid>
       <p className="help">
         Referencia cantidad×precio×cambio:{" "}
         {reference ? eur(reference) : "No calculable"} · Diferencia:{" "}
@@ -655,7 +639,7 @@ function SaleFields({
           cantidad disponible en este Saldo; no se ofrece para nuevas Compras.
         </p>
       )}
-    </section>
+    </FormSection>
   );
 }
 
@@ -680,8 +664,15 @@ export function SaleForm({
     [stale, setStale] = useState(false),
     [loaded, setLoaded] = useState(!rectifying),
     attempt = useRef(crypto.randomUUID()),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   const queryInstrument = new URLSearchParams(location.search).get("instrumento");
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
+  }, [error]);
   useEffect(() => {
     api<Options>("/instrumentos/opciones")
       .then((value) => {
@@ -744,7 +735,6 @@ export function SaleForm({
     setErrors(apiError.fields ?? {});
     setDetails(apiError.data ?? null);
     setStale(apiError.code === "REVISION_CONFLICT");
-    requestAnimationFrame(() => alert.current?.focus());
   }
   async function review(event: React.FormEvent) {
     event.preventDefault();
@@ -804,7 +794,7 @@ export function SaleForm({
         (entry) => entry.instrumentos.length === 0,
       );
   return (
-    <>
+    <div className="venta-form-page">
       <a
         className="back"
         href={rectifying ? `${BASE}/ventas/${id}` : `${BASE}/ventas`}
@@ -858,7 +848,12 @@ export function SaleForm({
           inversión activo. Registra una Compra antes de vender.
         </Alert>
       )}
-      <form className="saldo-form" onSubmit={review} noValidate>
+      <form
+        className="saldo-form"
+        onSubmit={review}
+        noValidate
+        ref={formRef}
+      >
         <SaleFields
           form={form}
           change={change}
@@ -867,25 +862,27 @@ export function SaleForm({
           locked={rectifying}
         />
         {rectifying && (
-          <section className="panel">
-            <label>
-              Motivo *
-              <input
-                value={form.motivo}
-                onChange={(event) => change("motivo", event.target.value)}
-                aria-invalid={Boolean(errors.motivo)}
-                required
-              />
-              {errors.motivo && (
-                <small className="field-error">{errors.motivo}</small>
-              )}
-            </label>
+          <FormSection title="Motivo de la rectificación">
+            <FormGrid>
+              <Field
+                id="motivo"
+                label="Motivo *"
+                className="ui-form-span"
+                error={errors.motivo}
+              >
+                <input
+                  value={form.motivo}
+                  onChange={(event) => change("motivo", event.target.value)}
+                  required
+                />
+              </Field>
+            </FormGrid>
             <p className="help">
               Revisión actual {revision} → se guardará {revision + 1}. El
               reemplazo es completo: todos los campos rectificables son
               obligatorios.
             </p>
-          </section>
+          </FormSection>
         )}
         {impact && <ImpactPanel impact={impact} />}
         <div className="form-footer">
@@ -923,7 +920,7 @@ export function SaleForm({
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -945,7 +942,7 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
   if (!data) return <p role="status">Cargando venta…</p>;
   const venta = data.venta as Compra;
   return (
-    <>
+    <div className="venta-detail-page">
       <a
         className="back"
         href={BASE + "/ventas"}
@@ -1067,7 +1064,23 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
           </ul>
         )}
       </section>
-    </>
+    </div>
+  );
+}
+
+export function AnnulSaleMotivo({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+}) {
+  return (
+    <Field id="motivo" label="Motivo *" className="ui-form-span" error={error}>
+      <input value={value} onChange={onChange} required />
+    </Field>
   );
 }
 
@@ -1077,7 +1090,10 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
     [motivo, setMotivo] = useState(""),
     [error, setError] = useState(""),
     [details, setDetails] = useState<Record<string, unknown> | null>(null),
-    [busy, setBusy] = useState(false);
+    [fields, setFields] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(false),
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true;
     api(`/ventas/${id}`)
@@ -1099,12 +1115,19 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
         }),
       );
     } catch (value) {
-      const apiError = value as ApiError;
-      setError(apiError.message);
-      setDetails(apiError.data ?? null);
+      fail(value);
     } finally {
       setBusy(false);
     }
+  }
+  function fail(value: unknown) {
+    const apiError = value as ApiError;
+    setError(apiError.message);
+    setDetails(apiError.data ?? null);
+    setFields(apiError.fields ?? {});
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
   }
   async function confirm() {
     if (!data || !motivo.trim()) return;
@@ -1116,9 +1139,7 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
       });
       go(`${BASE}/ventas/${result.venta.id}`);
     } catch (value) {
-      const apiError = value as ApiError;
-      setError(apiError.message);
-      setDetails(apiError.data ?? null);
+      fail(value);
     } finally {
       setBusy(false);
     }
@@ -1128,7 +1149,7 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
   if (data.venta.estado !== "Vigente")
     return <Alert>La Venta ya está anulada; no se puede rectificar.</Alert>;
   return (
-    <>
+    <div className="venta-annul-page">
       <a
         className="back"
         href={`${BASE}/ventas/${id}`}
@@ -1146,51 +1167,55 @@ export function AnnulSale({ id, go }: { id: string; go: (path: string) => void }
         description="El registro se conserva como Anulada; no se borra"
       />
       {error && (
-        <Alert>
-          {error}
-          {details && details.minimo ? (
-            <p className="help">
-              Disponible {String(details.disponible)} · necesario{" "}
-              {String(details.necesario)} · mínimo {String(details.minimo)} ·{" "}
-              {String(details.fecha)}. El borrador se conserva; no hay override.
-            </p>
-          ) : null}
-        </Alert>
+        <div ref={alert} tabIndex={-1} className="focus-alert">
+          <Alert>
+            {error}
+            {details && details.minimo ? (
+              <p className="help">
+                Disponible {String(details.disponible)} · necesario{" "}
+                {String(details.necesario)} · mínimo {String(details.minimo)} ·{" "}
+                {String(details.fecha)}. El borrador se conserva; no hay override.
+              </p>
+            ) : null}
+          </Alert>
+        </div>
       )}
       {impact && <ImpactPanel impact={impact} />}
-      <section className="panel">
-        <label>
-          Motivo *
-          <input
-            value={motivo}
-            onChange={(event) => {
-              setMotivo(event.target.value);
-              setError("");
-            }}
-            required
-          />
-        </label>
-        <p className="help">
-          Revisión actual {data.venta.revision} → se guardará{" "}
-          {data.venta.revision + 1}. La Venta anulada deja de computar en efectivo,
-          cantidad y referencia temporal.
-        </p>
-        <div className="form-footer">
-          {!impact ? (
-            <button className="primary" onClick={review} disabled={busy}>
-              {busy ? "Calculando…" : "Ver impacto de anulación"}
-            </button>
-          ) : (
-            <button
-              className="primary"
-              onClick={confirm}
-              disabled={busy || !motivo.trim()}
-            >
-              {busy ? "Anulando…" : "Anular venta"}
-            </button>
-          )}
-        </div>
-      </section>
-    </>
+      <div ref={formRef}>
+        <FormSection title="Anulación">
+          <FormGrid>
+            <AnnulSaleMotivo
+              value={motivo}
+              error={fields.motivo}
+              onChange={(event) => {
+                setMotivo(event.target.value);
+                setError("");
+                setFields((current) => ({ ...current, motivo: "" }));
+              }}
+            />
+          </FormGrid>
+          <p className="help">
+            Revisión actual {data.venta.revision} → se guardará{" "}
+            {data.venta.revision + 1}. La Venta anulada deja de computar en
+            efectivo, cantidad y referencia temporal.
+          </p>
+          <div className="form-footer">
+            {!impact ? (
+              <button className="primary" onClick={review} disabled={busy}>
+                {busy ? "Calculando…" : "Ver impacto de anulación"}
+              </button>
+            ) : (
+              <button
+                className="primary"
+                onClick={confirm}
+                disabled={busy || !motivo.trim()}
+              >
+                {busy ? "Anulando…" : "Anular venta"}
+              </button>
+            )}
+          </div>
+        </FormSection>
+      </div>
+    </div>
   );
 }

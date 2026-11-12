@@ -1,6 +1,12 @@
 name: Rootless infrastructure 32
 on:
+  push:
+    tags:
+      - 'deploy-test-v*'
   pull_request:
+    branches:
+      - main
+      - test
     types:
       - opened
       - synchronize
@@ -18,14 +24,15 @@ on:
     inputs:
       previous_ref:
         description: >-
-          Lowercase ancestor commit SHA declaring schema 26, used only to
-          exercise the reviewed 26 -> 27 migration gate. Empty keeps the
+          Lowercase ancestor commit SHA declaring schema 27, used only to
+          exercise the reviewed 27 -> 28 migration gate. Empty keeps the
           ordinary origin/main merge-base.
         required: false
         default: ''
         type: string
 permissions:
   contents: read
+  checks: read
 concurrency:
   group: rootless-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -55,8 +62,180 @@ jobs:
         shell: bash
         env:
           PREVIOUS_REF: ${{ github.event.inputs.previous_ref || '' }}
+          CI_BASE_REF: ${{ github.base_ref || (github.ref_name == 'main' && 'main' || 'test') }}
         run: |
           set -euo pipefail
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           python3 infra/tests/rootless-integration.py
+
+  deploy:
+    name: Deploy TEST from an authorized tag
+    if: ${{ startsWith(github.ref, 'refs/tags/deploy-test-v') && vars.MYFINANZAS_TEST_DEPLOY == 'true' }}
+    needs: [capability]
+    runs-on: ubuntu-24.04
+    environment: test
+    concurrency:
+      group: myfinanzas-test-deploy
+      cancel-in-progress: false
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      checks: read
+      actions: read
+      pull-requests: read
+      issues: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate tag, actor, origin and evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.triggering_actor }}
+          ALLOWED_ACTORS: ${{ vars.MYFINANZAS_DEPLOY_ACTORS }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]]
+          [[ "$GITHUB_REF_NAME" =~ ^deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" == 'tag' ]]
+          TAG_OBJECT="$(git rev-parse "refs/tags/$GITHUB_REF_NAME")"
+          TAG_SHA="$(git rev-parse "refs/tags/$GITHUB_REF_NAME^{commit}")"
+          [[ "$TAG_SHA" =~ ^[0-9a-f]{40}$ ]]
+          # github.sha is the tag object for an annotated tag on some events and
+          # the commit on others; accept both and always ship the commit.
+          [[ "$GITHUB_SHA" == "$TAG_OBJECT" || "$GITHUB_SHA" == "$TAG_SHA" ]]
+          [[ "$(git rev-parse HEAD)" == "$TAG_SHA" ]]
+          ANNOTATION="$(git for-each-ref --format='%(contents)' "refs/tags/$GITHUB_REF_NAME")"
+          SHA_LINE="$(printf '%s\n' "$ANNOTATION" | sed -n 's/^sha=//p' | head -1)"
+          QA_REFERENCE="$(printf '%s\n' "$ANNOTATION" | sed -n 's/^qa_reference=//p' | head -1)"
+          [[ "$SHA_LINE" == "$TAG_SHA" ]]
+          [[ -n "$QA_REFERENCE" && "$QA_REFERENCE" == *"$TAG_SHA"* ]]
+          echo "QA_REFERENCE=$QA_REFERENCE" >> "$GITHUB_ENV"
+          echo "RELEASE_SHA=$TAG_SHA" >> "$GITHUB_ENV"
+          echo "TAG_OBJECT=$TAG_OBJECT" >> "$GITHUB_ENV"
+          git fetch --no-tags origin +refs/heads/test:refs/remotes/origin/test
+          git merge-base --is-ancestor "$TAG_SHA" origin/test
+          [[ -n "$ALLOWED_ACTORS" ]]
+          found=0
+          IFS=',' read -ra actors <<< "$ALLOWED_ACTORS"
+          for allowed in "${actors[@]}"; do
+            allowed="${allowed// /}"
+            [[ -n "$allowed" && "$allowed" == "$ACTOR" ]] && found=1
+          done
+          [[ "$found" == 1 ]]
+          # QA evidence belongs to the reviewed commit, never to the integration
+          # SHA by assertion: reuse it only when Git proves the deployed tree is
+          # exactly that reviewed content, and the reference resolves to real
+          # GitHub evidence for that commit and pull request.
+          REVIEWED="$(printf '%s\n' "$QA_REFERENCE" | sed -n 's/.*reviewed=\([0-9a-f]\{40\}\).*/\1/p' | head -1)"
+          PR_NUMBER="$(printf '%s\n' "$QA_REFERENCE" | sed -n 's/.*pr=\([0-9][0-9]*\).*/\1/p' | head -1)"
+          EVIDENCE="$(printf '%s\n' "$QA_REFERENCE" | sed -n 's/.*qa=\([^ ]*\).*/\1/p' | head -1)"
+          INTEGRATION="$(printf '%s\n' "$QA_REFERENCE" | sed -n 's/.*integration=\([0-9a-f]\{40\}\).*/\1/p' | head -1)"
+          [[ -n "$REVIEWED" && -n "$PR_NUMBER" && -n "$EVIDENCE" ]]
+          [[ "$INTEGRATION" == "$TAG_SHA" ]]
+          git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:refs/remotes/pull/$PR_NUMBER"
+          python3 scripts/check-evidence --qa-equivalence \
+            --integration "$TAG_SHA" --reviewed "$REVIEWED" \
+            --repository "$GITHUB_REPOSITORY" --pr "$PR_NUMBER" --evidence "$EVIDENCE"
+      - name: Wait for the tag's own required FULL validation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ -n "$RELEASE_SHA" && -n "$TAG_NAME" ]]
+          # required must be the validation run triggered by THIS tag, not an
+          # older check that happens to share the SHA. The web and API suites
+          # belong to that run since the canonical profiles own them.
+          deadline=$((SECONDS + 2100))
+          find_run() {
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/validate.yml/runs?event=push&head_sha=$RELEASE_SHA&per_page=100" 2>/dev/null \
+              | jq -r --arg sha "$RELEASE_SHA" --arg tag "$TAG_NAME" \
+                  '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == $tag)] | sort_by(.created_at) | last // empty' \
+              || true
+          }
+          while true; do
+            run="$(find_run)"
+            if [[ -n "$run" ]]; then
+              status="$(printf '%s' "$run" | jq -r '.status')"
+              conclusion="$(printf '%s' "$run" | jq -r '.conclusion // ""')"
+              if [[ "$status" == "completed" ]]; then
+                if [[ "$conclusion" == "success" ]]; then
+                  echo "required FULL succeeded for tag $TAG_NAME on $RELEASE_SHA"
+                  exit 0
+                fi
+                echo "required FULL failed or was cancelled for tag $TAG_NAME on $RELEASE_SHA (conclusion=$conclusion)" >&2
+                exit 1
+              fi
+            fi
+            if (( SECONDS >= deadline )); then
+              echo "Timed out waiting for the tag's required FULL validation on $RELEASE_SHA" >&2
+              exit 1
+            fi
+            sleep 30
+          done
+      - name: Install rootless builder on disposable runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session
+      - name: Build once, verify and smoke
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ env.RELEASE_SHA }}
+        run: |
+          set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          dest="$RUNNER_TEMP/mf-test-release"
+          python3 infra/release.py build --ref "$RELEASE_SHA" --output "$dest" --single-build
+          manifest_sha="$(sha256sum "$dest/manifest.json" | cut -d' ' -f1)"
+          python3 infra/release.py verify "$dest" --expected-commit "$RELEASE_SHA" --expected-manifest-sha256 "$manifest_sha"
+          python3 infra/smoke.py --release "$dest" --expected-commit "$RELEASE_SHA" --expected-manifest-sha256 "$manifest_sha"
+          bundle="$RUNNER_TEMP/mf-test-deploy"
+          mkdir -p "$bundle/frontend"
+          cp "$dest/manifest.json" "$dest/manifest.sha256" "$dest/image.oci.tar" "$bundle/"
+          cp -a "$dest/frontend/." "$bundle/frontend/"
+          jq -n \
+            --arg environment test \
+            --arg version "${GITHUB_REF_NAME#deploy-test-v}" \
+            --arg tag "$GITHUB_REF_NAME" \
+            --arg release_sha "$RELEASE_SHA" \
+            --arg manifest_sha256 "$manifest_sha" \
+            --arg qa_reference "$QA_REFERENCE" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            '{environment:$environment, version:$version, tag:$tag, release_sha:$release_sha, manifest_sha256:$manifest_sha256, qa_reference:$qa_reference, workflow_run_id:$workflow_run_id}' \
+            > "$bundle/deploy.json"
+          (cd "$bundle" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          printf 'Tag: %s\nRelease SHA: %s\nManifest SHA-256: %s\n' "$GITHUB_REF_NAME" "$RELEASE_SHA" "$manifest_sha" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy over the forced SSH command
+        shell: bash
+        env:
+          TEST_DEPLOY_KEY: ${{ secrets.TEST_DEPLOY_KEY }}
+          TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS }}
+          TEST_DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST }}
+          TEST_DEPLOY_USER: ${{ vars.TEST_DEPLOY_USER }}
+          ACTOR: ${{ github.triggering_actor }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ -n "$TEST_DEPLOY_KEY" && -n "$TEST_DEPLOY_KNOWN_HOSTS" ]]
+          [[ -n "$TEST_DEPLOY_HOST" && -n "$TEST_DEPLOY_USER" ]]
+          version="${VERSION#deploy-test-v}"
+          install -d -m 700 "$RUNNER_TEMP/ssh"
+          printf '%s\n' "$TEST_DEPLOY_KEY" > "$RUNNER_TEMP/ssh/id_ed25519"
+          printf '%s\n' "$TEST_DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/ssh/id_ed25519" "$RUNNER_TEMP/ssh/known_hosts"
+          bundle="$RUNNER_TEMP/mf-test-deploy"
+          tar -C "$bundle" -cf - manifest.json manifest.sha256 SHA256SUMS deploy.json frontend image.oci.tar \
+            | ssh -i "$RUNNER_TEMP/ssh/id_ed25519" -o IdentitiesOnly=yes \
+                -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+                -o StrictHostKeyChecking=yes \
+                "$TEST_DEPLOY_USER@$TEST_DEPLOY_HOST" "deploy:$ACTOR:$version"
+      - name: Remove the deployment key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/ssh" "$RUNNER_TEMP/mf-test-deploy"

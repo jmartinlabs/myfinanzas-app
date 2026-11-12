@@ -147,6 +147,46 @@ function planNoVerificable(db: Database) {
   );
 }
 
+function capturedPlan(db: Database, ciclo = "1") {
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run(
+    `INSERT INTO presupuestos(id,nombre,fuente,destino,estado,revision,creado,actualizado)
+     VALUES('PRE9101','Plan capturado E4.9','Gasto real','S001','Activo',1,?,?)`,
+    [t, t],
+  );
+  db.run("INSERT INTO cycle_plans(ciclo,revision) VALUES(?,1)", [ciclo]);
+  db.run(
+    `INSERT INTO cycle_plan_lines(ciclo,presupuesto,base,esencial,del_mes)
+     VALUES(?, 'PRE9101', 1000, 500, 200)`,
+    [ciclo],
+  );
+  db.run(
+    `INSERT INTO cycle_plan_audit(ciclo,presupuesto,revision,actor,instante,motivo,delta)
+     VALUES(?, 'PRE9101', 1, 'fixture', ?, NULL, '{}')`,
+    [ciclo, t],
+  );
+}
+
+function seedAnticipo(db: Database, movement = "8001") {
+  const t = "2026-01-15T00:00:00.000Z";
+  db.run(
+    `INSERT INTO referencias(id,nombre,tipo,estado,revision,creado,actualizado)
+     VALUES('REF9001','Anticipo ficticio E4.9','Anticipo','Activa',1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO fichas_anticipos(referencia,apertura,evidencia,creado,actualizado)
+     VALUES('REF9001',NULL,NULL,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO movimiento_anticipo(movimiento,referencia,rol,origen,destino,
+       revision_movimiento,evidencia,procedencia,revision,actualizado)
+     VALUES(?,'REF9001','Adelanto','S001','S000',1,'Evidencia ficticia','Fixture E4.9',1,?)`,
+    [movement, t],
+  );
+}
+
 function verifiableRegimen(db: Database, ciclo = "1", saldo = "S001") {
   const t = "2026-01-01T00:00:00.000Z";
   db.run(
@@ -303,7 +343,7 @@ test("E4.9 B: SinPlan closes v1 with app/schema metadata and no live writes", as
   expect(result.status).toBe(201);
   expect(result.data.foto.version).toBe(1);
   expect(result.data.foto.appVersion).toBe("0.0.0-fixture");
-  expect(result.data.foto.schemaVersion).toBe(27);
+  expect(result.data.foto.schemaVersion).toBe(28);
   expect(result.data.foto.plan.estado).toBe("SinPlan");
   expect(result.data.foto.hechos.estado).toBe("Sin hechos");
   expect(result.data.foto.ventana.saldoInicial).toBe("100.00");
@@ -367,6 +407,33 @@ test("E4.9 B: PlanNoVerificable blocks without a photo", async () => {
   expect(f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get()).toEqual({
     n: 0,
   });
+  expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+});
+
+test("E4.9 B: a captured plan is frozen with its final lines", async () => {
+  const f = fixture();
+  capturedPlan(f.db);
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(pre.data.plan.estado).toBe("Capturado");
+  expect(pre.data.e49Bloqueado).toBe(false);
+
+  const { result } = await f.close("1");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.plan.estado).toBe("Capturado");
+  expect(result.data.foto.plan.items).toHaveLength(1);
+  expect(result.data.foto.plan.items[0]).toMatchObject({
+    presupuesto: "PRE9101",
+    nombre: "Plan capturado E4.9",
+    base: "10.00",
+    esencial: "5.00",
+    delMes: "2.00",
+  });
+  expect(result.data.foto.cobertura.totales.plan.estado).toBe("Completo");
+
+  const photo = await f.request("/api/cierres/1/foto");
+  expect(photo.data.foto.plan).toEqual(result.data.foto.plan);
 });
 
 test("E4.9 B: idempotent replay, payload conflict and stale preview", async () => {
@@ -442,6 +509,26 @@ test("E4.9 B: idempotent replay, payload conflict and stale preview", async () =
   expect(
     stale.db.query("SELECT COUNT(*) n FROM fotos_cierre").get(),
   ).toEqual({ n: 0 });
+});
+
+test("E4.9 B: AC-13 an ordinary closure neither reopens nor creates v2", async () => {
+  const f = fixture();
+  await f.enroll();
+  const first = await f.close("1");
+  expect(first.result.status).toBe(201);
+
+  const again = await f.close("1", { motivo: "Reintento ordinario" });
+  expect(again.result.status).toBe(409);
+  expect(again.result.data.code).toBe("ALREADY_CLOSED");
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
+  ).toEqual({ n: 1 });
+  expect(
+    f.db.query("SELECT version FROM cierres WHERE ciclo='1'").get(),
+  ).toEqual({ version: 1 });
+  expect((await f.request("/api/cierres/1/foto?version=2")).status).toBe(404);
+  const current = await f.request("/api/cierres/1/foto");
+  expect(current.data.foto.version).toBe(1);
 });
 
 test("E4.9 B: a failure before commit rolls back closure, photo, audit and attempt", () => {
@@ -661,6 +748,56 @@ test("E4.9 B: photo captures inherited positions at Fin and excludes later opera
   expect(result.data.foto.ventana.saldoInicial).toBe("100.00");
 });
 
+test("E4.9 B: AC-16 includes operations at Fin and excludes the next Inicio", async () => {
+  const f = fixture();
+  updateSaldo(f.db, "S003", {
+    revision: getSaldo(f.db, "S003").revision,
+    saldoApertura: "100.00",
+    fechaApertura: "2026-01-01",
+    permiteSalidaExterior: true,
+  });
+  const instrumento = createInstrumento(
+    f.db,
+    {
+      nombre: "Fondo de corte ficticio E4.9",
+      isin: "ES0000000555",
+      isinEvidencia: "Evidencia ficticia E4.9",
+      divisaReferencia: "EUR",
+    },
+    randomUUID(),
+    now,
+  ).instrumento.id;
+  performanceOperation(f.db, instrumento, {
+    id: "9301",
+    clase: "Compra",
+    fecha: "2026-01-31",
+    cantidad: "100000000",
+    precio: "10000000",
+    importe: 1000,
+  });
+  performanceOperation(f.db, instrumento, {
+    id: "9302",
+    clase: "Compra",
+    fecha: "2026-02-01",
+    cantidad: "100000000",
+    precio: "20000000",
+    importe: 2000,
+  });
+  await f.enroll();
+  const { result } = await f.close("1");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.ventana.fin).toBe("2026-01-31");
+  expect(result.data.foto.inversion.posiciones).toEqual([
+    { instrumento, saldoInversion: "S004", cantidad: "1" },
+  ]);
+  expect(result.data.foto.inversion.efectivo).toBe("90.00");
+  expect(
+    result.data.foto.inversion.operaciones.map(
+      (operation: { id: string }) => operation.id,
+    ),
+  ).toEqual(["9301"]);
+});
+
 test("E4.9 B: photo is not recalculated from later live changes", async () => {
   const f = fixture();
   await f.enroll();
@@ -766,6 +903,48 @@ test("E4.9 B: hechos con movimientos captures Con hechos", async () => {
   expect(result.data.foto.hechos.totales.ingresos).toBe("12.34");
 });
 
+test("E4.9 B: AC-21 a new investment operation is a fact, inherited positions are not", async () => {
+  const f = fixture();
+  updateSaldo(f.db, "S003", {
+    revision: getSaldo(f.db, "S003").revision,
+    saldoApertura: "100.00",
+    fechaApertura: "2026-01-01",
+    permiteSalidaExterior: true,
+  });
+  const instrumento = createInstrumento(
+    f.db,
+    {
+      nombre: "Fondo con hecho ficticio E4.9",
+      isin: "ES0000000444",
+      isinEvidencia: "Evidencia ficticia E4.9",
+      divisaReferencia: "EUR",
+    },
+    randomUUID(),
+    now,
+  ).instrumento.id;
+  performanceOperation(f.db, instrumento, {
+    id: "9201",
+    clase: "Compra",
+    fecha: "2026-01-10",
+    cantidad: "100000000",
+    precio: "10000000",
+    importe: 1000,
+  });
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.data.hechos.estado).toBe("Con hechos");
+  expect(pre.data.hechos.fuentes).toContainEqual({
+    fuente: "Operaciones de inversión",
+    hechos: 1,
+    acreditado: true,
+  });
+  const { result } = await f.close("1");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.hechos.estado).toBe("Con hechos");
+  expect(result.data.foto.hechos.movimientos).toEqual([]);
+  expect(result.data.foto.inversion.posiciones).toHaveLength(1);
+});
+
 test("E4.9 B: Deuda master alone does not create hechos in the cycle", async () => {
   const f = fixture();
   seedDeuda(f.db);
@@ -795,6 +974,23 @@ test("E4.9 B: S0 cero is a fact and closes with saldoInicial 0.00", async () => 
   expect(result.status).toBe(201);
   expect(result.data.foto.ventana.saldoInicial).toBe("0.00");
   expect(result.data.foto.hechos.estado).toBe("Sin hechos");
+});
+
+test("E4.9 B: AC-15 Anticipos stays Parcial with a captured fixture", async () => {
+  const f = fixture();
+  januaryMovement(f.db);
+  seedAnticipo(f.db);
+  await f.enroll();
+  const { result } = await f.close("1");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.auxiliares.anticipos).toHaveLength(1);
+  expect(result.data.foto.cobertura.totales.anticipos).toMatchObject({
+    estado: "Parcial",
+  });
+  expect(result.data.foto.cobertura.totales.anticipos.motivo).toContain(
+    "AC36 PARCIAL",
+  );
+  expect(result.data.foto.cobertura.estado).toBe("Parcial");
 });
 
 test("E4.9 B: verified backup without restore proof blocks before writing", async () => {

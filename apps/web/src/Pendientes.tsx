@@ -639,7 +639,7 @@ export function Pendientes({
         <section className="pendientes-page" aria-busy="true">
           {volver}
           <PageHead
-            eyebrow="E3.6 · Detalle"
+            eyebrow="Detalle"
             title={`Detalle · ${tipo} ${id}`}
             description="Consultando la fila y sus fuentes. Sin importes provisionales."
           />
@@ -651,7 +651,7 @@ export function Pendientes({
         <section className="pendientes-page">
           {volver}
           <PageHead
-            eyebrow="E3.6 · Detalle"
+            eyebrow="Detalle"
             title={`Detalle · ${tipo} ${id}`}
             description="Solo lectura; no corrige ni escribe hechos."
           />
@@ -681,7 +681,7 @@ export function Pendientes({
       <section className="pendientes-page">
         {volver}
         <PageHead
-          eyebrow={`E3.6 · ${TIPO_LABEL[fila.tipo] ?? fila.tipo}`}
+          eyebrow={TIPO_LABEL[fila.tipo] ?? fila.tipo}
           title={`Detalle · ${nombreFila(fila)}`}
           description="Solo lectura. No hay acciones de escritura; los enlaces abren el módulo propietario."
         >
@@ -982,7 +982,7 @@ export function Pendientes({
   return (
     <section className="pendientes-page">
       <PageHead
-        eyebrow="E3.6 · CONSULTA"
+        eyebrow="PENDIENTES Y CONCILIACIÓN"
         title="Pendientes y conciliación"
         description="Una fila por caso y tipo. Sin total económico global entre tipos; cada importe pertenece a su motor."
       >

@@ -124,7 +124,7 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="saldos-page">
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Saldos"
@@ -267,12 +267,14 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
                 columns={columns}
                 rows={data.saldos}
                 rowKey={(s) => s.id}
+                onRowClick={(s) => go(`/saldos/${s.id}`)}
               />
             </div>
             <DataList
               columns={columns}
               rows={data.saldos}
               rowKey={(s) => s.id}
+              onItemClick={(s) => go(`/saldos/${s.id}`)}
               className="mobile-list"
             />
             <div className="list-footer">
@@ -301,7 +303,7 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
         Los Saldos inactivos conservan su historial. S000 es una contraparte
         técnica protegida.
       </p>
-    </>
+    </div>
   );
 }
 export function SaldoDetail({
@@ -339,7 +341,7 @@ export function SaldoDetail({
     </div>
   );
   return (
-    <>
+    <div className="saldo-detail-page">
       <a
         className="back"
         href="/saldos"
@@ -373,6 +375,32 @@ export function SaldoDetail({
       )}
       {error && <Alert>{error}</Alert>}
       <FormGrid className="detail-grid saldo-detail-grid">
+        <section className="panel position-panel">
+          <p className="eyebrow">POSICIÓN ACTUAL</p>
+          <h2>
+            {s.posicion.importe !== null
+              ? "Saldo actual"
+              : s.posicion.condicion === "pendiente_motor"
+                ? "Pendiente de motor"
+                : "No aplicable"}
+          </h2>
+          <p>{s.posicion.motivo}</p>
+          <div
+            className={
+              "position-placeholder" +
+              (s.posicion.importe !== null ? " calculated" : "")
+            }
+          >
+            {s.posicion.importe !== null ? eur(s.posicion.importe) : "—"}
+          </div>
+          <p className="muted">
+            {s.posicion.importe !== null
+              ? "Resultado económico vigente, independiente de los filtros de consulta."
+              : s.posicion.condicion === "pendiente_motor"
+                ? "No se presenta un importe hasta disponer del motor correspondiente."
+                : "Este control no presenta un saldo actual convencional."}
+          </p>
+        </section>
         <FormSection title="Identificación">
           <dl>
             {row("Identificador", <code>{s.id}</code>)}
@@ -411,32 +439,6 @@ export function SaldoDetail({
             ))}
           </dl>
         </FormSection>
-        <section className="panel position-panel">
-          <p className="eyebrow">POSICIÓN ACTUAL</p>
-          <h2>
-            {s.posicion.importe !== null
-              ? "Saldo actual"
-              : s.posicion.condicion === "pendiente_motor"
-                ? "Pendiente de motor"
-                : "No aplicable"}
-          </h2>
-          <p>{s.posicion.motivo}</p>
-          <div
-            className={
-              "position-placeholder" +
-              (s.posicion.importe !== null ? " calculated" : "")
-            }
-          >
-            {s.posicion.importe !== null ? eur(s.posicion.importe) : "—"}
-          </div>
-          <p className="muted">
-            {s.posicion.importe !== null
-              ? "Resultado económico vigente, independiente de los filtros de consulta."
-              : s.posicion.condicion === "pendiente_motor"
-                ? "No se presenta un importe hasta disponer del motor correspondiente."
-                : "Este control no presenta un saldo actual convencional."}
-          </p>
-        </section>
       </FormGrid>
       {s.id !== "S000" && (
         <section className="panel lifecycle">
@@ -482,6 +484,6 @@ export function SaldoDetail({
         Revisión {s.revision} · Sin borrado físico ni cambios en las relaciones
         históricas.
       </p>
-    </>
+    </div>
   );
 }

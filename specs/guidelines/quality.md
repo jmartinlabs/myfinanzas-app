@@ -12,6 +12,7 @@ CLI age/age-keygen es obligatoria para pruebas de copia/restauración.
 | bun run typecheck | TypeScript sin errores en apps, pruebas y configuraciones |
 | bun run build | Cliente estático en apps/web/dist; no despliega ni empaqueta servidor |
 | bun run test | Integración Saldos/acceso/copias/concurrencia; cifra vigente en testplan |
+| bun test apps/web | Lógica de cliente: formato, temas/tokens CSS, formularios y estados; gate de fast/critical/full |
 | bun run test:e2e | Recorrido E1.1/E1.2/E1.3 real a 390/1440, MFA y restauración aislada |
 | ./scripts/validate-template | Estructura y contratos documentales válidos |
 | ./scripts/test-validator | Regresiones positivas y negativas del validador |
@@ -75,13 +76,19 @@ archivos deben añadirse al índice antes de la revisión previa al push. Lee hi
 blobs, sin modificarlos. También detecta secretos borrados en commits posteriores.
 
 La configuración vigente es [local-first](../methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27):
-PR hacia main —incluido `ready_for_review`, sin desactivar el gate en drafts—, push
-solo main y manual; un job required Ubuntu24.04 con baseline, selección conservadora,
-tipos/build y API/SQLite independiente en cambios críticos. El push de main clasifica
-su rango: solo documentación ejecuta `docs`; el resto, `fast`.
-E2E/regresiones completas se ejecutan localmente con QA independiente; manual CI
-conserva la batería completa. Acciones SHA, historial completo, credenciales no
-persistidas, permisos de lectura y timeout15min permanecen. No configura protecciones.
+PR hacia main o test —incluido `ready_for_review`, sin desactivar el gate en drafts—,
+push del tag `deploy-test-v*` y manual; un job required Ubuntu24.04 con baseline,
+selección conservadora, tipos/build y API/SQLite independiente en cambios críticos, sin
+`age` ni backup/restore cifrado (reservados a full). Ya
+no hay push automático a main/test: la PR ya validó su merge ref. El tag ejecuta `full`
+sobre su commit exacto; la PR selecciona `docs`/`fast`/`critical` y, desde el reparto por
+dependencia de `age` (#398), también **`full` automáticamente** cuando el diff toca
+persistencia, migraciones, base de datos, esquema, identidad, recuperación o sus tests;
+`full` sigue reservado además para dispatch. E2E/regresiones completas se ejecutan
+localmente con QA independiente; dispatch y tag conservan la batería completa. Acciones SHA, historial
+completo, credenciales no persistidas, permisos de lectura y timeout25min permanecen.
+El perfil se publica en el step summary; el check obligatorio sigue llamándose
+`required`. No configura protecciones.
 
 No atribuir a GitHub resultados locales: estado de ejecución en [STEP 3](../automated-checks.md).
 Un exit 1 esperado dentro de un test negativo no es un fallo de la suite: demuestra que
@@ -124,20 +131,37 @@ Baseline documental obligatoria en CI `docs`: `check-repository`, `check-project
 `git show --format= --check --first-parent HEAD`. `fast`, `critical`, `full` y
 `--full` local añaden `test-checks`, `test-validator`, `test-agent-usage`,
 `test-auto-agent-usage`, `test-verification`, `test-evidence` y `test-release`. Para full: `bun install --frozen-lockfile`,
-`bun run typecheck`, `bun run build`, `bun run test`, `python3 scripts/ci_prepare_linux.py`,
+`bun run typecheck`, `bun run build`, `bun test apps/web`, `bun run test`,
+`python3 scripts/ci_prepare_linux.py`,
 `node node_modules/@playwright/test/cli.js install chromium` y `bun run test:e2e`;
-gate adicional AC23 conserva su condición actual de rama.
+gate adicional AC23 conserva su condición actual de rama. La suite web
+(`bun test apps/web`) pertenece a los tres perfiles CI: es la única cobertura de la
+lógica de cliente y `fast` acepta precisamente CSS, cuyos tests la leen.
 Ninguna comprobación de aplicación se declara inaplicable a full: MyFinanzas tiene
 web/API/SQLite. En esta entrega del harness no cambia código de aplicación, SQL ni UI;
 sus suites no sustituyen ni prueban el nuevo grafo. Las regresiones locales prueban
 clasificación y gates sin ejecutar cargas financieras ni instalar navegadores.
 
-Para un push con PR abierta, `ci_context.py` selecciona la integración PR y verifica
-su head tras checkout. La clasificación combina el rango del evento y la PR acumulada;
-un último commit documental no oculta código anterior. Full/required usan el SHA
-fijado por baseline. Error API, lista incompleta, varias PR o referencia cambiada fallan.
-Push/PR comparten concurrencia por repositorio/rama; tags y forks se separan, main no
-cancela ejecución activa y manuales se aíslan. No elimina ejecuciones ya completadas.
+`ci_context.py` fija el contexto de integración: un PR usa su merge ref y verifica el
+head tras checkout; un push de tag usa el ref del tag y verifica que se pela al commit
+exacto del evento. Una base de PR distinta de `main`/`test` se rechaza, igual que un
+push de rama de trabajo o un tag ajeno. La clasificación compara la PR completa mediante
+merge-base sobre la base probada; un último commit documental no oculta código anterior.
+El push de tag `deploy-test-v*` selecciona `full` y full/required usan el SHA fijado por
+baseline. La concurrencia agrupa cada PR por rama: las PR superadas del mismo candidato
+se cancelan, mientras tags y manuales se separan y no se cancelan entre sí. No elimina
+ejecuciones ya completadas. `rootless.yml` ya no reacciona al push de `test` y no ejecuta
+suites de aplicación: no hay job `qa` ni equivalente, porque esa cobertura vive en los
+perfiles canónicos; el deploy espera el `required` del propio tag sobre su commit exacto
+antes de continuar.
+
+Repeticiones intencionales, medidas y no reducibles sin revisión: (1) `capability` ejecuta
+la suite API completa dentro de la imagen Debian endurecida aunque `required` ya la
+ejecutara en Ubuntu; son entornos distintos y [ci-policy](../methodology/ci-policy.md) no
+acepta Ubuntu como equivalencia Debian/glibc. (2) `deploy` reconstruye la release del tag
+con `--single-build` porque el artefacto que se envía debe nacer en el job que lo envía;
+compartirlo exigiría artifacts y no añade ninguna garantía. (3) Un PR de promoción
+`test → main` revalida contra `main` por la decisión de flujo vigente.
 
 Ubuntu24.04 x64: inventario dpkg de los 33 paquetes oficiales tools+chromium de Playwright
 1.64.1 más age. Versión instalada comprobada; una sola actualización/instalación APT
@@ -286,7 +310,9 @@ ningún ensayo local incompatible sustituye evidencia Linux compatible. Focales 
 obligatorios por candidato estable, con revisión/entorno y motivo de repetición.
 QA independiente revisa candidato/diff/evidencia y riesgos; no solo el resumen del autor.
 `python3 scripts/check-evidence` comprueba candidato, base, árbol limpio, logs crudos y
-registro; solo exige Linux/glibc para los logs declarados. No sustituye la lectura de la
+registro; solo exige Linux/glibc para los logs declarados. Su modo
+`--qa-equivalence` demuestra la composición de árbol y la evidencia GitHub del SHA
+revisado —con veredicto favorable— para reutilizar su QA; no sustituye la lectura de la
 salida cruda ni convierte un PASS declarado en evidencia. Al cierre enlazar un checkpoint
 vigente con SHA/PR/evidencias, conservando historia.
 [Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);

@@ -1,11 +1,15 @@
 import { test, expect } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { HttpApp } from "@effect/platform";
 import { openDatabase } from "./database";
 import { Auth, provision, totp } from "./auth";
 import { createApp } from "./app";
 import { createClassification } from "./clasificacion";
+import { createDebt as createDebtRow } from "./deudas";
 
 const now = Date.parse("2026-10-22T12:00:00Z");
 
@@ -635,5 +639,113 @@ test("17 E4.4 B AC-17/19: conciliación no comparable y revisión obsoleta", asy
     ).toBe(409);
   } finally {
     h.db.close();
+  }
+});
+
+test("17 E4.4 AC-19: concurrencia multiproceso, idempotencia y sin escritura parcial", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mf-e44-conc-process-")),
+    path = join(dir, "database.sqlite");
+  try {
+    const seeded = openDatabase(path);
+    try {
+      createDebtRow(
+        seeded,
+        {
+          nombre: "Deuda concurrencia ficticia",
+          inicioControl: "2026-10-01",
+          capitalApertura: "1000",
+        },
+        randomUUID(),
+      );
+    } finally {
+      seeded.close();
+    }
+
+    const createScript = `import{openDatabase}from ${JSON.stringify(resolve("apps/api/src/database.ts"))};import{createConciliacion}from ${JSON.stringify(resolve("apps/api/src/conciliaciones.ts"))};const db=openDatabase(process.argv[1]);try{const item=createConciliacion(db,'D001',JSON.parse(process.argv[3]),process.argv[2],${now});console.log('ok:'+item.id);}catch(e){if(e&&(e.status===409||e.code==='IDEMPOTENCY_CONFLICT'||e.code==='REVISION_CONFLICT'))console.log('conflict');else{console.error(e&&e.stack||e);process.exit(1);}}finally{db.close();}`;
+    const spawn = (script: string, args: string[]) =>
+      Bun.spawn([process.execPath, "-e", script, path, ...args], {
+        env: { ...process.env, NODE_ENV: "test" },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+    const settle = async (
+      children: ReturnType<typeof Bun.spawn>[],
+    ) => {
+      const outputs: string[] = [];
+      for (const child of children) {
+        expect(
+          await new Response(child.stderr as ReadableStream<Uint8Array>).text(),
+        ).toBe("");
+        expect(await child.exited).toBe(0);
+        outputs.push(
+          (await new Response(child.stdout as ReadableStream<Uint8Array>).text()).trim(),
+        );
+      }
+      return outputs;
+    };
+
+    const key1 = randomUUID(),
+      payload = { fechaCorte: "2026-10-20", capitalDeclarado: "750" };
+    const idempotent = await settle([
+      spawn(createScript, [key1, JSON.stringify(payload)]),
+      spawn(createScript, [key1, JSON.stringify(payload)]),
+    ]);
+    expect(idempotent).toEqual(["ok:C001", "ok:C001"]);
+
+    const distinct = await settle([
+      spawn(createScript, [
+        randomUUID(),
+        JSON.stringify({ fechaCorte: "2026-10-10", capitalDeclarado: "930" }),
+      ]),
+      spawn(createScript, [
+        randomUUID(),
+        JSON.stringify({ fechaCorte: "2026-10-10", capitalDeclarado: "931" }),
+      ]),
+    ]);
+    expect(distinct.sort()).toEqual(["conflict", "ok:C002"]);
+
+    const patchScript = `import{openDatabase}from ${JSON.stringify(resolve("apps/api/src/database.ts"))};import{updateConciliacion}from ${JSON.stringify(resolve("apps/api/src/conciliaciones.ts"))};const db=openDatabase(process.argv[1]);try{const item=updateConciliacion(db,'D001',process.argv[2],JSON.parse(process.argv[3]),${now});console.log('ok:'+item.revision);}catch(e){if(e&&(e.status===409||e.code==='REVISION_CONFLICT'))console.log('conflict');else{console.error(e&&e.stack||e);process.exit(1);}}finally{db.close();}`;
+    const patched = await settle([
+      spawn(patchScript, [
+        "C001",
+        JSON.stringify({
+          revision: 1,
+          capitalDeclarado: "720",
+          motivo: "Concurrencia ficticia A",
+        }),
+      ]),
+      spawn(patchScript, [
+        "C001",
+        JSON.stringify({
+          revision: 1,
+          capitalDeclarado: "721",
+          motivo: "Concurrencia ficticia B",
+        }),
+      ]),
+    ]);
+    expect(patched.sort()).toEqual(["conflict", "ok:2"]);
+
+    const check = openDatabase(path);
+    try {
+      expect(
+        check.query("SELECT COUNT(*) n FROM conciliaciones_deuda").get(),
+      ).toEqual({ n: 2 });
+      expect(
+        check.query(
+          "SELECT id,revision,estado FROM conciliaciones_deuda WHERE id='C001'",
+        ).get(),
+      ).toEqual({ id: "C001", revision: 2, estado: "Vigente" });
+      expect(
+        check.query("SELECT COUNT(*) n FROM conciliaciones_deuda_audit").get(),
+      ).toEqual({ n: 3 });
+      expect(check.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      expect(() =>
+        check.run("DELETE FROM conciliaciones_deuda WHERE id='C001'"),
+      ).toThrow();
+    } finally {
+      check.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });

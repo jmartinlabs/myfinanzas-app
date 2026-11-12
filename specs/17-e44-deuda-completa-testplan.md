@@ -1,11 +1,15 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Test plan
 
-Status: **DISEÑO DE PRUEBAS — NO EJECUTADO**. Esta es una entrega documental; no existe
-candidato funcional de E4.4, no hay SQL ni migración y **ningún resultado es PASS**. Una
-prueba diseñada no acredita la funcionalidad. Los AC se ejecutarán solo tras autorización
-expresa y separada de desarrollo.
+Status: **DISEÑO DE PRUEBAS — DEV17 INTEGRADO; EJECUCIÓN PARCIAL 2026-11-09**. La suite
+E4.4 existe y pasó en CI al integrarse; durante QA-01 se añadieron pruebas para AC-19,
+AC-21, AC-23, AC-25, AC-29, AC-30 y AC-31 y se ejecutaron en local. Este documento conserva
+la matriz de diseño; el mapa de ejecución vigente está en
+[progress](17-e44-deuda-completa-progress.md). **Ningún AC se declara PASS funcional** y no
+hay aceptación visual de los wireframes.
 
-Base de preparación: `main` = `c827d4c` (2026-11-02), esquema **v21**. Referencia: [specification](17-e44-deuda-completa-specification.md) y
+Base histórica de preparación: `main` = `c827d4c` (2026-11-02), esquema **v21**. Candidato de
+esta revisión: rama `qa01/e44-deuda` sobre `test` `dbfe507` (esquema vigente **v27**).
+Referencia: [specification](17-e44-deuda-completa-specification.md) y
 [brainstorming](17-e44-deuda-completa-brainstorming.md).
 
 ## Estrategia
@@ -35,6 +39,13 @@ Base de preparación: `main` = `c827d4c` (2026-11-02), esquema **v21**. Referenc
 | Documental actual | `python3 scripts/verify --base origin/main --head <SHA>` | Solo baseline/clasificación docs; no valida E4.4 |
 
 ## Matriz AC → riesgo → caso → comprobación futura
+
+**Estado de ejecución:** la columna «Estado» de la matriz siguiente expresa el diseño
+original (`UNRUN`) y no se reescribe como PASS. El estado real por AC, con la prueba que lo
+cubre y su resultado local/CI, se mantiene en
+[progress §3](17-e44-deuda-completa-progress.md#3-mapa-ac--prueba). En esta pasada no se
+convierte ningún `CUBIERTO` en PASS funcional: solo se acredita la ejecución de pruebas
+ficticias en local; CI y aceptación visual siguen pendientes.
 
 Riesgos: **R1** doble cómputo/precontrol; **R2** apertura/amortización inferida; **R3**
 pérdida/reescritura de historia; **R4** discrepancia oculta; **R5** Deuda como Saldo;
@@ -74,7 +85,7 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 | AC-28 | R11 | 390 mismas pantallas | Acción oculta, scroll horizontal, texto truncado | Secciones apiladas; acciones accesibles; sin overflow | Playwright 390 + capturas | UNRUN |
 | AC-29 | R4/R11 | Vacío/carga/parcial/no calculable/diferencia | 401/404/409/422 y pérdida de borrador | Estados diferenciados; borrador conservado; foco | Playwright/API | UNRUN |
 | AC-30 | R12 | Consulta normal | Simulación, cuadro, previsión, comisión, activo, ajuste | Rechazo/exclusión; cero hechos/cuotas/activos/ajustes | API/UI/inspección | UNRUN |
-| AC-31 | R1/R5 | Regresión E1.1–E1.6 y cuatro Tipos | Exterior Transferencia, E3, cierre, doble Gasto | Reglas previas intactas; cuota Gasto; extraordinaria no Gasto | Suite completa + E2E | UNRUN |
+| AC-31 | R1/R5 | Regresión E1.1–E1.6 y cuatro Tipos | Exterior Transferencia, E3, cierre, doble Gasto | Reglas previas intactas; cuota Gasto; extraordinaria no Gasto | Suite completa + E2E | PASS (fixtures) · CI `42863718688` |
 | AC-32 | R7 | EUR/tasas/textos/fechas exactos | Tercer decimal, float, overflow, texto/fecha inválidos | Exactitud; 422; sin redondeo | API/Bun | UNRUN |
 | AC-33 | R3/R9 | Cambios de Deuda/conciliación auditados | Log con importes/notas/secretos; auditoría ausente | Actor/UTC/anterior/posterior/motivo; append-only | API/SQL | UNRUN |
 
@@ -179,3 +190,5 @@ ni el merge.
 | 2026-10-27 | `cb74b28` | QA delta supervisor | FAIL documental | Atribución residual de Q1–Q7; corregida |
 | 2026-10-27 | `09b416b` | QA delta supervisor | PASS documental | Procedencia y solo lectura cerradas; no funcional |
 | 2026-11-02 | `8b551c5` | Dictamen documental SPEC17-AUD | PASS con reservas | M1/M2/m8 verificados; correcciones y decisiones registradas; no funcional |
+| 2026-11-03 | `024b348` | CI post-merge DEV17 | SUCCESS | Suite E4.4 y workflow full; no veredicto AC por AC |
+| 2026-11-09 | `qa01/e44-deuda` sobre `test` `dbfe507` | `bun test` de `deuda-completa`, `conciliaciones`, `deudas-v23-migration`, `resumen-inicio` y `resumen-anual` | PASS local de fixtures (47 pruebas) | AC-19/21/23/25/29/30/31 reforzados; sin PASS funcional ni aceptación visual; ver [progress](17-e44-deuda-completa-progress.md) |

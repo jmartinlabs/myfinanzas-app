@@ -16,6 +16,7 @@ import { previewMovement, writeMovement } from "../src/movimientos";
 import { createDebt, updateDebt } from "../src/deudas";
 import { createInstrumento } from "../src/instrumentos";
 import { createPurchase } from "../src/compras";
+import { createSale } from "../src/ventas";
 import { createValuation } from "../src/e43";
 import {
   confirmAnnualPlan,
@@ -36,14 +37,45 @@ const scenario = process.env.E46_SCENARIO ?? "base";
 const zero = scenario === "zero";
 const degraded = scenario === "degradado";
 const auth = scenario === "auth";
-const dir = auth
-  ? ".local/e2e-inicio-auth"
-  : degraded
-    ? ".local/e2e-inicio-degradado"
-    : zero
-      ? ".local/e2e-inicio-zero"
-      : ".local/e2e-inicio";
-const port = auth ? 3017 : degraded ? 3016 : zero ? 3015 : 3014;
+const casa = scenario === "casa";
+const casaMov = scenario === "casa-mov";
+const g5a = scenario === "g5a";
+const g5b = scenario === "g5b";
+const casaDeudas = scenario === "casa-deudas";
+const dir = g5a
+  ? ".local/e2e-inicio-g5a"
+  : g5b
+    ? ".local/e2e-inicio-g5b"
+    : casaDeudas
+    ? ".local/e2e-inicio-casa-deudas"
+    : casaMov
+      ? ".local/e2e-inicio-casa-mov"
+  : casa
+    ? ".local/e2e-inicio-casa"
+  : auth
+    ? ".local/e2e-inicio-auth"
+    : degraded
+      ? ".local/e2e-inicio-degradado"
+      : zero
+        ? ".local/e2e-inicio-zero"
+        : ".local/e2e-inicio";
+const port = g5a
+  ? 3028
+  : g5b
+    ? 3029
+    : casaDeudas
+    ? 3021
+    : casaMov
+      ? 3019
+      : casa
+        ? 3018
+        : auth
+          ? 3017
+          : degraded
+            ? 3016
+            : zero
+              ? 3015
+              : 3014;
 
 function saveMovement(db: Database, body: Record<string, unknown>) {
   const plan = previewMovement(db, body, null, false, NOW);
@@ -499,6 +531,30 @@ rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite");
 seedInicioFixture(db);
+if (g5b) {
+  const instrumento = db
+    .query("SELECT id FROM instrumentos WHERE isin='ES0000000101'")
+    .get() as { id: string };
+  createSale(
+    db,
+    {
+      fecha: "2026-07-20",
+      instrumento: instrumento.id,
+      saldoEfectivo: "S003",
+      saldoInversion: "S007",
+      cantidad: "2",
+      precio: "84.000000",
+      divisa: "EUR",
+      cambio: null,
+      importeEur: "168.00",
+      comisionEur: "0.00",
+      concepto: "Venta ficticia G5b E4.2",
+      nota: null,
+    },
+    randomUUID(),
+    NOW,
+  );
+}
 if (zero) zeroLiquidity(db);
 const key = loadKey(db, dir + "/auth.key");
 // Bootstrap uses the real clock so the real MFA window remains valid.

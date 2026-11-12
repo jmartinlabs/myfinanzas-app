@@ -1,23 +1,63 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-06
+## Identificadores canónicos y etapas — reconciliado 2026-11-10e
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
 funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como historia.
 
+Estados de relay vigentes: PENDIENTE, ENVIADO, RECIBIDO, VERIFICADO y BLOQUEADO
+([coordinator communication](methodology/coordinator-communication.md)). Las entradas históricas
+conservan las etiquetas con las que se escribieron; no se reescriben.
+
 | Funcional | SPEC | DEV | QA | MERGE | Aceptación | Evidencia / siguiente |
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
-| E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | not-ready (DT7; DEV no autorizado) | APTO (focal; 59 AC UNRUN) | merged `a806fd9` (#216) | pending | C1–C8 y R1–R4 integrados; QA focal APTO; DT7 abierto; DEV E4.5 no autorizado; 59 AC UNRUN |
+| E4.4 | approved | verified `024b348` + QA-01 `0473a71` (#332) + AC29 `d2fde23` (#375) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged (`f56847a`, #375) | QA-01 aceptada con reservas; aceptación funcional y visual pendientes | 31 CUBIERTO (CI `42925487584`, incluye AC19/21/23/25/30) + AC29/AC31 PASS (fixtures); E2E AC29 sin run `full`; 0 AC sin prueba; sin PASS funcional |
+| E4.5 | approved | motor puro + H-02/03/04/05/10/12 `da93897` + H-01/06/07/08/11/14 `9c793d3` + H-13/H-01c `642f0c0` + propuestas #339 `4fcee13` | APTO CON RESERVAS por incremento; QA previa sin informe versionado; DEV 94 pruebas | merged | pending | E45-A1/A3/A4 `99bfce5` (#348) + contención obligatoria `092e3b8` (#354); E45-A2 bloqueada por DT7 M2/M8; 107 pruebas; DT7 abierto; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
-| E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
-| E4.10 | approved (SPEC28 ratificada 2026-11-05) | verified I1–I8 merged | APTO CON RESERVAS (I8) | merged I7 `81c8960`, I8 `5ea79b9` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI y I8 regresión/AC22 integrados; 24 AC UNRUN (23+AC22 con evidencia de prueba, ninguno PASS) |
-| E4.11 | approved (SPEC29 merged `6fe91d7`, 2026-11-06) | verified I1–I3 merged | APTO CON RESERVAS (I1–I3) | merged `a658803`, `ef7bb00`, `a3c616d` | pending | I1 lectura/versiones; I2 v27 inmutable; I3 composición/agregado; 15 AC UNRUN; I4–I6 pendientes; rootless 26→27 integrado `1fa0ecc` |
-| E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
-| INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
-| DEPLOY-TAGS-01 | design approved for documentation (SPEC35, PR #233, 2026-11-05) | not-ready | passed (docs) | PR-open | pending | QA APTO; CI `required` PASS en PR #233; sin tags, workflows, credenciales ni despliegue; D1–D11 y fases 1–6 sin autorizar |
-| UI | draft (análisis #205; SPEC sin ratificar) | DEV-01/02/03/04 I1–I3 merged | APTO CON RESERVAS (DEV-04 I1–I3) | merged `b1bbe3c`, `3a5bed4`, `1f9c84a` | pending | DEV-03 navegación; DEV-04 Table/DataList, Saldos/Movimientos, patrimonio y tablas anchas; I4 pendiente |
+| E4.7 | approved (merged `948ade8`) | verified `0e89562` + QA-01 `317bb0c` + E2E `bc192cd` (#337) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; aceptación funcional pendiente | AC02/20/21/22/23 PASS local; AC3 PARCIAL (DT8); AC18 PARCIAL (F-MARGEN sin valor numérico); AC10–15 BLOCKED; AC19 N/A; E2E de foco estabilizado |
+| E4.9 | approved | verified `0176ffc` + QA-01 `50265bb` (#331) | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin cierre real ni DT6 | AC-07/12/13/15/16/18/21 PASS fixtures API; AC-09 parcial; DT6 real y cierre real pendientes |
+| E4.10 | approved | verified I1–I8; QA-01 `c335ad0` (#333) añade regresión cruzada | APTO CON RESERVAS (QA previa; revalidación QA-01) | merged | QA-01 aceptada con reservas; sin aceptación financiera real | 23 PASS (fixtures, desde #291) + AC15 PARCIAL; sin aceptación global; DT6/E3.5 abiertos |
+| E4.11 | approved | I1–I6; AC07 #313; §18 aprobado; DEV AC09 `9c857b6`; decisión §18.3.B `0b823d8` (#340); #327 abierta | APTO documental con reservas; aceptación abierta; AC09 PARCIAL | merged | pending | Opción B implementada `211f442` (#349); AC09-K cubierto; #327 cerrada por superada; AC09 sigue PARCIAL |
+| E4.12 | F0 aprobada 2026-11-09; F1 `IN_PROGRESS` (expediente `cb1bc8a`, paquete `149c9dd` #341) | nivel A preparado; F2/F3/F4 sin ejecutar | planned | n/a | pending | D08 (diseño) y D09–D15 aprobadas (#344 `29869b6`); D04 y D01–D03/D05–D07 pendientes; F1 IN_PROGRESS; AC01–17 UNRUN; B bloqueado |
+| INFRA-TEST-01 | approved | flujo/seed/release integrados | release 5d2bb47 operativa | n/a | operativa | tag `deploy-test-v0.1.0` apunta correctamente a `960c151`; run `42579540547` falló en reinicio SSH, rollback y smoke correctos; Infra investiga timeout |
+| DEPLOY-TAGS-01 | approved | deploy por tag + Actions→SSH (#305/#306) | QA/CI de workflow | merged | pending | tag correcto en `960c151`; fallo de reinicio SSH con rollback correcto; sin recrear/mover; sin GHCR |
+| UI | approved (enmienda Graphite 2026-11-10; 1A integrado) | DEV-01–DEV-07 integrados | DEV-07 cierre AA APTO CON RESERVAS; DEV-06 I1–I4 | merged | pending | DEV-07 I1–I5; matriz 30+15; 4 excepciones; no WCAG universal ni aceptación financiera. Graphite 1A integrado en `test` (`bff714e`, #356); integración visual premium pendiente |
+| SPEC36 | approved 2026-11-11 (D1–D10; precisiones D8/D3; enmienda C) | inc1: v28 #388 integrado + servicio/API en rama `6d9d340`; adaptador de lectura en revisión (#397); inc2 pendiente | schema QA técnico APTO; enmienda C aprobada | n/a | n/a | v28/C28 integrados; enmienda C sustituye solo el acoplamiento a E2.3; v29/motor no autorizados; SPEC37 no autorizada; sin datos reales ni despliegue |
+
+## SPEC36 · autorización 2026-11-11
+
+- **Aprobación:** usuario, 2026-11-11; D1–D10 con precisiones D8 (línea histórica de
+  Presupuesto inactivo permitida, nunca pendiente nuevo hacia destino inactivo/no elegible)
+  y D3 (persistencia de borradores y pendientes; v28/C28 si la comprobación física lo exige).
+  Texto y alcance en [SPEC36 §0](36-reparto-mensual-asistido-presupuestos-specification.md#0-registro-de-aprobación--2026-11-11).
+- **Secuencia autorizada:** (1) mecanismo compartido de Transferencia pendiente; (2) reparto
+  mensual asistido; SPEC37 queda como consumidor posterior y **no** tiene DEV autorizado.
+- **Enmienda C (2026-11-11):** origen de plan explícito por Ciclo (`PlanCiclo`/`Dprima`),
+  adaptador de solo lectura y un único motor/pendiente; D′ es objetivo pero no se activa
+  hasta paridad y aceptación. Solo se enmienda el acoplamiento exclusivo a E2.3 y la
+  lectura de D8; D1–D7, D9 y D10 no se reabren.
+- **Límites:** sin datos reales, migración operativa ni despliegue; v28 se entrega en PR
+  independiente y no se aplica a TEST v0.1.2. La aceptación con fixtures no es aceptación
+  funcional. v29 y el motor de reparto no están autorizados.
+
+## UI · Graphite Lime · frontera documental (2026-11-10)
+
+- **UI SPEC:** APROBADA; enmienda **UI-G1** ratificada por el usuario el 2026-11-10. Añade
+  `graphite-lime` («Grafito») como cuarto tema y autoriza en alcance 1A.
+- **1A:** cambios aditivos en `themes.css`, `themes.ts`, `theme-boot.js` y pruebas de tema.
+  Prohibido tocar pantallas, componentes, formularios, navegación, API, SQLite o datos.
+  **Implementado y fusionado en `test`** con #356 (`bff714e`); Graphite es seleccionable.
+- **Invariantes:** `dark-s` predeterminado, `mf-theme` persistencia, los tres temas actuales sin
+  cambios. 1A incorpora el tema al sistema, no la integración visual premium completa.
+- **1B:** `prefers-reduced-motion` **no autorizado**; se coordina con UI DEV-04 por `style.css`.
+- **Base:** autorización `18f7c0c`; implementación desde `9c9544b` (#355); integración en
+  `test` `bff714e` (#356); base documental actual `e6c6be1` (#357). La rama de exploración no
+  se fusiona completa.
+- **Estado:** diseño/QA cerrados; enmienda UI-G1 fusionada (#353, `64c0335`); 1A fusionado
+  (#356, `bff714e`); Graphite seleccionable; integración visual premium completa pendiente;
+  sin despliegue. 1B fuera de alcance.
+- **Preservación:** archivo documental en `specs/investigations/graphite-lime-design-2026-11-10/`
+  (#357, `e6c6be1`); originales 2× en la release `graphite-lime-design-2026-11-10`.
 
 ## Infraestructura rootless 25→27 — estado vigente (2026-11-06)
 
@@ -33,7 +73,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
 
-Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+Esta sección es histórica; el estado vigente está en la tabla superior y en la sección 2026-11-09. Sustituye como referencia cualquier alusión anterior que
 presente E4.9 sin DEV autorizado o con el candidato `85b4102`. Las secciones históricas
 conservan su fecha y no deben leerse como estado actual.
 
@@ -54,9 +94,9 @@ conservan su fecha y no deben leerse como estado actual.
   fixtures.
 - **Main posterior:** `a806fd9` (#216, documentación de E4.5) no modifica el estado de E4.9.
 
-## E4.5 — estado vigente reconciliado (2026-11-05)
+## E4.5 — estado histórico reconciliado (2026-11-05)
 
-Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+Esta sección es histórica; el estado vigente está en la tabla superior y en la sección 2026-11-09. Sustituye como referencia cualquier alusión anterior que
 presente E4.5 con C3/AC-56 abiertos, con #216 en `5d3ad0b` o con las precisiones sin
 aplicar. Las secciones históricas conservan su fecha y no deben leerse como estado actual.
 
@@ -887,9 +927,9 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
 | SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |
 | SPEC27 | E4.9 | Cierre y primera fotografía | Aprobada documentalmente; **DEV autorizado 2026-11-03 y ejecutado** | Integrado `0176ffc` (#200); CI PASS; QA APTO CON RESERVAS; aceptación y operación real pendientes; DT6 abierto |
-| SPEC28 | E4.10 | Reapertura y nuevo cierre | Número asignado; no iniciada | No iniciado |
-| SPEC29 | E4.11 | Fotografías consultables | Número asignado; no iniciada | No iniciado |
-| SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
+| SPEC28 | E4.10 | Reapertura y nuevo cierre | Aprobada e implementada | I1–I8 integrados; 24 AC UNRUN; aceptación pendiente |
+| SPEC29 | E4.11 | Fotografías consultables | Aprobada; I1–I6 integrados | AC07 #313; AC09 §18 #315; 14/1/15 `[PROPUESTA]` |
+| SPEC30 | E4.12 | Recuperación integral | SPEC/testplan #297 (DRAFT) | Nivel A preparado; F0/F1 pendientes; F2 no ejecutado |
 
 Técnicas: **SPEC31 SQLite producción**, contrato aprobado e implementación/enmienda
 presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless** #30
@@ -1937,3 +1977,244 @@ Runtime sin trabajadores visibles; controles dev07/qa07 not_found, terminación
 de proceso no confirmable. Dev32/PR30/AC22 continúa pausado. Próxima sesión:
 leer checkpoint y verificar estado antes de proponer continuación; requiere nueva
 instrucción del usuario, sin auto-resume.
+
+
+## Estado vigente UI / DEV-07 — 2026-11-09
+
+- **Cierre DEV-07 con reservas aprobado por el usuario (2026-11-09)** dentro del alcance
+  auditado: I1 línea base,
+  I2 tokens/AA, I3 sin residuo propio (sin PR), I4 matriz 30+15 y aserciones duras, I5
+  documentación. Integrados en `test` `0406e5d`; QA y CI posteriores a #318 satisfactorios
+  (`42600383366` required y `42600383295` Rootless+qa con 99 tests web).
+- **Evidencia**: 45 combinaciones con 0 fallos AA de texto/componentes, 0 objetivos
+  no-inline <44 y 0 overflow; matriz `artifacts/ui-dev07/base|critical` (no versionada).
+- **Excepciones vigentes (4)**: enlaces inline, segmento `input[type=date]` nativo,
+  tagline decorativa y primitivas base `.ui-badge`/`.ui-amount-note`/`.ui-metric-class`
+  fuera de la matriz.
+- **Límites**: Chromium; sin lector de pantalla ni WCAG universal; capturas fuera de Git;
+  contraste de componentes limitado a campos y glifos; DEV-07 no constituye aceptación
+  financiera ni cierra E4.6/E4.9/E4.10/E4.11.
+
+## E4.12 — F0/F1 (histórico 2026-11-09, superado por la aprobación F0)
+
+- SPEC30/testplan integrados (#297); AC en `UNRUN`; niveles A/B separados.
+- **F0** quedó aprobada el 2026-11-09 como marco documental; el estado vigente está en la
+  tabla superior y en el cierre de esta página.
+- **F1** mantiene pendientes destino/custodia DT6, entorno Linux x86_64, corte/matriz y
+  aceptación de reservas E4.7/E4.9/E4.10/E4.11.
+- **F2** no autorizado ni ejecutado; no hay restore, migración ni equivalencia con Excel.
+
+
+## Estado TEST — 2026-11-09 (confirmado por el usuario)
+
+- Confirmación del usuario: `deploy-test-v0.1.0` apunta correctamente a `960c151`; el
+  run `42579540547` registra ese `headSha`. Un checkout local sin ese objeto puede
+  resolver el tag a `c0341d7`; se verifica con `git fetch --tags`, sin recrear ni mover.
+- El run falló durante el reinicio por SSH; el rollback se ejecutó y su smoke pasó.
+  Infraestructura investiga el timeout. No se inician despliegues, variables ni cambios
+  en el VPS desde MyFinanzas.
+- La release inicial `5d2bb47` no se ve afectada.
+
+## Correcciones integradas 2026-11-09 (cierre de turno)
+
+- **E4.5** `da93897` (#321): H-02 (corte duro, `fuenteId` desconocido falla cerrado,
+  contención en `intervalosArchivo`), H-03 (solape parcial), H-04 (conflicto de
+  identidad/huella sin `0,00`), H-05 (cero acreditado), H-10 y H-12. 9 pruebas nuevas,
+  66 pass; CI `required` y full `42615103642` PASS; QA independiente APTO CON RESERVAS.
+- **Reservas E4.5**: sin prueba positiva de fuente con `intervalosArchivo: []`; excepción
+  `AperturaHistorica` a la validación de `fuenteId`; una fila fuera de intervalos anula
+  todo el componente; H-08 contradice la prueba B2 (`Completa` con `DosFuentes`).
+- **E4.11** `8774cd8` (#320): §18 con D1 (fixture vs alcanzable), SQL `NULL` inválido,
+  JSON `null`/clave ausente/`[]` diferenciados, D3 (`{}`/`[]` + `Parcial` sin entradas
+  ficticias), legacy inmutable y tres expectativas de #300 ancladas por nombre. QA
+  documental APTO; §18 sigue `[PROPUESTA]` y no se autoriza producto.
+- **DEV-07** sin cambios tras el cierre con reservas; no hay UI adicional.
+- **TEST**: sin cambios; tag `deploy-test-v0.1.0` y run fallido siguen pendientes de
+  decisión operativa/Infra; release `5d2bb47` intacta.
+
+
+## Cierre 2026-11-09 (correcciones funcionales)
+
+- **AC09 aprobado e implementado** (`9c857b6`, #325): `codigoAusencia`, contenedor
+  `null`/ausente, entrada `null`, motivo ausente y `{}`/`[]` con `Parcial` sin entradas
+  ficticias; guardas de lectura web con “No informado”; casos A–J/D3. Solo agregados
+  nuevos; sin esquema, migraciones ni recálculo. AC09 sigue `PARCIAL (fixtures) ·
+  BLOCKED real` y no hay aceptación.
+- **E4.5 residual** (`9c793d3`, #324): H-08 conforme a SPEC20 D14 (conflicto no resuelto
+  ⇒ `Solapada`, B2 corregida), H-01/06/07/11/14a/b con contradicción reproducida,
+  F2d/F2e y cobertura de los seis enums; 76 pruebas. H-09, H-13, aperturas y atribución
+  siguen requiriendo decisión; DT7 abierto.
+- **E4.12**: F0 aprobada como marco documental; F1 `IN_PROGRESS` con nueve propuestas y
+  seis decisiones adicionales en §9.10; F2/F3/F4 y AC01–17 `UNRUN`.
+
+
+## Cierre 2026-11-09 (residual E4.5 y expediente F1)
+
+- **E4.5 `642f0c0` (#329):** H-13 corrige la coerción de `Date.UTC` para años 1–99 y rechaza
+  `0000`. H-01c impide que un registro íntegramente posterior al corte descubra una Partida
+  fuera del universo y bloquee el total global; si la Partida ya está declarada, ese
+  registro sigue siendo agregado no atribuible y bloquea su total, y el mapping
+  `Pendiente`/`Ambigua` posterior al corte sigue en `sinClasificar` (SPEC20). P-01a/b fijan
+  la atribución dentro del corte pero fuera de `intervalosArchivo`. 81 pruebas, QA APTO
+  CON RESERVAS por incremento.
+- **Decisiones documentadas sin cambio de producto**: H-09 mantiene `conflictos[]` global
+  (cada conflicto lleva `partidaId`); la exención de `fuenteId` en `AperturaHistorica` no
+  omite límites de Gastos; el mapping `Pendiente`/`Ambigua` posterior al corte sigue en
+  `sinClasificar` porque SPEC20 lo ampara. Si se quiere otro comportamiento, requiere
+  enmienda de SPEC20.
+- **AC09**: la prueba defensiva #327 (`a1fd546`) demuestra que el contrato de foto no
+  produce `estado` no canónico; fija el descarte actual y deja abierta la lectura literal
+  de §18.3.B. No se mergea ni se cambia producto hasta decisión.
+- **E4.12 `cb1bc8a` (#328):** expediente con las 15 decisiones, agrupadas G1–G5, con
+  recomendación, alternativa, riesgos, dependencias, evidencia y autorización; ninguna
+  aprobada por inferencia.
+
+
+## QA-01 — CERRADO · APTO CON RESERVAS (2026-11-09)
+
+**Estado administrativo:** cerrado por decisión del usuario. Es consolidación técnica, de
+pruebas y documental; no es aceptación financiera, no acredita P7 ni equivalencia con Excel.
+
+**Decisiones ratificadas:**
+- **E4.4:** AC29 y AC31 permanecen PARCIAL (validación visual y suite E1.1–E1.6); los
+  `CUBIERTO` no se convierten en PASS funcional; aceptación visual pendiente.
+- **E4.7:** AC19 ratificado como N/A; AC3 PARCIAL por DT8; AC18 PARCIAL sin exigir nueva
+  fixture numérica; AC22 PASS local del alcance probado, no WCAG; AC10–AC15 BLOCKED.
+- **E4.9:** AC-09 PARCIAL; DT6/T-BKP sigue siendo gate obligatorio; sin cierre real.
+- **E4.10:** AC15 ratificado PARCIAL; los 23 PASS de fixtures no acreditan aceptación real;
+  DT6/E3.5 se mantienen.
+- No se abre otra ronda general de QA-01; las reservas no bloqueantes no generan tareas.
+
+## QA-01 — consolidación funcional (2026-11-09)
+
+- **E4.4 `0473a71` (#332):** AC25/AC30 con prueba específica; AC19/AC21/AC23/AC25/AC30
+  CUBIERTO local; AC29/AC31 siguen PARCIAL. Deudas separadas de Saldos y efectos de
+  cuotas/amortizaciones/conciliaciones verificados. Sin cambios de producto.
+- **E4.7 `317bb0c` (#334):** AC02/AC20/AC21/AC22/AC23 PASS local; AC19 documentado como
+  N/A con guarda y motivo visible; AC3 PARCIAL por DT8 y AC18 PARCIAL porque la fixture
+  F-MARGEN no ejecuta el valor numérico; AC10–AC15 BLOCKED. Corrección mínima de UI
+  (`sourceSummary` y nota AC19), sin fórmulas ni métricas nuevas.
+- **E4.9 `50265bb` (#331):** AC-07/12/13/15/16/18/21 con evidencia de fixtures API;
+  testplan reconciliado; sin defectos de producto; AC-09 parcial y DT6 abierto.
+- **E4.10 `c335ad0` (#333):** regresión cruzada cierre→reapertura→rectificación T1→v2,
+  idempotencia y rollback; 23 PASS (fixtures, desde #291) y AC15 PARCIAL, sin aceptación
+  global.
+- **CI:** full PASS final en `#331` (`42695177366`), `#332` (`42679709188`), `#333`
+  (`42680773106`) y `#334` (`42690200042`); hicieron falta reruns por flakes E2E ajenos.
+- **Defectos de producto:** solo la falta de trazabilidad visual de cifras en E4.7,
+  corregida; el resto son huecos de prueba, no defectos.
+- **Decisiones abiertas:** AC29/AC31 requieren aceptación visual y suite E1.1–E1.6;
+  AC19 de E4.7 como N/A requiere ratificación funcional; AC3 sigue DT8 y AC18 necesita
+  mejor evidencia de fixture; DT6/DT7 mantienen bloqueado el nivel real.
+- **Recomendación:** aceptación con reservas por módulo; sin aceptación global ni
+  equivalencia con Excel.
+
+
+## Avance 2026-11-10 (histórico: las decisiones abiertas se aprobaron el 2026-11-10; véase «Decisiones aprobadas»)
+
+- **E4.7 `bc192cd` (#337):** E2E de foco estabilizado con `expect.poll`/`toPass`, sin
+  reintento de `Tab` ni relajación del umbral; CI full PASS.
+- **DT7 `aa21796` (#338):** expediente de preparación con checklists de mapping y corte,
+  evidencia disponible y faltante; DT7 sigue abierto y sin datos reales.
+- **E4.5 `4fcee13` (#339):** propuestas A/B/C para H-09, `fuenteId` en aperturas,
+  atribución fuera de intervalos y mapping posterior al corte; sin cambio de producto.
+- **E4.11 `0b823d8` (#340):** expediente de decisión §18.3.B con opciones A–D y texto de
+  aclaración propuesto; #327 sigue sin mergear y AC09 sigue PARCIAL.
+- **E4.12 `149c9dd` (#341):** paquete F1 con D04 y D08–D15 resolubles ya (9), D01–D03 y
+  D05–D07 dependientes de DT6/entorno; 15 decisiones, ninguna aprobada. El nivel B sigue
+  bloqueado por DT6/DT7/restore Linux.
+- **CI:** `required`/docs verde en #337–#340; full verde en #337 y en las cabezas previas
+  de #338–#340, no en las fusionadas (docs-only). #341 full no completó: un intento falló
+  y dos agotaron el timeout de 15 min del job; la causa E2E concreta no está verificada en
+  los logs disponibles. #341 es un cambio solo documental; no altera código ni aceptación.
+- **Decisiones materiales abiertas:** AC09 §18.3.B (A/B/C/D); cuatro puntos de contrato
+  E4.5; D04 y D08–D15 de F1; evidencia real DT7 (M1/M2/M5/M8).
+
+
+## Decisiones aprobadas 2026-11-10
+
+**A. AC09 §18.3.B — opción B (lectura literal).** Conservar `bloque`, `estado` y `motivo`
+persistidos aunque el estado no sea canónico; `Parcial` sigue en cobertura; sin normalizar
+ni sintetizar. Registrada en SPEC29 y testplan (`#346`, `25fccb6`); `AC09-K` `UNRUN`. El
+cambio de producto requiere autorización DEV separada y está preparado en
+`specs/investigations/e411-ac09-option-b-dev-2026-11-10.md`. AC09 sigue
+`PARCIAL (fixtures) · BLOCKED real`; #327 no se modifica.
+
+**B. E4.5 — enmiendas A/B/B/B.** E45-A1 (H-09, definitiva): `resultado.conflictos[]` es la
+fuente canónica y `items[].conflictos[]` una proyección local. E45-A2 (`fuenteId` en
+aperturas, **provisional**): exige fuente declarada, pendiente de DT7 M2/M8. E45-A3
+(definitiva): motivo `RegistroFueraDeIntervalosArchivo` y `causa` para filas fuera de los
+tramos verificados, mismo bloqueo. E45-A4 (definitiva): `sinClasificar` acotado al alcance
+temporal consultado con trazabilidad de origen. Integradas en SPEC20/testplan (`#345`,
+`bfcd7a0`); motor y DTO sin cambios; 59 AC `UNRUN`; DT7 abierto.
+
+**C. E4.12 F1.** D08 aprobada solo en diseño; D09–D15 aprobadas con sus límites (D09 sin
+matriz real, D10 datos fuera de alcance, D11 A antes que B, D12 con reservas y D13 con brechas,
+D14 SHA sin tag, D15 exclusión de E4.5/DT7 en A). D04 pendiente de fecha/capacidad/
+responsable; D01–D03 y D05–D07 pendientes. Registro en
+`specs/investigations/e412-f1-approvals-2026-11-10.md` (`#344`, `29869b6`). F1 sigue
+`IN_PROGRESS`; F2/F3/F4 `UNRUN`.
+
+**D. DT7.** Inventario de evidencias M1/M2/M5/M8 y decisiones humanas en
+`specs/investigations/dt7-evidence-inventory-2026-11-10.md` (`#343`, `c3d8ef0`); criterio
+`LISTO PARA DECISIÓN` distinto de aprobado; sin datos reales, canal ni revisor designados;
+DT7 abierto.
+
+
+## DEV 2026-11-10 · AC09 opción B y E4.5 A1/A3/A4
+
+- **E4.11 AC09 `211f442` (#349):** `noDisponibleDeFoto` conserva `bloque`, `estado` y
+  `motivo` aunque el estado no sea canónico; `Parcial` sigue en cobertura; sin
+  `codigoAusencia` sintético; UI con tono neutro y rótulo «estado no reconocido» sin alterar
+  el estado. `AC09-K` y frontera sin motivo; 34 pruebas API y 106 web. Sin migración,
+  esquema ni reescritura. AC09 sigue `PARCIAL (fixtures) · BLOCKED real`; #327 cerrada por
+  superada sin merge.
+- **E4.5 `99bfce5` (#348):** E45-A1 con pruebas (global canónico, item como proyección);
+  E45-A3 con `RegistroFueraDeIntervalosArchivo` y `causa`
+  (`FueraDeIntervalosArchivo`/`CorteExcedido`), mismo bloqueo; E45-A4 acota `sinClasificar`
+  al periodo consultado sin campo ni lista nueva. 94 pruebas; E45-A2 sigue bloqueada por
+  DT7 M2/M8.
+- **Reservas E4.5:** una fuente con `intervalosArchivo: []` sigue permitiendo sumar dentro
+  del corte; si concurren `CorteExcedido` y `FueraDeIntervalosArchivo`, prevalece el motivo
+  de corte; un registro posterior `Ambigua` con `partidaId=null` no se expone (T2, sin
+  campo nuevo). Las tres requieren enmienda/DT7 si se quieren cerrar.
+- **QA:** APTO CON RESERVAS en ambos; CI required y full PASS tras rerun por timeouts
+  ajenos. Sin elevación de AC ni aceptación financiera.
+
+
+## Corrección E4.5 · contención en `intervalosArchivo` (2026-11-10)
+
+- **Defecto demostrado** (`investigation/e45-empty-intervals`, #351 cerrada sin merge): con
+  `intervalosArchivo: []` se omitía la contención y el importe sumaba a `archivo`; con
+  cobertura de otra fuente o `controlDetalle` podía certificarse un total `Verificado` con
+  importes sin cobertura propia (casos 2a/2c/3a/3b).
+- **Corrección `092e3b8` (#354):** la contención se ejecuta siempre, solo para registros que
+  llegarían a sumar y con coincidencia de fuente, Partida y clase. Sin contención:
+  `RegistroFueraDeIntervalosArchivo`, `causa="FueraDeIntervalosArchivo"`, importe solo como
+  contexto, `archivo/subtotal/total=null` y bloqueo; precedencia de `CorteExcedido`,
+  `Rechazado`, `NoVerificado`, conflictos, vinculados y regularización pendiente intacta.
+  El cero elegible fuera de tramo tampoco acredita cobertura.
+- **Pruebas:** 107 pass, sin skips; F2d y P-01a corregidos; casos 2a/2c/3a/3b, cero,
+  precedencia, misma fuente con distinta Partida y distinta clase.
+- **Límites:** cobertura global puede seguir `Completa` por otras fuentes; los 59 AC siguen
+  `UNRUN`, DT7 abierto y sin aceptación financiera. QA APTO CON RESERVAS; full CI no
+  completado por flakes ajenos y timeout del job, `required` PASS.
+
+
+## DT7 · M1 aprobado (2026-11-10)
+
+- **Decisión del usuario con Álex**, sobre la referencia vigente
+  **`MyFinanzas2026_v5.11(20261110-134135).xlsx`** (2026-11-10; relación con `v5.11(7)` no acreditada; hash y referencia por año `UNRUN`):
+  histórico **2023–2026**; primer ejercicio **2023**; **2019–2022 excluidos por alcance**
+  (no por ausencia de datos); posteriores a 2026 fuera del histórico.
+- **Límites:** la inclusión no acredita cobertura anual ni importes. 2023–2025 son histórico
+  parcial y 2026 transición. M2 verificará Partidas/fuentes/intervalos; M5 la regularización
+  2026; M8 las aperturas de Saldos de forma independiente de M1 (depende del inventario M2). **No se borra nada del Excel** y
+  no se declara `estadoUniverso=Acreditado`.
+- **Siguiente paso:** M2 de 2023 con metadatos estructurales (Partidas, fuentes,
+  `intervaloEsperado`, mapping por campo/ID y conciliación en privado), sin importes en el
+  repositorio. Criterios `DT7-EV-M2-01…04`; plantilla material `UNRUN`.
+- **Registro M1:** [hoja de decisiones](investigations/dt7-decision-sheet-2026-11-10.md)
+  y [addendum del cierre](investigations/dt7-decision-closure-2026-11-05.md).
+- **Sigue abierto:** M2/M5/M8, E45-A2 (M2/M8), designación de revisor (M12), P6/P7 (M13),
+  DT6 y los 59 AC de E4.5 `UNRUN`.

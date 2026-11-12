@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Behavioral checks for the local evidence validator."""
+import json
 import os
 from pathlib import Path
 import shutil
@@ -133,6 +134,327 @@ class EvidenceTests(unittest.TestCase):
                       '--log', f'baseline={self.baseline}', '--record', str(self.home / 'missing.md'))):
             result = self.check(*args)
             self.assertNotEqual(result.returncode, 0, result.stdout)
+
+
+class EquivalenceTests(unittest.TestCase):
+    """QA credit by reviewed-tree equivalence and real GitHub evidence."""
+
+    REPOSITORY = 'jmartinlabs/myfinanzas-app'
+
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.home = Path(temp.name)
+        self.root = self.home / 'repo'
+        self.root.mkdir()
+        self.git('init', '-q', '--initial-branch=main')
+        self.git('config', 'user.name', 'Fixture')
+        self.git('config', 'user.email', 'fixture@example.invalid')
+        self.git('config', 'commit.gpgsign', 'false')
+        self.git('config', 'gc.auto', '0')
+        self.git('config', 'maintenance.auto', 'false')
+        self.write('app.txt', 'v1\n')
+        self.base = self.commit('base')
+        self.bin = self.home / 'bin'
+        self.bin.mkdir()
+        fake = self.bin / 'gh'
+        fake.write_text(
+            '#!' + sys.executable + '\n'
+            'import json, os, sys\n'
+            'args = sys.argv[1:]\n'
+            'endpoint = args[1] if len(args) > 1 else ""\n'
+            'data = json.loads(os.environ.get("FAKE_GH_DATA", "{}"))\n'
+            'if endpoint not in data:\n'
+            '    print("gh: not found", file=sys.stderr)\n'
+            '    sys.exit(1)\n'
+            'json.dump(data[endpoint], sys.stdout)\n', encoding='utf-8')
+        fake.chmod(0o755)
+        self.data = {}
+
+    def git(self, *args):
+        return subprocess.check_output(['git', '-C', str(self.root), *args],
+                                       stderr=subprocess.PIPE).decode().strip()
+
+    def attempt(self, *args):
+        return subprocess.run(['git', '-C', str(self.root), *args], text=True,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    def write(self, name, text):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding='utf-8')
+
+    def commit(self, message='change'):
+        self.git('add', '.')
+        self.git('commit', '-qm', message)
+        return self.git('rev-parse', 'HEAD')
+
+    def feature(self, *changes):
+        self.git('checkout', '-qb', 'feature')
+        commits = []
+        for name, text in changes:
+            self.write(name, text)
+            commits.append(self.commit(name))
+        return commits
+
+    def merge(self, branch='feature'):
+        self.git('checkout', '-q', 'main')
+        self.git('merge', '--no-ff', '-m', 'merge ' + branch, branch)
+        return self.git('rev-parse', 'HEAD')
+
+    def fake(self, endpoint, payload):
+        self.data[endpoint] = payload
+
+    def bind(self, reviewed, head=None, pr=7, state='COMMENTED', body='QA independiente qa=APTO'):
+        self.fake(f'repos/{self.REPOSITORY}/pulls/{pr}',
+                  {'merged': True, 'head': {'sha': head or reviewed},
+                   'user': {'login': 'pr-author'}})
+        self.fake(f'repos/{self.REPOSITORY}/pulls/{pr}/reviews/1',
+                  {'commit_id': reviewed, 'state': state, 'body': body,
+                   'user': {'login': 'qa-reviewer'}})
+        return f'https://github.com/{self.REPOSITORY}/pull/{pr}#pullrequestreview-1'
+
+    def check(self, integration, reviewed, evidence, pr=7):
+        env = {**os.environ, 'PATH': str(self.bin) + os.pathsep + os.environ['PATH'],
+               'FAKE_GH_DATA': json.dumps(self.data)}
+        return subprocess.run([sys.executable, str(CHECK), '--root', str(self.root),
+                               '--qa-equivalence', '--integration', integration,
+                               '--reviewed', reviewed, '--repository', self.REPOSITORY,
+                               '--pr', str(pr), '--evidence', evidence],
+                              text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              env=env)
+
+    def assertPass(self, result, mode):
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn('QA equivalence PASS', result.stdout)
+        self.assertIn('mode=' + mode, result.stdout)
+        self.assertIn('qa_reference=reviewed=', result.stdout)
+
+    def assertFail(self, result, message):
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn(message, result.stdout)
+
+    def test_identical_tree_reuses_reviewed_qa(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, self.bind(reviewed))
+        self.assertPass(result, 'tree')
+        self.assertIn('evidence_author=qa-reviewer', result.stdout)
+
+    def test_merge_commit_onto_advanced_base_reuses_qa(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        integration = self.merge()
+        self.assertNotEqual(self.git('rev-parse', integration + '^{tree}'),
+                            self.git('rev-parse', reviewed + '^{tree}'))
+        self.assertPass(self.check(integration, reviewed, self.bind(reviewed)), 'merge')
+
+    def test_squash_merge_reuses_qa(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('merge', '--squash', 'feature')
+        integration = self.commit('squash')
+        self.assertNotEqual(self.git('rev-parse', integration + '^{tree}'),
+                            self.git('rev-parse', reviewed + '^{tree}'))
+        self.assertPass(self.check(integration, reviewed, self.bind(reviewed)), 'merge')
+
+    def test_rebase_merge_reuses_qa(self):
+        first, reviewed = self.feature(('app.txt', 'v2\n'), ('specs/a.md', 'a\n'))
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('checkout', '-qb', 'rebased', 'main')
+        self.git('cherry-pick', first, reviewed)
+        integration = self.git('rev-parse', 'HEAD')
+        self.assertPass(self.check(integration, reviewed, self.bind(reviewed)), 'merge')
+
+    def test_conflict_resolution_requires_new_qa(self):
+        reviewed = self.feature(('app.txt', 'v3\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('app.txt', 'v2\n')
+        self.commit('other')
+        self.assertNotEqual(self.attempt('merge', '--no-ff', '-m', 'conflict',
+                                         'feature').returncode, 0)
+        self.write('app.txt', 'v2+v3\n')
+        self.git('add', 'app.txt')
+        self.git('commit', '-qm', 'resolve')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'requires new independent QA')
+
+    def test_missing_reviewed_commit_is_rejected(self):
+        missing = '0' * 40
+        result = self.check(self.git('rev-parse', 'HEAD'), missing, self.bind(missing))
+        self.assertFail(result, 'reviewed commit is unavailable')
+
+    def test_arbitrary_evidence_url_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, 'https://example.com/qa')
+        self.assertFail(result, 'https://github.com URL')
+
+    def test_evidence_from_another_repository_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.bind(reviewed)
+        evidence = 'https://github.com/other/repo/pull/7#pullrequestreview-1'
+        result = self.check(reviewed, reviewed, evidence)
+        self.assertFail(result, 'belongs to another repository')
+
+    def test_evidence_url_must_match_the_declared_pr(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.bind(reviewed)
+        evidence = f'https://github.com/{self.REPOSITORY}/pull/99#pullrequestreview-1'
+        result = self.check(reviewed, reviewed, evidence)
+        self.assertFail(result, 'does not belong to the declared pull request')
+
+    def test_evidence_for_another_commit_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, self.bind(self.base))
+        self.assertFail(result, 'does not belong to the reviewed commit')
+
+    def test_evidence_lookup_failure_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        evidence = self.bind(reviewed)
+        del self.data[f'repos/{self.REPOSITORY}/pulls/7/reviews/1']
+        self.assertFail(self.check(reviewed, reviewed, evidence), 'lookup failed')
+
+    def test_unmerged_pr_or_foreign_commit_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        evidence = self.bind(reviewed)
+        self.fake(f'repos/{self.REPOSITORY}/pulls/7',
+                  {'merged': False, 'head': {'sha': reviewed}})
+        self.assertFail(self.check(reviewed, reviewed, evidence), 'is not merged')
+        self.fake(f'repos/{self.REPOSITORY}/pulls/7',
+                  {'merged': True, 'head': {'sha': self.base}})
+        self.assertFail(self.check(reviewed, reviewed, evidence),
+                        'not part of the declared pull request')
+
+    def test_commit_comment_evidence_is_accepted(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        evidence = f'https://github.com/{self.REPOSITORY}/commit/{reviewed}#commitcomment-9'
+        self.fake(f'repos/{self.REPOSITORY}/comments/9',
+                  {'commit_id': reviewed, 'body': 'QA independiente qa=APTO',
+                   'user': {'login': 'qa-reviewer'}})
+        self.bind(reviewed)
+        self.assertPass(self.check(reviewed, reviewed, evidence), 'tree')
+
+    def test_issue_comment_must_name_the_reviewed_commit(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        evidence = f'https://github.com/{self.REPOSITORY}/pull/7#issuecomment-5'
+        self.bind(reviewed)
+        self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
+                  {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
+                   'body': 'QA independiente APTO', 'user': {'login': 'qa-reviewer'}})
+        self.assertFail(self.check(reviewed, reviewed, evidence), 'must declare qa=APTO')
+        self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
+                  {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
+                   'body': 'qa=APTO', 'user': {'login': 'qa-reviewer'}})
+        self.assertFail(self.check(reviewed, reviewed, evidence), 'must name the reviewed commit')
+        self.fake(f'repos/{self.REPOSITORY}/issues/comments/5',
+                  {'issue_url': f'https://api.github.com/repos/{self.REPOSITORY}/issues/7',
+                   'body': 'qa=APTO reviewed=' + reviewed,
+                   'user': {'login': 'qa-reviewer'}})
+        self.assertPass(self.check(reviewed, reviewed, evidence), 'tree')
+
+    def test_unpublished_review_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, self.bind(reviewed, state='PENDING'))
+        self.assertFail(result, 'must be published as APPROVED or COMMENTED')
+
+    def test_reviewed_commit_already_in_integration_base_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.merge()
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'already contained in the integration base')
+
+    def test_extra_change_after_squash_requires_new_qa(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('merge', '--squash', 'feature')
+        self.commit('squash')
+        self.write('extra.txt', 'extra\n')
+        integration = self.commit('extra')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'requires new independent QA')
+
+    def test_empty_integration_commit_after_squash_is_rejected(self):
+        reviewed, head = self.feature(('app.txt', 'v2\n'), ('secret.txt', 'unreviewed\n'))
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('merge', '--squash', 'feature')
+        self.commit('squash')
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed, head=head))
+        self.assertFail(result, 'does not change the tree')
+
+    def test_empty_integration_commit_after_rebase_is_rejected(self):
+        reviewed, head = self.feature(('app.txt', 'v2\n'), ('secret.txt', 'unreviewed\n'))
+        self.git('checkout', '-q', 'main')
+        self.write('other.txt', 'other\n')
+        self.commit('other')
+        self.git('checkout', '-qb', 'rebased', 'main')
+        self.git('cherry-pick', reviewed, head)
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed, head=head))
+        self.assertFail(result, 'does not change the tree')
+
+    def test_review_comment_must_belong_to_the_declared_pr(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        evidence = f'https://github.com/{self.REPOSITORY}/pull/7#discussion_r3'
+        self.bind(reviewed)
+        self.fake(f'repos/{self.REPOSITORY}/pulls/comments/3',
+                  {'pull_request_url': f'https://api.github.com/repos/{self.REPOSITORY}/pulls/99',
+                   'commit_id': reviewed, 'body': 'qa=APTO',
+                   'user': {'login': 'qa-reviewer'}})
+        result = self.check(reviewed, reviewed, evidence)
+        self.assertFail(result, 'does not belong to the declared pull request')
+
+    def test_tree_identity_with_reviewed_in_parent_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.git('merge', '--ff-only', 'feature')
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'already contained in the integration base')
+
+    def test_tree_identity_without_tree_change_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        self.git('checkout', '-q', 'main')
+        self.git('cherry-pick', '-x', reviewed)
+        self.git('commit', '--allow-empty', '-qm', 'empty')
+        integration = self.git('rev-parse', 'HEAD')
+        result = self.check(integration, reviewed, self.bind(reviewed))
+        self.assertFail(result, 'does not change the tree')
+
+    def test_review_without_favourable_verdict_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed,
+                            self.bind(reviewed, body='revisado sin veredicto'))
+        self.assertFail(result, 'must be APPROVED or declare qa=APTO')
+
+    def test_negative_verdict_is_rejected(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed, self.bind(reviewed, body='qa=NO APTO'))
+        self.assertFail(result, 'must be APPROVED or declare qa=APTO')
+
+    def test_approved_review_without_body_is_accepted(self):
+        reviewed = self.feature(('app.txt', 'v2\n'))[0]
+        result = self.check(reviewed, reviewed,
+                            self.bind(reviewed, state='APPROVED', body=''))
+        self.assertPass(result, 'tree')
 
 
 if __name__ == '__main__':

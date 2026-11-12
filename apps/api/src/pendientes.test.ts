@@ -886,7 +886,7 @@ test("AC-18/AC-20: filtros por defecto, 422 contradictorio, claves efímeras y c
     expect(
       db
         .query(
-          "SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name LIKE '%pendiente%'",
+          "SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name LIKE '%pendiente%' AND name NOT LIKE 'transferencia_pendiente%'",
         )
         .get(),
     ).toEqual({ n: 0 });

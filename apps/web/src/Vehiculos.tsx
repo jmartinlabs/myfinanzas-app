@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  focusFirstInvalidField,
+  type TableColumn,
+} from "./ui";
 
 type Reference = {
   id: string;
@@ -547,7 +558,7 @@ function VehicleList({ go }: { go: (p: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="vehiculos-page">
       <PageHead
         eyebrow="E3.3 · VEHÍCULOS"
         title="Vehículos"
@@ -650,7 +661,7 @@ function VehicleList({ go }: { go: (p: string) => void }) {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 function VehicleDetail({ id, go }: { id: string; go: (p: string) => void }) {
@@ -681,7 +692,7 @@ function VehicleDetail({ id, go }: { id: string; go: (p: string) => void }) {
   }, [id, year, retry]);
   const canEdit = view?.ficha && view.integridad.estado === "OK";
   return (
-    <>
+    <div className="vehicle-detail-page">
       <button className="text-button" onClick={() => go(base)}>
         Volver a Vehículos
       </button>
@@ -786,7 +797,7 @@ function VehicleDetail({ id, go }: { id: string; go: (p: string) => void }) {
           <AuditPanel view={view} />
         </>
       )}
-    </>
+    </div>
   );
 }
 function CandidateList({
@@ -864,7 +875,8 @@ export function VehicleForm({
     [conflict, setConflict] = useState(false),
     [loadRetry, setLoadRetry] = useState(0),
     key = useRef(crypto.randomUUID()),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (!target) return;
     let live = true;
@@ -914,8 +926,11 @@ export function VehicleForm({
     };
   }, [editing, converting, id, conversionId, target, loadRetry]);
   useEffect(() => {
-    if (warning || error) alert.current?.focus();
-  }, [warning, error]);
+    if (!warning && !error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
+  }, [warning, error, fields]);
   function invalidate() {
     setWarning(null);
     setConfirmedName(false);
@@ -999,7 +1014,6 @@ export function VehicleForm({
         setFields(err.fields ?? {});
         setConflict(err.status === 409);
       }
-      requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
     }
@@ -1028,7 +1042,7 @@ export function VehicleForm({
       </>
     );
   return (
-    <>
+    <div className="vehicle-form-page">
       <PageHead
         eyebrow={
           converting
@@ -1079,6 +1093,9 @@ export function VehicleForm({
             Solo si no tiene ficha y no tiene hechos. Una Referencia usada queda
             bloqueada por E1.5.
           </p>
+          {/* Confirmación de fila (label.checkbox): no es un campo con error
+              propio ni recibe `fields`; su único error es el bloque de alerta
+              del formulario, que conserva el foco de respaldo. */}
           <label className="checkbox">
             <input
               type="checkbox"
@@ -1094,48 +1111,47 @@ export function VehicleForm({
       )}
       <form
         noValidate
+        ref={formRef}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
         className="saldo-form"
       >
-        <section className="panel">
-          <h2>Identificación</h2>
+        <FormSection title="Identificación">
           {target && <p>ID inmutable: {target}</p>}
-          <div className="form-grid">
-            <label>
-              Nombre *
+          <FormGrid>
+            <Field id="nombre" label="Nombre *" error={fields.nombre}>
               <input
                 aria-label="Nombre del vehículo *"
                 maxLength={120}
                 value={name}
-                aria-invalid={!!fields.nombre}
                 onChange={(e) => {
                   setName(e.target.value);
                   invalidate();
                 }}
               />
-              {fields.nombre && <span className="field-error">{fields.nombre}</span>}
-            </label>
-            <label>
-              Matrícula (opcional)
+            </Field>
+            <Field
+              id="matricula"
+              label="Matrícula (opcional)"
+              error={fields.matricula}
+            >
               <input
                 aria-label="Matrícula del vehículo"
                 maxLength={32}
                 value={registration}
-                aria-invalid={!!fields.matricula}
                 onChange={(e) => {
                   setRegistration(e.target.value);
                   invalidate();
                 }}
               />
-              {fields.matricula && (
-                <span className="field-error">{fields.matricula}</span>
-              )}
-            </label>
-            <label>
-              Próxima ITV (opcional)
+            </Field>
+            <Field
+              id="proximaITV"
+              label="Próxima ITV (opcional)"
+              error={fields.proximaITV}
+            >
               <input
                 type="date"
                 aria-label="Próxima ITV"
@@ -1145,12 +1161,12 @@ export function VehicleForm({
                   invalidate();
                 }}
               />
-              {fields.proximaITV && (
-                <span className="field-error">{fields.proximaITV}</span>
-              )}
-            </label>
-            <label>
-              Cita (opcional)
+            </Field>
+            <Field
+              id="cita"
+              label="Cita (opcional)"
+              error={fields.cita}
+            >
               <input
                 type="date"
                 aria-label="Cita del vehículo"
@@ -1160,15 +1176,14 @@ export function VehicleForm({
                   invalidate();
                 }}
               />
-              {fields.cita && <span className="field-error">{fields.cita}</span>}
-            </label>
-          </div>
+            </Field>
+          </FormGrid>
           <p className="help">
             Fechas en formato dd/mm/aaaa según el selector del navegador. La
             cita puede quedar vacía; las fechas pasadas son válidas. No se
             calcula periodicidad ni se envían avisos. Estado inicial Activa.
           </p>
-        </section>
+        </FormSection>
         {warning && (
           <section className="panel" aria-label="Avisos de duplicado">
             <h2>Duplicados confirmables</h2>
@@ -1228,7 +1243,7 @@ export function VehicleForm({
           </div>
         </div>
       </form>
-    </>
+    </div>
   );
 }
 function VehicleIntegrity({ go }: { go: (p: string) => void }) {
@@ -1252,7 +1267,7 @@ function VehicleIntegrity({ go }: { go: (p: string) => void }) {
     };
   }, [year, retry]);
   return (
-    <>
+    <div className="vehicle-integrity-page">
       <PageHead
         eyebrow="E3.3 · CONTROL"
         title="Integridad de vehículos"
@@ -1351,6 +1366,6 @@ function VehicleIntegrity({ go }: { go: (p: string) => void }) {
           </section>
         </>
       )}
-    </>
+    </div>
   );
 }

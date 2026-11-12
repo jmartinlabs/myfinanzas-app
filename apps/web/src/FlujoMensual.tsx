@@ -192,21 +192,21 @@ function AjusteCompartidosPanel({
         : "-" + euro(rAdj.replace(/^-/, ""));
   return (
     <section className="panel flow-adjusted" aria-labelledby="flow-adjusted">
-      <h2 id="flow-adjusted">Flujo ajustado por Recuperado (E3.6)</h2>
+      <h2 id="flow-adjusted">Flujo ajustado por Recuperado</h2>
       <p className="notice">
-        Vista separada: la base E2.6 no se modifica. <strong>G_n</strong>{" "}
+        Vista separada: la base del plan no se modifica. <strong>G_n</strong>{" "}
         sustituye a <strong>G_b</strong>; nunca se suma el Recuperado como
         segundo gasto. Comida no se resta aquí.
       </p>
       <div className="flow-grid">
         <AjusteIndicator
-          name="Gasto bruto E2.6 (G_b)"
+          name="Gasto bruto del plan (G_b)"
           value={{
             importe: ajuste.base.importe,
             cobertura: ajuste.base.cobertura,
             motivo: ajuste.base.motivo,
           }}
-          note="Base E2.6 conservada; los Gastos centrales se cuentan una vez."
+          note="Base del plan conservada; los Gastos centrales se cuentan una vez."
         />
         <AjusteIndicator
           name="Ajuste por Recuperado (R_adj)"
@@ -228,13 +228,13 @@ function AjusteCompartidosPanel({
           note="G_n = G_b − R_adj. No es coste propio, pendiente ni exceso."
         />
         <AjusteIndicator
-          name="S bruto E2.6"
+          name="S bruto del plan"
           value={{
             importe: flujo?.base.sBruto ?? null,
             cobertura: flujo?.base.cobertura ?? "Parcial",
             motivo:
               flujo?.base.motivo ??
-              "S bruto E2.6 conservado; no se sobrescribe por la vista ajustada.",
+              "S bruto del plan conservado; no se sobrescribe por la vista ajustada.",
           }}
           note="Referencia base; siempre Parcial."
         />
@@ -247,7 +247,7 @@ function AjusteCompartidosPanel({
               flujo?.ajuste.motivo ??
               "Resultado ajustado por Recuperado; no es ahorro real ni caja total.",
           }}
-          note="Derivado y siempre Parcial; no sustituye al S bruto E2.6."
+          note="Derivado y siempre Parcial; no sustituye al S bruto del plan."
         />
         <AjusteIndicator
           name="Memoria de caja: aportaciones cobradas"
@@ -516,9 +516,9 @@ export function FlujoMensual({
   return (
     <>
       <PageHead
-        eyebrow="E2.6 · CONSULTA"
-        title="Flujo mensual base"
-        description="Fuentes y cobertura por indicador. No es un cierre financiero."
+        eyebrow="RESUMEN DEL CICLO"
+        title="Flujo mensual"
+        description="¿Cuánto has ingresado y gastado durante este ciclo? Consulta las fuentes y la cobertura de cada cifra; no es un cierre financiero."
       />
       <section
         className="panel flow-selection"
@@ -637,11 +637,11 @@ export function FlujoMensual({
               className="panel flow-adjusted"
               aria-labelledby="flow-adjusted"
             >
-              <h2 id="flow-adjusted">Flujo ajustado por Recuperado (E3.6)</h2>
+              <h2 id="flow-adjusted">Flujo ajustado por Recuperado</h2>
               <p className="notice">
                 <strong>No disponible — </strong>
                 el servicio no expone el ajuste por Recuperado de Compartidos
-                para este ciclo. La base E2.6 sigue visible y no se sustituye.
+                para este ciclo. La base del plan sigue visible y no se sustituye.
               </p>
             </section>
           )}
@@ -668,7 +668,7 @@ export function FlujoMensual({
             )}
             {!!data.plan.sinPlanificar.length && (
               <p>
-                Sin planificar según E2.3: {data.plan.sinPlanificar.join(", ")}.
+                Sin planificar según el plan del ciclo: {data.plan.sinPlanificar.join(", ")}.
                 No se crean líneas automáticamente.
               </p>
             )}

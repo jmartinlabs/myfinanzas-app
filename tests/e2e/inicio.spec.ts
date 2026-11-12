@@ -22,14 +22,17 @@ const BASE_PORT = 3014;
 const ZERO_PORT = 3015;
 const DEGRADED_PORT = 3016;
 const AUTH_PORT = 3017;
+const CASA_PORT = 3018;
 const BASE_DIR = ".local/e2e-inicio";
 const ZERO_DIR = ".local/e2e-inicio-zero";
 const DEGRADED_DIR = ".local/e2e-inicio-degradado";
 const AUTH_DIR = ".local/e2e-inicio-auth";
+const CASA_DIR = ".local/e2e-inicio-casa";
 let base: ChildProcess | undefined;
 let zero: ChildProcess | undefined;
 let degraded: ChildProcess | undefined;
 let auth: ChildProcess | undefined;
+let casa: ChildProcess | undefined;
 
 async function waitForApi(request: APIRequestContext, port: number) {
   await expect
@@ -80,10 +83,19 @@ test.beforeAll(async ({ request }) => {
       env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "auth" },
     },
   );
+  casa = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "casa" },
+    },
+  );
   await waitForApi(request, BASE_PORT);
   await waitForApi(request, ZERO_PORT);
   await waitForApi(request, DEGRADED_PORT);
   await waitForApi(request, AUTH_PORT);
+  await waitForApi(request, CASA_PORT);
 });
 
 test.afterAll(() => {
@@ -91,6 +103,7 @@ test.afterAll(() => {
   zero?.kill();
   degraded?.kill();
   auth?.kill();
+  casa?.kill();
 });
 
 async function routeApi(page: Page, port: number) {
@@ -105,7 +118,7 @@ async function login(page: Page, dir: string) {
   const password = "Clave ficticia inicio " + randomUUID();
   await page.goto("/inicio");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
@@ -160,6 +173,284 @@ async function expectInicio(page: Page) {
   await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
 }
 
+/** Texto funcional de Inicio que debe leerse a ≥12 px (UI DEV-06 I1). */
+const FUNCTIONAL_TEXT_SELECTOR = [
+  ".inicio-readonly",
+  ".inicio-clase",
+  ".inicio-estado",
+  ".inicio-metric-meta",
+  ".inicio-metric-motivo",
+  ".inicio-source",
+  ".inicio-note",
+  ".inicio-ref-coverage",
+  ".inicio-item-list li",
+  ".inicio-item-meta",
+  ".inicio-item-value",
+  ".inicio-value-note",
+  ".inicio-metric-coverage",
+  ".inicio-zona",
+  ".inicio-context-ref",
+  ".inicio-context-meta",
+  ".inicio-context-facts dt",
+  ".inicio-counts dt",
+  ".inicio-objetivo-facts dt",
+  ".inicio-nd-list dt",
+  ".inicio-detail h4",
+  ".inicio-detail ul",
+  ".inicio-submetric h4",
+  ".inicio-aparte",
+  ".inicio-degradado",
+  ".inicio-coverage-list",
+  ".inicio-motivo",
+  ".ui-metric-class",
+  ".ui-badge",
+  ".ui-amount-note",
+  ".ui-amount-state",
+  ".graphite-kicker",
+  ".graphite-control-meta",
+  ".graphite-control-note",
+  ".graphite-plan-item > span",
+  ".graphite-facts dt",
+  ".graphite-kpi-meta",
+  ".graphite-control-link",
+  ".graphite-cycle-note",
+  ".graphite-cycle-coverage",
+  ".graphite-cycle-detail summary",
+  ".graphite-cycle-detail li > span",
+  ".graphite-rail-meta",
+  ".graphite-rail-empty",
+  ".graphite-rail-alert",
+  ".graphite-objective-facts dt",
+  ".graphite-objective-facts dd",
+  ".graphite-rail-link",
+  ".graphite-position-meta",
+  ".graphite-position-note",
+  ".graphite-position-cell > a",
+  ".graphite-coverage",
+  ".graphite-detail-heading p",
+  "small",
+].join(",");
+
+async function expectInicioFunctionalText(page: Page) {
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = true;
+  });
+  const undersized = await page.locator(".inicio-page").evaluate((root, selector) => {
+    const found: { className: string; text: string; fontSize: number }[] = [];
+    for (const node of Array.from(root.querySelectorAll(selector))) {
+      const element = node as HTMLElement;
+      const style = getComputedStyle(element);
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        !element.offsetParent
+      )
+        continue;
+      if (!(element.textContent ?? "").trim()) continue;
+      const fontSize = Number.parseFloat(style.fontSize);
+      if (fontSize < 12) {
+        found.push({
+          className: element.className,
+          text: (element.textContent ?? "").trim().slice(0, 80),
+          fontSize,
+        });
+      }
+    }
+    return found;
+  }, FUNCTIONAL_TEXT_SELECTOR);
+  expect(undersized).toEqual([]);
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = false;
+  });
+}
+
+async function expectGraphiteComposition(page: Page) {
+  const hero = page.locator('[data-inicio-section="hero"]');
+  const kpis = page.locator('[data-inicio-section="kpis"]');
+  const cycle = page.locator('[data-inicio-section="cycle"]');
+  const rail = page.locator('[data-inicio-section="rail"]');
+  const position = page.locator('[data-inicio-section="position"]');
+  const coverage = page.locator('[data-inicio-section="coverage"]');
+  await expect(hero).toBeVisible();
+  await expect(kpis).toBeVisible();
+  await expect(cycle).toBeVisible();
+  await expect(rail).toBeVisible();
+  await expect(position).toBeVisible();
+  await expect(coverage).toBeVisible();
+
+  // G2a: hero y banda KPI con cifras publicadas.
+  await expect(hero).toContainText("Liquidez disponible");
+  await expect(hero).toContainText("3.456,40 €");
+  await expect(hero).toContainText("3/4");
+  await expect(hero).toContainText("1.800,00 €");
+  await expect(hero).toContainText("1.900,00 €");
+  await expect(hero).toContainText("NO DISPONIBLE");
+  await expect(kpis).toContainText("2.250,00 €");
+  await expect(kpis).toContainText("1.800,00 €");
+  await expect(kpis).toContainText("1.197,50 €");
+  await expect(kpis).toContainText("1.020,00 €");
+  await expect(kpis).toContainText("2/2");
+  await expect(hero).not.toContainText("%");
+  await expect(kpis).not.toContainText("%");
+  await expect(hero.locator(".graphite-hero-margin")).toContainText("ND");
+  await expect(hero.locator(".graphite-hero-margin")).not.toContainText(
+    "0,00 €",
+  );
+  const planItem = (label: string) =>
+    hero.locator(".graphite-plan-item").filter({ hasText: label });
+  await expect(planItem("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(planItem("Del mes planificado")).toContainText("1.900,00 €");
+  const kpi = (label: string) =>
+    kpis.locator(".graphite-kpi").filter({ hasText: label });
+  await expect(kpi("Ingresos del ciclo")).toContainText("2.250,00 €");
+  await expect(kpi("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(kpi("Inversión valorada")).toContainText("1.197,50 €");
+  await expect(kpi("Deuda no hipotecaria")).toContainText("1.020,00 €");
+  const fact = (label: string) =>
+    hero.locator(".graphite-facts > div").filter({ hasText: label });
+  await expect(fact("Ingresos")).toContainText("2.250,00 €");
+  await expect(fact("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(fact("Nómina")).toContainText("2.000,00 €");
+  await expect(fact("Ingresos")).toContainText("PARCIAL");
+
+  // G2b: ciclo publicado; el detalle antiguo se conserva bajo la composición.
+  await expect(
+    page.getByRole("heading", { name: "Métricas publicadas del ciclo" }),
+  ).toBeVisible();
+  await expect(
+    page.locator("section[aria-labelledby='inicio-ciclo']"),
+  ).toHaveCount(1);
+  const cycleRows = cycle.locator(".graphite-cycle-desktop tbody tr");
+  await expect(cycleRows).toHaveCount(8);
+  const row = (label: string) => cycleRows.filter({ hasText: label });
+  await expect(row("Ingresos")).toContainText("2.250,00 €");
+  await expect(row("Ingresos")).toContainText("PARCIAL");
+  await expect(row("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(row("Amortización extraordinaria")).toContainText("100,00 €");
+  await expect(row("Nómina cobrada")).toContainText("2.000,00 €");
+  await expect(row("Saldo operativo bruto observado")).toContainText("ND");
+  await expect(row("Margen frente a nómina real")).toContainText("ND");
+  await expect(row("Base planificada")).toContainText("1.900,00 €");
+  await expect(row("Del mes planificado")).toContainText("1.900,00 €");
+  await expect(row("Base planificada")).toContainText("COMPLETO");
+  await expect(cycle).toContainText("Motivos y fuentes de cada métrica");
+  await expect(cycle).not.toContainText("Ver flujo mensual");
+  await expect(cycle).not.toContainText("%");
+  await expect(hero).toContainText("Ver flujo mensual");
+
+  // G2b: rail de atención y objetivo.
+  await expect(rail).toContainText("Pendientes y cobertura");
+  await expect(rail).toContainText(/\d+ visibles?/);
+  await expect(
+    rail.getByRole("heading", { name: "Coste esencial y meses" }),
+  ).toBeVisible();
+  await expect(rail).toContainText("1.500,00 €");
+  await expect(rail).toContainText("No configurados");
+  await expect(rail).toContainText("Meses cubiertos");
+  await expect(rail).toContainText("Ver Pendientes");
+  await expect(rail).toContainText("Ver coste esencial");
+  await expect(rail).not.toContainText("%");
+
+  // G2b: banda de posición y cobertura publicadas.
+  await expect(position.locator(".graphite-position-value")).toHaveText("7");
+  await expect(position).toContainText("sin total entre vistas");
+  await expect(position).toContainText("Sin total de Ahorro");
+  await expect(position).toContainText("Efectivo del bróker aparte");
+  await expect(position).toContainText("hipotecaria aparte");
+  await expect(position).toContainText("Inversión ·");
+  await expect(position).not.toContainText("%");
+  const positionCell = (label: string) =>
+    position
+      .locator(".graphite-position-cell")
+      .filter({ has: page.locator(".graphite-kicker", { hasText: label }) });
+  const saldosCell = positionCell("Saldos");
+  await expect(saldosCell).toContainText("6/7");
+  await expect(saldosCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Parcial",
+  );
+  const ahorroCell = positionCell("Ahorro");
+  await expect(ahorroCell).toContainText("800,00 €");
+  await expect(ahorroCell).toContainText("COMPLETO");
+  await expect(ahorroCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Verificado",
+  );
+  await expect(ahorroCell).not.toContainText("ND");
+  const inversionCell = positionCell("Inversión valorada");
+  await expect(inversionCell).toContainText("1.197,50 €");
+  await expect(inversionCell).toContainText("COMPLETO");
+  const deudaCell = positionCell("Deuda no hipotecaria");
+  await expect(deudaCell).toContainText("1.020,00 €");
+  await expect(deudaCell).toContainText("PARCIAL");
+  await expect(deudaCell).toContainText("Subtotal conocido");
+  await expect(deudaCell).toContainText("2/3");
+  await expect(deudaCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Parcial",
+  );
+  const coverageCell = positionCell("Cobertura");
+  await expect(coverageCell.locator(".ui-badge")).toHaveAttribute(
+    "data-estado",
+    "Verificado",
+  );
+  await expect(coverageCell).toContainText("Inversión · Completa");
+
+  // Taxonomía única también en la composición Graphite.
+  const graphiteBadges = page.locator(
+    ".inicio-page .ui-badge[data-estado]",
+  );
+  expect(await graphiteBadges.count()).toBeGreaterThan(0);
+  for (const badge of await graphiteBadges.all()) {
+    expect([
+      "Verificado",
+      "Cero verificado",
+      "Parcial",
+      "No disponible",
+      "No aplica",
+      "Sin datos",
+    ]).toContain(await badge.getAttribute("data-estado"));
+    expect((await badge.getAttribute("data-tipo")) ?? "").toBeTruthy();
+  }
+  await expect(coverage).toContainText("Cobertura del modelo");
+  await expect(coverage).toContainText("motivos de contexto");
+  await expect(page.locator(".graphite-detail-heading")).toContainText(
+    "Información completa",
+  );
+  for (const section of [
+    "inicio-saldos",
+    "inicio-ahorro",
+    "inicio-inversion",
+    "inicio-deuda",
+    "inicio-objetivo",
+  ])
+    await expect(
+      page.locator(`section[aria-labelledby='${section}']`),
+    ).toBeVisible();
+  await expect(page.locator("#inicio-cobertura")).toBeVisible();
+
+  // Los drill-down usan rutas publicadas sin importes.
+  const hrefs = await page
+    .locator(".inicio-page [data-inicio-section] a")
+    .evaluateAll((anchors) =>
+      anchors.map((anchor) => anchor.getAttribute("href") ?? ""),
+    );
+  expect(hrefs).toContain("/flujo-mensual?ciclo=7");
+  expect(hrefs).toContain("/saldos");
+  expect(hrefs).toContain("/inversiones");
+  expect(hrefs).toContain("/deudas");
+  expect(hrefs).toContain("/pendientes");
+  for (const href of hrefs)
+    expect(href).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
+}
+
+async function gridColumnCount(page: Page, selector: string) {
+  return page.locator(selector).evaluate((element) => {
+    const columns = getComputedStyle(element).gridTemplateColumns;
+    return columns.split(/\s+/).filter(Boolean).length;
+  });
+}
+
 async function drillDown(page: Page, link: Locator, url: RegExp) {
   await link.click();
   await expect(page).toHaveURL(url);
@@ -188,7 +479,7 @@ async function expectInicioContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase,.graphite-kicker,.graphite-plan-item > span,.graphite-facts dt,.graphite-kpi-meta,.graphite-control-note,.graphite-control-link,.graphite-cycle-coverage,.ui-data-list-label",
       ),
     );
     const result: number[] = [];
@@ -231,6 +522,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   page,
 }) => {
   mkdirSync("artifacts/e4-6", { recursive: true });
+  mkdirSync("artifacts/dev-06", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page, BASE_PORT);
@@ -350,7 +642,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   }
 
   // Taxonomía única: los badges no muestran estados crudos en minúsculas.
-  const badges = page.locator(".ui-badge");
+  const badges = page.locator(".ui-badge[data-estado]");
   expect(await badges.count()).toBeGreaterThan(0);
   for (const badge of await badges.all()) {
     expect([
@@ -427,7 +719,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
 
   // AC-09: enlaces reales y sin importes en la URL.
   const hrefs = await page
-    .locator(".inicio-page a")
+    .locator(".inicio-page section.panel a")
     .evaluateAll((anchors) => anchors.map((anchor) => anchor.getAttribute("href") ?? ""));
   expect(hrefs).toContain("/saldos");
   expect(hrefs).toContain("/flujo-mensual?ciclo=7");
@@ -497,7 +789,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   });
   expect(outlined).toBe(true);
 
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   const expectNoOverflow = async () =>
     expect(
       await page.evaluate(
@@ -505,8 +797,44 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
       ),
     ).toBe(true);
 
+  // UI DEV-06 I1: rejilla 4/2/1, texto funcional ≥12 px y coste R6 como
+  // lectura principal por encima de sus submétricas.
+  await expectInicioFunctionalText(page);
+  for (const [width, four, two, metric] of [
+    [1440, 4, 2, 2],
+    [900, 2, 2, 2],
+    [390, 1, 1, 1],
+  ] as const) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(await gridColumnCount(page, ".inicio-grid-4")).toBe(four);
+    expect(await gridColumnCount(page, ".inicio-grid-2")).toBe(two);
+    expect(await gridColumnCount(page, ".inicio-metric-grid")).toBe(metric);
+    await expectNoOverflow();
+    await expectInicioFunctionalText(page);
+  }
+  const objetivoSizes = await page.evaluate(() => {
+    const fontSize = (selector: string) => {
+      const node = document.querySelector(selector);
+      return node ? Number.parseFloat(getComputedStyle(node).fontSize) : 0;
+    };
+    return {
+      coste: fontSize(
+        ".inicio-objetivo > .ui-metric-main .ui-amount-value",
+      ),
+      submetrica: fontSize(".inicio-submetric .ui-amount-value"),
+    };
+  });
+  expect(objetivoSizes.coste).toBeGreaterThan(objetivoSizes.submetrica);
+  expect(objetivoSizes.submetrica).toBeGreaterThanOrEqual(12);
+
   await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+    "casa",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -514,19 +842,38 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    await expect(
+      page.locator("section[aria-labelledby='inicio-ciclo']"),
+    ).toHaveCount(1);
+    await expectGraphiteComposition(page);
+    await expectInicioFunctionalText(page);
     // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
     await resetScroll(page);
+    if (theme === "graphite-lime")
+      await page.screenshot({
+        path: "artifacts/e4-6/inicio-graphite-lime-1440-fold.png",
+      });
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-1440.png`,
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: `artifacts/dev-06/inicio-${theme}-1440.png`,
       fullPage: true,
     });
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+  for (const theme of [
+    "light-s",
+    "dark-s",
+    "hybrid-s",
+    "graphite-lime",
+    "casa",
+  ] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
@@ -534,6 +881,13 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expectNoOverflow();
     await expectInicioContrast(page);
     await expectNoOverflow();
+    await expect(
+      page.locator("section[aria-labelledby='inicio-ciclo']"),
+    ).toHaveCount(1);
+    await expectGraphiteComposition(page);
+    await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
+    await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
+    await expectInicioFunctionalText(page);
     await page.locator(".inicio-page details").evaluateAll((nodes) => {
       for (const node of nodes) (node as HTMLDetailsElement).open = false;
     });
@@ -542,7 +896,32 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
       path: `artifacts/e4-6/inicio-${theme}-390.png`,
       fullPage: true,
     });
+    await page.screenshot({
+      path: `artifacts/dev-06/inicio-${theme}-390.png`,
+      fullPage: true,
+    });
   }
+
+  await page.setViewportSize({ width: 820, height: 1000 });
+  await select.selectOption("graphite-lime");
+  await expectGraphiteComposition(page);
+  await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
+  await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
+  await expect(page.locator(".graphite-cycle-cards .ui-data-list-item")).toHaveCount(
+    8,
+  );
+  await expectNoOverflow();
+  await expectInicioContrast(page);
+  await expectInicioFunctionalText(page);
+  await page.screenshot({
+    path: "artifacts/e4-6/inicio-graphite-lime-820.png",
+    fullPage: true,
+  });
+  await page.screenshot({
+    path: "artifacts/dev-06/inicio-graphite-lime-820.png",
+    fullPage: true,
+  });
+
   await page.setViewportSize({ width: 1440, height: 1000 });
   expect(errors).toEqual([]);
 });
@@ -551,8 +930,10 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   page,
 }) => {
   mkdirSync("artifacts/e4-6", { recursive: true });
+  mkdirSync("artifacts/dev-06", { recursive: true });
   await routeApi(page, ZERO_PORT);
   await login(page, ZERO_DIR);
+  await expectInicioFunctionalText(page);
 
   const liquidez = page.getByRole("article", { name: "Liquidez", exact: true });
   await expect(liquidez).toContainText("0,00 €");
@@ -584,7 +965,7 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   await expect(deudaTotal).toContainText("Subtotal conocido");
 
   // Evidencia: tres temas a 1440 y 390, también en el escenario cero.
-  const select = page.getByLabel("Tema visual");
+  const select = page.getByLabel("Apariencia");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);
@@ -599,11 +980,18 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      if (width === 390 && theme === "light-s")
+        await expectInicioFunctionalText(page);
       await resetScroll(page);
       await page.screenshot({
         path: `artifacts/e4-6/inicio-cero-${theme}-${width}.png`,
         fullPage: true,
       });
+      if (width === 390)
+        await page.screenshot({
+          path: `artifacts/dev-06/inicio-cero-${theme}-390.png`,
+          fullPage: true,
+        });
     }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -613,6 +1001,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
   page,
 }) => {
   mkdirSync("artifacts/e4-6", { recursive: true });
+  mkdirSync("artifacts/dev-06", { recursive: true });
   await routeApi(page, DEGRADED_PORT);
   await page.route("**/api/resumen-inicio", async (route) => {
     const url = new URL(route.request().url());
@@ -667,6 +1056,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
     });
   });
   await login(page, DEGRADED_DIR);
+  await expectInicioFunctionalText(page);
 
   const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
   await expect(deuda).toContainText("Bloque no disponible por fallo de fuente");
@@ -695,8 +1085,30 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
     for (const node of nodes) (node as HTMLDetailsElement).open = false;
   });
 
+  // Graphite: un fallo de fuente no se presenta como bloque vacío.
+  const select = page.getByLabel("Apariencia");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await select.selectOption("graphite-lime");
+  const railDegradado = page.locator('[data-inicio-section="rail"]');
+  await expect(railDegradado).toContainText(
+    "Hay fuentes de pendientes con fallo",
+  );
+  await expect(railDegradado).not.toContainText("Sin pendientes visibles");
+  const posicionDegradada = page.locator('[data-inicio-section="position"]');
+  await expect(posicionDegradada).toContainText("NO DISPONIBLE");
+  await expect(posicionDegradada).not.toContainText("0,00 €");
+  await expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await resetScroll(page);
+  await page.screenshot({
+    path: "artifacts/e4-6/inicio-degradado-graphite-lime-1440.png",
+    fullPage: true,
+  });
+
   // Evidencia: tres temas a 1440 y 390, también en el escenario degradado.
-  const select = page.getByLabel("Tema visual");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);
@@ -711,11 +1123,18 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      if (width === 390 && theme === "light-s")
+        await expectInicioFunctionalText(page);
       await resetScroll(page);
       await page.screenshot({
         path: `artifacts/e4-6/inicio-degradado-${theme}-${width}.png`,
         fullPage: true,
       });
+      if (width === 390)
+        await page.screenshot({
+          path: `artifacts/dev-06/inicio-degradado-${theme}-390.png`,
+          fullPage: true,
+        });
     }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -725,6 +1144,7 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   page,
 }) => {
   await routeApi(page, AUTH_PORT);
+  mkdirSync("artifacts/dev-06", { recursive: true });
   const credentials = await login(page, AUTH_DIR);
   await expectInicio(page);
 
@@ -784,6 +1204,25 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   );
   await expect(page.locator(".cycle-context")).toContainText("Referencia financiera");
 
+  // El estado 401 conserva el texto funcional legible y no desborda a 390.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  const alertFontSize = await page
+    .locator(".alert")
+    .filter({ hasText: "no se muestran importes" })
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  expect(alertFontSize).toBeGreaterThanOrEqual(12);
+  await resetScroll(page);
+  await page.screenshot({
+    path: "artifacts/dev-06/inicio-401-390.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
   await page.unroute("**/api/resumen-inicio");
   await page
     .getByRole("button", { name: "Volver a iniciar sesión" })
@@ -794,6 +1233,58 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   await expect(
     page.getByRole("article", { name: "Liquidez", exact: true }),
   ).toContainText("3.456,40 €");
+});
+
+test("Casa: misma composición de Inicio que el resto de apariencias", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/ui-casa-1b", { recursive: true });
+  await routeApi(page, CASA_PORT);
+  await login(page, CASA_DIR);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  const select = page.getByLabel("Apariencia");
+  await select.selectOption("casa");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
+  await expect(page.locator(".inicio-page")).toHaveClass(/inicio-casa/);
+
+  const shared = page.locator(".inicio-page .graphite-control");
+  const kpis = page.locator(".inicio-page .graphite-kpis");
+  await expect(shared).toBeVisible();
+  await expect(kpis).toBeVisible();
+  await expect(page.locator(".casa-cover")).toHaveCount(0);
+  await expect(page.locator(".inicio-page .page-head h1")).toHaveCSS(
+    "font-family",
+    /Newsreader/,
+  );
+  await expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: "artifacts/ui-casa-1b/inicio-casa-1440.png",
+    fullPage: true,
+  });
+
+  await select.selectOption("light-s");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light-s");
+  await expect(shared).toBeVisible();
+  await expect(kpis).toBeVisible();
+  await select.selectOption("casa");
+  await expect(shared).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  await page.screenshot({
+    path: "artifacts/ui-casa-1b/inicio-casa-390.png",
+    fullPage: true,
+  });
+  expect(errors).toEqual([]);
 });
 
 test("AC-27: acceso anónimo 401 y respuesta no-store", async ({ request }) => {

@@ -464,7 +464,7 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="inversiones-page">
       <PageHead
         eyebrow="E4.1 · INVERSIONES"
         title="Inversiones"
@@ -569,7 +569,7 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }
 function InstrumentDetail({
@@ -720,7 +720,7 @@ function InstrumentDetail({
       : column,
   );
   return (
-    <>
+    <div className="inversion-detail-page">
       <a
         className="back"
         href={BASE}
@@ -731,7 +731,6 @@ function InstrumentDetail({
       >
         ‹ Volver
       </a>
-      <Tabs active="instrumentos" go={go} />
       <PageHead
         eyebrow={`${instrumento.id} · INSTRUMENTO`}
         title={instrumento.nombre}
@@ -938,7 +937,7 @@ function InstrumentDetail({
           </ul>
         )}
       </section>
-    </>
+    </div>
   );
 }
 function InstrumentForm({
@@ -1029,7 +1028,7 @@ function InstrumentForm({
   }
   if (!loaded) return <p role="status">Cargando instrumento…</p>;
   return (
-    <>
+    <div className="inversion-form-page">
       <a
         className="back"
         href={id ? `${BASE}/instrumentos/${id}` : BASE}
@@ -1127,7 +1126,7 @@ function InstrumentForm({
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }
 function PurchaseList({ go }: { go: (path: string) => void }) {
@@ -1266,7 +1265,7 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="compras-page">
       <PageHead
         eyebrow="E4.1 · INVERSIONES"
         title="Compras de inversión"
@@ -1410,7 +1409,7 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }
 function PurchaseFields({
@@ -1766,7 +1765,7 @@ function PurchaseForm({
   if (!loaded) return <p role="status">Cargando compra…</p>;
   const noCash = options && options.saldosEfectivo.length === 0;
   return (
-    <>
+    <div className="compra-form-page">
       <a
         className="back"
         href={rectifying ? `${BASE}/compras/${id}` : `${BASE}/compras`}
@@ -1867,7 +1866,7 @@ function PurchaseForm({
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 }
 function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) {
@@ -1888,7 +1887,7 @@ function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) 
   if (!data) return <p role="status">Cargando compra…</p>;
   const compra = data.compra as Compra;
   return (
-    <>
+    <div className="compra-detail-page">
       <a
         className="back"
         href={BASE + "/compras"}
@@ -1998,15 +1997,34 @@ function PurchaseDetail({ id, go }: { id: string; go: (path: string) => void }) 
           </ul>
         )}
       </section>
-    </>
+    </div>
   );
 }
+export function AnnulPurchaseMotivo({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+}) {
+  return (
+    <Field id="motivo" label="Motivo *" error={error}>
+      <input value={value} onChange={onChange} required />
+    </Field>
+  );
+}
+
 function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
   const [data, setData] = useState<any>(null),
     [impact, setImpactState] = useState<Impact | null>(null),
     [motivo, setMotivo] = useState(""),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [fields, setFields] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(false),
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLElement>(null);
   useEffect(() => {
     let live = true;
     api(`/compras/${id}`)
@@ -2027,10 +2045,18 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
         }),
       );
     } catch (value) {
-      setError((value as Error).message);
+      fail(value);
     } finally {
       setBusy(false);
     }
+  }
+  function fail(value: unknown) {
+    const apiError = value as ApiError;
+    setError(apiError.message);
+    setFields(apiError.fields ?? {});
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
   }
   async function confirm() {
     if (!data || !motivo.trim()) return;
@@ -2042,7 +2068,7 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
       });
       go(`${BASE}/compras/${result.compra.id}`);
     } catch (value) {
-      setError((value as Error).message);
+      fail(value);
     } finally {
       setBusy(false);
     }
@@ -2052,7 +2078,7 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
   if (data.compra.estado !== "Vigente")
     return <Alert>La Compra ya está anulada; no se puede rectificar.</Alert>;
   return (
-    <>
+    <div className="compra-annul-page">
       <a
         className="back"
         href={`${BASE}/compras/${id}`}
@@ -2069,20 +2095,22 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
         title="Anular compra"
         description="El registro se conserva como Anulada; no se borra"
       />
-      {error && <Alert>{error}</Alert>}
+      {error && (
+        <div ref={alert} tabIndex={-1} className="focus-alert">
+          <Alert>{error}</Alert>
+        </div>
+      )}
       {impact && <ImpactPanel impact={impact} />}
-      <section className="panel">
-        <label>
-          Motivo *
-          <input
-            value={motivo}
-            onChange={(event) => {
-              setMotivo(event.target.value);
-              setError("");
-            }}
-            required
-          />
-        </label>
+      <section className="panel" ref={formRef}>
+        <AnnulPurchaseMotivo
+          value={motivo}
+          error={fields.motivo}
+          onChange={(event) => {
+            setMotivo(event.target.value);
+            setError("");
+            setFields((current) => ({ ...current, motivo: "" }));
+          }}
+        />
         <p className="help">
           Revisión actual {data.compra.revision} → se guardará{" "}
           {data.compra.revision + 1}. La Compra anulada deja de computar en
@@ -2104,6 +2132,6 @@ function AnnulPurchase({ id, go }: { id: string; go: (path: string) => void }) {
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }

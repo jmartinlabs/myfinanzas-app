@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 
 export const VALORACION_BASE = "/inversiones/valoracion";
 
@@ -1397,7 +1408,14 @@ function ValuationForm({
     [busy, setBusy] = useState(false),
     [retry, setRetry] = useState(0),
     attempt = useRef(crypto.randomUUID()),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
+  }, [error]);
   useEffect(() => {
     if (!rectifying || !id) return;
     let live = true;
@@ -1537,7 +1555,6 @@ function ValuationForm({
     setOverwrite(false);
     if (apiError.code === "REVISION_CONFLICT" && rectifying)
       void loadConflict();
-    requestAnimationFrame(() => alert.current?.focus());
   }
   function discardAndReload() {
     if (!conflict) return;
@@ -1701,10 +1718,14 @@ function ValuationForm({
           </Alert>
         </div>
       )}
-      <form className="saldo-form" onSubmit={submit} noValidate>
-        <section className="panel">
-          <h2>Datos de la valoración</h2>
-          <div className="form-grid">
+      <form
+        className="saldo-form"
+        onSubmit={submit}
+        noValidate
+        ref={formRef}
+      >
+        <FormSection title="Datos de la valoración">
+          <FormGrid>
             <div className="valoracion-readonly full-width">
               <span className="help">Posición</span>
               <strong>
@@ -1726,6 +1747,8 @@ function ValuationForm({
                   value="Manual"
                   checked={tipo === "Manual"}
                   onChange={() => change("tipo", "Manual")}
+                  aria-invalid={Boolean(errors.tipo)}
+                  aria-describedby={errors.tipo ? "tipo-error" : undefined}
                 />{" "}
                 Manual
               </label>
@@ -1736,31 +1759,36 @@ function ValuationForm({
                   value="Automática"
                   checked={tipo === "Automática"}
                   onChange={() => change("tipo", "Automática")}
+                  aria-invalid={Boolean(errors.tipo)}
+                  aria-describedby={errors.tipo ? "tipo-error" : undefined}
                 />{" "}
                 Automática
               </label>
-              {errors.tipo && (
-                <small className="field-error">{errors.tipo}</small>
-              )}
+              {/* Mismo contrato que `Field`: el hueco existe siempre y solo se
+                  referencia cuando hay mensaje. */}
+              <p className="ui-field-error" id="tipo-error">
+                {errors.tipo ?? ""}
+              </p>
             </fieldset>
-            <label>
-              Fecha de vigencia (DD/MM/AAAA) *
+            <Field
+              id="fecha"
+              label="Fecha de vigencia (DD/MM/AAAA) *"
+              help={
+                <>
+                  DD/MM/AAAA: {fecha ? dateText(fecha) : "—"} · API ISO{" "}
+                  {fecha || "—"} · no puede ser futura.
+                </>
+              }
+              error={errors.fecha}
+            >
               <input
                 type="date"
                 value={fecha}
                 max={todayIso()}
                 onChange={(event) => change("fecha", event.target.value)}
-                aria-invalid={Boolean(errors.fecha)}
                 required
               />
-              <small className="help">
-                DD/MM/AAAA: {fecha ? dateText(fecha) : "—"} · API ISO{" "}
-                {fecha || "—"} · no puede ser futura.
-              </small>
-              {errors.fecha && (
-                <small className="field-error">{errors.fecha}</small>
-              )}
-            </label>
+            </Field>
             <div className="valoracion-readonly">
               <span className="help">Cantidad en la fecha</span>
               <strong>{cantidad ? numText(cantidad) : "—"}</strong>
@@ -1772,22 +1800,19 @@ function ValuationForm({
                 <small className="field-error">{positionError}</small>
               )}
             </div>
-            <label>
-              Procedencia *
+            <Field
+              id="procedencia"
+              label="Procedencia *"
+              help="Obligatoria; no se valida contra un proveedor externo."
+              error={errors.procedencia}
+            >
               <input
                 value={procedencia}
                 onChange={(event) => change("procedencia", event.target.value)}
-                aria-invalid={Boolean(errors.procedencia)}
                 maxLength={200}
                 required
               />
-              <small className="help">
-                Obligatoria; no se valida contra un proveedor externo.
-              </small>
-              {errors.procedencia && (
-                <small className="field-error">{errors.procedencia}</small>
-              )}
-            </label>
+            </Field>
             <div className="valoracion-readonly">
               <span className="help">Cobertura (derivada)</span>
               <strong>Completa · toda la cantidad</strong>
@@ -1795,96 +1820,82 @@ function ValuationForm({
                 Derivada y no editable. Solo Completa; sin lotes ni tramos.
               </small>
             </div>
-          </div>
+          </FormGrid>
           <div className="valoracion-notice">
             <b>A-01 / R-E43-13.</b> El importe se refiere a la cantidad de su
             fecha de vigencia. Si al corte la cantidad cambia, no se extrapola
             ni se escala; la posición quedará <b>No disponible</b> y exigirá una
             nueva valoración.
           </div>
-        </section>
+        </FormSection>
         {tipo === "Manual" ? (
-          <section className="panel">
-            <h2>Importe declarado</h2>
-            <div className="form-grid">
-              <label>
-                Importe EUR *
+          <FormSection title="Importe declarado">
+            <FormGrid>
+              <Field
+                id="valorEur"
+                label="Importe EUR *"
+                help="Valor declarado por el usuario; hasta céntimos. 0,00 es válido y no es ausencia."
+                error={errors.valorEur}
+              >
                 <input
                   value={valorEur}
                   onChange={(event) => change("valorEur", event.target.value)}
                   inputMode="decimal"
-                  aria-invalid={Boolean(errors.valorEur)}
                   placeholder="0.00"
                   required
                 />
-                <small className="help">
-                  Valor declarado por el usuario; hasta céntimos. 0,00 es
-                  válido y no es ausencia.
-                </small>
-                {errors.valorEur && (
-                  <small className="field-error">{errors.valorEur}</small>
-                )}
-              </label>
-            </div>
-          </section>
+              </Field>
+            </FormGrid>
+          </FormSection>
         ) : (
-          <section className="panel">
-            <h2>Insumos declarados</h2>
-            <div className="form-grid">
-              <label>
-                Precio unitario *
+          <FormSection title="Insumos declarados">
+            <FormGrid>
+              <Field
+                id="precio"
+                label="Precio unitario *"
+                help="Debe ser > 0; sin redondeo intermedio."
+                error={errors.precio}
+              >
                 <input
                   value={precio}
                   onChange={(event) => change("precio", event.target.value)}
                   inputMode="decimal"
-                  aria-invalid={Boolean(errors.precio)}
                   placeholder="120.000000"
                   required
                 />
-                <small className="help">
-                  Debe ser &gt; 0; sin redondeo intermedio.
-                </small>
-                {errors.precio && (
-                  <small className="field-error">{errors.precio}</small>
-                )}
-              </label>
-              <label>
-                Divisa *
+              </Field>
+              <Field
+                id="divisa"
+                label="Divisa *"
+                help="ISO 4217, tres letras mayúsculas."
+                error={errors.divisa}
+              >
                 <input
                   value={divisa}
                   onChange={(event) => change("divisa", event.target.value)}
                   maxLength={3}
-                  aria-invalid={Boolean(errors.divisa)}
                   placeholder="EUR"
                   required
                 />
-                <small className="help">ISO 4217, tres letras mayúsculas.</small>
-                {errors.divisa && (
-                  <small className="field-error">{errors.divisa}</small>
-                )}
-              </label>
-              <label>
-                Cambio a EUR *
+              </Field>
+              <Field
+                id="cambio"
+                label="Cambio a EUR *"
+                help="Debe ser > 0; si la divisa es EUR, exactamente 1."
+                error={errors.cambio}
+              >
                 <input
                   value={cambio}
                   onChange={(event) => change("cambio", event.target.value)}
                   inputMode="decimal"
-                  aria-invalid={Boolean(errors.cambio)}
                   placeholder="1.000000"
                   required
                 />
-                <small className="help">
-                  Debe ser &gt; 0; si la divisa es EUR, exactamente 1.
-                </small>
-                {errors.cambio && (
-                  <small className="field-error">{errors.cambio}</small>
-                )}
-              </label>
-            </div>
-          </section>
+              </Field>
+            </FormGrid>
+          </FormSection>
         )}
-        <section className="panel" aria-labelledby="preview-title">
-          <h2 id="preview-title">Vista previa · no persiste</h2>
+        <FormSection title="Vista previa · no persiste">
           <dl className="valoracion-lines">
             <div>
               <dt>Tipo</dt>
@@ -1928,11 +1939,10 @@ function ValuationForm({
               Rentabilidad quedan No disponible con motivo (D-02).
             </p>
           )}
-        </section>
+        </FormSection>
         {rectifying && (
-          <section className="panel">
-            <h2>Corrección auditada</h2>
-            <div className="form-grid">
+          <FormSection title="Corrección auditada">
+            <FormGrid>
               <div className="valoracion-readonly">
                 <span className="help">Revisión vigente enviada</span>
                 <strong>
@@ -1945,23 +1955,20 @@ function ValuationForm({
                   Una revisión obsoleta produce 409 REVISION_CONFLICT.
                 </small>
               </div>
-              <label>
-                Motivo de corrección *
+              <Field
+                id="motivo"
+                label="Motivo de corrección *"
+                help="Obligatorio; se conserva en auditoría."
+                error={errors.motivo}
+              >
                 <input
                   value={motivo}
                   onChange={(event) => change("motivo", event.target.value)}
-                  aria-invalid={Boolean(errors.motivo)}
                   maxLength={1000}
                   required
                 />
-                <small className="help">
-                  Obligatorio; se conserva en auditoría.
-                </small>
-                {errors.motivo && (
-                  <small className="field-error">{errors.motivo}</small>
-                )}
-              </label>
-            </div>
+              </Field>
+            </FormGrid>
             <p className="help">
               Son inmutables el ID, la posición y creado_utc. No hay DELETE: una
               valoración no se anula, se corrige con revisión y motivo.
@@ -1975,7 +1982,7 @@ function ValuationForm({
                 {revision + 1}.
               </p>
             )}
-          </section>
+          </FormSection>
         )}
         <div className="form-footer">
           <button

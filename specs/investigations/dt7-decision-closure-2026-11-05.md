@@ -1,8 +1,8 @@
 # DT7 — Propuesta de cierre de decisiones (2026-11-05)
 
 **Estado:** `[PROPUESTA REVISADA Y PARCIALMENTE RATIFICADA]` — **DT7 NO CERRADO.** Las
-decisiones M3/M6 están aceptadas y M9–M13 ratificadas por el usuario; el resto sigue
-pendiente. Este documento no es un PASS, no cierra DT7 y no autoriza DEV, datos reales,
+decisiones M3/M6 están aceptadas, M9–M13 ratificadas y **M1 aprobada el 2026-11-10**; M2/M5/M8
+siguen pendientes. Este documento no es un PASS, no cierra DT7 y no autoriza DEV, datos reales,
 importación, P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
 
 **Revisión 2026-11-05:** Álex emite **APTO CON TRES AJUSTES**. El usuario acepta M3/M6,
@@ -11,6 +11,17 @@ M1/M2/M5/M8 pendientes de evidencia privada real.
 
 **Integración:** PR #218 mergeada en `main` `c4706a6` (2026-11-05); este documento conserva
 el contenido revisado y registra la ratificación posterior.
+
+**Addendum 2026-11-10:** el usuario, con revisión de Álex, sobre la referencia vigente **`MyFinanzas2026_v5.11(20261110-134135).xlsx`** aprueba **M1**: histórico
+**2023–2026** (2023 primero; 2023–2025 parcial, 2026 transición); **2019–2022 excluidos por
+alcance**; posteriores a 2026 fuera del histórico. La inclusión no acredita cobertura, importes ni
+aperturas; M2/M5/M8 siguen pendientes. Registro en la
+[hoja de decisiones](dt7-decision-sheet-2026-11-10.md).
+
+**Preparación de la revisión (2026-11-09):** el expediente
+[dt7-readiness-2026-11-09](dt7-readiness-2026-11-09.md) reúne el estado, la evidencia
+sintética disponible y los checklists de mapping/corte para la revisión del usuario. No
+modifica ninguna decisión de este documento ni cambia estados; DT7 sigue abierto.
 
 - **Base:** `main` **`136713b`** (squash de #217; documento DT7 preparatorio integrado).
 - **Entrada:** `specs/investigations/dt7-preparation-2026-11-05.md`, SPEC20/testplan,
@@ -39,7 +50,7 @@ el contenido revisado y registra la ratificación posterior.
 
 | ID | Tema | Grupo | Qué se propone ahora | Quién decide | Gate | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| **M1** | Ejercicios del histórico | **B** evidencia real | Preparar plantilla y criterios; no fijar años | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
+| **M1** | Ejercicios del histórico | **B** evidencia real | **Aprobada 2026-11-10:** 2023–2026 incluidos; 2019–2022 excluidos por alcance; no acredita cobertura ni importes | Usuario con Álex | G-DT7 | `APROBADA (2026-11-10)` |
 | **M2** | Partidas y fuentes por ejercicio | **B** evidencia real | Preparar formato de inventario; no fijar listas | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
 | **M3** | Identidad de fuentes sin ID | **A** técnica | Identidad estable y conservación ante cambios de fila/coordenada | Usuario sobre recomendación | G-DT7 | `ACEPTADA (2026-11-05)` |
 | **M4** | Evidencia de `NoAplica`/Referencia | **A** técnica (política) | Reutilizar `referenciaOrigen`/`estadoMapeoReferencia`; no asumir | Usuario sobre recomendación | G-DT7 | `ACEPTADA COMO PROPUESTA` |
@@ -321,13 +332,13 @@ sigue en E4.4.
 
 ## 5. Matriz de cierre
 
-Estados: `PENDIENTE DE EVIDENCIA` (M1/M2/M5/M8); `ACEPTADA COMO PROPUESTA` (M4/M7/M15/M16,
+Estados: `APROBADA` (M1, 2026-11-10); `PENDIENTE DE EVIDENCIA` (M2/M5/M8); `ACEPTADA COMO PROPUESTA` (M4/M7/M15/M16,
 sin decisión formal); `ACEPTADA (2026-11-05)` (M3/M6); `CONFIRMADO (A); implementación
 PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
 | ID | Grupo | Recomendación / decisión | Evidencia | Estado |
 | --- | --- | --- | --- | --- |
-| M1 | B | Años y primero incluido | Privada por año | `PENDIENTE DE EVIDENCIA` |
+| M1 | B | Años y primero incluido | Privada por año, `UNRUN` | `APROBADA (2026-11-10)` |
 | M2 | B | Partidas/fuentes por año | Privada por fuente | `PENDIENTE DE EVIDENCIA` |
 | M3 | A | Identidad estable; coordenada en cualquier fuente; conservación ante cambios | Fuentes sin ID | `ACEPTADA (2026-11-05)` |
 | M4 | A | `NoAplica` solo con evidencia | Esquema/muestra | `ACEPTADA COMO PROPUESTA` |
@@ -348,7 +359,7 @@ PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
 1. **Usuario:** M3/M6 aceptadas; M4/M7/M15/M16 aceptadas como propuesta; M14 A confirmada;
    M9–M13 ratificadas. No hay decisiones nuevas pendientes en estos bloques.
-2. **Usuario:** aporta evidencia privada para M1/M2/M5/M8 en el canal que autorice; no se
+2. **Usuario:** aporta evidencia privada para M2/M5/M8 (M1 ya decidida) en el canal que autorice; no se
    publica en el repositorio.
 3. **Coordinador:** redacta el DT7 definitivo (inventario, mapping por campo, excepciones,
    criterios de aceptación) con evidencia sanitizada y decisiones registradas.
@@ -380,7 +391,7 @@ aprobación.
 
 - Este documento **no** cierra DT7. M9–M13 están ratificadas; M3/M6 aceptadas; M14 A
   confirmada como contrato, sin implementación; M4/M7/M15/M16 aceptadas como propuesta;
-  M1/M2/M5/M8 pendientes de evidencia real.
+  M1 aprobada (2026-11-10); M2/M5/M8 pendientes de evidencia real.
 - Sin DEV E4.5, datos reales, Excel, importación, P6/P7, SQL, migración, despliegue ni
   merge.
 - Los 59 AC siguen `UNRUN`; no se declara PASS funcional.

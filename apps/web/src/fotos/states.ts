@@ -22,6 +22,14 @@ export function estadoTone(estado: string): BadgeTone {
   return "info";
 }
 
+export function estadoNoDisponibleReconocido(estado: string): boolean {
+  return (
+    estado === "No disponible" ||
+    estado === "NoDisponible" ||
+    estado === "Parcial"
+  );
+}
+
 export function amountState(estado: string): AmountState {
   if (
     estado === "Verificado" ||

@@ -6,7 +6,7 @@ html {
 /*
  * MyFinanzas · tokens semánticos de temas.
  * Los componentes no conocen el tema: solo consumen estas variables.
- * Añadir un tema = añadir un bloque + una entrada en src/themes.ts.
+ * Añadir un tema = añadir un bloque + una entrada en src/themes.ts + known en theme-boot.js.
  */
 :root,
 :root[data-theme="dark-s"] {
@@ -217,4 +217,144 @@ html {
   --chip-bg: #fffcf7;
   --chip-border: #d8d2c7;
   --chip-text: #1f1f1f;
+}
+
+:root[data-theme="graphite-lime"] {
+  color-scheme: dark;
+  --bg: #0b0c0b;
+  --surface: #131513;
+  --surface-2: #191c18;
+  --surface-3: #0e100e;
+  --sidebar: #080908;
+  --sidebar-text: #f3f6ec;
+  --sidebar-muted: #8f988b;
+  --sidebar-border: #1e221d;
+  --sidebar-hover: #171a16;
+  --sidebar-active-bg: #d7ff5e;
+  --sidebar-active-text: #0b0e08;
+  --sidebar-focus: #d7ff5e;
+  --brand-accent: #d7ff5e;
+  --text: #f1f4ec;
+  --muted: #8f988b;
+  --border: #2b2f2a;
+  --control-border: #66705f;
+  --action: #d7ff5e;
+  --on-action: #0b0e08;
+  --action-hover: #e2ff7c;
+  --on-action-hover: #0b0e08;
+  --action-active: #c2e84a;
+  --on-action-active: #0b0e08;
+  --action-soft: #232819;
+  --action-soft-border: #3b4426;
+  --accent: #d7ff5e;
+  --on-accent: #0b0e08;
+  --accent-soft: #232819;
+  --accent-border: #3b4426;
+  --focus: #d7ff5e;
+  --positive: #7fe0a8;
+  --positive-soft: #1d2720;
+  --positive-border: #2f4234;
+  --negative: #ff9a8c;
+  --negative-soft: #28211d;
+  --negative-border: #4a302a;
+  --warning: #ffd166;
+  --warning-soft: #28261b;
+  --warning-border: #4a432a;
+  --error: #ff8178;
+  --error-soft: #2a1b19;
+  --error-border: #4a2b27;
+  --ok: #7fe0a8;
+  --row-hover: #171a16;
+  --selected: #1c2417;
+  --disabled-bg: #171a16;
+  --disabled-text: #6f786c;
+  --shadow-1: rgb(0 0 0 / 0.4);
+  --shadow-2: rgb(0 0 0 / 0.24);
+  --strong-surface: #181c15;
+  --on-strong: #f1f4ec;
+  --muted-on-strong: #a6afa0;
+  --strong-border: #2f362c;
+  --chart-1: #d7ff5e;
+  --chart-2: #7fe0a8;
+  --chart-3: #ffd166;
+  --chart-4: #c2c8bc;
+  --chart-strong: #f1f4ec;
+  --chart-accent: #d7ff5e;
+  --header-bg: #0b0c0b;
+  --footer-bg: #080908;
+  --input-bg: #0c0e0c;
+  --table-head: #0e110e;
+  --chip-bg: #232819;
+  --chip-border: #3b4426;
+  --chip-text: #d7ff5e;
+}
+
+:root[data-theme="casa"] {
+  color-scheme: light;
+  --bg: #f4f1e8;
+  --surface: #fbf9f3;
+  --surface-2: #eae5d7;
+  --surface-3: #f0ece2;
+  --sidebar: #efece1;
+  --sidebar-text: #191c18;
+  --sidebar-muted: #5d5d52;
+  --sidebar-border: #d5cfbe;
+  --sidebar-hover: #e6e1d3;
+  --sidebar-active-bg: #dde5da;
+  --sidebar-active-text: #1e4b3a;
+  --sidebar-focus: #1e4b3a;
+  --brand-accent: #1e4b3a;
+  --text: #191c18;
+  --muted: #5d5d52;
+  --border: #d5cfbe;
+  --control-border: #827a69;
+  --action: #1e4b3a;
+  --on-action: #fbf9f3;
+  --action-hover: #2a5c48;
+  --on-action-hover: #fbf9f3;
+  --action-active: #163c2d;
+  --on-action-active: #fbf9f3;
+  --action-soft: #dde5da;
+  --action-soft-border: #b9c9b7;
+  --accent: #7a5526;
+  --on-accent: #fbf9f3;
+  --accent-soft: #e9ddc7;
+  --accent-border: #d0bb97;
+  --focus: #1e4b3a;
+  --positive: #1e4b3a;
+  --positive-soft: #dde5da;
+  --positive-border: #b9c9b7;
+  --negative: #8a372a;
+  --negative-soft: #ead9d3;
+  --negative-border: #d3b3aa;
+  --warning: #7a4d00;
+  --warning-soft: #f2e4c4;
+  --warning-border: #d8c28a;
+  --error: #8a2a2a;
+  --error-soft: #f1ddda;
+  --error-border: #d8b4ae;
+  --ok: #1e4b3a;
+  --row-hover: #eae5d7;
+  --selected: #dde5da;
+  --disabled-bg: #eae5d7;
+  --disabled-text: #6c6a5d;
+  --shadow-1: rgb(25 28 24 / 0.08);
+  --shadow-2: rgb(25 28 24 / 0.06);
+  --strong-surface: #191c18;
+  --on-strong: #f4f1e8;
+  --muted-on-strong: #c9c3b4;
+  --strong-border: #191c18;
+  --chart-1: #1e4b3a;
+  --chart-2: #7a5526;
+  --chart-3: #8c857a;
+  --chart-4: #191c18;
+  --chart-strong: #191c18;
+  --chart-accent: #8a372a;
+  --header-bg: #fbf9f3;
+  --footer-bg: #f4f1e8;
+  --input-bg: #fbf9f3;
+  --table-head: #eae5d7;
+  --chip-bg: #fbf9f3;
+  --chip-border: #d5cfbe;
+  --chip-text: #191c18;
 }

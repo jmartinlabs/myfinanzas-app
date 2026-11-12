@@ -1,0 +1,880 @@
+{
+  "checks": [
+    {
+      "name": "movimientos-1440",
+      "width": 1440,
+      "height": 1000,
+      "sw": 1440,
+      "cw": 1440,
+      "sh": 1216,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 7,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      },
+      "smallControlDetails": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "btn btn-secondary",
+          "h": 38
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "page-btn",
+          "h": 36
+        }
+      ]
+    },
+    {
+      "name": "movimientos-390",
+      "width": 390,
+      "height": 844,
+      "sw": 390,
+      "cw": 390,
+      "sh": 3007,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 0,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      }
+    },
+    {
+      "name": "estados-1440",
+      "width": 1440,
+      "height": 1000,
+      "sw": 1440,
+      "cw": 1440,
+      "sh": 2467,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 3,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      },
+      "smallControlDetails": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32
+        },
+        {
+          "tag": "SELECT",
+          "cls": "theme-select",
+          "h": 32
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6
+        }
+      ]
+    },
+    {
+      "name": "estados-390",
+      "width": 390,
+      "height": 844,
+      "sw": 390,
+      "cw": 390,
+      "sh": 4576,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 0,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      }
+    },
+    {
+      "name": "formularios-1440",
+      "width": 1440,
+      "height": 1000,
+      "sw": 1440,
+      "cw": 1440,
+      "sh": 1851,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 3,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      },
+      "smallControlDetails": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6
+        }
+      ]
+    },
+    {
+      "name": "formularios-390",
+      "width": 390,
+      "height": 844,
+      "sw": 390,
+      "cw": 390,
+      "sh": 4394,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 0,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      }
+    },
+    {
+      "name": "formularios-1440-eur",
+      "width": 1440,
+      "height": 1000,
+      "sw": 1440,
+      "cw": 1440,
+      "sh": 1851,
+      "errors": [],
+      "fonts": 0,
+      "smallControls": 3,
+      "ratios": {
+        "text/surface": 16.51,
+        "text/bg": 17.63,
+        "muted/surface": 6.14,
+        "accent-ink/surface": 16.04,
+        "on-action/action": 16.99,
+        "positive/surface": 11.47,
+        "negative/surface": 8.96,
+        "warning/surface": 12.73,
+        "error/surface": 7.57,
+        "sidebar-text/sidebar": 18.24,
+        "sidebar-muted/sidebar": 6.68,
+        "active-text/active": 16.99,
+        "text/input": 17.43,
+        "muted/table-head": 6.36,
+        "positive/soft": 9.63,
+        "warning/soft": 10.53,
+        "negative/soft": 7.74,
+        "error/soft": 6.83,
+        "local-form-kicker/card": 15.64,
+        "local-form-label/card": 5.99,
+        "local-form-help/card": 5.99,
+        "local-form-input/input": 17.43,
+        "local-form-readonly/input": 11.17,
+        "local-form-info/title": 10.07,
+        "local-form-info/body": 5.76,
+        "local-form-callout/warning": 10.53,
+        "local-form-derived/value": 11.17,
+        "local-form-btn/action": 16.99,
+        "local-form-conditional/chip": 13.21,
+        "local-mov-table-head/head": 7.6,
+        "local-mov-table-cell/card": 11,
+        "local-mov-selected/selected": 14.38,
+        "local-mov-detail/detail": 15.54,
+        "local-mov-detail-label/detail": 6.46,
+        "local-state-label/card": 5.94,
+        "local-state-input/input": 17.43,
+        "local-state-error/error-soft": 6.83,
+        "local-state-success/positive-soft": 13.86
+      },
+      "smallControlDetails": [
+        {
+          "tag": "BUTTON",
+          "cls": "nav-group nav-group--toggle",
+          "h": 32
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "logout",
+          "h": 28.6
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "text-link",
+          "h": 26.6
+        }
+      ]
+    }
+  ],
+  "interactions": [
+    {
+      "test": "compra-cambio-condicional",
+      "usd": {
+        "value": "USD",
+        "hidden": false,
+        "state": "USD · cambio visible"
+      },
+      "eur": {
+        "value": "EUR",
+        "hidden": true,
+        "disabled": true,
+        "state": "EUR · cambio no requerido"
+      },
+      "ok": true
+    },
+    {
+      "test": "menu-movil-teclado",
+      "open": true,
+      "focusInside": true,
+      "closed": true,
+      "focusReturned": true,
+      "ok": true
+    }
+  ],
+  "focus": [
+    {
+      "page": "movimientos",
+      "items": [
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "brand",
+          "label": "MyFinanzas, ir a Inicio",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Inicio",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Flujo mensual",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Pendientes y conciliación",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Anticipos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Compartidos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Saldos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Clasificación",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Inversiones",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Deudas",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Vehículos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Referencias",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item active",
+          "label": "Movimientos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Ciclos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Precierre",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Cierre",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Fotos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "BUTTON",
+          "id": "",
+          "cls": "nav-group nav-group--toggle",
+          "label": "Planificación",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        }
+      ]
+    },
+    {
+      "page": "formularios",
+      "items": [
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "brand",
+          "label": "MyFinanzas, ir a Inicio",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Inicio",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Flujo mensual",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Pendientes y conciliación",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Anticipos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Compartidos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Saldos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Clasificación",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Inversiones",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Deudas",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Vehículos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Referencias",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Movimientos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Ciclos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Precierre",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Cierre",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "A",
+          "id": "",
+          "cls": "nav-item",
+          "label": "Fotos",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        },
+        {
+          "tag": "BUTTON",
+          "id": "",
+          "cls": "nav-group nav-group--toggle",
+          "label": "Planificación",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(215, 255, 94)"
+        }
+      ]
+    }
+  ],
+  "zoom": [
+    {
+      "label": "1440-200",
+      "page": "movimientos",
+      "width": 720,
+      "sw": 720,
+      "cw": 720,
+      "sh": 2882,
+      "ok": true
+    },
+    {
+      "label": "1440-200",
+      "page": "formularios",
+      "width": 720,
+      "sw": 720,
+      "cw": 720,
+      "sh": 4132,
+      "ok": true
+    },
+    {
+      "label": "1280-200",
+      "page": "movimientos",
+      "width": 640,
+      "sw": 640,
+      "cw": 640,
+      "sh": 2882,
+      "ok": true
+    },
+    {
+      "label": "1280-200",
+      "page": "formularios",
+      "width": 640,
+      "sw": 640,
+      "cw": 640,
+      "sh": 4132,
+      "ok": true
+    }
+  ],
+  "reducedMotion": [
+    {
+      "page": "movimientos",
+      "durations": [
+        {
+          "sel": ".nav-item",
+          "duration": "1e-05s",
+          "animation": "1e-05s"
+        },
+        {
+          "sel": ".btn",
+          "duration": "1e-05s",
+          "animation": "1e-05s"
+        },
+        {
+          "sel": ".mov-row",
+          "duration": "1e-05s",
+          "animation": "1e-05s"
+        },
+        {
+          "sel": ".filter-toggle",
+          "duration": "1e-05s",
+          "animation": "1e-05s"
+        },
+        {
+          "sel": ".theme-control",
+          "duration": "1e-05s",
+          "animation": "1e-05s"
+        }
+      ]
+    }
+  ]
+}

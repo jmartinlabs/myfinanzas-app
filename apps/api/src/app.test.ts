@@ -483,6 +483,43 @@ test("AC21: recuperación exige contraseña+código, consume y revoca sesiones p
     f.db.close();
   }
 });
+test("alta: contraseña exige entre 8 y 128 caracteres y conserva el código", async () => {
+  const short = fixture();
+  try {
+    const bootstrap = provision(short.db, short.now);
+    const rejected = await short.request("/api/auth/enroll", "POST", {
+      token: bootstrap,
+      password: "a".repeat(7),
+    });
+    expect(rejected.status).toBe(422);
+    expect(rejected.data.error).toContain("8 y 128");
+    const accepted = await short.request("/api/auth/enroll", "POST", {
+      token: bootstrap,
+      password: "a".repeat(8),
+    });
+    expect(accepted.status).toBe(200);
+    expect(accepted.data.secret).toBeString();
+  } finally {
+    short.db.close();
+  }
+
+  for (const [length, status] of [
+    [128, 200],
+    [129, 422],
+  ] as const) {
+    const f = fixture();
+    try {
+      const bootstrap = provision(f.db, f.now);
+      const r = await f.request("/api/auth/enroll", "POST", {
+        token: bootstrap,
+        password: "a".repeat(length),
+      });
+      expect(r.status).toBe(status);
+    } finally {
+      f.db.close();
+    }
+  }
+});
 test("errores HTTP no revelan SQL y rechazan tamaños/campos no editables", async () => {
   const f = fixture();
   try {

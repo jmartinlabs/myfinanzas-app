@@ -3,11 +3,75 @@ import { cycleOperationsJourney } from "./cycle-operations";
 import { presupuestos } from "./presupuestos";
 import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
+
+/**
+ * Paridad explícita tabla/carta: cada campo de la tarjeta conserva la misma
+ * etiqueta, texto y enlace que la columna de la fila. No sustituye las
+ * aserciones de contenido existentes; demuestra que la adaptación móvil no
+ * pierde ni duplica información.
+ */
+async function expectMovementsParity(page: Page) {
+  const table = await page.locator(".desktop-list").evaluate((root) => {
+    const clean = (value: string | null) =>
+      (value ?? "").replace(/\s+/g, " ").trim();
+    const headers = Array.from(root.querySelectorAll("thead th")).map((th) =>
+      clean(th.textContent),
+    );
+    return {
+      hrefs: Array.from(root.querySelectorAll("tbody a")).map((anchor) =>
+        anchor.getAttribute("href"),
+      ),
+      rows: Array.from(root.querySelectorAll("tbody tr")).map((row) => {
+        const cells = Array.from(row.querySelectorAll("td"));
+        return Object.fromEntries(
+          headers.map((header, index) => [
+            header,
+            clean(cells[index]?.textContent ?? ""),
+          ]),
+        );
+      }),
+    };
+  });
+  const cards = await page.locator(".movements-cards").evaluate((root) => {
+    const clean = (value: string | null) =>
+      (value ?? "").replace(/\s+/g, " ").trim();
+    return {
+      hrefs: Array.from(root.querySelectorAll(":scope > li a")).map((anchor) =>
+        anchor.getAttribute("href"),
+      ),
+      rows: Array.from(root.querySelectorAll(":scope > li")).map((card) =>
+        Object.fromEntries(
+          Array.from(card.querySelectorAll(".ui-data-list-field")).map(
+            (field) => [
+              field.getAttribute("data-label") ?? "",
+              clean(
+                field.querySelector(".ui-data-list-value")?.textContent ?? "",
+              ),
+            ],
+          ),
+        ),
+      ),
+    };
+  });
+  expect(table.rows.length).toBeGreaterThan(0);
+  expect(cards.rows).toEqual(table.rows);
+  expect(cards.hrefs).toEqual(table.hrefs);
+  await expect(
+    page.locator(".desktop-list tbody tr td[data-kind='amount']"),
+  ).toHaveCount(table.rows.length);
+  await expect(
+    page.locator(
+      ".movements-cards > li .ui-data-list-field[data-kind='amount']",
+    ),
+  ).toHaveCount(table.rows.length);
+}
 
 test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y restauración con MFA", async ({
   page,
@@ -22,6 +86,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
   );
   mkdirSync("artifacts/e1-4", { recursive: true });
+  mkdirSync("artifacts/dev-06-i2", { recursive: true });
   const shot = async (name: string) => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.evaluate(
@@ -37,6 +102,48 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       path: `artifacts/e1-4/${name}.png`,
       fullPage: true,
     });
+  };
+  const expectNoOverflow = async () =>
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  const evidence = async (name: string) => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expectNoOverflow();
+    await page.screenshot({
+      path: `artifacts/dev-06-i2/${name}.png`,
+      fullPage: true,
+    });
+  };
+  const graphiteEvidence = async (
+    name: string,
+    verify?: () => Promise<void>,
+  ) => {
+    const picker = page.getByLabel("Apariencia");
+    const previousTheme =
+      (await page.locator("html").getAttribute("data-theme")) ?? "dark-s";
+    const previousViewport = page.viewportSize() ?? {
+      width: 1440,
+      height: 1000,
+    };
+    await picker.selectOption("graphite-lime");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    if (verify) await verify();
+    await evidence(`${name}-1440`);
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await evidence(`${name}-820`);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence(`${name}-390`);
+    await picker.selectOption(previousTheme);
+    await page.setViewportSize(previousViewport);
   };
   const navigate = async (path: string) => {
     await page.goto(path);
@@ -87,7 +194,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     const password = "Contraseña ficticia navegador " + randomUUID();
     await navigate("/movimientos");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-movimientos/bootstrap.txt", "utf8"));
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
@@ -237,6 +344,11 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await expect(type).toBeFocused();
     await shot("validation-mobile");
+    await graphiteEvidence("g4-formulario-error", async () => {
+      await expect(
+        page.locator(".movement-form-page .field-error").first(),
+      ).toBeVisible();
+    });
     const fill = async (
       kind: string,
       name: string,
@@ -290,6 +402,18 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await shot("form-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await shot("form-desktop");
+    await graphiteEvidence("g4-formulario-graphite", async () => {
+      const head = page
+        .locator(".movement-form-page .ui-form-section-head")
+        .first();
+      await expect(head).toBeVisible();
+      const step = await head.evaluate((element) => {
+        const style = getComputedStyle(element, "::before");
+        return { content: style.content, width: parseFloat(style.width) };
+      });
+      expect(step.content).not.toBe("none");
+      expect(step.width).toBeGreaterThanOrEqual(24);
+    });
     await page
       .getByRole("button", { name: "Registrar movimiento", exact: true })
       .click();
@@ -304,6 +428,29 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       "octubre de 2026",
     );
     await shot("detail-desktop");
+    await graphiteEvidence("g4-detalle-graphite", async () => {
+      await expect(page.locator(".movement-detail")).toHaveAttribute(
+        "data-flow",
+        "inflow",
+      );
+      const importe = page.locator(
+        '.movement-detail [data-label="Importe"] dd',
+      );
+      await expect(importe).toHaveText("50,00 €");
+      expect(
+        await importe.evaluate((element) =>
+          Number.parseFloat(getComputedStyle(element).fontSize),
+        ),
+      ).toBeGreaterThanOrEqual(28);
+    });
+    await graphiteEvidence("g4-detalle-auditoria", async () => {
+      await page.locator(".movement-detail > .panel summary").click();
+      await expect(page.locator(".movement-audit").first()).toBeVisible();
+      await expect(
+        page.locator(".movement-audit .movement-facts").first(),
+      ).toBeVisible();
+    });
+    await page.locator(".movement-detail > .panel summary").click();
     await page.setViewportSize({ width: 390, height: 844 });
     await shot("detail-mobile");
     expect((await get("/saldos/" + saldo.id)).saldo.posicion.importe).toBe(
@@ -322,6 +469,19 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       "2026-10-13",
       "20",
     );
+    await navigate(`/movimientos/${gasto}`);
+    await graphiteEvidence("g4-detalle-gasto", async () => {
+      await expect(page.locator(".movement-detail")).toHaveAttribute(
+        "data-flow",
+        "outflow",
+      );
+      expect(
+        await page
+          .locator('.movement-detail [data-label="Importe"] dd')
+          .evaluate((element) => getComputedStyle(element).color),
+      ).toBe("rgb(255, 154, 140)");
+    });
+    await navigate("/movimientos");
     expect((await get("/saldos/" + saldo.id)).saldo.posicion.importe).toBe(
       "130.00",
     );
@@ -369,6 +529,9 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await shot("duplicate-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await shot("duplicate-desktop");
+    await graphiteEvidence("g4-duplicado", async () => {
+      await expect(page.locator(".duplicate-warning")).toBeVisible();
+    });
     await page
       .getByRole("button", { name: "Registrar otro hecho real", exact: true })
       .click();
@@ -429,6 +592,90 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       page.locator('[role="region"][tabindex="0"]:visible'),
     ).toHaveCount(0);
     await shot("list-mobile");
+    // UI DEV-06 I2: el tramo 1051-1120 conserva dos columnas sin recortar filtros.
+    await page.setViewportSize({ width: 1100, height: 1000 });
+    const filtersLayout = await page
+      .locator(".movements-list .filters")
+      .evaluate((element) => ({
+        tracks: getComputedStyle(element).gridTemplateColumns.split(" ").length,
+        overflow: element.scrollWidth - element.clientWidth,
+      }));
+    expect(filtersLayout.tracks).toBe(2);
+    expect(filtersLayout.overflow).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 390, height: 844 });
+    // UI DEV-06 I2: 6 capturas base (3 temas × 1440/390) y paridad tabla/carta.
+    await expectMovementsParity(page);
+    const themeSelect = page.getByLabel("Apariencia");
+    for (const theme of THEMES) {
+      await themeSelect.selectOption(theme);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await expect(page.locator(".desktop-list")).toBeVisible();
+      await expect(page.locator(".movements-cards")).toBeHidden();
+      await evidence(`movimientos-${theme}-1440`);
+      if (theme !== "graphite-lime")
+        await expect(page.locator(".list-footer-total")).toBeHidden();
+      if (theme === "graphite-lime") {
+        const tracks = await page
+          .locator(".movements-list .filters")
+          .evaluate(
+            (element) =>
+              getComputedStyle(element).gridTemplateColumns
+                .split(" ")
+                .filter(Boolean).length,
+          );
+        expect(tracks).toBe(5);
+        await expect(page.locator(".movement-search-icon")).toBeVisible();
+        await expect(page.locator(".movement-status-dot")).toBeVisible();
+        await expect(page.locator(".movement-type-icon").first()).toBeVisible();
+        await expect(page.locator(".list-footer-total")).toBeVisible();
+        const flows = await page
+          .locator(".movement-amount")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => ({
+              flow: node.getAttribute("data-flow"),
+              color: getComputedStyle(node).color,
+            })),
+          );
+        expect(flows.find((flow) => flow.flow === "inflow")?.color).toBe(
+          "rgb(127, 224, 168)",
+        );
+        expect(flows.find((flow) => flow.flow === "outflow")?.color).toBe(
+          "rgb(255, 154, 140)",
+        );
+        await page.setViewportSize({ width: 820, height: 1000 });
+        await expect(page.locator(".desktop-list")).toBeHidden();
+        await expect(page.locator(".movements-cards")).toBeVisible();
+        await expect(page.locator(".movements-cards .ui-data-list-item")).toHaveCount(
+          5,
+        );
+        await expectNoOverflow();
+        await evidence("movimientos-graphite-lime-820");
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.locator(".desktop-list")).toBeHidden();
+      await expect(page.locator(".movements-cards")).toBeVisible();
+      await expectMovementsParity(page);
+      if (theme === "graphite-lime") {
+        const tracks = await page
+          .locator(".movements-list .filters")
+          .evaluate(
+            (element) =>
+              getComputedStyle(element).gridTemplateColumns
+                .split(" ")
+                .filter(Boolean).length,
+          );
+        expect(tracks).toBe(1);
+        await expect(page.locator(".movement-search-icon")).toBeVisible();
+        await expect(
+          page.locator(".movements-cards .movement-type-icon").first(),
+        ).toBeVisible();
+        await expect(page.locator(".list-footer-total")).toBeVisible();
+      }
+      await evidence(`movimientos-${theme}-390`);
+    }
+    await themeSelect.selectOption("light-s");
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.getByText("Más filtros", { exact: true }).focus();
     await page.keyboard.press("Enter");
     await expect(page.getByLabel("Desde", { exact: true })).toBeVisible();
@@ -448,6 +695,15 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await expect(
       page.getByRole("heading", { name: "Sin coincidencias", exact: true }),
     ).toBeVisible();
+    for (const theme of THEMES) {
+      await themeSelect.selectOption(theme);
+      await expect(
+        page.getByRole("heading", { name: "Sin coincidencias", exact: true }),
+      ).toBeVisible();
+      await expectNoOverflow();
+      await evidence(`movimientos-vacio-${theme}-390`);
+    }
+    await themeSelect.selectOption("hybrid-s");
     await page
       .getByRole("button", { name: "Limpiar filtros", exact: true })
       .click();
@@ -469,6 +725,13 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await shot("rectification-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await shot("rectification-desktop");
+    await graphiteEvidence("g4-rectificacion-graphite", async () => {
+      const impact = page.locator(".movement-impact h2");
+      await expect(impact).toBeVisible();
+      expect(
+        await impact.evaluate((element) => getComputedStyle(element).color),
+      ).toBe("rgb(215, 255, 94)");
+    });
     await page
       .getByRole("button", { name: "Confirmar rectificación", exact: true })
       .click();
@@ -516,6 +779,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         .click();
       if (id === duplicate) {
         await shot("annulment-desktop");
+        await graphiteEvidence("g4-anulacion-graphite");
         await page.setViewportSize({ width: 390, height: 844 });
         await shot("annulment-mobile");
       }
@@ -530,12 +794,42 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       "120.00",
     );
     expect((await get("/ciclos/contexto")).referencia.fecha).toBe("2026-10-13");
+    await navigate(`/movimientos/${duplicate}`);
+    await graphiteEvidence("g4-detalle-anulado", async () => {
+      await expect(page.locator(".movement-detail")).toHaveAttribute(
+        "data-anulado",
+        "true",
+      );
+      expect(
+        await page
+          .locator('.movement-detail [data-label="Importe"] dd')
+          .evaluate((element) => getComputedStyle(element).textDecorationLine),
+      ).toContain("line-through");
+    });
     await navigate("/movimientos");
     await page
       .getByLabel("Estado de Movimiento", { exact: true })
       .selectOption("Anulado");
     await expect(page.locator(".mobile-list li")).toHaveCount(2);
     await shot("annulled-mobile");
+    await themeSelect.selectOption("graphite-lime");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(page.locator(".desktop-list tbody tr.annulled")).toHaveCount(2);
+    await expect(
+      page.locator(".desktop-list tbody tr.annulled .tag").first(),
+    ).toBeVisible();
+    expect(
+      await page
+        .locator(".desktop-list tbody tr.annulled .movement-amount")
+        .first()
+        .evaluate((element) => getComputedStyle(element).color),
+    ).toBe("rgb(143, 152, 139)");
+    await evidence("movimientos-anulados-graphite-lime-1440");
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await evidence("movimientos-anulados-graphite-lime-820");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await evidence("movimientos-anulados-graphite-lime-390");
+    await themeSelect.selectOption("hybrid-s");
     await navigate("/movimientos/nuevo");
     await fill("Ingreso", "Fecha futura inválida", "2026-10-12", "1", saldo.id);
     const options = await get("/movimientos/opciones"),
@@ -595,6 +889,18 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await navigate("/movimientos");
     await expect(page.getByRole("alert")).toContainText("Consulta de prueba");
+    for (const theme of THEMES) {
+      await themeSelect.selectOption(theme);
+      await expect(page.getByRole("alert")).toContainText("Consulta de prueba");
+      if (theme === "graphite-lime")
+        await expect(page.locator(".movement-status-dot")).toHaveAttribute(
+          "data-state",
+          "error",
+        );
+      await expectNoOverflow();
+      await evidence(`movimientos-error-${theme}-390`);
+    }
+    await themeSelect.selectOption("hybrid-s");
     await shot("error-mobile");
     await page.unroute("**/api/movimientos?*");
     await page.getByRole("button", { name: "Reintentar", exact: true }).click();
@@ -613,11 +919,78 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       });
     });
     await navigate("/movimientos");
-    await expect(page.getByRole("status")).toHaveText("Cargando Movimientos…");
+    await expect(page.locator(".movements-list").getByRole("status")).toHaveText("Cargando Movimientos…");
+    for (const theme of THEMES) {
+      await themeSelect.selectOption(theme);
+      await expect(page.locator(".movements-list").getByRole("status")).toHaveText("Cargando Movimientos…");
+      if (theme === "graphite-lime")
+        await expect(page.locator(".movement-status-dot")).toHaveAttribute(
+          "data-state",
+          "loading",
+        );
+      await expectNoOverflow();
+      await evidence(`movimientos-carga-${theme}-390`);
+    }
+    await themeSelect.selectOption("hybrid-s");
     await shot("loading-mobile");
     release();
     await expect(page.locator(".mobile-list li")).toHaveCount(4);
     await page.unroute("**/api/movimientos?*");
+    // Paginación: mismos parámetros, mismos botones y mismo límite de 100.
+    const listQueries: string[] = [];
+    let pagedRows: unknown[] | null = null;
+    await page.route("**/api/movimientos?*", async (route) => {
+      const url = new URL(route.request().url());
+      listQueries.push(url.search);
+      url.port = "3003";
+      const response = await route.fetch({ url: url.toString() });
+      const json = await response.json();
+      if (json.movimientos.length) pagedRows = json.movimientos;
+      else if (pagedRows) json.movimientos = pagedRows;
+      json.total = 250;
+      await route.fulfill({ response, json });
+    });
+    await navigate("/movimientos");
+    const previous = page.getByRole("button", {
+      name: "Anterior",
+      exact: true,
+    });
+    const next = page.getByRole("button", {
+      name: "Siguiente",
+      exact: true,
+    });
+    await expect(page.getByText("Página 1", { exact: true })).toBeVisible();
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+    await expect(page.locator(".desktop-list tbody tr")).toHaveCount(4);
+    expect(listQueries.at(-1)).toContain("page=1");
+    expect(listQueries.at(-1)).toContain("estado=Vigente");
+    await next.click();
+    await expect(page.getByText("Página 2", { exact: true })).toBeVisible();
+    await expect(previous).toBeEnabled();
+    await expect(next).toBeEnabled();
+    await expect(page.locator(".movements-cards > li")).toHaveCount(4);
+    expect(listQueries.at(-1)).toContain("page=2");
+    expect(listQueries.at(-1)).toContain("estado=Vigente");
+    for (const theme of THEMES) {
+      await themeSelect.selectOption(theme);
+      await expect(page.getByText("Página 2", { exact: true })).toBeVisible();
+      await expectNoOverflow();
+      if (theme === "graphite-lime")
+        await expect(page.locator(".list-footer-total")).toContainText(
+          "de 3 · 100 por página",
+        );
+      await evidence(`movimientos-paginacion-${theme}-390`);
+    }
+    await themeSelect.selectOption("hybrid-s");
+    await next.click();
+    await expect(page.getByText("Página 3", { exact: true })).toBeVisible();
+    await expect(next).toBeDisabled();
+    await previous.click();
+    await expect(page.getByText("Página 2", { exact: true })).toBeVisible();
+    await page.unroute("**/api/movimientos?*");
+    await navigate("/movimientos");
+    await expect(page.getByText("Página 1", { exact: true })).toBeVisible();
     await navigate("/movimientos/999999");
     await expect(page.getByRole("alert")).toContainText("no encontrado");
     await navigate("/movimientos/nuevo");

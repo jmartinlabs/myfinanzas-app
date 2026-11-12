@@ -44,6 +44,16 @@ type ApiResult = {
   data: any;
 };
 
+/** By-id reads are explicit and never carry the automatic latest marker. */
+function conConsultaPorId<T extends { seleccionVersion: { porDefecto: boolean } }>(
+  dto: T,
+): T {
+  return {
+    ...dto,
+    seleccionVersion: { ...dto.seleccionVersion, porDefecto: false },
+  };
+}
+
 function apiUrl(port: number, path: string) {
   return `http://127.0.0.1:${port}/api${path}`;
 }
@@ -102,7 +112,7 @@ async function routeApi(page: Page, port: number) {
 async function login(page: Page, dir: string, path = "/fotos") {
   await page.goto(path);
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(dir + "/bootstrap.txt", "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
@@ -185,7 +195,7 @@ function pageErrors(page: Page) {
 
 /** Evidencia visual en 1440×1000 y 390×844 con los tres temas vigentes. */
 async function capture(page: Page, name: string) {
-  const theme = page.getByLabel("Tema visual");
+  const theme = page.getByLabel("Apariencia");
   for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await theme.selectOption(id);
@@ -725,6 +735,15 @@ test("E4.11 UI/API: composición de trimestre/año, cobertura, drill-down y cont
       .toEqual(["0", "1", "2", "3"]);
     expect(year2027.composicion.map((item: { ciclo: string }) => item.ciclo))
       .toEqual(["4", "5", "6"]);
+    // AC08/P3-B: el ciclo 4 (inicio 2026-12-01, mes financiado 2027-01-01)
+    // no compone 2026 y sí compone 2027. Un ciclo fuera del periodo no se
+    // enumera como contexto ni recibe un estado `FueraDePeriodo`.
+    expect(year2026.composicion.map((item: { ciclo: string }) => item.ciclo))
+      .not.toContain("4");
+    expect(year2027.composicion.map((item: { ciclo: string }) => item.ciclo))
+      .toContain("4");
+    expect(JSON.stringify(year2026)).not.toContain("FueraDePeriodo");
+    expect(JSON.stringify(year2027)).not.toContain("FueraDePeriodo");
     expect(year2027.composicion[0]).toMatchObject({
       ciclo: "4",
       mesFinanciado: "2027-01-01",
@@ -810,7 +829,7 @@ test("E4.11 UI/API: composición de trimestre/año, cobertura, drill-down y cont
       page
         .getByRole("region", { name: "Identidad del agregado" })
         .locator(".ui-badge")
-        .filter({ hasText: "Versión solicitada" })
+        .filter({ hasText: "Consulta explícita" })
         .first(),
     ).toBeVisible();
     await page.getByLabel("Versión del agregado").fill("A9");
@@ -1023,7 +1042,11 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
     ).toBe(snapshotBefore.tables.fotos_cierre.count + 1);
 
     const a1After = (await api(page, `/fotos/periodos/${a1.id}`)).data;
-    expect(a1After).toEqual(a1);
+    expect(a1After).toEqual(conConsultaPorId(a1));
+    expect(a1After.seleccionVersion).toMatchObject({
+      version: "A1",
+      porDefecto: false,
+    });
     const v1 = (await api(page, "/fotos/ciclos/2?version=1")).data;
     const v2 = (await api(page, "/fotos/ciclos/2?version=2")).data;
     expect(v1).toMatchObject({
@@ -1058,7 +1081,23 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
       versionFoto: 2,
       fingerprint: v2.foto.fingerprint,
     });
-    expect((await api(page, `/fotos/periodos/${a1.id}`)).data).toEqual(a1);
+    const a1AfterA2 = (await api(page, `/fotos/periodos/${a1.id}`)).data;
+    expect(a1AfterA2).toEqual(conConsultaPorId(a1));
+    expect(a1AfterA2.seleccionVersion).toMatchObject({
+      version: "A1",
+      porDefecto: false,
+    });
+    const latest = (
+      await api(
+        page,
+        "/fotos/periodos?tipo=Trimestre&ejercicio=2026&trimestre=1",
+      )
+    ).data;
+    expect(latest.identidad.versionAgregado).toBe("A2");
+    expect(latest.seleccionVersion).toMatchObject({
+      version: "A2",
+      porDefecto: true,
+    });
     const snapshotAfterA2 = await snapshot(request, port);
     expect(
       snapshotAfterA2.periodos.find(
@@ -1077,6 +1116,20 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
     await expect(
       page.getByRole("heading", { name: "T1 · 2026 · A1", exact: true }),
     ).toBeVisible();
+    const identidadPorId = page.getByRole("region", {
+      name: "Identidad del agregado",
+    });
+    await expect(
+      identidadPorId
+        .locator(".ui-badge")
+        .filter({ hasText: "Consulta explícita" })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      identidadPorId
+        .locator(".ui-badge")
+        .filter({ hasText: "Última automática" }),
+    ).toHaveCount(0);
     await expect(
       page
         .getByRole("region", { name: "Tabla de composición del periodo" })
@@ -1091,6 +1144,20 @@ test("E4.11 API/UI: agregado persistido inmutable tras re-cierre v2 y nuevo agre
     await expect(
       page.getByRole("heading", { name: "T1 · 2026 · A2", exact: true }),
     ).toBeVisible();
+    const identidadUltima = page.getByRole("region", {
+      name: "Identidad del agregado",
+    });
+    await expect(
+      identidadUltima
+        .locator(".ui-badge")
+        .filter({ hasText: "Última automática" })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      identidadUltima
+        .locator(".ui-badge")
+        .filter({ hasText: "Consulta explícita" }),
+    ).toHaveCount(0);
     await expect(
       page
         .getByRole("region", { name: "Tabla de composición del periodo" })
@@ -1290,7 +1357,9 @@ test("E4.11 UI: estados vacío/carga/error/401/404/422, foco, teclado y regiones
 
     // Teclado: el enlace de navegación enfoca el h1 y el orden natural llega
     // al selector de tipo, ciclo y versión.
-    await page.getByRole("link", { name: /Fotos/ }).first().click();
+    await page
+      .getByRole("link", { name: "Instantáneas financieras", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Fotografías", exact: true }),
     ).toBeFocused();
@@ -1376,11 +1445,15 @@ test("E4.11 UI: estados vacío/carga/error/401/404/422, foco, teclado y regiones
     await expect(
       page.getByText("Código: INTERNAL · HTTP 500", { exact: true }),
     ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.activeElement?.querySelector(".alert") !== null,
-      ),
-    ).toBe(true);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.activeElement?.querySelector(".alert") !== null,
+          ),
+        { timeout: 5000 },
+      )
+      .toBe(true);
     await page.unroute("**/api/fotos/ciclos/1");
     await page
       .getByRole("button", { name: "Reintentar", exact: true })

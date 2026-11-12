@@ -28,7 +28,7 @@ async function login(page: any, request: any) {
   });
   await page.goto("/precierre");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(state + "/bootstrap.txt", "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })

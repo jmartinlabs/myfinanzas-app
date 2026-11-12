@@ -15,6 +15,11 @@ import {
   listConciliacionesDeuda,
   listDeudasCompletas,
 } from "./deuda-completa";
+import {
+  agregarDeudaNoHipotecaria,
+  esDeudaNoHipotecariaActiva,
+  listarDeudasCompletas,
+} from "./deuda-no-hipotecaria";
 import { Auth, provision, totp } from "./auth";
 import { createApp } from "./app";
 import { Problem } from "./problem";
@@ -979,6 +984,559 @@ test("E4.4 rutas GET: MFA/sesión, Problem, corte y lectura sin escrituras finan
     expect(snapshot()).toEqual(before);
     await request("/deudas/D001/conciliaciones", cookie);
     expect(listConciliacionesDeuda(db, d.id)).toHaveLength(1);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.4 AC-21: rectificar un pago recalcula deuda, corte y conciliación; ambas Deudas", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { d, p, s, sub, h2 } = debtFixture(db);
+    const other = createDebt(
+      db,
+      {
+        nombre: "Otra deuda ficticia",
+        inicioControl: "2026-10-01",
+        capitalApertura: "500",
+      },
+      randomUUID(),
+    );
+    const otherPartida = createClassification(
+      db,
+      "partidas",
+      { nombre: "Cuota de la otra deuda", padre: sub.id, deuda: other.id },
+      randomUUID(),
+    );
+    conciliation(db, {
+      id: "C002",
+      deuda: d.id,
+      fechaCorte: "2026-10-20",
+      capitalDeclarado: 75000,
+    });
+
+    const revision = () =>
+      (
+        db.query("SELECT revision FROM movimientos WHERE id=?").get(h2.id) as {
+          revision: number;
+        }
+      ).revision;
+    const movementsBefore = (
+      db.query("SELECT COUNT(*) n FROM movimientos").get() as { n: number }
+    ).n;
+
+    const initial = getDeudaCompleta(db, d.id, null, now);
+    expect(initial.capital.deudaViva).toBe("720.00");
+    expect(initial.conciliaciones[0]).toMatchObject({
+      diferencia: "30.00",
+      estadoConciliacion: "Diferencia",
+    });
+
+    // Rectification replaces the previous effect; it is not a second fact and
+    // the same row keeps its identity.
+    save(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-10-01",
+        saldo: s.id,
+        partida: p.id,
+        importe: "110",
+        capital: "90",
+        intereses: "20",
+        revision: revision(),
+        motivo: "Rectificación ficticia del importe",
+      },
+      h2.id,
+    );
+    const rectified = getDeudaCompleta(db, d.id, null, now);
+    expect(rectified.capital.deudaViva).toBe("710.00");
+    expect(rectified.capital.aplicado).toBe("290.00");
+    expect(rectified.conciliaciones[0]).toMatchObject({
+      diferencia: "40.00",
+      estadoConciliacion: "Diferencia",
+    });
+    expect(rectified.historia.find((h) => h.movimiento === h2.id)).toMatchObject({
+      total: "110.00",
+      capital: "90.00",
+      intereses: "20.00",
+      gasto: "110.00",
+      efectoBanco: "-110.00",
+      aplicaAlCapital: true,
+    });
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimientos").get(),
+    ).toEqual({ n: movementsBefore });
+
+    // Moving the date across the cut-off changes only the affected inclusive
+    // cut-offs, without reconstructing a past snapshot.
+    save(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-10-02",
+        saldo: s.id,
+        partida: p.id,
+        importe: "110",
+        capital: "90",
+        intereses: "20",
+        revision: revision(),
+        motivo: "Cambio ficticio de fecha",
+      },
+      h2.id,
+    );
+    expect(getDeudaCompleta(db, d.id, "2026-10-01", now).capital.deudaViva).toBe(
+      "1000.00",
+    );
+    expect(getDeudaCompleta(db, d.id, "2026-10-02", now).capital.deudaViva).toBe(
+      "910.00",
+    );
+    expect(getDeudaCompleta(db, d.id, "2026-10-20", now).capital.deudaViva).toBe(
+      "710.00",
+    );
+
+    // Reassigning the Partida makes both Deudas recalculate; the reconciliation
+    // keeps using the Deuda's recorded facts.
+    save(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-10-02",
+        saldo: s.id,
+        partida: otherPartida.id,
+        importe: "110",
+        capital: "90",
+        intereses: "20",
+        revision: revision(),
+        motivo: "Cambio ficticio de Deuda",
+      },
+      h2.id,
+    );
+    const sourceAfter = getDeudaCompleta(db, d.id, null, now);
+    const targetAfter = getDeudaCompleta(db, other.id, null, now);
+    expect(sourceAfter.capital).toMatchObject({
+      aplicado: "200.00",
+      deudaViva: "800.00",
+      calculable: true,
+    });
+    expect(sourceAfter.conciliaciones[0]).toMatchObject({
+      diferencia: "-50.00",
+      estadoConciliacion: "Diferencia",
+    });
+    expect(targetAfter.capital).toMatchObject({
+      aplicado: "90.00",
+      deudaViva: "410.00",
+      calculable: true,
+    });
+    expect(targetAfter.historia.map((h) => h.movimiento)).toEqual([h2.id]);
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimientos").get(),
+    ).toEqual({ n: movementsBefore });
+    expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.4 AC-25: consumidores reciben capital/tipo separados sin sumar Deuda a Saldos", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { d, s, p, sub } = debtFixture(db);
+    setHistorico(db, d.id);
+    const hipotecaria = createDebt(
+      db,
+      {
+        nombre: "Hipoteca ficticia",
+        inicioControl: "2026-10-01",
+        capitalApertura: "500",
+        tipoDeuda: "Hipotecaria",
+      },
+      randomUUID(),
+    );
+    const hipotecariaPartida = createClassification(
+      db,
+      "partidas",
+      { nombre: "Cuota hipotecaria ficticia", padre: sub.id, deuda: hipotecaria.id },
+      randomUUID(),
+    );
+    save(
+      db,
+      quota(s.id, hipotecariaPartida.id, {
+        importe: "50",
+        capital: "50",
+        intereses: "0",
+      }),
+    );
+    createDebt(
+      db,
+      {
+        nombre: "Deuda sin tipo ficticia",
+        inicioControl: "2026-10-01",
+        capitalApertura: "300",
+      },
+      randomUUID(),
+    );
+    db.run(
+      "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D902','Deuda no calculable ficticia','2026-10-01',NULL,'Activa',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
+    );
+    db.run(
+      "UPDATE deudas SET tipo_deuda='No hipotecaria' WHERE id='D902'",
+    );
+
+    const saldoBefore = getSaldo(db, s.id).posicion.importe;
+    const movementsBefore = (
+      db.query("SELECT COUNT(*) n FROM movimientos").get() as { n: number }
+    ).n;
+    const all = listarDeudasCompletas(db);
+    const nonHypothecary = all.filter(esDeudaNoHipotecariaActiva);
+    expect(nonHypothecary.map((item) => item.id)).toEqual([d.id, "D902"]);
+
+    const aggregate = agregarDeudaNoHipotecaria(nonHypothecary);
+    expect(aggregate).toEqual({
+      subtotal: "720.00",
+      total: null,
+      estado: "Parcial",
+      incluidos: 1,
+      excluidos: 1,
+      motivos: ["D902: Falta el capital de apertura."],
+      ids: [d.id, "D902"],
+      revisiones: [d.id + "@1", "D902@1"],
+    });
+
+    // The contract keeps the type and the outstanding capital separate: the
+    // hypothecary debt is identifiable but never added to the non-hypothecary
+    // subtotal, and Deuda is still not a Saldo.
+    const hypothecary = all.find((item) => item.id === hipotecaria.id)!;
+    expect(hypothecary.tipoDeuda).toBe("Hipotecaria");
+    expect(hypothecary.capitalPendiente).toBe("450.00");
+    expect(aggregate.total).not.toBe("1170.00");
+    expect(aggregate.subtotal).not.toBe("1170.00");
+    expect(getSaldo(db, s.id).posicion.importe).toBe(saldoBefore);
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimientos").get(),
+    ).toEqual({ n: movementsBefore });
+
+    // The aggregate adds outstanding capital only, never the quota's Gasto, so
+    // the financial effect is not duplicated.
+    const ficha = getDeudaCompleta(db, d.id, null, now);
+    expect(aggregate.subtotal).toBe(ficha.capital.deudaViva);
+    expect(ficha.totales.gasto).toBe("100.00");
+    expect(aggregate.subtotal).not.toBe(
+      ficha.totales.gasto,
+    );
+
+    expect(p.id.startsWith("PAR")).toBe(true);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.4 AC-29: parcial, no calculable y diferencia se distinguen sin ceros inventados", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { d, s, p } = debtFixture(db);
+    conciliation(db, {
+      id: "C002",
+      deuda: d.id,
+      fechaCorte: "2026-10-20",
+      capitalDeclarado: 75000,
+    });
+    db.run(
+      "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D900','Apertura no informada','2026-10-01',NULL,'Activa',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
+    );
+    conciliation(db, {
+      id: "C009",
+      deuda: "D900",
+      fechaCorte: "2026-10-20",
+      capitalDeclarado: 100000,
+    });
+
+    const valid = getDeudaCompleta(db, d.id, null, now);
+    expect(valid.capital.deudaViva).toBe("720.00");
+    expect(valid.conciliaciones[0]).toMatchObject({
+      diferencia: "30.00",
+      estadoConciliacion: "Diferencia",
+    });
+
+    const missingBase = getDeudaCompleta(db, "D900", null, now);
+    expect(missingBase.capitalPendiente).toBeNull();
+    expect(missingBase.capital).toMatchObject({
+      calculable: false,
+      motivoNoCalculable: "Falta el capital de apertura.",
+    });
+    expect(missingBase.conciliaciones[0]).toMatchObject({
+      diferencia: null,
+      estadoConciliacion: "No comparable",
+      motivoNoComparable: "Falta el capital de apertura.",
+    });
+
+    const list = listDeudasCompletas(db);
+    expect(
+      list.items.find((item) => item.id === d.id)?.capitalPendiente,
+    ).toBe("720.00");
+    expect(
+      list.items.find((item) => item.id === "D900")?.capitalPendiente,
+    ).toBeNull();
+    expect(
+      list.items.find((item) => item.id === "D900")?.capital.deudaViva,
+    ).toBeNull();
+
+    // An applicable invalid breakdown turns that Deuda's whole position at the
+    // consulted cut-off into "No calculable"; it is not shown as a partial sum.
+    record(db, {
+      id: "9101",
+      fecha: "2026-10-10",
+      tipo: "Gasto",
+      importe: 10000,
+      capital: null,
+      intereses: null,
+      partida: p.id,
+      saldo: s.id,
+    });
+    const invalid = getDeudaCompleta(db, d.id, "2026-10-20", now);
+    expect(invalid.capitalPendiente).toBeNull();
+    expect(invalid.capital).toMatchObject({
+      calculable: false,
+      hechosInvalidos: ["9101"],
+      motivoNoCalculable: "Desglose inválido en el Movimiento 9101.",
+    });
+    expect(invalid.cobertura.desgloseVerificable).toBe(false);
+    expect(invalid.conciliaciones[0]).toMatchObject({
+      diferencia: null,
+      estadoConciliacion: "No comparable",
+      motivoNoComparable: "Desglose inválido en el Movimiento 9101.",
+    });
+
+    try {
+      getDeudaCompleta(db, "D999", null, now);
+      throw new Error("La Deuda inexistente debió devolver 404.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Problem);
+      expect((error as Problem).status).toBe(404);
+    }
+    try {
+      getDeudaCompleta(db, d.id, "2026-10-23", now);
+      throw new Error("El corte futuro debió devolver 422.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Problem);
+      expect((error as Problem).status).toBe(422);
+    }
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.4 AC-30: simulación, cuadro, previsión, comisión, activo y ajuste se rechazan", async () => {
+  const db = openDatabase(":memory:"),
+    key = randomBytes(32);
+  try {
+    const auth = new Auth(db, key),
+      enrolled = await auth.enroll(
+        provision(db),
+        "Contraseña ficticia " + randomUUID(),
+      ),
+      verified = auth.verify(
+        new Request("http://127.0.0.1:5173", {
+          headers: { cookie: auth.challengeName + "=" + enrolled.challenge },
+        }),
+        totp(enrolled.secret!).generate(),
+      ),
+      handler = HttpApp.toWebHandler(
+        createApp(db, { key, now: () => now }),
+      ),
+      cookie = auth.cookieName + "=" + verified.session,
+      request = (
+        path: string,
+        method = "GET",
+        body?: unknown,
+        headers: Record<string, string> = {},
+      ) =>
+        handler(
+          new Request("http://127.0.0.1:3001/api" + path, {
+            method,
+            headers: { "content-type": "application/json", ...headers },
+            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+          }),
+        ),
+      write = () => ({
+        cookie,
+        origin: "http://127.0.0.1:5173",
+        "x-csrf-token": verified.csrf,
+        "idempotency-key": randomUUID(),
+      }),
+      base = {
+        nombre: "Deuda sin simulación ficticia",
+        inicioControl: "2026-10-01",
+        capitalApertura: "1000",
+      },
+      rejected = [
+        { simulacion: { cuotasFuturas: 12 } },
+        { cuadroAmortizacion: [] },
+        { prevision: "2027-01-01" },
+        { comision: "1.00" },
+        { activoInmobiliario: "Vivienda ficticia" },
+        { ajusteCapital: "10.00" },
+        { cuotaFutura: "100.00" },
+        { capitalPendiente: "1.00" },
+        { deudaViva: "1.00" },
+      ];
+
+    for (const extra of rejected)
+      expect(
+        (await request("/deudas", "POST", { ...base, ...extra }, write()))
+          .status,
+      ).toBe(422);
+    expect(db.query("SELECT COUNT(*) n FROM deudas").get()).toEqual({ n: 0 });
+
+    const created = await request("/deudas", "POST", base, write());
+    expect(created.status).toBe(201);
+    const item = (await created.json()).item as {
+      id: string;
+      revision: number;
+    };
+    for (const extra of rejected)
+      expect(
+        (
+          await request(
+            "/deudas/" + item.id,
+            "PATCH",
+            { revision: item.revision, ...extra },
+            write(),
+          )
+        ).status,
+      ).toBe(422);
+    expect(
+      (
+        await request(
+          "/deudas/" + item.id + "/conciliaciones",
+          "POST",
+          {
+            fechaCorte: "2026-10-20",
+            capitalDeclarado: "1000",
+            ajusteCapital: "10.00",
+          },
+          write(),
+        )
+      ).status,
+    ).toBe(422);
+
+    expect(db.query("SELECT COUNT(*) n FROM deudas").get()).toEqual({ n: 1 });
+    expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual({
+      n: 0,
+    });
+    expect(
+      db.query("SELECT COUNT(*) n FROM conciliaciones_deuda").get(),
+    ).toEqual({ n: 0 });
+    const ficha = (
+      await request("/deudas/" + item.id, "GET", undefined, { cookie })
+    );
+    const body = (await ficha.json()).item;
+    for (const keyName of [
+      "simulacion",
+      "cuadroAmortizacion",
+      "prevision",
+      "comision",
+      "activoInmobiliario",
+      "ajusteCapital",
+      "cuotaFutura",
+    ])
+      expect(body).not.toHaveProperty(keyName);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.4 AC-31: regresión E1.6 y cuatro Tipos; cuota Gasto y extraordinaria sin Gasto", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { d, p, s } = debtFixture(db);
+    const rows = db
+      .query(
+        "SELECT id,tipo,importe,capital,intereses FROM movimientos ORDER BY fecha,id",
+      )
+      .all() as {
+      id: string;
+      tipo: string;
+      importe: number;
+      capital: number | null;
+      intereses: number | null;
+    }[];
+    const quotaRow = rows.find((row) => row.tipo === "Gasto" && row.id !== rows[0].id)!;
+    const extraordinary = rows.find((row) => row.tipo === "Amortización deuda")!;
+    expect(quotaRow).toMatchObject({
+      importe: 10000,
+      capital: 8000,
+      intereses: 2000,
+    });
+    expect(extraordinary).toMatchObject({
+      importe: 20000,
+      capital: 20000,
+      intereses: 0,
+    });
+    // The quota is a Gasto in full; the extraordinary is not a Gasto.
+    expect(quotaRow.tipo).toBe("Gasto");
+    expect(extraordinary.tipo).not.toBe("Gasto");
+
+    // The pre-existing E1.6 reader and the four movement Types remain intact.
+    expect(getDebt(db, d.id).capitalPendiente).toBe("720.00");
+    const period = debtPeriod(db, ledgerRows(db));
+    expect(period.capital).toBe(33000n);
+    expect(period.intereses).toBe(4000n);
+    expect(period.desgloseVerificable).toBe(true);
+    const movementSql = (
+      db
+        .query(
+          "SELECT sql FROM sqlite_master WHERE type='table' AND name='movimientos'",
+        )
+        .get() as { sql: string }
+    ).sql;
+    for (const tipo of [
+      "Ingreso",
+      "Gasto",
+      "Transferencia",
+      "Amortización deuda",
+    ])
+      expect(movementSql).toContain(`'${tipo}'`);
+
+    // Exterior Transferencia is still blocked by E1.6/E3 rules, not added here.
+    try {
+      previewMovement(
+        db,
+        {
+          tipo: "Transferencia",
+          fecha: "2026-10-02",
+          origen: "S000",
+          destino: s.id,
+          importe: "10",
+          concepto: "Transferencia ficticia",
+          nota: "",
+        },
+        null,
+        false,
+        now,
+      );
+      throw new Error("La Transferencia desde Exterior debió rechazarse.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Problem);
+      expect((error as Problem).status).toBe(422);
+    }
+
+    // Merely reading the E4.4 model does not create movements, closings or
+    // synthetic capital facts.
+    const movementsBefore = (
+      db.query("SELECT COUNT(*) n FROM movimientos").get() as { n: number }
+    ).n;
+    const closingsBefore = (
+      db.query("SELECT COUNT(*) n FROM ciclos").get() as { n: number }
+    ).n;
+    getDeudaCompleta(db, d.id, null, now);
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimientos").get(),
+    ).toEqual({ n: movementsBefore });
+    expect(db.query("SELECT COUNT(*) n FROM ciclos").get()).toEqual({
+      n: closingsBefore,
+    });
+    expect(p.id.startsWith("PAR")).toBe(true);
   } finally {
     db.close();
   }

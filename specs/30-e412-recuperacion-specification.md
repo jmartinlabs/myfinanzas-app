@@ -1,11 +1,18 @@
 # 30 — E4.12 Ensayo integral de recuperación y equivalencia: Specification
 
-Status: **DRAFT — no aprobada; no autoriza DEV, ensayo, datos reales, migración, VPS ni merge.**
-Approval source/date: **PENDING** — no existe aprobación funcional ni revisión de Álex
-registrada para E4.12.
-Base: `main` `90cd5dc` (2026-11-04); rama `docs/spec-next`. Sin cambios de aplicación,
-esquema, infraestructura, datos ni tablero.
-Ningún AC está ejecutado: este documento **no declara PASS** y **no cierra E4.12**.
+Status: **F0 APROBADA — 2026-11-09. F1 IN_PROGRESS (preparación documental).** Aprobación
+explícita e identificable del usuario al marco documental de E4.12 —esta SPEC, su testplan,
+los 17 AC, los niveles A/B y los gates independientes—, transmitida por el coordinador. El
+`PASS` de F0 es de fase documental: **no es PASS de ningún AC ni de E4.12**. No autoriza DEV,
+ensayo, datos reales, migración, VPS ni merge; F2/F3/F4 siguen `UNRUN`.
+Approval source/date: **2026-11-09 — usuario**, aprobación del marco documental F0
+(SPEC30/testplan, AC01–AC17, niveles A/B y gates de §5/§6); revisión de Álex no registrada.
+F1: **IN_PROGRESS y PENDIENTE de decisiones** — §9 contiene propuestas documentales, no
+decisiones tomadas.
+Base del borrador: `test` `7477e86` (2026-11-08); revisión F0/F1: `test` `2e5de7c`
+(2026-11-09), rama `docs/e412-f1`. Sin cambios de aplicación, esquema, infraestructura, datos
+ni tablero; los estados de dependencias de §4/§7 no se reauditan en F1.
+Ningún AC está ejecutado: este documento **no declara PASS de AC** y **no cierra E4.12**.
 
 Contexto y fuentes: [requisitos E4.12](investigations/e412-recovery-requirements-2026-11-04.md),
 [roadmap E4.12](roadmap.md#e412--ensayo-integral-de-recuperación-y-preparación-de-equivalencia)
@@ -15,7 +22,13 @@ y sus reglas T-BKP, DT6, DT7 y P7,
 [SPEC32](32-ejecucion-rootless-specification.md) /
 [testplan 32](32-ejecucion-rootless-testplan.md),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md),
+[SPEC28/E4.10](28-e410-reapertura-specification.md),
+[SPEC29/E4.11](29-e411-fotografias-specification.md),
 [SPEC20/E4.5](20-historico-precontrol-specification.md),
+[aceptación E4.10](investigations/e410-acceptance-2026-11-06.md),
+[aceptación E4.11](investigations/e411-acceptance-2026-11-07.md),
+[DT6/T-BKP](investigations/dt6-t-bkp-procedure-2026-10-31.md),
+[DT7](investigations/dt7-decision-closure-2026-11-05.md),
 [security](guidelines/security.md), [quality](guidelines/quality.md),
 [referencia funcional v5.11](functional-reference-v5.11.md) y [tablero](epic-board.md).
 
@@ -29,8 +42,19 @@ decisión o evidencia que aún no existe. Ninguna marca convierte una propuesta 
 autorización.
 
 **Nota de vigencia documental:** el inventario de requisitos se contrastó sobre `main`
-`0b8aade`; este borrador se apoya en el tablero y el historial a `90cd5dc`. Las diferencias
-materiales se registran en §4.1 y no reabren decisiones aprobadas.
+`0b8aade`; este borrador se apoya en el estado de `test` `7477e86` y en los informes de
+aceptación de E4.10 (2026-11-06/07) y E4.11 (2026-11-07). Las diferencias materiales se
+registran en §3.2, §4.1 y §7 y no reabren decisiones aprobadas. El tablero sigue siendo la
+referencia de seguimiento, pero no es autorización y puede ir por detrás de la evidencia
+registrada.
+
+**Registro de aprobación F0 (2026-11-09).** `[CONFIRMADO]` El usuario aprobó de forma
+explícita e identificable el **marco documental** de E4.12 —esta SPEC, su testplan, los 17
+AC, los niveles A/B y los gates independientes—, transmitida por el coordinador. La
+aprobación no incluye ninguna decisión de §9 ni autoriza DEV, ensayo, datos reales,
+migración, VPS o merge. `[CONFIRMADO]` F0 queda **`PASS`/`DONE`** como gate
+documental; `[CONFIRMADO]` F1 queda **`IN_PROGRESS`**, con propuestas `[PROPUESTA]` en §9, y
+F2/F3/F4 **`UNRUN`**. Una fase cerrada no convierte ningún AC en PASS.
 
 ---
 
@@ -118,6 +142,26 @@ se ejecuta contra PROD, la base en servicio, el VPS ni el libro real. Un resulta
 ensayo no acredita por sí solo custodia externa, hardware real, plataforma Linux/x86_64
 ni equivalencia económica real.
 
+### 2.5 Dos niveles de evidencia, un solo estándar de declaración
+
+`[PROPUESTA]` Para no mezclar «lo que ya puede probarse» con «lo que exige operación real»,
+E4.12 distingue dos niveles. El nivel A puede ejecutarse con fixtures en un entorno aislado;
+el nivel B es el ensayo integral final y exige los gates de §4 y §5. Ninguno de los dos
+convierte una propuesta en autorización.
+
+| Dimensión | Nivel A — fixtures | Nivel B — integral final |
+| --- | --- | --- |
+| Datos | Fixtures deterministas y ficticias; copia sintética coherente con WAL | Copia ficticia coherente autorizada y, si se busca equivalencia real, contraste privado autorizado |
+| Entorno | Aislado, sin PROD; Linux x86_64 si se declara esa evidencia | Entorno de ensayo autorizado con configuración productiva declarada |
+| Puede demostrar | Contrato de esquema, integridad/FK, identidad y vínculos, fotos v1/v2, fallo cerrado, acceso y revocación con fixtures | Lo anterior más custodia externa, recuperación operativa, plataforma y oráculo |
+| No puede demostrar | DT6, custodia, RPO/RTO, recuperación operativa ni equivalencia económica | Nada que dependa de datos reales no autorizados (AC-25/P3) |
+| Etiqueta de resultado | `PASS (fixtures)`/`PARCIAL`/`UNRUN`/`BLOCKED`; nunca aceptación global | `PASS`/`PARCIAL`/`UNRUN`/`BLOCKED` con alcance declarado |
+
+`[CONFIRMADO]` Un `PASS (fixtures)` no es un PASS de aceptación y no se convierte en PASS
+integral por acumulación. El nivel A sirve para preparar evidencia y detectar huecos, no
+para cerrar E4.12 ni P7. `[PROPUESTA]` La autorización de F3 debe declarar qué nivel se
+autoriza; sin esa declaración no se ejecuta ninguno.
+
 ---
 
 ## 3. Requisitos y criterios de aceptación
@@ -134,26 +178,35 @@ Este documento no declara PASS de ningún AC.
 
 | ID | Requisito | Cómo se probará (tipo de evidencia) | Evidencia esperada | Estado |
 | --- | --- | --- | --- | --- |
-| **E4.12-AC01** | La copia restaurada en destino nuevo abre con el contrato de app/esquema que corresponde a su versión, sin downgrade destructivo ni reset de identidad; manifiesto, checksum, integridad, FK y esquema concuerdan. | Comparación pre/post de identidad y metadatos; apertura real de la copia restaurada; negativo con copia corrupta o manipulada. | Manifiesto, SHA-256, DTO de identidad pre/post, resultado de apertura y log crudo. | `PENDIENTE` |
-| **E4.12-AC02** | IDs de entidades, ciclos, fotos y archivo E4.5 se conservan estables, únicos y no reutilizados; ningún ID nuevo ocupa el hueco de uno existente. | Inventario y diff de IDs antes/después del restore; alta posterior sobre la copia para comprobar que no reutiliza IDs. | Listado/diff de IDs por entidad, recuentos y alta posterior con ID nuevo. | `PENDIENTE` |
-| **E4.12-AC03** | Las aperturas conservan su naturaleza de posición/atributo, no se convierten en Movimiento, no se duplican y Saldo/Deuda antes y después son iguales. | Comparación de aperturas y consulta de Saldos/Deudas; comprobación de que no se crea ningún Movimiento. | DTO de aperturas/Saldos/Deudas pre/post y listado de Movimientos sin altas. | `PENDIENTE` |
-| **E4.12-AC04** | Relaciones, transferencias, referencias, fichas y auxiliares conservan vínculos y cardinalidad 1:1/1:N; ninguna relación se recrea por nombre ni queda huérfana. | Diff de vínculos por ID, consulta de huérfanos y navegación funcional por API/UI sobre la copia. | Diff de relaciones, cardinalidades por ficha y navegación documentada. | `PENDIENTE` |
-| **E4.12-AC05** | El plan vivo sigue siendo editable según su contrato y el plan final/foto permanece congelado; editar el vivo no altera la foto ni el plan final. | Edición del plan vivo sobre la copia restaurada y consulta del plan final/foto antes/después. | DTO del plan antes/después y snapshot de la foto sin cambios. | `PENDIENTE` |
-| **E4.12-AC06** | Los hechos conservan importe, fecha, clasificación, referencias y auxiliares con su cobertura declarada; no se pierden, duplican ni reclasifican por texto. | Comparación de hechos y auxiliares antes/después al corte, dentro de la cobertura declarada (R4/R5). | Diff de hechos/auxiliares y cobertura por bloque. | `PENDIENTE` |
-| **E4.12-AC07** | Las fotos conservan versión, corte, metadatos, fingerprint y contenido persistido; v1 y v2 son consultables e inmutables y una foto anterior no se confunde con un recálculo actual. | Consulta explícita de v1 y v2 tras el restore y comparación de contenido/metadatos; contraste etiquetado con el cálculo vivo. | DTO v1/v2, fingerprint, diff de contenido y consulta/captura de la versión seleccionada. | `PENDIENTE` |
-| **E4.12-AC08** | Tras el restore, contraseña + TOTP son operativos; sesiones, desafíos, códigos e intentos previos no resucitan y un login nuevo emite códigos nuevos. | Reutilización de credenciales/sesiones previas y login nuevo real sobre la copia aislada. | Respuestas de rechazo/aceptación, emisión de códigos nuevos y ausencia de secretos en logs. | `PENDIENTE` |
-| **E4.12-AC09** | Ante copia corrupta, manifiesto/checksum/esquema manipulado, clave errónea, destino existente o antigüedad no aceptada, la restauración falla cerrada, sin destino parcial ni reemplazo de copia buena. | Negativos reproducibles con hash/esquema/clave y comprobación del estado previo del destino. | Exit no cero, destino previo intacto, ausencia de temporales utilizables y log crudo. | `PENDIENTE` |
-| **E4.12-AC10** | Cero datos reales, bases, claves o secretos en Git, CI, logs o artefactos; la evidencia del ensayo reside en una carpeta privada fuera de Git. | Revisión de contenido, destinos, logs y artefactos producidos; revisión de historial/diff. | Inventario de artefactos, resultado de revisión y confirmación de ruta privada sin valores secretos. | `PENDIENTE` |
-| **E4.12-AC11** | La copia de entrada es un snapshot coherente con WAL, con manifiesto (app, esquema, origen, instante, id), SHA-256, integridad/FK/esquema y sin texto plano ni temporales en el destino. | Verificación del manifiesto/checksum y de la correspondencia snapshot↔estado; no se copia un archivo abierto a ciegas. | Manifiesto, checksum, resultados de integridad/FK/esquema y declaración de origen. | `PENDIENTE` |
-| **E4.12-AC12** | La matriz v5.11 está congelada antes de ejecutar, con identificador, procedencia, corte, valor esperado, unidad/precisión y regla; no se calcula con el motor validado ni se copia de su salida. | Revisión de la matriz y de su procedencia; congelación por hash/fecha antes del ensayo. | Matriz versionada (fuera de Git si contiene datos), registro de congelación y revisión del usuario/asesor. | `PENDIENTE` |
-| **E4.12-AC13** | Cada escenario R1–R6/P1–P7 se contrasta al mismo corte; las diferencias se registran y no se fuerzan a PASS; un caso omitido no se lee como correcto. | Ejecución por escenario con resultado observado frente al esperado y clasificación de diferencias. | Tabla de resultados por caso, diferencias explicadas/no explicadas y cobertura de escenarios. | `PENDIENTE` |
-| **E4.12-AC14** | Existe un listado de discrepancias y brechas con estado por elemento (`PASS`/`PARCIAL`/`UNRUN`/`BLOCKED`), causa, responsable y gate que lo cierra, que permite decidir el gate P7 sin inferencias. | Consolidación del informe a partir de AC01–AC13 y del estado real de las dependencias. | Informe de brechas trazable a caso/AC y decisión de gate P7. | `PENDIENTE` |
-| **E4.12-AC15** | Los escenarios obligatorios del roadmap —recuperación en limpio, copia corrupta, recuperación de acceso, no publicación de datos/claves y escenarios integrados R1–R6/P1–P7— están cubiertos o declarados fuera con brecha explícita. | Matriz de cobertura escenario→AC→evidencia, sin huecos silenciosos. | Matriz de cobertura completa con exclusiones motivadas. | `PENDIENTE` |
-| **E4.12-AC16** | Versión de app/esquema, contrato y fixtures se fijan antes de ejecutar; restore y oráculo usan el mismo corte; E4.5/E4.9/E4.10/E4.11 figuran integrados, parciales o excluidos explícitamente. | Revisión del candidato y del corte; lista de inclusiones/exclusiones con justificación. | SHA del candidato, versión de esquema, contrato y lista de inclusiones/exclusiones. | `PENDIENTE` |
-| **E4.12-AC17** | Cada resultado registra acción, entorno, candidato, base, fecha y log crudo; `PARCIAL`/`UNRUN`/`BLOCKED` no se convierten en PASS; un restore sintético no se presenta como recuperación operativa. | Revisión de evidencia por QA independiente y reproducción de una muestra. | Registro de evidencia, logs crudos, revisión QA y declaración de límites. | `PENDIENTE` |
+| **E4.12-AC01** | La copia restaurada en destino nuevo abre con el contrato de app/esquema que corresponde a su versión, sin downgrade destructivo ni reset de identidad; manifiesto, checksum, integridad, FK y esquema concuerdan. | Comparación pre/post de identidad y metadatos; apertura real de la copia restaurada; negativo con copia corrupta o manipulada. | Manifiesto, SHA-256, DTO de identidad pre/post, resultado de apertura y log crudo. | `UNRUN` |
+| **E4.12-AC02** | IDs de entidades, ciclos, fotos y archivo E4.5 se conservan estables, únicos y no reutilizados; ningún ID nuevo ocupa el hueco de uno existente. | Inventario y diff de IDs antes/después del restore; alta posterior sobre la copia para comprobar que no reutiliza IDs. | Listado/diff de IDs por entidad, recuentos y alta posterior con ID nuevo. | `UNRUN` |
+| **E4.12-AC03** | Las aperturas conservan su naturaleza de posición/atributo, no se convierten en Movimiento, no se duplican y Saldo/Deuda antes y después son iguales. | Comparación de aperturas y consulta de Saldos/Deudas; comprobación de que no se crea ningún Movimiento. | DTO de aperturas/Saldos/Deudas pre/post y listado de Movimientos sin altas. | `UNRUN` |
+| **E4.12-AC04** | Relaciones, transferencias, referencias, fichas y auxiliares conservan vínculos y cardinalidad 1:1/1:N; ninguna relación se recrea por nombre ni queda huérfana. | Diff de vínculos por ID, consulta de huérfanos y navegación funcional por API/UI sobre la copia. | Diff de relaciones, cardinalidades por ficha y navegación documentada. | `UNRUN` |
+| **E4.12-AC05** | El plan vivo sigue siendo editable según su contrato y el plan final/foto permanece congelado; editar el vivo no altera la foto ni el plan final. | Edición del plan vivo sobre la copia restaurada y consulta del plan final/foto antes/después. | DTO del plan antes/después y snapshot de la foto sin cambios. | `UNRUN` |
+| **E4.12-AC06** | Los hechos conservan importe, fecha, clasificación, referencias y auxiliares con su cobertura declarada; no se pierden, duplican ni reclasifican por texto. | Comparación de hechos y auxiliares antes/después al corte, dentro de la cobertura declarada (R4/R5). | Diff de hechos/auxiliares y cobertura por bloque. | `UNRUN` |
+| **E4.12-AC07** | Las fotos conservan versión, corte, metadatos, fingerprint y contenido persistido; v1 y v2 son consultables e inmutables y una foto anterior no se confunde con un recálculo actual. | Consulta explícita de v1 y v2 tras el restore y comparación de contenido/metadatos; contraste etiquetado con el cálculo vivo. | DTO v1/v2, fingerprint, diff de contenido y consulta/captura de la versión seleccionada. | `UNRUN` |
+| **E4.12-AC08** | Tras el restore, contraseña + TOTP son operativos; sesiones, desafíos, códigos e intentos previos no resucitan y un login nuevo emite códigos nuevos. | Reutilización de credenciales/sesiones previas y login nuevo real sobre la copia aislada. | Respuestas de rechazo/aceptación, emisión de códigos nuevos y ausencia de secretos en logs. | `UNRUN` |
+| **E4.12-AC09** | Ante copia corrupta, manifiesto/checksum/esquema manipulado, clave errónea, destino existente o antigüedad no aceptada, la restauración falla cerrada, sin destino parcial ni reemplazo de copia buena. | Negativos reproducibles con hash/esquema/clave y comprobación del estado previo del destino. | Exit no cero, destino previo intacto, ausencia de temporales utilizables y log crudo. | `UNRUN` |
+| **E4.12-AC10** | Cero datos reales, bases, claves o secretos en Git, CI, logs o artefactos; la evidencia del ensayo reside en una carpeta privada fuera de Git. | Revisión de contenido, destinos, logs y artefactos producidos; revisión de historial/diff. | Inventario de artefactos, resultado de revisión y confirmación de ruta privada sin valores secretos. | `UNRUN` |
+| **E4.12-AC11** | La copia de entrada es un snapshot coherente con WAL, con manifiesto (app, esquema, origen, instante, id), SHA-256, integridad/FK/esquema y sin texto plano ni temporales en el destino. | Verificación del manifiesto/checksum y de la correspondencia snapshot↔estado; no se copia un archivo abierto a ciegas. | Manifiesto, checksum, resultados de integridad/FK/esquema y declaración de origen. | `UNRUN` |
+| **E4.12-AC12** | La matriz v5.11 está congelada antes de ejecutar, con identificador, procedencia, corte, valor esperado, unidad/precisión y regla; no se calcula con el motor validado ni se copia de su salida. | Revisión de la matriz y de su procedencia; congelación por hash/fecha antes del ensayo. | Matriz versionada (fuera de Git si contiene datos), registro de congelación y revisión del usuario/asesor. | `UNRUN` |
+| **E4.12-AC13** | Cada escenario R1–R6/P1–P7 se contrasta al mismo corte; las diferencias se registran y no se fuerzan a PASS; un caso omitido no se lee como correcto. | Ejecución por escenario con resultado observado frente al esperado y clasificación de diferencias. | Tabla de resultados por caso, diferencias explicadas/no explicadas y cobertura de escenarios. | `UNRUN` |
+| **E4.12-AC14** | Existe un listado de discrepancias y brechas con estado por elemento (`PASS`/`PARCIAL`/`UNRUN`/`BLOCKED`), causa, responsable y gate que lo cierra, que permite decidir el gate P7 sin inferencias. | Consolidación del informe a partir de AC01–AC13 y del estado real de las dependencias. | Informe de brechas trazable a caso/AC y decisión de gate P7. | `UNRUN` |
+| **E4.12-AC15** | Los escenarios obligatorios del roadmap —recuperación en limpio, copia corrupta, recuperación de acceso, no publicación de datos/claves y escenarios integrados R1–R6/P1–P7— están cubiertos o declarados fuera con brecha explícita. | Matriz de cobertura escenario→AC→evidencia, sin huecos silenciosos. | Matriz de cobertura completa con exclusiones motivadas. | `UNRUN` |
+| **E4.12-AC16** | Versión de app/esquema, contrato y fixtures se fijan antes de ejecutar; restore y oráculo usan el mismo corte; E4.5/E4.7/E4.9/E4.10/E4.11 figuran integrados, parciales o excluidos explícitamente. | Revisión del candidato y del corte; lista de inclusiones/exclusiones con justificación. | SHA del candidato, versión de esquema, contrato y lista de inclusiones/exclusiones. | `UNRUN` |
+| **E4.12-AC17** | Cada resultado registra acción, entorno, candidato, base, fecha y log crudo; `PARCIAL`/`UNRUN`/`BLOCKED` no se convierten en PASS; un restore sintético no se presenta como recuperación operativa. | Revisión de evidencia por QA independiente y reproducción de una muestra. | Registro de evidencia, logs crudos, revisión QA y declaración de límites. | `UNRUN` |
 
 `[PROPUESTA]` Los identificadores `E4.12-AC01…AC17` descomponen los tres AC del roadmap en
 criterios verificables; no crean aceptación nueva ni alteran E4.12-AC1…AC3.
+
+`[CONFIRMADO]` Los 17 AC están `UNRUN`: no se ha ejecutado ningún caso y `UNRUN` no
+significa correcto. `[PROPUESTA]` A nivel A (fixtures, §2.5) son elegibles AC01–AC11 y
+AC14–AC17 con el alcance que fije F2; AC12 solo con una matriz sanitizada congelada y AC13
+solo para los escenarios R/P que no dependan de E4.5/DT7 ni de datos reales. AC01 y AC11
+acreditan entonces contrato e integridad de una copia **sintética**, no custodia externa ni
+recuperación operativa. AC06 se limita a la cobertura declarada sin archivo E4.5; AC12 y
+AC13 no pueden declarar equivalencia económica. El nivel B (integral final) exige además
+los gates de §4 y §5 y la autorización específica de F3.
 
 ### 3.3 Cobertura de los escenarios obligatorios
 
@@ -203,35 +256,62 @@ reproducción en macOS (sqlite-b3-short-read).
 ## 4. Dependencias
 
 `[CONFIRMADO]` Las dependencias se leen en su estado real; el tablero **no es autorización**.
-La tabla canónica del tablero a `90cd5dc` solo mantiene filas E4.3–E4.12; los estados de
-E1–E3 y E4.1/E4.2 proceden del inventario de requisitos (base `0b8aade`) y del historial
-del tablero, y **no se reauditan en esta rama**.
+Los estados de E1–E3 y E4.1/E4.2 proceden del inventario de requisitos, del tablero y de los
+informes de aceptación citados; **no se reauditan en esta rama**. El estado vigente se fijó
+a `test` `7477e86` (2026-11-08), no a la base histórica del borrador; la revisión F0/F1 de
+2026-11-09 no lo reaudita.
 
 ### 4.1 Estado real por entrega
 
-> **Nota (2026-11-05):** la tabla conserva el estado a `90cd5dc` como base histórica del
-> borrador. Los avances posteriores no se reauditan aquí; en particular, E4.9 quedó
-> integrada y SPEC28 fue ratificada. Las filas E4.10/E4.11 se actualizan al estado vigente.
+> **Nota (2026-11-09):** la fila E4.12 refleja F0 aprobada; el resto de la tabla se
+> mantiene fechado a 2026-11-08 y no se reaudita aquí.
+>
+> **Nota (2026-11-08):** esta tabla sustituye la foto histórica a `90cd5dc`. E4.9, E4.10 y
+> E4.11 ya tienen código integrado; E4.7 también. Sus aceptaciones siguen abiertas. Donde
+> el tablero y el informe/testplan discrepan, se indica y no se resuelve por inferencia.
 
-| Dependencia | Estado declarado a `90cd5dc` | Situación | Qué debe estar cerrado antes del ensayo |
+| Dependencia | Estado real vigente (2026-11-08) | Situación | Exigencia para el ensayo |
 | --- | --- | --- | --- |
-| **E1.1–E1.6** | Integradas; E1.1 con 6 AC `PARCIAL`; E1.6 con contratos futuros separados | Integrado | Contratos estables de IDs, aperturas, movimientos, referencias y deuda; sin deuda documental que altere identidad |
+| **E1.1–E1.6** | Integradas; E1.1 con 6 AC `PARCIAL`; E1.6 con contratos futuros separados | Integrado con reservas | Contratos estables de IDs, aperturas, movimientos, referencias y deuda; sin deuda documental que altere identidad |
 | **E2.1–E2.6** | Integradas; E2.6 cerrada/integrada | Integrado | Plan de ciclo/anual, presupuestos, nómina y flujo con oráculo congelado |
 | **E3.1–E3.6** | Integradas con reservas: E3.1 AC36 `PARCIAL`; E3.2 D5-AC13 parcial/B-T11 `UNRUN`; E3.3 retorno administrativo por consolidar; E3.4 AC-25 abierto; E3.5 `MERGED 1560d04` con AC-15 `PARCIAL`; E3.6 `MERGED a26fffb` | Integrado con reservas | Auxiliares y Comida/FIN_NETA con cobertura declarada; AC-25/P3 resuelto o excluido explícitamente |
-| **E4.1** | Integrada `156a50d`; 6 AC `PARCIAL` | Integrado | Posiciones/instrumentos con cobertura y sin contratos abiertos que cambien el corte |
+| **E4.1** | Integrada `156a50d`; 6 AC `PARCIAL` | Integrado con reservas | Posiciones/instrumentos con cobertura y sin contratos abiertos que cambien el corte |
 | **E4.2** | Integrada `fd2e21c` | Integrado | Ventas/posición estables para el corte |
-| **E4.3** | A+B+C y QA integrados (`3b9be46`, `8552d4a`, `dd56553`); 15 AC PASS de cobertura y 2 `PARCIAL` | Integrado | Valoración/resultados con estado explícito; `No disponible` admisible en la primera foto, no en el ensayo final |
-| **E4.4** | Integrada `024b348`; evidencia post-merge #190 | Integrado | Deuda completa y conciliación con corte |
-| **E4.5** | SPEC20 aprobada; **DEV no autorizado**; 59 AC `UNRUN`; DT7 pendiente | **Sin DEV** | Archivo/histórico precontrol operativo y mapping DT7; sin esto no hay universo histórico completo |
-| **E4.6** | Integrada `cfbedb0` (#201); AC-01 `PARCIAL` según tablero | Integrado | Resumen de inicio en el corte o exclusión declarada |
-| **E4.7** | SPEC25 candidata integrada (#206); no aprobada; **sin DEV** | **Sin DEV** | Resumen anual y flujo trazable; sin esto no se cierra R3/R6 |
+| **E4.3** | A+B+C y QA integrados (`3b9be46`, `8552d4a`, `dd56553`); 15 AC PASS de cobertura y 2 `PARCIAL` | Integrado con reservas | Valoración/resultados con estado explícito; `No disponible` admisible en la primera foto, no en el ensayo final |
+| **E4.4** | Integrada `024b348`; evidencia post-merge #190 | Integrado; aceptación no registrada | Deuda completa y conciliación con corte; deuda de trazabilidad documental declarada |
+| **E4.5** | SPEC20 aprobada (docs `a806fd9`, #216); **DEV no autorizado**; 59 AC `UNRUN`; DT7 abierto | **Sin DEV** | Archivo/histórico precontrol operativo y mapping DT7; sin esto no hay universo histórico completo |
+| **E4.6** | Integrada `cfbedb0` (#201); AC-01 `PARCIAL` | Integrado con reservas | Resumen de inicio en el corte o exclusión declarada |
+| **E4.7** | Integrada `0e89562` (#210) con docs `948ade8`; aceptación pendiente (AC3 `PARCIAL`, AC10–15 `BLOCKED`, AC19 `UNRUN`) | Integrado con reservas | Resumen anual y flujo trazable; sin esto no se cierra R3/R6 |
 | **E4.8** | Precierre integrado (#150/#161); sin cierre real | Integrado | Controles de consistencia operativos antes del cierre/foto |
-| **E4.9** | PR **#200 en implementación**, no mergeado; AC `UNRUN` | **En PR** | Cierre manual, foto inmutable y preflight de backup verificables; DT6 bloquea el cierre real |
-| **E4.10** | SPEC28 **ratificada documentalmente** (2026-11-05); 24 AC `UNRUN`; **sin DEV** | **Sin DEV** | Reapertura/re-cierre y versiones v1/v2; sin esto AC07 no puede demostrar versiones de fotos |
-| **E4.11** | SPEC29 en borrador; P1-C/P4-A/P5-B aprobadas; **sin DEV** | **Sin DEV** | Consulta histórica por corte/versión; sin esto no hay foto trimestral/anual que preservar |
-| **E4.12** | SPEC30 = este documento | **Borrador** | Aprobación propia y autorización separada del ensayo |
+| **E4.9** | **Merged `0176ffc`** (#200); QA APTO CON RESERVAS; aceptación pendiente; AC-09 y cierre real sujetos a DT6 | **Integrado; aceptación abierta** | Cierre manual, foto inmutable y preflight de backup verificables; DT6 bloquea el cierre real, no el código |
+| **E4.10** | SPEC28 aprobada; DEV I1–I8 merged (I1 `70fa7c0`…I7 `81c8960`, I8 `5ea79b9`); **23 PASS (fixtures) / 1 PARCIAL**; aceptación global no declarada | **Integrado; aceptación abierta** | Reapertura, re-cierre, v1/v2 y cancelación disponibles; AC15 real sigue `BLOCKED` por DT6/E3.5 |
+| **E4.11** | SPEC29 aprobada (`6fe91d7`); DEV I1–I6 merged (I1 `a658803`, I2 `ef7bb00`, I3 `a3c616d`, I4 `f41f6c7`, I5 `024527c`, I6 `4da1516`); aceptación con fixtures **10 PASS / 5 PARCIAL / 15 `BLOCKED real`**; aceptación global no declarada | **Integrado; aceptación abierta** | Consulta por ciclo/versión y agregado v27 disponibles para fixtures. El tablero conserva «I4–I6 pendientes» y está desactualizado frente al historial; no se edita aquí |
+| **E4.12** | SPEC30 = este documento | **F0 aprobada 2026-11-09**; F1 `IN_PROGRESS` | F1 resuelta y autorización separada de F2/F3 |
 
-### 4.2 DT6/T-BKP
+`[CONFIRMADO]` E4.10 y E4.11 **no están funcionalmente aceptadas**: sus PASS son de
+fixtures y sus reservas/`BLOCKED real` siguen abiertos. `[PROPUESTA]` E4.12 puede usar su
+código y sus fixtures para el nivel A, pero no puede presentar esa evidencia como
+aceptación de E4.10/E4.11 ni como cierre de sus AC.
+
+### 4.2 Contrato de esquema y candidato
+
+`[CONFIRMADO]` En `test` `7477e86` el contrato vigente es `schemaVersion=27` /
+`C27-E411-FOTOS-PERIODO`; `C26-E410-REAPERTURA-V26` (v26) queda como versión anterior
+registrada. El manifiesto `schema-contracts.json` contiene C25 (E4.9), C26 (E4.10) y C27
+(E4.11). [SPEC35](35-deploy-tags-01-specification.md) declara el mismo contrato y el flujo
+`feature/* → test → main`; `test` es el origen de TEST y `main` el de PROD futuro. No se
+asume downgrade ni compatibilidad no verificada entre contratos.
+
+`[PROPUESTA]` E4.12 **no reserva versión de esquema**: es un ensayo, no una feature. Debe
+fijar como candidato un SHA congelado alcanzable desde `test`, con `schemaVersion=27` y
+`C27` verificados, y declararlo en AC16. Cualquier cambio posterior de esquema o contrato
+invalida el corte y exige re-fijarlo; no se mezclan contratos ni se hace downgrade. El
+ensayo no crea tags: la convención `deploy-test-v*`/`deploy-prod-v*` de SPEC35 sigue sin
+implementar (D11 abierta y fases 1–6 de SPEC35 no autorizadas) y su activación no forma parte de E4.12. `[PROPUESTA]` Tampoco
+hay paquete DEV de producto: si F2 necesita scripts o un harness de ensayo, son test-only,
+no tocan producción ni esquema y requieren la autorización de F2.
+
+### 4.3 DT6/T-BKP
 
 `[CONFIRMADO]` DT6 exige copia SQLite coherente (WAL), automatización/frecuencia, RPO/RTO,
 retención, cifrado, custodia/recuperación de claves, ubicación externa y prueba de
@@ -240,10 +320,12 @@ externo; no hay copia externa ni restauración operativa probada. Solo existen r
 sintéticos y preflight técnico.
 
 `[CONFIRMADO]` La ruta de código existe (VACUUM INTO, `age`, manifiesto/checksum,
-publicación por rename, revocación de accesos) y hay ensayos v19/v20, pero el restore
-sintético **no cierra DT6** ni acredita custodia externa.
+publicación por rename, revocación de accesos) y hay ensayos v19/v20. La aceptación E4.10
+registra además un restore v27 en Linux (AC22, CI #257) y el gate rootless 26→27 está
+integrado (`1fa0ecc`), pero el restore sintético **no cierra DT6** ni acredita custodia
+externa. El nivel A puede reutilizar el mecanismo con fixtures; el nivel B no.
 
-`[PENDIENTE]` Antes del ensayo faltan: destino externo autorizado, segunda copia,
+`[PENDIENTE]` Antes del ensayo integral faltan: destino externo autorizado, segunda copia,
 custodia/rotación de la identidad, ventana/frecuencia reales, evidencia de llegada y una
 restauración previa en entorno aislado que no sea el propio ensayo integral.
 
@@ -252,31 +334,37 @@ semanales / 3 mensuales` ya están aceptados en security. **Esta SPEC no fija ni
 esos objetivos**; el ensayo puede contrastarlos, pero no declararlos cumplidos sin
 evidencia.
 
-### 4.3 DT7 — mapping y corte
+### 4.4 DT7 — mapping y corte
 
 `[CONFIRMADO]` DT7 exige mapping exhaustivo por campo/ID/apertura/archivo, corte,
 discrepancias/excepciones, inventario privado y herramientas de importación aislada
-(roadmap DT7). **Estado real: abierto**; solo existe preparación documental/ficticia.
+(roadmap DT7). **Estado real: abierto.** Solo existe preparación documental/ficticia.
+
+`[CONFIRMADO]` M3/M6 están aceptadas; M9–M13 ratificadas; M14 A confirmada como contrato
+sin implementación; M4/M7/M15/M16 aceptadas como propuesta; **M1/M2/M5/M8 siguen pendientes
+de evidencia real**. Aprobar el checklist no cierra DT7 ni autoriza importación.
 
 `[CONFIRMADO]` Sin mapping revisado por el usuario y corte acordado, AC12 no tiene
 correspondencia caso→campo y AC14 no puede distinguir una brecha de una omisión.
 
-### 4.4 Decisiones de auditoría
+### 4.5 Decisiones de auditoría
 
 | Decisión | Estado | Efecto sobre E4.12 |
 | --- | --- | --- |
 | **AUD-06 — AC-25/P3 de SPEC16** | Abierta; exige fuente real y autorización específica | Sin contraste autorizado no se declara equivalencia de Comida; AC12/AC13 quedan limitados a la matriz ficticia |
-| **AUD-08 — DEV20/21/27 y gates DT7/E3.5/DT6** | Abierta; autorización separada | E4.5/E4.9 y sus gates deben resolverse antes del ensayo |
+| **AUD-08 — DEV20/21/27 y gates DT7/E3.5/DT6** | Abierta; autorización separada | E4.5 y sus gates deben resolverse; E4.9 ya está integrada, con aceptación y DT6 real pendientes |
 | **DT3/DT4** | Resueltas 2026-10-28 (cierre/fotos) | Base de la foto y de la versión; no se reabren |
 | **DT9** | Pendiente (rectificación excepcional de ciclos antiguos) | Si el ensayo incluye ciclos rectificados, requiere decisión expresa |
 | **DT10** | Pendiente (proveedor/despliegue fuera de STEP 4) | No se contrata ni despliega para el ensayo |
 
-### 4.5 Regla de bloqueo
+### 4.6 Regla de bloqueo
 
-`[PROPUESTA]` Si una dependencia no está integrada o su AC aplicable no está declarado, el
-ensayo integral **no se autoriza**. Como máximo podrá autorizarse una fase de preparación
-con exclusiones explícitas que no permita leer el resultado como equivalencia ni como
-recuperación operativa.
+`[PROPUESTA]` El **ensayo integral final (nivel B)** no se autoriza si una dependencia no
+está integrada, si su aceptación aplicable no está declarada o si falta cualquier entrada
+de §5. Como máximo podrá autorizarse una **fase de preparación con fixtures (nivel A)** con
+exclusiones explícitas, siempre que no se lea como equivalencia, custodia externa ni
+recuperación operativa. La autorización de F3 debe declarar el nivel y el subconjunto de AC;
+sin esa declaración no se ejecuta.
 
 ---
 
@@ -288,17 +376,30 @@ pertenecen a las fases de preparación y a las decisiones del usuario.
 
 | Entrada | Contenido mínimo | Disponible hoy | Bloquea |
 | --- | --- | --- | --- |
-| **5.1 Copia coherente con WAL** | Snapshot coherente con su estado WAL; manifiesto (app, esquema, origen, instante, id); SHA-256; integridad/FK/esquema; ausencia de temporales y texto plano en destino | Solo snapshots/paquetes de ensayos sintéticos | AC01, AC11 |
-| **5.2 Claves y custodia** | Identidad `age` y clave de aplicación de 32 bytes custodiadas fuera del VPS, del disco de copias y de Git; copia de recuperación protegida y separada; prueba de descifrado | Ubicación, custodio y rotación sin decidir | AC01, AC08, AC09 |
-| **5.3 Entorno aislado** | Destino nuevo sin acceso a la base en servicio; loopback; red aislada; permisos privados `0700`/`0600`; Linux x86_64 aislado autorizado si se busca evidencia de plataforma | Equipo Linux x86_64 y configuración productiva del ensayo sin confirmar | AC01, AC08, AC10, AC16 |
-| **5.4 Fixtures** | Fixtures deterministas y ficticias que cubran IDs, aperturas, relaciones, plan, hechos, auxiliares y versiones de fotos en las versiones de esquema del corte | Contratos congelados y fixtures parciales; falta la fixture integral con fotos v1/v2 y R1–R6/P1–P7 | AC02–AC07, AC12, AC13 |
-| **5.5 Matriz de equivalencia** | Casos v5.11 congelados con identificador, escenario R/P, procedencia, corte, valor esperado, unidad/precisión, regla y resultado observado | Referencia sanitizada; libro no inspeccionado; matriz sin congelar | AC12, AC13 |
+| **5.1 Copia coherente con WAL** | Snapshot coherente con su estado WAL; manifiesto (app, esquema, origen, instante, id); SHA-256; integridad/FK/esquema; ausencia de temporales y texto plano en destino | Snapshots/paquetes sintéticos y restore v27 Linux (E4.10 AC22, CI #257); sin copia externa | AC01, AC11 (nivel B); el nivel A puede usar copia sintética |
+| **5.2 Claves y custodia** | Identidad `age` y clave de aplicación de 32 bytes custodiadas fuera del VPS, del disco de copias y de Git; copia de recuperación protegida y separada; prueba de descifrado | Ubicación, custodio y rotación sin decidir | AC01, AC08, AC09 (nivel B); nivel A con claves de fixture |
+| **5.3 Entorno aislado** | Destino nuevo sin acceso a la base en servicio; loopback; red aislada; permisos privados `0700`/`0600`; Linux x86_64 aislado autorizado si se busca evidencia de plataforma | Equipo Linux x86_64 y configuración productiva del ensayo sin confirmar | AC01, AC08, AC10, AC16 (nivel B); nivel A puede usar entorno aislado disponible |
+| **5.4 Fixtures** | Fixtures deterministas y ficticias que cubran IDs, aperturas, relaciones, plan, hechos, auxiliares y versiones de fotos en las versiones de esquema del corte | E4.10 y E4.11 tienen fixtures de v1/v2 y agregados; falta la fixture integral con todos los bloques y R1–R6/P1–P7 | AC02–AC07, AC12, AC13; el nivel A exige la fixture integral |
+| **5.5 Matriz de equivalencia** | Casos v5.11 congelados con identificador, escenario R/P, procedencia, corte, valor esperado, unidad/precisión, regla y resultado observado | Referencia sanitizada; libro no inspeccionado; matriz sin congelar | AC12, AC13; el nivel A solo admite matriz sanitizada congelada |
 | **5.6 Criterios por escenario** | Criterio explícito antes de ejecutar, resultado esperado y tratamiento de diferencias para limpio, corrupto, acceso y R1–R6/P1–P7 | No acordados; no se inventan umbrales | AC09, AC13, AC15 |
 | **5.7 Evidencia** | Carpeta privada fuera de Git; formato de registro con acción, entorno, candidato, base, fecha y log crudo; sin datos personales ni secretos | Ruta y formato sin decidir | AC10, AC17 |
-| **5.8 Autorización del ensayo** | Aprobación explícita e identificable, separada de la aprobación de la SPEC, del DEV y del merge | No existe | Todas las fases de ejecución |
+| **5.8 Autorización del ensayo** | Aprobación explícita e identificable, separada de la aprobación de la SPEC, del DEV y del merge; declara nivel A o B y AC incluidos | No existe | Todas las fases de ejecución |
 
 `[CONFIRMADO]` No son entradas suficientes por sí solas: un CI verde, un restore sintético
 previo, la aprobación de esta SPEC o la existencia de la matriz sanitizada.
+
+`[PROPUESTA]` Gate mínimo por nivel, sin sustituir las autorizaciones de §6:
+
+| Gate | Nivel A — fixtures | Nivel B — integral final |
+| --- | --- | --- |
+| Funcional | E4.9/E4.10/E4.11 con código integrado y fixtures disponibles; reservas declaradas | Aceptación aplicable de E4.9/E4.10/E4.11 declarada; E4.5/DT7 resueltos. Una exclusión solo cabe como brecha explícita que impide declarar equivalencia |
+| Esquema | SHA de `test` con `schemaVersion=27`/`C27` congelado | Mismo SHA/corte congelado; cualquier cambio reinicia AC16 |
+| DT6 | Ruta sintética de backup/restore; sin custodia externa | Destino externo, custodia de claves y restore previo autorizados |
+| DT7 | Fuera o solo estructura ficticia; sin equivalencia | Mapping/corte revisados por el usuario |
+| Oráculo | Matriz sanitizada congelada; sin equivalencia real | Matriz v5.11 revisada y contraste autorizado si se declara |
+| Entorno | Aislado, sin PROD, con permisos privados | Entorno de ensayo autorizado con configuración productiva declarada |
+| Evidencia | Carpeta privada y registro con logs crudos | Igual, con revisión QA independiente |
+| Autorización | F3 nivel A explícita | F3 nivel B explícita y separada |
 
 ---
 
@@ -310,39 +411,48 @@ ensayar.
 
 | Fase | Objetivo | Entregable | Autorización requerida | Criterio de salida |
 | --- | --- | --- | --- | --- |
-| **F0 · SPEC** | Fijar requisitos, AC, entradas, fases, riesgos y exclusiones | Este documento y su testplan | Ninguna para redactar; aprobación del usuario para cerrar la fase | SPEC y testplan aprobados de forma explícita e identificable |
-| **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, alcance E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización específica de F1 | Decisiones §9 resueltas o declaradas fuera con brecha |
-| **F2 · Preparación de evidencias** | Construir fixtures integrales, obtener/verificar la copia ficticia coherente, congelar la matriz, acordar criterios por escenario y habilitar el entorno aislado | Expediente de preparación con manifiesto, checksum, matriz congelada y criterios | Autorización específica de F2 | Entradas §5 completas y revisadas; **no se ejecuta el ensayo integral** |
-| **F3 · Ensayo autorizado** | Ejecutar los escenarios y recoger evidencia cruda | Evidencia por AC y por escenario | Autorización explícita e identificable del ensayo | Escenarios ejecutados o `BLOCKED` con causa; sin PASS inferido |
+| **F0 · SPEC** | Fijar requisitos, AC, entradas, fases, riesgos y exclusiones | Este documento y su testplan | Ninguna para redactar; aprobación del usuario para cerrar la fase | **Cumplido 2026-11-09:** marco documental aprobado de forma explícita e identificable; `PASS`/`DONE` |
+| **F1 · Decisiones** | Resolver destino, custodia, entorno, corte, matriz, carpeta de evidencias, aceptaciones E4.7/E4.9/E4.10/E4.11 y límite AC-25/P3 | Registro de decisiones con fecha y responsable | Autorización de preparación documental; la resolución de §9 exige decisión expresa del usuario | **`IN_PROGRESS`:** propuestas en §9; ninguna decisión tomada ni declarada fuera |
+| **F2 · Preparación de evidencias** | Construir fixtures integrales, obtener/verificar la copia ficticia coherente, congelar la matriz, acordar criterios por escenario y habilitar el entorno aislado | Expediente de preparación con manifiesto, checksum, matriz congelada y criterios | Autorización específica de F2 | Entradas §5 aplicables al nivel autorizado, completas y revisadas; **no se ejecuta el ensayo integral** |
+| **F3 · Ensayo autorizado** | Ejecutar los escenarios y recoger evidencia cruda, en el nivel A o B que declare la autorización | Evidencia por AC y por escenario | Autorización explícita e identificable del ensayo, con nivel A/B y AC incluidos | Escenarios ejecutados o `BLOCKED` con causa; sin PASS inferido; un nivel A no se presenta como integral |
 | **F4 · Informe y brechas** | Consolidar resultados, diferencias y lista de brechas para P7 | Informe E4.12 con AC01–AC17 y lista de discrepancias | Autorización de F4 para publicar/registrar el informe | Informe revisado por QA independiente y decisión de gate P7 sin inferencias |
 
+`[CONFIRMADO]` **F0 = `PASS`/`DONE`** (2026-11-09, gate documental). **F1 = `IN_PROGRESS`**
+(preparación documental); su cierre exige decisiones de §9 identificables. **F2/F3/F4 =
+`UNRUN`.**
+
 `[CONFIRMADO]` La autorización de publicación de rama/PR no sustituye la autorización del
-ensayo ni la del merge (approvals).
+ensayo ni la del merge (approvals). `[PROPUESTA]` La autorización de F3 debe indicar
+expresamente si se ejecuta nivel A (fixtures), nivel B (integral final) o ambos, y qué AC
+quedan fuera. Sin esa indicación, F3 no se inicia. Un nivel A puede producir un informe
+parcial de brechas, pero no cierra E4.12 ni P7.
 
 ---
 
 ## 7. Riesgos y huecos
 
-> **Nota (2026-11-05):** los estados de esta tabla son los del borrador (`90cd5dc`). E4.9 se
-> integró después; SPEC28 está ratificada documentalmente y DEV E4.10 sigue no autorizado.
+> **Nota (2026-11-08):** los estados se actualizan a `test` `7477e86` y a los informes de
+> aceptación E4.10/E4.11. Las aceptaciones de E4.9/E4.10/E4.11 siguen abiertas; el código
+> está integrado.
 
 | Riesgo/hueco | Evidencia actual | Impacto en E4.12 | Responsable / gate |
 | --- | --- | --- | --- |
-| **DT6 abierto** | Sin destino externo; solo restores sintéticos | AC01 no puede acreditar recuperación operativa desde copia externa; P7 bloqueado | Usuario fija destino/custodia; gate DT6 |
+| **DT6 abierto** | Sin destino externo; restores sintéticos v19/v20/v27 | AC01 no puede acreditar recuperación operativa desde copia externa; P7 bloqueado | Usuario fija destino/custodia; gate DT6 |
 | **Sin restauración operativa probada** | Disponibilidad de Linux x86_64 por confirmar | El ensayo integral no tiene soporte real donde apoyarse | Usuario + ejecutor autorizado |
-| **DT7 abierto** | Mapping/corte sin aprobar; solo preparación ficticia | AC12 sin correspondencia campo→caso; AC14 no distingue brecha de omisión | Usuario revisa mapping |
+| **DT7 abierto** | Mapping/corte sin aprobar; M1/M2/M5/M8 pendientes de evidencia | AC12 sin correspondencia campo→caso; AC14 no distingue brecha de omisión | Usuario revisa mapping |
 | **Flake SQLite B3** | `SQLITE_IOERR_SHORT_READ` intermitente; 0 reproducciones macOS; reproducción Linux `UNRUN` | Riesgo de falso negativo/positivo en la suite y en la confianza del restore; no es corrupción demostrada | Investigación separada; no cerrar por CI verde |
 | **E4.5 sin DEV** | Spec aprobada; 59 AC `UNRUN`; DT7 pendiente | Falta archivo/histórico precontrol y universo DT7 para AC06/AC12 | Autorización DEV E4.5 |
-| **E4.9 en PR** | PR #200 en implementación, no mergeado; AC `UNRUN` | No hay contrato estable de cierre/foto ni preflight que el ensayo pueda preservar | Merge + QA E4.9 |
-| **E4.10 sin DEV** | SPEC28 ratificada documentalmente; 24 AC `UNRUN`; DEV no autorizado | No hay reapertura/re-cierre ni v1/v2 reales que AC07 exija preservar | Autorización DEV E4.10 |
-| **E4.11 sin DEV** | SPEC29 en borrador; P1-C/P4-A/P5-B aprobadas; DEV no autorizado | No hay consulta de fotos por corte/versión que AC05/AC07 puedan contrastar | SPEC29 + DEV |
-| **E4.7 sin DEV** | SPEC25 candidata | Escenario R3/R6 y flujo anual incompletos | SPEC25 + DEV |
+| **E4.9 aceptación abierta** | Merged `0176ffc`; QA APTO CON RESERVAS; AC-09 y cierre real sujetos a DT6 | El contrato de cierre/foto existe, pero su aceptación y el cierre real no; AC05/AC07 nivel B dependen de esa declaración | QA/usuario; DT6 |
+| **E4.10 aceptación abierta** | DEV I1–I8 merged; 23 PASS (fixtures)/1 PARCIAL; AC15 real `BLOCKED` | v1/v2 existen para fixtures; la aceptación global y el extremo real no | Usuario/QA; decisión sobre reserva AC15 |
+| **E4.11 aceptación abierta** | DEV I1–I6 merged; 10 PASS/5 PARCIAL con fixtures y 15 `BLOCKED real`; el tablero aún marca I4–I6 pendientes | Hay consulta y agregado v27 para fixtures, pero no aceptación ni validación real; AC07/AC13 nivel B condicionados | Coordinador/QA; conciliar tablero sin reauditar aquí |
+| **E4.7 aceptación pendiente** | Integrada `0e89562`; AC3 `PARCIAL`, AC10–15 `BLOCKED`, AC19 `UNRUN` | Escenario R3/R6 y flujo anual incompletos | Usuario/QA |
 | **Oráculo no inspeccionado** | Referencia sanitizada; libro no inspeccionado por agentes; AC-25/P3 abierto | AC12/AC13 no tienen oráculo estable ni equivalencia real de Comida | Usuario/asesor; AUD-06 |
-| **Esquema en deriva** | `main` v25 integrada con E4.9; E4.10 requiere versión posterior | El ensayo debe fijar versión de app/esquema y no mezclar contratos | Coordinador + ejecutor; AC16 |
-| **Restore sintético tomado como operativo** | Informes v19/v20 declaran sus límites | Falsa sensación de recuperación | Declaración de límites; AC17 |
+| **Esquema y candidato** | `test` `7477e86` con v27/C27; C26 y C25 anteriores; SPEC35 sin tags implementados | El ensayo debe fijar SHA, versión y contrato y no mezclar cortes; un cambio reinicia AC16 | Coordinador + ejecutor; AC16 |
+| **Discrepancia tablero vs informes** | Tablero declara E4.10/E4.11 con 24/15 AC `UNRUN`; los informes registran PASS de fixtures y E4.11 E2E I6 | Riesgo de leer como no ejecutado lo que ya tiene evidencia, o como aceptado lo que sigue abierto | Coordinador; conciliar sin reauditar aquí |
+| **Restore sintético tomado como operativo** | Informes v19/v20/v27 declaran sus límites | Falsa sensación de recuperación | Declaración de límites; AC17 |
 | **Temporales/forense** | `backup`/`restore` usan temporales privados; no se promete borrado seguro | La evidencia no puede afirmar ausencia forense de restos | Volumen cifrado en destino |
 | **Expansión a despliegue/P7** | Roadmap «Fuera» | Cambio de alcance no autorizado | §8; autorización separada |
-| **Base documental del inventario** | Requisitos a `0b8aade`; este borrador a `90cd5dc` | Riesgo de estado desactualizado si no se contrasta antes de F2 | Coordinador; revisar tablero antes de cada fase |
+| **Tags/dispatch no implementados** | SPEC35: diseño aprobado, D11 abierta; sin tags operativos | F3 no puede depender de un tag ni de un despliegue; debe usar SHA de `test` | Coordinador; SPEC35 |
 
 ---
 
@@ -367,29 +477,207 @@ identificable y, cuando corresponda, su propia especificación y autorización.
 
 ---
 
-## 9. Decisiones que la aprobación debe resolver
+## 9. Decisiones F1
 
-`[PENDIENTE]` Esta SPEC no fija estos valores; la fase F1 debe registrarlos antes de
-preparar evidencias. No se inventan plazos, umbrales, rutas ni proveedores.
+`[CONFIRMADO]` **F1 sigue `IN_PROGRESS`.** El **2026-11-10**, sobre `test` `d25cbc6`, el
+usuario aprobó D08 (solo el diseño) y D09–D15 con las limitaciones de sus propuestas; D04 y
+D01–D03/D05–D07 siguen `[PENDIENTE]`. Las propuestas de esta sección **no se reescriben**:
+cada subsección conserva su análisis y añade únicamente su estado. El estado vigente, el
+alcance y las reservas están en el
+[registro de aprobaciones](investigations/e412-f1-approvals-2026-11-10.md). Ninguna
+aprobación fija destino, custodio, retención, claves ni configuración operativa, ni autoriza
+DEV/F2/F3/F4. DT6 y DT7 siguen abiertos; no se alteran AC, niveles, gates ni las reservas de
+E4.5/E4.7/E4.9/E4.10/E4.11.
 
-| Decisión | Qué debe fijar | Fuente |
+| Subsección | Decisión | Estado 2026-11-10 |
 | --- | --- | --- |
-| Destino y segunda copia | Discos/rutas privadas existentes, capacidad y frecuencia de traslado | DT6 §6 |
-| Canal de exportación | Cómo llega la copia al soporte externo y quién lo verifica | DT6 §6 |
-| Custodia de identidad `age` | Ubicación, custodio, copia de recuperación y rotación | DT6 §6 |
-| Retención y poda | Inicio del calendario, responsable y registro | DT6 §6 |
-| `--allow-older` | Autorización, motivo, riesgo y alcance para copias >24 h | DT6 §3.5.1 |
-| Equipo de ensayo | Linux x86_64 aislado disponible o alcance alternativo declarado | DT6 §4/§6 |
-| Configuración productiva | `NODE_ENV`, `DATABASE_PATH`, `AUTH_KEY_PATH`, `APP_ORIGIN` y aislamiento | DT6 §3.1.1 |
-| Carpeta de evidencias | Ruta privada fuera de Git y formato | DT6 §6 |
-| Corte y matriz | Fecha/corte común y revisión de la matriz v5.11 | E4.12-AC2; DT7 |
-| Datos reales | Si se autoriza contraste privado (AC-25/P3) o se declara límite | AUD-06 |
-| Alcance E4.10/E4.11 | Si entran en el ensayo o se declaran fuera con brecha explícita | roadmap E4.12-AC3 |
+| §9.1 | F1-D01 — Destino y segunda copia | `[PENDIENTE]` |
+| §9.2 | F1-D02 — Canal de exportación | `[PENDIENTE]` |
+| §9.3 | F1-D03 — Custodia de la identidad `age` | `[PENDIENTE]` |
+| §9.4 | F1-D04 — Retención y poda | `[PENDIENTE]`: faltan fecha, capacidad y responsable; objetivo 7/4/3 se mantiene |
+| §9.5 | F1-D05 — `--allow-older` | `[PENDIENTE]` |
+| §9.6 | F1-D06 — Equipo de ensayo Linux x86_64 | `[PENDIENTE]` |
+| §9.7 | F1-D07 — Configuración productiva | `[PENDIENTE]` |
+| §9.8 | F1-D08 — Carpeta de evidencias | `[APROBADA 2026-11-10]` **solo el diseño**; ruta, responsable y puesta en marcha `[PENDIENTE]` |
+| §9.9 | F1-D09 — Corte y matriz | `[APROBADA 2026-11-10]` **solo la parte documental**; matriz real y mapping DT7 `[PENDIENTE]` |
+| §9.10 | F1-D10 a F1-D15 | `[APROBADA 2026-11-10]` con el alcance y las reservas de §9.10 |
+
+El [expediente consolidado de decisiones F1](investigations/e412-f1-decision-dossier-2026-11-09.md)
+reúne las quince decisiones —§9.1–§9.9 y §9.10— con recomendación, alternativa, riesgos,
+dependencias, evidencia disponible, autorización y gate. Es apoyo documental: no aprueba
+ninguna decisión ni altera esta sección. El
+[paquete de decisiones resolubles](investigations/e412-f1-package-2026-11-09.md) clasifica qué
+puede aprobarse ahora, qué exige evidencia externa/DT6/DT7 y qué no es aprobable aún, e
+incluye formulario y preparación documental de D08/D09. Registra las aprobaciones del
+2026-11-10, pero no las ejecuta.
+
+### 9.1 Destino y segunda copia
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — dos soportes físicos existentes en ubicaciones distintas:** copia primaria en un disco privado distinto del sistema/VPS y segunda copia en otro soporte guardado en un lugar diferente; volumen cifrado y permisos `0700`/`0600`; sin compras ni nube por defecto. `[PROPUESTA]` | Independencia ante fallo de hardware, robo o ransomware; coste nulo; verificable por el usuario; no depende del VPS. | El traslado manual puede retrasarse u olvidarse; capacidad y estado de los discos sin verificar; dos ubicaciones en la misma vivienda no cubren todos los riesgos. |
+| Alternativa — una copia externa más una local | Menor coste operativo; cubre el fallo del VPS si la local está en otro dispositivo. | No cubre pérdida o robo del equipo local; no alcanza la independencia recomendada por DT6. |
+| Alternativa — almacenamiento remoto cifrado | Independencia geográfica y posibilidad de automatizar. | Introduce tercero, coste y decisión DT10; claves y acceso remoto amplían la superficie. |
+| Alternativa — solo el disco del VPS o el mismo equipo | Ninguna operación adicional. | No cubre fallo del VPS o del disco; no es copia externa; rechazada para nivel B. |
+
+`[PENDIENTE]` Falta: inventario real de discos/soportes, rutas privadas, capacidad y
+frecuencia de traslado, confirmados por el usuario; autorización DT6. No se fijan aquí
+identificadores ni rutas. Desbloquea AC01/AC11 en nivel B y los gates DT6 y Entorno; no
+desbloquea AC12/AC13 (DT7) ni la equivalencia.
+
+### 9.2 Canal de exportación
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — exportación manual controlada** desde un staging privado a cada soporte, copiando solo `database.age` y `access-key.age`, con SHA-256 origen/destino, nombre/tamaño/recuento y registro de llegada confirmado por el operador autorizado; sin asumir montaje remoto ni sincronización. `[PROPUESTA]` | Verificación extremo a extremo; operable por el usuario; no depende del VPS; minimiza terceros y credenciales. | Error humano en la comprobación; copia parcial o de versión equivocada; soporte no cifrado a nivel de volumen. |
+| Alternativa — medio extraíble con la misma verificación | Compatible con la recomendada; puede ser el canal concreto. | Pérdida o contagio del medio; requiere control de acceso físico. |
+| Alternativa — montaje o sincronización automática | Comodidad y menor intervención. | Más superficie, credenciales y dependencia de red; no disponible hoy; puede asumir un montaje inexistente. |
+| Alternativa — publicación en almacenamiento remoto | Llegada desatendida. | Tercero, coste y decisión DT10; el paquete cifrado sigue expuesto a metadatos y borrado remoto. |
+
+`[PENDIENTE]` Falta: soporte/canal y operador designado, evidencia de llegada real y
+autorización DT6 junto con la decisión F1. Desbloquea AC01/AC10/AC11 en nivel B y los gates
+DT6/Evidencia.
+
+### 9.3 Custodia de la identidad `age`
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — custodia separada y offline:** identidad `age` y clave de aplicación de 32 bytes fuera del VPS y del disco de copias, en soporte físico protegido; copia de recuperación en ubicación distinta; acceso de emergencia documentado sin revelar el secreto; rotación solo con re-cifrado y verificación. `[PROPUESTA]` | Separa el secreto de las copias; recuperable sin depender de un servicio; no publica claves; rotación controlada. | Pérdida de la identidad deja las copias irrecuperables; un único custodio es punto de fallo; rotar sin re-cifrar inutiliza copias antiguas. |
+| Alternativa — gestor de secretos local/offline | Forma concreta de la recomendada si ya existe; sin tercero. | Dependencia de la disponibilidad y del mantenimiento del equipo. |
+| Alternativa — gestor o almacenamiento en nube | Recuperación remota y copia geográfica. | Tercero y decisión DT10; superficie de acceso y dependencia de credenciales. |
+| Alternativa — custodia por un tercero de confianza | Delegación operativa. | Dependencia humana y de disponibilidad; el ensayo no puede verificar su control. |
+| Alternativa — clave en el mismo equipo o disco que las copias | Ninguna operación adicional. | Un único fallo o robo compromete copia y clave; rechazada. |
+
+`[PENDIENTE]` Falta: ubicación, custodio, copia de recuperación, política de rotación y
+prueba de descifrado; autorización DT6. Desbloquea AC01/AC08/AC09 en nivel B y el gate
+DT6/custodia; no sustituye AC12/AC13.
+
+### 9.4 Retención y poda
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — calendario aprobado con poda manual reversible:** mantener el objetivo ya aceptado de 7 diarias / 4 semanales / 3 mensuales sin reabrirlo; iniciar el calendario en la fecha que fije el usuario tras la primera copia verificada; poda manual, con cuarentena antes de borrar, documentada y ejecutada por un responsable designado con registro; automatizar solo cuando procedimiento, rotación y restore estén estables y autorizados. `[PROPUESTA]` | Cumple el objetivo de retención; evita borrado prematuro; trazable y reversible. | La poda manual puede olvidarse y agotar capacidad; la fecha de inicio mal fijada crea una retención ficticia; automatizar antes de estabilizar el restore puede perder copias. |
+| Alternativa — automatizar la poda desde el inicio | Menor intervención. | Riesgo de borrar antes de verificar; el procedimiento aún no es estable. |
+| Alternativa — retención indefinida | No pierde copias por poda. | Crecimiento sin control y mayor exposición; no cumple una política de retención. |
+| Alternativa — solo copias diarias | Operación simple. | No cumple 7/4/3 ni cubre recuperación a más largo plazo. |
+| Alternativa — GFS ampliado | Mayor profundidad histórica. | Capacidad no demostrada; más superficie de poda y verificación. |
+
+`[PENDIENTE]` Falta: fecha de inicio, capacidad, responsable y registro de poda;
+autorización del usuario/DT6. Desbloquea la evidencia de retención para AC11 en nivel B y el
+gate DT6; no declara RPO/RTO cumplidos.
+
+### 9.5 `--allow-older`
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — deshabilitado por defecto y excepcional por copia:** uso solo para una copia histórica concreta de la retención, con motivo, riesgo aceptado, alcance y aprobación identificable registrados antes, y verificación completa de manifiesto/checksum y resultado; nunca para evitar una copia reciente ni como bypass general. `[PROPUESTA]` | Mínimo privilegio; trazabilidad por caso; mantiene recuperable la retención. | Copia obsoleta tomada como vigente; restauración sobre el destino equivocado; normalización del bypass. |
+| Alternativa — autorización permanente por política | Menos fricción operativa. | Convierte la excepción en rutina y difumina el control; rechazada por defecto. |
+| Alternativa — prohibición total | Elimina el riesgo de uso indebido. | Deja la retención 7/4/3 no recuperable y contradice el objetivo de recuperación. |
+| Alternativa — umbral configurable | Flexibilidad. | Más superficie de configuración y de decisión; no sustituye la aprobación por caso. |
+
+`[PENDIENTE]` Falta: política y aprobación por caso, evidencia en carpeta privada;
+decisión F1 y autorización DT6. Desbloquea AC09 (antigüedad no aceptada) y la recuperación
+de la retención para AC11/AC13 en nivel B; gate DT6.
+
+### 9.6 Equipo de ensayo Linux x86_64
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — equipo Linux x86_64 físico y aislado**, existente o autorizado por el usuario, sin acceso a PROD; para nivel A sin datos reales y para nivel B con la configuración productiva declarada. Si no está disponible, el nivel B queda `BLOCKED` por plataforma y no se sustituye por macOS/arm64 ni por un runner compartido. `[PROPUESTA]` | Arquitectura real; aislamiento; repetibilidad; no expone datos reales a CI. | Disponibilidad y características por confirmar; el hardware del usuario puede no cumplir aislamiento; sin equipo no hay nivel B. |
+| Alternativa — runner CI `ubuntu-24.04` | Linux x86_64 ya disponible. | Solo admite fixtures sintéticas; un runner compartido no acredita el ensayo real ni admite datos reales. |
+| Alternativa — VM Linux x86_64 emulada sobre el Mac arm64 | No requiere hardware adicional. | No acredita hardware real; válida solo para fixtures y con limitación declarada. |
+| Alternativa — hardware x86_64 del usuario si cumple aislamiento | Sin compras y con control físico. | Hay que verificar arquitectura, sistema, red y ausencia de la base en servicio. |
+| Alternativa — diferir el nivel B | No bloquea la preparación A. | Brecha explícita de plataforma para P7. |
+
+`[PENDIENTE]` Falta: disponibilidad, características y fecha del equipo, y autorización de
+uso. Desbloquea AC01/AC08/AC16 en nivel B y el gate Entorno; el nivel A puede usar el
+entorno aislado disponible.
+
+### 9.7 Configuración productiva
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — preflight declarado y revisado:** `NODE_ENV`, `DATABASE_PATH`, `AUTH_KEY_PATH` y `APP_ORIGIN` coherentes con el despliegue; identidad de origen y `database_origin`/`key_hash` compatibles; rutas nuevas con `0700`/`0600`; loopback/red aislada y sin acceso a la base en servicio. Valores concretos en la carpeta privada, nunca en Git. Nivel A declara configuración de fixture; nivel B, configuración productiva declarada y revisada. `[PROPUESTA]` | Fidelidad al despliegue; aislamiento; secretos fuera de Git; reproducible por revisión. | Abrir una base `production` como demo; mezclar identidades productiva y de fixture; `APP_ORIGIN` incorrecto invalida el acceso/TOTP; fuga de rutas o claves. |
+| Alternativa — configuración de demo | Sencilla. | Rechazada para nivel B: no acredita el comportamiento productivo. |
+| Alternativa — valores por defecto del repositorio | Sin preparación adicional. | Insuficiente; no declara aislamiento ni identidad compatible. |
+| Alternativa — archivo local versionado | Portable entre equipos. | Riesgo de fuga en Git o en artefactos; rechazado frente a variables del entorno del ensayo. |
+
+`[PENDIENTE]` Falta: declaración y revisión de los valores, autorización del entorno y
+evidencia del preflight; DT6/Entorno. Desbloquea AC01/AC08/AC10/AC16 en nivel B. No fija
+valores operativos ni sustituye la configuración del despliegue.
+
+### 9.8 Carpeta de evidencias
+
+**Estado 2026-11-10:** `[APROBADA 2026-11-10]` **solo el diseño** — estructura, metadatos,
+criterios de conservación y plantilla del
+[Anexo A](investigations/e412-f1-package-2026-11-09.md#anexo-a--d08-estructura-y-registro).
+La ruta privada, el responsable y la puesta en funcionamiento siguen `[PENDIENTE]`.
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — carpeta privada fuera de Git y del VPS:** permisos `0700`, estructura por fase/AC, registro con acción, entorno, candidato, base, fecha, operador y log crudo; sin datos personales, rutas sensibles ni secretos; acceso restringido y sin sincronización pública. `[PROPUESTA]` | Privacidad; trazabilidad por AC; revisión QA y reproducción; no publica datos. | Fuga por sincronización o copia de seguridad; pérdida de evidencia; logs que arrastran secretos. |
+| Alternativa — artefactos de CI | Automático y accesible al equipo. | Runner compartido y riesgo de publicación; rechazado para evidencia real. |
+| Alternativa — carpeta del repositorio con `.gitignore` | Cómoda para el ejecutor. | Riesgo de publicación, historial y revisión; rechazada. |
+| Alternativa — almacenamiento cifrado en nube | Disponibilidad y copia remota. | Tercero y decisión DT10; claves y acceso remoto añaden superficie. |
+| Alternativa — disco local cifrado | Control físico y sin tercero. | Debe garantizar separación del VPS, permisos y copia de la propia evidencia. |
+
+`[PENDIENTE]` Falta: ruta, responsable y puesta en funcionamiento; el formato y la política
+de conservación ya están aprobados (estado arriba). Desbloquea AC10/AC17 y la revisión QA de
+AC14/AC15; gate Evidencia.
+
+### 9.9 Corte y matriz
+
+**Estado 2026-11-10:** `[APROBADA 2026-11-10]` **solo la parte documental** — política de
+corte (fecha civil y SHA de `test` con v27/C27) y congelación en F2 de una matriz sanitizada
+con los criterios del
+[Anexo B](investigations/e412-f1-package-2026-11-09.md#anexo-b--d09-corte-y-congelación).
+Matriz real, mapping DT7 y equivalencia siguen `[PENDIENTE]`.
+
+| Opción | Criterios | Riesgos |
+| --- | --- | --- |
+| **Recomendada — corte común congelado antes de F2:** fecha civil y SHA de `test` con v27/C27; matriz v5.11 congelada por hash/fecha con identificador, procedencia, escenario R/P, valor esperado, unidad/precisión y regla, revisada por usuario/asesor y no derivada del motor. Nivel A admite matriz sanitizada congelada; nivel B exige matriz revisada y contraste privado autorizado si se declara. `[PROPUESTA]` | Oráculo independiente; restore y contraste al mismo corte; reproducible; separa ficticio de real. | Sesgo si se calcula con el motor; comparar cortes distintos; usar datos reales sin autorización (AC-25/P3); un cambio de esquema invalida AC16. |
+| Alternativa — matriz generada por el motor | Esfuerzo mínimo. | Rechazada: no es independiente y no demuestra equivalencia. |
+| Alternativa — matriz sin congelar, actualizada durante el ensayo | Se adapta a hallazgos. | Rompe el oráculo y permite ajustar el esperado al resultado. |
+| Alternativa — corte móvil | Evita re-fijar el SHA. | Invalida AC16 y mezcla versiones de app/esquema. |
+| Alternativa — solo referencia sanitizada | No exige datos privados. | Limita AC12/AC13 a un alcance ficticio; no acredita equivalencia real. |
+
+`[PENDIENTE]` Falta: fijar el corte en F2, la revisión del mapping DT7 por el usuario, el
+registro de congelación y la autorización de datos reales si aplica; la política está
+aprobada (estado arriba). Desbloquea AC12/AC13/AC14/AC16 y los gates Oráculo/DT7; no
+desbloquea por sí solo AC-25/P3.
+
+### 9.10 Decisiones restantes
+
+`[CONFIRMADO]` El **2026-11-10** el usuario aprobó estas seis decisiones con el alcance y
+las reservas de la columna «Estado»; las partes no aprobadas siguen `[PENDIENTE]`. Ninguna
+aprobación declara aceptación global, equivalencia real ni cierre de AC, y todas siguen
+sujetas a los informes de aceptación y al tablero:
+
+| Decisión | Qué debe fijar | Estado 2026-11-10 | Fuente |
+| --- | --- | --- | --- |
+| Datos reales | Si se autoriza contraste privado (AC-25/P3) o se declara límite | `[APROBADA 2026-11-10]`: acceso cerrado y AC-25/P3 abierto; datos reales fuera de alcance; revertir exige autorización nueva y específica | AUD-06 |
+| **Nivel de F3** | Si se autoriza solo nivel A (fixtures), solo nivel B o ambos, con AC incluidos y exclusiones | `[APROBADA 2026-11-10]` **solo la secuencia**: nivel A primero y nivel B separado; autorización concreta de F3 `[PENDIENTE]` | §2.5, §4.6, §6 |
+| **Aceptación E4.9/E4.10/E4.11** | Si sus PASS de fixtures y reservas (`PARCIAL`/`BLOCKED real`) se aceptan como corte de E4.12 o si se espera a su cierre; conciliar el tablero con I1–I6 de E4.11 | `[APROBADA 2026-11-10]` como corte documental **con reservas** para nivel A; sin aceptación global; nivel B decide cada reserva | Informes de aceptación; tablero |
+| **Aceptación E4.7** | AC3 `PARCIAL`, AC10–15 `BLOCKED`, AC19 `UNRUN`; decidir si se acepta como corte o se excluye con brecha explícita | `[APROBADA 2026-11-10]` como **corte parcial con brecha**: AC3 `PARCIAL`, AC10–AC15 `BLOCKED` por E4.5/DT7, AC19 `N/A`; no completa AC13/AC15 ni total anual | Informe E4.7; tablero |
+| **Candidato y tags** | SHA congelado de `test` con v27/C27; confirmar que no se crea tag ni se depende de SPEC35 para F3 | `[APROBADA 2026-11-10]` **solo la política**: SHA de `test` v27/C27 sin tag; SHA definitivo `[PENDIENTE]` en la autorización de F2 | SPEC35; AC16 |
+| **Alcance E4.5/DT7** | Si E4.5 y el archivo precontrol entran en el corte o se excluyen con brecha explícita | `[APROBADA 2026-11-10]` **solo la exclusión** de E4.5/DT7 del nivel A con brecha; inclusión real en B `[PENDIENTE]` | roadmap E4.12-AC3; DT7 |
+
+`[CONFIRMADO]` F1 no se cierra todavía: D01–D07 siguen `[PENDIENTE]` y D08 carece de ruta,
+responsable y puesta en marcha. Las aprobaciones del 2026-11-10 son explícitas e
+identificables, pero limitadas a su alcance; una parte no aprobada no se presume y el
+silencio no la convierte en aprobada.
 
 ---
 
 ## 10. Cierre de esta SPEC
 
-`[PENDIENTE]` La SPEC solo queda aprobada con una aprobación explícita e identificable del
-usuario. Esa aprobación no autoriza DEV, ensayo, datos reales, migración, VPS ni merge, y
-no cierra ningún AC. La ejecución del ensayo requiere las autorizaciones separadas de §6.
+`[CONFIRMADO]` El usuario aprobó el **marco documental de F0** el 2026-11-09 (SPEC,
+testplan, 17 AC, niveles A/B y gates independientes). Esa aprobación no autoriza DEV,
+ensayo, datos reales, migración, VPS ni merge, y no cierra ningún AC.
+
+`[CONFIRMADO]` F1 sigue **`IN_PROGRESS`**: D01–D07 están `[PENDIENTE]` y D08 no tiene ruta,
+responsable ni puesta en marcha. D08 (solo diseño) y D09–D15 se aprobaron el 2026-11-10 con
+las reservas del
+[registro de aprobaciones](investigations/e412-f1-approvals-2026-11-10.md). F2/F3/F4
+permanecen `UNRUN`. La ejecución del ensayo requiere las autorizaciones separadas de §6 y
+ninguna aprobación de §9 autoriza F2.

@@ -293,7 +293,9 @@ test("SQLite B3: actual recovery contention fails before policy, then exhausts t
     } finally {
       db.close();
     }
-  }));
+    // El caso espera de forma nativa hasta 3 s (busy_timeout real); con carga
+    // paralela CI midió 5.001 ms y abortó. 20 s solo amplía el margen del test.
+  }), 20000);
 
 test("SQLite B4: release a real recovery lock only after observing the native wait; demo and production succeed", async () =>
   fixture(async (path) => {

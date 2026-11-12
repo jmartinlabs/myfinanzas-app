@@ -79,9 +79,13 @@ No cambia algoritmo de autenticación, dependencias ni RPO/RTO operativo.
 ## Dependencias y versiones
 Bun 1.4.3, React/DOM 19.3.1, Vite 8.3.4, TypeScript 7.0.2, Playwright 1.64.1;
 Effect 3.22.3, platform 0.97.2, platform-bun 0.91.3. Exactas y bun.lock congelado.
-Única dependencia runtime nueva: **otpauth 9.5.2 (MIT)**, mantenida y compatible con Bun,
-para TOTP estándar/replay/ventana, evitando algoritmos OTP propios. Hash Argon2id y
-cifrado AES-GCM usan APIs nativas. Sin ORM, framework de identidad, correo ni servicio.
+Dependencias runtime nuevas: **otpauth 9.5.2 (MIT)**, mantenida y compatible con Bun,
+para TOTP estándar/replay/ventana, evitando algoritmos OTP propios, y
+**qrcode-generator 2.0.4 (MIT)** en `apps/web` para generar el QR de alta TOTP
+íntegramente en el navegador (sin red, sin imágenes remotas, ~57 KB de `dist`, sin
+dependencias transitivas; `bun audit` sin vulnerabilidades en la ejecución documentada).
+Hash Argon2id y cifrado AES-GCM usan APIs nativas. Sin ORM, framework de identidad,
+correo ni servicio.
 `age` CLI externo ya previsto por DT6, instalado localmente v1.3.2 desde release oficial
 con SHA-256 publicado verificado; CI usa paquete de Ubuntu. No se versiona el binario.
 Prettier 3.6.2 se utilizó como herramienta efímera de formato, sin dependencia de proyecto.

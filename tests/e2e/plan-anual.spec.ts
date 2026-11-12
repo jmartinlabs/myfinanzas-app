@@ -41,7 +41,7 @@ test("E2.4 annual plan: real MFA, exact nullable manual lines, review/conflict/e
     });
     await page.goto("/plan-anual");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-annual/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
@@ -61,7 +61,7 @@ test("E2.4 annual plan: real MFA, exact nullable manual lines, review/conflict/e
         exact: true,
       })
       .click();
-    await page.getByRole("link", { name: "Plan anual", exact: true }).click();
+    await page.goto("/plan-anual");
     await expect(
       page.getByRole("heading", { name: "Plan anual", exact: true }),
     ).toBeVisible();

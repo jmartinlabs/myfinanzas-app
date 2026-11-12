@@ -68,7 +68,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
   const password = "Contraseña ficticia UI DEV-05 I4 " + randomUUID();
   await page.goto("/referencias");
   await page
-    .getByLabel("Token de configuración local")
+    .getByLabel("Código de activación")
     .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
@@ -122,7 +122,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     return result.data;
   };
   const selectTheme = async (theme: (typeof THEMES)[number]) => {
-    await page.getByLabel("Tema visual").selectOption(theme);
+    await page.getByLabel("Apariencia").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const capture = async (

@@ -186,20 +186,25 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   no es `docs`; una comparación `docs` omite aplicación y regresiones del harness.
   `--full` fuerza toda la cobertura local (baseline, tipos/build, API/SQLite y E2E).
   La excepción histórica AC23 sigue limitada a su rama.
-- CI usa un único job `required`: `ci-plan`, baseline, preparación y `ci`, más
-  `ci-result` siempre. Este último rechaza fases ausentes, fallidas, canceladas o
-  con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
-- Eventos: PR hacia main —incluido `ready_for_review` para que un draft que pasa a
-  listo reciba validación—, push solo main y manual completo. Los drafts conservan el
-  gate rápido; no se desactiva globalmente. PR valida el head del evento (`HEAD^2`) y
-  exige que la base probada (`HEAD^1`) no reescriba la base del evento: se acepta que
-  main haya avanzado por fast-forward y se clasifica contra esa base efectiva; una
-  base divergente o un merge ref anterior al evento fallan visiblemente. La
-  comprobación de ancestro no demuestra que el merge ref sea el tip vigente de main:
-  una main que avance después del checkout no se detecta en este proceso, el SHA
-  probado queda publicado y la protección exige base actualizada antes del merge. No
-  hay filtro de paths que omita el check. Cada nuevo candidato sustituye al PR
-  anterior por concurrencia; main y ejecuciones manuales no se cancelan mutuamente.
+- CI usa un único job de ejecución `required`: `ci-plan`, baseline, preparación y
+  `ci`, más `ci-result` siempre. Un job adicional `profile` (solo metadatos, sin pasos
+  de verificación) depende de `required` y publica el perfil en el nombre del check.
+  `ci-result` rechaza fases ausentes, fallidas, canceladas o con skips fuera de la
+  matriz; no concede un PASS local ni una aprobación de merge.
+- Eventos (revisión 2026-11-11): PR hacia `main` o `test` —incluido
+  `ready_for_review` para que un draft que pasa a listo reciba validación—, push del
+  tag `deploy-test-v*` y manual completo. Ya **no** hay push automático a `main` ni a
+  `test`: la PR ya validó su merge ref y el postmerge duplicaba ejecuciones. Los
+  drafts conservan el gate rápido; no se desactiva globalmente. PR valida el head
+  del evento (`HEAD^2`) y exige que la base probada (`HEAD^1`) no reescriba la base del
+  evento: se acepta que la base (`main` o `test`) haya avanzado por fast-forward y se
+  clasifica contra esa base efectiva; una base divergente o un merge ref anterior al
+  evento fallan visiblemente. La comprobación de ancestro no demuestra que el merge ref
+  sea el tip vigente de la base: un avance posterior al checkout no se detecta en este
+  proceso, el SHA probado queda publicado y la protección exige base actualizada antes
+  del merge. No hay filtro de paths que omita el check. Solo cada PR cancela su
+  candidato anterior; las ejecuciones manuales y de tag no se cancelan entre sí ni por
+  una PR, para que el deploy pueda consumir su evidencia.
 - `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
   `docs` ejecuta un baseline documental: `check-repository` (historial, índice y
   seguridad), `check-project` (estructura y workflow), `validate-template`
@@ -209,16 +214,84 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   ejecutan todas. La selección se recalcula dentro del paso `baseline` con el
   mismo `ci_profile` y el contexto verificado; sin contexto, evento inválido o
   error de clasificación ejecuta la batería completa. No hay skip de workflow ni
-  estado nuevo en `ci-result`. `fast` añade tipos/build; `critical` añade **toda**
-  la suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
-  solo documentación Markdown no excluida ejecuta `docs`; cualquier otro cambio ejecuta
-  `fast`; nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo
-  el rango mediante merge-base sobre la base probada. El postmerge no repite
-  API/SQLite: la PR validó el merge ref contra la base. Si GitHub reconstruye el merge
-  ref sobre una main más nueva antes del checkout, esa misma ejecución es la repetición
-  y solo omite aplicación cuando el diff propio de la PR es documental; un merge ref
-  anterior al evento falla y debe relanzarse. Para un merge de alto riesgo
-  se usa `workflow_dispatch` full, no un `critical` automático que duplique coste.
+  estado nuevo en `ci-result`. `fast` añade tipos/build y la suite web
+  (`bun test apps/web`); `critical` añade la suite
+  API/SQLite Linux **excepto** las pruebas que dependen de `age`; `full` añade esas
+  pruebas y E2E. PR compara todo el rango
+  mediante merge-base sobre la base probada (`main` o `test`) y solo puede seleccionar
+  `docs`, `fast`, `critical` o `full` por rutas sensibles: **`full` no se selecciona por
+  tamaño de diff**, solo por dispatch expreso, por push del tag `deploy-test-v*` o por un
+  cambio en las rutas sensibles de persistencia, migraciones, esquema, identidad y
+  recuperación. El tag se
+  valida sobre el commit exacto (un tag anotado se pela a su commit) y ejecuta `full`.
+  Si GitHub reconstruye el merge ref sobre una base más nueva antes del checkout, esa
+  misma ejecución es la repetición y solo omite aplicación cuando el diff propio de la
+  PR es documental; un merge ref anterior al evento falla y debe relanzarse. Un merge
+  de alto riesgo se valida con un dispatch full o con el tag de deploy, no con un
+  `critical` automático adicional.
+- **Separación por dependencia de `age` (2026-11-11):** `age` y las pruebas de
+  backup/restore cifrado son exclusivos de `full`. `critical` ejecuta la suite API con
+  un filtro negativo construido desde `scripts/ci_policy.py` (`FULL_ONLY_TESTS`, 33
+  nombres exactos más los 3 casos generados de `31 S3`; 36 filtradas en total, 21
+  archivos) y **no** instala `age` ni ejecuta el paso `prepare`
+  (contrato `prepare=skipped`). `full` conserva la suite completa, `age`, Chromium y E2E;
+  el tag de despliegue sigue exigiendo `full`. El filtro es fail-closed:
+  `scripts/verify` exige que Bun informe exactamente 36 pruebas filtradas (ni una más ni
+  una menos), un test de política comprueba que cada nombre existe literalmente en la
+  suite, y la ejecución real sin `age` demuestra que ninguna prueba dependiente quedó
+  fuera. Las rutas sensibles de backup/restore, migraciones, base de datos, esquema,
+  identidad y recuperación promocionan la PR a `full` antes de su aceptación, igual que
+  cualquier test de `apps/api/src` que contenga una prueba de esa lista.
+- **Flujo de integración `feature/* → test → main` (TEST-BOOTSTRAP-01, 2026-11-07):**
+  `test` es la base de integración: los PR de trabajo apuntan a `test` y ejecutan el
+  gate según el diff; `main` conserva su ruleset y recibe la promoción. Se promueve el
+  mismo SHA validado en `test`, sin añadir ni reescribir cambios después de la
+  validación; un PR de promoción `test → main` vuelve a ejecutar el gate contra `main` y
+  cualquier diferencia exige validación propia. No se promueven commits no validados en
+  `test`. Bases de PR distintas de `main`/`test`, pushes de ramas de trabajo, tags
+  ajenos a `deploy-test-v*` y eventos incompletos fallan visiblemente. El tag
+  `deploy-test-v*` valida y fija su commit exacto con `full`; un PR valida su merge
+  ref. La protección/ruleset de `test` y sus required checks son una operación separada
+  no aplicada por este cambio; `rootless.yml` acepta PRs a `main`/`test` con los mismos
+  paths y guardas, y ya no reacciona a un push de `test`.
+  [SPEC35 §6](../35-deploy-tags-01-specification.md#6-estrategia-de-ramas)
+  conserva su texto aprobado (`feature/* → main`) hasta que su dueño lo actualice: este
+  apartado posee solo la mecánica de CI y no reescribe esa decisión funcional.
+- **Visibilidad del perfil (2026-11-11):** el job obligatorio conserva el nombre fijo
+  `required` (sin `name`, el check se llama como el id) y su step summary publica
+  `Perfil CI: DOCS|FAST|CRITICAL|FULL`. Un job adicional `profile`, dependiente de
+  `required` con `always()` y sin pasos de verificación, lleva el perfil en el nombre
+  del check: `CI profile: docs|fast|critical|full` (`UNKNOWN` si falta el output). Así
+  la lista de checks de la PR muestra el perfil sin permisos `checks: read` ni un paso
+  extra que consulte la API. El nombre del run no puede mostrar el perfil porque se
+  evalúa antes de clasificar. El nombre `required` no configura por sí solo la
+  protección de rama.
+- **Deploy por tag (2026-11-11):** `rootless.yml` conserva PR por paths, tags
+  `deploy-test-v*` y manual, sin push de `test`. No ejecuta suites de aplicación: el job
+  `qa` se retiró porque `bun test apps/web` pertenece a los perfiles canónicos, así que el
+  tag la ejecuta dentro de `required` full sobre el mismo commit y no se repite aparte.
+  Antes de desplegar se conservan las guardas de tag, actor,
+  ancestro en `origin/test`, anotación `sha`/`qa_reference` y SHA exacto, y se espera
+  hasta 35 minutos a que el `required` del propio tag figure en `success` sobre `TAG_SHA`;
+  un fallo terminal conocido o el timeout detienen el deploy. No se debilita ningún control
+  por esperar. El tag debe ser **anotado**: `git cat-file -t refs/tags/<tag>` tiene que
+  devolver `tag`; un tag lightweight se rechaza antes de ejecutar `full`. Un
+  `workflow_dispatch` manual de `rootless` no sustituye el gate de aplicación; para
+  typecheck/build/baseline hay que lanzar `Validate project` full sobre el mismo SHA.
+- **Crédito QA por árbol (2026-11-11):** la QA independiente se registra sobre el commit
+  revisado y se reutiliza en el commit de integración solo si
+  `scripts/check-evidence --qa-equivalence` demuestra identidad de árbol o composición
+  limpia sobre el primer padre, y `qa_reference` resuelve a una review, comentario de PR o
+  comentario de commit del SHA revisado con veredicto favorable (`APPROVED` o `qa=APTO`).
+  Cubre merge, squash y rebase; conflicto resuelto,
+  cambio extra o evidencia insuficiente bloquean. El preflight vive en `rootless.yml`; no
+  añade workflow, job ni perfil, ni CI post-merge. La CI `required` full del tag sigue
+  ejecutándose sobre el SHA exacto. La equivalencia no es aprobación de QA, ni de merge, ni
+  de despliegue.
+- **Focused (no implementado):** si en el futuro se necesita un perfil más estrecho, la
+  vía simple es filtrar suites de test por paths de forma explícita y probada (mapa de
+  rutas → suites), sin crear un perfil nuevo ni un workflow adicional; requiere su
+  propia SPEC y regresiones antes de aplicarse.
 - **Documentación (actualización 2026-10-28):** `docs` admite cualquier `.md` de
   documentación en cualquier directorio, sin allowlist de familias. Se excluyen siempre
   `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `instructions.md`, `NEW_PROJECT_PROMPT.md`,

@@ -8,6 +8,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'infra'))
@@ -18,6 +19,8 @@ OLD_CONTAINERFILE = b'FROM scratch\n# selected release\n'
 OLD_HEALTHCHECK = b'console.log("selected release");\n'
 NEW_CONTAINERFILE = b'FROM oven/bun:1.4.3-debian\n# builder HEAD\n'
 NEW_HEALTHCHECK = b'console.log("builder HEAD");\n'
+SEED_CONTAINERFILE = b'FROM scratch\n# test-only seed\n'
+SEED_IMAGE = 'sha256:' + '1' * 64
 
 
 class ReleaseContextTests(unittest.TestCase):
@@ -67,8 +70,18 @@ class ReleaseContextTests(unittest.TestCase):
                    'export const contract = "e4.1-v18";\n')
         self.write('apps/api/src/contracts.json', '{}\n')
         self.write('apps/web/src/main.ts', 'export const amount = 1;\n')
+        self.write('apps/web/public/themes.css', ':root { --bg: #141414; }\n')
+        self.write('apps/web/public/theme-boot.js',
+                   'document.documentElement.dataset.theme = "dark-s";\n')
+        self.write('apps/web/public/logo.svg', '<svg/>\n')
+        self.write('apps/web/public/bundle.js.map', '{}\n')
+        self.write('apps/web/public/.hidden', 'x\n')
         self.write('infra/Containerfile', containerfile)
         self.write('infra/healthcheck.mjs', healthcheck)
+        self.write('infra/Containerfile.seed', SEED_CONTAINERFILE)
+        self.write('tools/test-seed/cli.ts', 'export const seed = 1;\n')
+        self.write('tools/test-seed/dataset/ft1.json', '{}\n')
+        self.write('tools/test-seed/README.md', 'not copied into the context\n')
 
     def commit(self, message):
         subprocess.check_call(['git', '-C', str(self.root), 'add', '--all'])
@@ -86,24 +99,68 @@ class ReleaseContextTests(unittest.TestCase):
                 archive.addfile(entry, io.BytesIO(data))
         return buffer.getvalue()
 
-    def synthetic_release(self, source, recipe_sha, healthcheck_sha):
-        directory = self.home / ('release-' + release.sha(
-            (source + recipe_sha + healthcheck_sha).encode())[:16])
+    def oci_archive(self, path, payload):
+        blob = release.sha(payload)
+        index = json.dumps({'manifests': [
+            {'digest': 'sha256:' + blob}]}).encode()
+        with tarfile.open(path, 'w') as archive:
+            for name, data in (('index.json', index),
+                               ('blobs/sha256/' + blob, payload)):
+                entry = tarfile.TarInfo(name)
+                entry.size = len(data)
+                archive.addfile(entry, io.BytesIO(data))
+        return 'sha256:' + blob
+
+    def rewrite_manifest(self, directory, change):
+        path = directory / 'manifest.json'
+        manifest = json.loads(path.read_text())
+        change(manifest)
+        path.write_text(json.dumps(manifest, sort_keys=True))
+        return release.sha(path.read_bytes())
+
+    def synthetic_release(self, source, recipe_sha, healthcheck_sha, include_seed=True):
+        directory = self.home / ('release-' + uuid.uuid4().hex)
         directory.mkdir()
         (directory / 'frontend').mkdir()
-        archive = directory / 'image.oci.tar'
-        with tarfile.open(archive, 'w'):
-            pass
+        (directory / 'frontend/assets').mkdir()
+        (directory / 'frontend/index.html').write_text('<div></div>\n')
+        (directory / 'frontend/assets/app.js').write_text('export const app = 1;\n')
+        frontend_files = {
+            'index.html': release.sha((directory / 'frontend/index.html').read_bytes()),
+            'assets/app.js': release.sha((directory / 'frontend/assets/app.js').read_bytes()),
+        }
+        app_archive = directory / 'image.oci.tar'
+        app_digest = self.oci_archive(app_archive, b'application')
+        seed_archive = directory / 'image.seed.oci.tar'
+        seed_digest = self.oci_archive(seed_archive, b'seed')
+        contracts = release.contracts_for(source)
+        lock = release.sha(release.source_bytes(source, 'bun.lock'))
         manifest = {
+            'format': 1,
+            'image': 'sha256:' + '2' * 64,
+            'oci_manifest_digest': app_digest,
+            'rootfs_payload_sha256': '3' * 64,
             'inputs': {
                 'source': source,
-                'contracts': release.contracts_for(source),
+                'contracts': contracts,
+                'lock_sha256': lock,
                 'recipe_sha256': recipe_sha,
                 'healthcheck_sha256': healthcheck_sha,
             },
-            'oci_archive_sha256': release.sha(archive.read_bytes()),
-            'frontend_files': {},
+            'oci_archive_sha256': release.sha(app_archive.read_bytes()),
+            'frontend_files': frontend_files,
         }
+        if include_seed:
+            manifest['seed'] = {
+                'image': SEED_IMAGE,
+                'oci_manifest_digest': seed_digest,
+                'rootfs_payload_sha256': '4' * 64,
+                'recipe_sha256': release.sha(SEED_CONTAINERFILE),
+                'source': source,
+                'contracts': contracts,
+                'lock_sha256': lock,
+                'oci_archive_sha256': release.sha(seed_archive.read_bytes()),
+            }
         path = directory / 'manifest.json'
         path.write_text(json.dumps(manifest, sort_keys=True))
         return directory, release.sha(path.read_bytes())
@@ -128,6 +185,171 @@ class ReleaseContextTests(unittest.TestCase):
         self.assertNotEqual(inputs['recipe_sha256'],
                             release.sha(release.source_bytes('HEAD', 'infra/Containerfile')))
 
+    def test_context_carries_vite_public_assets(self):
+        target = self.home / 'context-public'
+        target.mkdir()
+        release.context(self.a, target, self.age)
+        self.assertTrue((target / 'apps/web/public/themes.css').is_file())
+        self.assertTrue((target / 'apps/web/public/theme-boot.js').is_file())
+        # Vite copies every public file; dotfiles and source maps stay out.
+        self.assertTrue((target / 'apps/web/public/logo.svg').is_file())
+        self.assertFalse((target / 'apps/web/public/bundle.js.map').exists())
+        self.assertFalse((target / 'apps/web/public/.hidden').exists())
+
+    def test_inventory_rejects_release_missing_index_asset(self):
+        def podman(web):
+            def fake(args, timeout=600):
+                if args[:2] in (['podman', 'create'], ['podman', 'rm']):
+                    return b''
+                if args[:2] == ['podman', 'export']:
+                    path = Path(args[args.index('--output') + 1])
+                    with tarfile.open(path, 'w') as archive:
+                        for name, data in web.items():
+                            info = tarfile.TarInfo('release/frontend/' + name)
+                            info.size = len(data)
+                            archive.addfile(info, io.BytesIO(data))
+                    return b''
+                raise AssertionError(args)
+            return fake
+
+        original = release.run
+        self.addCleanup(lambda: setattr(release, 'run', original))
+        release.run = podman({
+            'index.html': b'<link rel="stylesheet" href="/themes.css">\n',
+            'assets/app.js': b'console.log(1)\n',
+        })
+        frontend = self.home / 'frontend-missing'
+        frontend.mkdir()
+        with self.assertRaises(release.ReleaseError):
+            release.inventory('sha256:' + '1' * 64, self.home, frontend)
+        self.assertFalse((frontend / 'index.html').exists())
+
+        release.run = podman({
+            'index.html': b'<link rel="stylesheet" href="/themes.css">\n'
+                          b'<script src="/theme-boot.js"></script>\n',
+            'themes.css': b':root{}\n',
+            'theme-boot.js': b'document.documentElement.dataset.theme="dark-s";\n',
+        })
+        good = self.home / 'frontend-good'
+        good.mkdir()
+        _, web = release.inventory('sha256:' + '2' * 64, self.home, good)
+        self.assertIn('themes.css', web)
+        self.assertIn('theme-boot.js', web)
+
+    def test_release_rejects_referenced_asset_outside_frontend(self):
+        # Regression: index.html referenced /themes.css and /theme-boot.js while
+        # the release shipped only index.html and assets/.
+        html = (b'<script src="/theme-boot.js"></script>'
+                b'<link rel="stylesheet" href="/themes.css" />'
+                b'<script type="module" src="/assets/app.js"></script>')
+        self.assertEqual(
+            release.missing_frontend_assets(html, {'index.html': 'x', 'assets/app.js': 'y'}),
+            ['theme-boot.js', 'themes.css'])
+        self.assertEqual(release.missing_frontend_assets(
+            html, {'theme-boot.js': 'x', 'themes.css': 'y', 'assets/app.js': 'z'}), [])
+        self.assertEqual(release.missing_frontend_assets(
+            b'<link href="//cdn.example/x.css"><script src="https://e/x.js"></script>', {}), [])
+        # Query/hash, single quotes, uppercase attributes and root links.
+        self.assertEqual(release.missing_frontend_assets(
+            b"<LINK HREF='/themes.css?v=1#x'><a href='/'>home</a>", {}), ['themes.css'])
+        self.assertEqual(release.missing_frontend_assets(
+            b'<a href="/">home</a>', {}), [])
+        self.assertEqual(release.missing_frontend_assets(b'', {}), [])
+
+    def test_seed_context_uses_same_commit_base_and_lock(self):
+        target = self.home / 'seed-context-a'
+        target.mkdir()
+        inputs = release.seed_context(self.a, target)
+        release.check_context(target, inputs, release.SEED_CONTEXT_FILES)
+        self.assertEqual(inputs['source'], self.a)
+        self.assertEqual(inputs['builder_source'], self.b)
+        self.assertEqual(inputs['base'], release.BASE)
+        self.assertEqual(inputs['lock_sha256'],
+                         release.sha(release.source_bytes(self.a, 'bun.lock')))
+        self.assertEqual(inputs['recipe_sha256'], release.sha(SEED_CONTAINERFILE))
+        self.assertEqual((target / 'Containerfile.seed').read_bytes(), SEED_CONTAINERFILE)
+        self.assertTrue((target / 'tools/test-seed/cli.ts').is_file())
+        self.assertTrue((target / 'tools/test-seed/dataset/ft1.json').is_file())
+        self.assertFalse((target / 'tools/test-seed/README.md').exists())
+
+    def test_seed_recipe_is_pinned_and_test_only(self):
+        recipe = (ROOT / 'infra/Containerfile.seed').read_text()
+        self.assertIn('FROM ' + release.BASE, recipe)
+        self.assertIn('COPY tools/test-seed tools/test-seed', recipe)
+        self.assertIn('USER 10001:10001', recipe)
+        self.assertIn('ENTRYPOINT ["/usr/local/bin/bun"]', recipe)
+        self.assertIn('CMD ["tools/test-seed/cli.ts"]', recipe)
+        self.assertNotIn('test-seed', (ROOT / 'infra/Containerfile').read_text())
+
+    def test_production_context_excludes_test_seed(self):
+        target = self.home / 'context-no-seed'
+        target.mkdir()
+        inputs = release.context(self.a, target, self.age)
+        release.check_context(target, inputs)
+        self.assertFalse((target / 'tools/test-seed').exists())
+        self.assertFalse((target / 'Containerfile.seed').exists())
+
+    def test_verify_requires_seed_block(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK),
+            include_seed=False)
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest)
+        self.assertIn('seed image is missing', str(caught.exception))
+
+    def test_previous_release_verifies_without_seed(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK),
+            include_seed=False)
+        manifest = release.verify(directory, self.a, digest, require_seed=False)
+        self.assertNotIn('seed', manifest)
+
+    def test_previous_verification_rejects_an_unexpected_seed(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK),
+            include_seed=True)
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest, require_seed=False)
+        self.assertIn('unexpectedly declares a seed', str(caught.exception))
+
+    def test_verify_rejects_seed_archive_and_digest_mismatch(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        archive = directory / 'image.seed.oci.tar'
+        archive.write_bytes(archive.read_bytes() + b'x')
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest)
+        self.assertIn('seed OCI integrity', str(caught.exception))
+
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        digest = self.rewrite_manifest(
+            directory, lambda manifest: manifest['seed'].update(
+                {'oci_manifest_digest': 'sha256:' + '0' * 64}))
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest)
+        self.assertIn('seed OCI manifest digest', str(caught.exception))
+
+    def test_verify_rejects_seed_source_contract_lock_and_recipe_mismatch(self):
+        cases = [
+            ('source', lambda manifest: manifest['seed'].update({'source': '0' * 40}),
+             'seed/app source'),
+            ('contracts', lambda manifest: manifest['seed'].update(
+                {'contracts': {'schema': 0}}), 'seed/app contract'),
+            ('lock', lambda manifest: manifest['seed'].update({'lock_sha256': '0' * 64}),
+             'seed/app lock'),
+            ('recipe', lambda manifest: manifest['seed'].update({'recipe_sha256': '0' * 64}),
+             'recipe_sha256'),
+        ]
+        for label, change, expected in cases:
+            with self.subTest(label=label):
+                directory, digest = self.synthetic_release(
+                    self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+                digest = self.rewrite_manifest(directory, change)
+                with self.assertRaises(release.ReleaseError) as caught:
+                    release.verify(directory, self.a, digest)
+                self.assertIn(expected, str(caught.exception))
+
     def test_verify_rejects_builder_head_recipe_hash(self):
         directory, digest = self.synthetic_release(
             self.a, release.sha(NEW_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
@@ -143,6 +365,34 @@ class ReleaseContextTests(unittest.TestCase):
             release.verify(directory, self.a, digest)
         self.assertIn('infra/healthcheck.mjs', str(caught.exception))
         self.assertIn(self.a, str(caught.exception))
+
+    def test_single_build_test_artifact_is_explicit_and_verified(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        def single(manifest):
+            for item in (manifest, manifest['seed']):
+                item['reproducibility'] = {
+                    'mode': 'single-build', 'payload_equal': None,
+                    'builds': [{'rootfs_payload_sha256': item['rootfs_payload_sha256']}],
+                }
+        digest = self.rewrite_manifest(directory, single)
+        verified = release.verify(directory, self.a, digest)
+        self.assertEqual(verified['reproducibility']['mode'], 'single-build')
+        digest = self.rewrite_manifest(
+            directory, lambda m: m['seed']['reproducibility']['builds'][0].update(
+                {'rootfs_payload_sha256': '0' * 64}))
+        with self.assertRaises(release.ReleaseError):
+            release.verify(directory, self.a, digest)
+
+    def test_single_build_cannot_claim_two_build_proof(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        digest = self.rewrite_manifest(directory, lambda m: m['seed'].update({
+            'reproducibility': {'mode': 'single-build', 'payload_equal': True,
+                                'builds': [{'rootfs_payload_sha256': '4' * 64}]}
+        }))
+        with self.assertRaises(release.ReleaseError):
+            release.verify(directory, self.a, digest)
 
     def test_verify_accepts_selected_commit_recipe_hashes(self):
         directory, digest = self.synthetic_release(

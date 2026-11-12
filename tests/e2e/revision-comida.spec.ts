@@ -42,7 +42,7 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     });
     await page.goto("/revision-comida");
     await page
-      .getByLabel("Token de configuración local")
+      .getByLabel("Código de activación")
       .fill(readFileSync(".local/e2e-revision-comida/bootstrap.txt", "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
@@ -240,9 +240,12 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     await shot("revision-comida-formulario-390");
     await page.getByRole("button", { name: "Guardar rectificación" }).click();
     await expect(page.getByText("Revisa los campos", { exact: false })).toBeVisible();
-    await expect(
-      page.getByRole("group", { name: "Error del formulario" }),
-    ).toBeFocused();
+    await expect(page.locator("#motivo-error")).toHaveText("Campo obligatorio.");
+    await expect(page.getByLabel("Motivo de rectificación")).toHaveAttribute(
+      "aria-describedby",
+      "motivo-error",
+    );
+    await expect(page.getByLabel("Motivo de rectificación")).toBeFocused();
     await page.context().clearCookies();
     await page.goto("/revision-comida");
     await expect(page.getByLabel("Contraseña", { exact: true })).toBeVisible();
