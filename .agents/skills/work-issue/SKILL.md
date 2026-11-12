@@ -81,9 +81,11 @@ Each round:
    `· reanudación` so the round knows it is continuing an existing reservation.
 
 Only a declared, open or unverifiable dependency, another agent's ownership, a foreign
-repository or a failed precondition removes an Issue from the queue — never the fact that a
-different Issue is waiting for the user. Hard dependencies keep their meaning: an Issue whose
-dependency is not `Done` stays out even after that dependency reached review.
+repository, a history over the read limit or a failed precondition removes an Issue from the
+queue — never the fact that a different Issue is waiting for the user. Those blockers are per
+Issue: the session records them and continues with the next one. Hard dependencies keep their
+meaning: an Issue whose dependency is not `Done` stays out even after that dependency reached
+review.
 
 The session ends only when `next` reports no eligible work, every remaining candidate is
 blocked/taken/foreign/routed elsewhere, a real blocker appears (Project or permissions

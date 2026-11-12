@@ -1428,6 +1428,24 @@ class SessionContinuityTests(unittest.TestCase):
         self.assertEqual(svc.take(417), EXIT_OK)       # reanuda su propia toma
         self.assertEqual(len(claim_comments(github, 417)), 1)
 
+    def test_a_history_over_the_read_limit_is_not_offered_as_resumable(self):
+        github = FakeGh()
+        svc = service(github)
+        self.assertEqual(svc.take(417), EXIT_OK)
+        seed_receipts(github)
+        self.assertEqual(svc.move(417, "Development In Review", note="entregada"), EXIT_OK)
+        for entry in github.data:                      # el usuario la devuelve a la fase
+            if entry.number == 417:
+                entry.status = "Ready Development"
+        limit = MODULE["COMMENT_LIMIT"]
+        github.comments_store[417] += [{"id": 9000 + n, "body": "nota %d" % n}
+                                       for n in range(limit)]
+        lines = []
+        self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
+        self.assertNotIn("SIGUIENTE #417", self.head(lines))
+        self.assertIn("#417 no elegible: taken — historial por encima del límite",
+                      "\n".join(lines))
+
     def test_reserved_issue_leaves_the_queue_without_a_double_claim(self):
         github = FakeGh()
         svc = service(github)
