@@ -246,28 +246,37 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
 - **Responsive (D5):** 820/390 exige diseño y validación propios; no se deduce de las capturas
   a 1440.
 
-**Alcance técnico autorizado:** solo los bloques `light-s` y `hybrid-s` de
-`apps/web/public/themes.css`. `dark-s`, `graphite-lime` y `casa` conservan sus tokens; no se
-modifican `theme-boot.js`, `themes.ts`, `style.css`, componentes, rutas ni navegación.
+**Alcance técnico autorizado:**
+
+- **L1 (integrado):** bloques `light-s` y `hybrid-s` de `apps/web/public/themes.css`.
+- **L2 (autorizado por #402):** capa visual de Inicio en `apps/web/src/light-hybrid.css`,
+  importada de forma aditiva desde `style.css`. Cubre héroe, bandeja KPI, cabecera de ciclo,
+  Atención, Objetivo y banda de posición sobre la composición compartida; no cambia DOM,
+  estructura, orden, cifras ni acciones.
+
+`dark-s`, `graphite-lime` y `casa` conservan sus tokens y su identidad; no se modifican
+`theme-boot.js`, `themes.ts`, componentes, rutas ni navegación.
 
 **Alcance de entrega:** además de los tokens, el incremento incluye la actualización de las
 expectativas E2E de identidad afectadas (`theme.spec.ts`, `ui-switch.spec.ts`), esta enmienda y
 la evidencia visual comparada. No cambia componentes, DOM, rutas ni contratos.
 
-**Fuera de alcance:** L2 (recomposición de Inicio), L3 (interacción de Movimientos), L4
-(extensión de alcance), rediseño global, cambios de API, SQLite, contratos, datos reales, merge
-y despliegue.
+**Fuera de alcance:** L3 (interacción de Movimientos), L4 (extensión de alcance), rediseño
+global, cambios de composición u orden, cambios de API, SQLite, contratos, datos reales, merge y
+despliegue. Si un incremento exige tocar estructura, orden, componentes compartidos u otros
+temas, se detiene y se presenta la decisión antes de implementarlo.
 
 **Sustitución expresa:** esta enmienda sustituye, **solo para la capa de identidad de `light-s` y
 `hybrid-s`**, las cláusulas que declaraban cerrados los tres temas: la tabla de §2, la frase de
 §2.4 «Dark, Light, Hybrid y Casa conservan su identidad» y la lista de materias cerradas de §7.
 No reabre Dark, Casa, Graphite, la composición, el selector ni el mecanismo `mf-theme`.
 
-**Dependencia de entrega:** la conservación de los prototipos (L0) está **en revisión** en
-[#435](https://github.com/jmartinlabs/myfinanzas-app/pull/435). La referencia de tokens
-`specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` existe en la rama de esa
-PR; el merge de L1 debe ocurrir **después** del de L0, o simultáneamente, para no dejar la
-referencia rota en `test`.
+**Estado de entrega:** L0 ([#435](https://github.com/jmartinlabs/myfinanzas-app/pull/435)) y
+L1 ([#437](https://github.com/jmartinlabs/myfinanzas-app/pull/437)) están **fusionados** en
+`test`, por lo que la referencia
+`specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` es válida. L2 se entrega
+en su propia PR y mantiene el mismo límite: solo `light-s`/`hybrid-s`, sin tocar composición ni
+los otros temas.
 
 ## 3. Dependencias
 

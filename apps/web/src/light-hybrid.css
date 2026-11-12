@@ -1,0 +1,202 @@
+/* UI-P2 · L2 · Identidad de Inicio para Claro y Mixto.
+   Capa visual sobre la composición compartida: no cambia estructura, orden ni datos.
+   Superficies con color sólido: el contrato AA mide fondos reales, no gradientes. */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control {
+  --negative: #ffb4a8;
+  border-color: #2a4a50;
+  background: #17363c;
+  box-shadow:
+    0 0 0 6px #f4ece1,
+    0 0 0 7px #d8cdbf,
+    0 28px 64px rgb(68 45 28 / 0.18);
+  color: #f4f1e8;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-control {
+  background: #14252a;
+  box-shadow:
+    0 0 0 6px #f4ece1,
+    0 0 0 7px #d8cdbf,
+    0 30px 68px rgb(37 29 22 / 0.24);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control-cell {
+  border-left-color: rgb(244 241 232 / 0.16);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control :is(.graphite-kicker, .eyebrow) {
+  color: #a8d6cf;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control :is(.ui-amount-value, .ui-amount-currency) {
+  color: #f7f5ec;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control :is(.graphite-control-meta, .graphite-control-note, .graphite-plan-item > span:not(.ui-badge):not(.ui-amount-state)) {
+  color: #c9d9d4;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control .graphite-facts dt {
+  color: #a8d6cf;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control .graphite-facts dd {
+  color: #f4f1e8;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control :is(a, summary) {
+  color: #a8d6cf;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control .ui-amount-state {
+  border-color: rgb(244 241 232 / 0.4);
+  background: transparent;
+  color: #f4f1e8;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control :focus-visible {
+  outline-color: #a8d6cf;
+}
+
+/* Bandeja KPI ------------------------------------------------------------- */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-kpis {
+  gap: 8px;
+  padding: 8px;
+  border-color: #d8cdbf;
+  border-radius: 16px;
+  background: #f4ece1;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.65),
+    0 16px 38px rgb(78 53 33 / 0.08);
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-kpis {
+  background: #f2e9de;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-kpi {
+  padding: 14px 16px;
+  border: 1px solid #e1d6c8;
+  border-radius: 11px;
+  background: #fffdf9;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.82);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-kpi:first-child {
+  border-left: 1px solid #e1d6c8;
+}
+
+/* Ciclo real vs plan ------------------------------------------------------ */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-cycle {
+  border-color: #d8cdbf;
+  background: #fffdf9;
+  box-shadow: 0 16px 38px rgb(78 53 33 / 0.08);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-cycle .graphite-section-head {
+  border-bottom: 1px solid #d8cdbf;
+  background: #f4ece1;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-cycle .graphite-section-head .eyebrow {
+  color: #17616a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-cycle .ui-table th {
+  background: #f0e8dc;
+  color: #1f1f1f;
+}
+
+/* Atención y Objetivo ----------------------------------------------------- */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-attention {
+  border-color: #e8c97a;
+  background: #f9f1e5;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-attention {
+  border-color: #b7d4d1;
+  background: #fffdf9;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective {
+  --negative: #ffb4a8;
+  border-color: #17363c;
+  background: #17363c;
+  color: #f4f1e8;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-objective {
+  border-color: #b7d4d1;
+  border-top: 3px solid #17616a;
+  background: #fffdf9;
+  color: #1f1f1f;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective :is(.graphite-kicker, .eyebrow, .graphite-objective-facts dt) {
+  color: #a8d6cf;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-objective :is(.graphite-kicker, .eyebrow, .graphite-objective-facts dt) {
+  color: #17616a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective :is(.ui-amount-value, .ui-amount-currency, .graphite-objective-value, .graphite-objective-facts dd) {
+  color: #f4f1e8;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-objective :is(.ui-amount-value, .ui-amount-currency, .graphite-objective-value, .graphite-objective-facts dd) {
+  color: #1f1f1f;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective :is(a, summary) {
+  color: #a8d6cf;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective .ui-amount-state {
+  border-color: rgb(244 241 232 / 0.4);
+  background: transparent;
+  color: #f4f1e8;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-objective :is(a, summary) {
+  color: #17616a;
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-objective .ui-amount-state {
+  background: transparent;
+  border-color: #b7d4d1;
+  color: #1f1f1f;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective :focus-visible {
+  outline-color: #a8d6cf;
+}
+
+/* Banda de posición ------------------------------------------------------- */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-position {
+  gap: 8px;
+  padding: 8px;
+  border-color: #d8cdbf;
+  border-radius: 16px;
+  background: #f4ece1;
+  box-shadow: 0 14px 32px rgb(78 53 33 / 0.07);
+}
+
+html[data-theme="hybrid-s"] .inicio-page .graphite-position {
+  background: #f2e9de;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-position-cell {
+  border: 1px solid #e1d6c8;
+  border-radius: 11px;
+  background: #fffdf9;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-position-note {
+  color: #5f5b55;
+}
