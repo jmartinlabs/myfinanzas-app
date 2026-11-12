@@ -4108,3 +4108,149 @@ html[data-theme="graphite-lime"] .vehicle-integrity-page .integrity-list .text-b
     padding: var(--space-4);
   }
 }
+/* G5f · Cierre, Fotos y Resumen anual ------------------------------------- */
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head .muted,
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .panel {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .ui-table th {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page table.table, .fotos-page .fotos-table, .e47-page .e47-table) th {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page table.table, .fotos-page .fotos-table, .e47-page .e47-table) td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page table.table, .fotos-page .fotos-table, .e47-page .e47-table) tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) dt,
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .help,
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-card {
+  border-top-color: var(--graphite-card-border);
+  border-right-color: var(--graphite-card-border);
+  border-bottom-color: var(--graphite-card-border);
+  background: var(--surface);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .e47-page .e47-card[data-clase="real"] {
+  border-left-color: var(--positive);
+}
+
+html[data-theme="graphite-lime"] .e47-page .e47-card[data-clase="plan"] {
+  border-left-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-filters {
+  border-color: var(--graphite-card-border);
+  background: var(--surface);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-filters :is(input, select) {
+  min-height: 44px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .fotos-page .fotos-boundary {
+  border-color: var(--graphite-card-border);
+  background: var(--surface);
+}
+
+html[data-theme="graphite-lime"] :is(.e47-page, .cierre-page, .fotos-page) :is(.e47-source, .e47-table-source, .e47-coverage-meta, .e47-card-motivo, .ui-amount-note) {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .cierre-page .cierre-fingerprint,
+html[data-theme="graphite-lime"] .cierre-page .cierre-immutable {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
