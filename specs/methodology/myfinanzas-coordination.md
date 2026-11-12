@@ -17,15 +17,18 @@ E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redun
 La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
 v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
 autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
+El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. Los clientes externos (hoy OpenCode) se habilitan por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
 
-## Reparto de responsabilidades — orquestador, asesor y usuario
+## Reparto de responsabilidades — rol de coordinador, asesor y usuario
 
 Aprobado por el usuario el 2026-11-03. Sustituye el reparto anterior sin eliminar los
 gates de [approvals](approvals.md): desarrollo nuevo, cambios financieros, merges
-funcionales y operaciones reales conservan autorización expresa.
+funcionales y operaciones reales conservan autorización expresa. La designación vigente del
+coordinador es **Hermes** por decisión del usuario (2026-11-12); el rol no queda atado a ese
+proveedor.
 
-- **Coordinador técnico y ejecutor principal (OpenCode).** Asume de forma autónoma la
+- **Coordinador técnico (rol, no proveedor).** Un único coordinador activo por proyecto y
+  periodo de trabajo, designado explícitamente por el usuario. Asume de forma autónoma la
   planificación y el backlog, la coordinación de agentes, el desarrollo, la arquitectura,
   la implementación, las pruebas, la QA independiente, la documentación, las ramas,
   worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos (SPEC,
@@ -45,6 +48,12 @@ funcionales y operaciones reales conservan autorización expresa.
   merges funcionales, operaciones reales, datos reales, despliegues y cambios de alcance
   o visibilidad.
 
+La designación no ata el rol a un proveedor: cualquier cliente compatible (Hermes, OpenCode,
+Codex u otro) puede ejercerlo, y el relevo exige el handoff de
+[Cambio de coordinador](#cambio-de-coordinador). OpenCode sigue disponible como ejecutor o
+como coordinador sustituto por decisión del usuario; no se presupone que un proveedor pueda
+lanzar sesiones de otro, y sin despachador acreditado el trabajo no se declara iniciado.
+
 ### Materias que exigen consulta
 
 Solo las cinco anteriores. Las dudas técnicas, de implementación, refactorización,
@@ -63,9 +72,23 @@ es aprobación.
 4. El usuario consulta, evalúa las alternativas y decide.
 5. El usuario comunica la decisión; el orquestador la registra y coordina su ejecución.
 
-No se duplica la coordinación ni el seguimiento entre OpenCode y el asesor. Una duda
+No se duplica la coordinación ni el seguimiento entre el coordinador y el asesor. Una duda
 material detiene solo el trabajo afectado; las tareas independientes ya autorizadas
 continúan. Ante un dato o gate ausente se bloquea únicamente el despacho o paso afectado.
+
+### Cambio de coordinador
+
+El usuario designa al coordinador; el relevo es explícito y verificable, sin dos coordinadores
+simultáneos sobre el mismo tablero. Quien entrega el rol no abandona trabajo a medias y quien lo
+recibe no reabre lo ya cerrado. Antes de actuar, el nuevo coordinador registra en la Issue o en
+el checkpoint el handoff con: Issues y Status, asignaciones y reservas vigentes, trabajo en
+curso con rama/SHA/PR, QA disponible, dependencias abiertas, bloqueos con su condición de
+salida, decisiones vigentes y la siguiente acción verificable.
+
+Se reutilizan `$handoff` y `$work-issue`; no se crea otra base de estado, servicio, bot, cron ni
+campo nuevo del Project. La designación se anota aquí y en el tablero mediante el Status del
+trabajo en curso, y se comunica a los agentes implicados. Si el coordinador saliente no puede
+completar el handoff, el trabajo afectado pasa a `Blocked` con su `Previous Status` exacto.
 
 ## Gates que NO desaparecen
 - Especificación aprobada + dependencias satisfechas + autorización expresa de

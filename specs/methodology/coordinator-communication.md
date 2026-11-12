@@ -6,8 +6,8 @@
 > [Precedencia local](myfinanzas-coordination.md), AGENTS y aprobaciones del usuario
 > prevalecen; no cambia modelos/cuota, ownership, reglas financieras ni gates.
 
-How the coordinator (Codex or Claude Code) talks to an external client such as OpenCode
-and reports open work to the user. Read on demand from [orchestrate](../../.agents/skills/orchestrate/SKILL.md)
+How the active coordinator — any compatible client, today Hermes — talks to an external client
+such as OpenCode and reports open work to the user. Read on demand from [orchestrate](../../.agents/skills/orchestrate/SKILL.md)
 when delegating, receiving a return, or answering a status request.
 
 This contract adds no external service, hook, polling or second source of truth. Agent
@@ -25,7 +25,7 @@ approvals. Do not maintain a parallel relay or an alternative relay branch.
 Every relay delegation, correction or query states:
 
 - **Task ID** (unique, for example `ORCH-COMMS-01`) and its functional name;
-- **Client:** OpenCode with its verified version, or `unverified`;
+- **Client:** the external client (e.g. OpenCode) with its verified version, or `unverified`;
 - **Session:** the technical ID only if it is known; otherwise the stable functional reference the
   user gave (for example `ORCH Comunicación`). Never invent an ID;
 - **Repository, branch or worktree, objective and PR** (or `none`).
@@ -166,9 +166,10 @@ State what was not updated. This view writes nothing.
 ## 10. Several sessions and client portability
 
 A return from session B updates only task B; tasks in sessions A and C keep their states. Every later
-message keeps the Task ID and the destination session. The same rules serve Codex and Claude Code.
-Only the client name changes: use `HANDOFF → CODEX` when Codex coordinates and `HANDOFF → CLAUDE CODE`
-when Claude Code does. Agent Relay v1 is the canonical route to OpenCode; the user
+message keeps the Task ID and the destination session. The same rules serve every coordinator client.
+Only the client name changes: use `HANDOFF → CODEX` when Codex coordinates, `HANDOFF → CLAUDE CODE`
+when Claude Code does and `HANDOFF → HERMES` when Hermes does. Agent Relay v1 is the canonical route
+to OpenCode; the user
 triggers `Lee`. No parallel relay or alternative branch is maintained.
 
 ## 11. Gates and supervision
