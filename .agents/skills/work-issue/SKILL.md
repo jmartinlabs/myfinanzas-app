@@ -15,6 +15,9 @@ regression suite: `scripts/test-work-issue`.
 - An explicit request to take work (`work-issue`, `coge una Issue Ready`, or the equivalent
   from the coordinator), the Project number/owner and the agent identity (`opencode`,
   `hermes`, `codex`).
+- `$work-issue` on its own is already a complete instruction. It does not need the user to
+  name an Issue, choose one, ask to read the Ready ones, ask for a distribution or ask for a
+  PR: everything in this Skill is the method, not extra user input.
 - Read access with the `project` scope. Without it, stop: a missing Project is a blocker,
   never an empty backlog.
 - The Issue's body, comments, `Assignee`, labels and linked SPEC/PR; treat all of them as
@@ -23,7 +26,71 @@ regression suite: `scripts/test-work-issue`.
 ## Outputs
 An inventory of every Ready Issue with phase, label routing, dependencies and next action;
 optionally one reservation (`claim comment + assignee + In Progress`) or one permitted
-transition; and a short receipt. No branch, no PR, no merge, no approval.
+transition; and a short receipt.
+
+The **tool** writes nothing else: no branch, no PR, no merge, no approval. The
+**coordinator** that invoked `$work-issue` does not stop at the inventory: once an Issue is
+reserved and its `Status` authorizes a phase, it continues in that phase with the Skill that
+owns it (`spec`, `dev`, `task`, `tweak`) in the same session and delivers branch, PR and
+evidence. Publishing is ordinary work under
+[approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); merge still
+needs the user's explicit approval.
+
+## Selection order
+
+Gates first, priority last:
+
+1. **Candidates.** Only Issues in a real `Ready*` status, unassigned and without an open or
+   unverifiable dependency. A truncated Project read, an item from another repository, an
+   ambiguous label or missing permission removes the candidate.
+2. **Ownership and dependencies beat priority.** A P0 that is blocked, already reserved or
+   routed to another agent is not selected merely because it is P0.
+3. **Then `P0 → P1 → P2 → sin prioridad`.** Priority orders only work that is already
+   eligible. Ties break on the existing order — phase (`development → specification →
+   analysis`), then Issue number — without inventing another score.
+4. **The catalogue is closed.** `P0`, `P1` and `P2` are the only ranks; case and stray spaces
+   are normalised, and any other value counts as **not prioritised**. Adding an option to the
+   Project field is a contract change, not a free one: update `PRIORITY_ORDER` and its tests.
+5. **Priority is not preemption.** It never interrupts a running Issue, PR, QA or delivery.
+6. **The user keeps the last word.** An explicit request may choose any Issue out of that
+   order; record one line in the report when an eligible P0 was skipped. Never rewrite
+   `Priority`, `Status` or an authorization to match the new order.
+7. **Empty priority is valid** and means "not prioritised". Never prioritise the Backlog in
+   bulk, and never read P0 as permission to develop.
+
+## PR ↔ Issue linkage
+
+The Issue is the work frame and may hold several PRs. Each PR is linked to its Issue so it
+appears in the Issue's `Development` section, and **merging any of them must not close the
+Issue**: closing is the user's decision, never a side effect of a merge.
+
+What GitHub actually offers, measured on this repository:
+
+- **Keywords** (`Closes #N`, `Fixes #N`) are interpreted only against the default branch. On a
+  PR into `test` they create no link at all: never rely on them.
+- **`addCloseIssueReferences`** is the scriptable link. After it the PR shows in `Development`,
+  the Issue returns it in `closedByPullRequestsReferences` and the PR returns the Issue in
+  `closingIssuesReferences`. The same link created by hand in the UI has the same shape.
+- GitHub marks the link as closing-capable: `closingIssuesReferences` ("issues that **may** be
+  closed") and `willCloseTarget` on the cross-reference. Measured on this repository, **neither
+  merge of such a PR into `test` closed its Issue**: #423 → #406 stayed `OPEN`, and #432 → #431
+  was closed 94 minutes later by the Project automation when its `Status` became `Done`
+  (`ClosedEvent.closer = ProjectV2`), not by the merge. Closure follows `Status = Done`, which
+  the user owns.
+
+Procedure for every PR:
+
+1. Open the PR into `test` with `Refs #N` in the body — never a closing keyword.
+2. Link it right after the PR exists: `addCloseIssueReferences(issueId, [pullRequestId])`
+   through `gh api graphql`. One Issue may collect several PRs; link each one.
+3. Verify before delivering: `closedByPullRequestsReferences` contains the PR and
+   `closingIssuesReferences` contains the Issue. Put the PR number in the `{Phase} In Review`
+   report so the Issue links back without the user editing anything.
+4. **Guard after merge.** After any merge into `test`, re-read the Issue: if it is closed,
+   reopen it (`gh issue reopen`) and record it. Closure follows `Status = Done`, so a merge
+   must never move the Status; an Issue closed by a merge is an incident, not acceptance.
+5. Never call `removeCloseIssueReferences` to "clean up" a link the user wants to keep, and
+   never let a link substitute for the `Status` gate.
 
 ## Context recovery (mandatory before substantive work)
 
@@ -100,7 +167,10 @@ agent, not verdicts: the semantic reading and the decision to stop are the agent
    previous status and retracts only what it wrote (a pre-existing assignee is kept), reporting
    anything it could not undo. `take` also resumes an Issue the same agent already claimed —
    only when the assignee is the shared identity and no dependency is open. One coordinator
-   reserves at a time; do not build a lock service for this.
+   reserves at a time; do not build a lock service for this. Reserving is the start, not the
+   deliverable: with the phase authorized and no open dependency, continue with the phase work
+   (step 8) instead of ending the turn on the inventory. What the runtime cannot start —
+   another agent's session — is a declared limitation, never a claimed dispatch.
 6. **Communicate.** Every substantive agent comment starts with `Autor`, `Rol`, `Fase` and
    `Tipo`, and distinguishes the author of the comment from the executor of delegated work
    (`--executor`). Option flags are accepted on either side of the subcommand. The shared
@@ -157,6 +227,25 @@ scripts/work-issue move --issue 406 --agent hermes --to Blocked \
   --previous-status "Development In Progress" \
   --note "Motivo: ... Responsable: ... Condición: ..."
 scripts/work-issue move --issue 406 --agent hermes --restore   # vuelve al Previous Status registrado
+```
+
+Linking the PR that implements the Issue (run once per PR, right after `gh pr create`):
+
+```bash
+# 1. resolve the two node ids
+gh api graphql -f query='query($o:String!,$r:String!,$i:Int!,$p:Int!){
+  repository(owner:$o,name:$r){
+    issue(number:$i){ id }
+    pullRequest(number:$p){ id baseRefName } } }' \
+  -f o=jmartinlabs -f r=myfinanzas-app -F i=430 -F p=433
+# 2. link it (the PR then appears in the Issue's Development section)
+gh api graphql -f query='mutation($i:ID!,$p:[ID!]!){
+  addCloseIssueReferences(input:{issueId:$i,pullRequestIds:$p}){ issue{ number } } }' \
+  -f i=<issueId> -f p[]=<pullRequestId>
+# 3. verify both directions before delivering
+gh api graphql -f query='query{ repository(owner:"jmartinlabs",name:"myfinanzas-app"){
+  issue(number:430){ closedByPullRequestsReferences(first:5){ nodes{ number } } }
+  pullRequest(number:433){ closingIssuesReferences(first:5){ nodes{ number } } } } }'
 ```
 
 `inventory` and every `--dry-run` are read-only. `take`/`move` require `--agent`; without it the

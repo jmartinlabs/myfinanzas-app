@@ -39,7 +39,8 @@
       "content": {"number": 414, "title": "Ya reservada", "body": "Tiene assignee.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/414"},
       "id": "PVTI_fixture_414",
       "status": "Ready Development",
-      "assignees": ["jmartinlabs"]
+      "assignees": ["jmartinlabs"],
+      "priority": "P0"
     },
     {
       "content": {"number": 415, "title": "Dependencia abierta", "body": "Depende de #406 para empezar.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/415"},
@@ -58,10 +59,41 @@
       "priority": "P0"
     },
     {
+      "content": {"number": 450, "title": "Prioridad media", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/450"},
+      "id": "PVTI_fixture_450",
+      "status": "Ready Development",
+      "priority": "P1"
+    },
+    {
+      "content": {"number": 451, "title": "Prioridad baja", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/451"},
+      "id": "PVTI_fixture_451",
+      "status": "Ready Development",
+      "priority": "P2"
+    },
+    {
+      "content": {"number": 452, "title": "P0 de otro agente", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/452"},
+      "id": "PVTI_fixture_452",
+      "status": "Ready Development",
+      "labels": ["opencode"],
+      "priority": "P0"
+    },
+    {
+      "content": {"number": 453, "title": "P0 bloqueada", "body": "Depende de #406 para empezar.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/453"},
+      "id": "PVTI_fixture_453",
+      "status": "Ready Development",
+      "priority": "P0"
+    },
+    {
       "content": {"number": 405, "title": "Estandarización posterior", "body": "Todavía no autorizada.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/405"},
       "id": "PVTI_fixture_405",
       "status": "Backlog",
       "labels": ["phase:analysis"]
+    },
+    {
+      "content": {"number": 455, "title": "P0 en Backlog", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/455"},
+      "id": "PVTI_fixture_455",
+      "status": "Backlog",
+      "priority": "P0"
     },
     {
       "content": {"number": 400, "title": "En curso", "body": "Trabajo ya tomado.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/400"},
