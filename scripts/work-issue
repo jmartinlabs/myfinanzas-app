@@ -644,7 +644,10 @@ class Gh:
         self._login = None
 
     def _run(self, argv):
-        proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+        try:
+            proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+        except OSError as error:
+            raise WorkIssueError("no se pudo ejecutar %s (%s)" % (argv[0], error))
         return proc.returncode, proc.stdout, proc.stderr
 
     def _call(self, argv, what):
@@ -1221,6 +1224,16 @@ def resolve_option(args, name):
     return getattr(args, name, None) or getattr(args, name + "_global", None)
 
 
+def read_summary(args):
+    """(summary, error) for `context --publish`; unused arguments are not validated."""
+    if args.command != "context" or not args.summary_file or not args.publish:
+        return None, None
+    try:
+        return Path(args.summary_file).read_text(encoding="utf-8"), None
+    except OSError as error:
+        return None, str(error)
+
+
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -1238,13 +1251,11 @@ def main(argv=None):
     if args.command in ("take", "move", "context") and (not args.issue or args.issue < 1):
         print("No ejecutado: --issue debe ser un número de Issue positivo", file=sys.stderr)
         return EXIT_REFUSED
-    summary = None
-    if args.command == "context" and args.summary_file:
-        try:
-            summary = Path(args.summary_file).read_text(encoding="utf-8")
-        except OSError as error:
-            print("No publicado: no se pudo leer --summary-file (%s)" % error, file=sys.stderr)
-            return EXIT_REFUSED
+    summary, summary_error = read_summary(args)
+    if summary_error:
+        print("No publicado: no se pudo leer --summary-file (%s)" % summary_error,
+              file=sys.stderr)
+        return EXIT_REFUSED
     github = Gh(args.owner, args.project, args.repo)
     service = Service(github, agent, role, executor=executor)
     try:
