@@ -432,7 +432,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
     await page.goto(`/flujo-mensual?ciclo=${cycleId}`);
     await expect(
       page.getByRole("heading", {
-        name: "Flujo ajustado por Recuperado (E3.6)",
+        name: "Flujo ajustado por Recuperado",
         exact: true,
       }),
     ).toBeVisible();
@@ -792,16 +792,16 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       fullPage: true,
     });
 
-    // W4 — vista ajustada separada; la base E2.6 sigue intacta.
+    // W4 — vista ajustada separada; la base del plan sigue intacta.
     await page.goto("/flujo-mensual?ciclo=1");
     await expect(
       page.getByRole("heading", {
-        name: "Flujo ajustado por Recuperado (E3.6)",
+        name: "Flujo ajustado por Recuperado",
         exact: true,
       }),
     ).toBeVisible();
     const gb = page.getByRole("article", {
-      name: "Gasto bruto E2.6 (G_b)",
+      name: "Gasto bruto del plan (G_b)",
       exact: true,
     });
     await expect(gb).toContainText("1.800,00 €");
@@ -818,7 +818,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
     await expect(gn).toContainText("1.800,00 €");
     await expect(gn).toContainText("Parcial");
     const sbruto = page.getByRole("article", {
-      name: "S bruto E2.6",
+      name: "S bruto del plan",
       exact: true,
     });
     await expect(sbruto).toContainText("350,00 €");
@@ -835,7 +835,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       }),
     ).toContainText("0,00 €");
     await expect(page.getByText(/G_n = G_b − R_adj/).first()).toBeVisible();
-    // La base E2.6 sigue visible y etiquetada.
+    // La base del plan sigue visible y etiquetada.
     await expect(
       page.getByRole("article", {
         name: "Gasto bruto registrado",
