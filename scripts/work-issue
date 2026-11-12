@@ -95,6 +95,7 @@ class Item:
     item_id: str = ""
     url: str = ""
     priority: str = ""
+    repository: str = ""
 
     @property
     def phase(self):
@@ -123,6 +124,20 @@ def login(value):
     return str(value)
 
 
+def repo_key(value):
+    """Normalise an owner/repo or GitHub URL to `owner/repo` lower case."""
+    text = (value or "").strip().rstrip("/")
+    if text.endswith(".git"):
+        text = text[:-4]
+    match = re.search(r"github\.com[:/](.+)$", text)
+    return (match.group(1) if match else text).lower()
+
+
+def same_repo(value, repo):
+    """True when the item belongs to the configured repository (or does not say)."""
+    return not value or repo_key(value) == repo_key(repo)
+
+
 def normalise(raw):
     """Convert one `gh project item-list` entry into an Item."""
     content = raw.get("content") or {}
@@ -138,6 +153,7 @@ def normalise(raw):
         item_id=str(raw.get("id") or ""),
         url=str(content.get("url") or ""),
         priority=str(raw.get("priority") or ""),
+        repository=str(content.get("repository") or raw.get("repository") or ""),
     )
 
 
@@ -189,13 +205,17 @@ def agent_routing(labels, agents=AGENTS):
     return sorted(set(known)), sorted(set(unknown))
 
 
-def classify(item, agent=None, by_number=None, agents=AGENTS):
+def classify(item, agent=None, by_number=None, agents=AGENTS, repo=None):
     """Decide whether the agent may take this item, and why not when it may not."""
     by_number = by_number or {}
     decision = Decision(item=item, kind="eligible")
     if item.status not in READY:
         decision.kind = "not-ready"
         decision.reason = "el Status no es un Ready de fase"
+        return decision
+    if item.repository and not same_repo(item.repository, repo):
+        decision.kind = "other-repository"
+        decision.reason = "pertenece a " + item.repository
         return decision
     known, unknown = agent_routing(item.labels, agents)
     decision.dependencies = dependencies(item.body)
@@ -248,10 +268,10 @@ def sort_key(decision):
     )
 
 
-def plan(items, agent=None, agents=AGENTS):
+def plan(items, agent=None, agents=AGENTS, repo=None):
     """Every Ready item with its routing decision, ordered by priority and phase."""
     by_number = {item.number: item for item in items if item.number}
-    decisions = [classify(item, agent, by_number, agents)
+    decisions = [classify(item, agent, by_number, agents, repo)
                  for item in items if item.status in READY]
     return sorted(decisions, key=sort_key)
 
@@ -267,6 +287,8 @@ def next_action(decision):
         return "no reservar: resolver la etiqueta de agente"
     if decision.kind == "other-agent":
         return "no es de este agente"
+    if decision.kind == "other-repository":
+        return "no reservar: pertenece a otro repositorio"
     return "revisar el Status"
 
 
@@ -494,11 +516,17 @@ class Gh:
         return self._login
 
     def item(self, number, items=None):
-        for candidate in items if items is not None else self.items():
-            if candidate.number == number:
+        pool = items if items is not None else self.items()
+        for candidate in pool:
+            if candidate.number == number and same_repo(candidate.repository, self.repo):
                 item = candidate
                 break
         else:
+            foreign = [candidate for candidate in pool if candidate.number == number]
+            if foreign:
+                raise WorkIssueError(
+                    "la Issue #%d del Project pertenece a %s, no a %s"
+                    % (number, foreign[0].repository, self.repo))
             raise WorkIssueError("la Issue #%d no está en el Project" % number)
         if not item.body:
             payload = self._call(["gh", "api", "repos/%s/issues/%d" % (self.repo, number),
@@ -554,7 +582,8 @@ class Service:
         self.executor = executor
 
     def inventory(self, agent=None):
-        decisions = plan(self.github.items(), agent if agent is not None else self.agent)
+        decisions = plan(self.github.items(), agent if agent is not None else self.agent,
+                         repo=getattr(self.github, "repo", None))
         render(decisions, agent if agent is not None else self.agent, self.out)
         if getattr(self.github, "truncated", False):
             self.out("Aviso: el Project supera el límite de lectura de %d items; el inventario "
@@ -588,6 +617,14 @@ class Service:
                 return entry
         return None
 
+    def _foreign(self, items, number):
+        """The matching Project item when it belongs to another repository."""
+        for entry in items:
+            if (entry.number == number and entry.repository
+                    and not same_repo(entry.repository, self.github.repo)):
+                return entry
+        return None
+
     def _owns_assignee(self, item):
         """True when the only assignee is the shared GitHub identity we act as."""
         if not item.assignees:
@@ -607,12 +644,18 @@ class Service:
         if getattr(self.github, "truncated", False):
             raise WorkIssueError("el Project supera el límite de lectura de %d items; "
                                  "un inventario truncado no puede reservar" % PROJECT_LIMIT)
+        foreign = self._foreign(items, number)
+        if foreign:
+            self.out("No reservada #%d: pertenece a %s, no a %s"
+                     % (number, foreign.repository, self.github.repo))
+            return EXIT_REFUSED
         item = self.github.item(number, items)
         claims = [entry for entry in self.github.comments(number)
                   if claim_of(entry.get("body"))]
         mine = [entry for entry in claims if claim_of(entry.get("body")) == (agent, number)]
         others = [entry for entry in claims if claim_of(entry.get("body")) != (agent, number)]
-        decision = classify(item, agent, {entry.number: entry for entry in items})
+        decision = classify(item, agent, {entry.number: entry for entry in items},
+                            repo=self.github.repo)
         if (decision.kind == "taken" and mine and not others
                 and not decision.pending and not decision.unverified
                 and self._owns_assignee(item)):
@@ -702,6 +745,11 @@ class Service:
             raise WorkIssueError("move requiere --agent del catálogo: %s"
                                  % ", ".join(AGENTS))
         items = self.github.items()
+        foreign = self._foreign(items, number)
+        if foreign:
+            self.out("No movida #%d: pertenece a %s, no a %s"
+                     % (number, foreign.repository, self.github.repo))
+            return EXIT_REFUSED
         item = self.github.item(number, items)
         if previous_status and target != "Blocked" and not restore:
             self.out("No movida #%d: --previous-status solo se usa al bloquear" % number)

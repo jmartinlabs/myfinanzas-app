@@ -54,8 +54,10 @@ class FakeGh:
     """GitHub adapter double: records writes and mutates its own copy of the project."""
 
     def __init__(self, items=None, fail=(), claims=None, race=False, truncated=False,
-                 drift_status=None, fail_item_after=None, drop_comments=False):
+                 drift_status=None, fail_item_after=None, drop_comments=False,
+                 repo="jmartinlabs/myfinanzas-app"):
         self.data = copy.deepcopy(items if items is not None else load_items())
+        self.repo = repo
         self.fail = set(fail)
         self.race = race
         self.truncated = truncated
@@ -896,6 +898,40 @@ class FifthRoundTests(unittest.TestCase):
     def test_free_text_cannot_leak_an_unclosed_comment(self):
         self.assertNotIn("<!--", MODULE["sanitize"]("texto <!-- sin cerrar y algo más"))
         self.assertIn("comentario HTML retirado", MODULE["sanitize"]("texto <!-- sin cerrar"))
+
+
+class RepositoryScopeTests(unittest.TestCase):
+    """Review finding 4: a shared Project may carry Issues from other repositories."""
+
+    def test_foreign_issue_is_not_eligible(self):
+        items = load_items()
+        fixture_item(406, items).repository = "otro/proyecto"
+        decision = [d for d in plan(items, repo="jmartinlabs/myfinanzas-app")
+                    if d.item.number == 406][0]
+        self.assertEqual(decision.kind, "other-repository")
+        self.assertEqual(decision.route, "")
+
+    def test_foreign_issue_cannot_be_taken(self):
+        items = load_items()
+        fixture_item(406, items).repository = "otro/proyecto"
+        github = FakeGh(items=items)
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_repo_key_accepts_urls_and_git_suffix(self):
+        for value in ("jmartinlabs/myfinanzas-app", "https://github.com/jmartinlabs/myfinanzas-app",
+                      "git@github.com:jmartinlabs/myfinanzas-app.git",
+                      "JMARTINLABS/MYFINANZAS-APP/"):
+            self.assertEqual(MODULE["repo_key"](value), "jmartinlabs/myfinanzas-app", value)
+
+    def test_adapter_refuses_an_item_from_another_repository(self):
+        raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        raw["items"][0]["content"]["repository"] = "otro/proyecto"
+        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app", runner=AdapterTests().runner(
+            items=raw))
+        with self.assertRaises(WorkIssueError) as caught:
+            github.item(406)
+        self.assertIn("otro/proyecto", str(caught.exception))
 
 
 class ParserTests(unittest.TestCase):

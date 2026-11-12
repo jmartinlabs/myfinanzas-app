@@ -42,9 +42,10 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
    namespaced label outside the catalogue or an unavailable agent mean **do not reserve or
    dispatch**: report it and wait for a decision. Never change another agent's routing label.
    The label is routing, not authorization and not a reservation.
-4. **Check.** Before reserving, confirm the item is still in the expected Ready status, has no
-   other `Assignee`, and has no open or unverifiable dependency (`Depende de #N`,
-   `Blocked by #N`, `Bloqueada por #N`, `Requiere #N`; a negated clause does not count). The
+4. **Check.** Before reserving, confirm the item is still in the expected Ready status, belongs to
+   the configured repository (a shared Project may carry Issues from other repos: those are never
+   eligible), has no other `Assignee`, and has no open or unverifiable dependency (`Depende de
+   #N`, `Blocked by #N`, `Bloqueada por #N`, `Requiere #N`; a negated clause does not count). The
    `Status` is re-read immediately before writing, and again after reserving; a change aborts
    the reservation and retracts what was written.
 5. **Reserve.** `scripts/work-issue take --issue N --agent X` publishes the claim comment,
