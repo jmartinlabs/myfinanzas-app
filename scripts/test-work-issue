@@ -37,6 +37,16 @@ HUMAN_ONLY = MODULE["HUMAN_ONLY"]
 EXIT_OK = MODULE["EXIT_OK"]
 EXIT_REFUSED = MODULE["EXIT_REFUSED"]
 EXIT_FAILED = MODULE["EXIT_FAILED"]
+EXIT_EMPTY = MODULE["EXIT_EMPTY"]
+session_queue = MODULE["session_queue"]
+parse_issues = MODULE["parse_issues"]
+
+# Agent-owned In Progress status -> the review status it may deliver into.
+REVIEW = {
+    "Analysis In Progress": "Analysis In Review",
+    "Specification In Progress": "Specification In Review",
+    "Development In Progress": "Development In Review",
+}
 
 
 def load_items():
@@ -1284,6 +1294,148 @@ class ContextTests(unittest.TestCase):
         self.assertEqual(self.svc(github).move(406, "Development In Review"), EXIT_FAILED)
 
 
+class SessionContinuityTests(unittest.TestCase):
+    """One invocation works the agent's whole eligible queue, not a single Issue."""
+
+    def session(self, github, agent="hermes", lines=None):
+        return Service(github, agent, "Coordinador funcional",
+                       lines.append if lines is not None else (lambda line: None))
+
+    def head(self, lines):
+        return [line for line in lines if line.startswith("SIGUIENTE")][0]
+
+    def test_next_prints_the_whole_queue_in_priority_order(self):
+        lines = []
+        self.assertEqual(self.session(FakeGh(), lines=lines).next_issue("hermes"), EXIT_OK)
+        text = "\n".join(lines)
+        self.assertIn("COLA hermes (6): #417 (P0), #450 (P1), #451 (P2), #406 (sin prioridad), "
+                      "#410 (sin prioridad), #402 (sin prioridad)", text)
+        self.assertIn("SIGUIENTE #417 — Ready Development · fase development", text)
+        self.assertIn("move --to \"Development In Review\"", text)
+
+    def test_queue_order_is_eligibility_then_priority(self):
+        decisions = plan(load_items(), "hermes")
+        self.assertEqual([d.item.number for d in session_queue(decisions)],
+                         [417, 450, 451, 406, 410, 402])
+        self.assertEqual([d.item.number for d in session_queue(decisions, [417, 450])],
+                         [451, 406, 410, 402])
+
+    def test_next_never_offers_another_agents_issue_or_a_blocked_one(self):
+        lines = []
+        self.session(FakeGh(), lines=lines).next_issue("hermes")
+        text = "\n".join(lines)
+        self.assertNotIn("SIGUIENTE #452", text)          # P0 dirigida a opencode
+        self.assertIn("#452 no elegible: other-agent", text)
+        self.assertIn("#414 no elegible: taken", text)
+        self.assertIn("#453 no elegible: blocked-dependency", text)
+        self.assertIn("#416 no elegible: unverified-dependency", text)
+
+    def test_next_does_not_write(self):
+        github = FakeGh()
+        self.session(github).next_issue("hermes")
+        self.assertEqual(github.calls, [])
+        self.assertEqual(github.item_reads, 0)
+
+    def test_exhausted_queue_reports_empty_and_the_reason(self):
+        lines = []
+        code = self.session(FakeGh(), lines=lines).next_issue(
+            "hermes", [417, 450, 451, 406, 410, 402])
+        self.assertEqual(code, EXIT_EMPTY)
+        text = "\n".join(lines)
+        self.assertIn("SIN TRABAJO ELEGIBLE para hermes", text)
+        self.assertIn("#417 omitida: ya gestionada en esta sesión", text)
+        self.assertIn("#453 no elegible: blocked-dependency", text)
+
+    def test_truncated_project_is_not_a_complete_queue(self):
+        with self.assertRaises(WorkIssueError):
+            self.session(FakeGh(truncated=True)).next_issue("hermes")
+
+    def test_next_requires_a_catalogue_agent(self):
+        with self.assertRaises(WorkIssueError):
+            Service(FakeGh(), None, "Coordinador funcional").next_issue(None)
+
+    def test_a_pending_human_decision_does_not_block_the_next_issue(self):
+        github = FakeGh()
+        svc = service(github)
+        self.assertEqual(svc.take(417), EXIT_OK)
+        seed_receipts(github)
+        self.assertEqual(svc.move(417, "Development In Review",
+                                  note="Falta decisión del usuario sobre el alcance"), EXIT_OK)
+        lines = []
+        self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
+        self.assertIn("SIGUIENTE #450", self.head(lines))
+        self.assertEqual(fixture_item(417, github.data).status, "Development In Review")
+
+    def test_a_dependency_in_review_keeps_its_dependent_out_of_the_queue(self):
+        github = FakeGh()
+        svc = service(github)
+        self.assertEqual(svc.take(406), EXIT_OK)          # #415 depende de #406
+        seed_receipts(github)
+        self.assertEqual(svc.move(406, "Development In Review", note="entregada"), EXIT_OK)
+        lines = []
+        self.session(github, lines=lines).next_issue("hermes")
+        text = "\n".join(lines)
+        self.assertIn("#415 no elegible: blocked-dependency", text)
+        self.assertNotIn("SIGUIENTE #415", text)
+
+    def test_one_session_works_every_eligible_issue_and_stops_when_empty(self):
+        github = FakeGh()
+        svc = service(github)                              # recibo del estado Ready
+        worked, rounds = [], 0
+        while True:
+            rounds += 1
+            self.assertLessEqual(rounds, 10, "la sesión no terminó por sí sola")
+            lines = []
+            code = self.session(github, lines=lines).next_issue("hermes")
+            if code == EXIT_EMPTY:
+                break
+            self.assertEqual(code, EXIT_OK)
+            number = int(self.head(lines).split("#")[1].split()[0])
+            self.assertEqual(svc.take(number), EXIT_OK)
+            worked.append(number)
+            seed_receipts(github)                          # nuevo estado, nuevo recibo
+            status = fixture_item(number, github.data).status
+            self.assertEqual(svc.move(number, REVIEW[status], note="entregada"), EXIT_OK)
+            # La entrega de una Issue no cierra la sesión: la siguiente ronda sigue.
+            self.assertEqual(self.session(github).next_issue("hermes"), EXIT_EMPTY
+                             if len(worked) == 6 else EXIT_OK)
+
+        self.assertEqual(worked, [417, 450, 451, 406, 410, 402])
+        self.assertNotIn(415, worked)                      # dependencia aún no Done
+        self.assertEqual(rounds, len(worked) + 1)
+        for number in worked:
+            item = fixture_item(number, github.data)
+            self.assertTrue(item.status.endswith("In Review"), item.status)
+            self.assertNotEqual(item.status, "Done")
+            self.assertEqual(len(claim_comments(github, number)), 1)
+        self.assertFalse([entry for entry in github.data if entry.status == "Done"])
+
+    def test_a_rejected_review_returns_to_the_head_of_the_queue(self):
+        github = FakeGh()
+        svc = service(github)
+        self.assertEqual(svc.take(417), EXIT_OK)
+        seed_receipts(github)
+        self.assertEqual(svc.move(417, "Development In Review", note="entregada"), EXIT_OK)
+        for entry in github.data:                      # el usuario devuelve la Issue a la fase
+            if entry.number == 417:
+                entry.status = "Ready Development"
+        lines = []
+        self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
+        self.assertIn("SIGUIENTE #417", self.head(lines))
+        seed_receipts(github)                          # nuevo estado Ready, nuevo recibo
+        self.assertEqual(svc.take(417), EXIT_OK)       # reanuda su propia toma
+        self.assertEqual(len(claim_comments(github, 417)), 1)
+
+    def test_reserved_issue_leaves_the_queue_without_a_double_claim(self):
+        github = FakeGh()
+        svc = service(github)
+        self.assertEqual(svc.take(417), EXIT_OK)           # ya reservada: fuera de Ready
+        lines = []
+        self.session(github, lines=lines).next_issue("hermes")
+        self.assertIn("SIGUIENTE #450", self.head(lines))
+        self.assertEqual(len(claim_comments(github, 417)), 1)
+
+
 class ParserTests(unittest.TestCase):
     def test_agent_flag_works_before_and_after_the_subcommand(self):
         parser = MODULE["build_parser"]()
@@ -1311,6 +1463,60 @@ class ParserTests(unittest.TestCase):
         finally:
             MODULE["Gh"] = original
         self.assertEqual(code, 2)
+
+    def test_next_requires_an_agent_before_any_github_access(self):
+        created = []
+
+        class FakeGitHub:
+            def __init__(self, *args, **kwargs):
+                created.append(args)
+
+        original = MODULE["Gh"]
+        MODULE["Gh"] = FakeGitHub
+        try:
+            self.assertEqual(MODULE["main"](["next"]), EXIT_REFUSED)
+            self.assertEqual(MODULE["main"](["next", "--agent", "hermes",
+                                             "--exclude", "418,x"]), EXIT_REFUSED)
+        finally:
+            MODULE["Gh"] = original
+        self.assertEqual(created, [])
+
+    def test_exclude_accepts_commas_spaces_or_nothing(self):
+        self.assertEqual(parse_issues(None), [])
+        self.assertEqual(parse_issues(""), [])
+        self.assertEqual(parse_issues("418, 420"), [418, 420])
+        self.assertEqual(parse_issues("420 418,420"), [418, 420])
+        for malformed in ("x", "418,0", "-5"):
+            with self.assertRaises(ValueError):
+                parse_issues(malformed)
+
+
+class SkillContractTests(unittest.TestCase):
+    """The written contract makes the session behaviour repeatable without reminders."""
+
+    SKILL = ROOT / ".agents" / "skills" / "work-issue" / "SKILL.md"
+    ORCHESTRATE = ROOT / ".agents" / "skills" / "orchestrate" / "SKILL.md"
+
+    def test_work_issue_defines_a_continuous_session_over_the_whole_queue(self):
+        text = self.SKILL.read_text(encoding="utf-8")
+        self.assertIn("## Session continuity — one invocation, the whole eligible queue", text)
+        self.assertIn("`scripts/work-issue next --agent X", text)
+        self.assertIn("### Session ledger (closing report)", text)
+        self.assertIn("the turn yields only when no eligible work remains", text)
+        self.assertNotIn("An Issue other than the one reserved stays untouched", text)
+
+    def test_work_issue_keeps_gates_and_one_reservation_at_a_time(self):
+        text = self.SKILL.read_text(encoding="utf-8")
+        self.assertIn("reservation at a time", text)
+        self.assertIn("needs the user's explicit approval", text)
+        self.assertIn("no cron, webhook, bot or", text)
+
+    def test_orchestrate_consumes_the_queue_without_yielding_after_one_issue(self):
+        text = self.ORCHESTRATE.read_text(encoding="utf-8")
+        self.assertIn("consumes that queue continuously", text)
+        self.assertIn("A `$work-issue` session obeys the same rule", text)
+        self.assertIn("blocks only itself", text)
+        self.assertNotIn("the inventory is not a queue", text)
 
 
 class ContractTests(unittest.TestCase):

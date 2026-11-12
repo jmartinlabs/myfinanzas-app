@@ -92,6 +92,7 @@ PHASE_ORDER = {"development": 0, "specification": 1, "analysis": 2}
 EXIT_OK = 0
 EXIT_REFUSED = 2
 EXIT_FAILED = 3
+EXIT_EMPTY = 4
 
 
 class WorkIssueError(Exception):
@@ -304,6 +305,30 @@ def plan(items, agent=None, agents=AGENTS, repo=None):
     decisions = [classify(item, agent, by_number, agents, repo)
                  for item in items if item.status in READY]
     return sorted(decisions, key=sort_key)
+
+
+def session_queue(decisions, exclude=()):
+    """Eligible Issues of one agent, in the exact order a session must work them.
+
+    `exclude` carries only the Issues the running session already handled. It is a
+    convenience for the loop, never a second state: whatever was delivered has already left
+    the Ready set through its `Status` when the Project is re-read.
+    """
+    skipped = {int(number) for number in exclude or ()}
+    return [decision for decision in decisions
+            if decision.eligible and decision.item.number not in skipped]
+
+
+def parse_issues(value):
+    """Issue numbers from `--exclude`; malformed input is refused before any GitHub call."""
+    numbers = []
+    for token in re.split(r"[,\s]+", (value or "").strip()):
+        if not token:
+            continue
+        if not token.isdigit() or int(token) < 1:
+            raise ValueError(token)
+        numbers.append(int(token))
+    return sorted(set(numbers))
 
 
 def next_action(decision):
@@ -798,6 +823,59 @@ class Service:
                      "puede estar incompleto y no se reserva." % PROJECT_LIMIT)
         return decisions
 
+    def next_issue(self, agent=None, exclude=()):
+        """Next Issue of the agent's session queue plus the whole queue (read-only).
+
+        Continuity is decided by re-reading the Project, never by remembering the last
+        Issue: anything delivered has already left the Ready set through its `Status`.
+        A truncated read cannot prove the queue complete, so it is refused.
+        """
+        agent = agent or self.agent
+        if not agent or agent not in AGENTS:
+            raise WorkIssueError("next requiere --agent del catálogo: %s"
+                                 % ", ".join(AGENTS))
+        items = self.github.items()
+        if getattr(self.github, "truncated", False):
+            raise WorkIssueError(
+                "el Project supera el límite de lectura de %d items; una cola truncada no "
+                "puede declararse completa ni consumirse" % PROJECT_LIMIT)
+        decisions = plan(items, agent, repo=getattr(self.github, "repo", None))
+        for decision in decisions:
+            if self._resumable(decision, agent):
+                decision.kind = "eligible"
+                decision.reason = "reanudación de una toma propia"
+        decisions.sort(key=sort_key)
+        queue = session_queue(decisions, exclude)
+        if not queue:
+            self.out("SIN TRABAJO ELEGIBLE para %s — la sesión no tiene otra Issue "
+                     "reservable." % agent)
+            self._explain_skips(decisions, exclude)
+            return EXIT_EMPTY
+        head = queue[0]
+        phase, target = READY[head.item.status]
+        self.out("COLA %s (%d): %s" % (
+            agent, len(queue), ", ".join(plan_label(decision) for decision in queue)))
+        self.out("SIGUIENTE #%d — %s · fase %s · %s · %s" % (
+            head.item.number, head.item.status, phase,
+            head.item.priority or "sin prioridad",
+            "sin etiqueta de agente" if not head.route else "etiqueta " + head.route))
+        self.out("Acción: take --issue %d --agent %s → ejecutar la fase → "
+                 "move --to \"%s\" → volver a next."
+                 % (head.item.number, agent, target.replace("In Progress", "In Review")))
+        self._explain_skips(decisions, exclude)
+        return EXIT_OK
+
+    def _explain_skips(self, decisions, exclude=()):
+        """Why each Issue is not in the queue; the reasons are the session's evidence."""
+        skipped = {int(number) for number in exclude or ()}
+        for decision in decisions:
+            if decision.eligible:
+                if decision.item.number in skipped:
+                    self.out("  #%d omitida: ya gestionada en esta sesión"
+                             % decision.item.number)
+                continue
+            self.out("  #%d no elegible: %s" % (decision.item.number, decision.kind))
+
     def _rollback(self, number, claim_id=None, assigned=False, status_to=None, item=None):
         """Undo the writes already made; returns what could not be undone."""
         problems = []
@@ -958,6 +1036,25 @@ class Service:
         except WorkIssueError:
             return False
         return bool(login) and set(item.assignees) <= {login}
+
+    def _resumable(self, decision, agent):
+        """A Ready Issue whose only assignee and claim are ours: it must re-enter the queue.
+
+        This is the same resumption `take` grants after a review is returned to the phase.
+        Without it a rejected Issue would stay invisible to the session forever.
+        """
+        item = decision.item
+        if decision.kind != "taken" or decision.pending or decision.unverified:
+            return False
+        if not self._owns_assignee(item):
+            return False
+        claims = [entry for entry in self._material(self.github.comments(item.number))
+                  if claim_of(entry.get("body"))]
+        mine = [entry for entry in claims
+                if claim_of(entry.get("body")) == (agent, item.number)]
+        others = [entry for entry in claims
+                  if claim_of(entry.get("body")) != (agent, item.number)]
+        return bool(mine) and not others
 
     def take(self, number, agent=None, dry_run=False):
         agent = agent or self.agent
@@ -1215,6 +1312,11 @@ def build_parser():
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("inventory", parents=[common],
                         help="inventario completo de las tres Ready (solo lectura)")
+    next_command = commands.add_parser(
+        "next", parents=[common],
+        help="siguiente Issue de la cola del agente y cola completa (solo lectura)")
+    next_command.add_argument("--exclude",
+                              help="Issues ya gestionadas en esta sesión (418,420)")
     take = commands.add_parser("take", parents=[common], help="reserva una Issue elegible")
     take.add_argument("--issue", type=int, required=True)
     take.add_argument("--dry-run", action="store_true")
@@ -1262,8 +1364,8 @@ def main(argv=None):
     agent = resolve_agent(args)
     role = resolve_option(args, "role") or ROLES[0]
     executor = resolve_option(args, "executor")
-    if args.command in ("take", "move") and not agent:
-        print("No ejecutado: take/move requieren --agent del catálogo (%s)"
+    if args.command in ("take", "move", "next") and not agent:
+        print("No ejecutado: take/move/next requieren --agent del catálogo (%s)"
               % ", ".join(AGENTS), file=sys.stderr)
         return EXIT_REFUSED
     if args.command == "move" and not args.to and not args.restore:
@@ -1273,6 +1375,14 @@ def main(argv=None):
     if args.command in ("take", "move", "context") and (not args.issue or args.issue < 1):
         print("No ejecutado: --issue debe ser un número de Issue positivo", file=sys.stderr)
         return EXIT_REFUSED
+    excluded = []
+    if args.command == "next":
+        try:
+            excluded = parse_issues(args.exclude)
+        except ValueError as error:
+            print("No ejecutado: --exclude espera números de Issue separados por comas "
+                  "(recibido %s)" % error, file=sys.stderr)
+            return EXIT_REFUSED
     summary, summary_error = read_summary(args)
     if summary_error:
         print("No publicado: no se pudo leer --summary-file (%s)" % summary_error,
@@ -1285,6 +1395,8 @@ def main(argv=None):
         if args.command in (None, "inventory"):
             service.inventory(agent)
             return EXIT_OK
+        if args.command == "next":
+            return service.next_issue(agent, excluded)
         if args.command == "take":
             return service.take(args.issue, agent, dry_run=args.dry_run)
         if args.command == "context":
