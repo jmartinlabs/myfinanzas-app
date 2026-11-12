@@ -272,6 +272,16 @@ def classify(item, agent=None, by_number=None, agents=AGENTS, repo=None):
     return decision
 
 
+def priority_rank(value):
+    """Rank of the Project `Priority` value; empty or unknown mean "not prioritised".
+
+    The field is a closed single select (P0/P1/P2), so case and stray spaces are normalised:
+    a manual edit writing `p0` must not demote a P0 behind a P2. Any other option is treated
+    as unprioritised on purpose; the Skill states that, so a new option is a contract change.
+    """
+    return PRIORITY_ORDER.get((value or "").strip().upper(), 9)
+
+
 def sort_key(decision):
     """Gates first, then priority: an ineligible P0 never leads the list.
 
@@ -282,7 +292,7 @@ def sort_key(decision):
     item = decision.item
     return (
         0 if decision.eligible else 1,
-        PRIORITY_ORDER.get(item.priority, 9),
+        priority_rank(item.priority),
         PHASE_ORDER.get(item.phase or "", 9),
         item.number,
     )

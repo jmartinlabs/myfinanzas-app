@@ -46,13 +46,16 @@ Gates first, priority last:
 2. **Ownership and dependencies beat priority.** A P0 that is blocked, already reserved or
    routed to another agent is not selected merely because it is P0.
 3. **Then `P0 → P1 → P2 → sin prioridad`.** Priority orders only work that is already
-   eligible. Ties keep the existing criteria (dependency, phase, age, human decision); do not
-   invent another score.
-4. **Priority is not preemption.** It never interrupts a running Issue, PR, QA or delivery.
-5. **The user keeps the last word.** An explicit request may choose any Issue out of that
+   eligible. Ties break on the existing order — phase (`development → specification →
+   analysis`), then Issue number — without inventing another score.
+4. **The catalogue is closed.** `P0`, `P1` and `P2` are the only ranks; case and stray spaces
+   are normalised, and any other value counts as **not prioritised**. Adding an option to the
+   Project field is a contract change, not a free one: update `PRIORITY_ORDER` and its tests.
+5. **Priority is not preemption.** It never interrupts a running Issue, PR, QA or delivery.
+6. **The user keeps the last word.** An explicit request may choose any Issue out of that
    order; record one line in the report when an eligible P0 was skipped. Never rewrite
    `Priority`, `Status` or an authorization to match the new order.
-6. **Empty priority is valid** and means "not prioritised". Never prioritise the Backlog in
+7. **Empty priority is valid** and means "not prioritised". Never prioritise the Backlog in
    bulk, and never read P0 as permission to develop.
 
 ## PR ↔ Issue linkage

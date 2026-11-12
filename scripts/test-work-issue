@@ -251,7 +251,29 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(all(d.eligible for d in decisions[:eligible_count]))
         self.assertTrue(all(not d.eligible for d in decisions[eligible_count:]))
         tail = [d.item.number for d in decisions[eligible_count:]]
-        self.assertEqual(tail[:2], [452, 453])            # ambas P0, ambas al final
+        self.assertEqual(tail[:3], [414, 452, 453])       # las tres P0, todas al final
+
+    def test_p0_in_backlog_is_not_a_candidate(self):
+        numbers = {d.item.number for d in plan(load_items(), "hermes")}
+        self.assertNotIn(455, numbers)                    # P0 en Backlog no entra en el plan
+
+    def test_priority_is_normalised_before_ranking(self):
+        items = load_items()
+        for item in items:
+            if item.number == 406:
+                item.priority = "p0"
+            elif item.number == 450:
+                item.priority = " P1 "
+        eligible = [d.item.number for d in plan(items, "hermes") if d.eligible]
+        self.assertEqual(eligible[:3], [406, 417, 450])   # "p0" empata con P0 y va delante de P1
+
+    def test_unknown_priority_is_treated_as_not_prioritised(self):
+        items = load_items()
+        for item in items:
+            if item.number == 417:
+                item.priority = "P3"
+        eligible = [d.item.number for d in plan(items, "hermes") if d.eligible]
+        self.assertEqual(eligible[:2], [450, 451])        # P1 y P2 delante de un valor fuera de catálogo
 
     def test_ineligible_p0_does_not_delay_eligible_work(self):
         decisions = {d.item.number: d for d in plan(load_items(), "hermes")}
@@ -260,7 +282,7 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(decisions[450].eligible)           # P1 sigue disponible
         self.assertTrue(decisions[402].eligible)           # sin prioridad, sigue disponible
 
-    def test_plan_line_keeps_the_selection_order(self):
+    def test_plan_line_does_not_reorder_the_selection(self):
         lines = []
         render(plan(load_items(), "hermes"), "hermes", lines.append)
         plan_line = [line for line in lines if line.startswith("PLAN")][0]
