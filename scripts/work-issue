@@ -36,9 +36,6 @@ READY = {
 # Transitions the agent may perform on its own. Human-owned statuses (Backlog, every
 # Ready*, Done) and review rejections are never written by this tool.
 TRANSITIONS = {
-    "Ready Analysis": {"Analysis In Progress"},
-    "Ready Specification": {"Specification In Progress"},
-    "Ready Development": {"Development In Progress"},
     "Analysis In Progress": {"Analysis In Review", "Blocked"},
     "Specification In Progress": {"Specification In Review", "Blocked"},
     "Development In Progress": {"Development In Review", "Blocked"},
@@ -52,7 +49,10 @@ DEPENDENCY_RE = re.compile(
 DEPENDENCY_LIST_RE = re.compile(
     r"(?i)^\s*(?:\*\*)?(?:dependencias|dependencies)(?:\*\*)?\s*:\s*(.*)$", re.M)
 NEGATION_RE = re.compile(r"(?i)\bno\s+(?:depende|depends|est[áa]\s+bloquead[ao])")
-CLAUSE_BOUNDARY_RE = re.compile(r"[.;,\n]|\b(?:pero|sino|however|though)\b", re.I)
+CLAUSE_BOUNDARY_RE = re.compile(
+    r"[.;,\n]|\b(?:pero|sino|aunque|sin\s+embargo|si\s+bien|however|though|but|and|y)\b", re.I)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+BLOCK_RECORD_RE = re.compile(r"(?m)^- A: Blocked$")
 SPEC_RE = re.compile(r"specs/[0-9A-Za-z._/-]+\.md")
 EPIC_RE = re.compile(r"(?i)\b(?:épica|epica|epic)\s*[:·]?\s*([A-Z]?\d+(?:\.\d+)?)")
 ISSUE_REF_RE = re.compile(r"#(\d+)")
@@ -305,6 +305,11 @@ def render(decisions, agent=None, out=print):
         out("PLAN — ninguna Issue elegible para reservar ahora.")
 
 
+def sanitize(text):
+    """Free text must not be able to inject the HTML-comment markers the tool trusts."""
+    return HTML_COMMENT_RE.sub("[comentario HTML retirado]", text or "")
+
+
 def claim_of(body):
     """(agent, issue) when the comment carries a well-formed claim marker, else None."""
     match = CLAIM_RE.search(body or "")
@@ -339,6 +344,8 @@ def validate_transition(current, target, previous_status=None, restore=False):
         if target != previous_status:
             return "la restauración debe devolver exactamente %s" % previous_status
         return None
+    if current in READY:
+        return "usa take para reservar y pasar a In Progress"
     if target in HUMAN_ONLY:
         return "transición reservada al usuario: " + target
     if target == "Blocked":
@@ -368,11 +375,11 @@ def claim_body(agent, role, phase, item, note=None, executor=None):
         "",
         "- **Issue:** #%d — %s" % (item.number, item.title),
         "- **Status previo:** %s" % item.status,
-        "- Ejecutor: %s" % (executor or agent),
+        "- Ejecutor: %s" % sanitize(executor or agent),
         "",
     ]
     if note:
-        lines += [note.rstrip(), ""]
+        lines += [sanitize(note).rstrip(), ""]
     lines += [
         "Reserva best-effort: comentario de toma + assignee, con relectura posterior. "
         "La etiqueta de agente es enrutamiento, no autorización.",
@@ -411,7 +418,7 @@ def report_body(agent, role, phase, item, target, note=None, previous_status=Non
         lines.append("- Previous Status: %s" % previous_status)
     lines.append("")
     if note:
-        lines += [note.rstrip(), ""]
+        lines += [sanitize(note).rstrip(), ""]
     if target == "Blocked":
         lines.append('%s agent=%s issue=%d -->' % (BLOCK_MARKER, agent, item.number))
     return "\n".join(lines)
@@ -526,9 +533,14 @@ class Service:
                      "puede estar incompleto y no se reserva." % PROJECT_LIMIT)
         return decisions
 
-    def _rollback(self, number, claim_id=None, assigned=False):
+    def _rollback(self, number, claim_id=None, assigned=False, status_to=None, item=None):
         """Undo the writes already made; returns what could not be undone."""
         problems = []
+        if status_to and item is not None:
+            try:
+                self.github.set_status(item, status_to)
+            except WorkIssueError as error:
+                problems.append("Status no restaurado a %s (%s)" % (status_to, error))
         if assigned:
             try:
                 self.github.unassign(number)
@@ -558,7 +570,15 @@ class Service:
             raise WorkIssueError("el Project supera el límite de lectura de %d items; "
                                  "un inventario truncado no puede reservar" % PROJECT_LIMIT)
         item = self.github.item(number, items)
+        claims = [entry for entry in self.github.comments(number)
+                  if claim_of(entry.get("body"))]
+        mine = [entry for entry in claims if claim_of(entry.get("body")) == (agent, number)]
+        others = [entry for entry in claims if claim_of(entry.get("body")) != (agent, number)]
         decision = classify(item, agent, {entry.number: entry for entry in items})
+        if decision.kind == "taken" and mine and not others:
+            # Reanudación del mismo agente (p. ej. tras una devolución de review).
+            decision.kind = "eligible"
+            decision.reason = ""
         if not decision.eligible:
             self.out("No reservada #%d: %s (%s)" % (number, decision.kind, decision.reason))
             return EXIT_REFUSED
@@ -567,31 +587,35 @@ class Service:
             self.out("[dry-run] #%d %s -> %s (comentario de toma + assignee, sin escrituras)"
                      % (number, item.status, target))
             return EXIT_OK
-        earlier = [entry for entry in self.github.comments(number)
-                   if claim_of(entry.get("body"))]
-        if earlier:
-            owner = min(earlier, key=lambda entry: entry.get("id") or 0)
-            self.out("No reservada #%d: ya existe una toma previa (comentario %s)"
+        if others:
+            owner = min(others, key=lambda entry: entry.get("id") or 0)
+            self.out("No reservada #%d: ya existe una toma de otro agente (comentario %s)"
                      % (number, owner.get("id")))
             return EXIT_REFUSED
-        self.github.comment(number, claim_body(agent, self.role, phase, item,
-                                               executor=self.executor))
-        ours = self._claim_of(number, agent)
-        claim_id = ours.get("id") if ours else None
-        written = [entry for entry in self.github.comments(number)
-                   if claim_of(entry.get("body"))]
-        competitors = [entry for entry in written if entry.get("id") != claim_id]
-        if competitors and (claim_id is None or min(
-                entry.get("id") or 0 for entry in competitors) < (claim_id or 0)):
-            problems = self._rollback(number, claim_id)
-            self.out("No reservada #%d: colisión con otra toma anterior; la nuestra "
-                     "%s" % (number, "se retiró" if not problems else "NO se pudo retirar"))
-            for problem in problems:
-                self.out("  escritura pendiente: " + problem)
-            return EXIT_REFUSED
+        claim_id = min(mine, key=lambda entry: entry.get("id") or 0).get("id") if mine else None
+        posted = False
+        if claim_id is None:
+            self.github.comment(number, claim_body(agent, self.role, phase, item,
+                                                   executor=self.executor))
+            posted = True
+            ours = self._claim_of(number, agent)
+            claim_id = ours.get("id") if ours else None
+            if claim_id is None:
+                self.out("No reservada #%d: el comentario de toma no se confirmó" % number)
+                return EXIT_FAILED
+            written = [entry for entry in self.github.comments(number)
+                       if claim_of(entry.get("body"))]
+            competitors = [entry for entry in written if entry.get("id") != claim_id]
+            if competitors and min(entry.get("id") or 0 for entry in competitors) < claim_id:
+                problems = self._rollback(number, claim_id)
+                self.out("No reservada #%d: colisión con otra toma anterior; la nuestra "
+                         "%s" % (number, "se retiró" if not problems else "NO se pudo retirar"))
+                for problem in problems:
+                    self.out("  escritura pendiente: " + problem)
+                return EXIT_REFUSED
         fresh = self.github.item(number)
         if fresh.status != item.status:
-            problems = self._rollback(number, claim_id)
+            problems = self._rollback(number, claim_id if posted else None)
             self.out("No reservada #%d: el Status cambió durante la toma (%s -> %s)"
                      % (number, item.status, fresh.status))
             for problem in problems:
@@ -601,7 +625,8 @@ class Service:
             self.github.assign(number)
             self.github.set_status(item, target)
         except WorkIssueError as error:
-            problems = self._rollback(number, claim_id, assigned=True)
+            problems = self._rollback(number, claim_id if posted else None, assigned=True,
+                                      status_to=item.status, item=item)
             self.out("No verificada #%d: la escritura falló (%s)" % (number, error))
             for problem in problems:
                 self.out("  escritura pendiente: " + problem)
@@ -609,13 +634,15 @@ class Service:
         try:
             verified = self.github.item(number)
         except WorkIssueError as error:
-            problems = self._rollback(number, claim_id, assigned=True)
+            problems = self._rollback(number, claim_id if posted else None, assigned=True,
+                                      status_to=item.status, item=item)
             self.out("No verificada #%d: la relectura falló (%s)" % (number, error))
             for problem in problems:
                 self.out("  escritura pendiente: " + problem)
             return EXIT_FAILED
         if verified.status != target or not verified.assignees:
-            problems = self._rollback(number, claim_id, assigned=True)
+            problems = self._rollback(number, claim_id if posted else None, assigned=True,
+                                      status_to=item.status, item=item)
             self.out("No verificado #%d: Status=%s assignees=%s"
                      % (number, verified.status, verified.assignees or "ninguno"))
             for problem in problems:
@@ -634,6 +661,10 @@ class Service:
         item = self.github.item(number, items)
         if previous_status and target != "Blocked" and not restore:
             self.out("No movida #%d: --previous-status solo se usa al bloquear" % number)
+            return EXIT_REFUSED
+        if restore and item.status != "Blocked":
+            self.out("No movida #%d: --restore solo aplica desde Blocked (está en %s)"
+                     % (number, item.status))
             return EXIT_REFUSED
         if restore:
             recorded = self.blocked_previous(number, agent)
@@ -685,10 +716,12 @@ class Service:
         return EXIT_OK
 
     def blocked_previous(self, number, agent):
-        """Previous Status recorded by our own block comment for this Issue."""
+        """Previous Status recorded by our own, structurally complete block comment."""
         for entry in reversed(self.github.comments(number)):
             body = entry.get("body") or ""
-            if block_of(body) != (agent, number):
+            if block_of(body) != (agent, number) or not BLOCK_RECORD_RE.search(body):
+                continue
+            if "Tipo: Bloqueo" not in body:
                 continue
             match = re.search(r"Previous Status:\s*(%s)" % "|".join(STATUSES), body)
             if match:

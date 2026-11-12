@@ -50,10 +50,12 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
 5. **Reserve.** `scripts/work-issue take --issue N --agent X` publishes the claim comment,
    assigns the Issue and moves it to the matching `{Phase} In Progress`. The claim is
    best-effort (GitHub has no compare-and-set on Project fields): the marker
-   `<!-- work-issue:claim agent=X issue=N -->` plus the assignee are the evidence. If a
-   competing claim appears, the status drifts, or a write fails, the tool retracts its own
-   comment and assignee before returning; anything it could not undo is reported as a pending
-   write. One coordinator reserves at a time; do not build a lock service for this.
+   `<!-- work-issue:claim agent=X issue=N -->` plus the assignee are the evidence. The tool
+   confirms its own comment persisted and re-reads the status before writing; if a competing
+   claim appears, the status drifts, a write fails or the verification fails, it restores the
+   previous status, retracts its comment and assignee, and reports anything it could not undo.
+   `take` is also how an agent resumes an Issue it already claimed. One coordinator reserves at
+   a time; do not build a lock service for this.
 6. **Communicate.** Every substantive agent comment starts with `Autor`, `Rol`, `Fase` and
    `Tipo`, and distinguishes the author of the comment from the executor of delegated work
    (`--executor`). Option flags are accepted on either side of the subcommand. The shared
@@ -66,16 +68,17 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
 8. **Deliver.** Finish the authorized phase, publish evidence and the PR or report, then move
    the Issue to `{Phase} In Review` (`scripts/work-issue move --issue N --to ... --note ...`)
    and ask for the decision. `move` requires the claim published by the calling agent, matched
-   exactly against that marker: without it the tool refuses. The tool refuses `Backlog`, every
-   `Ready*` and `Done`: those are the user's. A rejected review is returned by the user to the
-   same phase.
+   exactly against that marker, and never performs the initial reservation: `Ready*` only moves
+   through `take`. The tool refuses `Backlog`, every `Ready*` and `Done`: those are the user's.
+   A rejected review is returned by the user to the same phase.
 9. **Block and restore.** `move --to Blocked --previous-status <exact current>` only works from
    the agent's own `{Phase} In Progress`, records the exact previous status with a block marker
-   (`<!-- work-issue:block agent=X issue=N -->`) because the Project has no field for it, and
-   rejects any value that does not match the current status. `--previous-status` is rejected
-   outside a block. Restoring (`--restore`) only trusts that recorded block comment — never a
-   `Previous Status` line quoted in another note — and returns to it; if the authorization or
-   scope changed, ask the user first.
+   (`<!-- work-issue:block agent=X issue=N -->`) plus `Tipo: Bloqueo` and `- A: Blocked`,
+   because the Project has no field for it, and rejects any value that does not match the
+   current status. `--previous-status` is rejected outside a block, and free text (`--note`,
+   `--executor`) is stripped of HTML comments so a note can never impersonate a record.
+   `--restore` only works on a `Blocked` Issue and only trusts such a complete record; if the
+   authorization or scope changed, ask the user first.
 10. **Verify.** Every write is checked by re-reading the item, and a failed verification read
     is handled like a failed write: undo what can be undone and report the rest; never assume
     success from a local intent or a failed call.
