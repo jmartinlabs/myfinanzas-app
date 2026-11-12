@@ -120,6 +120,18 @@ tool refuses with exit `2` before touching GitHub. `move` requires the claim pub
 Exit codes: `0` ok, `2` refused by the protocol (nothing changed, or the tool's own writes were
 retracted), `3` blocked or failed write — the receipt lists any write that could not be undone.
 
+## Limits of the evidence (declare, do not overclaim)
+- **Markers are not authenticated.** Every agent publishes with the same GitHub account, so a
+  person (or another tool) with `gh` can write a comment carrying a claim or block marker. The
+  tool checks structure, recency and consistency — never authorship. Cryptographic attribution
+  needs a separate agent identity (App/bot account), which this pilot does not have.
+- **A block record only authorises one restore.** `--restore` trusts the most recent report
+  only; if a human re-blocks the Issue without a new block record, the tool will not move it.
+- **Reservation is best-effort.** GitHub has no compare-and-set on Project fields: there is a
+  read-then-write window. Reserve one at a time and verify by re-reading, as the tool does.
+- **No deployment of this protocol is automatic.** No cron, webhook or bot dispatches work;
+  the study in #406 is analysis only.
+
 ## Stop conditions
 Stop and report — without writing — when the Project or its permissions are unavailable, the
 agent identity is not in the catalogue, the routing label is ambiguous or unknown, the item is

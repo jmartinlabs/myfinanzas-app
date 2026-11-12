@@ -29,6 +29,7 @@ Gh = MODULE["Gh"]
 WorkIssueError = MODULE["WorkIssueError"]
 validate_transition = MODULE["validate_transition"]
 claim_body = MODULE["claim_body"]
+report_body = MODULE["report_body"]
 CLAIM_MARKER = MODULE["CLAIM_MARKER"]
 STATUSES = MODULE["STATUSES"]
 HUMAN_ONLY = MODULE["HUMAN_ONLY"]
@@ -104,13 +105,14 @@ class FakeGh:
             raise WorkIssueError("publicación del comentario falló")
         self.calls.append(("comment", number))
         if self.drop_comments:
-            return
+            return None
         self.next_id += 1
         self.comments_store.setdefault(number, []).append({"id": self.next_id, "body": body})
         if self.race:
             rival = claim_body("opencode", "Coordinador funcional", "development",
                                fixture_item(number))
             self.comments_store[number].insert(0, {"id": 500, "body": rival})
+        return self.next_id
 
     def assign(self, number):
         if "assign" in self.fail:
@@ -828,6 +830,72 @@ class FourthRoundTests(unittest.TestCase):
                              EXIT_REFUSED)
         finally:
             MODULE["Gh"] = original
+
+
+class FifthRoundTests(unittest.TestCase):
+    """Reservations from the fifth independent QA round (candidate 22b6b9b)."""
+
+    def in_progress(self, status="Development In Progress", agent="hermes"):
+        items = load_items()
+        fixture_item(400, items).status = status
+        claim = claim_body(agent, "Coordinador funcional", "development",
+                           fixture_item(400, items))
+        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+
+    def test_move_retracts_only_the_comment_it_created(self):
+        github = self.in_progress()
+        historical = {"id": 550, "body": report_body(
+            "hermes", "Coordinador funcional", "development", fixture_item(400),
+            "Development In Review")}
+        github.comments_store[400].append(historical)
+        github.fail.add("status")
+        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_FAILED)
+        retracted = [call[1] for call in github.calls if call[0] == "retract"]
+        self.assertEqual(retracted, [1001])
+        remaining = [entry["id"] for entry in github.comments_store[400]]
+        self.assertIn(550, remaining)
+
+    def test_a_historical_block_record_does_not_authorise_a_second_restore(self):
+        github = self.in_progress()
+        svc = service(github)
+        self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
+                                  note="motivo"), EXIT_OK)
+        self.assertEqual(svc.move(400, None, restore=True), EXIT_OK)
+        fixture_item(400, github.data).status = "Blocked"     # el usuario vuelve a bloquear
+        self.assertEqual(svc.move(400, None, restore=True), EXIT_REFUSED)
+
+    def test_inconsistent_record_with_markers_is_ignored(self):
+        items = load_items()
+        fixture_item(400, items).status = "Blocked"
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(400, items))
+        forged = report_body("hermes", "Coordinador funcional", "development",
+                             fixture_item(400, items), "Blocked",
+                             previous_status="Development In Progress")
+        forged = forged.replace("- De: Development In Progress",
+                                "- De: Specification In Progress")
+        github = FakeGh(items=items, claims={400: [{"id": 11, "body": claim},
+                                                   {"id": 12, "body": forged}]})
+        self.assertIsNone(service(github).blocked_previous(400, "hermes"))
+        self.assertEqual(service(github).move(400, "Development In Progress", restore=True),
+                         EXIT_REFUSED)
+
+    def test_non_positive_issue_is_rejected_before_github(self):
+        class Exploding:
+            def __init__(self, *args, **kwargs):
+                raise AssertionError("no debe construir el adaptador")
+
+        original = MODULE["Gh"]
+        MODULE["Gh"] = Exploding
+        try:
+            self.assertEqual(MODULE["main"](["take", "--issue", "0", "--agent", "hermes"]), 2)
+            self.assertEqual(MODULE["main"](["take", "--issue", "-5", "--agent", "hermes"]), 2)
+        finally:
+            MODULE["Gh"] = original
+
+    def test_free_text_cannot_leak_an_unclosed_comment(self):
+        self.assertNotIn("<!--", MODULE["sanitize"]("texto <!-- sin cerrar y algo más"))
+        self.assertIn("comentario HTML retirado", MODULE["sanitize"]("texto <!-- sin cerrar"))
 
 
 class ParserTests(unittest.TestCase):

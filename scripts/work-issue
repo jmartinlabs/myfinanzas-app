@@ -52,7 +52,7 @@ NEGATION_RE = re.compile(r"(?i)\bno\s+(?:depende|depends|est[áa]\s+bloquead[ao]
 CLAUSE_BOUNDARY_RE = re.compile(
     r"[.;,\n]|\b(?:pero|sino|aunque|sin\s+embargo|si\s+bien|however|though|but|and|y)\b", re.I)
 HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
-BLOCK_RECORD_RE = re.compile(r"(?m)^- A: Blocked$")
+UNCLOSED_COMMENT_RE = re.compile(r"<!--.*$", re.S)
 RECORD_START = "<!-- work-issue:record -->"
 RECORD_END = "<!-- /work-issue:record -->"
 RECORD_RE = re.compile(r"<!-- work-issue:record -->(.*?)<!-- /work-issue:record -->", re.S)
@@ -315,6 +315,7 @@ def render(decisions, agent=None, out=print):
 def sanitize(text):
     """Free text must not inject markers or look like a structural record line."""
     clean = HTML_COMMENT_RE.sub("[comentario HTML retirado]", text or "")
+    clean = UNCLOSED_COMMENT_RE.sub("[comentario HTML retirado]", clean)
     return RESERVED_LINE_RE.sub(
         lambda match: "%s%s[texto] %s:" % (match.group(1), match.group(2), match.group(3)),
         clean)
@@ -482,7 +483,8 @@ class Gh:
         self.truncated = len(entries) >= PROJECT_LIMIT
         # Only Issues: draft items carry no number and Pull Requests are not work items.
         return [normalise(entry) for entry in entries
-                if (entry.get("content") or {}).get("type") in (None, "Issue")]
+                if (entry.get("content") or {}).get("type") in (None, "Issue")
+                and (entry.get("content") or {}).get("number")]
 
     def whoami(self):
         """Login of the shared GitHub identity, needed to recognise our own assignee."""
@@ -515,10 +517,12 @@ class Gh:
         try:
             handle.write(body)
             handle.close()
-            self._call(["gh", "issue", "comment", str(number), "--repo", self.repo,
-                        "--body-file", handle.name], "publicación del comentario")
+            out = self._call(["gh", "issue", "comment", str(number), "--repo", self.repo,
+                              "--body-file", handle.name], "publicación del comentario")
         finally:
             Path(handle.name).unlink(missing_ok=True)
+        match = re.search(r"#issuecomment-(\d+)", out or "")
+        return int(match.group(1)) if match else None
 
     def assign(self, number):
         self._call(["gh", "issue", "edit", str(number), "--repo", self.repo,
@@ -631,11 +635,9 @@ class Service:
         claim_id = min(mine, key=lambda entry: entry.get("id") or 0).get("id") if mine else None
         posted = False
         if claim_id is None:
-            self.github.comment(number, claim_body(agent, self.role, phase, item,
-                                                   executor=self.executor))
+            claim_id = self.github.comment(number, claim_body(agent, self.role, phase, item,
+                                                              executor=self.executor))
             posted = True
-            ours = self._claim_of(number, agent)
-            claim_id = ours.get("id") if ours else None
             if claim_id is None:
                 self.out("No reservada #%d: el comentario de toma no se confirmó" % number)
                 return EXIT_FAILED
@@ -740,24 +742,21 @@ class Service:
                      % (number, item.status, fresh.status))
             return EXIT_REFUSED
         phase = phase_of(item.status) or phase_of(target)
-        self.github.comment(number, report_body(
+        report_id = self.github.comment(number, report_body(
             agent, self.role, phase, item, target, note, previous_status,
             executor=self.executor))
-        report_id = None
-        for entry in reversed(self.github.comments(number)):
-            if report_of(entry.get("body")) == (agent, number):
-                report_id = entry.get("id")
-                break
         try:
             self.github.set_status(item, target)
         except WorkIssueError as error:
-            problems = []
-            if report_id is not None:
-                problems = self._rollback(number, report_id)
+            problems = self._rollback(number, report_id) if report_id is not None else []
+            if report_id is None:
+                result = "no se pudo identificar el comentario publicado"
+            elif problems:
+                result = "NO se pudo retirar (comentario %s)" % report_id
+            else:
+                result = "se retiró (comentario %s)" % report_id
             self.out("No movida #%d: el cambio de Status falló (%s); el informe %s"
-                     % (number, error,
-                        "se retiró" if report_id and not problems else
-                        "NO se pudo retirar" if report_id else "no se publicó"))
+                     % (number, error, result))
             for problem in problems:
                 self.out("  escritura pendiente: " + problem)
             return EXIT_FAILED
@@ -775,21 +774,25 @@ class Service:
         return EXIT_OK
 
     def blocked_previous(self, number, agent):
-        """Previous Status from our own, structurally consistent block comment."""
+        """Previous Status from the most recent report, only if it is our own block record."""
         for entry in reversed(self.github.comments(number)):
             body = entry.get("body") or ""
-            if block_of(body) != (agent, number) or "Tipo: Bloqueo" not in body:
+            if report_of(body) != (agent, number):
                 continue
+            # Only the latest report may authorize a restore; an older block record
+            # must not resurrect a phase after the Issue moved on (see SKILL limits).
+            if "Tipo: Bloqueo" not in body or block_of(body) != (agent, number):
+                return None
             section = RECORD_RE.search(body)
             if not section:
-                continue
+                return None
             record = section.group(1)
             recorded = re.search(r"(?m)^- Previous Status: (%s)$" % "|".join(STATUSES), record)
             source = re.search(r"(?m)^- De: (%s)$" % "|".join(STATUSES), record)
             if not recorded or not source or source.group(1) != recorded.group(1):
-                continue
+                return None
             if recorded.group(1) not in AGENT_IN_PROGRESS:
-                continue
+                return None
             return recorded.group(1)
         return None
 
@@ -854,6 +857,9 @@ def main(argv=None):
     if args.command == "move" and not args.to and not args.restore:
         print("No movida #%d: falta --to (o --restore con Previous Status registrado)"
               % args.issue, file=sys.stderr)
+        return EXIT_REFUSED
+    if args.command in ("take", "move") and (not args.issue or args.issue < 1):
+        print("No ejecutado: --issue debe ser un número de Issue positivo", file=sys.stderr)
         return EXIT_REFUSED
     github = Gh(args.owner, args.project, args.repo)
     service = Service(github, agent, role, executor=executor)
