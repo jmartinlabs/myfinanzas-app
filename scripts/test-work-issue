@@ -979,6 +979,9 @@ class RepositoryScopeTests(unittest.TestCase):
 class ContextTests(unittest.TestCase):
     """Issue #406 (2026-11-12): context recovery before substantive work."""
 
+    def svc(self, github, agent="hermes"):
+        return Service(github, agent, "Coordinador funcional", lambda line: None)
+
     def with_comments(self, comments, body=""):
         items = load_items()
         if body:
@@ -1015,13 +1018,13 @@ class ContextTests(unittest.TestCase):
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
         self.assertIn("CADUCADO", out)
-        self.assertEqual(Service(github, "hermes").take(406), EXIT_REFUSED)
+        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
 
     def test_checkpoint_expires_when_the_status_changes(self):
         github = FakeGh()
         seed_receipts(github)
         fixture_item(406, github.data).status = "Backlog"
-        self.assertEqual(Service(github, "hermes").take(406), EXIT_REFUSED)
+        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
 
     def test_context_reads_the_whole_history_not_only_the_last_comment(self):
         github = self.with_comments([
@@ -1091,16 +1094,16 @@ class ContextTests(unittest.TestCase):
 
     def test_context_publishes_a_bound_receipt_and_unblocks_take(self):
         github = FakeGh()
-        self.assertEqual(Service(github, "hermes").take(406), EXIT_REFUSED)
+        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
         code = Service(github, "hermes", "Coordinador funcional",
                        lambda line: None).context(406, "hermes", publish=True, summary=SUMMARY)
         self.assertEqual(code, EXIT_OK)
         self.assertTrue(MODULE["context_of"](github.comments_store[406][-1]["body"]))
-        self.assertEqual(Service(github, "hermes").take(406), EXIT_OK)
+        self.assertEqual(self.svc(github).take(406), EXIT_OK)
 
     def test_context_refuses_an_incomplete_summary(self):
         github = FakeGh()
-        code = Service(github, "hermes").context(406, "hermes", publish=True,
+        code = self.svc(github).context(406, "hermes", publish=True,
                                                  summary="## Estado\nnada")
         self.assertEqual(code, EXIT_REFUSED)
         self.assertEqual(github.comments_store.get(406, []), [])
@@ -1109,7 +1112,7 @@ class ContextTests(unittest.TestCase):
         comments = [{"id": number, "body": "nota %d" % number}
                     for number in range(1, MODULE["COMMENT_LIMIT"] + 2)]
         github = self.with_comments(comments)
-        code = Service(github, "hermes").context(406, "hermes", publish=True, summary=SUMMARY)
+        code = self.svc(github).context(406, "hermes", publish=True, summary=SUMMARY)
         self.assertEqual(code, EXIT_FAILED)
         self.assertFalse([entry for entry in github.comments_store[406]
                           if MODULE["context_of"](entry["body"])])
