@@ -1,0 +1,1279 @@
+#!/usr/bin/env python3
+"""work-issue: read Ready work from the GitHub Project, route it and reserve it safely.
+
+Read-only by default. The only writes are the agent claim comment, the assignee and
+the phase transition the protocol grants the agent. The tool never approves, merges,
+closes, deploys or moves an item into a human-owned status.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
+
+AGENTS = ("opencode", "hermes", "codex")
+ROLES = ("Coordinador funcional", "Ejecutor", "Revisor")
+
+STATUSES = (
+    "Backlog", "Ready Analysis", "Analysis In Progress", "Analysis In Review",
+    "Ready Specification", "Specification In Progress", "Specification In Review",
+    "Ready Development", "Development In Progress", "Development In Review",
+    "Blocked", "Done",
+)
+
+# Ready status -> (phase, agent-owned In Progress status)
+READY = {
+    "Ready Analysis": ("analysis", "Analysis In Progress"),
+    "Ready Specification": ("specification", "Specification In Progress"),
+    "Ready Development": ("development", "Development In Progress"),
+}
+
+# Transitions the agent may perform on its own. Human-owned statuses (Backlog, every
+# Ready*, Done) and review rejections are never written by this tool.
+TRANSITIONS = {
+    "Analysis In Progress": {"Analysis In Review", "Blocked"},
+    "Specification In Progress": {"Specification In Review", "Blocked"},
+    "Development In Progress": {"Development In Review", "Blocked"},
+}
+
+HUMAN_ONLY = frozenset({"Backlog", "Ready Analysis", "Ready Specification",
+                        "Ready Development", "Done"})
+
+DEPENDENCY_RE = re.compile(
+    r"(?i)\b(?:depende de|depends on|blocked by|bloquead[ao] por|requiere|requires)\s+#(\d+)")
+DEPENDENCY_LIST_RE = re.compile(
+    r"(?i)^\s*(?:\*\*)?(?:dependencias|dependencies)(?:\*\*)?\s*:\s*(.*)$", re.M)
+NEGATION_RE = re.compile(r"(?i)\bno\s+(?:depende|depends|est[áa]\s+bloquead[ao])")
+CLAUSE_BOUNDARY_RE = re.compile(
+    r"[.;,\n]|\b(?:pero|sino|aunque|sin\s+embargo|si\s+bien|however|though|but|and|y)\b", re.I)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+UNCLOSED_COMMENT_RE = re.compile(r"<!--.*$", re.S)
+RECORD_START = "<!-- work-issue:record -->"
+RECORD_END = "<!-- /work-issue:record -->"
+RECORD_RE = re.compile(r"<!-- work-issue:record -->(.*?)<!-- /work-issue:record -->", re.S)
+RESERVED_LINE_RE = re.compile(
+    r"(?im)^(\s*)(-?\s*)(Autor|Rol|Fase|Tipo|Issue|De|A|Ejecutor|Previous Status)\s*:")
+SPEC_RE = re.compile(r"specs/[0-9A-Za-z._/-]+\.md")
+EPIC_RE = re.compile(r"(?i)\b(?:épica|epica|epic)\s*[:·]?\s*([A-Z]?\d+(?:\.\d+)?)")
+ISSUE_REF_RE = re.compile(r"#(\d+)")
+
+CLAIM_MARKER = "<!-- work-issue:claim"
+CLAIM_RE = re.compile(r"<!-- work-issue:claim agent=([a-z0-9_-]+) issue=(\d+) -->")
+CONTEXT_MARKER = "<!-- work-issue:context"
+CONTEXT_RE = re.compile(
+    r"<!-- work-issue:context agent=([a-z0-9_-]+) issue=(\d+) fingerprint=([0-9a-f]{12}) "
+    r"comments=(\d+) -->")
+CONTEXT_SECTIONS = ("## Decisiones vigentes", "## Estado", "## Alcance autorizado",
+                    "## Fuentes consultadas")
+AUTHORIZATION_RE = re.compile(
+    r"(?i)\b(apruebo|aprobad[oa]|autoriz[oa]|autorizad[oa]|no autorizad[oa]|rechazad[oa]|"
+    r"no apto|no fusionar)\b")
+SPEC_REF_RE = re.compile(r"specs/[0-9A-Za-z._/-]+\.md")
+PR_REF_RE = re.compile(r"(?:github\.com/[^/\s]+/[^/\s]+/pull/|PR\s*#)(\d+)")
+COMMIT_REF_RE = re.compile(r"`([0-9a-f]{7,40})`")
+COMMENT_LIMIT = 500
+REPORT_MARKER = "<!-- work-issue:report"
+REPORT_RE = re.compile(r"<!-- work-issue:report agent=([a-z0-9_-]+) issue=(\d+) -->")
+BLOCK_MARKER = "<!-- work-issue:block"
+BLOCK_RE = re.compile(r"<!-- work-issue:block agent=([a-z0-9_-]+) issue=(\d+) -->")
+AUTHOR_HEADER = ("Autor", "Rol", "Fase", "Tipo")
+AGENT_IN_PROGRESS = frozenset({"Analysis In Progress", "Specification In Progress",
+                               "Development In Progress"})
+PROJECT_LIMIT = 1000
+PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
+PHASE_ORDER = {"development": 0, "specification": 1, "analysis": 2}
+
+EXIT_OK = 0
+EXIT_REFUSED = 2
+EXIT_FAILED = 3
+
+
+class WorkIssueError(Exception):
+    """Fatal condition: the requested action cannot be completed safely."""
+
+
+@dataclass
+class Item:
+    number: int
+    title: str
+    status: str
+    labels: list = field(default_factory=list)
+    assignees: list = field(default_factory=list)
+    body: str = ""
+    item_id: str = ""
+    url: str = ""
+    priority: str = ""
+    repository: str = ""
+
+    @property
+    def phase(self):
+        return READY[self.status][0] if self.status in READY else None
+
+
+@dataclass
+class Decision:
+    item: Item
+    kind: str
+    route: str = ""
+    reason: str = ""
+    dependencies: list = field(default_factory=list)
+    pending: list = field(default_factory=list)
+    unverified: list = field(default_factory=list)
+
+    @property
+    def eligible(self):
+        return self.kind == "eligible"
+
+
+def login(value):
+    """Normalise an assignee entry: gh may report a login string or an object."""
+    if isinstance(value, dict):
+        return str(value.get("login") or value.get("name") or "")
+    return str(value)
+
+
+def repo_key(value):
+    """Normalise an owner/repo or GitHub URL to `owner/repo` lower case."""
+    text = (value or "").strip().rstrip("/")
+    if text.endswith(".git"):
+        text = text[:-4]
+    match = re.search(r"github\.com[:/](.+)$", text)
+    return (match.group(1) if match else text).lower()
+
+
+def same_repo(value, repo):
+    """True when the item belongs to the configured repository (or does not say)."""
+    return not value or repo_key(value) == repo_key(repo)
+
+
+def normalise(raw):
+    """Convert one `gh project item-list` entry into an Item."""
+    content = raw.get("content") or {}
+    labels = [str(label) for label in (raw.get("labels") or [])]
+    assignees = [entry for entry in (login(value) for value in (raw.get("assignees") or [])) if entry]
+    return Item(
+        number=int(content.get("number") or 0),
+        title=str(content.get("title") or raw.get("title") or ""),
+        status=str(raw.get("status") or ""),
+        labels=labels,
+        assignees=assignees,
+        body=str(content.get("body") or ""),
+        item_id=str(raw.get("id") or ""),
+        url=str(content.get("url") or ""),
+        priority=str(raw.get("priority") or ""),
+        repository=str(content.get("repository") or raw.get("repository") or ""),
+    )
+
+
+def dependencies(body):
+    """Issue numbers named as hard dependencies; a negated clause is not a dependency.
+
+    Negation is evaluated per clause (up to the previous boundary) so that
+    "no depende de #7 pero depende de #8" still reports #8.
+    """
+    text = body or ""
+    found = set()
+    for match in DEPENDENCY_RE.finditer(text):
+        start = 0
+        for boundary in CLAUSE_BOUNDARY_RE.finditer(text, 0, match.start()):
+            start = boundary.end()
+        if NEGATION_RE.search(text[start:match.start(1)]):
+            continue
+        found.add(int(match.group(1)))
+    for match in DEPENDENCY_LIST_RE.finditer(text):
+        found.update(int(number) for number in ISSUE_REF_RE.findall(match.group(1)))
+    return sorted(found)
+
+
+def relations(body):
+    """Épica / SPEC / Issue references already present in the Issue body."""
+    text = body or ""
+    specs = sorted({path.rstrip(".,;") for path in SPEC_RE.findall(text)})
+    epics = sorted({epic for epic in EPIC_RE.findall(text)})
+    issues = sorted({int(number) for number in ISSUE_REF_RE.findall(text)})
+    return {"specs": specs, "epics": epics, "issues": issues}
+
+
+def agent_routing(labels, agents=AGENTS):
+    """Return (known, unknown): routing labels and namespaced ones outside the catalogue.
+
+    Only catalogue labels route work. Namespaced labels (`agent:X`, `to:X`) are honoured
+    when X is in the catalogue and fail closed when it is not: a routing hint must never
+    be silently ignored while the item is still taken.
+    """
+    known, unknown = [], []
+    for label in labels:
+        name = label.strip().lower()
+        namespaced = re.match(r"^(?:agent|to)[:·](.+)$", name)
+        if namespaced:
+            value = namespaced.group(1).strip() or "<empty>"
+            (known if value in agents else unknown).append(value)
+        elif name in agents:
+            known.append(name)
+    return sorted(set(known)), sorted(set(unknown))
+
+
+def classify(item, agent=None, by_number=None, agents=AGENTS, repo=None):
+    """Decide whether the agent may take this item, and why not when it may not."""
+    by_number = by_number or {}
+    decision = Decision(item=item, kind="eligible")
+    if item.status not in READY:
+        decision.kind = "not-ready"
+        decision.reason = "el Status no es un Ready de fase"
+        return decision
+    if item.repository and not same_repo(item.repository, repo):
+        decision.kind = "other-repository"
+        decision.reason = "pertenece a " + item.repository
+        return decision
+    known, unknown = agent_routing(item.labels, agents)
+    decision.dependencies = dependencies(item.body)
+    for number in decision.dependencies:
+        dependency = by_number.get(number)
+        if dependency is None:
+            decision.unverified.append(number)
+        elif dependency.status != "Done":
+            decision.pending.append(number)
+    if unknown:
+        decision.kind = "unknown-agent"
+        decision.reason = "etiqueta de agente desconocida: " + ", ".join(unknown)
+        return decision
+    if len(known) > 1:
+        decision.kind = "label-conflict"
+        decision.reason = "dos etiquetas de agente: " + ", ".join(known)
+        return decision
+    decision.route = known[0] if known else ""
+    if agent and decision.route and decision.route != agent:
+        decision.kind = "other-agent"
+        decision.reason = "dirigida a " + decision.route
+        return decision
+    if agent and not decision.route and agents and agent not in agents:
+        decision.kind = "unknown-agent"
+        decision.reason = "agente no reconocido: " + agent
+        return decision
+    if item.assignees:
+        decision.kind = "taken"
+        decision.reason = "ya tiene assignee: " + ", ".join(item.assignees)
+        return decision
+    if decision.pending:
+        decision.kind = "blocked-dependency"
+        decision.reason = "dependencia abierta: " + ", ".join("#%d" % n for n in decision.pending)
+        return decision
+    if decision.unverified:
+        decision.kind = "unverified-dependency"
+        decision.reason = ("dependencia no verificable en el Project: "
+                           + ", ".join("#%d" % n for n in decision.unverified))
+        return decision
+    return decision
+
+
+def sort_key(decision):
+    item = decision.item
+    return (
+        PRIORITY_ORDER.get(item.priority, 9),
+        PHASE_ORDER.get(item.phase or "", 9),
+        0 if decision.eligible else 1,
+        item.number,
+    )
+
+
+def plan(items, agent=None, agents=AGENTS, repo=None):
+    """Every Ready item with its routing decision, ordered by priority and phase."""
+    by_number = {item.number: item for item in items if item.number}
+    decisions = [classify(item, agent, by_number, agents, repo)
+                 for item in items if item.status in READY]
+    return sorted(decisions, key=sort_key)
+
+
+def next_action(decision):
+    if decision.eligible:
+        return "tomar y mover a " + READY[decision.item.status][1]
+    if decision.kind == "taken":
+        return "esperar: reservada por otro ejecutor"
+    if decision.kind in ("blocked-dependency", "unverified-dependency"):
+        return "no despachar hasta resolver la dependencia"
+    if decision.kind in ("label-conflict", "unknown-agent"):
+        return "no reservar: resolver la etiqueta de agente"
+    if decision.kind == "other-agent":
+        return "no es de este agente"
+    if decision.kind == "other-repository":
+        return "no reservar: pertenece a otro repositorio"
+    return "revisar el Status"
+
+
+def render(decisions, agent=None, out=print):
+    """Inventory plus a per-agent distribution proposal. Never writes anything."""
+    if not decisions:
+        out("Sin Issues en Ready Analysis, Ready Specification o Ready Development.")
+        return
+    out("INVENTARIO — Ready Analysis / Ready Specification / Ready Development")
+    out("%-5s %-26s %-4s %-10s %-12s %-20s %s" % (
+        "#", "Status", "Pri", "Agente", "Deps", "Clase", "Siguiente acción"))
+    for decision in decisions:
+        item = decision.item
+        deps = ", ".join("#%d" % number for number in decision.dependencies) or "—"
+        out("%-5s %-26s %-4s %-10s %-12s %-20s %s" % (
+            "#%d" % item.number, item.status, item.priority or "—",
+            decision.route or "libre", deps, decision.kind, next_action(decision)))
+        if decision.reason:
+            out("      motivo: " + decision.reason)
+        related = relations(item.body)
+        if related["specs"] or related["epics"] or related["issues"]:
+            out("      relación: %s%s%s" % (
+                ("épica " + ", ".join(related["epics"]) + "; ") if related["epics"] else "",
+                ("SPEC " + ", ".join(related["specs"]) + "; ") if related["specs"] else "",
+                "issues " + ", ".join("#%d" % n for n in related["issues"])
+                if related["issues"] else ""))
+    out("")
+    buckets = {}
+    for decision in decisions:
+        if not decision.eligible:
+            continue
+        buckets.setdefault(decision.route or "cualquier agente", []).append(decision.item.number)
+    if agent:
+        out("PLAN — agente %s: %s" % (
+            agent,
+            ", ".join("#%d" % n for n in sorted(
+                number for numbers in buckets.values() for number in numbers)) or "nada elegible"))
+    elif buckets:
+        out("PLAN — reparto propuesto (una reserva por Issue, no todo a la vez):")
+        for route in sorted(buckets):
+            out("  %-18s %s" % (route, ", ".join("#%d" % n for n in sorted(buckets[route]))))
+    else:
+        out("PLAN — ninguna Issue elegible para reservar ahora.")
+
+
+def sanitize(text):
+    """Free text must not inject markers or look like a structural record line."""
+    clean = HTML_COMMENT_RE.sub("[comentario HTML retirado]", text or "")
+    clean = UNCLOSED_COMMENT_RE.sub("[comentario HTML retirado]", clean)
+    return RESERVED_LINE_RE.sub(
+        lambda match: "%s%s[texto] %s:" % (match.group(1), match.group(2), match.group(3)),
+        clean)
+
+
+def claim_of(body):
+    """(agent, issue) when the comment carries a well-formed claim marker, else None."""
+    match = CLAIM_RE.search(body or "")
+    return (match.group(1), int(match.group(2))) if match else None
+
+
+def block_of(body):
+    """(agent, issue) when the comment carries a well-formed block marker, else None."""
+    match = BLOCK_RE.search(body or "")
+    return (match.group(1), int(match.group(2))) if match else None
+
+
+def report_of(body):
+    """(agent, issue) when the comment carries a well-formed report marker, else None."""
+    match = REPORT_RE.search(body or "")
+    return (match.group(1), int(match.group(2))) if match else None
+
+
+def context_of(body):
+    """(agent, issue, fingerprint, comments) for a context receipt, else None.
+
+    The marker must be the last non-empty line: a comment that merely quotes a receipt is
+    material content, not a checkpoint.
+    """
+    text = (body or "").rstrip()
+    if not text:
+        return None
+    last = text.splitlines()[-1].strip()
+    match = CONTEXT_RE.fullmatch(last)
+    return ((match.group(1), int(match.group(2)), match.group(3), int(match.group(4)))
+            if match else None)
+
+
+def is_receipt_body(body):
+    """A receipt is the tool's own structure, not just a quoted marker."""
+    text = (body or "").strip()
+    if not context_of(text):
+        return False
+    head = text.splitlines()[:5]
+    return bool(head) and head[0].startswith("Autor:") \
+        and any("Tipo: Contexto" in line for line in head) \
+        and "Huella del contexto:" in text
+
+
+def comment_kind(body):
+    """Mechanical classification of one comment; the agent judges meaning, not this."""
+    text = body or ""
+    if is_receipt_body(text):
+        return "context"
+    if block_of(text):
+        return "block"
+    if claim_of(text):
+        return "claim"
+    if report_of(text):
+        return "report"
+    if AUTHORIZATION_RE.search(text):
+        return "decision"
+    return "information"
+
+
+def fingerprint(item, comments):
+    """Stable digest of everything material about the Issue at this moment."""
+    digest = hashlib.sha256()
+    for value in (item.title, item.body, item.status,
+                  "|".join(sorted(item.labels)), "|".join(sorted(item.assignees))):
+        digest.update((value or "").encode("utf-8"))
+        digest.update(b"\0")
+    for entry in comments:
+        digest.update(("%s:%s" % (entry.get("id"), entry.get("body") or "")).encode("utf-8"))
+        digest.update(b"\0")
+    return digest.hexdigest()[:12]
+
+
+def references(item, comments):
+    """Everything the Issue points at: specs, PRs, issues and quoted commits."""
+    text = "\n".join([item.body or ""] + [(entry.get("body") or "") for entry in comments])
+    return {
+        "specs": sorted(set(SPEC_REF_RE.findall(text))),
+        "prs": sorted({int(number) for number in PR_REF_RE.findall(text)}),
+        "issues": sorted({int(number) for number in ISSUE_REF_RE.findall(text)}),
+        "commits": sorted(set(COMMIT_REF_RE.findall(text))),
+    }
+
+
+def context_findings(item, comments, refs, spec_present=None, pr_states=None,
+                     truncated=False):
+    """Mechanical inconsistencies only; semantic judgement stays with the agent."""
+    found = []
+    if truncated:
+        found.append({"code": "history-truncated", "severity": "blocker",
+                      "detail": "el historial supera %d comentarios; no se puede acreditar su lectura"
+                                % COMMENT_LIMIT})
+    claims = [(claim_of(entry.get("body")) or ("?", 0))[0] for entry in comments
+              if claim_of(entry.get("body"))]
+    if len(set(claims)) > 1:
+        found.append({"code": "claims-conflict", "severity": "warning",
+                      "detail": "tomas de varios agentes: " + ", ".join(sorted(set(claims)))})
+    records = []
+    for entry in comments:
+        body = entry.get("body") or ""
+        if not block_of(body):
+            continue
+        section = RECORD_RE.search(body)
+        if not section:
+            continue
+        recorded = re.search(r"(?m)^- Previous Status: (%s)$" % "|".join(STATUSES),
+                             section.group(1))
+        if recorded:
+            records.append(recorded.group(1))
+    if len(set(records)) > 1:
+        found.append({"code": "block-records-conflict", "severity": "warning",
+                      "detail": "registros de bloqueo con Previous Status distintos: "
+                                + ", ".join(sorted(set(records)))})
+    last_transition = None
+    for entry in reversed(comments):
+        body = entry.get("body") or ""
+        if not report_of(body):
+            continue
+        section = RECORD_RE.search(body)
+        if not section:
+            continue
+        target = re.search(r"(?m)^- A: (%s)$" % "|".join(STATUSES), section.group(1))
+        last_transition = target.group(1) if target else None
+        break
+    if last_transition and last_transition != item.status:
+        found.append({"code": "status-vs-report", "severity": "warning",
+                      "detail": "el último informe dice %s y el Project está en %s"
+                                % (last_transition, item.status)})
+    if spec_present is not None:
+        for path in refs["specs"]:
+            if not spec_present(path):
+                found.append({"code": "spec-missing", "severity": "warning",
+                              "detail": "SPEC referenciada no encontrada: " + path})
+    for number, state in sorted((pr_states or {}).items()):
+        if state and state.get("state") not in ("OPEN", None):
+            found.append({"code": "pr-not-open", "severity": "information",
+                          "detail": "PR #%d está %s" % (number, state.get("state"))})
+    if item.status in READY and not any(
+            comment_kind(entry.get("body")) == "decision" for entry in comments):
+        found.append({"code": "authorization-unverified", "severity": "warning",
+                      "detail": "no hay declaración de decisión explícita en el historial; "
+                                "el Status es la única autorización verificable"})
+    return found
+
+
+def validate_summary(text):
+    """Structure only: the receipt must carry the four sections the protocol requires."""
+    if not text or not text.strip():
+        return "el resumen está vacío"
+    missing = [section for section in CONTEXT_SECTIONS if section not in text]
+    if missing:
+        return "faltan secciones: " + ", ".join(missing)
+    return None
+
+
+def context_body(agent, role, phase, item, summary, digest, count):
+    header = [
+        "Autor: %s" % sanitize(agent),
+        "Rol: %s" % role,
+        "Fase: %s" % (phase or "?").capitalize(),
+        "Tipo: Contexto",
+        "",
+    ]
+    trailer = ["",
+               "Huella del contexto: `%s` (%d comentarios). Una reanudación solo puede reutilizar "
+               "este recibo mientras la huella no cambie." % (digest, count),
+               "",
+               "%s agent=%s issue=%d fingerprint=%s comments=%d -->"
+               % (CONTEXT_MARKER, agent, item.number, digest, count)]
+    # The summary is free text: it may not carry the markers the tool trusts.
+    return "\n".join(header) + sanitize(summary).strip() + "\n" + "\n".join(trailer)
+
+
+def validate_transition(current, target, previous_status=None, restore=False):
+    """Return None when the agent may perform the move, otherwise the refusal reason.
+
+    A caller-supplied Previous Status documents a block; it never rewrites history, so it
+    must match the current status exactly and can only be restored to that same status.
+    """
+    if target not in STATUSES:
+        return "Status desconocido: " + target
+    if current not in STATUSES:
+        return "Status actual desconocido: " + str(current)
+    if current == target:
+        return "el Status ya es " + target
+    if current == "Blocked":
+        if not restore:
+            return "solo se restaura el Status anterior con --restore"
+        if not previous_status:
+            return "no hay Previous Status registrado que restaurar"
+        if previous_status in HUMAN_ONLY or previous_status not in AGENT_IN_PROGRESS:
+            return "Previous Status no restaurable por el agente: " + str(previous_status)
+        if target != previous_status:
+            return "la restauración debe devolver exactamente %s" % previous_status
+        return None
+    if current in READY:
+        return "usa take para reservar y pasar a In Progress"
+    if target in HUMAN_ONLY:
+        return "transición reservada al usuario: " + target
+    if target == "Blocked":
+        if current not in AGENT_IN_PROGRESS:
+            return "solo se bloquea trabajo en curso del agente: " + str(current)
+        if not previous_status:
+            return "Blocked requiere --previous-status <valor exacto>"
+        if previous_status != current:
+            return ("Previous Status debe ser exactamente el Status actual (%s), no %s"
+                    % (current, previous_status))
+        return None
+    allowed = TRANSITIONS.get(current, set())
+    if target not in allowed:
+        return "transición no permitida al agente: %s -> %s" % (current, target)
+    return None
+
+
+def claim_body(agent, role, phase, item, note=None, executor=None):
+    """Operative comment header required by the protocol, plus the claim marker."""
+    lines = [
+        "Autor: %s" % agent,
+        "Rol: %s" % role,
+        "Fase: %s" % (phase or "?").capitalize(),
+        "Tipo: Inicio",
+        "",
+        "## Toma de la Issue",
+        "",
+        "- **Issue:** #%d — %s" % (item.number, item.title),
+        "- **Status previo:** %s" % item.status,
+        "- Ejecutor: %s" % sanitize(executor or agent),
+        "",
+    ]
+    if note:
+        lines += [sanitize(note).rstrip(), ""]
+    lines += [
+        "Reserva best-effort: comentario de toma + assignee, con relectura posterior. "
+        "La etiqueta de agente es enrutamiento, no autorización.",
+        "",
+        '%s agent=%s issue=%d -->' % (CLAIM_MARKER, agent, item.number),
+    ]
+    return "\n".join(lines)
+
+
+def phase_of(status):
+    """Phase a status belongs to, so a comment header never prints an unknown phase."""
+    lowered = (status or "").lower()
+    for phase in PHASE_ORDER:
+        if phase in lowered:
+            return phase
+    return None
+
+
+def report_body(agent, role, phase, item, target, note=None, previous_status=None,
+                executor=None):
+    header = [
+        "Autor: %s" % sanitize(agent),
+        "Rol: %s" % role,
+        "Fase: %s" % (phase or "?").capitalize(),
+        "Tipo: %s" % ("Bloqueo" if target == "Blocked" else "Informe"),
+    ]
+    if executor:
+        header.append("Ejecutor: %s" % sanitize(executor))
+    record = [
+        "- Issue: #%d" % item.number,
+        "- De: %s" % item.status,
+        "- A: %s" % target,
+    ]
+    if previous_status:
+        record.append("- Previous Status: %s" % previous_status)
+    lines = header + ["", "## Cambio de estado", "", RECORD_START] + record + [RECORD_END, ""]
+    if note:
+        lines += [sanitize(note).rstrip(), ""]
+    lines.append('%s agent=%s issue=%d -->' % (REPORT_MARKER, agent, item.number))
+    if target == "Blocked":
+        lines.append('%s agent=%s issue=%d -->' % (BLOCK_MARKER, agent, item.number))
+    return "\n".join(lines)
+
+
+class Gh:
+    """Thin GitHub CLI adapter. Every write is verified by a later read."""
+
+    def __init__(self, owner, number, repo, runner=None):
+        self.owner = owner
+        self.number = number
+        self.repo = repo
+        self.runner = runner or self._run
+        self.truncated = False
+        self._login = None
+
+    def _run(self, argv):
+        try:
+            proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
+        except OSError as error:
+            raise WorkIssueError("no se pudo ejecutar %s (%s)" % (argv[0], error)) from error
+        return proc.returncode, proc.stdout, proc.stderr
+
+    def _call(self, argv, what):
+        code, out, err = self.runner(argv)
+        if code:
+            raise WorkIssueError("%s falló (%d): %s" % (what, code, (err or out).strip()))
+        return out
+
+    def preflight(self):
+        code, out, err = self.runner(["gh", "auth", "status"])
+        text = (out or "") + (err or "")
+        if code:
+            raise WorkIssueError("gh no está autenticado: " + text.strip())
+        if "project" not in text:
+            raise WorkIssueError("el token de gh no tiene el scope 'project'")
+
+    def items(self):
+        out = self._call(["gh", "project", "item-list", str(self.number), "--owner", self.owner,
+                          "--format", "json", "--limit", str(PROJECT_LIMIT)], "lectura del Project")
+        try:
+            raw = json.loads(out or "{}")
+        except ValueError as error:
+            raise WorkIssueError("respuesta ilegible del Project: %s" % error)
+        entries = raw.get("items")
+        if not isinstance(entries, list):
+            raise WorkIssueError("el Project no devolvió una lista de items")
+        self.truncated = len(entries) >= PROJECT_LIMIT
+        # Only Issues: draft items carry no number and Pull Requests are not work items.
+        return [normalise(entry) for entry in entries
+                if (entry.get("content") or {}).get("type") in (None, "Issue")
+                and (entry.get("content") or {}).get("number")]
+
+    def whoami(self):
+        """Login of the shared GitHub identity, needed to recognise our own assignee."""
+        if self._login is None:
+            self._login = (self._call(["gh", "api", "user", "--jq", ".login"],
+                                      "identidad de gh") or "").strip()
+        return self._login
+
+    def pr_state(self, number):
+        """State of a referenced PR; None when it cannot be resolved."""
+        try:
+            out = self._call(["gh", "pr", "view", str(number), "--repo", self.repo,
+                              "--json", "state,mergedAt,title"], "estado de la PR #%d" % number)
+        except WorkIssueError:
+            return None
+        try:
+            payload = json.loads(out or "{}")
+        except ValueError:
+            return None
+        payload["merged"] = bool(payload.pop("mergedAt", None))
+        return payload
+
+    def item(self, number, items=None):
+        pool = items if items is not None else self.items()
+        for candidate in pool:
+            if candidate.number == number and same_repo(candidate.repository, self.repo):
+                item = candidate
+                break
+        else:
+            foreign = [candidate for candidate in pool if candidate.number == number]
+            if foreign:
+                raise WorkIssueError(
+                    "la Issue #%d del Project pertenece a %s, no a %s"
+                    % (number, foreign[0].repository, self.repo))
+            raise WorkIssueError("la Issue #%d no está en el Project" % number)
+        if not item.body:
+            payload = self._call(["gh", "api", "repos/%s/issues/%d" % (self.repo, number),
+                                  "--jq", ".body"], "lectura de la Issue #%d" % number)
+            item.body = payload or ""
+        return item
+
+    def comments(self, number):
+        out = self._call(["gh", "api", "--paginate",
+                          "repos/%s/issues/%d/comments" % (self.repo, number),
+                          "--jq", ".[] | @json"], "lectura de comentarios")
+        return [json.loads(line) for line in out.splitlines() if line.strip()]
+
+    def comment(self, number, body):
+        handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8")
+        try:
+            handle.write(body)
+            handle.close()
+            out = self._call(["gh", "issue", "comment", str(number), "--repo", self.repo,
+                              "--body-file", handle.name], "publicación del comentario")
+        finally:
+            Path(handle.name).unlink(missing_ok=True)
+        match = re.search(r"#issuecomment-(\d+)", out or "")
+        return int(match.group(1)) if match else None
+
+    def assign(self, number):
+        self._call(["gh", "issue", "edit", str(number), "--repo", self.repo,
+                    "--add-assignee", "@me"], "asignación de la Issue")
+
+    def unassign(self, number):
+        self._call(["gh", "issue", "edit", str(number), "--repo", self.repo,
+                    "--remove-assignee", "@me"], "retirada del assignee")
+
+    def retract_comment(self, comment_id):
+        self._call(["gh", "api", "-X", "DELETE",
+                    "repos/%s/issues/comments/%s" % (self.repo, comment_id)],
+                   "retirada del comentario %s" % comment_id)
+
+    def set_status(self, item, status):
+        self._call(["gh", "project", "item-edit", str(self.number), "--owner", self.owner,
+                    "--url", item.url, "--field", "Status", "--value", status],
+                   "cambio de Status")
+
+
+class Service:
+    """Orchestration shared by the CLI and the tests; the GitHub adapter is injected."""
+
+    def __init__(self, github, agent=None, role=ROLES[0], out=print, executor=None):
+        self.github = github
+        self.agent = agent
+        self.role = role
+        self.out = out
+        self.executor = executor
+
+    def inventory(self, agent=None):
+        decisions = plan(self.github.items(), agent if agent is not None else self.agent,
+                         repo=getattr(self.github, "repo", None))
+        render(decisions, agent if agent is not None else self.agent, self.out)
+        if getattr(self.github, "truncated", False):
+            self.out("Aviso: el Project supera el límite de lectura de %d items; el inventario "
+                     "puede estar incompleto y no se reserva." % PROJECT_LIMIT)
+        return decisions
+
+    def _rollback(self, number, claim_id=None, assigned=False, status_to=None, item=None):
+        """Undo the writes already made; returns what could not be undone."""
+        problems = []
+        if status_to and item is not None:
+            try:
+                self.github.set_status(item, status_to)
+            except WorkIssueError as error:
+                problems.append("Status no restaurado a %s (%s)" % (status_to, error))
+        if assigned:
+            try:
+                self.github.unassign(number)
+            except WorkIssueError as error:
+                problems.append("assignee no retirado (%s)" % error)
+        if claim_id is not None:
+            try:
+                self.github.retract_comment(claim_id)
+            except WorkIssueError as error:
+                problems.append("comentario %s no retirado (%s)" % (claim_id, error))
+        return problems
+
+    def _claim_of(self, number, agent):
+        """Our own claim comment, matched by the exact marker for this agent and Issue."""
+        for entry in self.github.comments(number):
+            if claim_of(entry.get("body")) == (agent, number):
+                return entry
+        return None
+
+    def _foreign(self, items, number):
+        """The matching Project item when it belongs to another repository."""
+        for entry in items:
+            if (entry.number == number and entry.repository
+                    and not same_repo(entry.repository, self.github.repo)):
+                return entry
+        return None
+
+    def _material(self, comments):
+        """Material comments; receipts are excluded so they never invalidate themselves.
+
+        Only a comment with the tool's receipt structure is excluded: a comment that merely
+        quotes a marker stays material and expires the checkpoint.
+        """
+        return [entry for entry in comments if not is_receipt_body(entry.get("body"))]
+
+    def _receipt(self, number, agent, digest, comments, material_count):
+        """Our valid receipt, only when it is the latest comment and the material matches."""
+        if not comments:
+            return None
+        if not is_receipt_body(comments[-1].get("body")):
+            return None
+        found = context_of(comments[-1].get("body"))
+        if not found or found[:2] != (agent, number):
+            return None
+        if found[2] != digest or found[3] != material_count:
+            return None
+        return comments[-1]
+
+    def context(self, number, agent=None, publish=False, summary=None, repo_root="."):
+        """Recover and expose the Issue context; optionally publish a bound receipt."""
+        agent = agent or self.agent
+        if publish and (not agent or agent not in AGENTS):
+            raise WorkIssueError("context --publish requiere --agent del catálogo (%s)"
+                                 % ", ".join(AGENTS))
+        items = self.github.items()
+        foreign = self._foreign(items, number)
+        if foreign:
+            self.out("No recuperado #%d: pertenece a %s, no a %s"
+                     % (number, foreign.repository, self.github.repo))
+            return EXIT_REFUSED
+        item = self.github.item(number, items)
+        if publish and item.status not in READY and item.status not in AGENT_IN_PROGRESS \
+                and item.status != "Blocked":
+            self.out("No publicado #%d: el Status %s no admite trabajo del agente"
+                     % (number, item.status))
+            return EXIT_REFUSED
+        comments = self.github.comments(number)
+        truncated = len(comments) > COMMENT_LIMIT
+        material = self._material(comments[:COMMENT_LIMIT])
+        digest = fingerprint(item, material)
+        refs = references(item, comments[:COMMENT_LIMIT])
+        pr_states = {ref: self.github.pr_state(ref) for ref in refs["prs"]}
+        root = Path(repo_root)
+        found = context_findings(item, comments[:COMMENT_LIMIT], refs,
+                                 spec_present=lambda path: (root / path).is_file(),
+                                 pr_states=pr_states, truncated=truncated)
+        receipts = [entry for entry in comments if is_receipt_body(entry.get("body"))
+                    and context_of(entry.get("body"))[:2] == (agent, number)]
+        valid = self._receipt(number, agent, digest, comments, len(material)) if agent else None
+        timeline = [{"id": entry.get("id"),
+                     "when": (entry.get("created_at") or entry.get("createdAt") or "")[:10],
+                     "author": (entry.get("user") or {}).get("login") or "—",
+                     "kind": comment_kind(entry.get("body"))}
+                    for entry in material]
+        self.out("CONTEXTO #%d — %s" % (number, item.title))
+        self.out("Status: %s · etiquetas: %s · assignees: %s"
+                 % (item.status, ", ".join(item.labels) or "—",
+                    ", ".join(item.assignees) or "—"))
+        self.out("Huella: %s (%d comentarios materiales)" % (digest, len(material)))
+        shown = timeline if len(timeline) <= 12 else timeline[:2] + timeline[-10:]
+        for position, entry in enumerate(shown):
+            if len(timeline) > 12 and position == 2:
+                self.out("  … %d comentarios omitidos (se muestran los más recientes) …"
+                         % (len(timeline) - 12))
+            self.out("  %s %s %s %s" % (entry["id"], entry["when"], entry["author"],
+                                        entry["kind"]))
+        decisions = [entry for entry in timeline if entry["kind"] == "decision"]
+        self.out("Decisiones registradas: %d%s" % (
+            len(decisions),
+            " — autoría no verificable en cuenta compartida" if decisions else ""))
+        self.out("Referencias: SPEC %s · PR %s · Issues %s · commits %s" % (
+            ", ".join(refs["specs"]) or "—",
+            ", ".join("#%d" % number for number in refs["prs"]) or "—",
+            ", ".join("#%d" % number for number in refs["issues"]) or "—",
+            ", ".join(refs["commits"]) or "—"))
+        for number_pr, state in sorted(pr_states.items()):
+            if state is None:
+                self.out("  PR #%d: no se pudo consultar" % number_pr)
+            else:
+                self.out("  PR #%d: %s%s · %s" % (number_pr, state.get("state", "?"),
+                                                  " (merged)" if state.get("merged") else "",
+                                                  state.get("title") or ""))
+        for finding in found:
+            self.out("  [%s] %s — %s" % (finding["severity"], finding["code"],
+                                         finding["detail"]))
+        if valid:
+            self.out("Checkpoint: VIGENTE (%s) — revisa solo los cambios posteriores a "
+                     "este recibo." % valid.get("id"))
+        elif receipts:
+            self.out("Checkpoint: CADUCADO — el cuerpo, los comentarios o el Status cambiaron; "
+                     "vuelve a recuperar el contexto.")
+        else:
+            self.out("Checkpoint: ninguno para este agente.")
+        blockers = [finding for finding in found if finding["severity"] == "blocker"]
+        if not publish:
+            return EXIT_FAILED if blockers else EXIT_OK
+        if blockers:
+            self.out("No publicado: hay bloqueos de contexto; no se puede acreditar la lectura.")
+            return EXIT_FAILED
+        problem = validate_summary(summary)
+        if problem:
+            self.out("No publicado: %s" % problem)
+            return EXIT_REFUSED
+        phase = READY[item.status][0] if item.status in READY else phase_of(item.status)
+        body = context_body(agent, self.role, phase, item, summary, digest, len(material))
+        comment_id = self.github.comment(number, body)
+        if comment_id is None:
+            self.out("No publicado: el comentario del recibo no se confirmó")
+            return EXIT_FAILED
+        self.out("Contexto publicado #%d (comentario %s, huella %s)"
+                 % (number, comment_id, digest))
+        return EXIT_OK
+
+    def _owns_assignee(self, item):
+        """True when the only assignee is the shared GitHub identity we act as."""
+        if not item.assignees:
+            return True
+        try:
+            login = self.github.whoami()
+        except WorkIssueError:
+            return False
+        return bool(login) and set(item.assignees) <= {login}
+
+    def take(self, number, agent=None, dry_run=False):
+        agent = agent or self.agent
+        if not agent or agent not in AGENTS:
+            raise WorkIssueError("agente no reconocido: %s (catálogo: %s)"
+                                 % (agent, ", ".join(AGENTS)))
+        items = self.github.items()
+        if getattr(self.github, "truncated", False):
+            raise WorkIssueError("el Project supera el límite de lectura de %d items; "
+                                 "un inventario truncado no puede reservar" % PROJECT_LIMIT)
+        foreign = self._foreign(items, number)
+        if foreign:
+            self.out("No reservada #%d: pertenece a %s, no a %s"
+                     % (number, foreign.repository, self.github.repo))
+            return EXIT_REFUSED
+        item = self.github.item(number, items)
+        comments = self.github.comments(number)
+        if len(comments) > COMMENT_LIMIT:
+            self.out("No reservada #%d: el historial supera %d comentarios y no se puede "
+                     "acreditar su lectura completa" % (number, COMMENT_LIMIT))
+            return EXIT_FAILED
+        material = self._material(comments)
+        digest = fingerprint(item, material)
+        claims = [entry for entry in material if claim_of(entry.get("body"))]
+        mine = [entry for entry in claims if claim_of(entry.get("body")) == (agent, number)]
+        others = [entry for entry in claims if claim_of(entry.get("body")) != (agent, number)]
+        decision = classify(item, agent, {entry.number: entry for entry in items},
+                            repo=self.github.repo)
+        if (decision.kind == "taken" and mine and not others
+                and not decision.pending and not decision.unverified
+                and self._owns_assignee(item)):
+            # Reanudación del mismo agente (p. ej. tras una devolución de review).
+            decision.kind = "eligible"
+            decision.reason = ""
+        if not decision.eligible:
+            self.out("No reservada #%d: %s (%s)" % (number, decision.kind, decision.reason))
+            return EXIT_REFUSED
+        phase, target = READY[item.status]
+        if others:
+            owner = min(others, key=lambda entry: entry.get("id") or 0)
+            self.out("No reservada #%d: ya existe una toma de otro agente (comentario %s)"
+                     % (number, owner.get("id")))
+            return EXIT_REFUSED
+        if dry_run:
+            self.out("[dry-run] #%d %s -> %s (comentario de toma + assignee, sin escrituras)"
+                     % (number, item.status, target))
+            return EXIT_OK
+        if not self._receipt(number, agent, digest, comments, len(material)):
+            self.out("No reservada #%d: falta un recibo de contexto vigente; ejecuta "
+                     "`work-issue context --issue %d --agent %s --publish --summary-file <archivo>` "
+                     "tras leer la Issue, su historial y las fuentes vinculadas"
+                     % (number, number, agent))
+            return EXIT_REFUSED
+        claim_id = min(mine, key=lambda entry: entry.get("id") or 0).get("id") if mine else None
+        posted = False
+        if claim_id is None:
+            claim_id = self.github.comment(number, claim_body(agent, self.role, phase, item,
+                                                              executor=self.executor))
+            posted = True
+            if claim_id is None:
+                self.out("No reservada #%d: el comentario de toma no se confirmó" % number)
+                return EXIT_FAILED
+            written = [entry for entry in self.github.comments(number)
+                       if claim_of(entry.get("body"))]
+            competitors = [entry for entry in written if entry.get("id") != claim_id]
+            if competitors and min(entry.get("id") or 0 for entry in competitors) < claim_id:
+                problems = self._rollback(number, claim_id)
+                self.out("No reservada #%d: colisión con otra toma anterior; la nuestra "
+                         "%s" % (number, "se retiró" if not problems else "NO se pudo retirar"))
+                for problem in problems:
+                    self.out("  escritura pendiente: " + problem)
+                return EXIT_REFUSED
+        fresh = self.github.item(number)
+        if fresh.status != item.status:
+            problems = self._rollback(number, claim_id if posted else None)
+            self.out("No reservada #%d: el Status cambió durante la toma (%s -> %s)"
+                     % (number, item.status, fresh.status))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_REFUSED
+        had_assignees = bool(item.assignees)
+        assigned = False
+        try:
+            self.github.assign(number)
+            assigned = True
+            self.github.set_status(item, target)
+        except WorkIssueError as error:
+            problems = self._rollback(number, claim_id if posted else None,
+                                      assigned=assigned and not had_assignees,
+                                      status_to=item.status, item=item)
+            self.out("No verificada #%d: la escritura falló (%s)" % (number, error))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_FAILED
+        try:
+            verified = self.github.item(number)
+        except WorkIssueError as error:
+            problems = self._rollback(number, claim_id if posted else None,
+                                      assigned=assigned and not had_assignees,
+                                      status_to=item.status, item=item)
+            self.out("No verificada #%d: la relectura falló (%s)" % (number, error))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_FAILED
+        if verified.status != target or not verified.assignees:
+            problems = self._rollback(number, claim_id if posted else None,
+                                      assigned=assigned and not had_assignees,
+                                      status_to=item.status, item=item)
+            self.out("No verificado #%d: Status=%s assignees=%s"
+                     % (number, verified.status, verified.assignees or "ninguno"))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_FAILED
+        self.out("Tomada #%d (%s -> %s) por %s" % (number, item.status, target, agent))
+        return EXIT_OK
+
+    def move(self, number, target, previous_status=None, note=None,
+             dry_run=False, restore=False):
+        agent = self.agent
+        if not agent or agent not in AGENTS:
+            raise WorkIssueError("move requiere --agent del catálogo: %s"
+                                 % ", ".join(AGENTS))
+        items = self.github.items()
+        foreign = self._foreign(items, number)
+        if foreign:
+            self.out("No movida #%d: pertenece a %s, no a %s"
+                     % (number, foreign.repository, self.github.repo))
+            return EXIT_REFUSED
+        item = self.github.item(number, items)
+        comments = self.github.comments(number)
+        if len(comments) > COMMENT_LIMIT:
+            self.out("No movida #%d: el historial supera %d comentarios y no se puede acreditar "
+                     "su lectura completa" % (number, COMMENT_LIMIT))
+            return EXIT_FAILED
+        material = self._material(comments)
+        if previous_status and target != "Blocked" and not restore:
+            self.out("No movida #%d: --previous-status solo se usa al bloquear" % number)
+            return EXIT_REFUSED
+        if restore and item.status != "Blocked":
+            self.out("No movida #%d: --restore solo aplica desde Blocked (está en %s)"
+                     % (number, item.status))
+            return EXIT_REFUSED
+        if restore:
+            recorded = self.blocked_previous(number, agent)
+            if not recorded:
+                self.out("No movida #%d: no hay Previous Status registrado por %s"
+                         % (number, agent))
+                return EXIT_REFUSED
+            if target and target != recorded:
+                self.out("No movida #%d: la restauración debe devolver exactamente %s"
+                         % (number, recorded))
+                return EXIT_REFUSED
+            target = recorded
+            previous_status = recorded
+        reason = validate_transition(item.status, target, previous_status, restore)
+        if reason:
+            self.out("No movida #%d: %s" % (number, reason))
+            return EXIT_REFUSED
+        claims = [entry for entry in material if claim_of(entry.get("body"))]
+        if not any(claim_of(entry.get("body")) == (agent, number) for entry in claims):
+            self.out("No movida #%d: no hay toma registrada de %s; reserva primero con take"
+                     % (number, agent))
+            return EXIT_REFUSED
+        if dry_run:
+            self.out("[dry-run] #%d %s -> %s (comentario + cambio de Status, sin escrituras)"
+                     % (number, item.status, target))
+            return EXIT_OK
+        if not self._receipt(number, agent, fingerprint(item, material), comments, len(material)):
+            self.out("No movida #%d: falta un recibo de contexto vigente para el estado actual; "
+                     "vuelve a ejecutar `work-issue context --issue %d --agent %s --publish`"
+                     % (number, number, agent))
+            return EXIT_REFUSED
+        fresh = self.github.item(number)
+        if fresh.status != item.status:
+            self.out("No movida #%d: el Status cambió durante la operación (%s -> %s)"
+                     % (number, item.status, fresh.status))
+            return EXIT_REFUSED
+        phase = phase_of(item.status) or phase_of(target)
+        report_id = self.github.comment(number, report_body(
+            agent, self.role, phase, item, target, note, previous_status,
+            executor=self.executor))
+        try:
+            self.github.set_status(item, target)
+        except WorkIssueError as error:
+            problems = self._rollback(number, report_id) if report_id is not None else []
+            if report_id is None:
+                result = "no se pudo identificar el comentario publicado"
+            elif problems:
+                result = "NO se pudo retirar (comentario %s)" % report_id
+            else:
+                result = "se retiró (comentario %s)" % report_id
+            self.out("No movida #%d: el cambio de Status falló (%s); el informe %s"
+                     % (number, error, result))
+            for problem in problems:
+                self.out("  escritura pendiente: " + problem)
+            return EXIT_FAILED
+        try:
+            verified = self.github.item(number)
+        except WorkIssueError as error:
+            self.out("No verificado #%d: la relectura falló (%s); el comentario de informe "
+                     "ya está publicado" % (number, error))
+            return EXIT_FAILED
+        if verified.status != target:
+            self.out("No verificado #%d: Status=%s (el comentario de informe ya está "
+                     "publicado)" % (number, verified.status))
+            return EXIT_FAILED
+        self.out("Movida #%d: %s -> %s" % (number, item.status, target))
+        return EXIT_OK
+
+    def blocked_previous(self, number, agent):
+        """Previous Status from the most recent report, only if it is our own block record."""
+        for entry in reversed(self.github.comments(number)):
+            body = entry.get("body") or ""
+            if is_receipt_body(body):
+                continue
+            if report_of(body) != (agent, number):
+                continue
+            # Only the latest report may authorize a restore; an older block record
+            # must not resurrect a phase after the Issue moved on (see SKILL limits).
+            if "Tipo: Bloqueo" not in body or block_of(body) != (agent, number):
+                return None
+            section = RECORD_RE.search(body)
+            if not section:
+                return None
+            record = section.group(1)
+            recorded = re.search(r"(?m)^- Previous Status: (%s)$" % "|".join(STATUSES), record)
+            source = re.search(r"(?m)^- De: (%s)$" % "|".join(STATUSES), record)
+            if not recorded or not source or source.group(1) != recorded.group(1):
+                return None
+            if recorded.group(1) not in AGENT_IN_PROGRESS:
+                return None
+            return recorded.group(1)
+        return None
+
+
+def build_parser():
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--agent", choices=AGENTS,
+                        help="agente propietario de la toma (obligatorio en take/move)")
+    common.add_argument("--role", choices=ROLES)
+    common.add_argument("--executor",
+                        help="ejecutor real cuando difiere del autor del comentario")
+    parser = argparse.ArgumentParser(
+        prog="work-issue",
+        description="Lee el trabajo Ready del Project, lo enruta por etiqueta de agente y "
+                    "reserva dentro del gate. Solo lectura salvo take/move.")
+    parser.add_argument("--agent", dest="agent_global", choices=AGENTS,
+                        help="filtro de agente (admite también ir tras el subcomando)")
+    parser.add_argument("--project", type=int, default=4, help="número del Project (4)")
+    parser.add_argument("--owner", default="jmartinlabs")
+    parser.add_argument("--repo", default="jmartinlabs/myfinanzas-app")
+    parser.add_argument("--role", dest="role_global", choices=ROLES)
+    parser.add_argument("--executor", dest="executor_global",
+                        help="ejecutor real cuando difiere del autor del comentario")
+    commands = parser.add_subparsers(dest="command")
+    commands.add_parser("inventory", parents=[common],
+                        help="inventario completo de las tres Ready (solo lectura)")
+    take = commands.add_parser("take", parents=[common], help="reserva una Issue elegible")
+    take.add_argument("--issue", type=int, required=True)
+    take.add_argument("--dry-run", action="store_true")
+    context = commands.add_parser("context", parents=[common],
+                                  help="recupera el contexto y publica el recibo")
+    context.add_argument("--issue", type=int, required=True)
+    context.add_argument("--publish", action="store_true")
+    context.add_argument("--summary-file")
+    context.add_argument("--repo-root", default=".")
+    move = commands.add_parser("move", parents=[common],
+                               help="transición de fase permitida al agente")
+    move.add_argument("--issue", type=int, required=True)
+    move.add_argument("--to", choices=STATUSES,
+                      help="Status destino (obligatorio salvo con --restore)")
+    move.add_argument("--previous-status")
+    move.add_argument("--note")
+    move.add_argument("--restore", action="store_true")
+    move.add_argument("--dry-run", action="store_true")
+    return parser
+
+
+def resolve_agent(args):
+    """The agent filter, accepted before or after the subcommand."""
+    return getattr(args, "agent", None) or args.agent_global
+
+
+def resolve_option(args, name):
+    """Options accepted on either side of the subcommand (subcommand wins)."""
+    return getattr(args, name, None) or getattr(args, name + "_global", None)
+
+
+def read_summary(args):
+    """(summary, error) for `context --publish`; unused arguments are not validated."""
+    if args.command != "context" or not args.summary_file or not args.publish:
+        return None, None
+    try:
+        return Path(args.summary_file).read_text(encoding="utf-8"), None
+    except OSError as error:
+        return None, str(error)
+
+
+def main(argv=None):
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    agent = resolve_agent(args)
+    role = resolve_option(args, "role") or ROLES[0]
+    executor = resolve_option(args, "executor")
+    if args.command in ("take", "move") and not agent:
+        print("No ejecutado: take/move requieren --agent del catálogo (%s)"
+              % ", ".join(AGENTS), file=sys.stderr)
+        return EXIT_REFUSED
+    if args.command == "move" and not args.to and not args.restore:
+        print("No movida #%d: falta --to (o --restore con Previous Status registrado)"
+              % args.issue, file=sys.stderr)
+        return EXIT_REFUSED
+    if args.command in ("take", "move", "context") and (not args.issue or args.issue < 1):
+        print("No ejecutado: --issue debe ser un número de Issue positivo", file=sys.stderr)
+        return EXIT_REFUSED
+    summary, summary_error = read_summary(args)
+    if summary_error:
+        print("No publicado: no se pudo leer --summary-file (%s)" % summary_error,
+              file=sys.stderr)
+        return EXIT_REFUSED
+    github = Gh(args.owner, args.project, args.repo)
+    service = Service(github, agent, role, executor=executor)
+    try:
+        github.preflight()
+        if args.command in (None, "inventory"):
+            service.inventory(agent)
+            return EXIT_OK
+        if args.command == "take":
+            return service.take(args.issue, agent, dry_run=args.dry_run)
+        if args.command == "context":
+            return service.context(args.issue, agent, publish=args.publish,
+                                   summary=summary, repo_root=args.repo_root)
+        return service.move(args.issue, args.to, args.previous_status, args.note,
+                            dry_run=args.dry_run, restore=args.restore)
+    except WorkIssueError as error:
+        print("Bloqueado: %s" % error, file=sys.stderr)
+        return EXIT_FAILED
+
+
+if __name__ == "__main__":
+    sys.exit(main())
