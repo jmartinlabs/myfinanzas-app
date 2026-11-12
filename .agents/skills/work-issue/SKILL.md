@@ -58,7 +58,12 @@ work-issue context --issue N --agent hermes --publish \
 ```
 
 `take` and `move` refuse to proceed without a valid receipt for the current fingerprint; a receipt
-is reusable on resume only while nothing material changed. Mechanical findings
+is reusable on resume only while nothing material changed. Only a comment with the tool's own
+structure — header, `Tipo: Contexto`, fingerprint note and the marker as its **last line** —
+counts as a receipt: a comment that merely quotes a marker is material and expires the checkpoint.
+The receipt may be published while the Issue is in a `Ready` phase, an agent `In Progress` or
+`Blocked`; `Backlog`, `Done` and reviews are user-owned. `--dry-run` needs no receipt because it
+writes nothing. A history above the read limit is a blocker, not a warning. Mechanical findings
 (`claims-conflict`, `status-vs-report`, `spec-missing`, `history-truncated`, …) are hints for the
 agent, not verdicts: the semantic reading and the decision to stop are the agent's.
 
@@ -163,9 +168,12 @@ retracted), `3` blocked or failed write — the receipt lists any write that cou
 - **Markers are not authenticated.** Every agent publishes with the same GitHub account, so a
   person (or another tool) with `gh` can write a comment carrying a claim or block marker. The
   tool checks structure, recency and consistency — never authorship. Cryptographic attribution
-  needs a separate agent identity (App/bot account), which this pilot does not have.
+  needs a separate agent identity (App/bot account), which this pilot does not have. The same
+  applies to a receipt copied verbatim: it is indistinguishable from a real one.
 - **A block record only authorises one restore.** `--restore` trusts the most recent report
   only; if a human re-blocks the Issue without a new block record, the tool will not move it.
+- **The receipt proves structure, not reading.** It binds a fingerprint to a summary the agent
+  wrote; the tool cannot prove the agent read the sources.
 - **Reservation is best-effort.** GitHub has no compare-and-set on Project fields: there is a
   read-then-write window. Reserve one at a time and verify by re-reading, as the tool does.
 - **No deployment of this protocol is automatic.** No cron, webhook or bot dispatches work;

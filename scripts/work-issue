@@ -376,16 +376,35 @@ def report_of(body):
 
 
 def context_of(body):
-    """(agent, issue, fingerprint, comments) for a context receipt, else None."""
-    match = CONTEXT_RE.search(body or "")
+    """(agent, issue, fingerprint, comments) for a context receipt, else None.
+
+    The marker must be the last non-empty line: a comment that merely quotes a receipt is
+    material content, not a checkpoint.
+    """
+    text = (body or "").rstrip()
+    if not text:
+        return None
+    last = text.splitlines()[-1].strip()
+    match = CONTEXT_RE.fullmatch(last)
     return ((match.group(1), int(match.group(2)), match.group(3), int(match.group(4)))
             if match else None)
+
+
+def is_receipt_body(body):
+    """A receipt is the tool's own structure, not just a quoted marker."""
+    text = (body or "").strip()
+    if not context_of(text):
+        return False
+    head = text.splitlines()[:5]
+    return bool(head) and head[0].startswith("Autor:") \
+        and any("Tipo: Contexto" in line for line in head) \
+        and "Huella del contexto:" in text
 
 
 def comment_kind(body):
     """Mechanical classification of one comment; the agent judges meaning, not this."""
     text = body or ""
-    if context_of(text):
+    if is_receipt_body(text):
         return "context"
     if block_of(text):
         return "block"
@@ -507,7 +526,8 @@ def context_body(agent, role, phase, item, summary, digest, count):
                "",
                "%s agent=%s issue=%d fingerprint=%s comments=%d -->"
                % (CONTEXT_MARKER, agent, item.number, digest, count)]
-    return "\n".join(header) + summary.strip() + "\n" + "\n".join(trailer)
+    # The summary is free text: it may not carry the markers the tool trusts.
+    return "\n".join(header) + sanitize(summary).strip() + "\n" + "\n".join(trailer)
 
 
 def validate_transition(current, target, previous_status=None, restore=False):
@@ -789,17 +809,25 @@ class Service:
         return None
 
     def _material(self, comments):
-        """Comments that are not context receipts; receipts must not invalidate themselves."""
-        return [entry for entry in comments if not context_of(entry.get("body"))]
+        """Material comments; receipts are excluded so they never invalidate themselves.
+
+        Only a comment with the tool's receipt structure is excluded: a comment that merely
+        quotes a marker stays material and expires the checkpoint.
+        """
+        return [entry for entry in comments if not is_receipt_body(entry.get("body"))]
 
     def _receipt(self, number, agent, digest, comments, material_count):
-        """Our valid receipt for this exact material state, if any."""
-        for entry in reversed(comments):
-            found = context_of(entry.get("body"))
-            if found and found[:2] == (agent, number) and found[2] == digest \
-                    and found[3] == material_count:
-                return entry
-        return None
+        """Our valid receipt, only when it is the latest comment and the material matches."""
+        if not comments:
+            return None
+        if not is_receipt_body(comments[-1].get("body")):
+            return None
+        found = context_of(comments[-1].get("body"))
+        if not found or found[:2] != (agent, number):
+            return None
+        if found[2] != digest or found[3] != material_count:
+            return None
+        return comments[-1]
 
     def context(self, number, agent=None, publish=False, summary=None, repo_root="."):
         """Recover and expose the Issue context; optionally publish a bound receipt."""
@@ -814,6 +842,11 @@ class Service:
                      % (number, foreign.repository, self.github.repo))
             return EXIT_REFUSED
         item = self.github.item(number, items)
+        if publish and item.status not in READY and item.status not in AGENT_IN_PROGRESS \
+                and item.status != "Blocked":
+            self.out("No publicado #%d: el Status %s no admite trabajo del agente"
+                     % (number, item.status))
+            return EXIT_REFUSED
         comments = self.github.comments(number)
         truncated = len(comments) > COMMENT_LIMIT
         material = self._material(comments[:COMMENT_LIMIT])
@@ -824,13 +857,12 @@ class Service:
         found = context_findings(item, comments[:COMMENT_LIMIT], refs,
                                  spec_present=lambda path: (root / path).is_file(),
                                  pr_states=pr_states, truncated=truncated)
-        receipts = [entry for entry in comments
-                    if context_of(entry.get("body")) and
-                    context_of(entry.get("body"))[:2] == (agent, number)]
+        receipts = [entry for entry in comments if is_receipt_body(entry.get("body"))
+                    and context_of(entry.get("body"))[:2] == (agent, number)]
         valid = self._receipt(number, agent, digest, comments, len(material)) if agent else None
         timeline = [{"id": entry.get("id"),
-                     "when": entry.get("created_at") or entry.get("createdAt"),
-                     "author": (entry.get("user") or {}).get("login") or "",
+                     "when": (entry.get("created_at") or entry.get("createdAt") or "")[:10],
+                     "author": (entry.get("user") or {}).get("login") or "—",
                      "kind": comment_kind(entry.get("body"))}
                     for entry in material]
         self.out("CONTEXTO #%d — %s" % (number, item.title))
@@ -838,9 +870,17 @@ class Service:
                  % (item.status, ", ".join(item.labels) or "—",
                     ", ".join(item.assignees) or "—"))
         self.out("Huella: %s (%d comentarios materiales)" % (digest, len(material)))
-        self.out("Historial: %d comentarios — %s" % (len(timeline), ", ".join(
-            "%s:%s" % (entry["id"], entry["kind"]) for entry in timeline[:12])
-            + (" …" if len(timeline) > 12 else "")))
+        shown = timeline if len(timeline) <= 12 else timeline[:2] + timeline[-10:]
+        for position, entry in enumerate(shown):
+            if len(timeline) > 12 and position == 2:
+                self.out("  … %d comentarios omitidos (se muestran los más recientes) …"
+                         % (len(timeline) - 12))
+            self.out("  %s %s %s %s" % (entry["id"], entry["when"], entry["author"],
+                                        entry["kind"]))
+        decisions = [entry for entry in timeline if entry["kind"] == "decision"]
+        self.out("Decisiones registradas: %d%s" % (
+            len(decisions),
+            " — autoría no verificable en cuenta compartida" if decisions else ""))
         self.out("Referencias: SPEC %s · PR %s · Issues %s · commits %s" % (
             ", ".join(refs["specs"]) or "—",
             ", ".join("#%d" % number for number in refs["prs"]) or "—",
@@ -910,14 +950,12 @@ class Service:
             return EXIT_REFUSED
         item = self.github.item(number, items)
         comments = self.github.comments(number)
+        if len(comments) > COMMENT_LIMIT:
+            self.out("No reservada #%d: el historial supera %d comentarios y no se puede "
+                     "acreditar su lectura completa" % (number, COMMENT_LIMIT))
+            return EXIT_FAILED
         material = self._material(comments)
         digest = fingerprint(item, material)
-        if not self._receipt(number, agent, digest, comments, len(material)):
-            self.out("No reservada #%d: falta un recibo de contexto vigente; ejecuta "
-                     "`work-issue context --issue %d --agent %s --publish --summary-file <archivo>` "
-                     "tras leer la Issue, su historial y las fuentes vinculadas"
-                     % (number, number, agent))
-            return EXIT_REFUSED
         claims = [entry for entry in material if claim_of(entry.get("body"))]
         mine = [entry for entry in claims if claim_of(entry.get("body")) == (agent, number)]
         others = [entry for entry in claims if claim_of(entry.get("body")) != (agent, number)]
@@ -942,6 +980,12 @@ class Service:
             self.out("[dry-run] #%d %s -> %s (comentario de toma + assignee, sin escrituras)"
                      % (number, item.status, target))
             return EXIT_OK
+        if not self._receipt(number, agent, digest, comments, len(material)):
+            self.out("No reservada #%d: falta un recibo de contexto vigente; ejecuta "
+                     "`work-issue context --issue %d --agent %s --publish --summary-file <archivo>` "
+                     "tras leer la Issue, su historial y las fuentes vinculadas"
+                     % (number, number, agent))
+            return EXIT_REFUSED
         claim_id = min(mine, key=lambda entry: entry.get("id") or 0).get("id") if mine else None
         posted = False
         if claim_id is None:
@@ -1019,12 +1063,11 @@ class Service:
             return EXIT_REFUSED
         item = self.github.item(number, items)
         comments = self.github.comments(number)
+        if len(comments) > COMMENT_LIMIT:
+            self.out("No movida #%d: el historial supera %d comentarios y no se puede acreditar "
+                     "su lectura completa" % (number, COMMENT_LIMIT))
+            return EXIT_FAILED
         material = self._material(comments)
-        if not self._receipt(number, agent, fingerprint(item, material), comments, len(material)):
-            self.out("No movida #%d: falta un recibo de contexto vigente para el estado actual; "
-                     "vuelve a ejecutar `work-issue context --issue %d --agent %s --publish`"
-                     % (number, number, agent))
-            return EXIT_REFUSED
         if previous_status and target != "Blocked" and not restore:
             self.out("No movida #%d: --previous-status solo se usa al bloquear" % number)
             return EXIT_REFUSED
@@ -1057,6 +1100,11 @@ class Service:
             self.out("[dry-run] #%d %s -> %s (comentario + cambio de Status, sin escrituras)"
                      % (number, item.status, target))
             return EXIT_OK
+        if not self._receipt(number, agent, fingerprint(item, material), comments, len(material)):
+            self.out("No movida #%d: falta un recibo de contexto vigente para el estado actual; "
+                     "vuelve a ejecutar `work-issue context --issue %d --agent %s --publish`"
+                     % (number, number, agent))
+            return EXIT_REFUSED
         fresh = self.github.item(number)
         if fresh.status != item.status:
             self.out("No movida #%d: el Status cambió durante la operación (%s -> %s)"
@@ -1098,6 +1146,8 @@ class Service:
         """Previous Status from the most recent report, only if it is our own block record."""
         for entry in reversed(self.github.comments(number)):
             body = entry.get("body") or ""
+            if is_receipt_body(body):
+                continue
             if report_of(body) != (agent, number):
                 continue
             # Only the latest report may authorize a restore; an older block record
@@ -1200,7 +1250,12 @@ def main(argv=None):
         if args.command == "context":
             summary = None
             if args.summary_file:
-                summary = Path(args.summary_file).read_text(encoding="utf-8")
+                try:
+                    summary = Path(args.summary_file).read_text(encoding="utf-8")
+                except OSError as error:
+                    print("No publicado: no se pudo leer --summary-file (%s)" % error,
+                          file=sys.stderr)
+                    return EXIT_REFUSED
             return service.context(args.issue, agent, publish=args.publish,
                                    summary=summary, repo_root=args.repo_root)
         return service.move(args.issue, args.to, args.previous_status, args.note,
