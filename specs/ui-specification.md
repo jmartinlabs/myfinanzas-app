@@ -73,8 +73,8 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Tema | `data-theme` | Estado |
 | --- | --- | --- |
 | Dark | `dark-s` | Implementado y cerrado; predeterminado |
-| Light | `light-s` | Implementado y cerrado |
-| Hybrid | `hybrid-s` | Implementado y cerrado |
+| Light | `light-s` | Implementado; identidad reabierta solo por UI-P2 (2.5) para L1 |
+| Hybrid | `hybrid-s` | Implementado; identidad reabierta solo por UI-P2 (2.5) para L1 |
 | Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; integrado en `test` con #356 (`bff714e`); seleccionable como cuarto tema |
 | Casa | `casa` | Aprobada 2026-11-10; 1A autorizado y en curso |
 
@@ -84,11 +84,12 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
   otro selector ni se cambia el mecanismo de persistencia. La ampliación del catálogo se hace
   con una entrada adicional y un bloque de tokens, no con un segundo mecanismo.
 - Dark, Light, Hybrid y Graphite Lime no se modifican: ni paletas, ni tokens, ni orden/identidad,
-  ni el tema inicial `dark-s`.
+  ni el tema inicial `dark-s`. La única excepción vigente es la enmienda **UI-P2 (2.5)**, que
+  reabre solo la identidad de Light y Hybrid.
 - Graphite Lime se añade de forma aditiva por la enmienda UI-G1. **Casa se añade de forma
   aditiva por la enmienda UI-P1 (2.3).** No se implementan otros candidatos sin una decisión
   expresa y una enmienda propia.
-- **Prohibido:** reabrir o alterar los cuatro temas existentes, cambiar `dark-s` como
+- **Prohibido:** reabrir o alterar los cuatro temas existentes (salvo la excepción UI-P2, 2.5), cambiar `dark-s` como
   predeterminado, sustituir `mf-theme` o modificar `theme-boot.js` para una apariencia no
   aprobada.
 
@@ -226,6 +227,48 @@ se difieren. Casa UI-P1 (#363), 1A (#364), 1B (#370) y 1C (#371) están integrad
 El análisis y el plan detallado se conservan en la
 [PR #365](https://github.com/jmartinlabs/myfinanzas-app/pull/365).
 
+### 2.5 Enmienda UI-P2 · Identidad visual Claro/Mixto (L1, 2026-11-12)
+
+Ratificada por el usuario en [#402](https://github.com/jmartinlabs/myfinanzas-app/issues/402)
+(comentario `6827471780`) al aceptar el análisis de rescate de los prototipos finales de fase C.
+Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre la composición.
+
+**Decisiones fijadas:**
+
+- **Composición única (D1=A):** los cinco temas comparten una sola composición funcional; la
+  identidad se aplica encima. No se crean estructuras por tema.
+- **Alcance L1 (D2=A):** tokens, superficies, bordes, sombras, tipografía y acentos de
+  `light-s` y `hybrid-s` sobre la estructura existente. **No** héroe, bandeja KPI, reordenación
+  de Inicio ni cambios de componentes.
+- **Detalle de Movimientos (D3=A provisional):** se mantiene la página actual; sin panel lateral.
+- **Semántica financiera (D4=A):** no se infieren signos ni colores de importe; queda pendiente
+  de [#421](https://github.com/jmartinlabs/myfinanzas-app/issues/421).
+- **Responsive (D5):** 820/390 exige diseño y validación propios; no se deduce de las capturas
+  a 1440.
+
+**Alcance técnico autorizado:** solo los bloques `light-s` y `hybrid-s` de
+`apps/web/public/themes.css`. `dark-s`, `graphite-lime` y `casa` conservan sus tokens; no se
+modifican `theme-boot.js`, `themes.ts`, `style.css`, componentes, rutas ni navegación.
+
+**Alcance de entrega:** además de los tokens, el incremento incluye la actualización de las
+expectativas E2E de identidad afectadas (`theme.spec.ts`, `ui-switch.spec.ts`), esta enmienda y
+la evidencia visual comparada. No cambia componentes, DOM, rutas ni contratos.
+
+**Fuera de alcance:** L2 (recomposición de Inicio), L3 (interacción de Movimientos), L4
+(extensión de alcance), rediseño global, cambios de API, SQLite, contratos, datos reales, merge
+y despliegue.
+
+**Sustitución expresa:** esta enmienda sustituye, **solo para la capa de identidad de `light-s` y
+`hybrid-s`**, las cláusulas que declaraban cerrados los tres temas: la tabla de §2, la frase de
+§2.4 «Dark, Light, Hybrid y Casa conservan su identidad» y la lista de materias cerradas de §7.
+No reabre Dark, Casa, Graphite, la composición, el selector ni el mecanismo `mf-theme`.
+
+**Dependencia de entrega:** la conservación de los prototipos (L0) está **en revisión** en
+[#435](https://github.com/jmartinlabs/myfinanzas-app/pull/435). La referencia de tokens
+`specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` existe en la rama de esa
+PR; el merge de L1 debe ocurrir **después** del de L0, o simultáneamente, para no dejar la
+referencia rota en `test`.
+
 ## 3. Dependencias
 
 | Dependencia | Estado | Qué aporta | Límite para `UI` |
@@ -324,7 +367,8 @@ ratificación de `UI · SPEC`; se conserva la recomendación como registro.
 
 **Cerradas y no sujetas a reapertura:** identidad cromática, los tres temas existentes,
 paletas, tokens, selector y alternativa B. La enmienda UI-G1 añade Graphite Lime como cuarto
-tema sin reabrir esas decisiones; el resto de la aprobación del 2026-11-06 se conserva.
+tema sin reabrir esas decisiones; la enmienda UI-P2 (2.5) reabre únicamente la capa de identidad
+de Light y Hybrid para L1. El resto de la aprobación del 2026-11-06 se conserva.
 
 ## 8. Aprobación registrada y plan de `UI · DEV-01`
 
