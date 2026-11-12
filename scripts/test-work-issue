@@ -1198,11 +1198,19 @@ class ContextTests(unittest.TestCase):
         read_only = make(["context", "--issue", "406", "--agent", "hermes",
                           "--summary-file", "/nonexistent/summary.md"])
         self.assertEqual(MODULE["read_summary"](read_only), (None, None))
+        self.assertEqual(MODULE["main"](["context", "--issue", "406", "--agent", "hermes",
+                                        "--publish", "--summary-file",
+                                        "/nonexistent/summary.md"]), EXIT_REFUSED)
 
     def test_a_missing_gh_binary_is_a_controlled_failure(self):
+        stderr = io.StringIO()
         with unittest.mock.patch.object(MODULE["subprocess"], "run",
-                                        side_effect=FileNotFoundError("gh")):
-            self.assertEqual(MODULE["main"](["inventory", "--agent", "hermes"]), EXIT_FAILED)
+                                        side_effect=FileNotFoundError("gh")), \
+                contextlib.redirect_stderr(stderr):
+            code = MODULE["main"](["inventory", "--agent", "hermes"])
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertIn("no se pudo ejecutar gh", stderr.getvalue())
+        self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_publishing_refuses_a_done_status(self):
         github = FakeGh()

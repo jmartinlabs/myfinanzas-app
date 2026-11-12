@@ -647,7 +647,7 @@ class Gh:
         try:
             proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8")
         except OSError as error:
-            raise WorkIssueError("no se pudo ejecutar %s (%s)" % (argv[0], error))
+            raise WorkIssueError("no se pudo ejecutar %s (%s)" % (argv[0], error)) from error
         return proc.returncode, proc.stdout, proc.stderr
 
     def _call(self, argv, what):
