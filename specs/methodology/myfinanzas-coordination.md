@@ -86,9 +86,13 @@ curso con rama/SHA/PR, QA disponible, dependencias abiertas, bloqueos con su con
 salida, decisiones vigentes y la siguiente acción verificable.
 
 Se reutilizan `$handoff` y `$work-issue`; no se crea otra base de estado, servicio, bot, cron ni
-campo nuevo del Project. La designación se anota aquí y en el tablero mediante el Status del
-trabajo en curso, y se comunica a los agentes implicados. Si el coordinador saliente no puede
-completar el handoff, el trabajo afectado pasa a `Blocked` con su `Previous Status` exacto.
+campo nuevo del Project. La designación se registra en esta regla y en el handoff o comentario de
+la Issue; el Status sigue expresando la fase autorizada de cada trabajo, nunca la identidad de
+quien coordina. El relevo se comunica a los agentes implicados.
+
+Si el coordinador saliente no puede completar el handoff, se bloquean solo las tareas concretas
+que no puedan continuar de forma verificable y segura, con su `Previous Status` exacto, y se
+registra qué falta y quién lo resuelve. Las tareas independientes ya autorizadas continúan.
 
 ## Gates que NO desaparecen
 - Especificación aprobada + dependencias satisfechas + autorización expresa de
