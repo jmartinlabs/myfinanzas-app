@@ -61,7 +61,8 @@ Each round:
 5. **Add one ledger line** (below). A human decision keeps that Issue in review and out of
    the queue; it never stops the round and never blocks a different Issue. An Issue the user
    returns from review to its phase re-enters the queue in priority order and is resumed with
-   its existing claim — never re-claimed as a second reservation.
+   its existing claim — never re-claimed as a second reservation. `next` marks it
+   `· reanudación` so the round knows it is continuing an existing reservation.
 
 Only a declared, open or unverifiable dependency, another agent's ownership, a foreign
 repository or a failed precondition removes an Issue from the queue — never the fact that a

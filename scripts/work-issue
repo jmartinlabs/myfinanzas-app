@@ -853,12 +853,14 @@ class Service:
             return EXIT_EMPTY
         head = queue[0]
         phase, target = READY[head.item.status]
+        resumed = " · reanudación" if head.reason else ""
         self.out("COLA %s (%d): %s" % (
             agent, len(queue), ", ".join(plan_label(decision) for decision in queue)))
-        self.out("SIGUIENTE #%d — %s · fase %s · %s · %s" % (
+        self.out("SIGUIENTE #%d — %s · fase %s · %s · %s%s" % (
             head.item.number, head.item.status, phase,
             head.item.priority or "sin prioridad",
-            "sin etiqueta de agente" if not head.route else "etiqueta " + head.route))
+            "sin etiqueta de agente" if not head.route else "etiqueta " + head.route,
+            resumed))
         self.out("Acción: take --issue %d --agent %s → ejecutar la fase → "
                  "move --to \"%s\" → volver a next."
                  % (head.item.number, agent, target.replace("In Progress", "In Review")))

@@ -1312,6 +1312,7 @@ class SessionContinuityTests(unittest.TestCase):
                       "#410 (sin prioridad), #402 (sin prioridad)", text)
         self.assertIn("SIGUIENTE #417 — Ready Development · fase development", text)
         self.assertIn("move --to \"Development In Review\"", text)
+        self.assertNotIn("reanudación", text)             # toma nueva, no reanudación
 
     def test_queue_order_is_eligibility_then_priority(self):
         decisions = plan(load_items(), "hermes")
@@ -1422,6 +1423,7 @@ class SessionContinuityTests(unittest.TestCase):
         lines = []
         self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
         self.assertIn("SIGUIENTE #417", self.head(lines))
+        self.assertIn("reanudación", self.head(lines))
         seed_receipts(github)                          # nuevo estado Ready, nuevo recibo
         self.assertEqual(svc.take(417), EXIT_OK)       # reanuda su propia toma
         self.assertEqual(len(claim_comments(github, 417)), 1)
