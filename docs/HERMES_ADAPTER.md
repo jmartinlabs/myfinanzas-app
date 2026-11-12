@@ -1,8 +1,9 @@
 # MyFinanzas · Uso con Hermes Agent (adaptador de agent-project-template PR #49)
 
-Hermes es un **cliente adicional** del mismo harness. OpenCode sigue siendo el coordinador
-técnico del desarrollo funcional; este adaptador no crea un segundo coordinador, no sustituye
-ninguna Skill y no cambia reglas, aprobaciones ni estado del proyecto.
+Hermes es un **cliente adicional** del mismo harness y, por decisión del usuario (2026-11-12),
+el **coordinador técnico activo**; el rol no queda atado al proveedor y OpenCode sigue siendo un
+cliente válido como ejecutor o sustituto. Este adaptador no crea un segundo coordinador, no
+sustituye ninguna Skill y no cambia reglas, aprobaciones ni estado del proyecto.
 
 Se apoya en la integración aprobada y fusionada en
 [agent-project-template#49](https://github.com/jmartinlabs/agent-project-template/pull/49)
@@ -17,7 +18,7 @@ documentación y un paso de confianza, no un port.
 | `.agents/skills/` (11 Skills) | Nivel de Skills de proyecto; se invocan como `/orchestrate`, `/spec`, `/dev`, `/handoff`, `/relay`, `/tweak`, `/task`, `/roadmap`, `/bootstrap`, `/init-project` y `/adopt-project`. |
 | `.agents/roles/` | Contratos reutilizables dentro de un paquete de trabajo; no son trabajadores permanentes. |
 | `specs/methodology/` | Mismas reglas de flujo, aprobaciones, delegación y comunicación. |
-| `specs/epic-board.md` | Solo lectura salvo que el usuario autorice expresamente a Hermes como coordinador; por defecto lo mantiene OpenCode. |
+| `specs/epic-board.md` | Lo escribe el coordinador activo (hoy Hermes); los demás clientes lo leen salvo designación expresa. |
 
 No se copian Skills, roles, workflows, prompts, pruebas ni scripts del template. Los
 adaptadores de Codex (`.codex/`), Claude Code (`.claude/`) y OpenCode (`.opencode/`) quedan
@@ -42,9 +43,10 @@ hermes                                       # arrancar SIEMPRE en la raíz del 
 
 ## Autoridad y límites en MyFinanzas
 
-- **OpenCode sigue siendo el coordinador principal.** Hermes puede ejecutar trabajo autorizado,
-  revisar o asesorar cuando el usuario lo elija, pero no abre una cola paralela, no crea un
-  segundo scheduler y no escribe `specs/epic-board.md` por defecto.
+- **Hermes ejerce hoy como coordinador designado** y escribe `specs/epic-board.md`. Cualquier
+  cliente compatible puede sustituirlo por decisión del usuario con el handoff de
+  [Cambio de coordinador](../specs/methodology/myfinanzas-coordination.md#cambio-de-coordinador);
+  ningún coordinador abre una cola paralela ni un segundo scheduler.
 - Las aprobaciones se rigen solo por `specs/methodology/approvals.md`. Aprobar una
   especificación **no** autoriza desarrollo; el merge exige aprobación explícita e
   identificable y nunca se auto-fusiona.
@@ -52,9 +54,10 @@ hermes                                       # arrancar SIEMPRE en la raíz del 
   trabajo entre sesiones.
 - Sin datos financieros reales, VPS, TEST/PROD, despliegues ni cambios de permisos o
   visibilidad. Sin operaciones destructivas.
-- La delegación multiagente con Hermes **no está validada** (P2 y P2b siguen UNRUN en el
-  template). No la uses ni la anuncies como disponible; ejecuta en primer plano o usa un
-  cliente ya validado.
+- Hermes delega subagentes propios, incluida la QA independiente, con resultados verificables; lo
+  que **no** está validado es que un proveedor lance sesiones de otro (Hermes → OpenCode/Codex o
+  al contrario). Sin despachador acreditado, el handoff es explícito y el trabajo no se declara
+  iniciado.
 - Una aprobación de comando en Hermes es control de shell, no consentimiento semántico. No
   ejecutes con `--yolo` ni con `approvals.mode: off`.
 - Hermes protege `AGENTS.md` y otros archivos de instrucciones con una aprobación de escritura
@@ -90,7 +93,8 @@ adicionales para las comprobaciones de descubrimiento.
 
 Límites de esta evidencia: una sola sesión y una sola versión del cliente; no mide varianza ni
 comportamiento con otros modelos. Las pruebas extensas P0/P-ISO ya están documentadas en el
-template y no se repiten aquí. La delegación permanece sin probar.
+template y no se repiten aquí. En esa sesión no se ejercitó la delegación, y el despacho entre
+proveedores sigue sin validar.
 
 ## Cuándo volver a verificar
 
