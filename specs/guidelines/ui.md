@@ -25,7 +25,9 @@ historia de E1.1–E1.5 y no reabren decisiones.
   (#198); conservan identidad, tokens y comportamiento. **Graphite Lime (`graphite-lime`,
   «Grafito»)** está integrado en `bff714e` (#356). **Casa (`casa`)** queda aprobada como quinta
   apariencia por la enmienda del 2026-11-10. El catálogo solo se amplía por decisión expresa; no
-  se reabren los tres temas.
+  se reabren los tres temas, **salvo la enmienda UI-P2
+  ([`ui-specification.md` §2.5](../ui-specification.md)), que reabre únicamente la capa de
+  identidad de Light y Hybrid para L1**.
 - Tokens semánticos en `apps/web/public/themes.css`; los componentes consumen `var(--…)` y no
   conocen el tema. `style.css` conserva un único hex de fallback
   (`var(--warning, #6b5412)`); el resto es tokenizado.
