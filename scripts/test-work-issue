@@ -1513,6 +1513,14 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("needs the user's explicit approval", text)
         self.assertIn("no cron, webhook, bot or", text)
 
+    def test_skill_separates_the_procedure_from_the_command_line_tool(self):
+        text = self.SKILL.read_text(encoding="utf-8")
+        self.assertIn("## Skill and tool — two different things", text)
+        self.assertIn("is the *procedure*", text)
+        self.assertIn("is the *command-line tool*", text)
+        self.assertIn("has no session or memory of its own between calls", text)
+        self.assertNotIn("equivalently `scripts/work-issue --agent", text)
+
     def test_orchestrate_consumes_the_queue_without_yielding_after_one_issue(self):
         text = self.ORCHESTRATE.read_text(encoding="utf-8")
         self.assertIn("consumes that queue continuously", text)

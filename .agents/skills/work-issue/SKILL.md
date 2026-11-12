@@ -11,6 +11,22 @@ ownership and QA remain in [orchestrate](../orchestrate/SKILL.md); this Skill on
 *which* Issue an agent may take and records it. Implementation: `scripts/work-issue`;
 regression suite: `scripts/test-work-issue`.
 
+## Skill and tool — two different things
+
+- **`$work-issue` (this Skill)** is the *procedure*: when an Issue may be taken, in which
+  order, what evidence must be published, how the session continues across Issues and when it
+  ends. It is not a program and does nothing by itself: it runs only inside an agent that
+  reads it and follows it.
+- **`scripts/work-issue`** is the *command-line tool* that procedure uses for the mechanical
+  part: `inventory` (read the Project), `next` (compute the agent's queue, read-only),
+  `context` (recover context and publish the receipt), `take` (reserve) and `move` (the one
+  transition a phase permits). It creates no branch, PR, merge or approval, executes no phase
+  and has no session or memory of its own between calls.
+- Therefore `@work-issue opencode` asks the **agent** to run a session over that agent's
+  queue, while `scripts/work-issue next --agent opencode` is one read-only call inside that
+  session. Naming the agent in the Skill invocation names the queue; the tool needs
+  `--agent` on `next`/`take`/`move` only because it cannot carry a session.
+
 ## Inputs
 - An explicit request to take work (`work-issue`, `@work-issue opencode`, `coge una Issue
   Ready`, or the equivalent from the coordinator), the Project number/owner and the agent
@@ -39,8 +55,8 @@ needs the user's explicit approval.
 
 ## Session continuity — one invocation, the whole eligible queue
 
-`@work-issue <agent>` (equivalently `scripts/work-issue --agent <agent>`) is a **session**,
-not a single reservation. For as long as the session is active, that one invocation keeps
+`@work-issue <agent>` is a **session** of that agent, not a single reservation and not the CLI
+on its own. For as long as the session is active, that one invocation keeps
 taking the agent's eligible Issues in *Selection order* until the queue is empty or a real
 blocker appears. Delivering one Issue, leaving another in review or asking whether to
 continue never ends the session: **the turn yields only when no eligible work remains**, not
