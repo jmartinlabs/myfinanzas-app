@@ -1,0 +1,176 @@
+{
+  "themes": {
+    "light": {
+      "ratios": {
+        "text/surface": 16.22,
+        "text/bg": 14.76,
+        "muted/surface": 6.64,
+        "accent-ink/surface": 5.73,
+        "on-orange/orange": 4.73,
+        "positive/surface": 6.29,
+        "negative/surface": 5.85,
+        "warning/surface": 5.83,
+        "sidebar-text/sidebar": 13.33,
+        "sidebar-muted/sidebar": 5.45,
+        "sidebar-active-text/active": 6.11,
+        "hero-text/hero": 11.84,
+        "hero-muted/hero": 8.43,
+        "hero-positive/hero": 8.26,
+        "hero-plan/hero": 8.9,
+        "muted/table-head": 5.79,
+        "text/input": 16.22,
+        "positive/positive-soft": 5.48,
+        "warning/warning-soft": 5.37,
+        "local-plan": 15.61,
+        "local-objective": 11.84
+      },
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1819
+      },
+      "errors": []
+    },
+    "hybrid": {
+      "ratios": {
+        "text/surface": 16.22,
+        "text/bg": 14.13,
+        "muted/surface": 6.64,
+        "accent-ink/surface": 5.73,
+        "on-orange/orange": 4.73,
+        "positive/surface": 6.29,
+        "negative/surface": 5.85,
+        "warning/surface": 5.83,
+        "sidebar-text/sidebar": 16.49,
+        "sidebar-muted/sidebar": 8.54,
+        "sidebar-active-text/active": 5.82,
+        "hero-text/hero": 14.52,
+        "hero-muted/hero": 7.52,
+        "hero-positive/hero": 9.76,
+        "hero-plan/hero": 9.34,
+        "muted/table-head": 5.79,
+        "text/input": 16.22,
+        "positive/positive-soft": 5.48,
+        "warning/warning-soft": 5.37,
+        "local-attention": 16.22
+      },
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1821
+      },
+      "errors": []
+    },
+    "movimientos-light": {
+      "ratios": {
+        "text/surface": 16.22,
+        "text/bg": 15.14,
+        "muted/surface": 6.64,
+        "accent-ink/surface": 5.73,
+        "on-orange/orange": 4.73,
+        "positive/surface": 6.29,
+        "negative/surface": 5.85,
+        "warning/surface": 5.83,
+        "sidebar-text/sidebar": 13.68,
+        "sidebar-muted/sidebar": 5.6,
+        "sidebar-active-text/active": 6.11,
+        "hero-text/hero": 11.84,
+        "hero-muted/hero": 8.43,
+        "hero-positive/hero": 8.26,
+        "hero-plan/hero": 8.9,
+        "muted/table-head": 5.79,
+        "text/input": 16.22,
+        "positive/positive-soft": 5.48,
+        "warning/warning-soft": 5.37,
+        "local-detail": 16.22
+      },
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1183
+      },
+      "errors": []
+    },
+    "movimientos-hybrid": {
+      "ratios": {
+        "text/surface": 16.22,
+        "text/bg": 14.25,
+        "muted/surface": 6.64,
+        "accent-ink/surface": 5.73,
+        "on-orange/orange": 4.73,
+        "positive/surface": 6.29,
+        "negative/surface": 5.85,
+        "warning/surface": 5.83,
+        "sidebar-text/sidebar": 16.49,
+        "sidebar-muted/sidebar": 8.54,
+        "sidebar-active-text/active": 5.82,
+        "hero-text/hero": 14.52,
+        "hero-muted/hero": 7.52,
+        "hero-positive/hero": 9.76,
+        "hero-plan/hero": 9.34,
+        "muted/table-head": 5.79,
+        "text/input": 16.22,
+        "positive/positive-soft": 5.48,
+        "warning/warning-soft": 5.37,
+        "local-detail": 16.22
+      },
+      "layout": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "scrollHeight": 1183
+      },
+      "errors": []
+    }
+  },
+  "layout": [
+    {
+      "file": "inicio-light.html",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "scrollHeight": 1819,
+      "errors": []
+    },
+    {
+      "file": "inicio-hybrid.html",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "scrollHeight": 1821,
+      "errors": []
+    },
+    {
+      "file": "movimientos-light.html",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "scrollHeight": 1183,
+      "errors": []
+    },
+    {
+      "file": "movimientos-hybrid.html",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "scrollHeight": 1183,
+      "errors": []
+    }
+  ],
+  "fonts": [],
+  "interactions": [
+    {
+      "test": "selector-tema-light-final",
+      "dark": "dark-s",
+      "hybrid": "hybrid-s",
+      "ok": true
+    },
+    {
+      "test": "seleccion-movimientos-light",
+      "before": "Compra semanal",
+      "after": "Nómina noviembre",
+      "ok": true
+    },
+    {
+      "test": "seleccion-movimientos-hybrid",
+      "before": "Compra semanal",
+      "after": "Nómina noviembre",
+      "ok": true
+    }
+  ]
+}
