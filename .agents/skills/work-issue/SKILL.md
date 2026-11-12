@@ -55,6 +55,32 @@ Gates first, priority last:
 6. **Empty priority is valid** and means "not prioritised". Never prioritise the Backlog in
    bulk, and never read P0 as permission to develop.
 
+## PR ↔ Issue linkage
+
+The `feature/* → test → main` flow rules out both GitHub mechanisms, verified on this
+repository:
+
+- **Closing keywords** (`Closes #N`, `Fixes #N`) are interpreted **only** against the default
+  branch. On a PR into `test` they create no link and close nothing (documented, and confirmed
+  by #423 → #406: `willCloseTarget: false`, the Issue stayed open after the merge).
+- **`addCloseIssueReferences`** does create the native linked-PR entry for a PR into `test`
+  (`ConnectedEvent` appears), but the API simultaneously reports `willCloseTarget: true`:
+  merging the phase PR would close the Issue at `test`, before `main` and before the user's
+  acceptance. The limitation is not a missing API but the coupling to premature closure.
+
+The contract, then:
+
+1. Every PR body carries `Refs #N`. It is a cross-reference, not a close reference.
+2. The report that moves the Issue to `{Phase} In Review` carries the PR number, so the Issue
+   links back to the PR without the user editing anything.
+3. Never write `Closes #N` in a PR into `test`, and never call `addCloseIssueReferences` while
+   the base is `test`: it declares `willCloseTarget: true` and the Issue must not close on a
+   merge that is not acceptance.
+4. Say "referencia bidireccional verificada", never "vínculo nativo", unless the Issue shows
+   the PR in its linked pull requests / `closedByPullRequestsReferences`.
+5. Check before delivering: `Refs #N` in the PR body, PR number in the Issue report,
+   `closedByPullRequestsReferences` still empty for a `test` PR.
+
 ## Context recovery (mandatory before substantive work)
 
 Reserving an Issue is not having understood it. Before doing substantive work on a reserved
