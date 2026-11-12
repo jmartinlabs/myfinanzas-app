@@ -71,10 +71,12 @@ What GitHub actually offers, measured on this repository:
 - **`addCloseIssueReferences`** is the scriptable link. After it the PR shows in `Development`,
   the Issue returns it in `closedByPullRequestsReferences` and the PR returns the Issue in
   `closingIssuesReferences`. The same link created by hand in the UI has the same shape.
-- GitHub labels that link as closing-capable ("may close these issues", `willCloseTarget`)
-  while the one observed merge of a linked PR into `test` (#423 → #406) did **not** close its
-  Issue. The platform's wording and its observed behaviour disagree, so the procedure never
-  depends on which of the two wins.
+- GitHub marks the link as closing-capable: `closingIssuesReferences` ("issues that **may** be
+  closed") and `willCloseTarget` on the cross-reference. Measured on this repository, **neither
+  merge of such a PR into `test` closed its Issue**: #423 → #406 stayed `OPEN`, and #432 → #431
+  was closed 94 minutes later by the Project automation when its `Status` became `Done`
+  (`ClosedEvent.closer = ProjectV2`), not by the merge. Closure follows `Status = Done`, which
+  the user owns.
 
 Procedure for every PR:
 
@@ -84,9 +86,9 @@ Procedure for every PR:
 3. Verify before delivering: `closedByPullRequestsReferences` contains the PR and
    `closingIssuesReferences` contains the Issue. Put the PR number in the `{Phase} In Review`
    report so the Issue links back without the user editing anything.
-4. **Guard after merge.** After any merge into `test`, re-read the Issue: if the platform
-   closed it, reopen it (`gh issue reopen`) and record it in the Issue. A merge never moves the
-   Issue to `Done`; that stays the user's decision.
+4. **Guard after merge.** After any merge into `test`, re-read the Issue: if it is closed,
+   reopen it (`gh issue reopen`) and record it. Closure follows `Status = Done`, so a merge
+   must never move the Status; an Issue closed by a merge is an incident, not acceptance.
 5. Never call `removeCloseIssueReferences` to "clean up" a link the user wants to keep, and
    never let a link substitute for the `Status` gate.
 
