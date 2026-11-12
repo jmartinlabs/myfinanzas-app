@@ -58,6 +58,31 @@
       "priority": "P0"
     },
     {
+      "content": {"number": 450, "title": "Prioridad media", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/450"},
+      "id": "PVTI_fixture_450",
+      "status": "Ready Development",
+      "priority": "P1"
+    },
+    {
+      "content": {"number": 451, "title": "Prioridad baja", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/451"},
+      "id": "PVTI_fixture_451",
+      "status": "Ready Development",
+      "priority": "P2"
+    },
+    {
+      "content": {"number": 452, "title": "P0 de otro agente", "body": "Sin dependencias.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/452"},
+      "id": "PVTI_fixture_452",
+      "status": "Ready Development",
+      "labels": ["opencode"],
+      "priority": "P0"
+    },
+    {
+      "content": {"number": 453, "title": "P0 bloqueada", "body": "Depende de #406 para empezar.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/453"},
+      "id": "PVTI_fixture_453",
+      "status": "Ready Development",
+      "priority": "P0"
+    },
+    {
       "content": {"number": 405, "title": "Estandarización posterior", "body": "Todavía no autorizada.", "url": "https://github.com/jmartinlabs/myfinanzas-app/issues/405"},
       "id": "PVTI_fixture_405",
       "status": "Backlog",

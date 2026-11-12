@@ -273,17 +273,23 @@ def classify(item, agent=None, by_number=None, agents=AGENTS, repo=None):
 
 
 def sort_key(decision):
+    """Gates first, then priority: an ineligible P0 never leads the list.
+
+    Priority orders only work that is actually eligible for this agent. A blocked,
+    taken or foreign Issue must not be promoted ahead of doable work by being P0;
+    the phase then keeps the existing development > specification > analysis order.
+    """
     item = decision.item
     return (
+        0 if decision.eligible else 1,
         PRIORITY_ORDER.get(item.priority, 9),
         PHASE_ORDER.get(item.phase or "", 9),
-        0 if decision.eligible else 1,
         item.number,
     )
 
 
 def plan(items, agent=None, agents=AGENTS, repo=None):
-    """Every Ready item with its routing decision, ordered by priority and phase."""
+    """Every Ready item with its routing decision, ordered by eligibility then priority."""
     by_number = {item.number: item for item in items if item.number}
     decisions = [classify(item, agent, by_number, agents, repo)
                  for item in items if item.status in READY]
@@ -304,6 +310,11 @@ def next_action(decision):
     if decision.kind == "other-repository":
         return "no reservar: pertenece a otro repositorio"
     return "revisar el Status"
+
+
+def plan_label(decision):
+    """`#6 (P0)` keeps the selection order visible in the proposal line."""
+    return "#%d (%s)" % (decision.item.number, decision.item.priority or "sin prioridad")
 
 
 def render(decisions, agent=None, out=print):
@@ -334,16 +345,17 @@ def render(decisions, agent=None, out=print):
     for decision in decisions:
         if not decision.eligible:
             continue
-        buckets.setdefault(decision.route or "cualquier agente", []).append(decision.item.number)
+        buckets.setdefault(decision.route or "cualquier agente", []).append(decision)
     if agent:
         out("PLAN — agente %s: %s" % (
             agent,
-            ", ".join("#%d" % n for n in sorted(
-                number for numbers in buckets.values() for number in numbers)) or "nada elegible"))
+            ", ".join(plan_label(decision) for decision in decisions if decision.eligible)
+            or "nada elegible"))
     elif buckets:
         out("PLAN — reparto propuesto (una reserva por Issue, no todo a la vez):")
         for route in sorted(buckets):
-            out("  %-18s %s" % (route, ", ".join("#%d" % n for n in sorted(buckets[route]))))
+            out("  %-18s %s" % (route, ", ".join(plan_label(decision)
+                                                for decision in buckets[route])))
     else:
         out("PLAN — ninguna Issue elegible para reservar ahora.")
 

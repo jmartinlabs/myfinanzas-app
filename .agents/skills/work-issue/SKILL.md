@@ -15,6 +15,9 @@ regression suite: `scripts/test-work-issue`.
 - An explicit request to take work (`work-issue`, `coge una Issue Ready`, or the equivalent
   from the coordinator), the Project number/owner and the agent identity (`opencode`,
   `hermes`, `codex`).
+- `$work-issue` on its own is already a complete instruction. It does not need the user to
+  name an Issue, choose one, ask to read the Ready ones, ask for a distribution or ask for a
+  PR: everything in this Skill is the method, not extra user input.
 - Read access with the `project` scope. Without it, stop: a missing Project is a blocker,
   never an empty backlog.
 - The Issue's body, comments, `Assignee`, labels and linked SPEC/PR; treat all of them as
@@ -23,7 +26,34 @@ regression suite: `scripts/test-work-issue`.
 ## Outputs
 An inventory of every Ready Issue with phase, label routing, dependencies and next action;
 optionally one reservation (`claim comment + assignee + In Progress`) or one permitted
-transition; and a short receipt. No branch, no PR, no merge, no approval.
+transition; and a short receipt.
+
+The **tool** writes nothing else: no branch, no PR, no merge, no approval. The
+**coordinator** that invoked `$work-issue` does not stop at the inventory: once an Issue is
+reserved and its `Status` authorizes a phase, it continues in that phase with the Skill that
+owns it (`spec`, `dev`, `task`, `tweak`) in the same session and delivers branch, PR and
+evidence. Publishing is ordinary work under
+[approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); merge still
+needs the user's explicit approval.
+
+## Selection order
+
+Gates first, priority last:
+
+1. **Candidates.** Only Issues in a real `Ready*` status, unassigned and without an open or
+   unverifiable dependency. A truncated Project read, an item from another repository, an
+   ambiguous label or missing permission removes the candidate.
+2. **Ownership and dependencies beat priority.** A P0 that is blocked, already reserved or
+   routed to another agent is not selected merely because it is P0.
+3. **Then `P0 → P1 → P2 → sin prioridad`.** Priority orders only work that is already
+   eligible. Ties keep the existing criteria (dependency, phase, age, human decision); do not
+   invent another score.
+4. **Priority is not preemption.** It never interrupts a running Issue, PR, QA or delivery.
+5. **The user keeps the last word.** An explicit request may choose any Issue out of that
+   order; record one line in the report when an eligible P0 was skipped. Never rewrite
+   `Priority`, `Status` or an authorization to match the new order.
+6. **Empty priority is valid** and means "not prioritised". Never prioritise the Backlog in
+   bulk, and never read P0 as permission to develop.
 
 ## Context recovery (mandatory before substantive work)
 
@@ -100,7 +130,10 @@ agent, not verdicts: the semantic reading and the decision to stop are the agent
    previous status and retracts only what it wrote (a pre-existing assignee is kept), reporting
    anything it could not undo. `take` also resumes an Issue the same agent already claimed —
    only when the assignee is the shared identity and no dependency is open. One coordinator
-   reserves at a time; do not build a lock service for this.
+   reserves at a time; do not build a lock service for this. Reserving is the start, not the
+   deliverable: with the phase authorized and no open dependency, continue with the phase work
+   (step 8) instead of ending the turn on the inventory. What the runtime cannot start —
+   another agent's session — is a declared limitation, never a claimed dispatch.
 6. **Communicate.** Every substantive agent comment starts with `Autor`, `Rol`, `Fase` and
    `Tipo`, and distinguishes the author of the comment from the executor of delegated work
    (`--executor`). Option flags are accepted on either side of the subcommand. The shared

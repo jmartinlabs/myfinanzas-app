@@ -238,6 +238,43 @@ class DiscoveryTests(unittest.TestCase):
         decisions = plan(load_items())
         self.assertEqual(decisions[0].item.number, 417)   # único P0
 
+    def test_priority_orders_only_eligible_work(self):
+        decisions = plan(load_items(), "hermes")
+        eligible = [d.item.number for d in decisions if d.eligible]
+        self.assertEqual(eligible[:3], [417, 450, 451])   # P0, P1, P2 elegibles
+
+    def test_ineligible_p0_never_leads_the_inventory(self):
+        decisions = plan(load_items(), "hermes")
+        self.assertTrue(decisions[0].eligible, decisions[0].kind)
+        self.assertEqual(decisions[0].item.number, 417)   # P0 elegible
+        eligible_count = sum(1 for decision in decisions if decision.eligible)
+        self.assertTrue(all(d.eligible for d in decisions[:eligible_count]))
+        self.assertTrue(all(not d.eligible for d in decisions[eligible_count:]))
+        tail = [d.item.number for d in decisions[eligible_count:]]
+        self.assertEqual(tail[:2], [452, 453])            # ambas P0, ambas al final
+
+    def test_ineligible_p0_does_not_delay_eligible_work(self):
+        decisions = {d.item.number: d for d in plan(load_items(), "hermes")}
+        for number in (452, 453):
+            self.assertFalse(decisions[number].eligible)
+        self.assertTrue(decisions[450].eligible)           # P1 sigue disponible
+        self.assertTrue(decisions[402].eligible)           # sin prioridad, sigue disponible
+
+    def test_plan_line_keeps_the_selection_order(self):
+        lines = []
+        render(plan(load_items(), "hermes"), "hermes", lines.append)
+        plan_line = [line for line in lines if line.startswith("PLAN")][0]
+        self.assertEqual(
+            plan_line,
+            "PLAN — agente hermes: #417 (P0), #450 (P1), #451 (P2), "
+            "#406 (sin prioridad), #410 (sin prioridad), #402 (sin prioridad)")
+
+    def test_take_never_writes_priority(self):
+        github = FakeGh()
+        self.assertEqual(service(github).take(451), EXIT_OK)      # P2, no la primera elegible
+        self.assertEqual([call[0] for call in github.calls], ["comment", "assign", "status"])
+        self.assertEqual(fixture_item(451, github.data).priority, "P2")
+
     def test_render_prints_inventory_and_distribution(self):
         lines = []
         render(plan(load_items()), None, lines.append)
