@@ -73,8 +73,8 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Tema | `data-theme` | Estado |
 | --- | --- | --- |
 | Dark | `dark-s` | Implementado y cerrado; predeterminado |
-| Light | `light-s` | Implementado; identidad reabierta solo por UI-P2 (2.5) para L1 |
-| Hybrid | `hybrid-s` | Implementado; identidad reabierta solo por UI-P2 (2.5) para L1 |
+| Light | `light-s` | Implementado; identidad reabierta por UI-P2 (2.5) para L1 y L2 |
+| Hybrid | `hybrid-s` | Implementado; identidad reabierta por UI-P2 (2.5) para L1 y L2 |
 | Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; integrado en `test` con #356 (`bff714e`); seleccionable como cuarto tema |
 | Casa | `casa` | Aprobada 2026-11-10; 1A autorizado y en curso |
 
@@ -227,7 +227,7 @@ se difieren. Casa UI-P1 (#363), 1A (#364), 1B (#370) y 1C (#371) están integrad
 El análisis y el plan detallado se conservan en la
 [PR #365](https://github.com/jmartinlabs/myfinanzas-app/pull/365).
 
-### 2.5 Enmienda UI-P2 · Identidad visual Claro/Mixto (L1, 2026-11-12)
+### 2.5 Enmienda UI-P2 · Identidad visual Claro/Mixto (L1–L2, 2026-11-12)
 
 Ratificada por el usuario en [#402](https://github.com/jmartinlabs/myfinanzas-app/issues/402)
 (comentario `6827471780`) al aceptar el análisis de rescate de los prototipos finales de fase C.

@@ -73,6 +73,19 @@ test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) 
     await expect(hero).toBeVisible();
     await expect(hero).toHaveCSS("color", "rgb(244, 241, 232)");
     await expect(page.locator(".inicio-page .graphite-kpis")).toHaveCSS("padding", "8px");
+    for (const selector of [
+      ".graphite-control",
+      ".graphite-kpis",
+      ".graphite-kpi",
+      ".graphite-attention",
+      ".graphite-objective",
+      ".graphite-position",
+    ]) {
+      await expect(page.locator(`.inicio-page ${selector}`).first()).toHaveCSS(
+        "background-image",
+        "none",
+      );
+    }
     await expect(page.locator(".inicio-page .graphite-kpi").first()).toHaveCSS(
       "border-radius",
       "11px",
@@ -118,6 +131,18 @@ test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) 
       }
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
+
+    // Foco visible y legible sobre la superficie del Objetivo
+    const objectiveLink = page.locator(".inicio-page .graphite-objective a").first();
+    await objectiveLink.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(objectiveLink).toBeFocused();
+    await expect(objectiveLink).toHaveCSS(
+      "outline-color",
+      theme === "light-s" ? "rgb(168, 214, 207)" : "rgb(30, 111, 122)",
+    );
+
     await page.locator(".inicio-page .graphite-control").screenshot({
       path: `artifacts/l2/hero-${theme}.png`,
     });

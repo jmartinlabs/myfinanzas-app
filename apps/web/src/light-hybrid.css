@@ -59,6 +59,10 @@ html[data-theme="hybrid-s"] .inicio-page .graphite-control {
   outline-color: #a8d6cf;
 }
 
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-control .ui-amount-negative {
+  color: var(--negative);
+}
+
 /* Bandeja KPI ------------------------------------------------------------- */
 
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-kpis {
@@ -123,10 +127,13 @@ html[data-theme="hybrid-s"] .inicio-page .graphite-attention {
 }
 
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective {
-  --negative: #ffb4a8;
   border-color: #17363c;
   background: #17363c;
   color: #f4f1e8;
+}
+
+html[data-theme="light-s"] .inicio-page .graphite-objective {
+  --negative: #ffb4a8;
 }
 
 html[data-theme="hybrid-s"] .inicio-page .graphite-objective {
@@ -166,13 +173,17 @@ html[data-theme="hybrid-s"] .inicio-page .graphite-objective :is(a, summary) {
   color: #17616a;
 }
 
+html[data-theme="light-s"] .inicio-page .graphite-objective .ui-amount-negative {
+  color: var(--negative);
+}
+
 html[data-theme="hybrid-s"] .inicio-page .graphite-objective .ui-amount-state {
   background: transparent;
   border-color: #b7d4d1;
   color: #1f1f1f;
 }
 
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-objective :focus-visible {
+html[data-theme="light-s"] .inicio-page .graphite-objective :focus-visible {
   outline-color: #a8d6cf;
 }
 
