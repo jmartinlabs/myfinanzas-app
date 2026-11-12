@@ -1238,6 +1238,13 @@ def main(argv=None):
     if args.command in ("take", "move", "context") and (not args.issue or args.issue < 1):
         print("No ejecutado: --issue debe ser un número de Issue positivo", file=sys.stderr)
         return EXIT_REFUSED
+    summary = None
+    if args.command == "context" and args.summary_file:
+        try:
+            summary = Path(args.summary_file).read_text(encoding="utf-8")
+        except OSError as error:
+            print("No publicado: no se pudo leer --summary-file (%s)" % error, file=sys.stderr)
+            return EXIT_REFUSED
     github = Gh(args.owner, args.project, args.repo)
     service = Service(github, agent, role, executor=executor)
     try:
@@ -1248,14 +1255,6 @@ def main(argv=None):
         if args.command == "take":
             return service.take(args.issue, agent, dry_run=args.dry_run)
         if args.command == "context":
-            summary = None
-            if args.summary_file:
-                try:
-                    summary = Path(args.summary_file).read_text(encoding="utf-8")
-                except OSError as error:
-                    print("No publicado: no se pudo leer --summary-file (%s)" % error,
-                          file=sys.stderr)
-                    return EXIT_REFUSED
             return service.context(args.issue, agent, publish=args.publish,
                                    summary=summary, repo_root=args.repo_root)
         return service.move(args.issue, args.to, args.previous_status, args.note,
