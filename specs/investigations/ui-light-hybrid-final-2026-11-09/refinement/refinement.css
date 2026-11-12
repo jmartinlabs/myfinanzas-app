@@ -1,0 +1,555 @@
+/* ==========================================================================
+   MyFinanzas · Refinamiento de Light y Hybrid
+   Solo tokens y tratamientos de superficie. Dark no se modifica.
+   ========================================================================== */
+
+/* ==========================================================================
+   LIGHT PREMIUM · Warm Editorial Finance
+   ========================================================================== */
+html[data-theme="light-s"] {
+  --bg: #f7f5f1;
+  --bg-2: #fbf8f2;
+  --bg-deep: #efe8dd;
+  --bg-image:
+    radial-gradient(ellipse 980px 560px at 84% -8%, rgba(228, 87, 46, 0.075), transparent 62%),
+    radial-gradient(ellipse 720px 520px at 4% 108%, rgba(30, 111, 122, 0.075), transparent 64%),
+    linear-gradient(145deg, #fbf8f2 0%, #f7f5f1 55%, #f0e9df 100%);
+
+  --surface: #fffdf9;
+  --surface-2: #f1ebe2;
+  --surface-3: #ece9e2;
+  --surface-hover: #f6efe5;
+  --surface-rgb: 255, 253, 249;
+  --deep-rgb: 239, 232, 221;
+  --card-bg: linear-gradient(158deg, #fffdf9 0%, #fbf5ec 100%);
+  --card-border: #d8d0c3;
+
+  --sidebar: #f0e9df;
+  --sidebar-2: #f8f2e9;
+  --sidebar-text: #1f1f1f;
+  --sidebar-muted: #5f5b55;
+  --sidebar-border: #d8cdbf;
+  --sidebar-hover: #e8dfd2;
+  --sidebar-active-bg: linear-gradient(90deg, #1e6f7a 0%, #17616a 100%);
+  --sidebar-active-text: #fffdf9;
+  --sidebar-active-border: #1e6f7a;
+  --sidebar-glow: 0 8px 24px rgba(30, 111, 122, 0.16);
+
+  --text: #1f1f1f;
+  --text-2: #4a4640;
+  --muted: #5f5b55;
+  --muted-2: #7b746a;
+
+  --border: #d8d0c3;
+  --border-soft: rgba(31, 31, 31, 0.1);
+  --border-strong: #a99b8b;
+  --control-border: #8f8172;
+
+  --accent: #1e6f7a;
+  --accent-ink: #1e6f7a;
+  --accent-soft: #e4efed;
+  --accent-border: #a9cfcb;
+
+  --orange: #e4572e;
+  --orange-hi: #f06a45;
+  --on-orange: #1a1a1a;
+
+  --positive: #2d6a4f;
+  --positive-soft: #e6f0ea;
+  --positive-border: #b7d2c3;
+  --negative: #b23a2a;
+  --negative-soft: #f8e9e6;
+  --negative-border: #e3b7ae;
+  --warning: #8a5a00;
+  --warning-soft: #fff3d6;
+  --warning-border: #e8c97a;
+  --error: #9b2c2c;
+  --error-soft: #fbeaea;
+  --error-border: #e3b5b5;
+
+  --focus: #1e6f7a;
+  --row-hover: #f7f0e6;
+  --selected-bg: #e4efed;
+  --selected-border: #1e6f7a;
+  --table-head: #f3ede4;
+  --input-bg: #fffdf9;
+
+  --shadow: 0 20px 50px rgba(78, 53, 33, 0.11);
+  --shadow-soft: 0 10px 28px rgba(78, 53, 33, 0.075);
+  --topbar-bg: rgba(251, 248, 242, 0.86);
+
+  /* Héroe oscuro dentro de una interfaz clara */
+  --hero-bg:
+    radial-gradient(ellipse 520px 300px at 18% -20%, rgba(30, 111, 122, 0.45), transparent 66%),
+    radial-gradient(ellipse 420px 240px at 96% -26%, rgba(228, 87, 46, 0.1), transparent 66%),
+    linear-gradient(135deg, #1b3b43 0%, #0e252b 100%);
+  --hero-bg-solid: #17363c;
+  --hero-text: #f7f5f1;
+  --hero-muted: #d8d0c4;
+  --hero-border: rgba(247, 245, 241, 0.16);
+  --hero-glow: rgba(30, 111, 122, 0.42);
+  --hero-chart: #2be4de;
+  --hero-chart-2: #8be6e1;
+  --hero-ring: #2be4de;
+  --hero-positive: #8be0b8;
+  --hero-positive-soft: rgba(139, 224, 184, 0.1);
+  --hero-positive-border: rgba(139, 224, 184, 0.28);
+  --hero-warning: #f2c14e;
+  --hero-plan: #8be6e1;
+  --hero-plan-soft: rgba(43, 228, 222, 0.1);
+  --hero-plan-border: rgba(43, 228, 222, 0.24);
+  --hero-negative: #ff9a8c;
+  --hero-error: #ff7b72;
+  --hero-info: #8be6e1;
+
+  --wave-opacity: 0.1;
+  --top-wave-opacity: 0;
+  --ambient-opacity: 0.55;
+  --sidebar-wave-opacity: 0.08;
+}
+
+/* Textura editorial y arcos, no ondas del tema oscuro. */
+html[data-theme="light-s"] .c-top-wave {
+  display: none;
+}
+
+html[data-theme="light-s"] .workspace::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(rgba(31, 31, 31, 0.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.55;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 68%);
+  pointer-events: none;
+}
+
+html[data-theme="light-s"] .workspace::after {
+  content: "";
+  position: absolute;
+  top: -240px;
+  right: -130px;
+  z-index: 0;
+  width: 760px;
+  height: 620px;
+  border: 1px solid rgba(30, 111, 122, 0.14);
+  border-radius: 50%;
+  transform: rotate(-14deg);
+  pointer-events: none;
+}
+
+html[data-theme="light-s"] .ambient {
+  top: -170px;
+  right: -70px;
+  width: 760px;
+  height: 560px;
+  background:
+    radial-gradient(ellipse at 70% 30%, rgba(30, 111, 122, 0.12), transparent 58%),
+    radial-gradient(ellipse at 30% 10%, rgba(228, 87, 46, 0.1), transparent 58%);
+  filter: blur(8px);
+}
+
+html[data-theme="light-s"] .sidebar {
+  background: linear-gradient(180deg, #f8f2e9 0%, #f0e9df 62%, #eae1d5 100%);
+}
+
+html[data-theme="light-s"] .sidebar::before {
+  background: radial-gradient(ellipse at 30% 100%, rgba(30, 111, 122, 0.12), transparent 66%);
+}
+
+html[data-theme="light-s"] .nav-item.active {
+  box-shadow: 0 8px 24px rgba(30, 111, 122, 0.2);
+}
+
+html[data-theme="light-s"] .topbar {
+  border-bottom-color: rgba(31, 31, 31, 0.09);
+}
+
+html[data-theme="light-s"] .c-control {
+  border-color: rgba(30, 111, 122, 0.3);
+  box-shadow: 0 26px 60px rgba(68, 45, 28, 0.16);
+}
+
+/* Célula de plan en crema dentro del héroe oscuro: contraste editorial. */
+html[data-theme="light-s"] .c-plan-cell {
+  border-right: 1px solid #d8cdbf;
+  border-left: 1px solid #d8cdbf;
+  background: linear-gradient(158deg, #fff8ec 0%, #f1e4d3 100%);
+  --hero-bg-solid: #fff8ec;
+  --hero-text: #1f1f1f;
+  --hero-muted: #5f5b55;
+  --hero-border: #d8cdbf;
+  --hero-chart: #1e6f7a;
+  --hero-chart-2: #17616a;
+  --hero-ring: #1e6f7a;
+  --hero-positive: #2d6a4f;
+  --hero-positive-soft: #e6f0ea;
+  --hero-positive-border: #b7d2c3;
+  --hero-plan: #1e6f7a;
+  --hero-plan-soft: #e4efed;
+  --hero-plan-border: #a9cfcb;
+  --hero-warning: #8a5a00;
+}
+
+html[data-theme="light-s"] .c-plan-cell .b-kicker {
+  color: #5f5b55;
+}
+
+html[data-theme="light-s"] .c-plan-cell .b-kicker .icon {
+  color: #1e6f7a;
+}
+
+html[data-theme="light-s"] .c-plan-cell .c-ring-track {
+  stroke: rgba(31, 31, 31, 0.1);
+  opacity: 1;
+}
+
+html[data-theme="light-s"] .c-plan-cell .c-plan-center span {
+  color: #5f5b55;
+}
+
+/* Franja KPI: un solo cuerpo cálido, no cuatro tarjetas blancas. */
+html[data-theme="light-s"] .b-kpis {
+  border-color: #d8d0c3;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(90deg, #fffdf9 0%, #f6efe5 52%, #fbf5ec 100%);
+  box-shadow: 0 16px 40px rgba(78, 53, 33, 0.08);
+}
+
+html[data-theme="light-s"] .b-kpi:nth-child(3) {
+  background: linear-gradient(160deg, rgba(30, 111, 122, 0.08), transparent 72%);
+}
+
+/* Tabla y tarjetas inferiores con ritmo cálido. */
+html[data-theme="light-s"] .b-cycle {
+  border-color: #d8d0c3;
+  background: linear-gradient(158deg, #fffdf9 0%, #fbf5ec 100%);
+}
+
+html[data-theme="light-s"] .b-cycle-table th {
+  background: #f3ede4;
+}
+
+html[data-theme="light-s"] .b-cycle-table tbody tr:hover {
+  background: #f7f0e6;
+}
+
+html[data-theme="light-s"] .b-attention {
+  border-color: #ded0bf;
+  border-left: 3px solid var(--warning);
+  background: linear-gradient(158deg, #f8f0e5 0%, #f1e6d8 100%);
+}
+
+html[data-theme="light-s"] .b-objective {
+  border-color: var(--hero-border);
+  background: var(--hero-bg);
+  color: var(--hero-text);
+  box-shadow: 0 22px 48px rgba(68, 45, 28, 0.16);
+}
+
+html[data-theme="light-s"] .b-objective h2,
+html[data-theme="light-s"] .b-objective .b-objective-value strong,
+html[data-theme="light-s"] .b-objective .b-objective-fact strong {
+  color: var(--hero-text);
+}
+
+html[data-theme="light-s"] .b-objective .meta-sm,
+html[data-theme="light-s"] .b-objective .b-objective-value span,
+html[data-theme="light-s"] .b-objective .b-objective-meta,
+html[data-theme="light-s"] .b-objective .b-objective-fact span {
+  color: var(--hero-muted);
+}
+
+html[data-theme="light-s"] .b-objective .badge--ok {
+  border-color: var(--hero-positive-border);
+  background: var(--hero-positive-soft);
+  color: var(--hero-positive);
+}
+
+html[data-theme="light-s"] .b-objective .track {
+  background: rgba(247, 245, 241, 0.16);
+}
+
+html[data-theme="light-s"] .b-objective .track > span {
+  background: linear-gradient(90deg, var(--hero-chart-2), var(--hero-chart));
+}
+
+html[data-theme="light-s"] .b-movements {
+  border-color: #d8d0c3;
+  background: linear-gradient(158deg, #fffdf9 0%, #fbf5ec 100%);
+}
+
+html[data-theme="light-s"] .b-budget {
+  border-color: #ded0bf;
+  background: linear-gradient(158deg, #f8f0e5 0%, #f2e8da 100%);
+}
+
+html[data-theme="light-s"] .b-position {
+  border-color: #d8d0c3;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(90deg, #fffdf9 0%, #f5eee4 100%);
+}
+
+/* ==========================================================================
+   HYBRID PREMIUM · Dark Navigation + Warm Financial Workspace
+   ========================================================================== */
+html[data-theme="hybrid-s"] {
+  --bg: #f3eee4;
+  --bg-2: #faf6ef;
+  --bg-deep: #ede5da;
+  --bg-image:
+    radial-gradient(ellipse 900px 540px at 84% -8%, rgba(30, 111, 122, 0.13), transparent 62%),
+    radial-gradient(ellipse 720px 500px at 4% 108%, rgba(228, 87, 46, 0.045), transparent 64%),
+    linear-gradient(145deg, #faf6ef 0%, #f3eee4 56%, #ede5da 100%);
+
+  --surface: #fffdf9;
+  --surface-2: #f4eee5;
+  --surface-3: #eae2d6;
+  --surface-hover: #f6efe5;
+  --surface-rgb: 255, 253, 249;
+  --deep-rgb: 239, 232, 221;
+  --card-bg: linear-gradient(158deg, #fffdf9 0%, #faf3e9 100%);
+  --card-border: #d8cdbf;
+
+  --sidebar: #10181c;
+  --sidebar-2: #0a1114;
+  --sidebar-text: #f7f5f1;
+  --sidebar-muted: #b9b2a7;
+  --sidebar-border: rgba(247, 245, 241, 0.14);
+  --sidebar-hover: #1c2b31;
+  --sidebar-active-bg: linear-gradient(90deg, #1e6f7a 0%, #17616a 100%);
+  --sidebar-active-text: #ffffff;
+  --sidebar-active-border: rgba(43, 228, 222, 0.28);
+  --sidebar-glow: 0 0 18px rgba(43, 228, 222, 0.08);
+
+  --text: #1f1f1f;
+  --text-2: #4a4640;
+  --muted: #5f5b55;
+  --muted-2: #7b746a;
+
+  --border: #d8d0c3;
+  --border-soft: rgba(31, 31, 31, 0.1);
+  --border-strong: #a99b8b;
+  --control-border: #8f8172;
+
+  --accent: #1e6f7a;
+  --accent-ink: #1e6f7a;
+  --accent-soft: #e4efed;
+  --accent-border: #a9cfcb;
+
+  --orange: #e4572e;
+  --orange-hi: #f06a45;
+  --on-orange: #1a1a1a;
+
+  --positive: #2d6a4f;
+  --positive-soft: #e6f0ea;
+  --positive-border: #b7d2c3;
+  --negative: #b23a2a;
+  --negative-soft: #f8e9e6;
+  --negative-border: #e3b7ae;
+  --warning: #8a5a00;
+  --warning-soft: #fff3d6;
+  --warning-border: #e8c97a;
+  --error: #9b2c2c;
+  --error-soft: #fbeaea;
+  --error-border: #e3b5b5;
+
+  --focus: #1e6f7a;
+  --row-hover: #f7f0e6;
+  --selected-bg: #e4efed;
+  --selected-border: #1e6f7a;
+  --table-head: #f3ede4;
+  --input-bg: #fffdf9;
+
+  --shadow: 0 20px 50px rgba(53, 40, 28, 0.12);
+  --shadow-soft: 0 10px 28px rgba(53, 40, 28, 0.08);
+  --topbar-bg: rgba(250, 246, 239, 0.86);
+
+  --hero-bg:
+    radial-gradient(ellipse 560px 320px at 16% -22%, rgba(30, 111, 122, 0.5), transparent 66%),
+    radial-gradient(ellipse 420px 240px at 96% -26%, rgba(43, 228, 222, 0.08), transparent 66%),
+    linear-gradient(135deg, #14252a 0%, #0b181d 100%);
+  --hero-bg-solid: #14252a;
+  --hero-text: #f7f5f1;
+  --hero-muted: #b9b2a7;
+  --hero-border: rgba(43, 228, 222, 0.16);
+  --hero-glow: rgba(30, 111, 122, 0.5);
+  --hero-chart: #2be4de;
+  --hero-chart-2: #73d7d4;
+  --hero-ring: #2be4de;
+  --hero-positive: #6fe0b0;
+  --hero-positive-soft: rgba(111, 224, 176, 0.08);
+  --hero-positive-border: rgba(111, 224, 176, 0.28);
+  --hero-warning: #f2c14e;
+  --hero-plan: #73d7d4;
+  --hero-plan-soft: rgba(30, 111, 122, 0.18);
+  --hero-plan-border: rgba(115, 215, 212, 0.28);
+  --hero-negative: #ff9a8c;
+  --hero-error: #ff7b72;
+  --hero-info: #73d7d4;
+
+  --wave-opacity: 0.32;
+  --top-wave-opacity: 0.36;
+  --ambient-opacity: 0.7;
+  --sidebar-wave-opacity: 0.45;
+}
+
+html[data-theme="hybrid-s"] .sidebar {
+  background: linear-gradient(180deg, #10181c 0%, #0c1418 55%, #080f12 100%);
+}
+
+html[data-theme="hybrid-s"] .sidebar::before {
+  background: radial-gradient(ellipse at 30% 100%, rgba(30, 111, 122, 0.28), transparent 66%);
+}
+
+html[data-theme="hybrid-s"] .nav-item.active {
+  box-shadow:
+    0 0 20px rgba(43, 228, 222, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="hybrid-s"] .ambient {
+  top: -200px;
+  right: -110px;
+  width: 820px;
+  height: 580px;
+  background: radial-gradient(ellipse at 55% 40%, rgba(30, 111, 122, 0.18), transparent 62%);
+  opacity: 0.9;
+}
+
+html[data-theme="hybrid-s"] .c-control {
+  border-color: rgba(43, 228, 222, 0.22);
+  box-shadow:
+    0 26px 62px rgba(37, 29, 22, 0.22),
+    0 0 34px rgba(30, 111, 122, 0.08);
+}
+
+html[data-theme="hybrid-s"] .c-control::after {
+  content: "";
+  position: absolute;
+  right: 7%;
+  bottom: 0;
+  left: 7%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(43, 228, 222, 0.4), transparent);
+}
+
+html[data-theme="hybrid-s"] .b-kpis {
+  border-color: #d8d0c3;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(90deg, #fffdf9 0%, #f4ede3 54%, #faf4eb 100%);
+  box-shadow: 0 16px 40px rgba(53, 40, 28, 0.08);
+}
+
+html[data-theme="hybrid-s"] .b-kpi:nth-child(3) {
+  background: linear-gradient(160deg, rgba(30, 111, 122, 0.07), transparent 72%);
+}
+
+html[data-theme="hybrid-s"] .b-cycle {
+  border-color: #d8d0c3;
+  background: linear-gradient(158deg, #fffdf9 0%, #faf3e9 100%);
+}
+
+html[data-theme="hybrid-s"] .b-cycle-table th {
+  background: #f3ede4;
+}
+
+/* El bloque de atención es el secundario oscuro del hybrid. */
+html[data-theme="hybrid-s"] .b-attention {
+  border-color: var(--hero-border);
+  background: var(--hero-bg);
+  color: var(--hero-text);
+  box-shadow: 0 20px 46px rgba(37, 29, 22, 0.18);
+}
+
+html[data-theme="hybrid-s"] .b-attention h2,
+html[data-theme="hybrid-s"] .b-attention .b-attn-title {
+  color: var(--hero-text);
+}
+
+html[data-theme="hybrid-s"] .b-attention p,
+html[data-theme="hybrid-s"] .b-attention .b-attn-meta,
+html[data-theme="hybrid-s"] .b-attention .b-attention-foot .meta {
+  color: var(--hero-muted);
+}
+
+html[data-theme="hybrid-s"] .b-attention .icon-box {
+  border-color: var(--hero-border);
+  background: rgba(247, 245, 241, 0.06);
+  color: var(--hero-warning);
+}
+
+html[data-theme="hybrid-s"] .b-attention .badge--partial {
+  border-color: rgba(242, 193, 78, 0.3);
+  background: rgba(242, 193, 78, 0.09);
+  color: var(--hero-warning);
+}
+
+html[data-theme="hybrid-s"] .b-attention .badge--info {
+  border-color: var(--hero-plan-border);
+  background: var(--hero-plan-soft);
+  color: var(--hero-plan);
+}
+
+html[data-theme="hybrid-s"] .b-attention .badge--muted {
+  border-color: var(--hero-border);
+  background: rgba(247, 245, 241, 0.06);
+  color: var(--hero-muted);
+}
+
+html[data-theme="hybrid-s"] .b-attention .link-arrow {
+  color: var(--hero-plan);
+}
+
+html[data-theme="hybrid-s"] .b-attention .b-attention-foot {
+  border-color: var(--hero-border);
+}
+
+html[data-theme="hybrid-s"] .b-objective {
+  border-color: #d8cdbf;
+  border-top: 2px solid var(--accent);
+  background: linear-gradient(158deg, #fffdf9 0%, #f5eee4 100%);
+}
+
+html[data-theme="hybrid-s"] .b-movements {
+  border-color: #d8d0c3;
+  background: linear-gradient(158deg, #fffdf9 0%, #faf3e9 100%);
+}
+
+html[data-theme="hybrid-s"] .b-budget {
+  border-color: #ded0bf;
+  background: linear-gradient(158deg, #f8f0e5 0%, #f2e8da 100%);
+}
+
+html[data-theme="hybrid-s"] .b-position {
+  border-color: #d8d0c3;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(90deg, #fffdf9 0%, #f5eee4 100%);
+}
+
+html[data-theme="hybrid-s"] .c-top-wave {
+  opacity: 0.4;
+}
+
+/* ==========================================================================
+   Refuerzo de títulos y tarjetas en ambos temas
+   ========================================================================== */
+html[data-theme="light-s"] .card,
+html[data-theme="hybrid-s"] .card {
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="light-s"] .b-cycle-head h2,
+html[data-theme="hybrid-s"] .b-cycle-head h2 {
+  letter-spacing: -0.3px;
+}
+
+html[data-theme="light-s"] .b-page-head h1,
+html[data-theme="hybrid-s"] .b-page-head h1 {
+  letter-spacing: -1.25px;
+}
+
+html[data-theme="light-s"] .c-plan-cell {
+  --plan-bg-solid: #fff8ec;
+}
