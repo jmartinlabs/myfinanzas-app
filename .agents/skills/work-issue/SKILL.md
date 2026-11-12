@@ -53,9 +53,10 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
    `<!-- work-issue:claim agent=X issue=N -->` plus the assignee are the evidence. The tool
    confirms its own comment persisted and re-reads the status before writing; if a competing
    claim appears, the status drifts, a write fails or the verification fails, it restores the
-   previous status, retracts its comment and assignee, and reports anything it could not undo.
-   `take` is also how an agent resumes an Issue it already claimed. One coordinator reserves at
-   a time; do not build a lock service for this.
+   previous status and retracts only what it wrote (a pre-existing assignee is kept), reporting
+   anything it could not undo. `take` also resumes an Issue the same agent already claimed —
+   only when the assignee is the shared identity and no dependency is open. One coordinator
+   reserves at a time; do not build a lock service for this.
 6. **Communicate.** Every substantive agent comment starts with `Autor`, `Rol`, `Fase` and
    `Tipo`, and distinguishes the author of the comment from the executor of delegated work
    (`--executor`). Option flags are accepted on either side of the subcommand. The shared
@@ -72,16 +73,19 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
    through `take`. The tool refuses `Backlog`, every `Ready*` and `Done`: those are the user's.
    A rejected review is returned by the user to the same phase.
 9. **Block and restore.** `move --to Blocked --previous-status <exact current>` only works from
-   the agent's own `{Phase} In Progress`, records the exact previous status with a block marker
-   (`<!-- work-issue:block agent=X issue=N -->`) plus `Tipo: Bloqueo` and `- A: Blocked`,
-   because the Project has no field for it, and rejects any value that does not match the
-   current status. `--previous-status` is rejected outside a block, and free text (`--note`,
-   `--executor`) is stripped of HTML comments so a note can never impersonate a record.
-   `--restore` only works on a `Blocked` Issue and only trusts such a complete record; if the
-   authorization or scope changed, ask the user first.
-10. **Verify.** Every write is checked by re-reading the item, and a failed verification read
-    is handled like a failed write: undo what can be undone and report the rest; never assume
-    success from a local intent or a failed call.
+   the agent's own `{Phase} In Progress` and records the transition inside a delimited record
+   (`<!-- work-issue:record -->`), together with `Tipo: Bloqueo` and
+   `<!-- work-issue:block agent=X issue=N -->`. Free text (`--note`, `--executor`) has HTML
+   comments removed and cannot reproduce a structural line, so it can never impersonate the
+   record. `--previous-status` is rejected outside a block. `--restore` only works on a
+   `Blocked` Issue, only trusts a complete record, and only returns to an agent
+   `{Phase} In Progress` status whose `De` line matches the recorded one. If the authorization
+   or scope changed, ask the user first.
+10. **Verify.** Every write is checked by re-reading the item. A failed write or verification
+    is undone as far as possible (including the published report comment) and the rest is
+    reported as a pending write; never assume success from a local intent or a failed call.
+    Argument validation happens before any GitHub access, so a malformed command never depends
+    on credentials.
 
 ## Status protocol (Project field `Status`)
 

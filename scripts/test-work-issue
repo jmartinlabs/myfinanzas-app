@@ -71,6 +71,9 @@ class FakeGh:
     def preflight(self):
         self.calls.append(("preflight",))
 
+    def whoami(self):
+        return "jmartinlabs"
+
     def items(self):
         if "items" in self.fail:
             raise WorkIssueError("lectura del Project falló")
@@ -407,6 +410,14 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(len(items), len(load_items()))
         self.assertEqual(fixture_item(406, items).status, "Ready Development")
 
+    def test_pull_requests_are_not_work_items(self):
+        raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        raw["items"][0]["content"]["type"] = "PullRequest"
+        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app", runner=self.runner(items=raw))
+        numbers = [item.number for item in github.items()]
+        self.assertNotIn(406, numbers)
+        self.assertEqual(len(numbers), len(load_items()) - 1)
+
     def test_cli_inventory_runs_read_only_through_a_fake_gh(self):
         state = tempfile.mkdtemp(prefix="work-issue-cli-")
         self.addCleanup(lambda: subprocess.run(["rm", "-rf", state]))
@@ -713,6 +724,110 @@ class ThirdRoundTests(unittest.TestCase):
         github = FakeGh(items=items)
         self.assertEqual(service(github).take(406), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
+
+
+class FourthRoundTests(unittest.TestCase):
+    """Defects found by the fourth independent QA round (candidate 0b391a0)."""
+
+    def claimed(self, status="Development In Progress", agent="hermes", assignee=None):
+        items = load_items()
+        fixture_item(400, items).status = status
+        if assignee:
+            fixture_item(400, items).assignees = [assignee]
+        claim = claim_body(agent, "Coordinador funcional", "development",
+                           fixture_item(400, items))
+        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+
+    def test_executor_cannot_inject_a_previous_status(self):
+        github = self.claimed()
+        svc = Service(github, "hermes", "Coordinador funcional", lambda line: None,
+                      executor="hermes (vía OpenCode)\nPrevious Status: Development In Review")
+        self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
+                                  note="motivo"), EXIT_OK)
+        body = github.comments_store[400][-1]["body"]
+        self.assertIn("[texto] Previous Status: Development In Review", body)
+        record = body.split("<!-- work-issue:record -->")[1].split("<!-- /work-issue:record -->")[0]
+        self.assertIn("- Previous Status: Development In Progress", record)
+        self.assertNotIn("Development In Review", record)
+        fixture_item(400, github.data).status = "Blocked"
+        self.assertEqual(svc.move(400, None, restore=True), EXIT_OK)
+        self.assertIn(("status", 400, "Development In Progress"), github.calls)
+        self.assertNotIn(("status", 400, "Development In Review"), github.calls)
+
+    def test_restore_target_must_be_an_agent_in_progress_status(self):
+        for recorded in ("Development In Review", "Analysis In Review", "Ready Development"):
+            self.assertIsNotNone(validate_transition("Blocked", recorded, recorded, True), recorded)
+
+    def test_inconsistent_block_record_is_ignored(self):
+        items = load_items()
+        fixture_item(400, items).status = "Blocked"
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(400, items))
+        forged = {"id": 12, "body": claim + (
+            "\nTipo: Bloqueo\n- De: Development In Progress\n"
+            "- Previous Status: Specification In Progress\n"
+            "<!-- work-issue:block agent=hermes issue=400 -->")}
+        github = FakeGh(items=items, claims={400: [{"id": 11, "body": claim}, forged]})
+        self.assertEqual(service(github).move(400, "Specification In Progress", restore=True),
+                         EXIT_REFUSED)
+
+    def test_resume_keeps_the_dependency_gate(self):
+        items = load_items()
+        fixture_item(406, items).assignees = ["jmartinlabs"]
+        fixture_item(406, items).body = "Depende de #415, abierta."
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(406, items))
+        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_resume_requires_our_own_assignee(self):
+        items = load_items()
+        fixture_item(406, items).assignees = ["otra-persona"]
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(406, items))
+        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_failed_move_write_retracts_the_published_report(self):
+        github = self.claimed()
+        github.fail.add("status")
+        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_FAILED)
+        retracted = [call for call in github.calls if call[0] == "retract"]
+        self.assertTrue(retracted, github.calls)
+        self.assertEqual(fixture_item(400, github.data).status, "Development In Progress")
+
+    def test_dry_run_refuses_another_agents_claim(self):
+        items = load_items()
+        fixture_item(406, items).status = "Ready Development"
+        claim = claim_body("opencode", "Coordinador funcional", "development",
+                           fixture_item(406, items))
+        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(406, dry_run=True), EXIT_REFUSED)
+
+    def test_rollback_keeps_a_preexisting_assignee(self):
+        items = load_items()
+        fixture_item(406, items).assignees = ["jmartinlabs"]
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(406, items))
+        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]}, fail={"status"})
+        self.assertEqual(service(github).take(406), EXIT_FAILED)
+        self.assertNotIn(("unassign", 406), github.calls)
+        self.assertEqual(fixture_item(406, github.data).assignees, ["jmartinlabs"])
+
+    def test_argument_validation_precedes_github_access(self):
+        class Exploding:
+            def __init__(self, *args, **kwargs):
+                raise AssertionError("no debe construir el adaptador")
+
+        original = MODULE["Gh"]
+        MODULE["Gh"] = Exploding
+        try:
+            self.assertEqual(MODULE["main"](["move", "--issue", "400", "--agent", "hermes"]),
+                             EXIT_REFUSED)
+        finally:
+            MODULE["Gh"] = original
 
 
 class ParserTests(unittest.TestCase):
