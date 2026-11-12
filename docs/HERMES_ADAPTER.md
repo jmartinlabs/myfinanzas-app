@@ -93,7 +93,8 @@ adicionales para las comprobaciones de descubrimiento.
 
 Límites de esta evidencia: una sola sesión y una sola versión del cliente; no mide varianza ni
 comportamiento con otros modelos. Las pruebas extensas P0/P-ISO ya están documentadas en el
-template y no se repiten aquí. La delegación permanece sin probar.
+template y no se repiten aquí. En esa sesión no se ejercitó la delegación, y el despacho entre
+proveedores sigue sin validar.
 
 ## Cuándo volver a verificar
 
