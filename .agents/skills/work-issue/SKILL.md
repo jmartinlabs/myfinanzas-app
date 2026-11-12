@@ -92,8 +92,9 @@ act. The ledger reports the session; it authorizes nothing and replaces no `Stat
 
 Gates first, priority last:
 
-1. **Candidates.** Only Issues in a real `Ready*` status, unassigned and without an open or
-   unverifiable dependency. A truncated Project read, an item from another repository, an
+1. **Candidates.** Only Issues in a real `Ready*` status, unassigned — or assigned solely to
+   this agent's own existing reservation, which `next` and `take` resume — and without an open
+   or unverifiable dependency. A truncated Project read, an item from another repository, an
    ambiguous label or missing permission removes the candidate.
 2. **Ownership and dependencies beat priority.** A P0 that is blocked, already reserved or
    routed to another agent is not selected merely because it is P0.
