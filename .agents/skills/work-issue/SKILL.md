@@ -60,29 +60,35 @@ Gates first, priority last:
 
 ## PR ↔ Issue linkage
 
-The `feature/* → test → main` flow rules out both GitHub mechanisms, verified on this
-repository:
+The Issue is the work frame and may hold several PRs. Each PR is linked to its Issue so it
+appears in the Issue's `Development` section, and **merging any of them must not close the
+Issue**: closing is the user's decision, never a side effect of a merge.
 
-- **Closing keywords** (`Closes #N`, `Fixes #N`) are interpreted **only** against the default
-  branch. On a PR into `test` they create no link and close nothing (documented, and confirmed
-  by #423 → #406: `willCloseTarget: false`, the Issue stayed open after the merge).
-- **`addCloseIssueReferences`** does create the native linked-PR entry for a PR into `test`
-  (`ConnectedEvent` appears), but the API simultaneously reports `willCloseTarget: true`:
-  merging the phase PR would close the Issue at `test`, before `main` and before the user's
-  acceptance. The limitation is not a missing API but the coupling to premature closure.
+What GitHub actually offers, measured on this repository:
 
-The contract, then:
+- **Keywords** (`Closes #N`, `Fixes #N`) are interpreted only against the default branch. On a
+  PR into `test` they create no link at all: never rely on them.
+- **`addCloseIssueReferences`** is the scriptable link. After it the PR shows in `Development`,
+  the Issue returns it in `closedByPullRequestsReferences` and the PR returns the Issue in
+  `closingIssuesReferences`. The same link created by hand in the UI has the same shape.
+- GitHub labels that link as closing-capable ("may close these issues", `willCloseTarget`)
+  while the one observed merge of a linked PR into `test` (#423 → #406) did **not** close its
+  Issue. The platform's wording and its observed behaviour disagree, so the procedure never
+  depends on which of the two wins.
 
-1. Every PR body carries `Refs #N`. It is a cross-reference, not a close reference.
-2. The report that moves the Issue to `{Phase} In Review` carries the PR number, so the Issue
-   links back to the PR without the user editing anything.
-3. Never write `Closes #N` in a PR into `test`, and never call `addCloseIssueReferences` while
-   the base is `test`: it declares `willCloseTarget: true` and the Issue must not close on a
-   merge that is not acceptance.
-4. Say "referencia bidireccional verificada", never "vínculo nativo", unless the Issue shows
-   the PR in its linked pull requests / `closedByPullRequestsReferences`.
-5. Check before delivering: `Refs #N` in the PR body, PR number in the Issue report,
-   `closedByPullRequestsReferences` still empty for a `test` PR.
+Procedure for every PR:
+
+1. Open the PR into `test` with `Refs #N` in the body — never a closing keyword.
+2. Link it right after the PR exists: `addCloseIssueReferences(issueId, [pullRequestId])`
+   through `gh api graphql`. One Issue may collect several PRs; link each one.
+3. Verify before delivering: `closedByPullRequestsReferences` contains the PR and
+   `closingIssuesReferences` contains the Issue. Put the PR number in the `{Phase} In Review`
+   report so the Issue links back without the user editing anything.
+4. **Guard after merge.** After any merge into `test`, re-read the Issue: if the platform
+   closed it, reopen it (`gh issue reopen`) and record it in the Issue. A merge never moves the
+   Issue to `Done`; that stays the user's decision.
+5. Never call `removeCloseIssueReferences` to "clean up" a link the user wants to keep, and
+   never let a link substitute for the `Status` gate.
 
 ## Context recovery (mandatory before substantive work)
 
@@ -219,6 +225,25 @@ scripts/work-issue move --issue 406 --agent hermes --to Blocked \
   --previous-status "Development In Progress" \
   --note "Motivo: ... Responsable: ... Condición: ..."
 scripts/work-issue move --issue 406 --agent hermes --restore   # vuelve al Previous Status registrado
+```
+
+Linking the PR that implements the Issue (run once per PR, right after `gh pr create`):
+
+```bash
+# 1. resolve the two node ids
+gh api graphql -f query='query($o:String!,$r:String!,$i:Int!,$p:Int!){
+  repository(owner:$o,name:$r){
+    issue(number:$i){ id }
+    pullRequest(number:$p){ id baseRefName } } }' \
+  -f o=jmartinlabs -f r=myfinanzas-app -F i=430 -F p=433
+# 2. link it (the PR then appears in the Issue's Development section)
+gh api graphql -f query='mutation($i:ID!,$p:[ID!]!){
+  addCloseIssueReferences(input:{issueId:$i,pullRequestIds:$p}){ issue{ number } } }' \
+  -f i=<issueId> -f p[]=<pullRequestId>
+# 3. verify both directions before delivering
+gh api graphql -f query='query{ repository(owner:"jmartinlabs",name:"myfinanzas-app"){
+  issue(number:430){ closedByPullRequestsReferences(first:5){ nodes{ number } } }
+  pullRequest(number:433){ closingIssuesReferences(first:5){ nodes{ number } } } } }'
 ```
 
 `inventory` and every `--dry-run` are read-only. `take`/`move` require `--agent`; without it the
