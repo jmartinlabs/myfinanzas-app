@@ -27,7 +27,7 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   y [aprobaciones](specs/methodology/approvals.md). Reparto: OpenCode orquesta, Álex asesora
   y el usuario aprueba ([detalle](specs/methodology/myfinanzas-coordination.md#reparto-de-responsabilidades--orquestador-asesor-y-usuario)).
 - El coordinador mantiene identificados los siguientes trabajos del roadmap y sus dependencias; mientras algo avanza o espera, prepara SPEC, investigación, paquete DEV ya autorizado o diseño QA sin cruzar gates. Replanifica ante resultados o bloqueos y deja una siguiente acción verificable; no crees trabajo artificial ni un segundo scheduler.
-- [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte canónico (solo bajo petición; no crea conversaciones). [$work-issue](.agents/skills/work-issue/SKILL.md) recoge trabajo ya autorizado en Issues/Projects: el Status del Project es el gate de fase y la etiqueta simple de agente solo enruta.
+- [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte canónico (solo bajo petición; no crea conversaciones). [$work-issue](.agents/skills/work-issue/SKILL.md) recoge trabajo ya autorizado en Issues/Projects: el Status del Project es el gate de fase, la etiqueta simple de agente solo enruta y reservar exige un recibo de contexto vigente.
 - [Flujos](specs/methodology/workflows.md) para clasificar; [agentes](specs/methodology/dynamic-agents.md)
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)

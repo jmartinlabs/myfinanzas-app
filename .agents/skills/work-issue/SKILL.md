@@ -25,6 +25,43 @@ An inventory of every Ready Issue with phase, label routing, dependencies and ne
 optionally one reservation (`claim comment + assignee + In Progress`) or one permitted
 transition; and a short receipt. No branch, no PR, no merge, no approval.
 
+## Context recovery (mandatory before substantive work)
+
+Reserving an Issue is not having understood it. Before doing substantive work on a reserved
+Issue, recover its current context and record it:
+
+1. **Load the whole Issue**: title, current body, Project `Status`, labels, assignees,
+   dependencies, acceptance criteria, scope and limits.
+2. **Read the relevant comment history with full pagination**, with authors and dates:
+   explicit user decisions, reviews, rejections, scope changes, blocks, clarifications and
+   checkpoints. The last comment is **not** automatically the material decision.
+3. **Open the linked sources you need** (current SPEC, parent/dependency Issues, PR, QA, decisions
+   and the relevant code). Regex extraction is not reading: `work-issue context` lists references
+   and checks their mechanical existence, it does not interpret them.
+4. **Resolve the decision hierarchy**: latest explicit and verifiable user instruction, approved
+   scope and SPEC, real implementation/QA state, history. An agent comment authorizes nothing and
+   extends no permission. On incomplete sources, material contradictions or unverifiable
+   authorization, **stop dependent work and report**; never infer from dates, comment counts or
+   the word "approved" in isolation.
+5. **Publish a short recovered-context receipt** in the Issue with `Autor/Rol/Fase/Tipo`, checked
+   references, current decisions, what is implemented, what is missing, dependencies and the
+   exact authorized scope. Distinguish coordinator and executor. Do not duplicate long reports or
+   create a second state master.
+6. **Re-check material changes before irreversible actions or before delivering to Review**: the
+   receipt's fingerprint covers body, comments, status, labels and assignees, so any change
+   invalidates it and forces a fresh read.
+
+```bash
+work-issue context --issue N --agent hermes                  # read-only: history, references, findings
+work-issue context --issue N --agent hermes --publish \
+  --summary-file /tmp/context.md                             # receipt bound to the fingerprint
+```
+
+`take` and `move` refuse to proceed without a valid receipt for the current fingerprint; a receipt
+is reusable on resume only while nothing material changed. Mechanical findings
+(`claims-conflict`, `status-vs-report`, `spec-missing`, `history-truncated`, …) are hints for the
+agent, not verdicts: the semantic reading and the decision to stop are the agent's.
+
 ## Procedure
 1. **Read.** Load the Project items with their real `Status`, priority, declared dependencies
    and the Épica/SPEC/Issue references already present in the body. `work-issue` without
@@ -49,7 +86,8 @@ transition; and a short receipt. No branch, no PR, no merge, no approval.
    `Status` is re-read immediately before writing, and again after reserving; a change aborts
    the reservation and retracts what was written.
 5. **Reserve.** `scripts/work-issue take --issue N --agent X` publishes the claim comment,
-   assigns the Issue and moves it to the matching `{Phase} In Progress`. The claim is
+   assigns the Issue and moves it to the matching `{Phase} In Progress`. It only proceeds with a
+   valid context receipt for the current fingerprint (see *Context recovery*). The claim is
    best-effort (GitHub has no compare-and-set on Project fields): the marker
    `<!-- work-issue:claim agent=X issue=N -->` plus the assignee are the evidence. The tool
    confirms its own comment persisted and re-reads the status before writing; if a competing

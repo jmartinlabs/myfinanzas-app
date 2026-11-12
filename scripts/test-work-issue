@@ -77,6 +77,9 @@ class FakeGh:
     def whoami(self):
         return "jmartinlabs"
 
+    def pr_state(self, number):
+        return {"state": "OPEN", "merged": False, "title": "PR de prueba"}
+
     def items(self):
         if "items" in self.fail:
             raise WorkIssueError("lectura del Project falló")
@@ -150,7 +153,37 @@ class FakeGh:
 
 
 def service(github, agent="hermes", out=None):
+    seed_receipts(github, agent)
     return Service(github, agent, "Coordinador funcional", out or (lambda line: None))
+
+
+SUMMARY = ("## Decisiones vigentes\n- Ninguna decisión pendiente.\n"
+           "## Estado\n- Sin trabajo iniciado en esta fase.\n"
+           "## Alcance autorizado\n- El descrito en la Issue.\n"
+           "## Fuentes consultadas\n- Cuerpo, historial y referencias.\n")
+
+
+def seed_receipts(github, agent="hermes"):
+    """Simulate the agent having read the Issue and published a bound receipt."""
+    for item in github.data:
+        material = [entry for entry in github.comments_store.get(item.number, [])
+                    if not MODULE["context_of"](entry["body"])]
+        digest = MODULE["fingerprint"](item, material)
+        body = MODULE["context_body"](agent, "Coordinador funcional", "development", item,
+                                      SUMMARY, digest, len(material))
+        github.next_id += 1
+        github.comments_store.setdefault(item.number, []).append(
+            {"id": github.next_id, "body": body})
+
+
+def claim_comments(github, number):
+    return [entry for entry in github.comments_store.get(number, [])
+            if MODULE["claim_of"](entry["body"])]
+
+
+def report_comments(github, number):
+    return [entry for entry in github.comments_store.get(number, [])
+            if MODULE["report_of"](entry["body"])]
 
 
 class DiscoveryTests(unittest.TestCase):
@@ -281,7 +314,7 @@ class TakeTests(unittest.TestCase):
         github = FakeGh(fail={"assign"})
         self.assertEqual(service(github).take(406), EXIT_FAILED)
         self.assertNotIn(("status", 406, "Development In Progress"), github.calls)
-        self.assertIn(("retract", 1001), github.calls)
+        self.assertTrue([call for call in github.calls if call[0] == "retract"])
 
     def test_take_stops_when_the_project_cannot_be_read(self):
         github = FakeGh(fail={"items"})
@@ -343,6 +376,7 @@ class MoveTests(unittest.TestCase):
         blocked = github.comments_store[400][-1]["body"]
         self.assertIn("Fase: Development", blocked)
         self.assertIn("<!-- work-issue:block agent=hermes issue=400 -->", blocked)
+        seed_receipts(github)
         self.assertEqual(svc.move(400, "Development In Progress", restore=True), EXIT_OK)
         self.assertIn(("status", 400, "Development In Progress"), github.calls)
 
@@ -517,16 +551,16 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(service(github).take(406), EXIT_FAILED)
         self.assertIn(("assign", 406), github.calls)
         self.assertIn(("unassign", 406), github.calls)
-        self.assertIn(("retract", 1001), github.calls)
-        self.assertEqual(github.comments_store.get(406, []), [])
+        self.assertTrue([call for call in github.calls if call[0] == "retract"])
+        self.assertEqual(claim_comments(github, 406), [])
         self.assertEqual(fixture_item(406, github.data).assignees, [])
 
     def test_collision_retracts_our_comment_and_allows_a_retry(self):
         github = FakeGh(race=True)
         self.assertEqual(service(github).take(406), EXIT_REFUSED)
-        self.assertIn(("retract", 1001), github.calls)
+        self.assertTrue([call for call in github.calls if call[0] == "retract"])
         self.assertNotIn(("assign", 406), github.calls)
-        self.assertEqual([entry["id"] for entry in github.comments_store[406]], [500])
+        self.assertEqual([entry["id"] for entry in claim_comments(github, 406)], [500])
 
     def test_inventory_shows_priority_and_dependencies(self):
         lines = []
@@ -569,6 +603,7 @@ class RegressionTests(unittest.TestCase):
 
     def test_executor_is_distinguished_from_the_author(self):
         github = FakeGh()
+        seed_receipts(github)
         Service(github, "hermes", "Coordinador funcional", lambda line: None,
                 executor="OpenCode").take(406)
         self.assertIn("Ejecutor: OpenCode", github.comments_store[406][-1]["body"])
@@ -610,12 +645,13 @@ class SecondRoundTests(unittest.TestCase):
     def test_take_aborts_when_the_status_changed_underneath(self):
         github = FakeGh(drift_status="Backlog")
         self.assertEqual(service(github).take(406), EXIT_REFUSED)
-        self.assertIn(("retract", 1001), github.calls)
+        self.assertTrue([call for call in github.calls if call[0] == "retract"])
         self.assertNotIn(("assign", 406), github.calls)
         self.assertEqual(fixture_item(406, github.data).status, "Ready Development")
 
     def test_verification_read_failure_reports_pending_writes(self):
         github = FakeGh(fail_item_after=2)
+        seed_receipts(github)
         lines = []
         code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
         self.assertEqual(code, EXIT_FAILED)
@@ -685,6 +721,7 @@ class ThirdRoundTests(unittest.TestCase):
 
     def test_failed_verification_restores_the_written_status(self):
         github = FakeGh(fail_item_after=2)
+        seed_receipts(github)
         lines = []
         code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
         self.assertEqual(code, EXIT_FAILED)
@@ -708,7 +745,7 @@ class ThirdRoundTests(unittest.TestCase):
         claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(406, items))
         github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
         self.assertEqual(service(github).take(406), EXIT_OK)
-        self.assertEqual(len(github.comments_store[406]), 1)      # no duplica la toma
+        self.assertEqual(len(claim_comments(github, 406)), 1)      # no duplica la toma
 
     def test_move_cannot_reserve_from_a_ready_status(self):
         github = self.claimed("Ready Development")
@@ -744,6 +781,7 @@ class FourthRoundTests(unittest.TestCase):
 
     def test_executor_cannot_inject_a_previous_status(self):
         github = self.claimed()
+        seed_receipts(github)
         svc = Service(github, "hermes", "Coordinador funcional", lambda line: None,
                       executor="hermes (vía OpenCode)\nPrevious Status: Development In Review")
         self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
@@ -754,6 +792,7 @@ class FourthRoundTests(unittest.TestCase):
         self.assertIn("- Previous Status: Development In Progress", record)
         self.assertNotIn("Development In Review", record)
         fixture_item(400, github.data).status = "Blocked"
+        seed_receipts(github)
         self.assertEqual(svc.move(400, None, restore=True), EXIT_OK)
         self.assertIn(("status", 400, "Development In Progress"), github.calls)
         self.assertNotIn(("status", 400, "Development In Review"), github.calls)
@@ -853,7 +892,8 @@ class FifthRoundTests(unittest.TestCase):
         github.fail.add("status")
         self.assertEqual(service(github).move(400, "Development In Review"), EXIT_FAILED)
         retracted = [call[1] for call in github.calls if call[0] == "retract"]
-        self.assertEqual(retracted, [1001])
+        self.assertEqual(len(retracted), 1)
+        self.assertNotEqual(retracted[0], 550)
         remaining = [entry["id"] for entry in github.comments_store[400]]
         self.assertIn(550, remaining)
 
@@ -862,8 +902,10 @@ class FifthRoundTests(unittest.TestCase):
         svc = service(github)
         self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
                                   note="motivo"), EXIT_OK)
+        seed_receipts(github)
         self.assertEqual(svc.move(400, None, restore=True), EXIT_OK)
         fixture_item(400, github.data).status = "Blocked"     # el usuario vuelve a bloquear
+        seed_receipts(github)
         self.assertEqual(svc.move(400, None, restore=True), EXIT_REFUSED)
 
     def test_inconsistent_record_with_markers_is_ignored(self):
@@ -932,6 +974,154 @@ class RepositoryScopeTests(unittest.TestCase):
         with self.assertRaises(WorkIssueError) as caught:
             github.item(406)
         self.assertIn("otro/proyecto", str(caught.exception))
+
+
+class ContextTests(unittest.TestCase):
+    """Issue #406 (2026-11-12): context recovery before substantive work."""
+
+    def with_comments(self, comments, body=""):
+        items = load_items()
+        if body:
+            fixture_item(406, items).body = body
+        github = FakeGh(items=items)
+        github.comments_store[406] = [dict(entry) for entry in comments]
+        return github
+
+    def read_context(self, github, agent="hermes", repo_root="."):
+        lines = []
+        code = Service(github, agent, "Coordinador funcional", lines.append).context(
+            406, agent, repo_root=repo_root)
+        return code, "\n".join(lines)
+
+    def test_take_requires_a_context_receipt(self):
+        github = FakeGh()
+        lines = []
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
+        self.assertEqual(code, EXIT_REFUSED)
+        self.assertIn("recibo de contexto vigente", "\n".join(lines))
+        self.assertEqual(github.calls, [])
+
+    def test_reading_the_history_is_not_needed_twice_when_the_checkpoint_is_valid(self):
+        github = FakeGh()
+        seed_receipts(github)
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("Checkpoint: VIGENTE", out)
+
+    def test_checkpoint_expires_when_a_new_comment_arrives(self):
+        github = FakeGh()
+        seed_receipts(github)
+        github.comments_store[406].append({"id": 900, "body": "Comentario nuevo del usuario"})
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("CADUCADO", out)
+        self.assertEqual(Service(github, "hermes").take(406), EXIT_REFUSED)
+
+    def test_checkpoint_expires_when_the_status_changes(self):
+        github = FakeGh()
+        seed_receipts(github)
+        fixture_item(406, github.data).status = "Backlog"
+        self.assertEqual(Service(github, "hermes").take(406), EXIT_REFUSED)
+
+    def test_context_reads_the_whole_history_not_only_the_last_comment(self):
+        github = self.with_comments([
+            {"id": 1, "body": "Apruebo el alcance del piloto.", "user": {"login": "jmartinlabs"}},
+            {"id": 2, "body": "Nota de progreso sin decisión."},
+            {"id": 3, "body": "Otra nota."},
+            {"id": 4, "body": "Último comentario puramente informativo."},
+        ])
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("1:decision", out)
+        self.assertIn("4:information", out)
+        self.assertNotIn("authorization-unverified", out)
+
+    def test_an_agent_claim_does_not_count_as_a_decision(self):
+        github = self.with_comments([
+            {"id": 1, "body": claim_body("hermes", "Coordinador funcional", "development",
+                                         fixture_item(406))},
+        ])
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("1:claim", out)
+        self.assertIn("authorization-unverified", out)
+
+    def test_context_detects_conflicting_claims(self):
+        claims = [claim_body("hermes", "Coordinador funcional", "development", fixture_item(406)),
+                  claim_body("opencode", "Coordinador funcional", "development", fixture_item(406))]
+        github = self.with_comments([{"id": 1, "body": claims[0]}, {"id": 2, "body": claims[1]}])
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("claims-conflict", out)
+
+    def test_context_detects_a_report_that_disagrees_with_the_status(self):
+        github = self.with_comments([
+            {"id": 1, "body": report_body("hermes", "Coordinador funcional", "development",
+                                          fixture_item(406), "Development In Review",
+                                          note="informe")},
+        ])
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("status-vs-report", out)
+
+    def test_context_reports_a_missing_spec_reference(self):
+        github = self.with_comments([{"id": 1, "body": "Ver specs/99-inexistente.md"}])
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("spec-missing", out)
+        root = tempfile.mkdtemp(prefix="wi-spec-")
+        self.addCleanup(lambda: __import__("shutil").rmtree(root, ignore_errors=True))
+        Path(root, "specs").mkdir(parents=True, exist_ok=True)
+        Path(root, "specs/99-inexistente.md").write_text("SPEC", encoding="utf-8")
+        code, out = self.read_context(github, repo_root=root)
+        self.assertNotIn("spec-missing", out)
+
+    def test_context_blocks_when_the_history_cannot_be_fully_read(self):
+        comments = [{"id": number, "body": "nota %d" % number}
+                    for number in range(1, MODULE["COMMENT_LIMIT"] + 2)]
+        github = self.with_comments(comments)
+        code, out = self.read_context(github)
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertIn("history-truncated", out)
+
+    def test_context_is_read_only_unless_publishing(self):
+        github = FakeGh()
+        self.read_context(github)
+        self.assertEqual(github.calls, [])
+
+    def test_context_publishes_a_bound_receipt_and_unblocks_take(self):
+        github = FakeGh()
+        self.assertEqual(Service(github, "hermes").take(406), EXIT_REFUSED)
+        code = Service(github, "hermes", "Coordinador funcional",
+                       lambda line: None).context(406, "hermes", publish=True, summary=SUMMARY)
+        self.assertEqual(code, EXIT_OK)
+        self.assertTrue(MODULE["context_of"](github.comments_store[406][-1]["body"]))
+        self.assertEqual(Service(github, "hermes").take(406), EXIT_OK)
+
+    def test_context_refuses_an_incomplete_summary(self):
+        github = FakeGh()
+        code = Service(github, "hermes").context(406, "hermes", publish=True,
+                                                 summary="## Estado\nnada")
+        self.assertEqual(code, EXIT_REFUSED)
+        self.assertEqual(github.comments_store.get(406, []), [])
+
+    def test_context_refuses_to_publish_with_a_blocker(self):
+        comments = [{"id": number, "body": "nota %d" % number}
+                    for number in range(1, MODULE["COMMENT_LIMIT"] + 2)]
+        github = self.with_comments(comments)
+        code = Service(github, "hermes").context(406, "hermes", publish=True, summary=SUMMARY)
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertFalse([entry for entry in github.comments_store[406]
+                          if MODULE["context_of"](entry["body"])])
+
+    def test_move_requires_a_fresh_receipt_after_a_status_change(self):
+        github = FakeGh()
+        seed_receipts(github)
+        svc = Service(github, "hermes", "Coordinador funcional", lambda line: None)
+        self.assertEqual(svc.take(406), EXIT_OK)
+        self.assertEqual(svc.move(406, "Development In Review"), EXIT_REFUSED)
+        self.assertEqual(svc.context(406, "hermes", publish=True, summary=SUMMARY), EXIT_OK)
+        self.assertEqual(svc.move(406, "Development In Review"), EXIT_OK)
 
 
 class ParserTests(unittest.TestCase):
