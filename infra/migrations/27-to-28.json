@@ -1,0 +1,13 @@
+{
+  "from_schema": 27,
+  "to_schema": 28,
+  "authorized_by": "usuario",
+  "authorized_at": "2026-11-11",
+  "authorization": "Aprobado registrar el manifiesto 27→28 para validación sintética rootless; no autoriza migraciones con datos reales, despliegues, downgrade in-place ni el merge de esta PR.",
+  "downgrade": "restore-only",
+  "from_data": "e4.11-v27",
+  "to_data": "e36.1-v28",
+  "authentication": "argon2id-aesgcm-totp-session-v1",
+  "from_authentication": "argon2id-aesgcm-totp-session-v1",
+  "to_authentication": "argon2id-aesgcm-totp-session-v1"
+}

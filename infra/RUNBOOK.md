@@ -5,9 +5,10 @@ en runner efímero ubuntu-24.04; Debian 13, Caddy y almacenamiento reales requie
 otra fase y autorización. No copiar plantillas al servidor ni cambiar su página.
 
 El disparador de despliegue por tag, la promoción TEST→PROD y su aprobación se definen en
-[DEPLOY-TAGS-01](../specs/35-deploy-tags-01-specification.md). Ese diseño **no está
-habilitado**; este runbook conserva los gates operativos, el orden de parada/copia/rollback
-y las condiciones de Rootless que el workflow deberá respetar.
+[DEPLOY-TAGS-01](../specs/35-deploy-tags-01-specification.md). TEST consume un SHA congelado
+de la rama `test`; PROD futuro, el commit promovido a `main` tras el gate TEST→main. Ese
+diseño **no está habilitado**; este runbook conserva los gates operativos, el orden de
+parada/copia/rollback y las condiciones de Rootless que el workflow deberá respetar.
 
 ## Paquete privado y confianza
 
@@ -20,7 +21,9 @@ materializa solo fuentes permitidas desde Git, no el directorio de trabajo.
 Bun 1.4.3/Debian se fija por digest; bun.lock congela dependencias y se deshabilitan
 scripts de instalación. age 1.3.2 linux/amd64 tiene checksum fijado. El manifiesto
 registra fuente, receta, lock, base, plataforma, OS, versiones, imagen, digest OCI,
-checksums de frontend y dos builds sin caché. `Containerfile` y `healthcheck.mjs` se
+checksums de frontend y la evidencia de builds: dos limpios en el gate Rootless
+(`reproducibility.mode=reproducible`) o uno declarado en el artifact TEST
+(`mode=single-build`, `payload_equal=null`). `Containerfile` y `healthcheck.mjs` se
 materializan y hashean desde el commit seleccionado; `builder_source` identifica el
 HEAD del checkout constructor solo como metadato, nunca como fuente de release. El
 payload normalizado excluye tiempos y archivos host generados por Podman; diferencias
@@ -28,15 +31,72 @@ inexplicadas bloquean aceptación.
 No equivale a prometer archivo OCI idéntico byte a byte ni disponibilidad perpetua
 de descargas. No ampliar arquitectura sin nueva validación.
 
-La carpeta contiene `image.oci.tar`, `frontend/`, `manifest.json` y
-`manifest.sha256`; permanece privada y no se publica como artifact de CI.
-Transportar solo por canal privado autorizado en una fase posterior. Obtener el
+La carpeta contiene `image.oci.tar`, `image.seed.oci.tar`, `frontend/`,
+`manifest.json`, `manifest.sha256` y `SHA256SUMS`. Solo para TEST se permite un
+artifact ZIP sin cifrar construido en GitHub Actions (retención 7 días), sin secretos,
+bases de datos ni información financiera; en un repositorio público debe tratarse como
+público. La descarga manual es por HTTPS (`gh run download` o la API de artifacts); SSH
+se usa únicamente para transferir el paquete ya verificado al host privado. Requiere
+gate Rootless previo del mismo SHA y QA independiente. El build de un tag
+`deploy-test-vX.Y.Z` usa un único build por imagen (`--single-build`,
+`payload_equal: null`), sin atribuirse la reproducibilidad que Rootless sigue validando
+con dos builds limpios; fuera del despliegue puede repetirse `release.py build` sobre el
+SHA exacto para evidencia. `release.py build` construye la app y
+la imagen seed **test-only** desde el mismo commit, base y lock; el manifiesto registra
+el bloque `seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta,
+`source`, `contracts` y lock), y `verify` exige que el par esté presente y emparejado.
+Obtener el SHA-256 del ZIP real de una fuente independiente y publicar el
+`manifest.sha256` en el step summary o el PR; `SHA256SUMS` verifica la integridad del
+transporte, no la autenticidad. Transferir al host por SSH autorizado en una fase
+posterior. Obtener el
 SHA del manifiesto y commit esperado de una fuente revisada independiente:
 `python3 infra/release.py verify /ruta/privada/release --expected-commit COMMIT --expected-manifest-sha256 SHA`.
 Un checksum recibido junto a archivos manipulados no autentica a su autor.
 Verificar antes de `podman load --input /ruta/privada/release/image.oci.tar`;
 seleccionar después el ID inmutable del manifiesto, nunca una etiqueta mutable.
-Conservar backend y frontend como conjunto, también al volver a versión anterior.
+Cargar `image.seed.oci.tar` solo para tareas de seed efímeras y nunca referenciarlo
+en la unidad permanente. Conservar backend, frontend y seed como conjunto, también
+al volver a versión anterior.
+
+El smoke sintético de API/UI se ejecuta en un host rootless autorizado, tras verificar
+el paquete, sobre una raíz de datos temporal nueva:
+`python3 infra/smoke.py --release /ruta/privada/release --expected-commit COMMIT --expected-manifest-sha256 SHA`.
+Hace `production-init → seed init/apply/verify → setup`, arranca la app y comprueba
+salud, 401 anónimo, HTML del frontend verificado y una lectura autenticada con TOTP.
+La app no sirve `/` por sí misma: el smoke comprueba el `frontend/` verificado con un
+servidor estático local, no un endpoint de la API. No sustituye CI, el gate Rootless
+ni la autorización de despliegue.
+
+## Despliegue directo TEST por tag
+
+El workflow Rootless se dispara con un tag `deploy-test-vX.Y.Z` creado por un actor
+autorizado. No despliegan los merges a `test`. Tras validar tag, actor, SHA y gates
+(`required`, `qa`, Rootless), construye una sola release, la verifica, ejecuta el smoke y
+envía el bundle al VPS por SSH dentro de un comando forzado; el receptor aplica imagen,
+unidad y frontend con smoke y rollback automático.
+
+Gates:
+
+- tag anotado e inmutable, formato SemVer, commit igual al SHA y ancestro de `origin/test`;
+- anotación con `sha=<SHA40>` y `qa_reference=reviewed=<SHA40> integration=<SHA40>
+  pr=<N> qa=<URL>`; la URL debe resolver a una review `APPROVED` o a un artefacto cuyo
+  cuerpo declare `qa=APTO`, del commit revisado, y el preflight demuestra con Git que el
+  árbol del tag es ese contenido (merge, squash o rebase); en comentarios de PR el cuerpo
+  debe incluir además `reviewed=<SHA40>`; un `reviewed` ya contenido en la base o un commit
+  de integración sin cambio de árbol no acreditan el contenido desplegado, tampoco con
+  identidad de árbol; conflicto, divergencia o evidencia insuficiente detienen antes de
+  construir.
+  Es la evidencia de revisión independiente, distinta del check automático `qa`;
+- actor en `MYFINANZAS_DEPLOY_ACTORS`, además del ruleset inmutable de tags;
+- `required`, `qa` y Rootless en `SUCCESS` sobre el SHA exacto;
+- interruptor `MYFINANZAS_TEST_DEPLOY=true`; desactivado, el tag no despliega;
+- Environment `test` solo como frontera de secretos y regla de tags, sin Required reviewers
+  ni segunda aprobación.
+
+No usa GHCR, temporizadores, polling ni credenciales de registro. La clave SSH vive en los
+secretos del Environment `test`, `TEST_DEPLOY_KEY`/`TEST_DEPLOY_KNOWN_HOSTS`, y el receptor
+corre como `mftest` sin sudo. La primera activación sigue siendo manual; las posteriores no ejecutan `seed` ni
+modifican el estado persistente y solo aplican releases con el mismo contrato.
 
 ## Preflight y almacenamiento
 
@@ -63,6 +123,21 @@ no borrar uno previo para que funcione. La publicación conjunta DB/clave es la 
 31. El arranque normal nunca crea estado, demo ni claves. Alta del propietario:
 CLI `setup.ts` con archivo privado 0600, nunca mostrar token en stdout/env/argv.
 Custodiar su archivo y seguir el procedimiento de alta HTTPS en la fase A.
+
+### Obtención y renovación del código de activación
+
+Mientras el propietario no esté configurado, generar un código con la misma imagen y
+los flags endurecidos de la tarea deliberada, ejecutando `apps/api/src/setup.ts` con un
+archivo nuevo dentro de `state`, por ejemplo
+`/var/lib/myfinanzas/state/alta-20261108.txt`. El CLI crea el archivo en modo 0600; el
+código caduca en 10 minutos y admite un solo uso. Entregarlo al usuario por un canal
+privado, nunca por stdout, ENV, argv, chat compartido o Git.
+
+Si caduca sin usarse o se pierde, repetir el comando con otro nombre de archivo nuevo:
+cada ejecución invalida el código anterior y no requiere parar ni reiniciar
+`myfinanzas-api.service`. No reutilizar el archivo entregado. Si el propietario ya está
+configurado, el CLI se niega por diseño (no hay reinicio administrativo automático);
+usar el procedimiento de recuperación con contraseña y código de recuperación.
 
 ## Unidad y salud
 

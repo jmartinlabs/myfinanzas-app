@@ -2,13 +2,14 @@
   "name": "Validate project",
   "on": {
     "push": {
-      "branches": [
-        "main"
+      "tags": [
+        "deploy-test-v*"
       ]
     },
     "pull_request": {
       "branches": [
-        "main"
+        "main",
+        "test"
       ],
       "types": [
         "opened",
@@ -24,15 +25,18 @@
   },
   "concurrency": {
     "group": "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
-    "cancel-in-progress": "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}"
+    "cancel-in-progress": "${{ github.event_name == 'pull_request' }}"
   },
   "jobs": {
     "required": {
       "runs-on": "ubuntu-24.04",
-      "timeout-minutes": 15,
+      "timeout-minutes": 25,
       "permissions": {
         "contents": "read",
         "pull-requests": "read"
+      },
+      "outputs": {
+        "profile": "${{ steps.plan.outputs.profile }}"
       },
       "steps": [
         {
@@ -81,6 +85,14 @@
           }
         },
         {
+          "id": "summary",
+          "name": "Publish selected CI profile",
+          "env": {
+            "CI_PROFILE": "${{ steps.plan.outputs.profile }}"
+          },
+          "run": "profile=\"$(printf '%s' \"$CI_PROFILE\" | tr '[:lower:]' '[:upper:]')\"\ncase \"$profile\" in DOCS|FAST|CRITICAL|FULL) ;; *) echo \"Invalid CI profile\" >&2; exit 1;; esac\nprintf 'Perfil CI: %s\\n' \"$profile\" >> \"$GITHUB_STEP_SUMMARY\"\n"
+        },
+        {
           "id": "baseline",
           "name": "Repository, project and document checks",
           "run": "python3 scripts/verify baseline",
@@ -103,12 +115,12 @@
         },
         {
           "id": "prepare",
-          "if": "${{ steps.plan.outputs.profile == 'critical' || steps.plan.outputs.profile == 'full' }}",
-          "name": "Prepare Linux API or full dependencies",
+          "if": "${{ steps.plan.outputs.profile == 'full' }}",
+          "name": "Prepare Linux full dependencies",
           "env": {
             "CI_PROFILE": "${{ steps.plan.outputs.profile }}"
           },
-          "run": "if [ \"$CI_PROFILE\" = full ]; then python3 scripts/ci_prepare_linux.py; else python3 scripts/ci_prepare_linux.py api; fi"
+          "run": "python3 scripts/ci_prepare_linux.py"
         },
         {
           "id": "browser",
@@ -139,6 +151,22 @@
             "CI_PROFILE": "${{ steps.plan.outputs.profile }}"
           },
           "run": "python3 scripts/verify ci-result"
+        }
+      ]
+    },
+    "profile": {
+      "name": "CI profile: ${{ needs.required.outputs.profile || 'UNKNOWN' }}",
+      "needs": "required",
+      "if": "${{ always() }}",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 5,
+      "steps": [
+        {
+          "name": "Record selected CI profile",
+          "env": {
+            "CI_PROFILE": "${{ needs.required.outputs.profile || 'UNKNOWN' }}"
+          },
+          "run": "printf 'CI profile: %s\\n' \"$CI_PROFILE\"\n"
         }
       ]
     }

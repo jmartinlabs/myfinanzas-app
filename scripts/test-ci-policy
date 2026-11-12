@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Behavioral evidence for the shared classifier and supported workflow graph."""
 import copy
+import contextlib
+import io
 import itertools
 import json
 import os
 from pathlib import Path
+import re
 import runpy
 import shutil
 import subprocess
@@ -361,6 +364,55 @@ class CiClassifierTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             CONTEXT['snapshot'](self.root, 'push', event, head)
 
+    def test_snapshot_peels_annotated_deploy_tag_to_the_event_commit(self):
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        ref = 'refs/tags/deploy-test-v1.2.3'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
+        tag_object = self.git('rev-parse', ref).decode().strip()
+        self.assertNotEqual(tag_object, actual)
+        event = {'ref': ref, 'after': tag_object}
+        # GITHUB_SHA may be the tag object or its peeled commit.
+        self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, actual), actual)
+        self.assertEqual(CONTEXT['snapshot'](self.root, 'push', event, ref, tag_object), actual)
+        for forged, checkout in ((None, ref), ('b' * 40, ref), (actual, 'refs/tags/other')):
+            with self.subTest(forged=forged, checkout=checkout), self.assertRaises(ValueError):
+                CONTEXT['snapshot'](self.root, 'push', event, checkout, forged)
+        for malformed in ('refs/tags/deploy-test-v1.2', 'refs/tags/deploy-test-v01.2.3',
+                          'refs/tags/deploy-test-v1.2.3.4'):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                CONTEXT['snapshot'](self.root, 'push',
+                                    {'ref': malformed, 'after': actual}, malformed, actual)
+        # A lightweight deploy tag is rejected before any application checks.
+        light = 'refs/tags/deploy-test-v9.9.9'
+        self.git('tag', 'deploy-test-v9.9.9', actual)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', {'ref': light, 'after': actual}, light, actual)
+        # A rewritten tag ref is no longer an annotated tag object either.
+        self.git('update-ref', ref, actual)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', {'ref': ref, 'after': actual}, ref, tag_object)
+
+    def test_lightweight_deploy_tag_is_rejected_before_full(self):
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        light = 'refs/tags/deploy-test-v9.9.9'
+        self.git('tag', 'deploy-test-v9.9.9', actual)
+        event = {'ref': light, 'after': actual, 'repository': {'default_branch': 'main'}}
+        with self.assertRaises(ValueError):
+            CONTEXT['select_ref']('push', event, 'fixture/project', lambda *_: [], self.root)
+        with self.assertRaises(ValueError):
+            CONTEXT['snapshot'](self.root, 'push', event, light, actual)
+        with self.assertRaises(ValueError):
+            POLICY['ci_profile'](self.root, 'push', event, light)
+        # The annotated SemVer tag is accepted and selects full.
+        annotated = 'refs/tags/deploy-test-v9.9.10'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v9.9.10', '-m', 'fixture', actual)
+        event = {'ref': annotated, 'after': actual, 'repository': {'default_branch': 'main'}}
+        self.assertEqual(CONTEXT['select_ref']('push', event, 'fixture/project',
+                                               lambda *_: [], self.root), annotated)
+        self.assertEqual(POLICY['ci_profile'](self.root, 'push', event, annotated), 'full')
+
     def test_surviving_docs_push_keeps_full_for_accumulated_pr_code(self):
         self.git('switch', '-qc', 'feature')
         self.write('apps/api/code.ts', 'fictional code')
@@ -404,7 +456,7 @@ class CiClassifierTests(unittest.TestCase):
     def test_ci_profiles_critical_unknown_renames_and_fast_allowlist(self):
         profiles = POLICY['profile_records']
         critical = [
-            'apps/api/src/database.ts', 'apps/web/src/Unknown.tsx', 'apps/web/src/amount.ts',
+            'apps/api/src/app.ts', 'apps/web/src/Unknown.tsx', 'apps/web/src/amount.ts',
             'scripts/verify', 'infra/Containerfile', 'bun.lock',
             'apps/api/contract.md', 'tests/fixtures/expected.md', 'scripts/guide.md',
             'specs/fixtures/README.md', 'AGENTS.md', 'specs/methodology/policy.md',
@@ -415,6 +467,24 @@ class CiClassifierTests(unittest.TestCase):
                 self.assertEqual(profiles((status + '\0' + path + '\0').encode()), 'critical')
             for endpoints in ((path, 'apps/web/src/style.css'), ('apps/web/src/style.css', path)):
                 self.assertEqual(profiles(('R100\0' + '\0'.join(endpoints) + '\0').encode()), 'critical')
+        sensitive = [
+            'apps/api/src/backup.ts', 'apps/api/src/backup-cli.ts', 'apps/api/src/database.ts',
+            'apps/api/src/database-schema.ts', 'apps/api/src/database-identity.ts',
+            'apps/api/src/private-state.ts', 'apps/api/src/schema-contract.ts',
+            'apps/api/src/sqlite-opening.ts', 'apps/api/src/e411-schema.ts',
+            'infra/migrations/27-to-28.json', 'infra/compatibility.py', 'infra/release.py',
+            'infra/smoke.py',
+        ]
+        for path in sensitive:
+            for status in ('A', 'M', 'D'):
+                self.assertEqual(profiles((status + '\0' + path + '\0').encode()), 'full')
+            for endpoints in ((path, 'apps/web/src/style.css'), ('apps/web/src/style.css', path)):
+                self.assertEqual(profiles(('R100\0' + '\0'.join(endpoints) + '\0').encode()), 'full')
+        self.assertEqual(profiles(('M\0specs/project.md\0M\0apps/api/src/backup.ts\0').encode()), 'full')
+        for path in ('apps/api/src/app.test.ts', 'apps/api/src/security-review.test.ts'):
+            self.assertEqual(profiles(('M\0' + path + '\0').encode()), 'full')
+        self.assertNotEqual(profiles(('M\0apps/api/src/amount.test.ts\0').encode()), 'full')
+        self.assertNotEqual(profiles(('M\0apps/api/src/not-a-file.test.ts\0').encode()), 'full')
         docs = ['specs/project.md', 'specs/investigations/new.md', 'docs/guide.md',
                 'README.md', 'specs/31-sqlite-produccion-x.md', 'unknown.md']
         for path in docs:
@@ -440,28 +510,67 @@ class CiClassifierTests(unittest.TestCase):
         event = {'pull_request': {'base': {'ref': 'main', 'sha': base}, 'head': {'sha': head}}}
         select = POLICY['ci_profile']
         self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'critical')
+        event['pull_request']['base'] = {'ref': 'test', 'sha': base}
+        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'critical')
         event['pull_request']['base']['sha'] = head
         with self.assertRaises(ValueError):
             select(self.root, 'pull_request', event, 'refs/pull/7/merge')
-        event['pull_request']['base'] = {'ref': 'other', 'sha': base}
-        with self.assertRaises(ValueError):
-            select(self.root, 'pull_request', event, 'refs/pull/7/merge')
+        for arbitrary in ('other', 'feature', 'Main'):
+            event['pull_request']['base'] = {'ref': arbitrary, 'sha': base}
+            with self.assertRaises(ValueError):
+                select(self.root, 'pull_request', event, 'refs/pull/7/merge')
         actual = self.git('rev-parse', 'HEAD').decode().strip()
-        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'after': actual}, actual), 'fast')
+        for ref in ('refs/heads/main', 'refs/heads/test'):
+            self.assertEqual(select(self.root, 'push', {'ref': ref, 'after': actual}, actual), 'fast')
         self.write('specs/backlog/main-docs.md')
         docs_head = self.commit()
-        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'before': actual,
-                                                    'after': docs_head}, docs_head), 'docs')
+        for ref in ('refs/heads/main', 'refs/heads/test'):
+            self.assertEqual(select(self.root, 'push', {'ref': ref, 'before': actual,
+                                                        'after': docs_head}, docs_head), 'docs')
         self.write('apps/web/src/main-code.ts', 'export const total = 1;')
         code_head = self.commit()
-        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'before': docs_head,
-                                                    'after': code_head}, code_head), 'fast')
-        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'after': code_head}, code_head), 'fast')
-        for ref in ('refs/heads/feature', 'refs/tags/v1'):
+        for ref in ('refs/heads/main', 'refs/heads/test'):
+            self.assertEqual(select(self.root, 'push', {'ref': ref, 'before': docs_head,
+                                                        'after': code_head}, code_head), 'fast')
+            self.assertEqual(select(self.root, 'push', {'ref': ref, 'after': code_head}, code_head), 'fast')
+        for ref in ('refs/heads/feature', 'refs/tags/v1', 'refs/heads/test-extra'):
             with self.assertRaises(ValueError):
                 select(self.root, 'push', {'ref': ref, 'before': docs_head, 'after': code_head}, code_head)
         self.assertEqual(select(self.root, 'workflow_dispatch', {}, code_head), 'full')
         with self.assertRaises(ValueError): select(self.root, 'unknown', {}, code_head)
+
+    def test_ci_profile_deploy_tags_run_full_on_the_exact_tag_commit(self):
+        select = POLICY['ci_profile']
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        ref = 'refs/tags/deploy-test-v1.2.3'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v1.2.3', '-m', 'fixture', actual)
+        self.assertEqual(select(self.root, 'push', {'ref': ref, 'after': actual}, ref), 'full')
+        # An annotated tag push may expose the tag object as the event SHA.
+        annotated = 'refs/tags/deploy-test-v2.0.0'
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v2.0.0', '-m', 'fixture', actual)
+        tag_object = self.git('rev-parse', annotated).decode().strip()
+        self.assertEqual(select(self.root, 'push', {'ref': annotated, 'after': tag_object}, annotated), 'full')
+        # A checked-out commit that differs from the tag commit is refused.
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'tag', '-a', 'deploy-test-v3.0.0', '-m', 'fixture', self.base)
+        self.write('specs/backlog/after-tag.md')
+        self.commit()
+        with self.assertRaises(ValueError):
+            select(self.root, 'push', {'ref': 'refs/tags/deploy-test-v3.0.0', 'after': self.base},
+                   'refs/tags/deploy-test-v3.0.0')
+        for event, checkout in (
+                ({'ref': ref, 'after': actual}, actual),           # raw SHA instead of the tag ref
+                ({'ref': ref, 'after': '0' * 40}, ref),            # deleted tag
+                ({'ref': 'refs/tags/v1', 'after': actual}, 'refs/tags/v1'),
+                ({'ref': 'refs/tags/deploy-test-v1.2', 'after': actual},
+                 'refs/tags/deploy-test-v1.2'),
+                ({'ref': 'refs/tags/deploy-test-v01.2.3', 'after': actual},
+                 'refs/tags/deploy-test-v01.2.3'),
+                ({'ref': ref, 'after': actual}, 'refs/heads/main')):
+            with self.subTest(event=event, checkout=checkout), self.assertRaises(ValueError):
+                select(self.root, 'push', event, checkout)
 
     def test_ci_profile_accepts_a_base_that_only_advanced_and_rejects_races(self):
         select = POLICY['ci_profile']
@@ -535,6 +644,19 @@ class CiWorkflowTests(unittest.TestCase):
         legacy.write_text('name: Legacy\non: [push, pull_request]\njobs: {}\n')
         self.assertTrue(WORKFLOW['validate_workflow'](legacy))
 
+    def test_required_check_name_is_stable_and_profile_job_publishes_the_profile(self):
+        required = self.candidate['jobs']['required']
+        # No job-level name: the protected check keeps the fixed id `required`.
+        self.assertNotIn('name', required)
+        self.assertEqual(required['outputs'], {'profile': '${{ steps.plan.outputs.profile }}'})
+        profile = self.candidate['jobs']['profile']
+        self.assertEqual(profile['name'],
+                         "CI profile: ${{ needs.required.outputs.profile || 'UNKNOWN' }}")
+        self.assertEqual(profile['needs'], 'required')
+        self.assertEqual(profile['if'], '${{ always() }}')
+        self.assertEqual(len(profile['steps']), 1)
+        self.assertNotIn('scripts/verify', profile['steps'][0]['run'])
+
     def test_reject_semantic_mutations(self):
         mutations = {
             'missing selector': lambda w: w['jobs']['required']['steps'].remove(by_id(w, 'plan')),
@@ -551,7 +673,18 @@ class CiWorkflowTests(unittest.TestCase):
             'draft job skip': lambda w: w['jobs']['required'].update({'if': 'github.event.pull_request.draft == false'}),
             'draft step skip': lambda w: by_id(w, 'verify').update({'if': 'github.event.pull_request.draft == false'}),
             'redundant feature push': lambda w: w['on'].update(push={}),
-            'missing main push': lambda w: w['on'].pop('push'),
+            'missing deploy tag push': lambda w: w['on'].pop('push'),
+            'missing deploy tag filter': lambda w: w['on']['push'].pop('tags'),
+            'wrong deploy tag filter': lambda w: w['on']['push'].update(tags=['v*']),
+            'automatic branch push': lambda w: w['on']['push'].update(branches=['main', 'test']),
+            'missing test PR base': lambda w: w['on']['pull_request']['branches'].remove('test'),
+            'arbitrary PR base': lambda w: w['on']['pull_request']['branches'].append('feature'),
+            'arbitrary push branch': lambda w: w['on']['push'].update(branches=['feature']),
+            'test push cancellation allowed': lambda w: w['concurrency'].update(
+                {'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}"}),
+            'missing profile summary': lambda w: w['jobs']['required']['steps'].remove(by_id(w, 'summary')),
+            'summary loses profile': lambda w: by_id(w, 'summary').update(run='echo ok'),
+            'summary trusts declared profile': lambda w: by_id(w, 'summary').pop('env'),
             'privileged event': lambda w: w.update({'on': ['pull_request_target']}),
             'write permissions': lambda w: w.update(permissions={'contents': 'write'}),
             'unpinned action': lambda w: w['jobs']['required']['steps'][0].update(uses='actions/checkout@v4'),
@@ -574,6 +707,16 @@ class CiWorkflowTests(unittest.TestCase):
             'skip Linux setup': lambda w: by_id(w, 'prepare').update({'if': False}),
             'system browser substitution': lambda w: w['jobs']['required'].update(env={'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': '/usr/bin/chromium'}),
             'application skipped': lambda w: by_id(w, 'verify').update({'if': False}),
+            'profile job removed': lambda w: w['jobs'].pop('profile'),
+            'profile check name loses profile': lambda w: w['jobs']['profile'].update(
+                {'name': 'CI profile'}),
+            'profile job loses dependency': lambda w: w['jobs']['profile'].pop('needs'),
+            'profile job can be skipped': lambda w: w['jobs']['profile'].pop('if'),
+            'required loses profile output': lambda w: w['jobs']['required'].pop('outputs'),
+            'profile job runs verification': lambda w: w['jobs']['profile']['steps'][0].update(
+                run='python3 scripts/verify baseline'),
+            'extra job': lambda w: w['jobs'].update(
+                extra={'runs-on': 'ubuntu-24.04', 'steps': [{'run': 'echo extra'}]}),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name):
@@ -611,6 +754,30 @@ class CiWorkflowTests(unittest.TestCase):
                     self.assertIn(output.read_text(), ('profile=docs\n', 'profile=fast\n', 'profile=critical\n', 'profile=full\n'))
 
 
+class FullOnlyTests(unittest.TestCase):
+    def test_list_is_unique_and_every_name_exists_in_the_api_suite(self):
+        names = POLICY['FULL_ONLY_TESTS']
+        self.assertTrue(names)
+        self.assertEqual(len(names), len(set(names)))
+        texts = '\n'.join(path.read_text(encoding='utf-8')
+                          for path in (ROOT / 'apps/api/src').glob('*.test.ts'))
+        for name in names:
+            self.assertIn(name, texts)
+        self.assertEqual(len(names), 33)
+        self.assertEqual(POLICY['full_only_expected'](), 36)
+        for prefix in POLICY['FULL_ONLY_PREFIXES']:
+            self.assertIn(prefix, texts)
+
+    def test_pattern_excludes_every_full_only_test_and_keeps_a_control(self):
+        pattern = POLICY['full_only_pattern']()
+        for name in POLICY['FULL_ONLY_TESTS']:
+            self.assertIsNone(re.fullmatch(pattern, name))
+        for suffix in ('bundle.tmp/auth.key', 'database.sqlite/bundle.tmp', 'database #?.sqlite/key #?.bin'):
+            self.assertIsNone(re.fullmatch(
+                pattern, '31 S3: reserved-name rejection / encrypted restore for ' + suffix))
+        self.assertIsNotNone(re.fullmatch(pattern, 'AC01: a regular critical test'))
+
+
 class CiResultTests(unittest.TestCase):
     def test_all_result_combinations(self):
         for classification, baseline, full in itertools.product(
@@ -641,7 +808,7 @@ class CiResultTests(unittest.TestCase):
         for profile in ('docs', 'fast', 'critical', 'full'):
             states = {name: 'success' for name in ('context','snapshot','plan','baseline','verify')}
             states.update({name: 'success' if profile != 'docs' else 'skipped' for name in ('bun','install')})
-            states['prepare'] = 'success' if profile in ('critical','full') else 'skipped'
+            states['prepare'] = 'success' if profile == 'full' else 'skipped'
             states['browser'] = 'success' if profile == 'full' else 'skipped'
             self.assertTrue(gate(profile, states))
             for name in states:
@@ -658,28 +825,50 @@ class CiContextTests(unittest.TestCase):
         self.head = 'a' * 40
         self.event = {'after': self.head, 'ref': 'refs/heads/feature',
                       'repository': {'default_branch': 'main'}}
-        self.pr = {'number': 7, 'state': 'open',
+        self.pr = {'number': 7, 'state': 'open', 'base': {'ref': 'main'},
                    'head': {'repo': {'full_name': self.repository}, 'ref': 'feature', 'sha': self.head}}
 
     def choose(self, event=None, pulls=None, name='push'):
         return CONTEXT['select_ref'](name, self.event if event is None else event,
                                      self.repository, lambda *_: [] if pulls is None else pulls)
 
-    def test_push_without_pr_main_tag_manual_and_pr_keep_validation(self):
+    def test_push_without_pr_main_test_tag_manual_and_pr_keep_validation(self):
         self.assertEqual(self.choose(), self.head)
-        for ref in ('refs/heads/main', 'refs/tags/v1'):
+        for ref in ('refs/heads/main', 'refs/heads/test'):
             event = {**self.event, 'ref': ref}
             def forbidden(*_):
-                self.fail('default branch and tags must not need a PR lookup')
+                self.fail('integration branches must not need a PR lookup')
             self.assertEqual(CONTEXT['select_ref']('push', event, self.repository, forbidden), self.head)
+        # Tags keep their ref so an annotated tag is checked out and peeled.
+        tag_event = {**self.event, 'ref': 'refs/tags/deploy-test-v1.2.3'}
+        self.assertEqual(CONTEXT['select_ref']('push', tag_event, self.repository,
+                                               lambda *_: self.fail('tags must not need a PR lookup')),
+                         'refs/tags/deploy-test-v1.2.3')
+        with self.assertRaises(ValueError):
+            CONTEXT['select_ref']('push', {**self.event, 'ref': 'refs/tags/'}, self.repository, lambda *_: [])
+        for malformed in ('refs/tags/deploy-test-v1.2', 'refs/tags/deploy-test-v01.2.3'):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                CONTEXT['select_ref']('push', {**self.event, 'ref': malformed}, self.repository, lambda *_: [])
         self.assertIsNone(self.choose(name='workflow_dispatch'))
-        event = {'number': 7, 'pull_request': {'head': {'sha': self.head}}}
-        self.assertEqual(self.choose(event, name='pull_request'), 'refs/pull/7/merge')
+        for base in ('main', 'test'):
+            event = {'number': 7, 'pull_request': {'base': {'ref': base}, 'head': {'sha': self.head}}}
+            self.assertEqual(self.choose(event, name='pull_request'), 'refs/pull/7/merge')
+        for base in ('feature', 'other', ''):
+            event = {'number': 7, 'pull_request': {'base': {'ref': base}, 'head': {'sha': self.head}}}
+            with self.assertRaises(ValueError):
+                self.choose(event, name='pull_request')
 
     def test_surviving_push_and_pr_use_same_integration_ref(self):
         self.assertEqual(self.choose(pulls=[self.pr]), 'refs/pull/7/merge')
-        event = {'number': 7, 'pull_request': {'head': {'sha': self.head}}}
+        event = {'number': 7, 'pull_request': {'base': {'ref': 'main'}, 'head': {'sha': self.head}}}
         self.assertEqual(self.choose(pulls=[self.pr]), self.choose(event, name='pull_request'))
+
+    def test_push_to_integration_branch_ignores_open_promotion_pr(self):
+        for ref in ('refs/heads/main', 'refs/heads/test'):
+            def forbidden(*_):
+                self.fail('an integration push must freeze its own SHA')
+            self.assertEqual(CONTEXT['select_ref']('push', {**self.event, 'ref': ref},
+                                                   self.repository, forbidden), self.head)
 
     def test_lookup_error_stale_head_multiple_or_incomplete_is_not_silently_ignored(self):
         bad = copy.deepcopy(self.pr)
@@ -704,7 +893,7 @@ class CiContextTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertNotIn(env['GH_TOKEN'].encode(), r.stdout + r.stderr)
 
-    def test_concurrency_expressions_coalesce_events_but_isolate_forks_and_manual(self):
+    def test_concurrency_cancels_only_superseded_prs_and_isolates_tag_and_manual_runs(self):
         # Evaluate only the expression grammar used by the reviewed recipe; no eval().
         import re
         def value(expression, context):
@@ -735,20 +924,30 @@ class CiContextTests(unittest.TestCase):
         push = {'workflow': 'Validate project', 'repository': self.repository, 'event': {},
                 'ref_name': 'feature', 'ref': 'refs/heads/feature', 'head_ref': '',
                 'event_name': 'push', 'run_id': 1, 'ref_type': 'branch'}
+        main_push = {**push, 'ref_name': 'main', 'ref': 'refs/heads/main'}
+        test_push = {**push, 'ref_name': 'test', 'ref': 'refs/heads/test'}
         pr = {**push, 'event_name': 'pull_request', 'head_ref': 'feature', 'ref_name': '7/merge',
               'ref': 'refs/pull/7/merge', 'event': {'pull_request': {'head': {'repo': {'full_name': self.repository}}}}}
-        self.assertEqual(render(policy['group'], push), render(policy['group'], pr))
+        promotion = {**pr, 'head_ref': 'test', 'ref_name': '9/merge', 'ref': 'refs/pull/9/merge'}
+        tag = {**push, 'ref_type': 'tag', 'ref_name': 'deploy-test-v1.2.3',
+               'ref': 'refs/tags/deploy-test-v1.2.3'}
+        # Automatic branch pushes no longer trigger this workflow; PRs keep their
+        # own group and deploy tag/manual runs never cancel or get cancelled.
+        self.assertNotEqual(render(policy['group'], main_push), render(policy['group'], test_push))
+        self.assertNotEqual(render(policy['group'], test_push), render(policy['group'], pr))
         fork = copy.deepcopy(pr)
         fork['event']['pull_request']['head']['repo']['full_name'] = 'other/project'
         self.assertNotEqual(render(policy['group'], pr), render(policy['group'], fork))
-        tag = {**push, 'ref_type': 'tag', 'ref': 'refs/tags/feature'}
         self.assertNotEqual(render(policy['group'], push), render(policy['group'], tag))
-        self.assertNotEqual(render(policy['group'], pr), render(policy['group'], tag))
+        self.assertNotEqual(render(policy['group'], push), render(policy['group'], promotion))
         manual = {**push, 'event_name': 'workflow_dispatch'}
         self.assertNotEqual(render(policy['group'], push), render(policy['group'], manual))
         expr = policy['cancel-in-progress'][4:-3]
         self.assertTrue(value(expr, {'github': pr}))
-        self.assertFalse(value(expr, {'github': {**push, 'ref': 'refs/heads/main'}}))
+        self.assertTrue(value(expr, {'github': promotion}))
+        self.assertFalse(value(expr, {'github': main_push}))
+        self.assertFalse(value(expr, {'github': test_push}))
+        self.assertFalse(value(expr, {'github': tag}))
         self.assertFalse(value(expr, {'github': manual}))
 
 
@@ -782,9 +981,21 @@ class CiLinuxTests(unittest.TestCase):
         self.assertEqual(set(self.prepare()), self.missing)
         commands = [c for c in self.calls if c[0] == 'sudo']
         self.assertEqual(len(commands), 2)
-        self.assertEqual(commands[0], ['sudo', 'apt-get', 'update'])
-        self.assertEqual(set(commands[1][6:]), self.missing)
-        self.assertEqual(commands[1][:6], ['sudo', 'apt-get', 'install', '-y', '--no-install-recommends', '--'])
+        self.assertEqual(commands[0], ['sudo', 'apt-get', '-o', 'Acquire::Retries=3',
+                                       '-o', 'DPkg::Lock::Timeout=120', 'update'])
+        self.assertEqual(set(commands[1][10:]), self.missing)
+        self.assertEqual(commands[1][:10], ['sudo', 'apt-get', '-o', 'Acquire::Retries=3',
+                                            '-o', 'DPkg::Lock::Timeout=120', 'install', '-y',
+                                            '--no-install-recommends', '--'])
+
+    def test_prepare_always_uses_the_full_plan_and_checks_playwright(self):
+        self.missing = {'age'}
+        self.prepare()
+        self.assertTrue(any(c[:2] == ['node', 'node_modules/@playwright/test/cli.js'] for c in self.calls))
+        installs = [c for c in self.calls if c[:2] == ['sudo', 'apt-get'] and 'install' in c]
+        self.assertIn('age', installs[0])
+        # No API-only mode survives: every preparation is the full dependency plan.
+        self.assertNotIn('api', [c for call in self.calls for c in call])
 
     def test_unsupported_runner_version_inventory_or_installation_fails(self):
         for kwargs in ({'os_release': 'ID=ubuntu\nVERSION_ID=26.04'}, {'machine': 'aarch64'}):
@@ -802,14 +1013,61 @@ class CiLinuxTests(unittest.TestCase):
             with self.subTest(failure=failure), self.assertRaises(ValueError):
                 self.prepare(broken)
 
-    def test_api_preparation_never_invokes_playwright_or_installs_browser_packages(self):
+    def test_apt_lock_failure_reports_command_code_and_stderr(self):
         self.missing = {'age'}
-        LINUX['prepare'](ROOT, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64', mode='api')
-        self.assertFalse(any(c[0] == 'node' for c in self.calls))
-        installs = [c for c in self.calls if c[:3] == ['sudo','apt-get','install']]
-        self.assertEqual(installs[0][6:], ['age'])
+        lock = 'E: Could not get lock /var/lib/dpkg/lock-frontend'
+        def locked(command):
+            result = self.execute(command)
+            if command[:2] == ['sudo', 'apt-get']:
+                return SimpleNamespace(returncode=100, stdout='', stderr=lock + '\n')
+            return result
+        with self.assertRaises(ValueError) as caught:
+            self.prepare(locked)
+        message = str(caught.exception)
+        self.assertIn('sudo apt-get -o Acquire::Retries=3 -o DPkg::Lock::Timeout=120 update', message)
+        self.assertIn('100', message)
+        self.assertIn(lock, message)
+
+    def test_inventory_failure_reports_command_code_and_stderr(self):
+        detail = 'dpkg-query: error: failed to open package info file'
+        def broken(command):
+            result = self.execute(command)
+            if command[:1] == ['dpkg-query']:
+                return SimpleNamespace(returncode=2, stdout='', stderr=detail + '\n')
+            return result
+        with self.assertRaises(ValueError) as caught:
+            self.prepare(broken)
+        message = str(caught.exception)
+        self.assertIn('dpkg-query -W -f=${db:Status-Status}', message)
+        self.assertIn('exited 2', message)
+        self.assertIn(detail, message)
+
+    def test_unexpected_inventory_failure_never_reaches_install(self):
+        def broken(command):
+            result = self.execute(command)
+            if command[:1] == ['dpkg-query']:
+                return SimpleNamespace(returncode=2, stdout='', stderr='inventory unavailable')
+            return result
         with self.assertRaises(ValueError):
-            LINUX['prepare'](ROOT, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64', mode='invalid')
+            self.prepare(broken)
+        self.assertFalse(any(c[:2] == ['sudo', 'apt-get'] for c in self.calls))
+
+    def test_main_prints_error_detail_before_generic_failure(self):
+        detail = 'command sudo apt-get update exited 100; stderr: lock'
+        def broken(*args, **kwargs):
+            raise ValueError(detail)
+        original = LINUX['main'].__globals__['prepare']
+        LINUX['main'].__globals__['prepare'] = broken
+        try:
+            with contextlib.redirect_stderr(io.StringIO()) as err, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                status = LINUX['main']()
+        finally:
+            LINUX['main'].__globals__['prepare'] = original
+        lines = err.getvalue().splitlines()
+        self.assertEqual(status, 1)
+        self.assertEqual(lines[0], 'CI Linux preparation detail: ' + detail)
+        self.assertEqual(lines[-1], 'CI Linux preparation failed; browser checks must not be skipped.')
 
     def test_manifest_version_drift_is_rejected_before_install(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -820,6 +1078,55 @@ class CiLinuxTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 LINUX['prepare'](root, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64')
             self.assertEqual(self.calls, [])
+
+
+class RootlessWorkflowTests(unittest.TestCase):
+    """The deploy workflow may only build and deploy; suites live in the profiles."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.source = (ROOT / '.github/workflows/rootless.yml').read_text()
+
+    def errors(self, text):
+        path = self.root / 'rootless.yml'
+        path.write_text(text)
+        return WORKFLOW['validate_rootless_workflow'](path)
+
+    def test_actual_workflow_is_reviewed_and_has_no_application_job(self):
+        self.assertEqual(self.errors(self.source), [])
+        self.assertEqual(WORKFLOW['validate_rootless_workflow'](
+            ROOT / '.github/workflows/rootless.yml'), [])
+
+    def test_reject_reintroduced_application_jobs_and_weakened_guards(self):
+        replacements = {
+            're-added qa job': ('  deploy:\n', '  qa:\n    needs: capability\n    steps:\n'
+                                              '      - run: bun test apps/web\n\n  deploy:\n'),
+            'weakened dependency': ('needs: [capability]', 'needs: [capability, qa]'),
+            'removed smoke': ('infra/smoke.py', 'echo smoke'),
+            'removed evidence': ('--qa-equivalence', '--check-evidence'),
+            'removed tag wait': ("Wait for the tag's own required FULL validation", 'echo wait'),
+            'unpinned action': ('actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
+                                'actions/checkout@v4'),
+            'postmerge push': ("  push:\n    tags:\n", "  push:\n    branches:\n      - test\n    tags:\n"),
+            'allowed failure': ('    timeout-minutes: 60\n',
+                                '    timeout-minutes: 60\n    continue-on-error: true\n'),
+            'persisted credentials': ('persist-credentials: false',
+                                      'persist-credentials: true'),
+            'narrowed paths': ("      - 'bun.lock'\n", ''),
+            'external environment': ('environment: test', 'environment: production'),
+        }
+        for name, (old, new) in replacements.items():
+            with self.subTest(name=name):
+                self.assertIn(old, self.source)
+                self.assertTrue(self.errors(self.source.replace(old, new, 1)))
+
+    def test_unreadable_workflow_fails_visibly(self):
+        self.assertEqual(WORKFLOW['validate_rootless_workflow'](self.root / 'missing'),
+                         ['rootless: unreadable workflow'])
+        (self.root / 'empty.yml').write_text('name: Empty\n')
+        self.assertTrue(WORKFLOW['validate_rootless_workflow'](self.root / 'empty.yml'))
 
 
 if __name__ == '__main__':

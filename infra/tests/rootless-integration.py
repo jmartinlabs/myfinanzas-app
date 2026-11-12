@@ -15,9 +15,13 @@ import urllib.error
 import urllib.request
 import uuid
 
-# The reviewed migration dispatched through PREVIOUS_REF is 26 -> 27. Update
+# Import the release contract error for sanitized diagnostics only.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from release import ReleaseError  # noqa: E402
+
+# The reviewed migration dispatched through PREVIOUS_REF is 27 -> 28. Update
 # this guard together with the next authorized migration manifest.
-PREVIOUS_REF_SCHEMA = 26
+PREVIOUS_REF_SCHEMA = 27
 
 
 class ProbeError(Exception):
@@ -79,14 +83,16 @@ def e14_diagnostics(stderr):
 def resolve_previous_ref(source):
     """Select the previous release without weakening the ordinary merge-base path.
 
-    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 26 -> 27
-    migration against an ancestor commit while origin/main already carries v27.
-    An explicit value must resolve to an ancestor whose source declares schema 26.
+    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 27 -> 28
+    migration against an ancestor commit while the integration branch already
+    carries v28. The default base is CI_BASE_REF (test or main); an explicit
+    value must resolve to an ancestor whose source declares schema 27.
     """
     override = os.environ.get('PREVIOUS_REF', '').strip()
     if not override:
         return subprocess.check_output(
-            ['git', '-C', str(source), 'merge-base', 'HEAD', 'origin/main'],
+            ['git', '-C', str(source), 'merge-base', 'HEAD',
+             'origin/' + os.environ.get('CI_BASE_REF', 'main')],
             text=True).strip()
     if not re.fullmatch(r'[0-9a-f]{7,40}', override):
         raise ProbeError('previous_ref must be an unambiguous lowercase commit SHA')
@@ -195,6 +201,19 @@ def main():
             raise ProbeError('wrong manifest trust pin was accepted')
         verify(output, manifest['inputs']['source'], digest)
         evidence['frontend-backend-integrity-and-negative'] = True
+        stage = 'synthetic-seed-release-smoke'
+        smoke_evidence = root / 'smoke-evidence.json'
+        smoke = subprocess.run(
+            [sys.executable, str(source / 'infra/smoke.py'),
+             '--release', str(output),
+             '--expected-commit', manifest['inputs']['source'],
+             '--expected-manifest-sha256', digest,
+             '--evidence', str(smoke_evidence)],
+            capture_output=True, text=True, timeout=600)
+        if smoke.returncode or not smoke_evidence.is_file():
+            # Never publish raw output: it may contain synthetic factors.
+            raise ProbeError('synthetic release+seed smoke failed')
+        evidence['synthetic-seed-release-smoke'] = True
         data = root / 'data'
         data.mkdir(mode=0o700)
         env = ['--env=NODE_ENV=production', '--env=APP_ORIGIN=https://myfinanzas.pp.ua',
@@ -433,7 +452,7 @@ def main():
         stage = 'final-image-api-regressions'
         suite = root / 'suite'
         suite.mkdir(mode=0o700)
-        for prefix in ('apps/api/src', 'apps/api/test-support', 'apps/web/src'):
+        for prefix in ('apps/api/src', 'apps/api/test-support', 'apps/web/src', 'tools/test-seed', 'tools/demo'):
             for relative in run(['git', 'ls-tree', '-r', '--name-only', 'HEAD', '--', prefix]).splitlines():
                 # API tests import shared web modules; runtime JSON manifests
                 # are imported by TS modules and must travel with the suite.
@@ -442,6 +461,11 @@ def main():
                 destination = suite / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:' + relative]))
+        # The seed tests read the release recipe as a static guard; copy it
+        # into the read-only suite without adding it to the runtime image.
+        containerfile = suite / 'infra' / 'Containerfile'
+        containerfile.parent.mkdir(parents=True, exist_ok=True)
+        containerfile.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:infra/Containerfile']))
         # #31 adds real fcntl lock-holder fixtures requiring Python, not an app
         # dependency. Copy the runner's interpreter/stdlib/loader into the private
         # read-only test mount; never add Python or broad host mounts to runtime.
@@ -514,7 +538,7 @@ def main():
         stage = 'previous-private-release-build'
         previous_ref = resolve_previous_ref(source)
         evidence['previous-ref-selection'] = 'explicit' if os.environ.get('PREVIOUS_REF', '').strip() else 'merge-base'
-        previous = build(root / 'previous', ref=previous_ref)
+        previous = build(root / 'previous', ref=previous_ref, seed=False)
         same_contracts = previous['inputs']['contracts'] == manifest['inputs']['contracts']
         authorization = None
         if not same_contracts:
@@ -653,6 +677,6 @@ if __name__ == '__main__':
         main()
     except Exception as error:
         # Fixed stage and class only: no keys, data, env or command output.
-        detail = str(error) if isinstance(error, ProbeError) else type(error).__name__
+        detail = str(error) if isinstance(error, (ProbeError, ReleaseError)) else type(error).__name__
         print('::error title=Rootless integration failed::stage=' + stage + '; reason=' + detail)
         sys.exit(1)

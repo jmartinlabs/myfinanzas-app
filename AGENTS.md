@@ -24,10 +24,10 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 
 ## Coordinación
 - [$orchestrate](.agents/skills/orchestrate/SKILL.md), [reglas locales](specs/methodology/myfinanzas-coordination.md)
-  y [aprobaciones](specs/methodology/approvals.md). Reparto: OpenCode orquesta, Álex asesora
-  y el usuario aprueba ([detalle](specs/methodology/myfinanzas-coordination.md#reparto-de-responsabilidades--orquestador-asesor-y-usuario)).
+  y [aprobaciones](specs/methodology/approvals.md). Reparto: un coordinador técnico activo
+  designado por el usuario (hoy Hermes); Álex asesora y el usuario aprueba ([detalle](specs/methodology/myfinanzas-coordination.md#reparto-de-responsabilidades--rol-de-coordinador-asesor-y-usuario)).
 - El coordinador mantiene identificados los siguientes trabajos del roadmap y sus dependencias; mientras algo avanza o espera, prepara SPEC, investigación, paquete DEV ya autorizado o diseño QA sin cruzar gates. Replanifica ante resultados o bloqueos y deja una siguiente acción verificable; no crees trabajo artificial ni un segundo scheduler.
-- [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte canónico de coordinación; se usa solo bajo petición explícita y no crea conversaciones automáticamente.
+- [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte canónico (solo bajo petición; no crea conversaciones). [$work-issue](.agents/skills/work-issue/SKILL.md) recoge trabajo ya autorizado en Issues/Projects: el Status del Project es el gate de fase, la etiqueta simple de agente solo enruta y reservar exige un recibo de contexto vigente; una invocación con agente (`@work-issue opencode`) es una sesión que agota la cola elegible de ese agente, una Issue a la vez, hasta que no queda trabajo o aparece un bloqueo real.
 - [Flujos](specs/methodology/workflows.md) para clasificar; [agentes](specs/methodology/dynamic-agents.md)
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
@@ -55,7 +55,8 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 ## Política permanente de Git y GitHub
 - Aprobada el 2026-10-20. Gestiona Git/GitHub de forma autónoma; repositorio público
   (visibilidad confirmada intencional el 2026-10-31), sin cambiar visibilidad. Rama por
-  ámbito, nunca en `main`; preserva trabajo ajeno.
+  ámbito, nunca en `main` ni `test`; flujo `feature/* → test → main` con promoción del
+  mismo SHA validado en `test`, nunca de cambios no validados; preserva trabajo ajeno.
 - Antes de push revisa commits, rutas, diff y archivos borrados; no confíes solo en `.gitignore`.
   Publica rama y PR con resumen, cambios, pruebas y limitaciones; declara dependencias.
 - Espera aprobación explícita antes del merge; el permiso de push no la sustituye. Tras el
