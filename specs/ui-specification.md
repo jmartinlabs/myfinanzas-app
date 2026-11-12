@@ -73,8 +73,8 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Tema | `data-theme` | Estado |
 | --- | --- | --- |
 | Dark | `dark-s` | Implementado y cerrado; predeterminado |
-| Light | `light-s` | Implementado; identidad reabierta solo por UI-P2 (2.5) para L1 |
-| Hybrid | `hybrid-s` | Implementado; identidad reabierta solo por UI-P2 (2.5) para L1 |
+| Light | `light-s` | Implementado; identidad reabierta por UI-P2 (2.5) para L1 y L2 |
+| Hybrid | `hybrid-s` | Implementado; identidad reabierta por UI-P2 (2.5) para L1 y L2 |
 | Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; integrado en `test` con #356 (`bff714e`); seleccionable como cuarto tema |
 | Casa | `casa` | Aprobada 2026-11-10; 1A autorizado y en curso |
 
@@ -227,7 +227,7 @@ se difieren. Casa UI-P1 (#363), 1A (#364), 1B (#370) y 1C (#371) están integrad
 El análisis y el plan detallado se conservan en la
 [PR #365](https://github.com/jmartinlabs/myfinanzas-app/pull/365).
 
-### 2.5 Enmienda UI-P2 · Identidad visual Claro/Mixto (L1, 2026-11-12)
+### 2.5 Enmienda UI-P2 · Identidad visual Claro/Mixto (L1–L2, 2026-11-12)
 
 Ratificada por el usuario en [#402](https://github.com/jmartinlabs/myfinanzas-app/issues/402)
 (comentario `6827471780`) al aceptar el análisis de rescate de los prototipos finales de fase C.
@@ -246,28 +246,37 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
 - **Responsive (D5):** 820/390 exige diseño y validación propios; no se deduce de las capturas
   a 1440.
 
-**Alcance técnico autorizado:** solo los bloques `light-s` y `hybrid-s` de
-`apps/web/public/themes.css`. `dark-s`, `graphite-lime` y `casa` conservan sus tokens; no se
-modifican `theme-boot.js`, `themes.ts`, `style.css`, componentes, rutas ni navegación.
+**Alcance técnico autorizado:**
+
+- **L1 (integrado):** bloques `light-s` y `hybrid-s` de `apps/web/public/themes.css`.
+- **L2 (autorizado por #402):** capa visual de Inicio en `apps/web/src/light-hybrid.css`,
+  importada de forma aditiva desde `style.css`. Cubre héroe, bandeja KPI, cabecera de ciclo,
+  Atención, Objetivo y banda de posición sobre la composición compartida; no cambia DOM,
+  estructura, orden, cifras ni acciones.
+
+`dark-s`, `graphite-lime` y `casa` conservan sus tokens y su identidad; no se modifican
+`theme-boot.js`, `themes.ts`, componentes, rutas ni navegación.
 
 **Alcance de entrega:** además de los tokens, el incremento incluye la actualización de las
 expectativas E2E de identidad afectadas (`theme.spec.ts`, `ui-switch.spec.ts`), esta enmienda y
 la evidencia visual comparada. No cambia componentes, DOM, rutas ni contratos.
 
-**Fuera de alcance:** L2 (recomposición de Inicio), L3 (interacción de Movimientos), L4
-(extensión de alcance), rediseño global, cambios de API, SQLite, contratos, datos reales, merge
-y despliegue.
+**Fuera de alcance:** L3 (interacción de Movimientos), L4 (extensión de alcance), rediseño
+global, cambios de composición u orden, cambios de API, SQLite, contratos, datos reales, merge y
+despliegue. Si un incremento exige tocar estructura, orden, componentes compartidos u otros
+temas, se detiene y se presenta la decisión antes de implementarlo.
 
 **Sustitución expresa:** esta enmienda sustituye, **solo para la capa de identidad de `light-s` y
 `hybrid-s`**, las cláusulas que declaraban cerrados los tres temas: la tabla de §2, la frase de
 §2.4 «Dark, Light, Hybrid y Casa conservan su identidad» y la lista de materias cerradas de §7.
 No reabre Dark, Casa, Graphite, la composición, el selector ni el mecanismo `mf-theme`.
 
-**Dependencia de entrega:** la conservación de los prototipos (L0) está **en revisión** en
-[#435](https://github.com/jmartinlabs/myfinanzas-app/pull/435). La referencia de tokens
-`specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` existe en la rama de esa
-PR; el merge de L1 debe ocurrir **después** del de L0, o simultáneamente, para no dejar la
-referencia rota en `test`.
+**Estado de entrega:** L0 ([#435](https://github.com/jmartinlabs/myfinanzas-app/pull/435)) y
+L1 ([#437](https://github.com/jmartinlabs/myfinanzas-app/pull/437)) están **fusionados** en
+`test`, por lo que la referencia
+`specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` es válida. L2 se entrega
+en su propia PR y mantiene el mismo límite: solo `light-s`/`hybrid-s`, sin tocar composición ni
+los otros temas.
 
 ## 3. Dependencias
 

@@ -1,6 +1,7 @@
 /* Graphite Lime · G1 · capa visual aislada por data-theme. */
 @import "./graphite.css";
 @import "./inicio-shared.css";
+@import "./light-hybrid.css";
 
 :root {
   font-family:
