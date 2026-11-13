@@ -177,6 +177,23 @@ const cicloTexto = (ciclo: TransversalItem["ciclo"]) =>
   ciclo
     ? `${fecha(ciclo.inicio)}${ciclo.fin ? "–" + fecha(ciclo.fin) : " · Abierto"}`
     : "—";
+// La fecha se marca para que no se parta dentro del número; el único corte
+// permitido es el guion entre inicio y fin.
+const cicloCelda = (ciclo: TransversalItem["ciclo"]) =>
+  ciclo ? (
+    <>
+      <span className="pendiente-ciclo-fecha">{fecha(ciclo.inicio)}</span>
+      {ciclo.fin ? (
+        <>
+          –<span className="pendiente-ciclo-fecha">{fecha(ciclo.fin)}</span>
+        </>
+      ) : (
+        " · Abierto"
+      )}
+    </>
+  ) : (
+    "—"
+  );
 const nombreFila = (fila: TransversalItem) =>
   fila.caso?.nombre?.trim() || fila.fuente.id;
 
@@ -533,7 +550,7 @@ export function Pendientes({
     {
       id: "ciclo",
       header: "Ciclo",
-      cell: (fila) => cicloTexto(fila.ciclo),
+      cell: (fila) => cicloCelda(fila.ciclo),
     },
     {
       id: "ejercicio",

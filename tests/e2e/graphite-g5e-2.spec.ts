@@ -165,6 +165,8 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
       await expect(list.locator(".pendientes-cards")).toBeHidden();
       await expect(list.locator(".pendientes-table th")).toHaveCount(9);
       // Las fechas se parten como mucho en el guion, nunca dentro del número.
+      // Se mide cada fecha por separado: un fragmento de línea propio por fecha
+      // (lineas === 1) y nunca más estrecho que su propio texto medido.
       const dateLines = await page.evaluate(() => {
         const row = Array.from(
           document.querySelectorAll<HTMLElement>(".pendientes-table tbody tr"),
@@ -175,17 +177,34 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
         const context = document.createElement("canvas").getContext("2d");
         if (!context) return null;
         context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-        const range = document.createRange();
-        range.selectNodeContents(cell);
         return {
           text: cell.textContent ?? "",
-          full: context.measureText("01/11/2026").width,
-          widths: Array.from(range.getClientRects()).map((rect) => rect.width),
+          fontFamily: style.fontFamily,
+          fontSize: style.fontSize,
+          cellWidth: cell.getBoundingClientRect().width,
+          fechas: Array.from(
+            cell.querySelectorAll<HTMLElement>(".pendiente-ciclo-fecha"),
+          ).map((span) => {
+            const texto = span.textContent ?? "";
+            const rects = Array.from(span.getClientRects()).map((rect) => rect.width);
+            return {
+              texto,
+              lineas: rects.length,
+              min: rects.length ? Math.min(...rects) : 0,
+              full: context.measureText(texto).width,
+            };
+          }),
         };
       });
       expect(dateLines?.text).toContain("01/11/2026");
-      expect(dateLines!.widths.length).toBeGreaterThan(0);
-      expect(Math.min(...dateLines!.widths)).toBeGreaterThanOrEqual(dateLines!.full - 3);
+      expect(dateLines!.fechas.length).toBe(2);
+      // El mensaje conserva las cifras medidas para distinguir corte real de
+      // artefacto de medición sin relajar la aserción.
+      for (const fecha of dateLines!.fechas) {
+        const detalle = `${fecha.texto} · ${JSON.stringify(dateLines)}`;
+        expect(fecha.lineas, detalle).toBe(1);
+        expect(fecha.min, detalle).toBeGreaterThanOrEqual(fecha.full - 3);
+      }
       await expect(list).toHaveCSS("padding-top", "0px");
     }
     if (width === 1280 || width === 1100) {

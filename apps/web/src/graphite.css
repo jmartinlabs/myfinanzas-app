@@ -5323,6 +5323,16 @@ html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child
   color: var(--muted);
 }
 
+/* Con `normal` el único punto de corte de la fecha sería la barra `/`: se marca
+   cada fecha para que el guion entre inicio y fin sea el único corte válido. */
+html[data-theme="graphite-lime"]
+  .pendientes-page
+  .pendientes-table
+  td:nth-child(3)
+  .pendiente-ciclo-fecha {
+  white-space: nowrap;
+}
+
 html[data-theme="graphite-lime"] .pendientes-page .pendientes-table :is(th, td):nth-child(1) {
   white-space: nowrap;
 }
