@@ -258,8 +258,9 @@ export type TransferenciaPendienteDTO = {
   repartoLinea: {
     id: number;
     reparto: number;
-    clase: "Presupuesto" | "Adicional";
+    clase: "Presupuesto" | "Adicional" | "Partida";
     presupuesto: string | null;
+    partida?: string | null;
     incluida: boolean;
     motivoExclusion: string | null;
   } | null;
@@ -354,13 +355,23 @@ export type RepartoLineaPendienteDTO = {
 
 export type RepartoLineaDTO = {
   id: number;
-  clase: "Presupuesto" | "Adicional";
+  clase: "Presupuesto" | "Adicional" | "Partida";
   presupuesto: {
     id: string;
     nombre: string;
     fuente: string;
     destino: string | null;
     estado: string;
+  } | null;
+  // D′ origin entity (SPEC36 amendment C). Wire-only for now: the UI increment
+  // (Issue #411) is the consumer that renders it.
+  partida?: {
+    id: string;
+    nombre: string;
+    estado: string;
+    raiz?: boolean;
+    fuente?: string | null;
+    destino?: string | null;
   } | null;
   origen: SaldoResumenDTO | null;
   destino: SaldoResumenDTO | null;
@@ -379,6 +390,8 @@ export type RepartoLineaDTO = {
 export type RepartoDTO = {
   id: number;
   ciclo: { id: string; inicio: string; fin: string | null };
+  /** Active plan source declared by the reparto (SPEC36 amendment C). */
+  fuentePlan?: "PlanCiclo" | "Dprima";
   estado: RepartoEstado;
   origenComun: SaldoResumenDTO | null;
   revision: number;

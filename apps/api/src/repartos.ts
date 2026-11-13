@@ -2,28 +2,38 @@ import type { Database } from "bun:sqlite";
 import { civil, getCycle } from "./ciclos";
 import { closedWindows } from "./e49-guards";
 import { fingerprint } from "./movement-ledger";
-import { getCyclePlan } from "./planes-ciclo";
 import { Problem } from "./problem";
+import {
+  readRepartoPlan,
+  type RepartoPlanSource,
+} from "./reparto-plan-source";
 import { decimal, money } from "./saldos";
 import { spanishToday } from "./movimientos";
 import { crearTransferenciaPendiente } from "./transferencias-pendientes";
 
 /**
- * SPEC36 — increment 2: monthly assisted distribution (Reparto).
+ * SPEC36 — increments 2 and 3: monthly assisted distribution (Reparto).
  *
  * The Reparto is an operational preparation. It never moves money, creates
- * Movimientos, writes financial tables, changes E2.3 figures or prorates the
- * annual plan. It reads the E2.3 monthly amount (`getCyclePlan`) and delegates
- * every pending insertion to the increment-1 `crearTransferenciaPendiente`
- * inside the generation transaction.
+ * Movimientos, writes financial tables, changes E2.3/D′ figures or prorates the
+ * annual plan. It reads the published lines of the active plan source through
+ * `readRepartoPlan` (amendment C) and delegates every pending insertion to the
+ * increment-1 `crearTransferenciaPendiente` inside the generation transaction.
  *
- * Rules enforced here (SPEC36 §5–§9, §16):
+ * Rules enforced here (SPEC36 §0.1, §0.2, §5–§9, §16):
  *  - one Reparto per Cycle (`repartos_ciclo_unico`), re-opening returns it;
- *  - one pending per line; several partial lines toward the same Presupuesto
- *    are valid because uniqueness is by line;
- *  - a Presupuesto line derives its destination from the Presupuesto;
- *  - D8: a historical line of an inactive Presupuesto stays visible/editable
- *    in Borrador, but no new line and no pending is created for it;
+ *  - every Reparto declares one plan source (`PlanCiclo`|`Dprima`) and it is
+ *    immutable: sources are never mixed and never switched;
+ *  - `Presupuesto` lines belong to `PlanCiclo`, `Partida` lines to `Dprima`;
+ *    `Adicional` lines belong to both; exactly one reference per class;
+ *  - a Presupuesto/Partida line derives its destination from its source and it
+ *    is not editable;
+ *  - one pending per line; several partial lines toward the same entity are
+ *    valid because uniqueness is by line;
+ *  - D8 applies to the active source entity (inactive Presupuesto for
+ *    `PlanCiclo`, inactive Partida for `Dprima`) and to the destination Saldo:
+ *    a historical line stays visible, but no new line and no pending is created
+ *    for an inactive entity or an ineligible destination;
  *  - a closed Cycle blocks create/edit/add/exclude/generate; reading,
  *    cancelling pendings and completing remain available;
  *  - precierre only warns and never includes pendings in its photo;
@@ -39,6 +49,10 @@ import { crearTransferenciaPendiente } from "./transferencias-pendientes";
 const repartoStates = ["Borrador", "Generado", "Completado"] as const;
 type RepartoEstado = (typeof repartoStates)[number];
 
+const planSources = ["PlanCiclo", "Dprima"] as const;
+const lineClasses = ["Presupuesto", "Adicional", "Partida"] as const;
+type RepartoClase = (typeof lineClasses)[number];
+
 type RepartoRow = {
   id: number;
   ciclo: string;
@@ -53,8 +67,9 @@ type RepartoRow = {
 type LineRow = {
   id: number;
   reparto: number;
-  clase: "Presupuesto" | "Adicional";
+  clase: RepartoClase;
   presupuesto: string | null;
+  partida: string | null;
   origen: string | null;
   destino: string | null;
   importe: number | null;
@@ -82,6 +97,21 @@ type BudgetRow = {
   fuente: string;
   destino: string | null;
   estado: "Activo" | "Inactivo";
+};
+
+type PartidaRow = {
+  id: string;
+  nombre: string;
+  estado: "Activa" | "Inactiva";
+  padre_partida: string | null;
+  fuente: string | null;
+};
+
+/** Published D′ monthly plan row for one root and Cycle (never recalculated). */
+type MonthlyPlanRow = {
+  fuente: "Gasto real" | "Aportación a saldo" | "No aplica";
+  destino: string | null;
+  revision: number;
 };
 
 type PendingRow = {
@@ -212,6 +242,53 @@ function budgetRow(db: Database, id: string): BudgetRow | null {
   );
 }
 
+function partidaRow(db: Database, id: string): PartidaRow | null {
+  return (
+    (db
+      .query(
+        "SELECT id,nombre,estado,padre_partida,fuente FROM partidas WHERE id=?",
+      )
+      .get(id) as PartidaRow | null) ?? null
+  );
+}
+
+/**
+ * Published D′ monthly plan row. It is read as-is: Del mes, Ejecutado and
+ * Pendiente are never recomputed here (amendment C).
+ */
+function monthlyPlanRow(
+  db: Database,
+  ciclo: string,
+  raiz: string,
+): MonthlyPlanRow | null {
+  return (
+    (db
+      .query(
+        "SELECT fuente,destino,revision FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?",
+      )
+      .get(ciclo, raiz) as MonthlyPlanRow | null) ?? null
+  );
+}
+
+function planSource(value: unknown, field = "fuentePlan"): RepartoPlanSource {
+  if (typeof value !== "string" || !(planSources as readonly string[]).includes(value))
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Indica el origen del plan del reparto.",
+      { [field]: "Origen PlanCiclo o Dprima." },
+    );
+  return value as RepartoPlanSource;
+}
+
+function cycleOfReparto(db: Database, reparto: number): string {
+  return (
+    db.query("SELECT ciclo FROM repartos WHERE id=?").get(reparto) as {
+      ciclo: string;
+    }
+  ).ciclo;
+}
+
 function requireCycle(db: Database, value: unknown) {
   if (typeof value !== "string" || !value)
     throw new Problem(422, "VALIDATION", "ID de ciclo inválido.");
@@ -277,6 +354,7 @@ function snapshot(row: RepartoRow) {
   return {
     id: row.id,
     ciclo: row.ciclo,
+    fuentePlan: row.fuente_plan,
     estado: row.estado,
     origenComun: row.origen_comun,
     revision: row.revision,
@@ -340,6 +418,7 @@ function lineSnapshot(line: LineRow) {
     reparto: line.reparto,
     clase: line.clase,
     presupuesto: line.presupuesto,
+    partida: line.partida,
     origen: line.origen,
     destino: line.destino,
     importe: decimal(line.importe === null ? null : String(line.importe)),
@@ -361,8 +440,27 @@ function requireRevision(current: number, value: unknown, what: "reparto" | "lin
     );
 }
 
+function partidaDto(db: Database, ciclo: string, row: PartidaRow) {
+  const plan = monthlyPlanRow(db, ciclo, row.id);
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    estado: row.estado,
+    raiz: row.padre_partida === null,
+    /** Fuente publicada por el origen activo para este Ciclo. */
+    fuente: plan?.fuente ?? row.fuente ?? null,
+    /** Destino publicado por el origen; nunca editable en el reparto. */
+    destino: plan?.destino ?? null,
+  };
+}
+
 function lineDto(db: Database, row: LineRow, pending?: PendingRow) {
   const budget = row.presupuesto ? budgetRow(db, row.presupuesto) : null;
+  const partida =
+    row.clase === "Partida" && row.partida
+      ? partidaRow(db, row.partida)
+      : null;
+  const ciclo = row.clase === "Partida" ? cycleOfReparto(db, row.reparto) : null;
   const pendiente =
     pending ??
     ((db
@@ -381,6 +479,19 @@ function lineDto(db: Database, row: LineRow, pending?: PendingRow) {
       if (budget.destino !== row.destino) avisos.push("PRESUPUESTO_DESTINO");
     }
   }
+  if (row.clase === "Partida") {
+    if (!partida) avisos.push("PARTIDA_NO_DISPONIBLE");
+    else {
+      if (partida.estado !== "Activa") avisos.push("PARTIDA_INACTIVA");
+      const plan = monthlyPlanRow(db, ciclo!, partida.id);
+      if (!plan) avisos.push("SIN_PLAN");
+      else {
+        if (plan.fuente !== "Aportación a saldo")
+          avisos.push("FUENTE_NO_APORTACION");
+        if (plan.destino !== row.destino) avisos.push("PARTIDA_DESTINO");
+      }
+    }
+  }
   if (row.origen && ineligibleReason(db, row.origen))
     avisos.push("SALDO_ORIGEN_NO_ELEGIBLE");
   if (row.destino && ineligibleReason(db, row.destino))
@@ -390,6 +501,7 @@ function lineDto(db: Database, row: LineRow, pending?: PendingRow) {
     reparto: row.reparto,
     clase: row.clase,
     presupuesto: budget,
+    partida: partida && ciclo ? partidaDto(db, ciclo, partida) : null,
     origen: row.origen ? saldoRow(db, row.origen) : null,
     destino: row.destino ? saldoRow(db, row.destino) : null,
     importe: decimal(row.importe === null ? null : String(row.importe)),
@@ -532,25 +644,57 @@ export function crearReparto(
   now = Date.now(),
 ) {
   for (const name of Object.keys(body))
-    if (name !== "origenComun")
+    if (!["origenComun", "fuentePlan"].includes(name))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${name}.`);
-  const ciclo = requireCycle(db, cicloValue);
-  return conIntento(db, "reparto:crear", { ciclo: ciclo.id, ...body }, key, now, () => {
-    const existing = repartoByCycle(db, ciclo.id);
-    if (existing) return { creado: false, reparto: repartoDto(db, existing) };
-    assertOpenCycle(db, ciclo.id);
-    let origenComun: string | null = null;
-    if (body.origenComun !== undefined && body.origenComun !== null)
-      origenComun = assertEligible(db, body.origenComun, "origenComun");
-    const time = new Date(now).toISOString();
-    const result = db.run(
-      "INSERT INTO repartos(ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado) VALUES(?,'PlanCiclo','Borrador',?,1,?,?)",
-      [ciclo.id, origenComun, time, time],
+  if (!/^[a-zA-Z0-9-]{16,100}$/.test(key))
+    throw new Problem(
+      422,
+      "IDEMPOTENCY_REQUIRED",
+      "Clave de intento inválida.",
     );
-    const created = repartoRow(db, Number(result.lastInsertRowid))!;
-    audit(db, created, "alta", null, now);
-    return { creado: true, reparto: repartoDto(db, created) };
-  });
+  if (body.fuentePlan === undefined)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Indica el origen del plan del reparto.",
+      { fuentePlan: "Origen obligatorio: PlanCiclo o Dprima." },
+    );
+  const fuentePlan = planSource(body.fuentePlan);
+  const ciclo = requireCycle(db, cicloValue);
+  return conIntento(
+    db,
+    "reparto:crear",
+    { ciclo: ciclo.id, ...body, fuentePlan },
+    key,
+    now,
+    () => {
+      const existing = repartoByCycle(db, ciclo.id);
+      if (existing) {
+        // One plan source per Cycle and it is never switched (AC-26).
+        if (existing.fuente_plan !== fuentePlan)
+          throw new Problem(
+            409,
+            "FUENTE_PLAN_INMUTABLE",
+            "El reparto del Ciclo ya declaró otro origen de plan; no se cambia.",
+            {},
+            { fuentePlan: existing.fuente_plan },
+          );
+        return { creado: false, reparto: repartoDto(db, existing) };
+      }
+      assertOpenCycle(db, ciclo.id);
+      let origenComun: string | null = null;
+      if (body.origenComun !== undefined && body.origenComun !== null)
+        origenComun = assertEligible(db, body.origenComun, "origenComun");
+      const time = new Date(now).toISOString();
+      const result = db.run(
+        "INSERT INTO repartos(ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado) VALUES(?,?,'Borrador',?,1,?,?)",
+        [ciclo.id, fuentePlan, origenComun, time, time],
+      );
+      const created = repartoRow(db, Number(result.lastInsertRowid))!;
+      audit(db, created, "alta", null, now);
+      return { creado: true, reparto: repartoDto(db, created) };
+    },
+  );
 }
 
 export function getRepartoPorCiclo(
@@ -576,11 +720,32 @@ export function previewReparto(
   db: Database,
   cicloValue: unknown,
   now = Date.now(),
+  sourceValue?: unknown,
 ) {
   return db.transaction(() => {
     const ciclo = requireCycle(db, cicloValue);
-    const plan = getCyclePlan(db, ciclo.id, now);
     const existing = repartoByCycle(db, ciclo.id);
+    const requested =
+      sourceValue === undefined || sourceValue === null || sourceValue === ""
+        ? null
+        : planSource(sourceValue);
+    if (existing && requested && requested !== existing.fuente_plan)
+      throw new Problem(
+        409,
+        "FUENTE_PLAN_INMUTABLE",
+        "El reparto del Ciclo ya declaró otro origen de plan; no se cambia.",
+        {},
+        { fuentePlan: existing.fuente_plan },
+      );
+    /**
+     * Before the reparto exists the preview needs an explicit source. Without
+     * one it reads the operational legacy source (`PlanCiclo`): D′ is never
+     * activated implicitly (SPEC36 §0.1).
+     */
+    const fuentePlan: RepartoPlanSource = existing
+      ? existing.fuente_plan
+      : (requested ?? "PlanCiclo");
+    const plan = readRepartoPlan(db, ciclo.id, fuentePlan, now);
     const existingDto = existing ? repartoDto(db, existing) : null;
     const periodReason =
       ciclo.inicio > spanishToday(now)
@@ -588,55 +753,85 @@ export function previewReparto(
         : !(ciclo.fin ?? ciclo.corte)
           ? "Periodo/corte no verificable"
           : null;
-    const items = plan.items.map((item) => {
-      const budget = item.presupuesto;
-      const pendiente = item.pendiente;
+    const dprima = fuentePlan === "Dprima";
+    const items = plan.lines.map((line) => {
+      const entidad = {
+        id: line.referencia,
+        nombre: line.nombre,
+        fuente: line.fuente,
+        destino: line.destino,
+        estado:
+          line.entidadEstado === null
+            ? null
+            : line.entidadEstado === "Activa"
+              ? dprima
+                ? "Activa"
+                : "Activo"
+              : dprima
+                ? "Inactiva"
+                : "Inactivo",
+      };
+      const pendiente = line.pendiente;
       const importeSugerido =
-        budget.fuente === "Aportación a saldo" &&
+        line.fuente === "Aportación a saldo" &&
         pendiente !== null &&
         aggregateCents(pendiente) > 0n
           ? pendiente
           : null;
       const motivos: string[] = [];
-      if (budget.fuente !== "Aportación a saldo") {
-        if (budget.fuente === "Gasto real") motivos.push("MANTENER_EN_ORIGEN");
+      if (line.fuente !== "Aportación a saldo") {
+        if (line.fuente === "Gasto real") motivos.push("MANTENER_EN_ORIGEN");
         else motivos.push("NO_APLICA");
       } else {
-        if (budget.estado !== "Activo") motivos.push("PRESUPUESTO_INACTIVO");
-        if (!budget.destino) motivos.push("SIN_DESTINO");
-        else if (ineligibleReason(db, budget.destino))
+        if (line.entidadEstado !== "Activa")
+          motivos.push(dprima ? "PARTIDA_INACTIVA" : "PRESUPUESTO_INACTIVO");
+        if (!line.destino) motivos.push("SIN_DESTINO");
+        else if (ineligibleReason(db, line.destino))
           motivos.push("SALDO_DESTINO_NO_ELEGIBLE");
+        if (line.atribucionAmbigua) motivos.push("ATRIBUCION_AMBIGUA");
         if (!importeSugerido) motivos.push("SIN_PENDIENTE_VERIFICABLE");
       }
       const lineasExistentes = existing
         ? (db
             .query(
-              "SELECT id, CAST(importe AS TEXT) importe FROM reparto_lineas WHERE reparto=? AND clase='Presupuesto' AND presupuesto=? AND incluida=1 ORDER BY id",
+              // Static, server-owned column per class; no user input.
+              `SELECT id, CAST(importe AS TEXT) importe FROM reparto_lineas
+               WHERE reparto=? AND clase=? AND ${dprima ? "partida" : "presupuesto"}=?
+                 AND incluida=1 ORDER BY id`,
             )
-            .all(existing.id, budget.id) as { id: number; importe: string }[])
+            .all(existing.id, dprima ? "Partida" : "Presupuesto", line.referencia) as {
+            id: number;
+            importe: string;
+          }[])
         : [];
       const acumulado = lineasExistentes.reduce(
-        (total, line) => total + BigInt(line.importe),
+        (total, existingLine) => total + BigInt(existingLine.importe),
         0n,
       );
       const restante =
         pendiente === null ? null : aggregateCents(pendiente) - acumulado;
       return {
-        presupuesto: budget,
-        delMes: item.aTransferir,
-        ejecutado: item.ejecutado,
+        clase: dprima ? "Partida" : "Presupuesto",
+        referencia: line.referencia,
+        presupuesto: dprima ? null : entidad,
+        partida: dprima ? entidad : null,
+        delMes: line.delMes,
+        ejecutado: line.ejecutado,
         pendiente,
-        estado: item.estado,
-        motivoE2: item.motivo,
+        estado: line.estado,
+        motivoE2: line.motivo,
+        sinPlanificar: line.sinPlanificar,
+        entidadEstado: line.entidadEstado,
         importeSugerido,
         propuestaAutomatica:
           importeSugerido !== null && motivos.length === 0,
         elegible:
-          budget.estado === "Activo" &&
-          budget.fuente === "Aportación a saldo" &&
+          line.entidadEstado === "Activa" &&
+          line.fuente === "Aportación a saldo" &&
           importeSugerido !== null &&
-          budget.destino !== null &&
-          !ineligibleReason(db, budget.destino),
+          line.destino !== null &&
+          !ineligibleReason(db, line.destino) &&
+          !line.atribucionAmbigua,
         motivos,
         lineasExistentes,
         efectoAcumulado: decimal(acumulado)!,
@@ -644,12 +839,32 @@ export function previewReparto(
         excedePendiente: pendiente !== null && restante !== null && restante < 0n,
       };
     });
+    // A Cycle without published lines has no plan: no invented lines/amounts.
+    const sinPlan = !db
+      .query(
+        `SELECT 1 FROM ${dprima ? "dprima_plan_mensual" : "cycle_plan_lines"} WHERE ciclo=? LIMIT 1`,
+      )
+      .get(ciclo.id);
     return {
       ciclo,
+      fuentePlan,
       reparto: existingDto,
       revision: plan.revision,
-      contextRevision: plan.contextRevision,
-      sinPlan: plan.sinPlan,
+      // Opaque revision of the previewed data (adapter output, not recalculated).
+      contextRevision: fingerprint([
+        fuentePlan,
+        plan.revision,
+        plan.lines.map((line) => [
+          line.referencia,
+          line.delMes,
+          line.ejecutado,
+          line.pendiente,
+          line.estado,
+          line.motivo,
+          line.entidadEstado,
+        ]),
+      ]),
+      sinPlan,
       periodo: {
         inicio: ciclo.inicio,
         fin: ciclo.fin,
@@ -678,11 +893,24 @@ export function actualizarReparto(
 ) {
   const id = identifier(idValue);
   for (const name of Object.keys(body))
-    if (!["revision", "origenComun"].includes(name))
+    if (!["revision", "origenComun", "fuentePlan"].includes(name))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${name}.`);
   return conIntento(db, "reparto:actualizar", { id, ...body }, key, now, () => {
     const row = repartoRow(db, id);
     if (!row) throw new Problem(404, "NOT_FOUND", "Reparto no encontrado.");
+    // The plan source is decided when the reparto is created and never changes
+    // (SPEC36 §0.1, AC-26), even while it is still a Borrador without lines.
+    if (
+      body.fuentePlan !== undefined &&
+      planSource(body.fuentePlan) !== row.fuente_plan
+    )
+      throw new Problem(
+        409,
+        "FUENTE_PLAN_INMUTABLE",
+        "El origen del plan del reparto no se cambia después de crearlo.",
+        {},
+        { fuentePlan: row.fuente_plan },
+      );
     requireRevision(row.revision, body.revision, "reparto");
     assertOpenCycle(db, row.ciclo);
     if (row.estado !== "Borrador")
@@ -752,17 +980,90 @@ function presupuestoLineInput(db: Database, body: Record<string, unknown>) {
   return budget;
 }
 
+/**
+ * A `Partida` line belongs to a `Dprima` reparto. Its destination and source
+ * are the ones already published by the D′ monthly plan for that root and
+ * Cycle: they are read, never recomputed, and never editable (SPEC36 §4, §5.1,
+ * §16.1). D8: an inactive Partida receives no new line.
+ */
+function partidaLineInput(
+  db: Database,
+  ciclo: string,
+  body: Record<string, unknown>,
+) {
+  if (body.partida === undefined)
+    throw new Problem(422, "VALIDATION", "Indica la Partida de la línea.", {
+      partida: "Identificador obligatorio.",
+    });
+  if (typeof body.partida !== "string" || !body.partida)
+    throw new Problem(422, "VALIDATION", "Partida inválida.");
+  const partida = partidaRow(db, body.partida);
+  if (!partida)
+    throw new Problem(
+      422,
+      "PARTIDA_NO_DISPONIBLE",
+      "La Partida de la línea no está disponible.",
+    );
+  if (partida.padre_partida !== null)
+    throw new Problem(
+      422,
+      "PARTIDA_NO_RAIZ",
+      "Solo una Partida raíz genera una línea de reparto.",
+      { partida: "Selecciona una Partida raíz." },
+    );
+  if (partida.estado !== "Activa")
+    throw new Problem(
+      422,
+      "PARTIDA_INACTIVA",
+      "No se crean líneas nuevas para una Partida inactiva.",
+      { partida: "Reactiva la Partida o usa una línea adicional." },
+    );
+  const plan = monthlyPlanRow(db, ciclo, partida.id);
+  if (!plan)
+    throw new Problem(
+      422,
+      "SIN_PLAN",
+      "La Partida no tiene línea en el Plan mensual D′ de este Ciclo.",
+      { partida: "Informa el Plan mensual D′ antes de repartir." },
+    );
+  if (plan.fuente !== "Aportación a saldo")
+    throw new Problem(
+      422,
+      "FUENTE_NO_APORTACION",
+      "Solo una Aportación a saldo genera una línea de Partida.",
+      { partida: "La fuente del Plan mensual D′ debe ser Aportación a saldo." },
+    );
+  if (!plan.destino)
+    throw new Problem(
+      422,
+      "SIN_DESTINO",
+      "La línea del Plan mensual D′ no tiene destino configurado.",
+      { destino: "Configura el destino en el Plan mensual D′." },
+    );
+  if (body.destino !== undefined && body.destino !== plan.destino)
+    throw new Problem(
+      422,
+      "PARTIDA_DESTINO",
+      "El destino procede del Plan mensual D′ y no es editable.",
+      { destino: "El destino se deriva de la Partida." },
+    );
+  return { id: partida.id, destino: plan.destino, fuente: plan.fuente };
+}
+
 function lineFields(
   db: Database,
   body: Record<string, unknown>,
-  clase: "Presupuesto" | "Adicional",
+  clase: RepartoClase,
   budget: BudgetRow | null,
+  partida: { id: string; destino: string } | null,
 ) {
   const origen = assertEligible(db, body.origen, "origen");
   const destino =
     clase === "Presupuesto"
       ? assertEligible(db, budget!.destino, "destino")
-      : assertEligible(db, body.destino, "destino");
+      : clase === "Partida"
+        ? assertEligible(db, partida!.destino, "destino")
+        : assertEligible(db, body.destino, "destino");
   if (origen === destino)
     throw new Problem(422, "VALIDATION", "Origen y destino deben ser distintos.");
   const importe = amount(body.importe);
@@ -802,6 +1103,7 @@ export function crearLineaReparto(
       ![
         "clase",
         "presupuesto",
+        "partida",
         "origen",
         "destino",
         "importe",
@@ -821,24 +1123,48 @@ export function crearLineaReparto(
     );
   if (
     body.clase !== undefined &&
-    body.clase !== "Presupuesto" &&
-    body.clase !== "Adicional"
+    !(lineClasses as readonly unknown[]).includes(body.clase)
   )
     throw new Problem(422, "VALIDATION", "Clase de línea inválida.", {
-      clase: "Presupuesto o Adicional.",
+      clase: "Presupuesto, Partida o Adicional.",
     });
-  const clase: "Presupuesto" | "Adicional" =
+  const clase: RepartoClase =
     body.clase === "Adicional"
       ? "Adicional"
-      : body.clase === "Presupuesto"
-        ? "Presupuesto"
-        : body.presupuesto !== undefined
+      : body.clase === "Partida"
+        ? "Partida"
+        : body.clase === "Presupuesto"
           ? "Presupuesto"
-          : "Adicional";
-  if (clase === "Adicional" && body.presupuesto !== undefined)
-    throw new Problem(422, "VALIDATION", "Una línea adicional no referencia Presupuesto.");
+          : body.partida !== undefined
+            ? "Partida"
+            : body.presupuesto !== undefined
+              ? "Presupuesto"
+              : "Adicional";
+  if (
+    clase === "Adicional" &&
+    (body.presupuesto !== undefined || body.partida !== undefined)
+  )
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Una línea adicional no referencia Presupuesto ni Partida.",
+    );
+  if (clase === "Presupuesto" && body.partida !== undefined)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Una línea de Presupuesto no referencia Partida.",
+    );
+  if (clase === "Partida" && body.presupuesto !== undefined)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Una línea de Partida no referencia Presupuesto.",
+    );
   if (clase === "Presupuesto" && body.destino !== undefined && body.presupuesto === undefined)
     throw new Problem(422, "VALIDATION", "Indica el Presupuesto de la línea.");
+  if (clase === "Partida" && body.destino !== undefined && body.partida === undefined)
+    throw new Problem(422, "VALIDATION", "Indica la Partida de la línea.");
   return conIntento(
     db,
     "reparto:linea-alta",
@@ -855,22 +1181,40 @@ export function crearLineaReparto(
           "STATE_CONFLICT",
           "Un reparto Completado no admite líneas nuevas.",
         );
+      // One plan source per reparto: the class must belong to that source.
+      if (clase === "Presupuesto" && reparto.fuente_plan !== "PlanCiclo")
+        throw new Problem(
+          422,
+          "FUENTE_PLAN_INCOMPATIBLE",
+          "El reparto usa el Plan mensual D′; no admite líneas de Presupuesto.",
+          { clase: "Usa una línea de Partida o un reparto con origen PlanCiclo." },
+        );
+      if (clase === "Partida" && reparto.fuente_plan !== "Dprima")
+        throw new Problem(
+          422,
+          "FUENTE_PLAN_INCOMPATIBLE",
+          "El reparto usa el Plan del ciclo; no admite líneas de Partida.",
+          { clase: "Usa una línea de Presupuesto o un reparto con origen Dprima." },
+        );
       const budget = clase === "Presupuesto" ? presupuestoLineInput(db, body) : null;
+      const partida =
+        clase === "Partida" ? partidaLineInput(db, reparto.ciclo, body) : null;
       const input =
         body.origen === undefined && reparto.origen_comun
           ? { ...body, origen: reparto.origen_comun }
           : body;
-      const fields = lineFields(db, input, clase, budget);
+      const fields = lineFields(db, input, clase, budget, partida);
       const time = new Date(now).toISOString();
       const result = db.run(
         `INSERT INTO reparto_lineas(
-           reparto,clase,presupuesto,origen,destino,importe,fecha_prevista,
+           reparto,clase,presupuesto,partida,origen,destino,importe,fecha_prevista,
            concepto,nota,incluida,motivo_exclusion,revision,creado,actualizado
-         ) VALUES(?,?,?,?,?,?,?,?,?,1,NULL,1,?,?)`,
+         ) VALUES(?,?,?,?,?,?,?,?,?,?,1,NULL,1,?,?)`,
         [
           id,
           clase,
           budget?.id ?? null,
+          partida?.id ?? null,
           fields.origen,
           fields.destino,
           fields.importe,
@@ -948,13 +1292,15 @@ export function actualizarLineaReparto(
         );
       requireRevision(line.revision, body.revision, "linea");
       const changes: Record<string, string | number | null> = {};
-      if (body.destino !== undefined && line.clase === "Presupuesto") {
+      if (body.destino !== undefined && line.clase !== "Adicional") {
         if (body.destino !== line.destino)
           throw new Problem(
             422,
-            "PRESUPUESTO_DESTINO",
-            "El destino procede del Presupuesto y no es editable.",
-            { destino: "El destino se deriva del Presupuesto." },
+            line.clase === "Partida" ? "PARTIDA_DESTINO" : "PRESUPUESTO_DESTINO",
+            line.clase === "Partida"
+              ? "El destino procede del Plan mensual D′ y no es editable."
+              : "El destino procede del Presupuesto y no es editable.",
+            { destino: "El destino se deriva de su origen." },
           );
       }
       const excluded =
@@ -987,7 +1333,7 @@ export function actualizarLineaReparto(
       }
       for (const side of ["origen", "destino"] as const) {
         if (body[side] === undefined) continue;
-        if (line.clase === "Presupuesto" && side === "destino") continue;
+        if (line.clase !== "Adicional" && side === "destino") continue;
         const value = assertEligible(db, body[side], side);
         if (value !== line[side]) changes[side] = value;
       }
@@ -1211,7 +1557,9 @@ export function generarReparto(
             // server log; the wire response never echoes it.
             console.error("reparto:generar", line.id, error);
           const code = problem
-            ? ["PRESUPUESTO_DESTINO", "FUENTE_NO_APORTACION"].includes(problem.code)
+            ? ["PRESUPUESTO_DESTINO", "PARTIDA_DESTINO", "FUENTE_NO_APORTACION"].includes(
+                problem.code,
+              )
               ? "CONTEXT_CHANGED"
               : problem.code
             : "INTERNAL";
@@ -1259,27 +1607,39 @@ function seguimientoData(db: Database, row: RepartoRow) {
   const lineas = lines.map((line) => lineDto(db, line));
   const completion = completionState(lines, pendings);
   const d8 = lineas
-    .filter((line) => line.avisos.includes("PRESUPUESTO_INACTIVO"))
+    .filter(
+      (line) =>
+        line.avisos.includes("PRESUPUESTO_INACTIVO") ||
+        line.avisos.includes("PARTIDA_INACTIVA"),
+    )
     .map((line) => ({
       linea: line.id,
       presupuesto: line.presupuesto?.id ?? null,
-      motivo: "Presupuesto inactivo: línea histórica visible, sin pendiente nuevo.",
+      partida: line.partida?.id ?? null,
+      motivo: line.avisos.includes("PARTIDA_INACTIVA")
+        ? "Partida inactiva: línea histórica visible, sin pendiente nuevo."
+        : "Presupuesto inactivo: línea histórica visible, sin pendiente nuevo.",
     }));
   const contexto = lineas
     .filter(
       (line) =>
         line.avisos.includes("PRESUPUESTO_DESTINO") ||
+        line.avisos.includes("PARTIDA_DESTINO") ||
         line.avisos.includes("FUENTE_NO_APORTACION") ||
-        line.avisos.includes("PRESUPUESTO_NO_DISPONIBLE"),
+        line.avisos.includes("PRESUPUESTO_NO_DISPONIBLE") ||
+        line.avisos.includes("PARTIDA_NO_DISPONIBLE"),
     )
     .map((line) => ({
       linea: line.id,
       presupuesto: line.presupuesto?.id ?? null,
+      partida: line.partida?.id ?? null,
       motivos: line.avisos.filter((aviso) =>
         [
           "PRESUPUESTO_DESTINO",
+          "PARTIDA_DESTINO",
           "FUENTE_NO_APORTACION",
           "PRESUPUESTO_NO_DISPONIBLE",
+          "PARTIDA_NO_DISPONIBLE",
         ].includes(aviso),
       ),
     }));

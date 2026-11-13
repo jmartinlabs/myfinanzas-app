@@ -9,8 +9,11 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { createCycle, cycleContext } from "./ciclos";
+import { createClassification } from "./clasificacion";
 import { createBudget } from "./presupuestos";
+import { getPlanMensualDprima, writeMensual, confirmPartidaConfig, previewPartidaConfig } from "./dprima";
 import { generarReparto } from "./repartos";
+import { readRepartoPlan } from "./reparto-plan-source";
 
 const now = Date.parse("2026-10-25T12:00:00Z");
 const origin = "http://127.0.0.1:5173";
@@ -133,7 +136,9 @@ function openReparto(
   body: Record<string, unknown> = {},
   key = randomUUID(),
 ) {
-  return request(`/api/ciclos/${ciclo}/reparto`, "POST", body, {
+  // The plan source is mandatory; existing lifecycle tests keep the legacy
+  // operational source explicitly. R-18 covers the mandatory field itself.
+  return request(`/api/ciclos/${ciclo}/reparto`, "POST", { fuentePlan: "PlanCiclo", ...body }, {
     "idempotency-key": key,
   });
 }
@@ -178,6 +183,76 @@ function presetLine(
     importe,
     fechaPrevista: "2026-01-05",
     concepto: "Aportación ficticia",
+    ...over,
+  });
+}
+
+/** D′ fixture (F36-DPRIMA): root Partidas under one synthetic subcategory. */
+function dprimaPartidas(db: Database) {
+  const categoria = createClassification(
+    db,
+    "categorias",
+    {
+      nombre: "Gastos reparto D′ " + randomUUID(),
+      anual: "Gasto",
+      mensual: "Gasto",
+      referencia: false,
+    },
+    randomUUID(),
+  ).id;
+  const sub = createClassification(
+    db,
+    "subcategorias",
+    { nombre: "Sub reparto D′", padre: categoria },
+    randomUUID(),
+  ).id;
+  return (nombre: string) =>
+    createClassification(db, "partidas", { nombre, padre: sub }, randomUUID()).id;
+}
+
+/** Published D′ monthly line; never recalculated by the reparto engine. */
+function planMensualDprima(
+  db: Database,
+  ciclo: string,
+  raiz: string,
+  over: {
+    fuente?: string;
+    destino?: string | null;
+    delMes?: string | null;
+    revision?: number;
+  } = {},
+) {
+  return writeMensual(
+    db,
+    ciclo,
+    {
+      raiz,
+      fuente: over.fuente ?? "Aportación a saldo",
+      destino: over.destino === undefined ? "S002" : over.destino,
+      base: null,
+      esencial: null,
+      delMes: over.delMes === undefined ? "100.00" : over.delMes,
+      revision: over.revision ?? 0,
+    },
+    randomUUID(),
+    now,
+  );
+}
+
+function presetPartidaLine(
+  request: ReturnType<typeof http>["request"],
+  reparto: number,
+  partida: string,
+  importe: string,
+  over: Record<string, unknown> = {},
+) {
+  return addLine(request, reparto, {
+    clase: "Partida",
+    partida,
+    origen: "S001",
+    importe,
+    fechaPrevista: "2026-01-05",
+    concepto: "Aportación D′ ficticia",
     ...over,
   });
 }
@@ -1349,4 +1424,618 @@ test("R-14 propuesta sin destino no es elegible ni propone automáticamente", as
   expect(item.elegible).toBe(false);
   expect(item.propuestaAutomatica).toBe(false);
   expect(item.importeSugerido).toBe("100.00");
+});
+
+/* ------------------------------------------------------------------ */
+/* SPEC36 amendment C — origin Dprima (Issue #410)                      */
+/* ------------------------------------------------------------------ */
+
+test("R-18 fuentePlan: obligatorio, persistido e inmutable por reparto", async () => {
+  const { db, c1 } = setup();
+  const api = http(db);
+  await api.auth();
+  const missing = await api.request(`/api/ciclos/${c1}/reparto`, "POST", {}, {
+    "idempotency-key": randomUUID(),
+  });
+  expect(missing.status).toBe(422);
+  expect(missing.data.code).toBe("VALIDATION");
+  expect(missing.data.fields.fuentePlan).toBeDefined();
+  const unknown = await api.request(
+    `/api/ciclos/${c1}/reparto`,
+    "POST",
+    { fuentePlan: "Otro" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(unknown.status).toBe(422);
+  expect(unknown.data.code).toBe("VALIDATION");
+  expect(
+    (db.query("SELECT count(*) n FROM repartos").get() as { n: number }).n,
+  ).toBe(0);
+
+  const opened = await openReparto(api.request, c1, {
+    fuentePlan: "Dprima",
+    origenComun: "S001",
+  });
+  expect(opened.status).toBe(201);
+  expect(opened.data.reparto.fuentePlan).toBe("Dprima");
+  expect(
+    db.query("SELECT fuente_plan FROM repartos WHERE ciclo=?").get(c1),
+  ).toEqual({ fuente_plan: "Dprima" });
+  // Reopening with the same source returns the same reparto, never a second one.
+  const same = await openReparto(api.request, c1, { fuentePlan: "Dprima" });
+  expect(same.status).toBe(200);
+  expect(same.data.creado).toBe(false);
+  expect(same.data.reparto.id).toBe(opened.data.reparto.id);
+  // Another source on the same Cycle is a domain conflict, not a switch.
+  const switched = await openReparto(api.request, c1, { fuentePlan: "PlanCiclo" });
+  expect(switched.status).toBe(409);
+  expect(switched.data.code).toBe("FUENTE_PLAN_INMUTABLE");
+
+  const reparto = opened.data.reparto.id;
+  const patched = await api.request(
+    `/api/repartos/${reparto}`,
+    "PATCH",
+    { revision: 1, fuentePlan: "PlanCiclo" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(patched.status).toBe(409);
+  expect(patched.data.code).toBe("FUENTE_PLAN_INMUTABLE");
+  // Sending the current source again is not a change.
+  const noop = await api.request(
+    `/api/repartos/${reparto}`,
+    "PATCH",
+    { revision: 1, fuentePlan: "Dprima" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(noop.status).toBe(422);
+  expect(noop.data.code).toBe("VALIDATION");
+  expect(
+    db.query("SELECT fuente_plan,revision FROM repartos WHERE id=?").get(reparto),
+  ).toEqual({ fuente_plan: "Dprima", revision: 1 });
+  // The audit keeps the declared source.
+  const alta = db
+    .query("SELECT posterior FROM reparto_audit WHERE reparto=? AND accion='alta'")
+    .get(reparto) as { posterior: string };
+  expect(JSON.parse(alta.posterior).fuentePlan).toBe("Dprima");
+
+  // The preview reads the declared source and refuses another one (AC-26).
+  const otherSource = await api.request(
+    `/api/ciclos/${c1}/reparto/propuesta?fuentePlan=PlanCiclo`,
+  );
+  expect(otherSource.status).toBe(409);
+  expect(otherSource.data.code).toBe("FUENTE_PLAN_INMUTABLE");
+  const own = await api.request(`/api/ciclos/${c1}/reparto/propuesta`);
+  expect(own.status).toBe(200);
+  expect(own.data.fuentePlan).toBe("Dprima");
+  expect(own.data.sinPlan).toBe(true);
+  expect(own.data.items).toEqual([]);
+});
+
+test("R-19 propuesta Dprima: adaptador de solo lectura y un único origen", async () => {
+  const { db, c1, preA } = setup();
+  const root = dprimaPartidas(db);
+  const rootA = root("Vivienda D′");
+  const rootG = root("Comida D′");
+  const rootN = root("Sin plan mensual D′");
+  planMensualDprima(db, c1, rootA, {
+    fuente: "Aportación a saldo",
+    destino: "S002",
+    delMes: "100.00",
+  });
+  planMensualDprima(db, c1, rootG, {
+    fuente: "Gasto real",
+    destino: "S003",
+    delMes: "200.00",
+  });
+  const api = http(db);
+  await api.auth();
+  const before = financialSnapshot(db);
+  const published = getPlanMensualDprima(db, c1, now);
+  const response = await api.request(
+    `/api/ciclos/${c1}/reparto/propuesta?fuentePlan=Dprima`,
+  );
+  expect(response.status).toBe(200);
+  expect(response.data.fuentePlan).toBe("Dprima");
+  expect(response.data.sinPlan).toBe(false);
+  expect(response.data.reparto).toBeNull();
+  expect(response.data.revision).toBeNull();
+  expect(response.data.contextRevision).toMatch(/^[a-f0-9]{64}$/);
+  // Only the chosen source: no Presupuesto of the legacy plan leaks in.
+  expect(
+    response.data.items.every(
+      (item: any) => item.clase === "Partida" && item.presupuesto === null,
+    ),
+  ).toBe(true);
+  const byRoot = Object.fromEntries(
+    response.data.items.map((item: any) => [item.partida.id, item]),
+  );
+  expect(byRoot[preA]).toBeUndefined();
+  // Del mes, Ejecutado, Pendiente and Estado are the published ones (AC-27).
+  for (const raiz of [rootA, rootG]) {
+    const source = published.items.find((item) => item.raiz === raiz)!;
+    expect(byRoot[raiz]).toMatchObject({
+      delMes: source.delMes,
+      ejecutado: source.ejecutado,
+      pendiente: source.pendiente,
+      estado: source.estado,
+      motivoE2: source.motivo,
+      entidadEstado: "Activa",
+    });
+  }
+  expect(byRoot[rootA]).toMatchObject({
+    importeSugerido: "100.00",
+    propuestaAutomatica: true,
+    elegible: true,
+    partida: {
+      id: rootA,
+      estado: "Activa",
+      fuente: "Aportación a saldo",
+      destino: "S002",
+    },
+  });
+  expect(byRoot[rootG].motivos).toContain("MANTENER_EN_ORIGEN");
+  expect(byRoot[rootG].importeSugerido).toBeNull();
+  // A root without a published monthly line keeps "Sin plan", no invented amount.
+  expect(byRoot[rootN].delMes).toBeNull();
+  expect(byRoot[rootN].pendiente).toBeNull();
+  expect(byRoot[rootN].importeSugerido).toBeNull();
+  expect(byRoot[rootN].motivos).toContain("NO_APLICA");
+  expect(financialSnapshot(db)).toEqual(before);
+  // The same Cycle can still preview the legacy source, one at a time.
+  const legacy = await api.request(
+    `/api/ciclos/${c1}/reparto/propuesta?fuentePlan=PlanCiclo`,
+  );
+  expect(legacy.status).toBe(200);
+  expect(legacy.data.fuentePlan).toBe("PlanCiclo");
+  expect(
+    legacy.data.items.every((item: any) => item.clase === "Presupuesto"),
+  ).toBe(true);
+  expect(
+    legacy.data.items.find((item: any) => item.referencia === preA),
+  ).toBeDefined();
+  // An unknown source never falls back to another plan.
+  expect(
+    (await api.request(`/api/ciclos/${c1}/reparto/propuesta?fuentePlan=Otro`))
+      .status,
+  ).toBe(422);
+});
+
+test("R-20 líneas Partida: alta, DTO, efecto acumulado y una referencia por clase", async () => {
+  const { db, c1, c2, preA } = setup();
+  const root = dprimaPartidas(db);
+  const rootA = root("Aportación D′");
+  const hija = root("Hija D′");
+  const config = previewPartidaConfig(db, hija, {
+    cambios: { padrePartida: rootA },
+    motivo: "Fixture hija D′",
+  });
+  confirmPartidaConfig(
+    db,
+    hija,
+    {
+      cambios: { padrePartida: rootA },
+      motivo: "Fixture hija D′",
+      fingerprint: config.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  planMensualDprima(db, c1, rootA, { destino: "S002", delMes: "100.00" });
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1, { fuentePlan: "Dprima" }))
+    .data.reparto.id;
+
+  const first = await presetPartidaLine(api.request, reparto, rootA, "30.00");
+  expect(first.status).toBe(201);
+  expect(first.data.item).toMatchObject({
+    clase: "Partida",
+    presupuesto: null,
+    partida: {
+      id: rootA,
+      estado: "Activa",
+      raiz: true,
+      fuente: "Aportación a saldo",
+      destino: "S002",
+    },
+    origen: { id: "S001" },
+    destino: { id: "S002" },
+    importe: "30.00",
+    incluida: true,
+    pendiente: null,
+    avisos: [],
+    puedeGenerarse: true,
+  });
+  // The class is inferred from the single reference.
+  const inferred = await addLine(api.request, reparto, {
+    partida: rootA,
+    origen: "S001",
+    importe: "30.00",
+    fechaPrevista: "2026-01-05",
+    concepto: "Parcial inferida",
+  });
+  expect(inferred.status).toBe(201);
+  expect(inferred.data.item.clase).toBe("Partida");
+  // Accumulated effect over the published Pendiente of the D′ line.
+  const proposal = await api.request(`/api/ciclos/${c1}/reparto/propuesta`);
+  const item = proposal.data.items.find(
+    (entry: any) => entry.partida.id === rootA,
+  );
+  expect(item.lineasExistentes).toHaveLength(2);
+  expect(item.efectoAcumulado).toBe("60.00");
+  expect(item.restante).toBe("40.00");
+  expect(item.excedePendiente).toBe(false);
+
+  // Exactly one reference per class.
+  const both = await addLine(api.request, reparto, {
+    clase: "Partida",
+    presupuesto: preA,
+    partida: rootA,
+    origen: "S001",
+    importe: "1.00",
+    fechaPrevista: "2026-01-05",
+  });
+  expect(both.status).toBe(422);
+  expect(both.data.code).toBe("VALIDATION");
+  const none = await addLine(api.request, reparto, {
+    clase: "Partida",
+    origen: "S001",
+    importe: "1.00",
+    fechaPrevista: "2026-01-05",
+  });
+  expect(none.status).toBe(422);
+  expect(none.data.code).toBe("VALIDATION");
+  // The class must match the declared plan source.
+  const wrongClass = await presetLine(api.request, reparto, preA, "10.00");
+  expect(wrongClass.status).toBe(422);
+  expect(wrongClass.data.code).toBe("FUENTE_PLAN_INCOMPATIBLE");
+  const legacy = (await openReparto(api.request, c2)).data.reparto.id;
+  const partidaInLegacy = await presetPartidaLine(
+    api.request,
+    legacy,
+    rootA,
+    "10.00",
+  );
+  expect(partidaInLegacy.status).toBe(422);
+  expect(partidaInLegacy.data.code).toBe("FUENTE_PLAN_INCOMPATIBLE");
+  // Destination and entity come from the D′ plan: never editable.
+  const changedDestination = await presetPartidaLine(
+    api.request,
+    reparto,
+    rootA,
+    "5.00",
+    { destino: "S003" },
+  );
+  expect(changedDestination.status).toBe(422);
+  expect(changedDestination.data.code).toBe("PARTIDA_DESTINO");
+  const daughter = await presetPartidaLine(api.request, reparto, hija, "5.00");
+  expect(daughter.status).toBe(422);
+  expect(daughter.data.code).toBe("PARTIDA_NO_RAIZ");
+  const unknown = await presetPartidaLine(
+    api.request,
+    reparto,
+    "PAR9999",
+    "5.00",
+  );
+  expect(unknown.status).toBe(422);
+  expect(unknown.data.code).toBe("PARTIDA_NO_DISPONIBLE");
+
+  // Draft edition keeps origen/importe editable and the destination frozen.
+  const editDestination = await api.request(
+    `/api/repartos/${reparto}/lineas/${first.data.item.id}`,
+    "PATCH",
+    { revision: 1, destino: "S003" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(editDestination.status).toBe(422);
+  expect(editDestination.data.code).toBe("PARTIDA_DESTINO");
+  const edited = await api.request(
+    `/api/repartos/${reparto}/lineas/${first.data.item.id}`,
+    "PATCH",
+    { revision: 1, importe: "25.00", concepto: "Revisada" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(edited.status).toBe(200);
+  expect(edited.data.item).toMatchObject({
+    clase: "Partida",
+    importe: "25.00",
+    concepto: "Revisada",
+    revision: 2,
+    partida: { id: rootA },
+  });
+  // Line audit reuses the existing log under `reparto-linea:*`.
+  const auditRow = db
+    .query("SELECT campos FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+    .get(`reparto-linea:${first.data.item.id}`) as { campos: string };
+  expect(JSON.parse(auditRow.campos).linea.partida).toBe(rootA);
+});
+
+test("R-21 D8 Dprima: Partida inactiva visible sin pendiente y destino no elegible", async () => {
+  const { db, c1 } = setup();
+  const root = dprimaPartidas(db);
+  const rootA = root("Aportación D′");
+  const rootB = root("Histórica D′");
+  const unused = root("Inactiva sin plan D′");
+  planMensualDprima(db, c1, rootA, { destino: "S002", delMes: "100.00" });
+  planMensualDprima(db, c1, rootB, { destino: "S005", delMes: "80.00" });
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1, { fuentePlan: "Dprima" }))
+    .data.reparto.id;
+  // D8 at line creation: an inactive Partida never receives a new line.
+  db.run(
+    "UPDATE partidas SET estado='Inactiva',revision=revision+1,actualizado=? WHERE id=?",
+    [stamp, unused],
+  );
+  const blockedNew = await presetPartidaLine(api.request, reparto, unused, "5.00");
+  expect(blockedNew.status).toBe(422);
+  expect(blockedNew.data.code).toBe("PARTIDA_INACTIVA");
+
+  const good = (await presetPartidaLine(api.request, reparto, rootA, "40.00"))
+    .data.item;
+  const historical = (
+    await presetPartidaLine(api.request, reparto, rootB, "20.00")
+  ).data.item;
+  /**
+   * The schema refuses to deactivate a Partida while it still has a published
+   * monthly line, so the only reachable historical-inactive state is a Partida
+   * whose monthly line no longer exists. Fixture only: the engine never
+   * deletes plan rows.
+   */
+  db.run("DELETE FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?", [
+    c1,
+    rootB,
+  ]);
+  db.run(
+    "UPDATE partidas SET estado='Inactiva',revision=revision+1,actualizado=? WHERE id=?",
+    [stamp, rootB],
+  );
+
+  const read = await api.request(`/api/ciclos/${c1}/reparto`);
+  const visible = read.data.reparto.lineas.find(
+    (line: any) => line.id === historical.id,
+  );
+  expect(visible.avisos).toContain("PARTIDA_INACTIVA");
+  expect(visible.incluida).toBe(true);
+  expect(visible.importe).toBe("20.00");
+  expect(visible.puedeGenerarse).toBe(false);
+  expect(visible.partida).toMatchObject({ id: rootB, estado: "Inactiva" });
+  // The historical line stays editable while the entity is inactive (D8).
+  const editedHistorical = await api.request(
+    `/api/repartos/${reparto}/lineas/${historical.id}`,
+    "PATCH",
+    { revision: 1, concepto: "Concepto histórico D′" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(editedHistorical.status).toBe(200);
+  expect(editedHistorical.data.item).toMatchObject({
+    concepto: "Concepto histórico D′",
+    incluida: true,
+    avisos: expect.arrayContaining(["PARTIDA_INACTIVA"]),
+  });
+  // No new line for the inactive entity.
+  const blocked = await presetPartidaLine(api.request, reparto, rootB, "5.00");
+  expect(blocked.status).toBe(422);
+  expect(blocked.data.code).toBe("PARTIDA_INACTIVA");
+  // No new pending either: the whole generation rolls back.
+  const failed = await generate(api.request, reparto, 1);
+  expect(failed.status).toBe(409);
+  expect(failed.data.code).toBe("GENERACION_INCOMPLETA");
+  expect(failed.data.creados).toEqual([]);
+  expect(failed.data.errores[0]).toMatchObject({
+    lineaId: historical.id,
+    code: "PARTIDA_INACTIVA",
+  });
+  expect(
+    (db.query("SELECT count(*) n FROM transferencia_pendiente").get() as {
+      n: number;
+    }).n,
+  ).toBe(0);
+  expect(
+    db.query("SELECT estado,revision FROM repartos WHERE id=?").get(reparto),
+  ).toEqual({ estado: "Borrador", revision: 1 });
+  // The follow-up exposes the D8 notice of the active source entity.
+  const seguimiento = await api.request(`/api/repartos/${reparto}/seguimiento`);
+  expect(seguimiento.data.avisos.d8).toContainEqual({
+    linea: historical.id,
+    presupuesto: null,
+    partida: rootB,
+    motivo: "Partida inactiva: línea histórica visible, sin pendiente nuevo.",
+  });
+  // Reactivating the Partida and its published line restores generation.
+  db.run(
+    "UPDATE partidas SET estado='Activa',revision=revision+1,actualizado=? WHERE id=?",
+    [stamp, rootB],
+  );
+  planMensualDprima(db, c1, rootB, { destino: "S005", delMes: "80.00" });
+  const generated = await generate(api.request, reparto, 1);
+  expect(generated.status).toBe(200);
+  expect(generated.data.creados).toHaveLength(2);
+  expect(good.id).toBeNumber();
+
+  // Context changed: the published D′ destination no longer matches the line.
+  const rootD = root("Contexto D′");
+  planMensualDprima(db, c1, rootD, { destino: "S003", delMes: "60.00" });
+  const contextLine = (
+    await presetPartidaLine(api.request, reparto, rootD, "10.00")
+  ).data.item;
+  db.run(
+    "UPDATE dprima_plan_mensual SET destino='S005',revision=revision+1,actualizado=? WHERE ciclo=? AND raiz=?",
+    [stamp, c1, rootD],
+  );
+  const changed = await generate(api.request, reparto, 2);
+  expect(changed.status).toBe(409);
+  expect(changed.data.code).toBe("GENERACION_INCOMPLETA");
+  expect(changed.data.errores[0]).toMatchObject({
+    lineaId: contextLine.id,
+    code: "CONTEXT_CHANGED",
+  });
+  expect(
+    (db.query("SELECT count(*) n FROM transferencia_pendiente").get() as {
+      n: number;
+    }).n,
+  ).toBe(2);
+
+  // Ineligible destination: no automatic proposal and no new line.
+  const rootE = root("Destino inactivo D′");
+  planMensualDprima(db, c1, rootE, { destino: "S004", delMes: "50.00" });
+  db.run(
+    "UPDATE saldos SET estado='Inactiva',revision=revision+1,actualizado=? WHERE id='S004'",
+    [stamp],
+  );
+  const preview = await api.request(`/api/ciclos/${c1}/reparto/propuesta`);
+  const blockedItem = preview.data.items.find(
+    (entry: any) => entry.partida.id === rootE,
+  );
+  expect(blockedItem.motivos).toContain("SALDO_DESTINO_NO_ELEGIBLE");
+  expect(blockedItem.elegible).toBe(false);
+  expect(blockedItem.propuestaAutomatica).toBe(false);
+  const ineligible = await presetPartidaLine(
+    api.request,
+    reparto,
+    rootE,
+    "5.00",
+  );
+  expect(ineligible.status).toBe(422);
+  expect(ineligible.data.code).toBe("SALDO_NO_ELEGIBLE");
+});
+
+test("R-22 destinos compartidos D′: ATRIBUCION_AMBIGUA sin propuesta automática", async () => {
+  const { db, c1 } = setup();
+  const root = dprimaPartidas(db);
+  const first = root("Compartida A D′");
+  const second = root("Compartida B D′");
+  planMensualDprima(db, c1, first, { destino: "S002", delMes: "100.00" });
+  planMensualDprima(db, c1, second, { destino: "S002", delMes: "50.00" });
+  const api = http(db);
+  await api.auth();
+  const preview = await api.request(
+    `/api/ciclos/${c1}/reparto/propuesta?fuentePlan=Dprima`,
+  );
+  expect(preview.status).toBe(200);
+  for (const raiz of [first, second]) {
+    const item = preview.data.items.find(
+      (entry: any) => entry.partida.id === raiz,
+    );
+    expect(item.motivos).toContain("ATRIBUCION_AMBIGUA");
+    expect(item.propuestaAutomatica).toBe(false);
+    expect(item.elegible).toBe(false);
+    expect(item.importeSugerido).toBeNull();
+    expect(item.pendiente).toBeNull();
+    expect(item.estado).toBe("No disponible");
+  }
+});
+
+test("R-23 generación Dprima: un pendiente por línea, idempotente y efecto de Partida", async () => {
+  const { db, c1 } = setup();
+  const root = dprimaPartidas(db);
+  const rootA = root("Aportación D′");
+  const rootB = root("Segunda D′");
+  planMensualDprima(db, c1, rootA, { destino: "S002", delMes: "100.00" });
+  planMensualDprima(db, c1, rootB, { destino: "S005", delMes: "80.00" });
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c1, { fuentePlan: "Dprima" }))
+    .data.reparto.id;
+  const l1 = (await presetPartidaLine(api.request, reparto, rootA, "30.00")).data
+    .item;
+  const l2 = (await presetPartidaLine(api.request, reparto, rootB, "20.00")).data
+    .item;
+  const key = randomUUID();
+  const generated = await generate(api.request, reparto, 1, undefined, key);
+  expect(generated.status).toBe(200);
+  expect(generated.data.reparto.fuentePlan).toBe("Dprima");
+  expect(generated.data.creados).toHaveLength(2);
+  for (const pending of generated.data.creados) {
+    expect(pending.repartoLinea.clase).toBe("Partida");
+    expect(pending.estado).toBe("Pendiente de realizar");
+  }
+  expect(
+    generated.data.creados
+      .map((pending: any) => pending.repartoLinea.id)
+      .sort(),
+  ).toEqual([l1.id, l2.id].sort());
+  expect(
+    (db.query("SELECT count(*) n FROM transferencia_pendiente").get() as {
+      n: number;
+    }).n,
+  ).toBe(2);
+  // Same key and payload replays the stored response, without new rows.
+  const replay = await generate(api.request, reparto, 1, undefined, key);
+  expect(replay.status).toBe(200);
+  expect(replay.data.creados.map((pending: any) => pending.id)).toEqual(
+    generated.data.creados.map((pending: any) => pending.id),
+  );
+  expect((await generate(api.request, reparto, 2)).data.creados).toEqual([]);
+  // Generation writes pendientes only, never a financial fact.
+  expect(
+    (db.query("SELECT count(*) n FROM movimientos").get() as { n: number }).n,
+  ).toBe(0);
+
+  const pending = generated.data.creados.find(
+    (item: any) => item.repartoLinea.id === l1.id,
+  );
+  const impact = await api.request(
+    `/api/transferencias-pendientes/${pending.id}/impacto`,
+    "POST",
+    { fechaReal: "2026-01-10" },
+  );
+  expect(impact.status).toBe(200);
+  expect(impact.data.condiciones).toEqual({
+    requiereRevision: false,
+    motivos: [],
+  });
+  expect(impact.data.efectoPresupuestario).toMatchObject({
+    aplica: true,
+    presupuesto: null,
+    partida: rootA,
+    destino: "S002",
+  });
+  const confirmed = await confirmPending(api.request, pending);
+  expect(confirmed.estado).toBe("Confirmada");
+  expect(confirmed.partida).toMatchObject({ id: rootA, estado: "Activa" });
+  expect(confirmed.movimiento.id).toBeString();
+  expect(confirmed.repartoLinea.clase).toBe("Partida");
+  const movements = db
+    .query("SELECT origen,destino,importe,tipo FROM movimientos")
+    .all() as { origen: string; destino: string; importe: number; tipo: string }[];
+  expect(movements).toEqual([
+    { origen: "S001", destino: "S002", importe: 3000, tipo: "Transferencia" },
+  ]);
+});
+
+test("R-24 propuesta PlanCiclo sale del adaptador, sin un segundo cálculo", async () => {
+  const { db, c1, preA, preG, preN } = setup();
+  const api = http(db);
+  await api.auth();
+  const plan = readRepartoPlan(db, c1, "PlanCiclo", now);
+  const response = await api.request(
+    `/api/ciclos/${c1}/reparto/propuesta?fuentePlan=PlanCiclo`,
+  );
+  expect(response.status).toBe(200);
+  expect(response.data.fuentePlan).toBe("PlanCiclo");
+  expect(response.data.revision).toBe(plan.revision);
+  expect(response.data.items.map((item: any) => item.referencia)).toEqual([
+    preA,
+    preG,
+    preN,
+  ]);
+  for (const [index, line] of plan.lines.entries()) {
+    expect(response.data.items[index]).toMatchObject({
+      clase: "Presupuesto",
+      referencia: line.referencia,
+      presupuesto: {
+        id: line.referencia,
+        nombre: line.nombre,
+        fuente: line.fuente,
+        destino: line.destino,
+      },
+      delMes: line.delMes,
+      ejecutado: line.ejecutado,
+      pendiente: line.pendiente,
+      estado: line.estado,
+      motivoE2: line.motivo,
+      entidadEstado: line.entidadEstado,
+    });
+  }
 });
