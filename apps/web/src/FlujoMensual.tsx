@@ -194,13 +194,14 @@ function AjusteCompartidosPanel({
     <section className="panel flow-adjusted" aria-labelledby="flow-adjusted">
       <h2 id="flow-adjusted">Flujo ajustado por Recuperado</h2>
       <p className="notice">
-        Vista separada: la base del plan no se modifica. <strong>G_n</strong>{" "}
-        sustituye a <strong>G_b</strong>; nunca se suma el Recuperado como
+        Vista separada: la base del plan no se modifica. El{" "}
+        <strong>gasto neto</strong> sustituye al{" "}
+        <strong>gasto bruto del plan</strong>; nunca se suma el Recuperado como
         segundo gasto. Comida no se resta aquí.
       </p>
       <div className="flow-grid">
         <AjusteIndicator
-          name="Gasto bruto del plan (G_b)"
+          name="Gasto bruto del plan"
           value={{
             importe: ajuste.base.importe,
             cobertura: ajuste.base.cobertura,
@@ -209,23 +210,23 @@ function AjusteCompartidosPanel({
           note="Base del plan conservada; los Gastos centrales se cuentan una vez."
         />
         <AjusteIndicator
-          name="Ajuste por Recuperado (R_adj)"
+          name="Ajuste por Recuperado"
           value={{
             importe: ajuste.recuperado.importe,
             cobertura: ajuste.recuperado.cobertura,
             motivo: ajuste.recuperado.motivo,
           }}
           display={rAdjDisplay}
-          note="Se resta de G_b; no es Ingreso."
+          note="Se resta del gasto bruto del plan; no es Ingreso."
         />
         <AjusteIndicator
-          name="Gasto neto del ciclo por Recuperado (G_n)"
+          name="Gasto neto del ciclo por Recuperado"
           value={{
             importe: ajuste.gastoNeto.importe,
             cobertura: ajuste.gastoNeto.cobertura,
             motivo: ajuste.gastoNeto.motivo,
           }}
-          note="G_n = G_b − R_adj. No es coste propio, pendiente ni exceso."
+          note="El gasto neto es el gasto bruto del plan menos el ajuste por Recuperado. No es coste propio, pendiente ni exceso."
         />
         <AjusteIndicator
           name="S bruto del plan"
@@ -239,7 +240,7 @@ function AjusteCompartidosPanel({
           note="Referencia base; siempre Parcial."
         />
         <AjusteIndicator
-          name="S ajustado (S_aj)"
+          name="S ajustado"
           value={{
             importe: flujo?.ajuste.sAjustado ?? null,
             cobertura: flujo?.ajuste.cobertura ?? "Parcial",
@@ -316,8 +317,9 @@ function AjusteCompartidosPanel({
             Ver Neto, coste propio, pendiente y exceso por caso ({ajuste.casos.length})
           </summary>
           <p className="muted">
-            Valores actuales del caso, separados del flujo. No se suman a G_b,
-            R_adj, G_n ni S_aj.
+            Valores actuales del caso, separados del flujo. No se suman al gasto
+            bruto del plan, al ajuste por Recuperado, al gasto neto ni al S
+            ajustado.
           </p>
           <div className="flow-case-metrics">
             <table>

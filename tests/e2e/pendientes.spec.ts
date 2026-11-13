@@ -446,7 +446,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
     await expect(casos).toContainText("150,00 €");
     await expect(casos).toContainText("300,00 €");
     await expect(
-      page.getByText(/No se suman a G_b, R_adj, G_n ni S_aj/),
+      page.getByText(/No se suman al gasto\s+bruto del plan/),
     ).toBeVisible();
     await page.screenshot({
       path: ARTIFACTS + "/w4-casos-ajuste-1440.png",
@@ -801,18 +801,18 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       }),
     ).toBeVisible();
     const gb = page.getByRole("article", {
-      name: "Gasto bruto del plan (G_b)",
+      name: "Gasto bruto del plan",
       exact: true,
     });
     await expect(gb).toContainText("1.800,00 €");
     const radj = page.getByRole("article", {
-      name: "Ajuste por Recuperado (R_adj)",
+      name: "Ajuste por Recuperado",
       exact: true,
     });
     await expect(radj).toContainText("0,00 €");
     await expect(radj).toContainText("Verificada");
     const gn = page.getByRole("article", {
-      name: "Gasto neto del ciclo por Recuperado (G_n)",
+      name: "Gasto neto del ciclo por Recuperado",
       exact: true,
     });
     await expect(gn).toContainText("1.800,00 €");
@@ -823,7 +823,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
     });
     await expect(sbruto).toContainText("350,00 €");
     const sajustado = page.getByRole("article", {
-      name: "S ajustado (S_aj)",
+      name: "S ajustado",
       exact: true,
     });
     await expect(sajustado).toContainText("350,00 €");
@@ -834,7 +834,9 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
         exact: true,
       }),
     ).toContainText("0,00 €");
-    await expect(page.getByText(/G_n = G_b − R_adj/).first()).toBeVisible();
+    await expect(
+      page.getByText(/El gasto neto es el gasto bruto del plan menos el ajuste por Recuperado/).first(),
+    ).toBeVisible();
     // La base del plan sigue visible y etiquetada.
     await expect(
       page.getByRole("article", {
