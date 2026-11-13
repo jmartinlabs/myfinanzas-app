@@ -788,7 +788,7 @@ class CiWorkflowTests(unittest.TestCase):
                     self.assertIn(output.read_text(), ('profile=docs\n', 'profile=fast\n', 'profile=full\n'))
 
 
-class ApplicationProfileTests(unittest.TestCase):
+class CiApplicationProfileTests(unittest.TestCase):
     """FAST is the PR venue; FULL owns API/SQLite and E2E on the deploy tag."""
 
     def test_fast_is_a_strict_subset_and_full_runs_every_suite_once(self):
@@ -1120,7 +1120,7 @@ class CiLinuxTests(unittest.TestCase):
             self.assertEqual(self.calls, [])
 
 
-class RootlessWorkflowTests(unittest.TestCase):
+class CiRootlessWorkflowTests(unittest.TestCase):
     """The deploy workflow may only build and deploy; suites live in the profiles."""
 
     def setUp(self):
