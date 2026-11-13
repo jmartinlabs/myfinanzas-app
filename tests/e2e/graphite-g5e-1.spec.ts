@@ -168,6 +168,9 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
     page.locator(".anticipo-table .ui-table tbody tr.annulled td").first(),
   ).toHaveCSS("color", "rgb(143, 152, 139)");
   await expect(
+    page.locator(".anticipo-table .ui-table tbody tr.annulled .tag").first(),
+  ).toHaveCSS("color", "rgb(143, 152, 139)");
+  await expect(
     page.getByText("No disponible: sin par acreditado verificable.", {
       exact: false,
     }),
@@ -239,6 +242,8 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
   expect(Math.round(checkBox!.height)).toBe(20);
   const checkLabel = page.locator(".anticipo-page .check-label");
   expect((await checkLabel.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await noOverflow();
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
 
   for (const [width, height] of [
@@ -257,9 +262,13 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
       });
       await expect(cardAction).toBeVisible();
       expect((await cardAction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-      await expect(
-        page.locator(".mobile-list .ui-data-list-item.annulled"),
-      ).toHaveCount(1);
+      const annulledCard = page.locator(".mobile-list .ui-data-list-item.annulled");
+      await expect(annulledCard).toHaveCount(1);
+      await expect(annulledCard.locator(".tag")).toHaveCSS(
+        "color",
+        "rgb(143, 152, 139)",
+      );
+      await expect(annulledCard).toHaveCSS("border-left-width", "3px");
     }
     await noOverflow();
     await page.screenshot({

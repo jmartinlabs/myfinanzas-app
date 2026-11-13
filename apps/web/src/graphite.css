@@ -4856,9 +4856,7 @@ html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.
 }
 
 html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled {
-  background-image: none;
-  background-color: var(--surface-2);
-  border-color: var(--graphite-card-border);
+  border-left: 3px solid var(--border);
 }
 
 html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table .tag {
