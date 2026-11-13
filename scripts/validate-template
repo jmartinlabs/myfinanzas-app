@@ -19,7 +19,15 @@ REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.githu
 #   '~:'      a sentence that may be reworded: case and whitespace runs are ignored
 #   're:'     a rule with declared synonyms, written as a regular expression
 # Code, JSON, YAML and permission checks keep exact matching: those are not prose.
-def norm(text): return re.sub(r'\s+',' ',text).strip().casefold()
+WHITESPACE=re.compile(r'\s+')
+LINKS=re.compile(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)')
+HEADING=re.compile(r'^#{1,6}\s+(.+)$',re.M)
+# Every credential rule needs one of these literals. A document without them cannot
+# match, so the expensive expressions are skipped; the expressions stay
+# authoritative and test-validator proves each shape is still detected.
+SECRET_LITERALS=('-----begin ','gh','akia','sk-','password','api_key','access_token','secret')
+PORTABILITY_LITERALS=('/users/','/home/','/workspace/','\\users\\')
+def norm(text): return WHITESPACE.sub(' ',text).strip().casefold()
 def satisfied(text,token):
  if token.startswith('re:'): return re.search(token[3:],norm(text),re.I) is not None
  if token.startswith('~:'): return norm(token[2:]) in norm(text)
@@ -28,17 +36,21 @@ def satisfied(text,token):
 def validate(root):
  root=Path(root).resolve(); errors=[]
  def fail(rule,msg): errors.append(f'{rule}: {msg}')
- def read(name):
-  p=root/name
-  return p.read_text(encoding='utf-8') if p.is_file() else ''
+ cache={}
+ def read(name): return text(root/name)
+ def text(p):
+  # Several rules inspect the same document; read each one once per run.
+  key=str(p)
+  if key not in cache: cache[key]=p.read_text(encoding='utf-8') if p.is_file() else ''
+  return cache[key]
  for name in REQUIRED:
   if not (root/name).is_file() or not (root/name).stat().st_size: fail('structure',f'missing or empty {name}')
  docs=[root/n for n in ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md') if (root/n).is_file()]
  for folder in ('specs','templates','.agents/skills'):
   docs.extend((root/folder).rglob('*.md'))
  for p in docs:
-  s=p.read_text(encoding='utf-8')
-  for dest in re.findall(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)',s):
+  s=text(p)
+  for dest in LINKS.findall(s):
    dest=dest.strip().split(' "',1)[0].strip('<>'); u=urlsplit(dest)
    if u.scheme or dest.startswith('#'): continue
    target=(p.parent/unquote(u.path)).resolve()
@@ -52,7 +64,7 @@ def validate(root):
  for p in root.rglob('*.md'):
   seen={}
   values=set()
-  for heading in re.findall(r'^#{1,6}\s+(.+)$',p.read_text(encoding='utf-8'),re.M):
+  for heading in HEADING.findall(text(p)):
    base=heading_slug(heading); count=seen.get(base,0)
    values.add(base if count==0 else f'{base}-{count}'); seen[base]=count+1
   anchors[p.resolve()]=values
@@ -60,7 +72,7 @@ def validate(root):
  for folder in ('docs','specs/methodology','specs/guidelines','templates','.agents'):
   fragment_docs.extend((root/folder).rglob('*.md'))
  for p in fragment_docs:
-  for dest in re.findall(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)',p.read_text(encoding='utf-8')):
+  for dest in LINKS.findall(text(p)):
    dest=dest.strip().split(' "',1)[0].strip('<>'); u=urlsplit(dest)
    if u.scheme or not u.fragment or not u.path: continue
    target=(p.parent/unquote(u.path)).resolve()
@@ -87,9 +99,9 @@ def validate(root):
  safety=docs+[root/n for n in ('PROMPT_BACKUP.md','PROMPT_BACKUP_COMPLETE.md','.gitignore','.github/workflows/validate.yml','scripts/validate-template','scripts/test-validator','scripts/agent-relay','scripts/test-agent-relay') if (root/n).is_file()]
  patterns=(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',r'\bgh[pousr]_[A-Za-z0-9]{30,}\b',r'\bgithub_pat_[A-Za-z0-9_]{30,}\b',r'\bAKIA[A-Z0-9]{16}\b',r'\bsk-[A-Za-z0-9]{32,}\b',r'(?im)^\s*(?:password|api_key|access_token|secret)\s*[:=]\s*["\']?[A-Za-z0-9+/=_-]{20,}')
  for p in safety:
-  s=p.read_text(encoding='utf-8')
-  if any(re.search(pat,s) for pat in patterns): fail('secrets',f'credential-like content in {p.relative_to(root)} (value withheld)')
-  if re.search(r'/(?:Users|home|workspace)/[A-Za-z0-9_.-]+|[A-Z]:\\Users\\',s): fail('portability',f'machine-specific path in {p.relative_to(root)}')
+  s=text(p); lower=s.lower()
+  if any(literal in lower for literal in SECRET_LITERALS) and any(re.search(pat,s) for pat in patterns): fail('secrets',f'credential-like content in {p.relative_to(root)} (value withheld)')
+  if any(literal in lower for literal in PORTABILITY_LITERALS) and re.search(r'/(?:Users|home|workspace)/[A-Za-z0-9_.-]+|[A-Z]:\\Users\\',s): fail('portability',f'machine-specific path in {p.relative_to(root)}')
  for p in [root/'AGENTS.md',*(root/'.agents/skills').rglob('SKILL.md')]:
   if p.is_file() and re.search(r'(?i)(?:all projects|every project|all applications) must (?:use|install|run)\b',p.read_text()): fail('neutrality',f'universal stack mandate in {p.relative_to(root)}')
  # The project workflow contract checks parsed structure/conditions, not token presence.

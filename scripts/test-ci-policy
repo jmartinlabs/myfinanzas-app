@@ -818,6 +818,112 @@ class CiApplicationProfileTests(unittest.TestCase):
                          ENTRY['application_checks']('full'))
 
 
+class CiHarnessSelectionTests(unittest.TestCase):
+    """FAST narrows harness regressions by declared inputs; every doubt runs all."""
+
+    def all_suites(self):
+        return tuple(name for name, _ in POLICY['HARNESS_INPUTS'])
+
+    def test_declarations_cover_the_verify_suites_exactly_once(self):
+        declared = [name for name, _ in POLICY['HARNESS_INPUTS']]
+        self.assertEqual(len(declared), len(set(declared)))
+        self.assertEqual(set(declared), set(ENTRY['HARNESS_SUITES']))
+        for name, inputs in POLICY['HARNESS_INPUTS']:
+            self.assertIsInstance(name, str)
+            for entry in inputs:
+                # Declarations are repository-relative prefixes or exact files.
+                self.assertTrue(entry and not entry.startswith('/') and '\\' not in entry, entry)
+                self.assertEqual(entry, entry.strip())
+
+    def test_application_only_paths_omit_every_harness_regression(self):
+        for paths in (('apps/web/src/amount.ts',), ('apps/api/src/database.ts', 'tests/e2e/a.spec.ts'),
+                      ['artifacts'.replace('artifacts', 'apps/web/src/style.css')]):
+            with self.subTest(paths=paths):
+                self.assertEqual(POLICY['harness_suites'](paths), ())
+                self.assertEqual(ENTRY['baseline_checks']('fast', harness=POLICY['harness_suites'](paths)),
+                                 ENTRY['baseline_checks']('docs'))
+
+    def test_contract_inputs_select_every_suite(self):
+        for path in ('templates/specification.md', '.agents/skills/relay/SKILL.md', 'AGENTS.md',
+                     'CLAUDE.md', 'scripts/verify', 'scripts/ci_policy.py',
+                     'specs/methodology/ci-policy.md', 'specs/guidelines/quality.md'):
+            with self.subTest(path=path):
+                self.assertEqual(POLICY['harness_suites']((path,)), self.all_suites())
+
+    def test_declared_inputs_select_only_their_own_suites(self):
+        cases = {
+            'infra/release.py': ('test-release',),
+            'README.md': ('test-validator',),
+            'docs/USAGE_REPORTS.md': ('test-validator', 'test-agent-usage'),
+            'package.json': ('test-checks', 'test-release'),
+            '.github/workflows/validate.yml': ('test-validator', 'test-checks',
+                                               'test-verification', 'test-release'),
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                self.assertEqual(POLICY['harness_suites']((path,)), expected)
+
+    def test_unknown_or_malformed_inputs_fail_closed(self):
+        for paths in (None, (), [], ['unknown/input.txt'], ['apps/web/src/a.ts', 'unknown/x'],
+                     ['.'], [''], ['apps//web'], ['../apps/web/a.ts'], [7], ['apps/web/a.ts', None]):
+            with self.subTest(paths=paths):
+                self.assertEqual(POLICY['harness_suites'](paths), self.all_suites())
+
+    def test_full_profile_and_docs_profile_keep_their_own_selection(self):
+        everything = ENTRY['baseline_checks']('full')
+        self.assertEqual(ENTRY['baseline_checks']('full', harness=()), everything)
+        self.assertEqual(ENTRY['baseline_checks']('full', harness=('test-release',)), everything)
+        omitted = [name for name, _, _ in ENTRY['baseline_checks']('docs')]
+        self.assertTrue(omitted)
+        for check in ENTRY['baseline_checks']('docs'):
+            self.assertNotIn(check[0], ENTRY['HARNESS_SUITES'])
+
+    def test_verified_git_comparison_drives_the_selection(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name) / 'repo'; root.mkdir()
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
+        git('init', '-q', '--initial-branch=main')
+        (root / 'AGENTS.md').write_text('fixture\n')
+        (root / 'apps/web').mkdir(parents=True)
+        (root / 'apps/web/app.ts').write_text('export const total = 1;\n')
+        git('add', '-A')
+        git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'base')
+        base = git('rev-parse', 'HEAD').decode().strip()
+        # Application-only change: no harness suite can regress.
+        (root / 'apps/web/app.ts').write_text('export const total = 2;\n')
+        git('add', '-A')
+        git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'app')
+        app = git('rev-parse', 'HEAD').decode().strip()
+        self.assertEqual(POLICY['harness_suites'](POLICY['changed_paths'](root, base, app)), ())
+        # Harness instruction change: the complete set returns.
+        (root / 'AGENTS.md').write_text('fixture changed\n')
+        git('add', '-A')
+        git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'harness')
+        harness = git('rev-parse', 'HEAD').decode().strip()
+        self.assertEqual(POLICY['harness_suites'](POLICY['changed_paths'](root, app, harness)),
+                         self.all_suites())
+        # An unverifiable comparison never narrows.
+        self.assertIsNone(POLICY['changed_paths'](root, 'f' * 40, harness))
+        self.assertEqual(POLICY['harness_suites'](None), self.all_suites())
+
+    def test_unverifiable_events_keep_every_suite(self):
+        # A manual dispatch has no comparison, and an unsupported push cannot be
+        # classified: both compose to the complete harness set, never a subset.
+        for event_name, event in (('workflow_dispatch', {}),
+                                  ('push', {'ref': 'refs/heads/feature', 'after': 'a' * 40})):
+            with self.subTest(event=event_name):
+                try:
+                    _, paths = POLICY['ci_comparison'](ROOT, event_name, event)
+                except ValueError:
+                    paths = None
+                self.assertEqual(POLICY['harness_suites'](paths), self.all_suites())
+
+
 class CiResultTests(unittest.TestCase):
     def test_all_result_combinations(self):
         for classification, baseline, full in itertools.product(

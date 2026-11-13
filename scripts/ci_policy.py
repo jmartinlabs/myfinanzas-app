@@ -64,6 +64,58 @@ def docs_path(path):
     return True
 
 
+# Path-derived harness selection for FAST. A regression suite reads a bounded set
+# of inputs; a comparison that changes none of them cannot regress it, so FAST
+# runs only the suites whose declared inputs it touches. FULL at the deploy tag
+# always runs every suite, and an undeclared path fails closed to all of them.
+APPLICATION_ONLY = ('apps/', 'tests/')
+# Harness contract inputs owned by no single suite: instructions, templates,
+# methodology and the harness scripts themselves always select every suite.
+CONTRACT_INPUTS = ('templates/', '.agents/', 'specs/methodology/', 'specs/guidelines/',
+                   'AGENTS.md', 'CLAUDE.md', 'scripts/')
+HARNESS_INPUTS = (
+    ('test-validator', ('README.md', 'NEW_PROJECT_PROMPT.md', 'docs/', '.codex/',
+                        '.github/workflows/', 'specs/README.md')),
+    ('test-checks', ('package.json', 'bun.lock', 'apps/api/package.json',
+                     'apps/web/package.json', '.github/workflows/', 'specs/methodology/ci-policy.md')),
+    ('test-verification', ('.github/workflows/',)),
+    ('test-agent-relay', ()),
+    ('test-evidence', ()),
+    ('test-release', ('infra/', 'package.json', 'bun.lock', '.github/workflows/')),
+    ('test-work-issue', ()),
+    ('test-agent-usage', ('.codex/', 'docs/USAGE_REPORTS.md')),
+    ('test-auto-agent-usage', ('.codex/',)),
+)
+
+
+def within(path, inputs):
+    return any(path == entry or (entry.endswith('/') and path.startswith(entry))
+               for entry in inputs)
+
+
+def harness_suites(paths):
+    """Harness regressions an already-verified change list requires.
+
+    Unknown, malformed or absent paths select every suite: the omission must be
+    proved by a readable comparison, never inferred from missing data.
+    """
+    names = tuple(name for name, _ in HARNESS_INPUTS)
+    if not isinstance(paths, (list, tuple)) or not paths:
+        return names
+    for path in paths:
+        if (not isinstance(path, str) or not path or '\\' in path
+                or any(part in ('', '.', '..') for part in path.split('/'))):
+            return names
+        if any(path.startswith(prefix) for prefix in CONTRACT_INPUTS):
+            return names
+    if not all(any(path.startswith(prefix) for prefix in APPLICATION_ONLY)
+               or any(within(path, inputs) for _, inputs in HARNESS_INPUTS)
+               for path in paths):
+        return names
+    return tuple(name for name, inputs in HARNESS_INPUTS
+                 if any(within(path, inputs) for path in paths))
+
+
 def record_paths(data):
     """Consume Git --name-status -z bytes, retaining both rename/copy endpoints."""
     try:
@@ -106,23 +158,29 @@ def is_ancestor(root, ancestor, descendant):
                           stderr=subprocess.PIPE).returncode == 0
 
 
-def classify_git(root, base, head, *, pull_request=False):
-    """Only complete, verified commit comparisons may opt out of full checks."""
+def changed_paths(root, base, head, *, pull_request=False):
+    """Paths of a verified commit comparison, or None when it is unverifiable."""
     try:
         if not all(isinstance(s, str) and re.fullmatch(r'[0-9a-f]{40}', s)
                    and s != '0' * 40 for s in (base, head)):
-            return 'full'
+            return None
         if git(root, 'rev-parse', '--is-shallow-repository').strip() != b'false':
-            return 'full'
+            return None
         for sha in (base, head):
             git(root, 'cat-file', '-e', sha + '^{commit}')
         if pull_request:
             base = git(root, 'merge-base', base, head).decode().strip()
         records = git(root, 'diff', '--name-status', '-z', '--find-renames',
                       '--ignore-submodules=none', '--no-ext-diff', '--no-textconv', base, head, '--')
-        return classify_records(records)
+        return record_paths(records)
     except (OSError, subprocess.SubprocessError, UnicodeError):
-        return 'full'
+        return None
+
+
+def classify_git(root, base, head, *, pull_request=False):
+    """Only complete, verified commit comparisons may opt out of full checks."""
+    paths = changed_paths(root, base, head, pull_request=pull_request)
+    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
 
 
 def classify_event_range(root, event_name, event):
@@ -164,15 +222,16 @@ def classify_event(root, event_name, event, checkout_ref=None):
         return 'full'
 
 
-def ci_profile(root, event_name, event, checkout_ref=None):
-    """PR: docs only for a verified documentation-only diff, otherwise FAST.
+def ci_comparison(root, event_name, event, checkout_ref=None):
+    """Profile plus the verified changed paths behind it (None: unverifiable).
 
+    PR: docs only for a verified documentation-only diff, otherwise FAST.
     FULL is selected by the deploy tag (exact commit) and by manual dispatch.
     No PR comparison, however sensitive the paths, escalates: API/SQLite and E2E
     run once per deploy candidate instead of once per pull request.
     """
     if event_name == 'workflow_dispatch':
-        return 'full'
+        return 'full', None
     if event_name == 'push':
         ref = event.get('ref')
         after = event.get('after', '')
@@ -199,7 +258,7 @@ def ci_profile(root, event_name, event, checkout_ref=None):
                 raise ValueError('deploy tag commit is unavailable')
             if head != tagged:
                 raise ValueError('deploy tag checkout differs from the tag commit')
-            return 'full'
+            return 'full', None
         # main/test push compatibility is retained for historical agent runs;
         # the workflows no longer trigger postmerge pushes.
         if ref not in ('refs/heads/main', 'refs/heads/test'):
@@ -208,12 +267,13 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             raise ValueError('postmerge snapshot differs from event')
         before = event.get('before')
         if not re.fullmatch(r'[0-9a-f]{40}', before or '') or before == '0' * 40:
-            return 'fast'
+            return 'fast', None
         try:
             git(root, 'merge-base', '--is-ancestor', before, event['after'])
-            return 'docs' if classify_git(root, before, event['after']) == 'docs' else 'fast'
+            paths = changed_paths(root, before, event['after'])
+            return ('docs' if paths and all(docs_path(path) for path in paths) else 'fast'), paths
         except (OSError, subprocess.SubprocessError):
-            return 'fast'
+            return 'fast', None
     if event_name != 'pull_request':
         raise ValueError('unsupported CI event')
     pr = event.get('pull_request', {})
@@ -224,12 +284,12 @@ def ci_profile(root, event_name, event, checkout_ref=None):
     try:
         head = pr['head']['sha']; base = pr['base']['sha']
         if not re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref or ''):
-            return 'fast'
+            return 'fast', None
         if git(root, 'rev-parse', 'HEAD^2').decode().strip() != head:
             raise ValueError('integration head changed')
         if git(root, 'status', '--porcelain=v1', '-z', '--untracked-files=all'):
             # A local dirty snapshot cannot inherit a committed docs comparison.
-            return 'fast'
+            return 'fast', None
         tested_base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
         if tested_base != base:
             # A queued run can fetch a merge ref rebuilt on a newer integration
@@ -239,9 +299,14 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             if not is_ancestor(root, base, tested_base):
                 raise ValueError('event base is not an ancestor of the tested integration base')
             base = tested_base
-        return 'docs' if classify_git(root, base, head, pull_request=True) == 'docs' else 'fast'
+        paths = changed_paths(root, base, head, pull_request=True)
+        return ('docs' if paths and all(docs_path(path) for path in paths) else 'fast'), paths
     except (OSError, subprocess.SubprocessError, KeyError, TypeError):
-        return 'fast'
+        return 'fast', None
+
+
+def ci_profile(root, event_name, event, checkout_ref=None):
+    return ci_comparison(root, event_name, event, checkout_ref)[0]
 
 
 def ci_result_ok(profile, states):
