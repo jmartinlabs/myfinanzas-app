@@ -188,6 +188,9 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
     page.getByRole("button", { name: "Registrar Gasto CAT013", exact: true }),
   ).toHaveCSS("min-height", "44px");
   await expect(page.locator(".shared-history li").first()).toHaveCSS("font-size", "12px");
+  const dateRow = page.locator(".shared-page .detail-grid > div").first();
+  await expect(dateRow).toHaveCSS("display", "grid");
+  await expect(dateRow).toHaveCSS("border-bottom-style", "solid");
 
   for (const [width, height] of [
     [1440, 1000],
@@ -262,6 +265,10 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
   await expect(impact.locator(".shared-metrics dt").first()).toHaveCSS(
     "font-size",
     "12px",
+  );
+  await expect(impact.locator(".shared-alert").first()).toHaveCSS(
+    "color",
+    "rgb(255, 129, 120)",
   );
   await expect(
     page.getByRole("button", { name: "Revisar aportación", exact: true }),
