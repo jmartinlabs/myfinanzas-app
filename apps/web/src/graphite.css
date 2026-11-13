@@ -5325,11 +5325,7 @@ html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child
 
 /* Con `normal` el único punto de corte de la fecha sería la barra `/`: se marca
    cada fecha para que el guion entre inicio y fin sea el único corte válido. */
-html[data-theme="graphite-lime"]
-  .pendientes-page
-  .pendientes-table
-  td:nth-child(3)
-  .pendiente-ciclo-fecha {
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(3) .pendiente-ciclo-fecha {
   white-space: nowrap;
 }
 
