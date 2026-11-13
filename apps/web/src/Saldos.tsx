@@ -118,7 +118,6 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
                 ? "Pendiente de motor"
                 : "No aplicable"}
           </span>
-          <small className="table-id">{s.posicion.motivo}</small>
         </>
       ),
     },

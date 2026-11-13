@@ -729,7 +729,7 @@ function InstrumentDetail({
           go(BASE);
         }}
       >
-        ‹ Volver
+        ‹ Volver a Instrumentos
       </a>
       <PageHead
         eyebrow={`${instrumento.id} · INSTRUMENTO`}
