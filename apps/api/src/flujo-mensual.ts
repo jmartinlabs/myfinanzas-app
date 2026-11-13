@@ -193,7 +193,7 @@ function ajusteCompartidos(
   if (!periodoVerificable) {
     recuperadoNd = true;
     recuperadoMotivo =
-      "Periodo/corte central no verificable; no se calcula R_adj ni se rellena con cero.";
+      "Periodo/corte central no verificable; no se calcula el ajuste por Recuperado ni se rellena con cero.";
     memoriaNd = true;
     memoriaMotivo = recuperadoMotivo;
   } else {
@@ -298,7 +298,7 @@ function ajusteCompartidos(
         }`
       : gastos.length
         ? "Recuperado atribuido por Gasto con céntimos exactos; no es Ingreso ni un segundo Gasto."
-        : "Periodo verificable sin Gastos compartidos: R_adj = 0 verificado.";
+        : "Periodo verificable sin Gastos compartidos: ajuste por Recuperado = 0 verificado.";
   const recuperadoMetrica: AjusteMetrica & {
     gastos: AjusteGastoCompartido[];
   } = {
@@ -316,8 +316,8 @@ function ajusteCompartidos(
       gastoBruto === null ? "No disponible" : "Parcial",
     motivo:
       gastoBruto === null
-        ? "Gasto bruto E2.6 no disponible con la cobertura actual."
-        : "Gasto bruto E2.6 conservado una vez; base de la sustitución G_b − R_adj.",
+        ? "Gasto bruto no disponible con la cobertura actual."
+        : "Gasto bruto conservado una vez; es la base sobre la que se aplica el ajuste por Recuperado.",
   };
 
   const gastoBrutoCents = safeCents(gastoBruto);
@@ -337,12 +337,12 @@ function ajusteCompartidos(
         : "Parcial",
     motivo:
       gastoNeto === null
-        ? `G_n No disponible: ${
+        ? `Gasto neto No disponible: ${
             gastoBruto === null
-              ? "falta G_b E2.6."
-              : "R_adj no es verificable."
+              ? "falta el gasto bruto del plan."
+              : "el ajuste por Recuperado no es verificable."
           }`
-        : "G_n = G_b − R_adj; cálculo vivo sin foto/cierre. Nunca se muestra G_b + Neto.",
+        : "El gasto neto es el gasto bruto menos el ajuste por Recuperado; cálculo vivo sin foto/cierre. Nunca se muestra el gasto bruto sumado al Neto por caso.",
   };
 
   const ingresosCents = safeCents(ingresos);
@@ -357,12 +357,12 @@ function ajusteCompartidos(
     sAjustadoCents === null ? null : decimal(sAjustadoCents);
   const sAjustadoMotivo =
     sAjustado === null
-      ? `S_aj No disponible: ${
+      ? `S ajustado No disponible: ${
           ingresosCents === null
-            ? "faltan Ingresos E2.6."
+            ? "faltan los Ingresos."
             : gastoNetoCents === null
-              ? "falta G_n."
-              : "falta la Amortización extraordinaria E2.6."
+              ? "falta el gasto neto."
+              : "falta la Amortización extraordinaria."
         }`
       : "Resultado ajustado por Recuperado; siempre Parcial. No es ahorro real, caja total ni flujo completo. Comida y devoluciones no se restan.";
   const resultadoMetrica: AjusteMetrica & {
@@ -399,7 +399,7 @@ function ajusteCompartidos(
     : "Parcial";
   const motivo = recuperadoNd
     ? recuperadoMotivoFinal
-    : "Vista ajustada viva: G_n sustituye a G_b; S_aj es Parcial. La base E2.6 se conserva intacta.";
+    : "Vista ajustada viva: el gasto neto sustituye al gasto bruto; el S ajustado es Parcial. La base del plan se conserva intacta.";
 
   const ajusteCompartidosDto: AjusteCompartidos = {
     cicloId: ciclo.id,
