@@ -162,10 +162,21 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     await noOverflow();
     if (width === 1440) {
       await expect(list.locator(".desktop-list")).toBeVisible();
+      await expect(list.locator(".pendientes-cards")).toBeHidden();
       await expect(list.locator(".pendientes-table th")).toHaveCount(9);
-      await expect(
-        list.locator(".pendientes-table tbody td:nth-child(3)").first(),
-      ).not.toHaveCSS("white-space", "nowrap");
+      // Las fechas se parten como mucho en el guion, nunca dentro del número.
+      const lineWidths = await page.evaluate(() => {
+        const cell = document.querySelectorAll<HTMLElement>(
+          ".pendientes-table tbody tr",
+        )[0]?.children[2];
+        if (!cell) return [];
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        return Array.from(range.getClientRects()).map((rect) => Math.round(rect.width));
+      });
+      expect(lineWidths.length).toBeGreaterThan(0);
+      expect(Math.min(...lineWidths)).toBeGreaterThanOrEqual(50);
+      await expect(list).toHaveCSS("padding-top", "0px");
     }
     if (width === 1280 || width === 1100) {
       await expect(list.locator(".desktop-list")).toBeHidden();
@@ -188,6 +199,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     }
     if (width === 390) {
       await expect(list.locator(".pendientes-cards")).toBeVisible();
+      await expect(list).toHaveCSS("padding-top", "0px");
     }
     await page.screenshot({
       path: `artifacts/g5e-2/pendientes-lista-${width}.png`,
@@ -210,6 +222,19 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     path: "artifacts/g5e-2/pendientes-vacio-1440.png",
     fullPage: true,
   });
+
+  // Estado de carga: el esqueleto aparece mientras la consulta está en curso
+  await page.route("**/api/pendientes?**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    await route.fallback();
+  });
+  await page.goto("/pendientes?texto=carga-ficticia");
+  await expect(page.locator(".pendientes-skeleton")).toBeVisible();
+  await expect(page.locator(".pendientes-skeleton li").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await page.unroute("**/api/pendientes?**");
 
   // Estado de error de consulta
   await page.route("**/api/pendientes?**", (route) =>
@@ -270,6 +295,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   await expect(
     page.getByRole("button", { name: "Abrir Comida del ciclo", exact: true }),
   ).toHaveCSS("min-height", "44px");
+  await expect(root.locator("> .panel").first()).toHaveCSS("padding-top", "16px");
   for (const [width, height] of [
     [1440, 1000],
     [820, 900],
@@ -278,6 +304,9 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     await page.setViewportSize({ width, height });
     await page.goto("/pendientes/Conciliacion/1");
     await expect(page.locator(".pendiente-metrics")).toBeVisible();
+    if (width === 390) {
+      await expect(root.locator("> .panel").first()).toHaveCSS("padding-top", "12px");
+    }
     await noOverflow();
     await page.screenshot({
       path: `artifacts/g5e-2/pendientes-detalle-conciliacion-${width}.png`,

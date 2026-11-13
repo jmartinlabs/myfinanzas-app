@@ -5699,8 +5699,12 @@ html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions .text-butt
     padding: var(--space-3);
   }
 
-  html[data-theme="graphite-lime"] .pendientes-page > .panel {
+  html[data-theme="graphite-lime"] .pendientes-page > .panel:not(.pendientes-list) {
     padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .pendientes-list {
+    padding: 0;
   }
 
   html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar,
