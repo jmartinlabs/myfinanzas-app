@@ -82,6 +82,13 @@ class ValidationTests(unittest.TestCase):
   self.neutralize_readme_headings()
   self.append('README.md','\n'+value+'\n'); self.assertRule('secrets')
  def test_secret_private_key(self): self.secret_shape('-----BEGIN '+'RSA PRIVATE KEY-----')
+ def test_secret_github_pat(self): self.secret_shape('github'+'_pat_'+'a'*36)
+ def test_secret_github_pat_isolated_document(self):
+  # El README del template ya contiene 'gh', así que un documento aislado es el que
+  # prueba de verdad el literal del prefiltro, no solo el patrón.
+  self.neutralize_readme_headings()
+  (self.root/'specs'/'pat-only.md').write_text('github'+'_pat_'+'a'*36)
+  self.assertRule('secrets')
  def test_secret_aws_key(self): self.secret_shape('AKIA'+'A'*16)
  def test_secret_api_token(self): self.secret_shape('sk-'+'a'*32)
  def test_secret_credential_assignment(self): self.secret_shape('password'+': '+'a'*24)

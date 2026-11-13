@@ -286,13 +286,20 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   las expresiones de secretos y de rutas de máquina. Ninguna regla cambia: los
   literales son condiciones necesarias de cada patrón y `test-checks`/`test-validator`
   prueban que cada forma sigue detectándose.
-- **Medición local de referencia (2026-11-13, macOS, una pasada, reloj de pared):**
-  baseline completo secuencial ≈ 400 s; el mismo baseline en paralelo ≈ 110 s; un PR de
-  UI (solo `apps/`) ≈ 13 s de baseline; un PR que toca `scripts/` ≈ 88 s; un PR de
-  documentación ≈ 9 s. La cifra de CI la publica el log de cada paso (`PASS <suite>
-  (<s>)`); no es una garantía de contrato y debe re-medirse al cambiar la lista de
-  suites o el tamaño del árbol. El límite conocido es `test-validator`: 51 fixtures
-  validan el contrato completo y dominan el muro cuando la selección las incluye.
+- **Medición local de referencia (macOS, reloj de pared; varía con la carga de la
+  máquina y el tamaño del historial):** baseline completo secuencial ≈ 181–275 s; el mismo
+  baseline en paralelo ≈ 78–165 s; un PR de UI (solo `apps/`) ≈ 9 s de baseline; un PR que
+  toca `scripts/` ≈ 78 s en frío y 97–146 s con la máquina cargada; un PR de documentación
+  ≈ 9 s. La cifra de CI la publica el log de cada paso (`PASS <suite> (<s>)`); no es una
+  garantía de contrato y debe re-medirse al cambiar la lista de suites o el tamaño del
+  árbol. El límite conocido es `test-validator`: 52 fixtures validan el contrato completo y
+  dominan el muro cuando la selección las incluye.
+- **Corrección del prefiltro de `github_pat_` (2026-11-13):** el prefiltro por literales
+  añadido con la optimización usaba `gh` como condición necesaria del token de GitHub, pero
+  `github_pat_…` no contiene esa subcadena, así que la regla no se evaluaba. Los literales
+  se ampliaron (`github_pat_`) en `check-repository` y `validate-template`, con pruebas en
+  `test-checks` y `test-validator`. Regla permanente: al añadir una alternativa a un patrón
+  de secretos hay que añadir su literal y un caso que lo dispare.
 - **Retirada del perfil `critical` sin `age` (2026-11-12):** el perfil intermedio
   `critical` (suite API con filtro negativo de las 36 pruebas que dependen de `age`,
   `FULL_ONLY_TESTS`/`FULL_ONLY_PREFIXES`, `prepare=skipped`) desaparece junto con su
