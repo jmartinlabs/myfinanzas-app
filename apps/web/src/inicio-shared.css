@@ -240,6 +240,9 @@
   padding-top: 10px;
 }
 .inicio-page .graphite-cycle-detail summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
   font-size: 12px;
   font-weight: 650;
 }
@@ -305,6 +308,11 @@
 .inicio-page .graphite-attention-list a,
 .inicio-page .graphite-rail-link a {
   font-size: 12px;
+}
+.inicio-page .graphite-attention-list li > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
 }
 .inicio-page .graphite-objective-value {
   margin: 4px 0 0;
@@ -403,6 +411,9 @@
   margin: 0;
 }
 .inicio-page .graphite-coverage a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
   font-size: 12px;
 }
 .inicio-page .graphite-detail-heading {
