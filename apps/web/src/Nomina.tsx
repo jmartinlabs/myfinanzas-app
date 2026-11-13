@@ -305,7 +305,7 @@ export function Nomina() {
       (!mes || p.mes === mes) && (tipo === "Todas" || p.tipo === tipo),
   );
   return (
-    <>
+    <div className="payroll-page">
       <PageHead
         eyebrow="E2.5 · Documentación salarial"
         title="Nómina"
@@ -971,6 +971,6 @@ export function Nomina() {
           </details>
         </>
       )}
-    </>
+    </div>
   );
 }
