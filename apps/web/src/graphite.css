@@ -4622,6 +4622,16 @@ html[data-theme="graphite-lime"] .fotos-page .fotos-boundary {
   background: var(--surface);
 }
 
+/* G5f · En la tabla del Resumen anual las columnas miden ~73 px a 820 px: el
+   badge recupera la escala base (10 px) y el hueco justo para no desbordar la
+   celda ni el documento con las métricas de fuente de Linux. */
+html[data-theme="graphite-lime"] .e47-table .ui-badge {
+  padding: 2px 2px;
+  gap: 1px;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
 html[data-theme="graphite-lime"] :is(.e47-page, .cierre-page, .fotos-page) :is(.e47-source, .e47-table-source, .e47-coverage-meta, .e47-card-motivo, .ui-amount-note) {
   font-size: 12px;
   line-height: 1.5;
