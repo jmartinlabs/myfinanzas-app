@@ -26,7 +26,7 @@ PATTERNS = (
 # still fires on its own fixture.
 PREFILTER = {
     'private-key': (b'-----begin ',),
-    'github-token': (b'gh',),
+    'github-token': (b'gh', b'github_pat_'),
     'aws-key': (b'akia',),
     'api-token': (b'sk-',),
     'credential-assignment': (b'password', b'api_key', b'access_token', b'secret'),

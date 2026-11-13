@@ -25,7 +25,7 @@ HEADING=re.compile(r'^#{1,6}\s+(.+)$',re.M)
 # Every credential rule needs one of these literals. A document without them cannot
 # match, so the expensive expressions are skipped; the expressions stay
 # authoritative and test-validator proves each shape is still detected.
-SECRET_LITERALS=('-----begin ','gh','akia','sk-','password','api_key','access_token','secret')
+SECRET_LITERALS=('-----begin ','gh','github_pat_','akia','sk-','password','api_key','access_token','secret')
 PORTABILITY_LITERALS=('/users/','/home/','/workspace/','\\users\\')
 def norm(text): return WHITESPACE.sub(' ',text).strip().casefold()
 def satisfied(text,token):
