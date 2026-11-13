@@ -477,16 +477,6 @@ html[data-theme="hybrid-s"] .movements-list .filters {
   min-height: 44px;
 }
 
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty h2 {
-  font-size: 15px;
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty p {
-  max-width: 62ch;
-  color: #5f5b55;
-  font-size: 12px;
-}
-
 
 @media (max-width: 1000px) {
   :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-type-icon {
@@ -519,15 +509,14 @@ html[data-theme="hybrid-s"] .movements-list .filters {
 
 /* Enlaces y resúmenes dentro de Inicio: 44 px sin romper el flujo de prosa. */
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page details summary {
-  display: flex;
-  align-items: center;
   min-height: 44px;
+  padding-block: 10px;
 }
 
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page details a,
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-rail-link a,
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-rail-meta a,
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-cycle-detail a {
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-attention-list a,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-coverage a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -547,11 +536,6 @@ html[data-theme="hybrid-s"] .movements-list .filters {
   min-height: 44px;
 }
 
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page .checkbox span,
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page .checkbox strong {
-  min-width: 0;
-}
-
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page .checkbox input {
   flex: 0 0 auto;
   width: 20px;
@@ -560,28 +544,21 @@ html[data-theme="hybrid-s"] .movements-list .filters {
 }
 
 /* Estados vacíos y de filtros sin resultados. */
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty {
-  padding: var(--space-4);
-  border-top: 1px solid #d8cdbf;
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty:not([aria-busy]) {
   background: #fffdf9;
 }
 
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty h2 {
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty:not([aria-busy]) h2 {
   color: #1f1f1f;
   font-size: 15px;
   letter-spacing: -0.2px;
 }
 
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty p {
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty:not([aria-busy]) p {
   max-width: 62ch;
   color: #5f5b55;
   font-size: 12px;
   line-height: 1.55;
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page [role="status"] {
-  color: #5f5b55;
-  font-size: 12px;
 }
 
 /* A 390 los filtros ocupan el ancho completo y el buscador mantiene el icono. */

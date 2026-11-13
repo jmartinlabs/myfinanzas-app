@@ -83,6 +83,10 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
         "min-height",
         "44px",
       );
+      const attention = page.locator(".inicio-page .graphite-attention-list a").first();
+      await expect(attention).toBeVisible();
+      const attentionBox = await attention.boundingBox();
+      expect(attentionBox!.height).toBeGreaterThanOrEqual(44);
       await page.screenshot({ path: `artifacts/l4/inicio-${theme}-${width}.png` });
 
       // Movimientos: sin overflow, enlaces de concepto y casillas sin recorte
@@ -99,6 +103,8 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
       await expect(checkbox).toBeVisible();
       const fits = await checkbox.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
       expect(fits).toBe(true);
+      const checkboxBox = await checkbox.boundingBox();
+      expect(checkboxBox!.height).toBeGreaterThanOrEqual(44);
       await page.screenshot({ path: `artifacts/l4/movimientos-${theme}-${width}.png` });
 
       // Estado vacío: filtros sin resultados
@@ -106,10 +112,19 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
       const empty = page.locator(".movements-list .empty");
       await expect(empty).toBeVisible();
       await expect(empty).toHaveCSS("background-color", "rgb(255, 253, 249)");
+      await expect(empty.locator("p").first()).toHaveCSS("font-size", "12px");
       await noOverflow();
       await page.screenshot({ path: `artifacts/l4/estado-vacio-${theme}-${width}.png` });
     }
   }
+
+  // Smoke a 1440: los objetivos táctiles también aplican en escritorio
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await selectTheme("light-s");
+  await page.goto("/inicio");
+  const desktopAttention = page.locator(".inicio-page .graphite-attention-list a").first();
+  await expect(desktopAttention).toBeVisible();
+  expect((await desktopAttention.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
   // Regresión: los otros temas conservan su responsive y su identidad
   for (const theme of ["dark-s", "casa", "graphite-lime"] as const) {

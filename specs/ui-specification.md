@@ -258,8 +258,8 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
   selección y paginación. Detalle como página (D3) y sin inferir signos ni colores de importe
   (D4). La opción B (iconos en DOM/SVG) queda pendiente de decisión.
 - **L4 (autorizado por #402 el 2026-11-13):** responsive y estados de Claro/Mixto en el mismo
-  archivo: 820/390, objetivos táctiles de 44 px, casillas sin recorte y estados vacíos legibles
-  en Inicio y Movimientos. Diseño propio, no adaptación mecánica (D5).
+  archivo: 820/390, objetivos táctiles de 44 px y casillas sin recorte en Inicio y Movimientos,
+  y estado vacío legible en Movimientos. Diseño propio, no adaptación mecánica (D5).
 
 `dark-s`, `graphite-lime` y `casa` conservan sus tokens y su identidad; no se modifican
 `theme-boot.js`, `themes.ts`, componentes, rutas ni navegación.
