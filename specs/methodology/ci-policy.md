@@ -288,11 +288,11 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   prueban que cada forma sigue detectándose.
 - **Medición local de referencia (macOS, reloj de pared; varía con la carga de la
   máquina y el tamaño del historial):** baseline completo secuencial ≈ 181–275 s; el mismo
-  baseline en paralelo ≈ 78–146 s; un PR de UI (solo `apps/`) ≈ 9 s de baseline; un PR que
+  baseline en paralelo ≈ 78–165 s; un PR de UI (solo `apps/`) ≈ 9 s de baseline; un PR que
   toca `scripts/` ≈ 78 s en frío y 97–146 s con la máquina cargada; un PR de documentación
   ≈ 9 s. La cifra de CI la publica el log de cada paso (`PASS <suite> (<s>)`); no es una
   garantía de contrato y debe re-medirse al cambiar la lista de suites o el tamaño del
-  árbol. El límite conocido es `test-validator`: 51 fixtures validan el contrato completo y
+  árbol. El límite conocido es `test-validator`: 52 fixtures validan el contrato completo y
   dominan el muro cuando la selección las incluye.
 - **Corrección del prefiltro de `github_pat_` (2026-11-13):** el prefiltro por literales
   añadido con la optimización usaba `gh` como condición necesaria del token de GitHub, pero
