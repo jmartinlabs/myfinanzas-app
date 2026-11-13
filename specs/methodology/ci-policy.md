@@ -218,7 +218,8 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   índice y seguridad), `check-project` (estructura y workflow), `validate-template`
   (estructura, enlaces, anclas, contratos y heurísticas) y whitespace de trabajo y
   commit. Omite las regresiones `test-*` del harness porque un diff compuesto solo
-  por documentación no modifica sus entradas; `fast` y `full` las ejecutan todas. La
+  por documentación no modifica sus entradas; `full` las ejecuta todas y `fast` aplica
+  la selección por rutas declarada más abajo. La
   selección se recalcula dentro del paso `baseline` con el mismo `ci_profile` y el
   contexto verificado; sin contexto, evento inválido o error de clasificación ejecuta
   la batería completa. No hay skip de workflow ni estado nuevo en `ci-result`.
@@ -244,6 +245,54 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   del tag lo impide en producción. Para reducir esa ventana, el paso previo a etiquetar
   puede usar `Validate project` con `workflow_dispatch` (FULL sobre el SHA exacto) — es
   opcional y no crea un gate nuevo.
+- **Selección de las regresiones del harness por rutas en `fast` (2026-11-13).** El
+  baseline de `fast` ejecuta **siempre** los controles esenciales (`check-repository`,
+  `check-project`, `validate-template` y whitespace de trabajo y commit) y solo las
+  regresiones `test-*` que declara la comparación verificada. La declaración vive en
+  `scripts/ci_policy.py` (`HARNESS_INPUTS` por suite, `CONTRACT_INPUTS` transversales y
+  `APPLICATION_ONLY`) y no crea un segundo clasificador: usa el mismo `ci_comparison`
+  que decide el perfil. Un diff limitado a `apps/` o `tests/` no ejecuta ninguna
+  regresión del harness; `templates/`, `.agents/`, `specs/methodology/`,
+  `specs/guidelines/`, `AGENTS.md`, `CLAUDE.md` o `scripts/` ejecutan todas; `.github/`,
+  `docs/`, `.codex/`, `package.json`, `bun.lock` o `infra/` seleccionan solo las suites
+  que los declaran. Una ruta no declarada, un evento ilegible, una comparación no
+  verificable, un árbol de trabajo sucio o un clasificador que falle ejecutan **todas**
+  (fail-closed). La selección se anuncia en el log
+  (`INTENTIONALLY SKIPPED harness regressions: ...`) y nunca se contabiliza como PASS.
+  `full` ignora cualquier selección: la batería completa sigue siendo la del tag.
+  **Riesgo declarado:** una regresión omitida en la PR se ejecuta en el FULL del tag de
+  despliegue, sobre el commit exacto que se promueve; un PR sin la cobertura completa no
+  autoriza el merge por sí mismo, y el deploy espera ese FULL. El riesgo aceptado es que
+  un fallo que solo detecte una suite omitida aparezca al etiquetar; se acota lanzando
+  `Validate project` con `workflow_dispatch` (FULL sobre el SHA exacto) antes de etiquetar.
+- **Paralelismo del baseline (2026-11-13).** Las suites del baseline son independientes
+  (cada una trabaja sobre repositorios y temporales propios), así que `scripts/verify
+  baseline` las ejecuta en paralelo con `min(4, cpu)` procesos; `VERIFY_JOBS` fija el
+  número para medir o depurar. La salida sigue siendo determinista: se anuncian todas
+  las suites seleccionadas y después se imprimen sus bloques y sus `PASS`/`FAIL` en el
+  orden de declaración del baseline, con los segundos de cada una. Cada suite se ejecuta
+  exactamente una vez, y un fallo ya no oculta el resultado real de las demás suites
+  (todas se han ejecutado); la fase falla igualmente y el código de salida se propaga.
+  La fase de aplicación (`typecheck`, `build`, `web`) sigue secuencial dentro de un solo
+  paso para no competir por artefactos compartidos. La cobertura no cambia: misma lista
+  de suites, mismo criterio de cobertura por reporter y mismos fallos.
+- **Coste evitable retirado de los dos controles más caros (2026-11-13).**
+  `check-repository` lanzaba un proceso Git por mensaje de commit y por blob del índice
+  (más de 5.000 arranques en este historial); ahora lee el historial con un `git log`
+  único y los blobs con un `git cat-file --batch` persistente, y descarta por literales
+  necesarios antes de aplicar las expresiones de credenciales. `validate-template`
+  releía y reescribía la normalización de los mismos documentos por cada regla; ahora
+  memoiza la lectura dentro de una ejecución y filtra por literales necesarios antes de
+  las expresiones de secretos y de rutas de máquina. Ninguna regla cambia: los
+  literales son condiciones necesarias de cada patrón y `test-checks`/`test-validator`
+  prueban que cada forma sigue detectándose.
+- **Medición local de referencia (2026-11-13, macOS, una pasada, reloj de pared):**
+  baseline completo secuencial ≈ 400 s; el mismo baseline en paralelo ≈ 110 s; un PR de
+  UI (solo `apps/`) ≈ 13 s de baseline; un PR que toca `scripts/` ≈ 88 s; un PR de
+  documentación ≈ 9 s. La cifra de CI la publica el log de cada paso (`PASS <suite>
+  (<s>)`); no es una garantía de contrato y debe re-medirse al cambiar la lista de
+  suites o el tamaño del árbol. El límite conocido es `test-validator`: 51 fixtures
+  validan el contrato completo y dominan el muro cuando la selección las incluye.
 - **Retirada del perfil `critical` sin `age` (2026-11-12):** el perfil intermedio
   `critical` (suite API con filtro negativo de las 36 pruebas que dependen de `age`,
   `FULL_ONLY_TESTS`/`FULL_ONLY_PREFIXES`, `prepare=skipped`) desaparece junto con su

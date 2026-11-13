@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import runpy
 import shutil
 import subprocess
@@ -16,6 +17,12 @@ DOC_BASELINE_NAMES = [name for name, _, _ in ENTRY['baseline_checks']('docs')
                       if name not in ('working-whitespace', 'commit-whitespace')]
 HARNESS_NAMES = sorted(ENTRY['HARNESS_SUITES'])
 APP_NAMES = ['typecheck', 'build', 'web', 'api', 'e2e']
+# Declaration order of the baseline phase; reporting follows it even when the
+# suites themselves run concurrently.
+BASELINE_ORDER = [name for name, _, _ in ENTRY['BASELINE']]
+ESSENTIAL_NAMES = DOC_BASELINE_NAMES
+WORKFLOW_HARNESS = [name for name in HARNESS_NAMES
+                    if name in ('test-checks', 'test-release', 'test-validator', 'test-verification')]
 
 class VerificationTests(unittest.TestCase):
     def setUp(self):
@@ -67,6 +74,14 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
                               env={**self.env,**(extra or {})},text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     def calls(self):
         return [json.loads(line) for line in self.record.read_text().splitlines()] if self.record.exists() else []
+    def assertRuns(self, expected, message=None):
+        """Every expected check ran exactly once.
+
+        The baseline phase runs independent suites concurrently, so execution
+        order is not part of the contract; the executed set and the phase split
+        still are.
+        """
+        self.assertEqual(sorted(self.calls()), sorted(expected), message or self.calls())
     def clear(self):
         self.record.unlink(missing_ok=True)
     def docs_args(self):
@@ -75,7 +90,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
     def test_docs_baseline_once_and_explicit_omission(self):
         result=self.run_entry(*self.docs_args())
         self.assertEqual(result.returncode,0,result.stdout)
-        self.assertEqual(self.calls(),DOC_BASELINE_NAMES)
+        self.assertRuns(DOC_BASELINE_NAMES)
         self.assertIn('INTENTIONALLY SKIPPED harness regressions',result.stdout)
         self.assertIn('INTENTIONALLY SKIPPED application',result.stdout)
         for name in HARNESS_NAMES:
@@ -87,25 +102,25 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             if staged: self.git('add','app.ts')
             self.clear(); result=self.run_entry(*self.docs_args())
             self.assertEqual(result.returncode,0,result.stdout)
-            self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+            self.assertRuns(BASELINE_NAMES+APP_NAMES)
             if staged: self.git('reset','-q','HEAD','--','app.ts')
             path.unlink()
         path.write_text('committed code\n'); self.commit(); self.clear()
         result=self.run_entry(*self.docs_args())
         self.assertEqual(result.returncode,0,result.stdout)
-        self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+        self.assertRuns(BASELINE_NAMES+APP_NAMES)
 
     def test_forced_full_runs_every_suite_once(self):
         result=self.run_entry('--full',*self.docs_args())
         self.assertEqual(result.returncode,0,result.stdout)
-        self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+        self.assertRuns(BASELINE_NAMES+APP_NAMES)
     def test_code_and_unknown_or_missing_comparison_select_full(self):
         for args in ([],['--base','f'*40,'--head',self.head]):
             self.clear(); result=self.run_entry(*args)
-            self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+            self.assertEqual(result.returncode,0,result.stdout); self.assertRuns(BASELINE_NAMES+APP_NAMES)
         (self.root/'app.ts').write_text('fixture\n'); head=self.commit(); self.clear()
         result=self.run_entry('--base',self.base,'--head',head)
-        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertRuns(BASELINE_NAMES+APP_NAMES)
     def test_each_required_check_failure_is_visible(self):
         for name in BASELINE_NAMES+APP_NAMES:
             with self.subTest(name=name):
@@ -167,7 +182,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             with self.subTest(label=label):
                 self.clear(); result=self.run_entry('baseline',extra=extra)
                 self.assertEqual(result.returncode,0,(label,result.stdout))
-                self.assertEqual(self.calls(),BASELINE_NAMES,label)
+                self.assertRuns(BASELINE_NAMES,label)
                 self.assertNotIn('INTENTIONALLY SKIPPED harness',result.stdout)
     def test_dirty_snapshot_cannot_omit_harness(self):
         event=self.home/'dirty-event.json'
@@ -176,7 +191,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         (self.root/'untracked.md').write_text('dirty documentation\n')
         self.clear(); result=self.run_entry('baseline', extra=extra)
         self.assertEqual(result.returncode,0,result.stdout)
-        self.assertEqual(self.calls(),BASELINE_NAMES)
+        self.assertRuns(BASELINE_NAMES)
         self.assertIn('working tree is not clean',result.stdout)
     def test_baseline_classifier_crash_runs_complete_suite(self):
         event=self.home/'crash-event.json'; event.write_text('{}')
@@ -186,7 +201,7 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             self.clear(); result=self.run_entry('baseline',extra={
                 'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event)})
             self.assertEqual(result.returncode,0,result.stdout)
-            self.assertEqual(self.calls(),BASELINE_NAMES)
+            self.assertRuns(BASELINE_NAMES)
             self.assertIn('Baseline profile unavailable',result.stdout)
         finally: policy.write_text(original)
     def test_missing_tool_does_not_report_application_pass(self):
@@ -219,14 +234,14 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         local=self.run_entry(*self.docs_args()); self.assertEqual(local.returncode,0,local.stdout); local_calls=self.calls(); self.clear()
         classification=self.run_entry('classify',extra=extra); self.assertEqual(classification.stdout.strip(),'docs')
         phase=self.run_entry('baseline',extra=extra); self.assertEqual(phase.returncode,0,phase.stdout)
-        self.assertEqual(self.calls(),local_calls); self.clear()
+        self.assertRuns(local_calls); self.clear()
         # Without a verified CI context the baseline phase conservatively runs every suite.
         phase=self.run_entry('baseline'); self.assertEqual(phase.returncode,0,phase.stdout)
-        self.assertEqual(self.calls(),BASELINE_NAMES); self.clear()
+        self.assertRuns(BASELINE_NAMES); self.clear()
         local=self.run_entry('--full'); self.assertEqual(local.returncode,0,local.stdout); local_calls=self.calls(); self.clear()
         for mode in ('baseline','application'):
             phase=self.run_entry(mode); self.assertEqual(phase.returncode,0,phase.stdout)
-        self.assertEqual(self.calls(),local_calls)
+        self.assertRuns(local_calls)
     def test_shared_classifier_invalid_output_and_crash_are_not_green(self):
         policy=self.root/'scripts/ci_policy.py'
         original=policy.read_text()
@@ -310,13 +325,12 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(plan.returncode,0,plan.stdout); self.assertEqual(plan.stdout.strip(),'docs')
         self.clear(); result = self.run_entry('baseline', extra=extra)
         self.assertEqual(result.returncode,0,result.stdout)
-        self.assertEqual(self.calls(),DOC_BASELINE_NAMES)
+        self.assertRuns(DOC_BASELINE_NAMES)
         self.assertIn('INTENTIONALLY SKIPPED harness regressions',result.stdout)
         for name in HARNESS_NAMES:
             self.assertNotIn(name,self.calls())
         protected = ('scripts/guide.md','AGENTS.md','.agents/skills/demo/SKILL.md',
-                     'specs/methodology/policy.md','specs/guidelines/quality.md',
-                     'apps/web/src/amount.ts','bun.lock','.github/workflows/validate.yml')
+                     'specs/methodology/policy.md','specs/guidelines/quality.md')
         for index,path in enumerate(protected):
             with self.subTest(path=path):
                 extra = self.integration_event(path, branch='fixture-protected-' + str(index))
@@ -325,7 +339,65 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
                 self.assertEqual(plan.stdout.strip(),'fast',(path,plan.stdout))
                 result = self.run_entry('baseline', extra=extra)
                 self.assertEqual(result.returncode,0,(path,result.stdout))
-                self.assertEqual(self.calls(),BASELINE_NAMES,(path,self.calls()))
+                self.assertRuns(BASELINE_NAMES,(path,self.calls()))
+
+    def test_declared_inputs_select_their_own_suites(self):
+        # Application/build inputs cannot regress a harness suite: FAST keeps only
+        # the essential controls and says so instead of implying a pass.
+        extra = self.integration_event('apps/web/src/amount.ts', branch='fixture-application')
+        self.clear(); result = self.run_entry('baseline', extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertRuns(ESSENTIAL_NAMES)
+        self.assertIn('INTENTIONALLY SKIPPED harness regressions',result.stdout)
+        for name in HARNESS_NAMES:
+            self.assertNotIn('PASS '+name,result.stdout)
+        # The workflow graph is validated by four suites, not by the whole baseline.
+        extra = self.integration_event('.github/workflows/validate.yml', branch='fixture-workflow')
+        self.clear(); result = self.run_entry('baseline', extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertRuns(ESSENTIAL_NAMES+WORKFLOW_HARNESS)
+        self.assertIn('INTENTIONALLY SKIPPED harness regressions',result.stdout)
+        self.assertNotIn('PASS test-agent-relay',result.stdout)
+        # The deployment recipe selects only its own regression suite.
+        extra = self.integration_event('infra/release.py', branch='fixture-infrastructure')
+        self.clear(); result = self.run_entry('baseline', extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertRuns(ESSENTIAL_NAMES+['test-release'])
+        self.assertNotIn('PASS test-validator',result.stdout)
+        # An undeclared path is not proved harmless: every suite runs again.
+        extra = self.integration_event('unmapped/input.txt', branch='fixture-unmapped')
+        self.clear(); result = self.run_entry('baseline', extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertRuns(BASELINE_NAMES)
+        self.assertNotIn('INTENTIONALLY SKIPPED harness',result.stdout)
+        # A dirty snapshot cannot inherit a narrowed application-only comparison.
+        extra = self.integration_event('apps/web/src/amount-2.ts', branch='fixture-dirty-fast')
+        (self.root/'apps/web/src/uncommitted.ts').write_text('export const pending = 1;' + chr(10))
+        self.clear(); result = self.run_entry('baseline', extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertRuns(BASELINE_NAMES)
+        self.assertNotIn('INTENTIONALLY SKIPPED harness regressions',result.stdout)
+        (self.root/'apps/web/src/uncommitted.ts').unlink()
+
+    def test_parallel_baseline_reports_in_declaration_order_and_runs_once(self):
+        extra = self.integration_event('scripts/guide.md', branch='fixture-parallel')
+        expected = BASELINE_ORDER
+        observed = []
+        for jobs in ('1','4'):
+            self.clear()
+            result = self.run_entry('baseline', extra={**extra,'VERIFY_JOBS':jobs})
+            self.assertEqual(result.returncode,0,result.stdout)
+            # The reported order is the declaration order for both job counts.
+            self.assertEqual(re.findall(r'(?m)^PASS (\S+)',result.stdout),expected,jobs)
+            self.assertRuns(BASELINE_NAMES)
+            observed.append(re.findall(r'(?m)^(?:RUN|PASS) (\S+)',result.stdout))
+        self.assertEqual(observed[0],observed[1])
+        # A failing suite is reported where it ran, and the phase still fails.
+        self.clear(); result = self.run_entry('baseline', extra={**extra,'VERIFY_JOBS':'4',
+                                                                 'VERIFY_FIXTURE_FAIL':'test-evidence'})
+        self.assertNotEqual(result.returncode,0,result.stdout)
+        self.assertIn('FAIL test-evidence',result.stdout)
+        self.assertNotIn('Baseline phase: PASS',result.stdout)
 
     def advanced_integration_event(self, path):
         self.git('switch', '-qc', 'fixture-advanced')
@@ -475,6 +547,6 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         before=self.git('status','--porcelain'); head=self.git('rev-parse','HEAD')
         result=self.run_entry('--full'); self.assertEqual(result.returncode,0,result.stdout)
         self.assertEqual(self.git('status','--porcelain'),before); self.assertEqual(self.git('rev-parse','HEAD'),head)
-        self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+        self.assertRuns(BASELINE_NAMES+APP_NAMES)
 
 if __name__=='__main__': unittest.main(verbosity=2)
