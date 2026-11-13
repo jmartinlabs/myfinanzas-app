@@ -93,10 +93,17 @@ test("L3: identidad de Movimientos en Claro y Mixto, 1440/820/390", async ({ pag
     await expect(
       page.locator('.movement-type[data-tipo="Ingreso"] .movement-type-icon').first(),
     ).toHaveCSS("background-color", "rgb(230, 241, 241)");
+    await expect(page.locator(".movement-status-dot").first()).toBeVisible();
+    await expect(page.locator(".movement-status-dot").first()).toHaveCSS("width", "7px");
     await expect(page.locator(".movement-status-dot").first()).toHaveCSS(
       "background-color",
       "rgb(23, 97, 106)",
     );
+    // D4: ningún importe recibe color financiero; todos comparten color.
+    const amountColors = await page
+      .locator(".movement-amount")
+      .evaluateAll((nodes) => [...new Set(nodes.map((n) => getComputedStyle(n).color))]);
+    expect(amountColors).toHaveLength(1);
     await expect(list).toHaveCSS("background-image", "none");
 
     for (const [width, height] of [

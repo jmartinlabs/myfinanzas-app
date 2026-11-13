@@ -258,8 +258,38 @@ html[data-theme="hybrid-s"] .movements-list .filters {
   text-transform: none;
 }
 
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search {
+  position: relative;
+  display: block;
+}
+
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search-icon {
-  border-color: #5f5b55;
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #5f5b55;
+  border-radius: 50%;
+  transform: translateY(-55%);
+  pointer-events: none;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search-icon::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: #5f5b55;
+  transform: rotate(45deg);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search input {
+  padding-left: 38px;
 }
 
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search-icon::after {
@@ -293,6 +323,11 @@ html[data-theme="hybrid-s"] .movements-list .filters {
 }
 
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: #17616a;
 }
 
@@ -450,4 +485,32 @@ html[data-theme="hybrid-s"] .movements-list .filters {
   max-width: 62ch;
   color: #5f5b55;
   font-size: 12px;
+}
+
+
+@media (max-width: 1000px) {
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-type-icon {
+    display: none;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-amount {
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table th,
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table th,
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td {
+    padding-inline: 4px;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-amount {
+    font-size: 12px;
+  }
 }
