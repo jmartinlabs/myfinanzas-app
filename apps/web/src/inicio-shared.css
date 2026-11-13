@@ -1,0 +1,494 @@
+/* UI-03 · estructura compartida de Inicio, derivada de la composición Graphite. */
+
+/* G2a · Inicio: hero de control y banda KPI ----------------------------- */
+
+.inicio-page .graphite-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr) minmax(0, 1fr);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.inicio-page .graphite-control-cell {
+  min-width: 0;
+  padding: 24px 26px;
+  border-left: 1px solid var(--border);
+}
+.inicio-page .graphite-control-cell:first-of-type {
+  border-left: 0;
+}
+.inicio-page .graphite-control-cell:nth-of-type(1),
+.inicio-page .graphite-control-cell:nth-of-type(2) {
+  display: flex;
+  flex-direction: column;
+}
+.inicio-page .graphite-control-cell:nth-of-type(1) .graphite-control-note,
+.inicio-page .graphite-control-cell:nth-of-type(2) .graphite-control-note {
+  margin-top: auto;
+  padding-top: 16px;
+}
+.inicio-page .graphite-kicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.2px;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+.inicio-page .graphite-hero-amount .ui-amount-value {
+  font-size: clamp(38px, 3.6vw, 50px);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.inicio-page .graphite-hero-margin .ui-amount-value {
+  font-size: clamp(30px, 2.6vw, 40px);
+}
+.inicio-page .graphite-hero-amount .ui-amount-state {
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+.inicio-page .graphite-control-meta,
+.inicio-page .graphite-kpi-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.inicio-page .graphite-control-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.inicio-page .graphite-plan-pair {
+  display: grid;
+  gap: 16px;
+}
+.inicio-page .graphite-plan-item {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.inicio-page .graphite-plan-item > span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.inicio-page .graphite-plan-item .ui-amount-value {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+}
+.inicio-page .graphite-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.inicio-page .graphite-facts dt {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.inicio-page .graphite-facts dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+.inicio-page .graphite-facts .ui-amount-value {
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.inicio-page .graphite-control-link {
+  margin: 14px 0 0;
+  font-size: 12px;
+}
+.inicio-page .graphite-control-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+.inicio-page .graphite-facts .ui-badge {
+  margin-top: 4px;
+}
+.inicio-page .graphite-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.inicio-page .graphite-kpi {
+  min-width: 0;
+  padding: 18px 20px;
+  border-left: 1px solid var(--border);
+}
+.inicio-page .graphite-kpi:first-child {
+  border-left: 0;
+}
+.inicio-page .graphite-kpi .graphite-kicker {
+  margin-bottom: 8px;
+}
+.inicio-page .graphite-kpi-value .ui-amount-value {
+  font-size: clamp(22px, 2.1vw, 28px);
+  letter-spacing: -0.8px;
+}
+.inicio-page .graphite-kpi-value .ui-amount-state {
+  font-size: 14px;
+}
+.inicio-page .graphite-kpi-meta {
+  margin-top: 10px;
+}
+@media (max-width: 1180px) {
+  .inicio-page .graphite-control {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page .graphite-control-cell {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+  .inicio-page .graphite-control-cell:first-of-type {
+    border-top: 0;
+  }
+  .inicio-page .graphite-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inicio-page .graphite-kpi:nth-child(odd) {
+    border-left: 0;
+  }
+  .inicio-page .graphite-kpi:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 600px) {
+  .inicio-page .graphite-control-cell,
+  .inicio-page .graphite-kpi {
+    padding: 18px;
+  }
+  .inicio-page .graphite-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page .graphite-kpi,
+  .inicio-page .graphite-kpi:nth-child(odd) {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+  .inicio-page .graphite-kpi:first-child {
+    border-top: 0;
+  }
+  .inicio-page .graphite-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* G2b · Inicio: ciclo, rail, posición y cobertura ------------------------ */
+
+.inicio-page .graphite-cycle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.85fr);
+  gap: 18px;
+  align-items: start;
+}
+.inicio-page .graphite-cycle,
+.inicio-page .graphite-rail-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.inicio-page .graphite-cycle {
+  padding: 20px;
+  min-width: 0;
+}
+.inicio-page .graphite-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.inicio-page .graphite-section-head .eyebrow {
+  margin-bottom: 4px;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+.inicio-page .graphite-section-head h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.inicio-page .graphite-cycle .ui-table th:nth-child(1) {
+  width: 24%;
+}
+.inicio-page .graphite-cycle .ui-table th:nth-child(2) {
+  width: 16%;
+}
+.inicio-page .graphite-cycle .ui-table th:nth-child(3) {
+  width: 24%;
+}
+.inicio-page .graphite-cycle .ui-table th:nth-child(4) {
+  width: 36%;
+}
+.inicio-page .graphite-cycle .ui-table td:nth-child(3) .ui-badge {
+  max-width: 100%;
+}
+.inicio-page .graphite-cycle-coverage {
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.inicio-page .graphite-cycle-detail {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.inicio-page .graphite-cycle-detail summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  font-size: 12px;
+  font-weight: 650;
+}
+.inicio-page .graphite-cycle-detail ul {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.inicio-page .graphite-cycle-detail li {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.inicio-page .graphite-cycle-detail li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.inicio-page .graphite-cycle-detail li > span,
+.inicio-page .graphite-cycle-detail .inicio-source {
+  font-size: 12px;
+  line-height: 1.45;
+}
+.inicio-page .graphite-rail {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.inicio-page .graphite-rail-card {
+  padding: 18px;
+  min-width: 0;
+}
+.inicio-page .graphite-attention-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.inicio-page .graphite-attention-list li {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.inicio-page .graphite-attention-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.inicio-page .graphite-attention-list li > span {
+  font-size: 13px;
+  font-weight: 650;
+}
+.inicio-page .graphite-cycle-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.inicio-page .graphite-attention-list small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+.inicio-page .graphite-attention-list a,
+.inicio-page .graphite-rail-link a {
+  font-size: 12px;
+}
+.inicio-page .graphite-attention-list li > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+.inicio-page .graphite-objective-value {
+  margin: 4px 0 0;
+}
+.inicio-page .graphite-objective-value .ui-amount-value {
+  font-size: 30px;
+  letter-spacing: -0.9px;
+}
+.inicio-page .graphite-rail-meta,
+.inicio-page .graphite-rail-empty,
+.inicio-page .graphite-rail-alert {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.inicio-page .graphite-objective-facts {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+.inicio-page .graphite-objective-facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.inicio-page .graphite-objective-facts dt {
+  font-size: 12px;
+}
+.inicio-page .graphite-objective-facts dd {
+  margin: 0;
+  font-size: 14px;
+  text-align: right;
+}
+.inicio-page .graphite-objective-facts .ui-amount-value {
+  font-size: 16px;
+}
+.inicio-page .graphite-objective-facts .ui-badge {
+  margin-left: 6px;
+}
+.inicio-page .graphite-rail-link {
+  margin: 12px 0 0;
+}
+.inicio-page .graphite-position {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.inicio-page .graphite-position-cell {
+  min-width: 0;
+  padding: 16px 18px;
+  border-left: 1px solid var(--border);
+}
+.inicio-page .graphite-position-cell:first-child {
+  border-left: 0;
+}
+.inicio-page .graphite-position-value {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.9px;
+}
+.inicio-page .graphite-position-cell .ui-amount-value {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+.inicio-page .graphite-position-meta,
+.inicio-page .graphite-position-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.inicio-page .graphite-position-cell > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-top: 8px;
+  font-size: 12px;
+}
+.inicio-page .graphite-coverage {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.inicio-page .graphite-coverage p {
+  margin: 0;
+}
+.inicio-page .graphite-coverage a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  font-size: 12px;
+}
+.inicio-page .graphite-detail-heading {
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.inicio-page .graphite-detail-heading .eyebrow {
+  margin-bottom: 4px;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+.inicio-page .graphite-detail-heading h2 {
+  margin-bottom: 6px;
+  font-size: 20px;
+}
+.inicio-page .graphite-detail-heading p:last-child {
+  margin: 0;
+  font-size: 12px;
+}
+@media (max-width: 1000px) {
+  .inicio-page .graphite-cycle-desktop {
+    display: none;
+  }
+  .inicio-page .graphite-cycle-cards {
+    display: grid;
+  }
+}
+@media (max-width: 1180px) {
+  .inicio-page .graphite-cycle-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page .graphite-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inicio-page .graphite-position {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .inicio-page .graphite-position-cell:nth-child(3n + 1) {
+    border-left: 0;
+  }
+  .inicio-page .graphite-position-cell:nth-child(n + 4) {
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 800px) {
+  .inicio-page .graphite-position {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inicio-page .graphite-position-cell:nth-child(3n + 1) {
+    border-left: 1px solid var(--border);
+  }
+  .inicio-page .graphite-position-cell:nth-child(odd) {
+    border-left: 0;
+  }
+  .inicio-page .graphite-position-cell:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 600px) {
+  .inicio-page .graphite-rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page .graphite-position {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page .graphite-position-cell,
+  .inicio-page .graphite-position-cell:nth-child(odd) {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+  .inicio-page .graphite-position-cell:first-child {
+    border-top: 0;
+  }
+  .inicio-page .graphite-cycle {
+    padding: 16px;
+  }
+}

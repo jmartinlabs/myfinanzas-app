@@ -558,7 +558,7 @@ function VehicleList({ go }: { go: (p: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="vehiculos-page">
       <PageHead
         eyebrow="E3.3 · VEHÍCULOS"
         title="Vehículos"
@@ -661,7 +661,7 @@ function VehicleList({ go }: { go: (p: string) => void }) {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 function VehicleDetail({ id, go }: { id: string; go: (p: string) => void }) {
@@ -692,7 +692,7 @@ function VehicleDetail({ id, go }: { id: string; go: (p: string) => void }) {
   }, [id, year, retry]);
   const canEdit = view?.ficha && view.integridad.estado === "OK";
   return (
-    <>
+    <div className="vehicle-detail-page">
       <button className="text-button" onClick={() => go(base)}>
         Volver a Vehículos
       </button>
@@ -797,7 +797,7 @@ function VehicleDetail({ id, go }: { id: string; go: (p: string) => void }) {
           <AuditPanel view={view} />
         </>
       )}
-    </>
+    </div>
   );
 }
 function CandidateList({
@@ -1042,7 +1042,7 @@ export function VehicleForm({
       </>
     );
   return (
-    <>
+    <div className="vehicle-form-page">
       <PageHead
         eyebrow={
           converting
@@ -1243,7 +1243,7 @@ export function VehicleForm({
           </div>
         </div>
       </form>
-    </>
+    </div>
   );
 }
 function VehicleIntegrity({ go }: { go: (p: string) => void }) {
@@ -1267,7 +1267,7 @@ function VehicleIntegrity({ go }: { go: (p: string) => void }) {
     };
   }, [year, retry]);
   return (
-    <>
+    <div className="vehicle-integrity-page">
       <PageHead
         eyebrow="E3.3 · CONTROL"
         title="Integridad de vehículos"
@@ -1366,6 +1366,6 @@ function VehicleIntegrity({ go }: { go: (p: string) => void }) {
           </section>
         </>
       )}
-    </>
+    </div>
   );
 }

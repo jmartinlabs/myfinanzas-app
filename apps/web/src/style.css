@@ -1,5 +1,7 @@
 /* Graphite Lime · G1 · capa visual aislada por data-theme. */
 @import "./graphite.css";
+@import "./inicio-shared.css";
+@import "./light-hybrid.css";
 
 :root {
   font-family:
@@ -528,6 +530,7 @@ small {
   flex-direction: row;
   align-items: center;
   gap: 7px;
+  min-height: var(--touch-min);
   white-space: nowrap;
   font-size: var(--text-xs) !important;
   margin: 0 !important;
@@ -5341,6 +5344,10 @@ textarea {
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
+.ui-table tbody tr[data-row-clickable="true"],
+.ui-data-list-item[data-row-clickable="true"] {
+  cursor: pointer;
+}
 .ui-table tbody tr:hover {
   background: var(--surface-2);
 }
@@ -6561,4 +6568,31 @@ textarea {
 }
 .reparto-seguimiento .ui-form-section {
   margin: 0;
+}
+
+/* UI-03 — separación visual de las experiencias de Partidas. */
+.panel[id] {
+  scroll-margin-top: 96px;
+}
+.dprima-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+.dprima-subnav a {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.dprima-subnav a:hover {
+  border-color: var(--accent);
+}
+.dprima-technical {
+  border-style: dashed;
 }

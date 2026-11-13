@@ -11,7 +11,8 @@ import { createClassification } from "../src/clasificacion";
 import { createSaldo } from "../src/saldos";
 import type { AnnualProvider } from "../src/plan-anual";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
-const dir = ".local/e2e-vehiculos";
+const port = Number(process.env.VEHICULOS_PORT ?? "3009");
+const dir = process.env.VEHICULOS_STATE ?? ".local/e2e-vehiculos";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),
@@ -166,7 +167,7 @@ writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
     HttpServer.serve(createApp(db, { key, annualProvider })).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3009 })),
+      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),
 );

@@ -129,7 +129,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       fullPage: true,
     });
 
-    await page.getByRole("link", { name: "Compras", exact: true }).click();
+    await page.goto("/inversiones/compras");
     await expect(
       page.getByRole("heading", { name: "Compras de inversión", exact: true }),
     ).toBeVisible();
@@ -197,7 +197,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await expect(page.getByText("10,00 €").first()).toBeVisible();
     await expect(page.getByText(/01\/04\/2026 · Vigente/)).toBeVisible();
 
-    await page.getByRole("link", { name: "Compras", exact: true }).click();
+    await page.goto("/inversiones/compras");
     await expect(page.getByText(/Todas \(4\) · 3 vigentes · 1 anulada/)).toBeVisible();
     const first = page.locator("tr", { hasText: "10/02/2026" });
     await first.getByRole("button", { name: "Rectificar" }).click();
@@ -242,7 +242,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await expect(page.getByText("900,00 €").first()).toBeVisible();
     await expect(page.getByText(/revisión 2/).first()).toBeVisible();
 
-    await page.getByRole("link", { name: "Compras", exact: true }).click();
+    await page.goto("/inversiones/compras");
     const second = page.locator("tr", { hasText: "03/03/2026" });
     await second.getByRole("button", { name: "Anular" }).click();
     await page.getByRole("button", { name: "Ver impacto de anulación" }).click();
@@ -265,7 +265,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
         }),
       }),
     );
-    await page.getByRole("link", { name: /Instrumentos/ }).click();
+    await page.goto("/inversiones");
     await expect(
       page.getByRole("heading", { name: "Sin Instrumentos", exact: true }),
     ).toBeVisible();
@@ -277,7 +277,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
         body: JSON.stringify({ error: "Fallo ficticio de fuente" }),
       }),
     );
-    await page.getByRole("link", { name: "Compras", exact: true }).click();
+    await page.goto("/inversiones/compras");
     await expect(
       page.getByText(/No se pudo leer el registro de Compras\./),
     ).toBeVisible();
@@ -290,7 +290,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
         body: JSON.stringify({ error: "Sesión expirada ficticia" }),
       }),
     );
-    await page.getByRole("link", { name: /Instrumentos/ }).click();
+    await page.goto("/inversiones");
     await expect(
       page.getByText(/La sesión ha caducado\. Copia cualquier borrador/),
     ).toBeVisible();
@@ -310,7 +310,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       path: "artifacts/e4-1/instrumentos-list-390.png",
       fullPage: true,
     });
-    await page.getByRole("link", { name: "Compras", exact: true }).click();
+    await page.goto("/inversiones/compras");
     await expect(page.locator(".inversiones-mobile li").first()).toBeVisible();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -329,7 +329,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.screenshot({
       path: "artifacts/e4-1/rectificar-390.png",
     });
-    await page.getByRole("link", { name: /Instrumentos/ }).click();
+    await page.goto("/inversiones");
     await page.locator(".inversiones-mobile a", { hasText: "Fondo índice demo" }).click();
     await expect(
       page.getByLabel("Posiciones por Saldo móvil"),

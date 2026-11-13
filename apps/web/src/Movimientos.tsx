@@ -586,6 +586,7 @@ function MovementList({
                 rows={data.movimientos}
                 rowKey={(m) => m.id}
                 rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
+                onRowClick={(m) => go(`${base}/${m.id}`)}
               />
             </div>
             <DataList
@@ -593,6 +594,7 @@ function MovementList({
               rows={data.movimientos}
               rowKey={(m) => m.id}
               rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
+              onItemClick={(m) => go(`${base}/${m.id}`)}
               label="Tarjetas de Movimientos"
               className="mobile-list movements-cards"
             />

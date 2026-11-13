@@ -593,7 +593,7 @@ function OperationList({ go }: { go: (p: string) => void }) {
   return (
     <>
       <PageHead
-        eyebrow="E3.4 · REVISIÓN BANCARIA"
+        eyebrow="REVISIÓN BANCARIA"
         title="Revisión Comida"
         description="Operaciones bancarias individuales con clasificación, evidencia y vínculo opcional."
       >
@@ -807,7 +807,7 @@ function ReposList({ go }: { go: (p: string) => void }) {
   return (
     <>
       <PageHead
-        eyebrow="E3.4 · REPOSICIONES"
+        eyebrow="REPOSICIONES"
         title="Reposiciones"
         description="Operaciones bancarias reales de entrada con evidencia propia."
       >
@@ -1032,7 +1032,7 @@ function OperationDetail({
   return (
     <>
       <PageHead
-        eyebrow="E3.4 · FICHA"
+        eyebrow="FICHA"
         title={`Operación ${o.id}`}
         description={`${o.concepto} · ${date(o.fecha)}`}
       >
@@ -1488,7 +1488,7 @@ function OperationForm({
   return (
     <>
       <PageHead
-        eyebrow={id ? "E3.4 · RECTIFICACIÓN" : "E3.4 · ALTA"}
+        eyebrow={id ? "RECTIFICACIÓN" : "ALTA"}
         title={
           id
             ? `Editar ${tipo === "Reposicion" ? "reposición" : "operación"} ${id}`

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Canonical MyFinanzas local/CI verification; provisioning is separate."""
 import argparse
+import concurrent.futures
 import contextlib
 import io
 import json
@@ -11,12 +12,13 @@ import runpy
 import shutil
 import subprocess
 import sys
+import time
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
 BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.startswith('test-') else None) for name in (
     'check-repository', 'check-project', 'validate-template', 'test-checks',
     'test-validator', 'test-agent-relay', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification',
-    'test-evidence', 'test-release')) + (
+    'test-evidence', 'test-release', 'test-work-issue')) + (
     ('working-whitespace', ['git', 'diff', '--check'], None),
     ('commit-whitespace', ['git', 'show', '--format=', '--check', '--first-parent', 'HEAD'], None))
 # Harness regressions read scripts, fixtures and protected instructions; a verified
@@ -24,11 +26,17 @@ BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.
 # baseline control (repository, project, template, links, whitespace) still runs.
 HARNESS_SUITES = frozenset((
     'test-checks', 'test-validator', 'test-agent-relay', 'test-verification', 'test-evidence',
-    'test-agent-usage', 'test-auto-agent-usage', 'test-release'))
+    'test-agent-usage', 'test-auto-agent-usage', 'test-release', 'test-work-issue'))
+# Declaration order, for deterministic reporting of an omitted selection.
+HARNESS_ORDER = tuple(name for name, _, _ in BASELINE if name in HARNESS_SUITES)
 APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),
                ('build', ['bun', 'run', 'build'], None),
+               ('web', ['bun', 'test', 'apps/web'], 'bun'),
                ('api', ['bun', 'run', 'test'], 'bun'),
                ('e2e', ['bun', 'run', 'test:e2e'], 'playwright'))
+# FAST is the PR profile: typecheck, build and the web unit suite. API/SQLite and
+# E2E moved to FULL over the deploy tag, so a PR never needs age or Chromium.
+FAST_APPLICATION = ('typecheck', 'build', 'web')
 LEGACY_BRANCH = 'feat/07-ciclos-operacion'
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 
@@ -93,43 +101,62 @@ def legacy_required():
             names.append(result.stdout.strip())
     return LEGACY_BRANCH in names
 
-def baseline_checks(profile, checks=None):
-    """Omit harness regressions only for a verified docs profile; all else runs them."""
+def baseline_checks(profile, checks=None, harness=None):
+    """FULL never narrows; docs omits harness; only FAST may use a path selection."""
     checks = BASELINE if checks is None else tuple(checks)
+    if profile == 'docs':
+        selected = frozenset()
+    elif profile == 'fast' and harness is not None:
+        selected = frozenset(harness) & HARNESS_SUITES
+    else:
+        selected = HARNESS_SUITES
     return [check for check in checks
-            if profile != 'docs' or check[0] not in HARNESS_SUITES]
+            if check[0] not in HARNESS_SUITES or check[0] in selected]
 
-def baseline_profile():
-    """Reuse the shared CI selector; no verified context runs the complete baseline."""
+def baseline_context():
+    """(profile, harness selection) for the baseline phase; None means every suite.
+
+    FAST narrows harness regressions to the suites whose declared inputs the
+    verified comparison changes. Anything unverifiable, and any dirty snapshot,
+    keeps the complete set: an unproven diff never omits a suite.
+    """
     try:
         event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
-        profile = POLICY['ci_profile'](ROOT, os.environ['GITHUB_EVENT_NAME'], event,
-                                       os.getenv('CI_CHECKOUT_REF'))
+        profile, paths = POLICY['ci_comparison'](ROOT, os.environ['GITHUB_EVENT_NAME'], event,
+                                                 os.getenv('CI_CHECKOUT_REF'))
+        # A local dirty/untracked snapshot cannot inherit a committed comparison.
+        status = subprocess.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
+                                cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        dirty = bool(status.returncode or status.stdout)
         if profile == 'docs':
-            # A local dirty/untracked snapshot cannot inherit the committed comparison.
-            status = subprocess.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
-                                    cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if status.returncode or status.stdout:
+            if dirty:
                 print('Baseline profile downgraded: working tree is not clean.', file=sys.stderr)
-                return 'full'
-        return profile
+                return 'full', None
+            return 'docs', None
+        if profile != 'fast' or dirty:
+            return profile, None
+        return profile, POLICY['harness_suites'](paths)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
         print('Baseline profile unavailable; running the complete baseline.', file=sys.stderr)
-        return 'full'
+        return 'full', None
+
+def parallel_jobs():
+    """One suite per core, bounded: the phase costs its longest suite, not the sum."""
+    override = os.getenv('VERIFY_JOBS')
+    if override:
+        try:
+            return max(1, min(8, int(override)))
+        except ValueError:
+            print('Ignoring invalid VERIFY_JOBS; using the default.', file=sys.stderr)
+    return max(1, min(4, os.cpu_count() or 1))
 
 def application_checks(profile='full'):
-    if profile == 'critical':
-        api = ['bun', 'test', 'apps/api', '--test-name-pattern',
-               POLICY['full_only_pattern'](), '--pass-with-no-tests']
-        filtered = POLICY['full_only_expected']()
-    else:
-        api = ['bun', 'run', 'test']
-        filtered = 0
-    checks = [('typecheck', ['bun', 'run', 'typecheck'], None),
-              ('build', ['bun', 'run', 'build'], None),
-              ('api', api, 'bun', filtered),
-              ('e2e', ['bun', 'run', 'test:e2e'], 'playwright')]
-    if legacy_required():
+    """Canonical application set; the profile only narrows it."""
+    checks = list(APPLICATION)
+    if profile == 'fast':
+        checks = [check for check in checks if check[0] in FAST_APPLICATION]
+
+    if legacy_required() and profile != 'fast':
         # Preserve explicit historical acceptance repeats, not duplicate core suites.
         legacy = [('legacy-ac23-' + str(i), ['bun', 'test', 'apps/api/src/movimientos.test.ts',
                    '--test-name-pattern', '04 AC22/23/28: dos procesos'], 'bun') for i in range(1, 6)]
@@ -138,35 +165,67 @@ def application_checks(profile='full'):
         checks[2:2] = legacy
     return checks
 
-def run_checks(checks, prerequisites=()):
+def run_check(check):
+    """Run one check to completion; (name, passed, detail, output, seconds)."""
+    name, command, reporter = check[:3]
+    expected_filtered = check[3] if len(check) > 3 else 0
+    env = {**os.environ}
+    if reporter == 'bun':
+        env.setdefault('NODE_ENV', 'test')
+    started = time.monotonic()
+    def done(passed, detail, output=''):
+        return name, passed, detail, output, time.monotonic() - started
+    try:
+        result = subprocess.run(command, cwd=ROOT, env=env, text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except OSError as error:
+        return done(False, str(error))
+    if result.returncode != 0:
+        return done(False, 'exit ' + str(result.returncode), result.stdout)
+    if reporter and not test_coverage(result.stdout, reporter, expected_filtered):
+        return done(False, 'missing/zero test coverage or unexpected skips/failures (filtered count mismatch)', result.stdout)
+    return done(True, '', result.stdout)
+
+def run_checks(checks, prerequisites=(), jobs=1):
+    """Independent checks may run concurrently; reporting stays in declaration order.
+
+    Every selected check is attempted, so a failure reports its own result plus the
+    real outcome of the others instead of claiming they were not run.
+    """
     missing = [tool for tool in prerequisites if shutil.which(tool) is None]
     if missing:
         print('FAIL prerequisites: ' + ', '.join(missing), file=sys.stderr)
         for check in checks:
             print('UNRUN ' + check[0])
         return False
-    for index, check in enumerate(checks):
-        name, command, reporter = check[:3]
-        expected_filtered = check[3] if len(check) > 3 else 0
-        print('RUN ' + name, flush=True)
-        try:
-            env = {**os.environ}
-            if reporter == 'bun':
-                env.setdefault('NODE_ENV', 'test')
-            result = subprocess.run(command, cwd=ROOT, env=env, text=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            print(result.stdout, end='' if result.stdout.endswith('\n') else '\n', flush=True)
-            if result.returncode != 0:
-                raise VerificationError('exit ' + str(result.returncode))
-            if reporter and not test_coverage(result.stdout, reporter, expected_filtered):
-                raise VerificationError('missing/zero test coverage or unexpected skips/failures (filtered count mismatch)')
-            print('PASS ' + name, flush=True)
-        except (OSError, VerificationError) as error:
-            print('FAIL ' + name + ': ' + str(error), file=sys.stderr)
-            for unrun in checks[index + 1:]:
-                print('UNRUN ' + unrun[0])
-            return False
-    return True
+    for check in checks:
+        print('RUN ' + check[0], flush=True)
+    if jobs > 1 and len(checks) > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(jobs, len(checks))) as pool:
+            results = list(pool.map(run_check, checks))
+    else:
+        results = [run_check(check) for check in checks]
+    ok = True
+    for name, passed, detail, output, seconds in results:
+        if output:
+            print(output, end='' if output.endswith('\n') else '\n', flush=True)
+        if passed:
+            print('PASS %s (%.1fs)' % (name, seconds), flush=True)
+        else:
+            print('FAIL %s: %s (%.1fs)' % (name, detail, seconds), file=sys.stderr)
+            ok = False
+    return ok
+
+def harness_notice(profile, selection):
+    """Declare a narrowed or omitted harness selection instead of implying a pass."""
+    if selection is None or profile == 'docs':
+        return
+    omitted = [name for name in HARNESS_ORDER if name not in set(selection)]
+    if not omitted:
+        return
+    print('INTENTIONALLY SKIPPED harness regressions: the verified comparison changes no '
+          'declared input of ' + ', '.join(omitted) + '; the deploy tag FULL run still '
+          'executes every suite.')
 
 def main(argv=None):
     if sys.version_info < (3, 10):
@@ -199,25 +258,20 @@ def main(argv=None):
         if profile == 'docs':
             print('INTENTIONALLY SKIPPED application checks: docs profile; local QA evidence is separate.')
             return 0
-        if profile == 'full':
-            checks = application_checks('full')
-        elif profile == 'critical':
-            checks = [check for check in application_checks('critical') if check[0] != 'e2e']
-        else:
-            checks = list(APPLICATION[:2])
-        tools = ('bun', 'node', 'age', 'git') if profile == 'full' else (
-            ('bun', 'node', 'git') if profile == 'critical' else ('bun', 'git'))
+        checks = application_checks(profile)
+        tools = ('bun', 'node', 'age', 'git') if profile == 'full' else ('bun', 'git')
         ok = run_checks(checks, tools)
         print('CI profile ' + profile + ': ' + ('PASS' if ok else 'FAIL') + '; local full QA is a separate integration gate.')
         return 0 if ok else 1
     if args.mode == 'result':
         return POLICY['main'](['result'])
     if args.mode == 'baseline':
-        profile = baseline_profile()
+        profile, selection = baseline_context()
         print('Baseline profile: ' + profile)
         if profile == 'docs':
-            print('INTENTIONALLY SKIPPED harness regressions: docs profile; critical/full retain them.')
-        ok = run_checks(baseline_checks(profile), ('git',))
+            print('INTENTIONALLY SKIPPED harness regressions: docs profile; fast/full retain them.')
+        harness_notice(profile, selection)
+        ok = run_checks(baseline_checks(profile, harness=selection), ('git',), parallel_jobs())
         print('Baseline phase: ' + ('PASS' if ok else 'FAIL') + '; application phase not included.')
         return 0 if ok else 1
     if args.mode == 'application':
@@ -231,7 +285,8 @@ def main(argv=None):
     print('Classification: ' + selected)
     if selected == 'docs':
         print('INTENTIONALLY SKIPPED harness regressions: documentation-only changes; not reported as passed.')
-    if not run_checks(baseline_checks(selected), ('git',)):
+    # A local comparison never narrows the baseline: only the CI FAST profile does.
+    if not run_checks(baseline_checks(selected), ('git',), parallel_jobs()):
         print('UNRUN application checks')
         return 1
     if selected == 'docs':

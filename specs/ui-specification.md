@@ -73,8 +73,8 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Tema | `data-theme` | Estado |
 | --- | --- | --- |
 | Dark | `dark-s` | Implementado y cerrado; predeterminado |
-| Light | `light-s` | Implementado y cerrado |
-| Hybrid | `hybrid-s` | Implementado y cerrado |
+| Light | `light-s` | Implementado; identidad reabierta por UI-P2 (2.5) para L1 y L2 |
+| Hybrid | `hybrid-s` | Implementado; identidad reabierta por UI-P2 (2.5) para L1 y L2 |
 | Graphite Lime | `graphite-lime` | Aprobado 2026-11-10; integrado en `test` con #356 (`bff714e`); seleccionable como cuarto tema |
 | Casa | `casa` | Aprobada 2026-11-10; 1A autorizado y en curso |
 
@@ -84,11 +84,12 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
   otro selector ni se cambia el mecanismo de persistencia. La ampliación del catálogo se hace
   con una entrada adicional y un bloque de tokens, no con un segundo mecanismo.
 - Dark, Light, Hybrid y Graphite Lime no se modifican: ni paletas, ni tokens, ni orden/identidad,
-  ni el tema inicial `dark-s`.
+  ni el tema inicial `dark-s`. La única excepción vigente es la enmienda **UI-P2 (2.5)**, que
+  reabre solo la identidad de Light y Hybrid.
 - Graphite Lime se añade de forma aditiva por la enmienda UI-G1. **Casa se añade de forma
   aditiva por la enmienda UI-P1 (2.3).** No se implementan otros candidatos sin una decisión
   expresa y una enmienda propia.
-- **Prohibido:** reabrir o alterar los cuatro temas existentes, cambiar `dark-s` como
+- **Prohibido:** reabrir o alterar los cuatro temas existentes (salvo la excepción UI-P2, 2.5), cambiar `dark-s` como
   predeterminado, sustituir `mf-theme` o modificar `theme-boot.js` para una apariencia no
   aprobada.
 
@@ -226,6 +227,63 @@ se difieren. Casa UI-P1 (#363), 1A (#364), 1B (#370) y 1C (#371) están integrad
 El análisis y el plan detallado se conservan en la
 [PR #365](https://github.com/jmartinlabs/myfinanzas-app/pull/365).
 
+### 2.5 Enmienda UI-P2 · Identidad visual Claro/Mixto (L1–L2, 2026-11-12)
+
+Ratificada por el usuario en [#402](https://github.com/jmartinlabs/myfinanzas-app/issues/402)
+(comentario `6827471780`) al aceptar el análisis de rescate de los prototipos finales de fase C.
+Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre la composición.
+
+**Decisiones fijadas:**
+
+- **Composición única (D1=A):** los cinco temas comparten una sola composición funcional; la
+  identidad se aplica encima. No se crean estructuras por tema.
+- **Alcance L1 (D2=A):** tokens, superficies, bordes, sombras, tipografía y acentos de
+  `light-s` y `hybrid-s` sobre la estructura existente. **No** héroe, bandeja KPI, reordenación
+  de Inicio ni cambios de componentes.
+- **Detalle de Movimientos (D3=A provisional):** se mantiene la página actual; sin panel lateral.
+- **Semántica financiera (D4=A):** no se infieren signos ni colores de importe; queda pendiente
+  de [#421](https://github.com/jmartinlabs/myfinanzas-app/issues/421).
+- **Responsive (D5):** 820/390 exige diseño y validación propios; no se deduce de las capturas
+  a 1440.
+
+**Alcance técnico autorizado:**
+
+- **L1 (integrado):** bloques `light-s` y `hybrid-s` de `apps/web/public/themes.css`.
+- **L2 (autorizado por #402):** capa visual de Inicio en `apps/web/src/light-hybrid.css`,
+  importada de forma aditiva desde `style.css`. Cubre héroe, bandeja KPI, cabecera de ciclo,
+  Atención, Objetivo y banda de posición sobre la composición compartida; no cambia DOM,
+  estructura, orden, cifras ni acciones.
+- **L3 · opción A (autorizado por #402 el 2026-11-13):** capa visual de Movimientos en el mismo
+  archivo: carril de filtros, cabecera de tabla, jerarquía de tipos e iconos por `data-tipo`,
+  selección y paginación. Detalle como página (D3) y sin inferir signos ni colores de importe
+  (D4). La opción B (iconos en DOM/SVG) queda pendiente de decisión.
+- **L4 (autorizado por #402 el 2026-11-13):** responsive y estados de Claro/Mixto en el mismo
+  archivo: 820/390, objetivos táctiles de 44 px y casillas sin recorte en Inicio y Movimientos,
+  y estado vacío legible en Movimientos. Diseño propio, no adaptación mecánica (D5).
+
+`dark-s`, `graphite-lime` y `casa` conservan sus tokens y su identidad; no se modifican
+`theme-boot.js`, `themes.ts`, componentes, rutas ni navegación.
+
+**Alcance de entrega:** además de los tokens, el incremento incluye la actualización de las
+expectativas E2E de identidad afectadas (`theme.spec.ts`, `ui-switch.spec.ts`), esta enmienda y
+la evidencia visual comparada. No cambia componentes, DOM, rutas ni contratos.
+
+**Fuera de alcance:** opción B de L3 (iconos en DOM/SVG), rediseño global, cambios de
+composición u orden, cambios de API, SQLite, contratos, datos reales, merge y despliegue. Si un incremento exige tocar estructura, orden, componentes compartidos u otros
+temas, se detiene y se presenta la decisión antes de implementarlo.
+
+**Sustitución expresa:** esta enmienda sustituye, **solo para la capa de identidad de `light-s` y
+`hybrid-s`**, las cláusulas que declaraban cerrados los tres temas: la tabla de §2, la frase de
+§2.4 «Dark, Light, Hybrid y Casa conservan su identidad» y la lista de materias cerradas de §7.
+No reabre Dark, Casa, Graphite, la composición, el selector ni el mecanismo `mf-theme`.
+
+**Estado de entrega:** L0 ([#435](https://github.com/jmartinlabs/myfinanzas-app/pull/435)) y
+L1 ([#437](https://github.com/jmartinlabs/myfinanzas-app/pull/437)) están **fusionados** en
+`test`, por lo que la referencia
+`specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` es válida. L2 se entrega
+en su propia PR y mantiene el mismo límite: solo `light-s`/`hybrid-s`, sin tocar composición ni
+los otros temas.
+
 ## 3. Dependencias
 
 | Dependencia | Estado | Qué aporta | Límite para `UI` |
@@ -324,7 +382,8 @@ ratificación de `UI · SPEC`; se conserva la recomendación como registro.
 
 **Cerradas y no sujetas a reapertura:** identidad cromática, los tres temas existentes,
 paletas, tokens, selector y alternativa B. La enmienda UI-G1 añade Graphite Lime como cuarto
-tema sin reabrir esas decisiones; el resto de la aprobación del 2026-11-06 se conserva.
+tema sin reabrir esas decisiones; la enmienda UI-P2 (2.5) reabre únicamente la capa de identidad
+de Light y Hybrid para L1. El resto de la aprobación del 2026-11-06 se conserva.
 
 ## 8. Aprobación registrada y plan de `UI · DEV-01`
 
