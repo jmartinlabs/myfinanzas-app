@@ -597,7 +597,7 @@ test("R-04b generación concurrente multiproceso: un único ganador", async () =
     const presupuesto = makeBudget(seed, { destino: "S002" });
     plan(seed, ciclo, [[presupuesto, "10000"]]);
     seed.run(
-      "INSERT INTO repartos(ciclo,estado,origen_comun,revision,creado,actualizado) VALUES(?, 'Borrador','S001',1,?,?)",
+      "INSERT INTO repartos(ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado) VALUES(?, 'PlanCiclo','Borrador','S001',1,?,?)",
       [ciclo, stamp, stamp],
     );
     const reparto = (

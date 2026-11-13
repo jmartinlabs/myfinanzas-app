@@ -42,6 +42,7 @@ type RepartoEstado = (typeof repartoStates)[number];
 type RepartoRow = {
   id: number;
   ciclo: string;
+  fuente_plan: "PlanCiclo" | "Dprima";
   estado: RepartoEstado;
   origen_comun: string | null;
   revision: number;
@@ -437,6 +438,7 @@ function repartoDto(db: Database, row: RepartoRow) {
   return {
     id: row.id,
     ciclo: row.ciclo,
+    fuentePlan: row.fuente_plan,
     estado: row.estado,
     origenComun: row.origen_comun ? saldoRow(db, row.origen_comun) : null,
     revision: row.revision,
@@ -542,7 +544,7 @@ export function crearReparto(
       origenComun = assertEligible(db, body.origenComun, "origenComun");
     const time = new Date(now).toISOString();
     const result = db.run(
-      "INSERT INTO repartos(ciclo,estado,origen_comun,revision,creado,actualizado) VALUES(?,'Borrador',?,1,?,?)",
+      "INSERT INTO repartos(ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado) VALUES(?,'PlanCiclo','Borrador',?,1,?,?)",
       [ciclo.id, origenComun, time, time],
     );
     const created = repartoRow(db, Number(result.lastInsertRowid))!;

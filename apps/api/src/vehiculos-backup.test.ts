@@ -120,8 +120,8 @@ test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and
     expect(decrypted.exitCode).toBe(0);
     const bundle = JSON.parse(decrypted.stdout.toString());
     expect(bundle.manifest).toMatchObject({
-      app: "e36.1-v28",
-      schema: 28,
+      app: "e36.3-v29",
+      schema: 29,
       origin: "demo",
     });
     const snapshotPath = join(dir, "snapshot.sqlite");
@@ -129,7 +129,7 @@ test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and
     const snapshot = new Database(snapshotPath, { readonly: true, strict: true });
     try {
       expect(snapshot.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 28,
+        version: 29,
       });
       expect(
         snapshot
@@ -162,7 +162,7 @@ test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and
     const copy = new Database(restored.database, { readonly: true, strict: true });
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 28,
+        version: 29,
       });
       expect(
         copy.query("SELECT matricula FROM fichas_vehiculo WHERE referencia=?").get(vehicle.id),

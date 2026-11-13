@@ -39,7 +39,7 @@ La idempotencia de datos es por construcción (base vacía), con claves fijas
 
 ## Estado inicial de una base DEMO
 
-`openDatabase()` con identidad `demo` (`NODE_ENV=development`/`test`) crea el esquema v28 y
+`openDatabase()` con identidad `demo` (`NODE_ENV=development`/`test`) crea el esquema v29 y
 siembra cinco saldos iniciales (`apps/api/src/database-schema.ts:212-218`), además de `S000`:
 
 | Saldo | Nombre inicial | Tipo / Control |
