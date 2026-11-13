@@ -646,6 +646,8 @@ export function crearReparto(
   for (const name of Object.keys(body))
     if (!["origenComun", "fuentePlan"].includes(name))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${name}.`);
+  // The intent key is validated before the body: R-09 fixes that precedence even
+  // though `conIntento` checks it again inside the transaction.
   if (!/^[a-zA-Z0-9-]{16,100}$/.test(key))
     throw new Problem(
       422,

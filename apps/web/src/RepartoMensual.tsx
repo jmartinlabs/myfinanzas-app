@@ -1410,7 +1410,9 @@ export function RepartoMensual({
       const data = await api(
         `/ciclos/${ciclo.id}/reparto`,
         "POST",
-        { origenComun: origenComun || null },
+        // PlanCiclo sigue siendo el origen operativo: D′ no se activa sin una
+        // decisión explícita y su selector llega con la Issue #411.
+        { fuentePlan: "PlanCiclo", origenComun: origenComun || null },
         { "idempotency-key": createKey },
       );
       const creado = asRecord(data)?.creado !== false;
