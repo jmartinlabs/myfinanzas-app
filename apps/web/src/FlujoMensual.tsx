@@ -475,20 +475,26 @@ export function FlujoMensual({
           setData(d);
           setCycles(d.ciclos);
           setLoading(false);
-          requestAnimationFrame(() => title.current?.focus());
         }
       })
       .catch((e) => {
         if (generation.current === version) {
           setError(e.message);
           setLoading(false);
-          requestAnimationFrame(() => alert.current?.focus());
         }
       });
     return () => {
       generation.current++;
     };
   }, [selected, retry]);
+  // El foco se mueve después del commit que monta el destino, nunca dentro de la
+  // promesa: si el nodo aún no existe, el foco se pierde y la aserción falla.
+  useEffect(() => {
+    if (data && data.ciclo.id === selected) title.current?.focus();
+  }, [data, selected]);
+  useEffect(() => {
+    if (error) alert.current?.focus();
+  }, [error]);
   const link = (url: string, text: string) => (
     <a
       href={url}
