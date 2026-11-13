@@ -16,6 +16,11 @@ export type NavigationItem = {
   readonly activePrefix?: string;
   /** Acceso heredado: se muestra después de las entradas principales. */
   readonly legacy?: boolean;
+  /**
+   * Acceso auxiliar: secundario y accesible, sin carácter de legado. Se marca
+   * con `Auxiliar` en la navegación (VIS-25: Revisión Comida no es legado).
+   */
+  readonly secondary?: boolean;
 };
 
 export type NavigationGroup = {
@@ -94,7 +99,7 @@ export const navigationGroups: readonly NavigationGroup[] = [
         href: "/revision-comida",
         label: "Revisión Comida",
         icon: "◎",
-        legacy: true,
+        secondary: true,
       },
     ],
   },

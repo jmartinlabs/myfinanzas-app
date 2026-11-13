@@ -317,6 +317,11 @@ small {
 .nav-link.nav-link-legacy {
   font-weight: 500;
 }
+/* VIS-25: acceso auxiliar (Revisión Comida), secundario sin ser legado. */
+.sidebar .nav-link.nav-link-secondary {
+  color: var(--sidebar-muted);
+  font-weight: 500;
+}
 .nav-group-toggle {
   display: flex;
   align-items: center;
