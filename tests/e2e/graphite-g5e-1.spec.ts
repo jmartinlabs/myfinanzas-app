@@ -156,19 +156,31 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
     "text-transform",
     "uppercase",
   );
-  await expect(page.locator(".anticipo-table .ui-table tbody tr")).toHaveCount(2);
+  await expect(page.locator(".anticipo-table .ui-table tbody tr")).toHaveCount(3);
   await expect(page.locator(".anticipo-table .ui-table th").first()).toHaveCSS(
     "font-size",
     "12px",
   );
+  await expect(page.locator(".anticipo-table .ui-table tbody tr.annulled")).toHaveCount(
+    1,
+  );
+  await expect(
+    page.locator(".anticipo-table .ui-table tbody tr.annulled td").first(),
+  ).toHaveCSS("color", "rgb(143, 152, 139)");
   await expect(
     page.getByText("No disponible: sin par acreditado verificable.", {
       exact: false,
     }),
   ).toBeVisible();
+  const cycleCard = page.locator(".anticipo-operation").first();
+  await expect(cycleCard).toBeVisible();
+  await expect(cycleCard.locator("h3")).toContainText("Ciclo 1");
   await expect(
-    page.getByText("No disponible: sin Ciclos registrados.", { exact: true }),
+    cycleCard.getByText("No disponible — sin fotografía confirmada.", {
+      exact: false,
+    }),
   ).toBeVisible();
+  await expect(cycleCard.locator("p").first()).toHaveCSS("font-size", "12px");
 
   const acreditar = page.getByRole("button", {
     name: "Acreditar Movimiento 201",
@@ -191,7 +203,7 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
   ).toBeFocused();
   const review = page.locator(".anticipo-review");
   await expect(review).toHaveCSS("border-top-width", "2px");
-  await expect(review).toHaveCSS("border-top-color", "rgb(59, 68, 38)");
+  await expect(review).toHaveCSS("border-top-color", "rgb(215, 255, 94)");
   await page.screenshot({
     path: "artifacts/g5e-1/anticipos-revision-1440.png",
     fullPage: true,
@@ -212,6 +224,23 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
     "44px",
   );
 
+  // Formulario de Neto de apertura: la casilla conserva 20x20 y la etiqueta 44
+  await page
+    .getByRole("button", {
+      name: "Confirmar Neto de apertura / solicitar corrección",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel("Ciclo de apertura", { exact: true }).selectOption("1");
+  const check = page.locator(".anticipo-page .check-label input");
+  await expect(check).toBeVisible();
+  const checkBox = await check.boundingBox();
+  expect(Math.round(checkBox!.width)).toBe(20);
+  expect(Math.round(checkBox!.height)).toBe(20);
+  const checkLabel = page.locator(".anticipo-page .check-label");
+  expect((await checkLabel.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+
   for (const [width, height] of [
     [1440, 1000],
     [820, 900],
@@ -222,9 +251,15 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
     await expect(metrics).toHaveCount(4);
     if (width === 820) {
       await expect(page.locator(".desktop-list.anticipo-table")).toBeHidden();
-      const cardAction = page.locator(".mobile-list .ui-data-list-item button").first();
+      const cardAction = page.getByRole("button", {
+        name: "Acreditar Movimiento 202",
+        exact: true,
+      });
       await expect(cardAction).toBeVisible();
       expect((await cardAction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      await expect(
+        page.locator(".mobile-list .ui-data-list-item.annulled"),
+      ).toHaveCount(1);
     }
     await noOverflow();
     await page.screenshot({
@@ -277,10 +312,17 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
     fullPage: true,
   });
 
-  // Casa y Claro no heredan la capa Graphite
+  // 720x500: equivalencia de zoom sin overflow
+  await page.setViewportSize({ width: 720, height: 500 });
+  for (const path of ["/anticipos", "/anticipos/REF001"]) {
+    await page.goto(path);
+    await noOverflow();
+  }
+
+  // Los otros temas no heredan la capa Graphite
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/anticipos");
-  for (const theme of ["casa", "light-s"] as const) {
+  for (const theme of ["casa", "light-s", "dark-s", "hybrid-s"] as const) {
     await selectTheme(theme);
     await expect(cards.first()).toHaveCSS("background-image", "none");
     await expect(cards.first()).not.toHaveCSS(

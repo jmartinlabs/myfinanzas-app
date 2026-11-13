@@ -4844,8 +4844,21 @@ html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tbody 
   background: var(--row-hover);
 }
 
-html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table .annulled {
-  opacity: 0.62;
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tbody tr.annulled td {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tr.annulled .tag,
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled .tag {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled {
+  background-image: none;
+  background-color: var(--surface-2);
+  border-color: var(--graphite-card-border);
 }
 
 html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table .tag {
@@ -4967,7 +4980,7 @@ html[data-theme="graphite-lime"] .anticipo-page .form-grid label:not(.check-labe
   text-transform: uppercase;
 }
 
-html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input, select, textarea) {
+html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
   min-height: var(--touch-min);
   margin-top: 6px;
   border-color: var(--control-border);
@@ -4978,7 +4991,7 @@ html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input, select, te
   text-transform: none;
 }
 
-html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input, select, textarea):focus-visible {
+html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
   border-color: var(--focus);
 }
 
@@ -5012,9 +5025,9 @@ html[data-theme="graphite-lime"] .anticipo-page .form-actions button {
 }
 
 html[data-theme="graphite-lime"] .anticipo-page .panel.anticipo-review {
-  border: 2px solid var(--accent-border);
+  border: 2px solid var(--focus);
   background-image: var(--graphite-card-bg);
-  box-shadow: 0 0 0 1px rgb(215 255 94 / 0.08);
+  box-shadow: 0 0 0 1px rgb(215 255 94 / 0.18);
 }
 
 html[data-theme="graphite-lime"] .anticipo-page .panel.anticipo-review h2 {

@@ -10,6 +10,7 @@ import { openDatabase } from "../src/database";
 import { loadKey, provision } from "../src/auth";
 import { createApp } from "../src/app";
 import { createAnticipo } from "../src/anticipos";
+import { createCycle, cycleContext } from "../src/ciclos";
 
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
@@ -30,13 +31,25 @@ const refs = [
   (nombre) =>
     createAnticipo(db, { nombre }, crypto.randomUUID(), now).referencia.id,
 );
-for (const [id, from, to, amount] of [
-  ["201", "S001", "S002", 100000],
-  ["202", "S002", "S001", 50000],
+for (const [id, from, to, amount, anulado] of [
+  ["201", "S001", "S002", 100000, 0],
+  ["202", "S002", "S001", 50000, 0],
+  ["203", "S001", "S003", 25000, 1],
 ] as const)
   db.run(
-    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,revision,creado,actualizado) VALUES(?,'2026-01-01','Transferencia',?,?,?,?,'histórico ficticio de anticipo','',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
-    [id, amount, from, to, refs[0]],
+    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,anulado,revision,creado,actualizado) VALUES(?,'2026-01-01','Transferencia',?,?,?,?,'histórico ficticio de anticipo','',?,1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+    [id, amount, from, to, refs[0], anulado],
+  );
+for (const inicio of ["2026-06-20"])
+  createCycle(
+    db,
+    {
+      inicio,
+      saldoInicialComida: "0",
+      contextRevision: cycleContext(db).revision,
+    },
+    crypto.randomUUID(),
+    now,
   );
 writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
