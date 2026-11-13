@@ -82,8 +82,17 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   };
   const noOverflow = async () =>
     expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-    ).toBe(true);
+      await page.evaluate(() => {
+        const doc = document.documentElement;
+        if (doc.scrollWidth > doc.clientWidth) return "documento";
+        const wrap = document.querySelector<HTMLElement>(
+          ".pendientes-list .ui-table-wrap",
+        );
+        if (wrap && wrap.offsetParent && wrap.scrollWidth > wrap.clientWidth + 2)
+          return "tabla del catálogo";
+        return "sin overflow";
+      }),
+    ).toBe("sin overflow");
 
   // Catálogo
   await page.goto("/pendientes");
@@ -119,6 +128,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   // Tabla: 9 columnas legibles, sin solapes y con cifras tabulares
   const table = list.locator(".pendientes-table");
   await expect(table.locator("tbody tr")).toHaveCount(3);
+  await expect(table.locator("th")).toHaveCount(9);
   await expect(table.locator("th").first()).toHaveCSS("font-size", "12px");
   await expect(table.locator("td").first()).toHaveCSS("font-size", "13px");
   await expect(table.locator("tbody tr").first().locator(".tag")).toHaveCSS(
@@ -141,6 +151,8 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
 
   for (const [width, height] of [
     [1440, 1000],
+    [1280, 900],
+    [1100, 900],
     [820, 900],
     [390, 844],
   ] as const) {
@@ -148,11 +160,23 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     await page.goto("/pendientes");
     await expect(page.getByText("3 filas · sin total económico global", { exact: true })).toBeVisible();
     await noOverflow();
+    if (width === 1440) {
+      await expect(list.locator(".desktop-list")).toBeVisible();
+      await expect(list.locator(".pendientes-table th")).toHaveCount(9);
+      await expect(
+        list.locator(".pendientes-table tbody td:nth-child(3)").first(),
+      ).not.toHaveCSS("white-space", "nowrap");
+    }
+    if (width === 1280 || width === 1100) {
+      await expect(list.locator(".desktop-list")).toBeHidden();
+      await expect(list.locator(".pendientes-cards")).toBeVisible();
+    }
     if (width === 820) {
       await expect(list.locator(".desktop-list")).toBeHidden();
       await expect(list.locator(".pendientes-cards")).toBeVisible();
       const cards = list.locator(".pendientes-cards .ui-data-list-item");
       await expect(cards).toHaveCount(3);
+      await expect(cards.first().locator(".ui-data-list-field")).toHaveCount(9);
       await expect(cards.first().locator(".ui-data-list-label").first()).toHaveCSS(
         "font-size",
         "12px",
@@ -201,6 +225,9 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   await expect(
     errorGroup.getByRole("button", { name: "Reintentar", exact: true }),
   ).toHaveCSS("min-height", "44px");
+  await expect(page.getByLabel("Buscar por REF/ID/nombre", { exact: true })).toHaveValue(
+    "error-ficticio",
+  );
   await noOverflow();
   await page.screenshot({
     path: "artifacts/g5e-2/pendientes-error-1440.png",

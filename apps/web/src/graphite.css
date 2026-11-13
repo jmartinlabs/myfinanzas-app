@@ -5545,10 +5545,14 @@ html[data-theme="graphite-lime"] .pendientes-page > .page-foot {
 
 html[data-theme="graphite-lime"] .pendientes-page > .panel {
   margin-top: 16px;
-  padding: var(--space-4);
   border-color: var(--graphite-card-border);
   background-image: var(--graphite-card-bg);
   box-shadow: var(--graphite-card-shadow);
+}
+
+/* El catálogo conserva su padding 0; cada bloque interno aporta el suyo. */
+html[data-theme="graphite-lime"] .pendientes-page > .panel:not(.pendientes-list) {
+  padding: var(--space-4);
 }
 
 html[data-theme="graphite-lime"] .pendientes-page > .panel > h2 {
@@ -5676,8 +5680,10 @@ html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions .text-butt
   }
 }
 
-/* 761–1050: la tabla de 9 columnas no cabe; se usa la tarjeta ya existente. */
-@media (min-width: 761px) and (max-width: 1050px) {
+/* 761–1439: con las 9 columnas y las fechas completas la tabla solo respira en
+ * el layout de 1440; por debajo se usa la tarjeta ya existente, con paridad de
+ * campos y acciones. */
+@media (min-width: 761px) and (max-width: 1439px) {
   html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .desktop-list {
     display: none;
   }
