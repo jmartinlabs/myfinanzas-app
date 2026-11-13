@@ -5150,3 +5150,595 @@ html[data-theme="graphite-lime"] .anticipo-page .anticipo-list > p {
     width: auto;
   }
 }
+
+/* G5e-2 · Pendientes y conciliación: catálogo, detalle y estados ---------- */
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head .muted {
+  margin-top: 4px;
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .back:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .notice {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .notice strong {
+  color: var(--text);
+}
+
+/* Catálogo --------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 14px;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters label {
+  display: block;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters :is(select, input) {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters :is(select, input):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-search-action .primary {
+  min-height: var(--touch-min);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px var(--space-4);
+  border-bottom: 1px solid var(--graphite-card-border);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar p {
+  color: var(--text);
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar span {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .ui-table-wrap {
+  overflow-x: auto;
+  padding: 8px var(--space-4) 0;
+}
+
+/* La tabla usa su ancho natural: las 9 columnas no caben con reparto fijo. */
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table {
+  min-width: 0;
+  table-layout: auto;
+  width: 100%;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  vertical-align: bottom;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td {
+  font-size: 13px;
+  vertical-align: top;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(3),
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(4) {
+  white-space: normal;
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table :is(th, td):nth-child(1) {
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .ui-table-amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .table-id {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .pendiente-alerts {
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .pendiente-motive {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(2) a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td[data-kind="actions"] a,
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-action a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .tag {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .tag.inactive {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards {
+  gap: 10px;
+  padding: 10px var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-value {
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Motivo y alertas ocupan todo el ancho de la tarjeta. */
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-label="Motivo y alertas"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .pendiente-alerts ul,
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .pendiente-motive {
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty {
+  min-height: 0;
+  margin: 0;
+  padding: 20px var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty h2 {
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty p {
+  max-width: 78ch;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton {
+  padding: 14px var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton > p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton li {
+  border-color: var(--graphite-card-border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-fallos {
+  margin: 14px var(--space-4);
+  border-radius: 10px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-fallos h2 {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-fallos ul {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 10px;
+  padding: 10px var(--space-4);
+  border-top: 1px solid var(--graphite-card-border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer .text-button {
+  min-height: var(--touch-min);
+  padding-inline: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer .text-button:disabled {
+  color: var(--disabled-text);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-foot {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Detalle ---------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel {
+  margin-top: 16px;
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > h2 {
+  margin-bottom: 12px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .notice {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--accent-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid {
+  gap: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid > div {
+  padding: 12px 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid dd {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid dd small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-motive {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-alerts ul {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-contextos {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .table-scroll {
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics th {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics td {
+  padding: 10px 12px;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics tbody tr + tr td {
+  border-top: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions .text-button {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Responsive ------------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters .search,
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-search-action {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 761–1050: la tabla de 9 columnas no cabe; se usa la tarjeta ya existente. */
+@media (min-width: 761px) and (max-width: 1050px) {
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .desktop-list {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .panel {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar,
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer {
+    padding: 10px var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards {
+    padding: 10px var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton,
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions :is(button, .text-button) {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics tbody tr + tr td {
+    border-top: 0;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics tr {
+    border-bottom: 1px solid var(--graphite-card-border);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics td::before {
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+}
