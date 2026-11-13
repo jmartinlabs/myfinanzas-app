@@ -253,6 +253,10 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
   importada de forma aditiva desde `style.css`. Cubre héroe, bandeja KPI, cabecera de ciclo,
   Atención, Objetivo y banda de posición sobre la composición compartida; no cambia DOM,
   estructura, orden, cifras ni acciones.
+- **L3 · opción A (autorizado por #402 el 2026-11-13):** capa visual de Movimientos en el mismo
+  archivo: carril de filtros, cabecera de tabla, jerarquía de tipos e iconos por `data-tipo`,
+  selección y paginación. Detalle como página (D3) y sin inferir signos ni colores de importe
+  (D4). La opción B (iconos en DOM/SVG) queda pendiente de decisión.
 
 `dark-s`, `graphite-lime` y `casa` conservan sus tokens y su identidad; no se modifican
 `theme-boot.js`, `themes.ts`, componentes, rutas ni navegación.
@@ -261,7 +265,7 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
 expectativas E2E de identidad afectadas (`theme.spec.ts`, `ui-switch.spec.ts`), esta enmienda y
 la evidencia visual comparada. No cambia componentes, DOM, rutas ni contratos.
 
-**Fuera de alcance:** L3 (interacción de Movimientos), L4 (extensión de alcance), rediseño
+**Fuera de alcance:** L4 (responsive y estados), opción B de L3 (iconos en DOM/SVG), rediseño
 global, cambios de composición u orden, cambios de API, SQLite, contratos, datos reales, merge y
 despliegue. Si un incremento exige tocar estructura, orden, componentes compartidos u otros
 temas, se detiene y se presenta la decisión antes de implementarlo.
