@@ -35,10 +35,20 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-  const ventasTab = () =>
-    page.getByRole("link", { name: "Ventas", exact: true }).click();
-  const instrumentsTab = () =>
-    page.getByRole("link", { name: /Instrumentos/ }).first().click();
+  // UI-02 retiró las pestañas de la ficha de Instrumento: la navegación de
+  // secciones solo existe en el listado y en las vistas de Compras y Ventas.
+  // Desde la ficha hay que volver al listado (misma ruta que usa «‹ Volver»)
+  // antes de pulsar la sección, y el enlace se acota a esa navegación para no
+  // confundirlo con la tabla «Ventas del Instrumento».
+  const sections = () =>
+    page.getByRole("navigation", { name: "Secciones de Inversiones" });
+  const openSection = async (name: "Instrumentos" | "Ventas") => {
+    const link = sections().getByRole("link", { name, exact: true });
+    if ((await link.count()) === 0) await page.goto("/inversiones");
+    await link.click();
+  };
+  const ventasTab = () => openSection("Ventas");
+  const instrumentsTab = () => openSection("Instrumentos");
   const reviewSale = async () => {
     await page.getByRole("button", { name: "Revisar venta" }).focus();
     await page.keyboard.press("Enter");
@@ -180,6 +190,9 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(
       page.getByRole("heading", { name: "Fondo cerrado demo", exact: true }),
     ).toBeVisible();
+    // UI-02: la ficha de Instrumento no repite la navegación de secciones; el
+    // enlace a Ventas solo vive en el listado y en las vistas de Ventas.
+    await expect(sections()).toHaveCount(0);
     const positions = page.getByLabel("Posiciones por Saldo de inversión");
     await expect(positions).toContainText("S004 · Cartera de inversión demo");
     await expect(positions).toContainText("0");

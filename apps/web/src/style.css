@@ -530,6 +530,7 @@ small {
   flex-direction: row;
   align-items: center;
   gap: 7px;
+  min-height: var(--touch-min);
   white-space: nowrap;
   font-size: var(--text-xs) !important;
   margin: 0 !important;

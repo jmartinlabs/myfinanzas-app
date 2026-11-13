@@ -132,7 +132,9 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
     await page.goto("/inicio");
     await selectTheme(theme);
     await expect(page.locator(".inicio-page .graphite-control")).toBeVisible();
-    await expect(page.locator(".inicio-page details summary").first()).not.toHaveCSS(
+    // La fila de 44 px es la política de accesibilidad compartida por las cinco
+    // apariencias (inicio-shared): ya no es exclusiva de Claro/Mixto.
+    await expect(page.locator(".inicio-page details summary").first()).toHaveCSS(
       "min-height",
       "44px",
     );
