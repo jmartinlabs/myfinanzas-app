@@ -4640,3 +4640,513 @@ html[data-theme="graphite-lime"] .cierre-page .cierre-immutable {
     gap: 8px;
   }
 }
+
+/* G5e-1 · Anticipos: catálogo, ficha, formulario y revisión -------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .muted {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .actions button,
+html[data-theme="graphite-lime"] .anticipo-page > .panel button,
+html[data-theme="graphite-lime"] .anticipo-list .panel a {
+  min-height: var(--touch-min);
+}
+
+/* Ficha y formularios ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel {
+  margin-top: 16px;
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel > h2 {
+  margin-bottom: 12px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel > p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel > .tag {
+  margin-bottom: 10px;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics {
+  gap: 12px;
+  margin: 18px 0;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric {
+  gap: 6px;
+  padding: 14px;
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric strong {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.4px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid > div {
+  padding: 12px 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid dd {
+  margin: 5px 0 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid dd p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Pares de devolución ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair {
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-bottom: 10px;
+  padding: 14px;
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair:hover {
+  border-color: var(--accent-border);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair:focus-within {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair input {
+  margin-top: 0;
+  accent-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair strong {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair small,
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Operaciones, ciclos y auditoría ---------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table {
+  padding: 4px 0 0;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tbody tr.annulled td {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tr.annulled .tag,
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled .tag {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled {
+  border-left: 3px solid var(--border);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table .tag {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table button {
+  margin: 4px 0;
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-value {
+  font-size: 13px;
+}
+
+/* Estado y evidencia llevan texto además del chip: se apilan a la izquierda. */
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-field[data-kind="status"] .ui-data-list-value p {
+  margin: 4px 0 0;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation {
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation h3 {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation strong {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details {
+  margin: 0 0 8px;
+  border-bottom: 1px solid var(--graphite-card-border);
+  padding-bottom: 6px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details summary {
+  min-height: var(--touch-min);
+  padding-block: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details summary:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details summary::marker {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Formularios y revisión ------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid {
+  gap: 14px 16px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid label:not(.check-label) {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid > p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .check-label {
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .check-label input {
+  accent-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-actions {
+  gap: 10px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-actions button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .panel.anticipo-review {
+  border: 2px solid var(--focus);
+  background-image: var(--graphite-card-bg);
+  box-shadow: 0 0 0 1px rgb(215 255 94 / 0.18);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .panel.anticipo-review h2 {
+  color: var(--accent);
+}
+
+/* Catálogo de fichas ----------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page > p[role="status"] {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.4px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list {
+  gap: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel {
+  padding: 16px;
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel:hover {
+  border-color: var(--accent-border);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 {
+  margin-bottom: 6px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 a:hover,
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 a:focus-visible {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel .tag {
+  margin-bottom: 6px;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--graphite-card-border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* Responsive ------------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 761–1050: la tabla de operaciones no cabe en su panel; se usa la misma
+ * tarjeta que ya existe a 390, con paridad de campos y acciones. */
+@media (min-width: 761px) and (max-width: 1050px) {
+  html[data-theme="graphite-lime"] .anticipo-page .desktop-list.anticipo-table {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .mobile-list.ui-data-list {
+    display: grid;
+    gap: 10px;
+    padding: 4px 0 0;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .anticipo-page > .panel {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .form-actions button {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .anticipo-table button {
+    width: auto;
+  }
+}
