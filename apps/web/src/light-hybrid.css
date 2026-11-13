@@ -211,3 +211,370 @@ html[data-theme="hybrid-s"] .inicio-page .graphite-position {
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-position-note {
   color: #5f5b55;
 }
+
+/* L3 · Movimientos: filtros, tabla, tipos y jerarquía --------------------- */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page > .page-foot {
+  max-width: 96ch;
+  color: #5f5b55;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list {
+  border-color: #d8cdbf;
+  background: #fffdf9;
+  box-shadow: 0 16px 38px rgb(78 53 33 / 0.08);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .filters {
+  border-bottom: 1px solid #d8cdbf;
+  background: #f4ece1;
+}
+
+html[data-theme="hybrid-s"] .movements-list .filters {
+  background: #f2e9de;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .filters label,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-filters .form-grid label {
+  color: #5f5b55;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .filters input,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .filters select,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-filters .form-grid input,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-filters .form-grid select {
+  min-height: 44px;
+  margin-top: 7px;
+  border-color: #8c857a;
+  background: #fffdf9;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search {
+  position: relative;
+  display: block;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #5f5b55;
+  border-radius: 50%;
+  transform: translateY(-55%);
+  pointer-events: none;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search-icon::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: #5f5b55;
+  transform: rotate(45deg);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search input {
+  padding-left: 38px;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-search-icon::after {
+  background: #5f5b55;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-filters {
+  border-top-color: #d8cdbf;
+  background: #f2ebe1;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-filters summary {
+  color: #1f1f1f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-filters[open] summary {
+  border-bottom-color: #d8cdbf;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .list-toolbar {
+  border-block-color: #d8cdbf;
+  background: #f0e8dc;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .list-toolbar p {
+  color: #1f1f1f;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #17616a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-status-dot[data-state="loading"] {
+  background: #8a5a00;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-status-dot[data-state="error"] {
+  background: #a33a2a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table th {
+  background: #f0e8dc;
+  color: #1f1f1f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td {
+  vertical-align: middle;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table tbody tr:hover {
+  background: #f2ebe1;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table tbody tr:hover td:first-child,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table tbody tr:focus-within td:first-child {
+  box-shadow: inset 3px 0 0 #17616a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td:first-child {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td:nth-child(3) a {
+  color: #17616a;
+  font-weight: 650;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td .table-id {
+  color: #5f5b55;
+  font-size: 12px;
+}
+
+/* Tipo y jerarquía -------------------------------------------------------- */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d8cdbf;
+  border-radius: 7px;
+  background: #f2ebe1;
+  color: #5f5b55;
+  font-size: 14px;
+  line-height: 1;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type-icon::before {
+  content: "•";
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Ingreso"] .movement-type-icon::before {
+  content: "↓";
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Gasto"] .movement-type-icon::before {
+  content: "↗";
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Transferencia"] .movement-type-icon::before {
+  content: "⇄";
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Amortización deuda"] .movement-type-icon::before {
+  content: "▤";
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon::before {
+  content: "↺";
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Ingreso"] .movement-type-icon,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
+  border-color: #b7d4d1;
+  background: #e6f1f1;
+  color: #17616a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Gasto"] .movement-type-icon,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Amortización deuda"] .movement-type-icon {
+  border-color: #e3b7ae;
+  background: #f9e9e6;
+  color: #a33a2a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Transferencia"] .movement-type-icon {
+  border-color: #b7d4d1;
+  background: #dceae7;
+  color: #17616a;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type-copy {
+  min-width: 0;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-amount {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tarjetas y paginación --------------------------------------------------- */
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-cards .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid #d8cdbf;
+  border-radius: 12px;
+  background: #fffdf9;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-data-list-label {
+  color: #5f5b55;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .list-footer .text-button,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .list-footer button {
+  min-height: 44px;
+}
+
+
+@media (max-width: 1000px) {
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-type-icon {
+    display: none;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-amount {
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table th,
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table th,
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td {
+    padding-inline: 4px;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-amount {
+    font-size: 12px;
+  }
+}
+
+/* L4 · Responsive 820/390 y objetivos táctiles de Claro/Mixto ------------ */
+
+/* Enlaces y resúmenes dentro de Inicio: 44 px sin romper el flujo de prosa. */
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page details summary {
+  min-height: 44px;
+  padding-block: 10px;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page details a,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-rail-link a,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-attention-list a,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .inicio-page .graphite-coverage a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* Concepto de cada movimiento: objetivo táctil completo en tabla. */
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .ui-table td:nth-child(3) a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* Casillas de confirmación: sin recorte a 390 y con etiqueta táctil. */
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page .checkbox {
+  min-width: 0;
+  white-space: normal;
+  min-height: 44px;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-page .checkbox input {
+  flex: 0 0 auto;
+  width: 20px;
+  min-height: 20px;
+  height: 20px;
+}
+
+/* Estados vacíos y de filtros sin resultados. */
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty:not([aria-busy]) {
+  background: #fffdf9;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty:not([aria-busy]) h2 {
+  color: #1f1f1f;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .empty:not([aria-busy]) p {
+  max-width: 62ch;
+  color: #5f5b55;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* A 390 los filtros ocupan el ancho completo y el buscador mantiene el icono. */
+@media (max-width: 480px) {
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .filters {
+    padding: 14px;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .list-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .list-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
