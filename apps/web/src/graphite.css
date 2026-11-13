@@ -6463,7 +6463,10 @@ html[data-theme="graphite-lime"] .payroll-page > .empty {
   text-align: left;
 }
 
-html[data-theme="graphite-lime"] .payroll-page .payroll-table:has(.ui-table-empty:empty) {
+/* Solo se oculta la tabla cuando el módulo no tiene ninguna paga: el mensaje
+ * de vacío ya está presente. Con un filtro sin resultados la tabla y su
+ * caption se conservan (comportamiento base). */
+html[data-theme="graphite-lime"] .payroll-page:has(> .empty) .payroll-table {
   display: none;
 }
 
@@ -6716,6 +6719,7 @@ html[data-theme="graphite-lime"] .payroll-page .form-grid label:has(> input[type
   min-height: 20px;
   height: 20px;
   margin: 0;
+  padding: 0;
   accent-color: var(--accent);
 }
 

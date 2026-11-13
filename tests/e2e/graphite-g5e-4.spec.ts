@@ -110,6 +110,11 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
         const wrap = document.querySelector<HTMLElement>(".payroll-table");
         if (wrap && wrap.offsetParent && wrap.scrollWidth > wrap.clientWidth + 2)
           return "tabla de pagas";
+        for (const selector of [".payroll-page > .filters", ".payroll-cards"]) {
+          const block = document.querySelector<HTMLElement>(selector);
+          if (block && block.offsetParent && block.scrollWidth > block.clientWidth + 2)
+            return selector;
+        }
         return "sin overflow";
       }),
     ).toBe("sin overflow");
@@ -171,6 +176,9 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
     path: "artifacts/g5e-4/nomina-formulario-1440.png",
     fullPage: true,
   });
+  await page.setViewportSize({ width: 720, height: 500 });
+  await noOverflow();
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Revisar impacto", exact: true }).click();
   const review = page.locator('.payroll-page .panel[aria-label="Confirmación de Nómina"]');
   await expect(review).toBeVisible();
@@ -187,6 +195,15 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   });
   await page.getByRole("button", { name: "Confirmar revisión de Nómina" }).click();
   await expect(page.locator(".payroll-card")).toHaveCount(1);
+
+  // Filtro sin resultados: la tabla y su caption no desaparecen
+  await page.getByLabel("Mes nómina", { exact: true }).fill("2026-01");
+  await expect(
+    page.getByText("Pagas documentadas · importes independientes", { exact: false }).first(),
+  ).toBeVisible();
+  await expect(root.locator(".payroll-table")).toBeVisible();
+  await noOverflow();
+  await page.getByLabel("Mes nómina", { exact: true }).fill("");
 
   // Histórico con datos: tabla y tarjetas
   const table = root.locator(".payroll-table");
