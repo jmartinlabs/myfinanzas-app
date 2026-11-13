@@ -818,7 +818,7 @@ class CiApplicationProfileTests(unittest.TestCase):
                          ENTRY['application_checks']('full'))
 
 
-class HarnessSelectionTests(unittest.TestCase):
+class CiHarnessSelectionTests(unittest.TestCase):
     """FAST narrows harness regressions by declared inputs; every doubt runs all."""
 
     def all_suites(self):
