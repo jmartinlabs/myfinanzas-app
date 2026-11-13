@@ -257,6 +257,9 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
   archivo: carril de filtros, cabecera de tabla, jerarquía de tipos e iconos por `data-tipo`,
   selección y paginación. Detalle como página (D3) y sin inferir signos ni colores de importe
   (D4). La opción B (iconos en DOM/SVG) queda pendiente de decisión.
+- **L4 (autorizado por #402 el 2026-11-13):** responsive y estados de Claro/Mixto en el mismo
+  archivo: 820/390, objetivos táctiles de 44 px, casillas sin recorte y estados vacíos legibles
+  en Inicio y Movimientos. Diseño propio, no adaptación mecánica (D5).
 
 `dark-s`, `graphite-lime` y `casa` conservan sus tokens y su identidad; no se modifican
 `theme-boot.js`, `themes.ts`, componentes, rutas ni navegación.
@@ -265,9 +268,8 @@ Esta enmienda **reabre solo la capa de identidad de Light y Hybrid**; no reabre 
 expectativas E2E de identidad afectadas (`theme.spec.ts`, `ui-switch.spec.ts`), esta enmienda y
 la evidencia visual comparada. No cambia componentes, DOM, rutas ni contratos.
 
-**Fuera de alcance:** L4 (responsive y estados), opción B de L3 (iconos en DOM/SVG), rediseño
-global, cambios de composición u orden, cambios de API, SQLite, contratos, datos reales, merge y
-despliegue. Si un incremento exige tocar estructura, orden, componentes compartidos u otros
+**Fuera de alcance:** opción B de L3 (iconos en DOM/SVG), rediseño global, cambios de
+composición u orden, cambios de API, SQLite, contratos, datos reales, merge y despliegue. Si un incremento exige tocar estructura, orden, componentes compartidos u otros
 temas, se detiene y se presenta la decisión antes de implementarlo.
 
 **Sustitución expresa:** esta enmienda sustituye, **solo para la capa de identidad de `light-s` y
