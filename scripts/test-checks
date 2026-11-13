@@ -132,6 +132,13 @@ class RepositoryChecks(unittest.TestCase):
         (self.root / 'source.ts').unlink(); self.commit()
         self.assertTrue(any(f[2] == 'github-token' for f in self.findings()))
 
+    def test_fine_grained_github_pat_is_not_hidden_by_the_prefilter(self):
+        # `github_pat_` does not contain `gh`: the literal prefilter must list it.
+        (self.root / 'README.md').write_text('github' + '_pat_' + 'a' * 36)
+        self.commit()
+        self.assertTrue(any(f[2] == 'github-token' for f in self.findings()),
+                        self.findings())
+
     def test_staged_then_modified_secret(self):
         path = self.root / 'source.ts'
         path.write_text('gh' + 'p_' + 'a' * 36); self.git('add', 'source.ts')
