@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""Shared conservative classifier and fail-closed result gate (Python standard library)."""
+"""Shared conservative classifier and fail-closed result gate (Python standard library).
+
+Two questions are answered separately:
+
+* coverage (`classify`, docs/full) — may a comparison omit application checks entirely?
+* execution venue (`ci_profile`: docs/fast/full) — what does this event run?
+
+Pull requests to main/test always use the FAST profile (baseline, typecheck, build
+and the web unit suite). The complete API/SQLite suite and E2E belong to FULL over
+the exact deploy-tag commit, which the TEST deployment waits for. No PR path can
+select, or be escalated into, FULL: that coverage is owned by the tag.
+"""
 import argparse
 import json
 import os
@@ -32,87 +43,6 @@ PROMPT_BACKUP = re.compile(r'prompt_backup.*\.md$')
 DEPLOY_TAG = re.compile(
     r'refs/tags/deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
 
-# Tests that spawn `age`/`age-keygen` or exercise encrypted backup/restore.
-# They are excluded from the CRITICAL execution profile so it never needs apt
-# packages; FULL runs the whole suite. Names must exist verbatim in
-# apps/api/src/*.test.ts (scripts/test-ci-policy enforces it), so a rename is a
-# visible failure instead of a silent coverage change.
-FULL_ONLY_TESTS = (
-    'AC24–26: backup WAL consistente/cifrado, restauración aislada, antigüedad y fallos',
-    'AC24: snapshot de archivo WAL mientras otro proceso confirma escrituras',
-    'AC26: fallo simulado ENOSPC en cifrado limpia temporales y conserva copia anterior',
-    '03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v2/v5',
-    '02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y backup v1/v5',
-    '07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deuda/hechos/MFA, age9 y restore',
-    'D5 AC-01: encrypted v18 restore preserves accreditation, evidence and revokes attempts',
-    '06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia y age7/MFA',
-    'E4.10 I8: backup/restore v28 (fixture v26) conserva la ventana y no la reabre ni duplica',
-    'E4.3 AC-24: v28 backup/manifest/restore keeps the valuation, audit and MFA and clears attempts',
-    'E4.3 AC-24: historical v23 backups keep e4.4-v23 and restore unchanged',
-    'E4.3 AC-24: restoring a v29 package fails without a destination',
-    'E4.4 AC-24: v28 backup/manifest/restore keeps new fields, reconciliation and MFA',
-    'E4.4 AC-24: historical v22 backups keep e35-v22 and restore; unadmitted versions fail',
-    'E4.10 A: v28 backup/manifest/restore keeps the closure, photo, audit and MFA and clears attempts',
-    'E4.9 A: historical v24 backups keep e4.3-v24 and restore unchanged',
-    'E4.10 A: restoring a v29 package fails without a destination',
-    'E4.1-AC-33(j): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo',
-    'E4.1-AC-33(j): copia 14 desconocida no se publica',
-    '04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y restore aislado',
-    'P11 genuine v9 demo/production migration retains MFA/key; encrypted v12 restore revokes cycle/annual/payroll attempts and retains delta audit',
-    '08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno',
-    '31 P6 AC24–29: encrypted production identity roundtrip and crossing rejection',
-    '31 P9 AC09/24/28/29: malformed markers and encrypted manifest/key corruption fail closed',
-    '05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age v4/v5',
-    '05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema',
-    'RESTORE-19/20: v19 cifrado conserva Comida y migra a v21',
-    'RESTORE-19/20: v20 cifrado conserva D′ y revoca accesos',
-    'RESTORE-19/20: negativos no publican destino parcial',
-    'AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones, vínculos, evidencias y auditoría',
-    '31 S6: restore sync failures leave either no target or a complete validated pair',
-    'SPEC36 v28: encrypted backup/restore preserves v28 and clears pending attempts',
-    'E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and revoke sessions',
-)
-
-# 31 S3 is generated in a loop with three database/key names, so its resolved
-# title cannot be listed literally. The prefix covers all three executions.
-FULL_ONLY_PREFIXES = (
-    '31 S3: reserved-name rejection / encrypted restore for ',
-)
-FULL_ONLY_DYNAMIC = 3
-
-# Persistence, migration and recovery surfaces: a PR touching them runs FULL
-# before merge so the encrypted backup/restore tests cannot be bypassed.
-SENSITIVE = re.compile(
-    r'^(?:apps/api/src/(?:backup|backup-cli|private-state|database|database-schema|'
-    r'database-identity|schema-contract|sqlite[^/]*)\.ts|'
-    r'apps/api/src/[^/]*-schema\.ts|'
-    r'infra/(?:migrations/[^/]+|compatibility\.py|release\.py|smoke\.py))$')
-
-
-def full_only_pattern():
-    alternatives = [re.escape(name) + '$' for name in FULL_ONLY_TESTS]
-    alternatives += [re.escape(prefix) for prefix in FULL_ONLY_PREFIXES]
-    return '^(?!(' + '|'.join(alternatives) + ')).*$'
-
-
-def full_only_expected():
-    return len(FULL_ONLY_TESTS) + FULL_ONLY_DYNAMIC
-
-
-def sensitive_path(path):
-    return isinstance(path, str) and SENSITIVE.fullmatch(path) is not None
-
-
-def full_only_file(path):
-    """A test edit must run the tests it changes; age tests are filtered from critical."""
-    if not isinstance(path, str) or not path.startswith('apps/api/src/') or not path.endswith('.test.ts'):
-        return False
-    try:
-        text = (ROOT / path).read_text(encoding='utf-8')
-    except OSError:
-        return False
-    return any(name in text for name in FULL_ONLY_TESTS)
-
 
 def docs_path(path):
     # Documentation Markdown in any directory, except operational/harness files
@@ -132,6 +62,58 @@ def docs_path(path):
             or any(lower.startswith(prefix) for prefix in FUNCTIONAL_PREFIXES)):
         return False
     return True
+
+
+# Path-derived harness selection for FAST. A regression suite reads a bounded set
+# of inputs; a comparison that changes none of them cannot regress it, so FAST
+# runs only the suites whose declared inputs it touches. FULL at the deploy tag
+# always runs every suite, and an undeclared path fails closed to all of them.
+APPLICATION_ONLY = ('apps/', 'tests/')
+# Harness contract inputs owned by no single suite: instructions, templates,
+# methodology and the harness scripts themselves always select every suite.
+CONTRACT_INPUTS = ('templates/', '.agents/', 'specs/methodology/', 'specs/guidelines/',
+                   'AGENTS.md', 'CLAUDE.md', 'scripts/')
+HARNESS_INPUTS = (
+    ('test-validator', ('README.md', 'NEW_PROJECT_PROMPT.md', 'docs/', '.codex/',
+                        '.github/workflows/', 'specs/README.md')),
+    ('test-checks', ('package.json', 'bun.lock', 'apps/api/package.json',
+                     'apps/web/package.json', '.github/workflows/', 'specs/methodology/ci-policy.md')),
+    ('test-verification', ('.github/workflows/',)),
+    ('test-agent-relay', ()),
+    ('test-evidence', ()),
+    ('test-release', ('infra/', 'package.json', 'bun.lock', '.github/workflows/')),
+    ('test-work-issue', ()),
+    ('test-agent-usage', ('.codex/', 'docs/USAGE_REPORTS.md')),
+    ('test-auto-agent-usage', ('.codex/',)),
+)
+
+
+def within(path, inputs):
+    return any(path == entry or (entry.endswith('/') and path.startswith(entry))
+               for entry in inputs)
+
+
+def harness_suites(paths):
+    """Harness regressions an already-verified change list requires.
+
+    Unknown, malformed or absent paths select every suite: the omission must be
+    proved by a readable comparison, never inferred from missing data.
+    """
+    names = tuple(name for name, _ in HARNESS_INPUTS)
+    if not isinstance(paths, (list, tuple)) or not paths:
+        return names
+    for path in paths:
+        if (not isinstance(path, str) or not path or '\\' in path
+                or any(part in ('', '.', '..') for part in path.split('/'))):
+            return names
+        if any(path.startswith(prefix) for prefix in CONTRACT_INPUTS):
+            return names
+    if not all(any(path.startswith(prefix) for prefix in APPLICATION_ONLY)
+               or any(within(path, inputs) for _, inputs in HARNESS_INPUTS)
+               for path in paths):
+        return names
+    return tuple(name for name, inputs in HARNESS_INPUTS
+                 if any(within(path, inputs) for path in paths))
 
 
 def record_paths(data):
@@ -176,23 +158,29 @@ def is_ancestor(root, ancestor, descendant):
                           stderr=subprocess.PIPE).returncode == 0
 
 
-def classify_git(root, base, head, *, pull_request=False):
-    """Only complete, verified commit comparisons may opt out of full checks."""
+def changed_paths(root, base, head, *, pull_request=False):
+    """Paths of a verified commit comparison, or None when it is unverifiable."""
     try:
         if not all(isinstance(s, str) and re.fullmatch(r'[0-9a-f]{40}', s)
                    and s != '0' * 40 for s in (base, head)):
-            return 'full'
+            return None
         if git(root, 'rev-parse', '--is-shallow-repository').strip() != b'false':
-            return 'full'
+            return None
         for sha in (base, head):
             git(root, 'cat-file', '-e', sha + '^{commit}')
         if pull_request:
             base = git(root, 'merge-base', base, head).decode().strip()
         records = git(root, 'diff', '--name-status', '-z', '--find-renames',
                       '--ignore-submodules=none', '--no-ext-diff', '--no-textconv', base, head, '--')
-        return classify_records(records)
+        return record_paths(records)
     except (OSError, subprocess.SubprocessError, UnicodeError):
-        return 'full'
+        return None
+
+
+def classify_git(root, base, head, *, pull_request=False):
+    """Only complete, verified commit comparisons may opt out of full checks."""
+    paths = changed_paths(root, base, head, pull_request=pull_request)
+    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
 
 
 def classify_event_range(root, event_name, event):
@@ -234,28 +222,16 @@ def classify_event(root, event_name, event, checkout_ref=None):
         return 'full'
 
 
-# A narrow fast allowlist; everything else retains independent Linux API coverage.
-# UI files can contain financial rules, so TS/TSX are deliberately critical.
-def fast_path(path):
-    return (docs_path(path) or (isinstance(path, str) and all(p not in ('', '.', '..') for p in path.split('/'))
-            and '\\' not in path and path.startswith('apps/web/') and path.endswith('.css')))
+def ci_comparison(root, event_name, event, checkout_ref=None):
+    """Profile plus the verified changed paths behind it (None: unverifiable).
 
-
-def profile_records(data):
-    paths = record_paths(data)
-    if not paths:
-        return 'critical'
-    if any(sensitive_path(p) or full_only_file(p) for p in paths):
-        return 'full'
-    if all(docs_path(p) for p in paths):
-        return 'docs'
-    return 'fast' if all(fast_path(p) for p in paths) else 'critical'
-
-
-def ci_profile(root, event_name, event, checkout_ref=None):
-    """Execution venue differs from docs/full coverage; invalid contexts fail closed."""
+    PR: docs only for a verified documentation-only diff, otherwise FAST.
+    FULL is selected by the deploy tag (exact commit) and by manual dispatch.
+    No PR comparison, however sensitive the paths, escalates: API/SQLite and E2E
+    run once per deploy candidate instead of once per pull request.
+    """
     if event_name == 'workflow_dispatch':
-        return 'full'
+        return 'full', None
     if event_name == 'push':
         ref = event.get('ref')
         after = event.get('after', '')
@@ -282,7 +258,7 @@ def ci_profile(root, event_name, event, checkout_ref=None):
                 raise ValueError('deploy tag commit is unavailable')
             if head != tagged:
                 raise ValueError('deploy tag checkout differs from the tag commit')
-            return 'full'
+            return 'full', None
         # main/test push compatibility is retained for historical agent runs;
         # the workflows no longer trigger postmerge pushes.
         if ref not in ('refs/heads/main', 'refs/heads/test'):
@@ -291,51 +267,50 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             raise ValueError('postmerge snapshot differs from event')
         before = event.get('before')
         if not re.fullmatch(r'[0-9a-f]{40}', before or '') or before == '0' * 40:
-            return 'fast'
+            return 'fast', None
         try:
             git(root, 'merge-base', '--is-ancestor', before, event['after'])
-            return 'docs' if classify_git(root, before, event['after']) == 'docs' else 'fast'
+            paths = changed_paths(root, before, event['after'])
+            return ('docs' if paths and all(docs_path(path) for path in paths) else 'fast'), paths
         except (OSError, subprocess.SubprocessError):
-            return 'fast'
+            return 'fast', None
     if event_name != 'pull_request':
         raise ValueError('unsupported CI event')
     pr = event.get('pull_request', {})
     if pr.get('base', {}).get('ref') not in ('main', 'test'):
         raise ValueError('only PRs targeting main or test are supported')
-    # Selection compares the complete PR against the exact tested integration base.
-    # Unverified data never opts out of independent API/SQLite validation.
+    # The selected profile is FAST unless the verified merge ref proves the whole
+    # PR is documentation. Unverified data never opts out: it only loses docs.
     try:
         head = pr['head']['sha']; base = pr['base']['sha']
         if not re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref or ''):
-            return 'critical'
+            return 'fast', None
         if git(root, 'rev-parse', 'HEAD^2').decode().strip() != head:
             raise ValueError('integration head changed')
         if git(root, 'status', '--porcelain=v1', '-z', '--untracked-files=all'):
-            return 'critical'
+            # A local dirty snapshot cannot inherit a committed docs comparison.
+            return 'fast', None
         tested_base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
         if tested_base != base:
             # A queued run can fetch a merge ref rebuilt on a newer integration
             # base (main or test), so the event snapshot may be an older base.
             # Only a base that advanced from that snapshot is legitimate; a
             # rewritten, divergent or older merge ref still fails closed.
-            # Ancestry does not prove the tested base is the current tip: the
-            # checked-out SHA remains the tested one.
             if not is_ancestor(root, base, tested_base):
                 raise ValueError('event base is not an ancestor of the tested integration base')
             base = tested_base
-        if classify_git(root, base, head, pull_request=True) == 'full':
-            if git(root, 'rev-parse', '--is-shallow-repository').strip() != b'false':
-                return 'critical'
-        ancestor = git(root, 'merge-base', base, head).decode().strip()
-        records = git(root, 'diff', '--name-status', '-z', '--find-renames',
-                      '--ignore-submodules=none', '--no-ext-diff', '--no-textconv', ancestor, head, '--')
-        return profile_records(records)
+        paths = changed_paths(root, base, head, pull_request=True)
+        return ('docs' if paths and all(docs_path(path) for path in paths) else 'fast'), paths
     except (OSError, subprocess.SubprocessError, KeyError, TypeError):
-        return 'critical'
+        return 'fast', None
+
+
+def ci_profile(root, event_name, event, checkout_ref=None):
+    return ci_comparison(root, event_name, event, checkout_ref)[0]
 
 
 def ci_result_ok(profile, states):
-    if profile not in ('docs', 'fast', 'critical', 'full'):
+    if profile not in ('docs', 'fast', 'full'):
         return False
     expected = {name: 'success' for name in ('context', 'snapshot', 'plan', 'baseline', 'verify')}
     expected.update({name: 'success' if profile != 'docs' else 'skipped' for name in ('bun', 'install')})

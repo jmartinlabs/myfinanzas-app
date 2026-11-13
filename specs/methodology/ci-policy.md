@@ -182,6 +182,14 @@ sustituida solo en selección de entorno, eventos y grafo CI. **La actualizació
 documentación del 2026-10-28 sustituye para este repositorio la allowlist genérica y
 v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
 
+**Revisión 2026-11-12 — FAST en PR, FULL en despliegue (decisión del usuario).** Un PR
+hacia `main`/`test` valida solo lo mínimo imprescindible y rápido: baseline, typecheck,
+build y la suite unitaria web. La batería completa de API/SQLite y E2E **no** se ejecuta
+en cada PR; se ejecuta en el FULL del tag de despliegue, sobre el commit exacto del tag.
+Esto **sustituye** para este repositorio la selección `critical` y la escalada por rutas
+sensibles en PR descritas en el contrato portable: ninguna prueba se elimina ni se
+relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `full`.
+
 - `python3 scripts/verify` conserva la cobertura local completa cuando la comparación
   no es `docs`; una comparación `docs` omite aplicación y regresiones del harness.
   `--full` fuerza toda la cobertura local (baseline, tipos/build, API/SQLite y E2E).
@@ -205,46 +213,99 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   del merge. No hay filtro de paths que omita el check. Solo cada PR cancela su
   candidato anterior; las ejecuciones manuales y de tag no se cancelan entre sí ni por
   una PR, para que el deploy pueda consumir su evidencia.
-- `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
-  `docs` ejecuta un baseline documental: `check-repository` (historial, índice y
-  seguridad), `check-project` (estructura y workflow), `validate-template`
+- `docs/full` sigue midiendo cobertura de entrega; el perfil de ejecución es otra cosa.
+  El perfil CI `docs` ejecuta un baseline documental: `check-repository` (historial,
+  índice y seguridad), `check-project` (estructura y workflow), `validate-template`
   (estructura, enlaces, anclas, contratos y heurísticas) y whitespace de trabajo y
   commit. Omite las regresiones `test-*` del harness porque un diff compuesto solo
-  por documentación no modifica sus entradas; `fast`, `critical` y `full` las
-  ejecutan todas. La selección se recalcula dentro del paso `baseline` con el
-  mismo `ci_profile` y el contexto verificado; sin contexto, evento inválido o
-  error de clasificación ejecuta la batería completa. No hay skip de workflow ni
-  estado nuevo en `ci-result`. `fast` añade tipos/build y la suite web
-  (`bun test apps/web`); `critical` añade la suite
-  API/SQLite Linux **excepto** las pruebas que dependen de `age`; `full` añade esas
-  pruebas y E2E. PR compara todo el rango
-  mediante merge-base sobre la base probada (`main` o `test`) y solo puede seleccionar
-  `docs`, `fast`, `critical` o `full` por rutas sensibles: **`full` no se selecciona por
-  tamaño de diff**, solo por dispatch expreso, por push del tag `deploy-test-v*` o por un
-  cambio en las rutas sensibles de persistencia, migraciones, esquema, identidad y
-  recuperación. El tag se
-  valida sobre el commit exacto (un tag anotado se pela a su commit) y ejecuta `full`.
-  Si GitHub reconstruye el merge ref sobre una base más nueva antes del checkout, esa
-  misma ejecución es la repetición y solo omite aplicación cuando el diff propio de la
-  PR es documental; un merge ref anterior al evento falla y debe relanzarse. Un merge
-  de alto riesgo se valida con un dispatch full o con el tag de deploy, no con un
-  `critical` automático adicional.
-- **Separación por dependencia de `age` (2026-11-11):** `age` y las pruebas de
-  backup/restore cifrado son exclusivos de `full`. `critical` ejecuta la suite API con
-  un filtro negativo construido desde `scripts/ci_policy.py` (`FULL_ONLY_TESTS`, 33
-  nombres exactos más los 3 casos generados de `31 S3`; 36 filtradas en total, 21
-  archivos) y **no** instala `age` ni ejecuta el paso `prepare`
-  (contrato `prepare=skipped`). `full` conserva la suite completa, `age`, Chromium y E2E;
-  el tag de despliegue sigue exigiendo `full`. El filtro es fail-closed:
-  `scripts/verify` exige que Bun informe exactamente 36 pruebas filtradas (ni una más ni
-  una menos), un test de política comprueba que cada nombre existe literalmente en la
-  suite, y la ejecución real sin `age` demuestra que ninguna prueba dependiente quedó
-  fuera. Las rutas sensibles de backup/restore, migraciones, base de datos, esquema,
-  identidad y recuperación promocionan la PR a `full` antes de su aceptación, igual que
-  cualquier test de `apps/api/src` que contenga una prueba de esa lista.
+  por documentación no modifica sus entradas; `full` las ejecuta todas y `fast` aplica
+  la selección por rutas declarada más abajo. La
+  selección se recalcula dentro del paso `baseline` con el mismo `ci_profile` y el
+  contexto verificado; sin contexto, evento inválido o error de clasificación ejecuta
+  la batería completa. No hay skip de workflow ni estado nuevo en `ci-result`.
+  `fast` (todo PR) añade tipos/build y la suite web (`bun test apps/web`); `full`
+  añade la suite API/SQLite completa (incluidas las pruebas que dependen de `age`),
+  `prepare` con `age`+Chromium y E2E. PR compara todo el rango mediante merge-base
+  sobre la base probada (`main` o `test`) y solo puede seleccionar `docs` o `fast`:
+  **ninguna ruta sensible escala un PR**, porque esa cobertura la da el FULL del tag.
+  `full` se selecciona únicamente por dispatch manual o por push del tag
+  `deploy-test-v*`; el tag se valida sobre el commit exacto (un tag anotado se pela a
+  su commit) y ejecuta `full` con toda la batería. Si GitHub reconstruye el merge ref
+  sobre una base más nueva antes del checkout, esa misma ejecución es la repetición y
+  solo omite aplicación cuando el diff propio de la PR es documental; un merge ref
+  anterior al evento falla y debe relanzarse. La validación completa de un cambio de
+  alto riesgo se hace con el tag de despliegue o con un dispatch full sobre el SHA que
+  se quiere promover, no con un perfil intermedio en la PR.
+- **Coste y cobertura retirada de PR (2026-11-12):** la suite API/SQLite (varios cientos
+  de pruebas y minutos de ejecución), el filtro libre de `age` que la acompañaba y E2E
+  salen del camino de PR. Motivo: el PR debe dar señal rápida de tipos, build y lógica
+  de cliente; la cobertura de API/E2E se paga una vez por candidato de despliegue, en
+  el tag, y bloquea el deploy si falla. Riesgo aceptado y explícito: un fallo que solo
+  detecte la suite API puede llegar a `test` y descubrirse al etiquetar; el gate FULL
+  del tag lo impide en producción. Para reducir esa ventana, el paso previo a etiquetar
+  puede usar `Validate project` con `workflow_dispatch` (FULL sobre el SHA exacto) — es
+  opcional y no crea un gate nuevo.
+- **Selección de las regresiones del harness por rutas en `fast` (2026-11-13).** El
+  baseline de `fast` ejecuta **siempre** los controles esenciales (`check-repository`,
+  `check-project`, `validate-template` y whitespace de trabajo y commit) y solo las
+  regresiones `test-*` que declara la comparación verificada. La declaración vive en
+  `scripts/ci_policy.py` (`HARNESS_INPUTS` por suite, `CONTRACT_INPUTS` transversales y
+  `APPLICATION_ONLY`) y no crea un segundo clasificador: usa el mismo `ci_comparison`
+  que decide el perfil. Un diff limitado a `apps/` o `tests/` no ejecuta ninguna
+  regresión del harness; `templates/`, `.agents/`, `specs/methodology/`,
+  `specs/guidelines/`, `AGENTS.md`, `CLAUDE.md` o `scripts/` ejecutan todas; `.github/`,
+  `docs/`, `.codex/`, `package.json`, `bun.lock` o `infra/` seleccionan solo las suites
+  que los declaran. Una ruta no declarada, un evento ilegible, una comparación no
+  verificable, un árbol de trabajo sucio o un clasificador que falle ejecutan **todas**
+  (fail-closed). La selección se anuncia en el log
+  (`INTENTIONALLY SKIPPED harness regressions: ...`) y nunca se contabiliza como PASS.
+  `full` ignora cualquier selección: la batería completa sigue siendo la del tag.
+  **Riesgo declarado:** una regresión omitida en la PR se ejecuta en el FULL del tag de
+  despliegue, sobre el commit exacto que se promueve; un PR sin la cobertura completa no
+  autoriza el merge por sí mismo, y el deploy espera ese FULL. El riesgo aceptado es que
+  un fallo que solo detecte una suite omitida aparezca al etiquetar; se acota lanzando
+  `Validate project` con `workflow_dispatch` (FULL sobre el SHA exacto) antes de etiquetar.
+- **Paralelismo del baseline (2026-11-13).** Las suites del baseline son independientes
+  (cada una trabaja sobre repositorios y temporales propios), así que `scripts/verify
+  baseline` las ejecuta en paralelo con `min(4, cpu)` procesos; `VERIFY_JOBS` fija el
+  número para medir o depurar. La salida sigue siendo determinista: se anuncian todas
+  las suites seleccionadas y después se imprimen sus bloques y sus `PASS`/`FAIL` en el
+  orden de declaración del baseline, con los segundos de cada una. Cada suite se ejecuta
+  exactamente una vez, y un fallo ya no oculta el resultado real de las demás suites
+  (todas se han ejecutado); la fase falla igualmente y el código de salida se propaga.
+  La fase de aplicación (`typecheck`, `build`, `web`) sigue secuencial dentro de un solo
+  paso para no competir por artefactos compartidos. La cobertura no cambia: misma lista
+  de suites, mismo criterio de cobertura por reporter y mismos fallos.
+- **Coste evitable retirado de los dos controles más caros (2026-11-13).**
+  `check-repository` lanzaba un proceso Git por mensaje de commit y por blob del índice
+  (más de 5.000 arranques en este historial); ahora lee el historial con un `git log`
+  único y los blobs con un `git cat-file --batch` persistente, y descarta por literales
+  necesarios antes de aplicar las expresiones de credenciales. `validate-template`
+  releía y reescribía la normalización de los mismos documentos por cada regla; ahora
+  memoiza la lectura dentro de una ejecución y filtra por literales necesarios antes de
+  las expresiones de secretos y de rutas de máquina. Ninguna regla cambia: los
+  literales son condiciones necesarias de cada patrón y `test-checks`/`test-validator`
+  prueban que cada forma sigue detectándose.
+- **Medición local de referencia (2026-11-13, macOS, una pasada, reloj de pared):**
+  baseline completo secuencial ≈ 400 s; el mismo baseline en paralelo ≈ 110 s; un PR de
+  UI (solo `apps/`) ≈ 13 s de baseline; un PR que toca `scripts/` ≈ 88 s; un PR de
+  documentación ≈ 9 s. La cifra de CI la publica el log de cada paso (`PASS <suite>
+  (<s>)`); no es una garantía de contrato y debe re-medirse al cambiar la lista de
+  suites o el tamaño del árbol. El límite conocido es `test-validator`: 51 fixtures
+  validan el contrato completo y dominan el muro cuando la selección las incluye.
+- **Retirada del perfil `critical` sin `age` (2026-11-12):** el perfil intermedio
+  `critical` (suite API con filtro negativo de las 36 pruebas que dependen de `age`,
+  `FULL_ONLY_TESTS`/`FULL_ONLY_PREFIXES`, `prepare=skipped`) desaparece junto con su
+  filtro y su prueba de lista. Motivo: sin perfil en el que ejecutarse no tenía
+  consumidor, y mantener una lista de exclusión sin uso invita a que se desincronice de
+  la suite. `full` ejecuta la suite API **completa** con `age`, preparación Linux,
+  Chromium y E2E; no queda ningún camino que filtre pruebas por dependencia. `age`,
+  `prepare` (`success`) y `browser` (`success`) son obligatorios en `full` y
+  `skipped` en `docs`/`fast`, y `ci-result` lo exige literalmente.
 - **Flujo de integración `feature/* → test → main` (TEST-BOOTSTRAP-01, 2026-11-07):**
-  `test` es la base de integración: los PR de trabajo apuntan a `test` y ejecutan el
-  gate según el diff; `main` conserva su ruleset y recibe la promoción. Se promueve el
+  `test` es la base de integración: los PR de trabajo apuntan a `test` y ejecutan
+  `fast` (o `docs` si el diff es solo documentación); `main` conserva su ruleset y
+  recibe la promoción. Se promueve el
   mismo SHA validado en `test`, sin añadir ni reescribir cambios después de la
   validación; un PR de promoción `test → main` vuelve a ejecutar el gate contra `main` y
   cualquier diferencia exige validación propia. No se promueven commits no validados en
@@ -259,9 +320,9 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   apartado posee solo la mecánica de CI y no reescribe esa decisión funcional.
 - **Visibilidad del perfil (2026-11-11):** el job obligatorio conserva el nombre fijo
   `required` (sin `name`, el check se llama como el id) y su step summary publica
-  `Perfil CI: DOCS|FAST|CRITICAL|FULL`. Un job adicional `profile`, dependiente de
+  `Perfil CI: DOCS|FAST|FULL`. Un job adicional `profile`, dependiente de
   `required` con `always()` y sin pasos de verificación, lleva el perfil en el nombre
-  del check: `CI profile: docs|fast|critical|full` (`UNKNOWN` si falta el output). Así
+  del check: `CI profile: docs|fast|full` (`UNKNOWN` si falta el output). Así
   la lista de checks de la PR muestra el perfil sin permisos `checks: read` ni un paso
   extra que consulte la API. El nombre del run no puede mostrar el perfil porque se
   evalúa antes de clasificar. El nombre `required` no configura por sí solo la
@@ -273,11 +334,28 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   Antes de desplegar se conservan las guardas de tag, actor,
   ancestro en `origin/test`, anotación `sha`/`qa_reference` y SHA exacto, y se espera
   hasta 35 minutos a que el `required` del propio tag figure en `success` sobre `TAG_SHA`;
-  un fallo terminal conocido o el timeout detienen el deploy. No se debilita ningún control
+  un fallo terminal conocido o el timeout detienen el deploy. La consulta filtra
+  `event=push`, `head_sha=RELEASE_SHA` y `head_branch=<tag>`: **no consume el check de la
+  PR** ni un check antiguo que comparta SHA, así que un PR verde nunca sustituye al FULL
+  del tag. No se debilita ningún control
   por esperar. El tag debe ser **anotado**: `git cat-file -t refs/tags/<tag>` tiene que
   devolver `tag`; un tag lightweight se rechaza antes de ejecutar `full`. Un
   `workflow_dispatch` manual de `rootless` no sustituye el gate de aplicación; para
   typecheck/build/baseline hay que lanzar `Validate project` full sobre el mismo SHA.
+- **PROD — regla obligatoria (contrato, no implementado):** hoy no existe workflow de
+  producción y este cambio **no** lo inventa. Cuando se implemente, el contrato es el
+  mismo que TEST y no admite atajos: (1) un tag de PROD (p. ej. `deploy-prod-vX.Y.Z`)
+  debe ser **anotado** y resolver a un commit exacto; (2) ese commit debe ser el mismo
+  SHA ya validado en `test`, sin reescrituras; (3) el despliegue solo puede empezar con
+  el **FULL del propio tag** en `success` sobre ese commit exacto — run de
+  `validate.yml` con `event=push`, `head_sha=<commit>` y `head_branch=<tag>`; (4) no
+  valen como sustituto el check de un PR, un run de otro SHA, un `workflow_dispatch`
+  manual de despliegue ni un PASS declarado; (5) ausente, fallido, cancelado o fuera de
+  plazo ⇒ no se despliega y el job falla visiblemente; (6) el *environment* de GitHub y
+  su aprobación son controles adicionales, no equivalentes; (7) implementarlo exige su
+  propia SPEC, un `DEPLOY_TAG` de PROD en `scripts/ci_policy.py` (selección `full`,
+  igual que TEST) y regresiones que fijen los puntos 1–5. Hasta entonces, ninguna rama
+  puede publicar en producción: no hay workflow, secreto ni tag de PROD configurado.
 - **Crédito QA por árbol (2026-11-11):** la QA independiente se registra sobre el commit
   revisado y se reutiliza en el commit de integración solo si
   `scripts/check-evidence --qa-equivalence` demuestra identidad de árbol o composición
@@ -307,15 +385,17 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   `.md` admitido fuera de esas rutas (por ejemplo `docs/`, `infra/` o un futuro
   `CONTRIBUTING.md`) aún no tiene comprobación completa de enlaces relativos. Se
   registra como cobertura pendiente y no reduce el baseline actual.
-- Fast se limita a CSS en `apps/web/`. Todo TS/TSX,
-  incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
-  dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.
-  Borrados y ambos extremos de renombres cuentan. Clasificación incierta nunca
-  exime API/SQLite. No se amplía esta lista sin revisión y regresiones.
+- `fast` es el perfil de PR y no depende de las rutas: cualquier cambio no documental
+  (TS/TSX, API, persistencia, migraciones, infra, dependencias, harness, instrucciones,
+  rutas nuevas o desconocidas) ejecuta baseline + typecheck + build + suite web. La
+  cobertura de API/SQLite y E2E no se omite: se traslada al FULL del tag, que es
+  obligatorio antes de desplegar. Borrados y ambos extremos de renombres cuentan para
+  decidir `docs`. Clasificación incierta nunca selecciona `docs`.
 - Ubuntu24.04 x64 conserva acciones SHA, historia completa y permisos de lectura.
-  `ci_prepare_linux.py api` prepara solo age; full prepara además Chromium como
-  antes. Los controles financieros y de persistencia son independientes del entorno
-  del autor aunque compartan job con el gate rápido.
+  `ci_prepare_linux.py` ya no tiene modo reducido: solo se ejecuta en `full`, donde
+  instala la lista completa (`age` + Chromium y sus paquetes). `fast` no instala ni
+  `age` ni Chromium; por eso `prepare` y `browser` valen `skipped` fuera de `full` y
+  `ci-result` lo exige literalmente.
 - SQLite local requiere Linux Debian13/glibc aislado compatible con producción,
   Bun1.4.3 y arquitectura de destino; usar filesystem Linux para WAL, bloqueos,
   permisos y renameat2. macOS, Ubuntu CI y un bind mount de macOS no demuestran

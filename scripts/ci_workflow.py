@@ -18,7 +18,7 @@ BUN = {'uses': 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
 BASELINE = 'python3 scripts/verify baseline'
 CLASSIFY = """set -eu
 profile="$(python3 scripts/verify ci-plan)"
-case "$profile" in docs|fast|critical|full) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
+case "$profile" in docs|fast|full) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
 printf 'profile=%s\\n' "$profile" >> "$GITHUB_OUTPUT"
 """
 CONCURRENCY = {
@@ -29,7 +29,7 @@ CONCURRENCY = {
     'cancel-in-progress': "${{ github.event_name == 'pull_request' }}",
 }
 PROFILE_SUMMARY = """profile="$(printf '%s' "$CI_PROFILE" | tr '[:lower:]' '[:upper:]')"
-case "$profile" in DOCS|FAST|CRITICAL|FULL) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
+case "$profile" in DOCS|FAST|FULL) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
 printf 'Perfil CI: %s\\n' "$profile" >> "$GITHUB_STEP_SUMMARY"
 """
 # The required check keeps a fixed name for branch protection. A metadata-only
