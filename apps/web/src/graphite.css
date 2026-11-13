@@ -5762,3 +5762,595 @@ html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions .text-butt
     text-transform: uppercase;
   }
 }
+
+/* G5e-3 · Compartidos: catálogo, ficha y formularios ---------------------- */
+
+html[data-theme="graphite-lime"] .shared-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .muted {
+  margin-top: 4px;
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .actions button {
+  min-height: var(--touch-min);
+}
+
+/* Chips de estado: el texto debe seguir legible sobre superficie oscura. */
+html[data-theme="graphite-lime"] .shared-page .tag {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.state-closed {
+  border-color: var(--control-border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.state-partial {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.state-review {
+  border-color: var(--error-border);
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.inactive {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+/* Catálogo --------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .shared-page .shared-list {
+  padding: 10px var(--space-4) 4px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: var(--radius);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table {
+  min-width: 0;
+  table-layout: auto;
+  width: 100%;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table td:nth-child(n + 4) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards {
+  gap: 10px;
+  padding: 10px var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-value {
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="actions"] {
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="actions"] :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state h2 {
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state p {
+  max-width: 78ch;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-scope-note {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-scope-note h2 {
+  margin-bottom: 8px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-scope-note p {
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Ficha ------------------------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .shared-page > .panel,
+html[data-theme="graphite-lime"] .shared-page .shared-layout > .panel {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page > .panel {
+  margin-bottom: 16px;
+  padding: var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .shared-page > .panel > h2,
+html[data-theme="graphite-lime"] .shared-page .shared-layout > .panel > h2 {
+  margin-bottom: 10px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-state {
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-state > p:not(.shared-alert) {
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-state .muted,
+html[data-theme="graphite-lime"] .shared-page .shared-actions .muted,
+html[data-theme="graphite-lime"] .shared-page .shared-layout .muted,
+html[data-theme="graphite-lime"] .shared-page > .panel .muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-alert {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--error-border);
+  border-left: 3px solid var(--error);
+  border-radius: 8px;
+  background: var(--error-soft);
+  color: var(--error);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head h2 {
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-aportaciones {
+  margin-top: 10px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-aportaciones li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-aportaciones li small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics {
+  gap: 10px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics .metric {
+  padding: 12px 14px;
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics dd {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.4px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Participantes: la tabla de 6 columnas no cabe en el panel; se usa la
+ * tarjeta existente, con los mismos campos y acciones. */
+html[data-theme="graphite-lime"] .shared-page [aria-label="Participantes"] .desktop-list {
+  display: none;
+}
+
+html[data-theme="graphite-lime"] .shared-page [aria-label="Participantes"] .shared-cards {
+  display: grid;
+  padding: 0;
+}
+
+
+/* Gastos, partidas, movimientos e historia --------------------------------- */
+
+html[data-theme="graphite-lime"] .shared-page .shared-expenses li,
+html[data-theme="graphite-lime"] .shared-page .shared-partidas li,
+html[data-theme="graphite-lime"] .shared-page .shared-related li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-expenses li small,
+html[data-theme="graphite-lime"] .shared-page .shared-related li small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-expenses li.shared-invalid {
+  padding-inline: 10px;
+  border-left: 3px solid var(--error);
+  border-radius: 6px;
+  background: var(--error-soft);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-partidas h3,
+html[data-theme="graphite-lime"] .shared-page .shared-layout h3 {
+  margin: 14px 0 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-history li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .field-error {
+  color: var(--error);
+  font-size: 12px;
+}
+
+/* Impacto y formularios ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact h2,
+html[data-theme="graphite-lime"] .shared-page .shared-impact h3 {
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact .muted,
+html[data-theme="graphite-lime"] .shared-page .shared-impact p:not(.shared-alert) {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact table td {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-contribution {
+  margin-top: 16px;
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-contribution p:not(.shared-alert) {
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-contribution .muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact .form-actions,
+html[data-theme="graphite-lime"] .shared-page .shared-contribution .form-actions,
+html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact .form-actions button,
+html[data-theme="graphite-lime"] .shared-page .shared-contribution .form-actions button,
+html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form {
+  display: grid;
+  gap: 14px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section-head {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section-title {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field :is(input, select, textarea) {
+  min-height: var(--touch-min);
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field :is(input, select, textarea):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field[data-invalid="true"] :is(input, select, textarea) {
+  border-color: var(--error);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field-help,
+html[data-theme="graphite-lime"] .shared-page .shared-form .muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions {
+  margin-top: 0;
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+  html[data-theme="graphite-lime"] .shared-page .shared-list {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page > .page-head ~ .shared-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .shared-page > .panel,
+  html[data-theme="graphite-lime"] .shared-page > .panel.shared-state,
+  html[data-theme="graphite-lime"] .shared-page .shared-layout > .panel,
+  html[data-theme="graphite-lime"] .shared-page .shared-impact,
+  html[data-theme="graphite-lime"] .shared-page .shared-contribution,
+  html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section,
+  html[data-theme="graphite-lime"] .shared-page .shared-scope-note,
+  html[data-theme="graphite-lime"] .shared-page .empty-state {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-cards {
+    padding: 10px 0;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions :is(button, .text-button),
+  html[data-theme="graphite-lime"] .shared-page .shared-impact .form-actions button,
+  html[data-theme="graphite-lime"] .shared-page .shared-contribution .form-actions button,
+  html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions button {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-expenses li,
+  html[data-theme="graphite-lime"] .shared-page .shared-partidas li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
