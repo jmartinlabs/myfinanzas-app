@@ -165,17 +165,27 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
       await expect(list.locator(".pendientes-cards")).toBeHidden();
       await expect(list.locator(".pendientes-table th")).toHaveCount(9);
       // Las fechas se parten como mucho en el guion, nunca dentro del número.
-      const lineWidths = await page.evaluate(() => {
-        const cell = document.querySelectorAll<HTMLElement>(
-          ".pendientes-table tbody tr",
-        )[0]?.children[2];
-        if (!cell) return [];
+      const dateLines = await page.evaluate(() => {
+        const row = Array.from(
+          document.querySelectorAll<HTMLElement>(".pendientes-table tbody tr"),
+        ).find((tr) => tr.textContent?.includes("Apertura 2026"));
+        const cell = row?.children[2] as HTMLElement | undefined;
+        if (!cell) return null;
+        const style = getComputedStyle(cell);
+        const context = document.createElement("canvas").getContext("2d");
+        if (!context) return null;
+        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
         const range = document.createRange();
         range.selectNodeContents(cell);
-        return Array.from(range.getClientRects()).map((rect) => Math.round(rect.width));
+        return {
+          text: cell.textContent ?? "",
+          full: context.measureText("01/11/2026").width,
+          widths: Array.from(range.getClientRects()).map((rect) => rect.width),
+        };
       });
-      expect(lineWidths.length).toBeGreaterThan(0);
-      expect(Math.min(...lineWidths)).toBeGreaterThanOrEqual(50);
+      expect(dateLines?.text).toContain("01/11/2026");
+      expect(dateLines!.widths.length).toBeGreaterThan(0);
+      expect(Math.min(...dateLines!.widths)).toBeGreaterThanOrEqual(dateLines!.full - 3);
       await expect(list).toHaveCSS("padding-top", "0px");
     }
     if (width === 1280 || width === 1100) {
@@ -234,6 +244,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     "font-size",
     "12px",
   );
+  await expect(page.locator(".pendientes-skeleton")).toBeHidden({ timeout: 10000 });
   await page.unroute("**/api/pendientes?**");
 
   // Estado de error de consulta
