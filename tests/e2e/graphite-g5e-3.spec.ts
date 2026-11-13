@@ -4,15 +4,23 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3009;
-const STATE = ".local/e2e-compartidos";
+const PORT = 3061;
+const STATE = ".local/e2e-compartidos-g5e";
 let child: ReturnType<typeof spawn> | undefined;
 
 test.beforeAll(async ({ request }) => {
   child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/compartido-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+    {
+      stdio: "pipe",
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        COMPARTIDO_PORT: String(PORT),
+        COMPARTIDO_STATE: STATE,
+      },
+    },
   );
   await expect
     .poll(

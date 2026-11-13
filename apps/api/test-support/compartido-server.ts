@@ -1,5 +1,6 @@
 // Isolated fictional source and real MFA server for E3.2 base B. No fixture API.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { resolve, sep } from "node:path";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { HttpServer } from "@effect/platform";
 import { Layer } from "effect";
@@ -11,7 +12,10 @@ import { createClassification } from "../src/clasificacion";
 import { createSaldo } from "../src/saldos";
 import { previewMovement, writeMovement } from "../src/movimientos";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
-const dir = ".local/e2e-compartidos";
+const port = Number(process.env.COMPARTIDO_PORT ?? 3009);
+const dir = resolve(process.env.COMPARTIDO_STATE ?? ".local/e2e-compartidos");
+if (!dir.startsWith(resolve(".local") + sep))
+  throw new Error("State must live under .local/");
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),
@@ -149,7 +153,7 @@ writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
     HttpServer.serve(createApp(db, { key })).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3009 })),
+      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),
 );

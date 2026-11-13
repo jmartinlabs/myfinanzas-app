@@ -6034,8 +6034,7 @@ html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions {
   gap: 8px;
 }
 
-html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions :is(button, .text-button),
-html[data-theme="graphite-lime"] .shared-page > .panel > .actions button {
+html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions :is(button, .text-button) {
   min-height: var(--touch-min);
 }
 
@@ -6096,7 +6095,7 @@ html[data-theme="graphite-lime"] .shared-page .detail-grid {
   margin-top: 14px;
 }
 
-html[data-theme="graphite-lime"] .shared-page .detail-grid dl > div {
+html[data-theme="graphite-lime"] .shared-page .detail-grid > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
@@ -6129,9 +6128,6 @@ html[data-theme="graphite-lime"] .shared-page [aria-label="Participantes"] .shar
   padding: 0;
 }
 
-html[data-theme="graphite-lime"] .shared-page .shared-participants table {
-  table-layout: auto;
-}
 
 /* Gastos, partidas, movimientos e historia --------------------------------- */
 
@@ -6194,7 +6190,7 @@ html[data-theme="graphite-lime"] .shared-page .shared-impact h3 {
 }
 
 html[data-theme="graphite-lime"] .shared-page .shared-impact .muted,
-html[data-theme="graphite-lime"] .shared-page .shared-impact p {
+html[data-theme="graphite-lime"] .shared-page .shared-impact p:not(.shared-alert) {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
@@ -6220,7 +6216,7 @@ html[data-theme="graphite-lime"] .shared-page .shared-contribution {
   box-shadow: var(--graphite-card-shadow);
 }
 
-html[data-theme="graphite-lime"] .shared-page .shared-contribution p {
+html[data-theme="graphite-lime"] .shared-page .shared-contribution p:not(.shared-alert) {
   color: var(--text);
   font-size: 13px;
 }
