@@ -4,7 +4,9 @@ import {
   ApiError,
   eur,
   type RepartoDTO,
+  type RepartoEntidadDTO,
   type RepartoEstado,
+  type RepartoFuentePlan,
   type RepartoLineaDTO,
   type RepartoLineaPendienteDTO,
   type RepartoMotivoNoCompletar,
@@ -46,34 +48,70 @@ const amount = (value: string | null) =>
 const saldoLabel = (saldo: SaldoResumenDTO | null) =>
   saldo ? `${saldo.id} · ${saldo.nombre}` : "No disponible";
 const lineLabel = (linea: RepartoLineaDTO) =>
-  linea.presupuesto
-    ? `${linea.presupuesto.nombre} · ${linea.presupuesto.id}`
-    : "Transferencia adicional";
+  linea.partida
+    ? `${linea.partida.nombre} · ${linea.partida.id}`
+    : linea.presupuesto
+      ? `${linea.presupuesto.nombre} · ${linea.presupuesto.id}`
+      : "Transferencia adicional";
+
+/**
+ * SPEC36 amendment C — the plan origin is `PlanCiclo` (Presupuesto/E2.3) or
+ * `Dprima` (Partida raíz y Plan mensual D′). One source per reparto, declared
+ * once, never mixed and never switched after generating pendientes.
+ */
+const fuentePlanLabel = (fuente: RepartoFuentePlan) =>
+  fuente === "Dprima"
+    ? "Dprima · Plan mensual D′ por Partida raíz"
+    : "PlanCiclo · Plan del ciclo E2.3 por Presupuesto";
+
+// Entity of the active source: Presupuesto for `PlanCiclo`, Partida for `Dprima`.
+const entidadItem = (
+  item: RepartoPropuestaItemDTO,
+): RepartoEntidadDTO | null =>
+  item.clase === "Partida"
+    ? (item.partida ?? item.presupuesto)
+    : (item.presupuesto ?? item.partida);
+
+const estadoDeEntidad = (estado: string | null | undefined) =>
+  estado === "Activa" || estado === "Activo"
+    ? ("Activa" as const)
+    : estado === "Inactiva" || estado === "Inactivo"
+      ? ("Inactiva" as const)
+      : null;
+
+/** Server-owned entity state; the entity wording is only a fallback. */
+const entidadEstadoItem = (item: RepartoPropuestaItemDTO) =>
+  item.entidadEstado ?? estadoDeEntidad(entidadItem(item)?.estado);
 
 type ProposalLine = {
-  clase: "Presupuesto";
-  presupuesto: string;
+  clase: "Presupuesto" | "Partida";
+  presupuesto?: string;
+  partida?: string;
   origen: string;
   destino: string | null;
   importe: string;
   fechaPrevista: string;
 };
 
+// Origin entity of a proposal line: exactly one reference per class.
+const referenciaLinea = (line: ProposalLine) =>
+  line.partida ?? line.presupuesto ?? null;
+
 // Identity of a proposal line for "do not duplicate" checks (A5): same class,
-// Presupuesto, amount and destination. Existing lines are never recreated.
+// origin entity, amount and destination. Existing lines are never recreated.
 const proposalIdentity = (line: {
   clase: string;
-  presupuesto: string | null;
+  referencia: string | null;
   importe: string | null;
   destino: string | null;
 }) =>
-  `${line.clase}|${line.presupuesto ?? ""}|${line.importe ?? ""}|${line.destino ?? ""}`;
+  `${line.clase}|${line.referencia ?? ""}|${line.importe ?? ""}|${line.destino ?? ""}`;
 
 // Deterministic per-line idempotency key: a retry after a partial failure
 // replays the same attempt instead of inserting a duplicate.
 function proposalKey(repartoId: number, line: ProposalLine) {
   const raw =
-    `${repartoId}-${line.presupuesto}-${line.importe}-${line.destino ?? ""}`.replace(
+    `${repartoId}-${line.clase}-${referenciaLinea(line) ?? ""}-${line.importe}-${line.destino ?? ""}`.replace(
       /[^a-zA-Z0-9-]/g,
       "",
     );
@@ -82,11 +120,23 @@ function proposalKey(repartoId: number, line: ProposalLine) {
 
 const avisoLabels: Record<string, string> = {
   PRESUPUESTO_INACTIVO: "Histórico · no se generará un pendiente nuevo.",
+  PARTIDA_INACTIVA:
+    "Partida inactiva · histórico; no se generará un pendiente nuevo.",
   PRESUPUESTO_NO_DISPONIBLE: "El Presupuesto no está disponible.",
+  PARTIDA_NO_DISPONIBLE: "La Partida no está disponible.",
   PRESUPUESTO_DESTINO: "El destino del Presupuesto cambió.",
-  FUENTE_NO_APORTACION: "El Presupuesto ya no es Aportación a saldo.",
+  PARTIDA_DESTINO: "El destino publicado por D′ cambió.",
+  PARTIDA_NO_RAIZ: "Solo una Partida raíz puede repartirse desde D′.",
+  FUENTE_NO_APORTACION: "La fuente ya no es Aportación a saldo.",
+  SIN_PLAN: "La Partida no tiene línea en el Plan mensual D′ de este Ciclo.",
+  SIN_DESTINO: "La línea del plan no tiene destino configurado.",
+  ATRIBUCION_AMBIGUA:
+    "Atribución ambigua: el destino no tiene una atribución única y fiable.",
+  SIN_PENDIENTE_VERIFICABLE:
+    "Sin Pendiente positivo verificable; no se inventa un importe.",
   SALDO_ORIGEN_NO_ELEGIBLE: "El Saldo de origen ya no es elegible.",
   SALDO_DESTINO_NO_ELEGIBLE: "El Saldo de destino ya no es elegible.",
+  SIN_REPARTO: "El Ciclo todavía no tiene reparto; esta es una propuesta.",
 };
 const avisoTexto = (aviso: string) => avisoLabels[aviso] ?? aviso;
 const motivoTexto = (motivo: RepartoMotivoNoCompletar) => {
@@ -105,6 +155,18 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === "object"
     ? (value as Record<string, unknown>)
     : null;
+
+// Fields the panel does not render as a `Field`: their server-side guidance is
+// appended to the message so it is never invisible to the user.
+const camposSinCampo = ["fuentePlan", "clase", "partida", "presupuesto"] as const;
+
+function mensajeError(value: unknown): string {
+  if (!(value instanceof ApiError)) return (value as Error).message;
+  const extra = camposSinCampo
+    .map((name) => value.fields[name])
+    .filter((text): text is string => typeof text === "string" && text !== "");
+  return extra.length ? `${value.message} ${extra.join(" ")}` : value.message;
+}
 
 type GeneracionError = { lineaId: number; code: string; message: string };
 
@@ -173,6 +235,31 @@ function asPresupuesto(
 function responseLine(value: unknown): RepartoLineaDTO | null {
   const raw = asRecord(value);
   return asLinea(raw?.linea ?? raw?.item ?? value);
+}
+
+/**
+ * Entity of a proposal line. Accepts `Presupuesto` and `Partida` shapes: both
+ * carry id, nombre, fuente, destino and estado; `estado` stays null instead of
+ * being defaulted so the panel never invents an active entity.
+ */
+function asEntidad(value: unknown): RepartoEntidadDTO | null {
+  if (typeof value === "string")
+    return {
+      id: value,
+      nombre: value,
+      fuente: "",
+      destino: null,
+      estado: null,
+    };
+  const raw = asRecord(value);
+  if (!raw || typeof raw.id !== "string") return null;
+  return {
+    id: raw.id,
+    nombre: typeof raw.nombre === "string" ? raw.nombre : raw.id,
+    fuente: typeof raw.fuente === "string" ? raw.fuente : "",
+    destino: typeof raw.destino === "string" ? raw.destino : null,
+    estado: typeof raw.estado === "string" ? raw.estado : null,
+  };
 }
 
 // The line DTO only carries the summary; the operational ficha (origen,
@@ -254,6 +341,19 @@ function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
   };
 }
 
+function asPartida(value: unknown): RepartoLineaDTO["partida"] {
+  const raw = asRecord(value);
+  if (!raw || typeof raw.id !== "string") return null;
+  return {
+    id: raw.id,
+    nombre: typeof raw.nombre === "string" ? raw.nombre : raw.id,
+    estado: typeof raw.estado === "string" ? raw.estado : "Activa",
+    raiz: raw.raiz === true,
+    fuente: typeof raw.fuente === "string" ? raw.fuente : null,
+    destino: typeof raw.destino === "string" ? raw.destino : null,
+  };
+}
+
 function asLinea(value: unknown): RepartoLineaDTO | null {
   const raw = asRecord(value);
   if (!raw) return null;
@@ -261,8 +361,14 @@ function asLinea(value: unknown): RepartoLineaDTO | null {
   const pendiente = raw.pendiente;
   return {
     id: raw.id,
-    clase: raw.clase === "Adicional" ? "Adicional" : "Presupuesto",
+    clase:
+      raw.clase === "Adicional"
+        ? "Adicional"
+        : raw.clase === "Partida" || (!raw.presupuesto && raw.partida)
+          ? "Partida"
+          : "Presupuesto",
     presupuesto: asPresupuesto(raw.presupuesto),
+    partida: asPartida(raw.partida),
     origen: asSaldo(raw.origen),
     destino: asSaldo(raw.destino),
     importe:
@@ -316,6 +422,9 @@ export function normalizeReparto(
           ? ciclo.fin
           : cicloFallback?.fin ?? null,
     },
+    // v28 rows were backfilled to `PlanCiclo`: an old payload without the field
+    // can only be the legacy source, never D′.
+    fuentePlan: raw.fuentePlan === "Dprima" ? "Dprima" : "PlanCiclo",
     estado:
       raw.estado === "Generado" || raw.estado === "Completado"
         ? raw.estado
@@ -346,65 +455,106 @@ export function normalizeReparto(
 function asPropuestaItem(value: unknown): RepartoPropuestaItemDTO | null {
   const raw = asRecord(value);
   if (!raw) return null;
-  const presupuesto = asPresupuesto(raw.presupuesto);
-  if (!presupuesto) return null;
+  const presupuesto = asEntidad(raw.presupuesto);
+  const partida = asEntidad(raw.partida);
+  // Class is server-owned; an older payload only carried `presupuesto`.
+  const clase: "Presupuesto" | "Partida" =
+    raw.clase === "Partida" || (!presupuesto && partida)
+      ? "Partida"
+      : "Presupuesto";
+  const entidad =
+    clase === "Partida" ? partida ?? presupuesto : presupuesto ?? partida;
+  // A line without an origin entity cannot be rendered truthfully: dropping it
+  // is safer than inventing an id, a name or an active state.
+  if (!entidad) return null;
+  const referencia =
+    typeof raw.referencia === "string" && raw.referencia !== ""
+      ? raw.referencia
+      : entidad.id;
   const motivos: string[] = Array.isArray(raw.motivos)
     ? raw.motivos.filter((motivo): motivo is string => typeof motivo === "string")
     : [];
+  const entidadEstado =
+    raw.entidadEstado === "Activa" || raw.entidadEstado === "Inactiva"
+      ? raw.entidadEstado
+      : estadoDeEntidad(entidad.estado);
+  const importeSugerido =
+    raw.importeSugerido === null || raw.importeSugerido === undefined
+      ? null
+      : String(raw.importeSugerido);
   const propuestaRaw = asRecord(raw.propuesta) ?? asRecord(raw.sugerencia);
-  // The increment-2 contract returns `propuestaAutomatica` + `importeSugerido`
-  // instead of a nested proposal object. The origin is intentionally absent:
-  // only the common selector can resolve it.
-  const automatica =
-    raw.propuestaAutomatica === true &&
-    raw.importeSugerido !== null &&
-    raw.importeSugerido !== undefined;
-  const propuesta = propuestaRaw
+  const propuestaManual = propuestaRaw
     ? {
-        clase: "Presupuesto" as const,
+        clase,
         origen:
           typeof propuestaRaw.origen === "string"
             ? propuestaRaw.origen
-            : asSaldo(propuestaRaw.origen)?.id ?? null,
+            : (asSaldo(propuestaRaw.origen)?.id ?? null),
         destino:
           typeof propuestaRaw.destino === "string"
             ? propuestaRaw.destino
-            : asSaldo(propuestaRaw.destino)?.id ?? null,
+            : (asSaldo(propuestaRaw.destino)?.id ?? null),
         importe: String(propuestaRaw.importe ?? ""),
         fechaPrevista:
           typeof propuestaRaw.fechaPrevista === "string"
             ? propuestaRaw.fechaPrevista
             : today(),
       }
-    : automatica
-      ? {
-          clase: "Presupuesto" as const,
-          origen: null,
-          destino: presupuesto.destino,
-          importe: String(raw.importeSugerido),
-          fechaPrevista: today(),
-        }
-      : null;
-  const inactivo = presupuesto.estado !== "Activo";
+    : null;
+  const automatica =
+    raw.propuestaAutomatica === true && importeSugerido !== null;
+  // Server-owned eligibility; only an older payload is derived, and never into
+  // an eligible line.
+  const elegible =
+    typeof raw.elegible === "boolean"
+      ? raw.elegible
+      : entidadEstado === "Activa" && (propuestaManual !== null || automatica);
+  // D8 / ATRIBUCION_AMBIGUA: a non-eligible line never proposes an amount.
+  const propuesta: RepartoPropuestaItemDTO["propuesta"] = !elegible
+    ? null
+    : (propuestaManual ??
+      (automatica && importeSugerido !== null
+        ? {
+            clase,
+            origen: null,
+            destino: entidad.destino,
+            importe: importeSugerido,
+            fechaPrevista: today(),
+          }
+        : null));
   const mantenerEnOrigen =
     raw.mantenerEnOrigen === true ||
     motivos.includes("MANTENER_EN_ORIGEN") ||
-    presupuesto.fuente === "Gasto real";
+    entidad.fuente === "Gasto real";
   const sinPropuesta =
     raw.sinPropuesta === true ||
     motivos.includes("NO_APLICA") ||
-    presupuesto.fuente === "No aplica";
-  const motivoNoElegible = inactivo
-    ? "Histórico · no se generará un pendiente nuevo"
-    : motivos.includes("SIN_DESTINO")
-      ? "El Presupuesto no tiene destino configurado; no se propone automáticamente."
-      : motivos.includes("SALDO_DESTINO_NO_ELEGIBLE")
-        ? "El destino del Presupuesto está inactivo o no es elegible; no se propone automáticamente."
-        : typeof raw.motivoNoElegible === "string"
-          ? raw.motivoNoElegible
-          : null;
+    entidad.fuente === "No aplica";
+  const motivoNoElegible =
+    entidadEstado === "Inactiva"
+      ? clase === "Partida"
+        ? "Partida inactiva · se conserva la línea histórica y no se generará un pendiente nuevo"
+        : "Histórico · no se generará un pendiente nuevo"
+      : motivos.includes("ATRIBUCION_AMBIGUA")
+        ? "Atribución ambigua: el destino no tiene una atribución única y fiable; no se propone automáticamente."
+        : motivos.includes("SIN_DESTINO")
+          ? "La línea del plan no tiene destino configurado; no se propone automáticamente."
+          : motivos.includes("SALDO_DESTINO_NO_ELEGIBLE")
+            ? "El destino está inactivo o no es elegible; no se propone automáticamente."
+            : motivos.includes("SIN_PLAN")
+              ? "La Partida no tiene línea en el Plan mensual D′ de este Ciclo."
+              : motivos.includes("FUENTE_NO_APORTACION")
+                ? "La fuente del plan ya no es Aportación a saldo."
+                : motivos.includes("SIN_PENDIENTE_VERIFICABLE")
+                  ? "Sin Pendiente positivo verificable; no se inventa un importe."
+                  : typeof raw.motivoNoElegible === "string"
+                    ? raw.motivoNoElegible
+                    : null;
   return {
+    clase,
+    referencia,
     presupuesto,
+    partida,
     delMes:
       raw.delMes === null || raw.delMes === undefined
         ? null
@@ -425,12 +575,26 @@ function asPropuestaItem(value: unknown): RepartoPropuestaItemDTO | null {
           ? raw.motivo
           : null,
     sinPlanificar: raw.sinPlanificar === true,
-    // Server-owned: prefer the explicit flag and only derive it for older
-    // payloads that predate the field.
-    elegible:
-      typeof raw.elegible === "boolean"
-        ? raw.elegible
-        : !inactivo && propuesta !== null,
+    entidadEstado,
+    importeSugerido,
+    propuestaAutomatica: automatica,
+    elegible,
+    motivos,
+    lineasExistentes: Array.isArray(raw.lineasExistentes)
+      ? raw.lineasExistentes.flatMap((entry) => {
+          const linea = asRecord(entry);
+          if (!linea || typeof linea.id !== "number") return [];
+          return [
+            {
+              id: linea.id,
+              importe:
+                linea.importe === null || linea.importe === undefined
+                  ? "0"
+                  : String(linea.importe),
+            },
+          ];
+        })
+      : [],
     motivoNoElegible,
     propuesta,
     mantenerEnOrigen,
@@ -470,6 +634,10 @@ export function normalizePropuesta(value: unknown): RepartoPropuestaDTO {
       inicio: typeof ciclo?.inicio === "string" ? ciclo.inicio : "",
       fin: typeof ciclo?.fin === "string" ? ciclo.fin : null,
     },
+    // The server always declares the source it read; the legacy source is the
+    // only safe default for a payload that predates amendment C.
+    fuentePlan: raw.fuentePlan === "Dprima" ? "Dprima" : "PlanCiclo",
+    reparto: normalizeReparto(raw.reparto),
     revision: typeof raw.revision === "number" ? raw.revision : 1,
     contextRevision:
       typeof raw.contextRevision === "string" ? raw.contextRevision : "",
@@ -491,11 +659,11 @@ export function normalizePropuesta(value: unknown): RepartoPropuestaDTO {
       motivo: typeof periodo?.motivo === "string" ? periodo.motivo : null,
     },
     origenComunSugerido: asSaldo(raw.origenComunSugerido),
-    motivoOrigen:
-      typeof raw.motivoOrigen === "string"
-        ? raw.motivoOrigen
-        : typeof raw.origenComunMotivo === "string"
-          ? raw.origenComunMotivo
+    origenComunMotivo:
+      typeof raw.origenComunMotivo === "string"
+        ? raw.origenComunMotivo
+        : typeof raw.motivoOrigen === "string"
+          ? raw.motivoOrigen
           : null,
     origenes: rawSaldos
       .map(asSaldo)
@@ -503,6 +671,9 @@ export function normalizePropuesta(value: unknown): RepartoPropuestaDTO {
     items: rawItems
       .map(asPropuestaItem)
       .filter((item): item is RepartoPropuestaItemDTO => !!item),
+    avisos: Array.isArray(raw.avisos)
+      ? raw.avisos.filter((aviso): aviso is string => typeof aviso === "string")
+      : [],
   };
 }
 
@@ -617,6 +788,8 @@ export function normalizeSeguimiento(
                   typeof value.presupuesto === "string"
                     ? value.presupuesto
                     : null,
+                partida:
+                  typeof value.partida === "string" ? value.partida : null,
                 motivo:
                   typeof value.motivo === "string" ? value.motivo : "",
               },
@@ -641,6 +814,8 @@ export function normalizeSeguimiento(
                   typeof value.presupuesto === "string"
                     ? value.presupuesto
                     : null,
+                partida:
+                  typeof value.partida === "string" ? value.partida : null,
                 motivos: Array.isArray(value.motivos)
                   ? value.motivos.filter(
                       (motivo): motivo is string => typeof motivo === "string",
@@ -659,37 +834,90 @@ export function generarEtiqueta(n: number) {
   return n === 1 ? "Generar 1 pendiente" : `Generar ${n} pendientes`;
 }
 
-const propuestaColumns: TableColumn<RepartoPropuestaItemDTO>[] = [
+/**
+ * Creation payload of the reparto. The plan source travels with the reparto and
+ * the server fixes it forever: it is never mixed and never switched after
+ * generating pendientes (SPEC36 §0.1, AC-26).
+ */
+export function payloadCrearReparto(
+  fuentePlan: RepartoFuentePlan,
+  origenComun: string,
+) {
+  return { fuentePlan, origenComun: origenComun || null };
+}
+
+/**
+ * Line payload for `POST /repartos/:id/lineas`. Exactly one origin reference per
+ * class — Presupuesto for `PlanCiclo`, Partida for `Dprima` — because a reparto
+ * never mixes sources (SPEC36 §0.1). A non-eligible line never becomes a line.
+ */
+export function payloadLineaPropuesta(
+  item: RepartoPropuestaItemDTO,
+  origen: string,
+): ProposalLine | null {
+  if (!item.elegible || !item.propuesta) return null;
+  // Never send `referencia`: the line body is validated field by field and the
+  // entity id travels in `presupuesto` or `partida`, not as a Referencia (D10).
+  return {
+    clase: item.clase,
+    ...(item.clase === "Partida"
+      ? { partida: item.referencia }
+      : { presupuesto: item.referencia }),
+    origen,
+    destino: entidadItem(item)?.destino ?? null,
+    importe: item.propuesta.importe,
+    fechaPrevista: item.propuesta.fechaPrevista || today(),
+  };
+}
+
+// Column label for the published Pendiente: E2.3 (Presupuesto) or D′ (Partida).
+const pendienteHeader = (fuente: RepartoFuentePlan) =>
+  fuente === "Dprima" ? "Pendiente D′ / Estado" : "Pendiente E2.3 / Estado";
+
+const propuestaColumns = (
+  fuente: RepartoFuentePlan,
+): TableColumn<RepartoPropuestaItemDTO>[] => [
   {
-    id: "presupuesto",
-    header: "Presupuesto / Fuente",
-    cell: (item) => (
-      <>
-        <strong>{item.presupuesto.nombre}</strong>
-        <small className="table-id">
-          {item.presupuesto.id} · {item.presupuesto.fuente || "Fuente no disponible"}
-        </small>
-        {item.presupuesto.estado !== "Activo" && <Tag inactive>Histórico</Tag>}
-        {item.motivo && <p className="help">{item.motivo}</p>}
-      </>
-    ),
+    id: "entidad",
+    header: "Entidad / Fuente",
+    cell: (item) => {
+      const entidad = entidadItem(item);
+      const estado = entidadEstadoItem(item);
+      return (
+        <>
+          <Tag>{item.clase}</Tag>
+          <strong>{entidad?.nombre ?? "Entidad no disponible"}</strong>
+          <small className="table-id">
+            {item.referencia} · {entidad?.fuente || "Fuente no disponible"}
+          </small>
+          {estado === "Inactiva" && <Tag inactive>Histórico</Tag>}
+          {estado === null && (
+            <p className="help">Estado de la entidad no disponible.</p>
+          )}
+          {item.motivo && <p className="help">{item.motivo}</p>}
+        </>
+      );
+    },
   },
   {
     id: "destino",
     header: "Destino",
-    cell: (item) => (
-      <>
-        {item.presupuesto.destino ?? "Sin destino configurado"}
-        {item.presupuesto.fuente === "Gasto real" && (
-          <p className="help">
-            Destino del Presupuesto, no una reserva ni financiación necesaria.
-          </p>
-        )}
-        {item.presupuesto.fuente === "No aplica" && (
-          <p className="help">No aplica · sin propuesta de financiación.</p>
-        )}
-      </>
-    ),
+    cell: (item) => {
+      const entidad = entidadItem(item);
+      return (
+        <>
+          {entidad?.destino ?? "Sin destino configurado"}
+          {entidad?.fuente === "Gasto real" && (
+            <p className="help">
+              Destino del plan, no una reserva ni financiación necesaria.
+            </p>
+          )}
+          {entidad?.fuente === "No aplica" && (
+            <p className="help">No aplica · sin propuesta de financiación.</p>
+          )}
+        </>
+      );
+    },
   },
   {
     id: "delMes",
@@ -705,7 +933,7 @@ const propuestaColumns: TableColumn<RepartoPropuestaItemDTO>[] = [
   },
   {
     id: "pendiente",
-    header: "Pendiente E2.3 / Estado",
+    header: pendienteHeader(fuente),
     cell: (item) => (
       <>
         {amount(item.pendiente)}
@@ -728,13 +956,10 @@ const propuestaColumns: TableColumn<RepartoPropuestaItemDTO>[] = [
 ];
 
 function PropuestaTexto({ item }: { item: RepartoPropuestaItemDTO }) {
-  if (item.presupuesto.estado !== "Activo")
-    return (
-      <>
-        <Tag inactive>Histórico</Tag>
-        <p className="help">No se generará un pendiente nuevo.</p>
-      </>
-    );
+  const entidad = entidadItem(item);
+  const estado = entidadEstadoItem(item);
+  // A source line with no proposal of its own always wins over the entity state:
+  // Gasto real keeps its funds and No aplica is not comparable.
   if (item.mantenerEnOrigen)
     return (
       <>
@@ -748,6 +973,17 @@ function PropuestaTexto({ item }: { item: RepartoPropuestaItemDTO }) {
         <strong>Sin propuesta</strong>
         <p className="help">
           No se calculan Pendiente ni Estado comparables; no se inventa importe.
+        </p>
+      </>
+    );
+  if (estado === "Inactiva")
+    return (
+      <>
+        <Tag inactive>Histórico</Tag>
+        <p className="help">
+          {item.clase === "Partida"
+            ? "La Partida está inactiva: se conserva la línea histórica y no se genera un pendiente nuevo."
+            : "No se generará un pendiente nuevo."}
         </p>
       </>
     );
@@ -774,7 +1010,7 @@ function PropuestaTexto({ item }: { item: RepartoPropuestaItemDTO }) {
     <>
       <strong>
         {item.propuesta.origen ?? "Origen a decidir"} →{" "}
-        {item.propuesta.destino ?? item.presupuesto.destino ?? "Destino no disponible"}
+        {item.propuesta.destino ?? entidad?.destino ?? "Destino no disponible"}
       </strong>
       <p>
         {amount(item.propuesta.importe)} · prevista{" "}
@@ -787,25 +1023,30 @@ function PropuestaTexto({ item }: { item: RepartoPropuestaItemDTO }) {
 export function RepartoPropuestaTabla({
   items,
   empty,
+  fuentePlan = "PlanCiclo",
 }: {
   items: RepartoPropuestaItemDTO[];
   empty?: ReactNode;
+  /** Active source of the preview; only changes the published Pendiente label. */
+  fuentePlan?: RepartoFuentePlan;
 }) {
+  const columns = propuestaColumns(fuentePlan);
+  const rowKey = (item: RepartoPropuestaItemDTO) => item.referencia;
+  const rowClassName = (item: RepartoPropuestaItemDTO) =>
+    entidadEstadoItem(item) === "Inactiva" ? "ui-row-inactive" : undefined;
   return (
     <>
       <div className="desktop-list">
         <Table
-          caption="Propuesta de reparto mensual por Presupuesto"
+          caption="Propuesta de reparto mensual por entidad del origen activo"
           label="Tabla de propuesta de reparto mensual"
-          columns={propuestaColumns}
+          columns={columns}
           rows={items}
-          rowKey={(item) => item.presupuesto.id}
-          rowClassName={(item) =>
-            item.presupuesto.estado !== "Activo" ? "ui-row-inactive" : undefined
-          }
+          rowKey={rowKey}
+          rowClassName={rowClassName}
           empty={
             empty ?? (
-              <EmptyState title="Sin presupuestos elegibles" icon="○">
+              <EmptyState title="Sin entidades elegibles" icon="○">
                 No hay líneas comparables. No se usan destinos inactivos ni
                 importes inventados.
               </EmptyState>
@@ -814,17 +1055,15 @@ export function RepartoPropuestaTabla({
         />
       </div>
       <DataList
-        columns={propuestaColumns}
+        columns={columns}
         rows={items}
-        rowKey={(item) => item.presupuesto.id}
-        rowClassName={(item) =>
-          item.presupuesto.estado !== "Activo" ? "ui-row-inactive" : undefined
-        }
+        rowKey={rowKey}
+        rowClassName={rowClassName}
         label="Propuesta de reparto móvil"
         className="mobile-list"
         empty={
           empty ?? (
-            <EmptyState title="Sin presupuestos elegibles" icon="○">
+            <EmptyState title="Sin entidades elegibles" icon="○">
               No hay líneas comparables. No se usan destinos inactivos ni
               importes inventados.
             </EmptyState>
@@ -844,13 +1083,18 @@ const borradorColumns = (
 ): TableColumn<RepartoLineaDTO>[] => [
   {
     id: "linea",
-    header: "Línea",
+    header: "Entidad de la línea",
     cell: (line) => (
       <>
         <strong>{lineLabel(line)}</strong>
         <small className="table-id">
-          {line.clase === "Adicional" ? "Transferencia adicional" : "Presupuesto"}
+          {line.clase === "Adicional" ? "Transferencia adicional" : line.clase}
         </small>
+        {(line.clase === "Partida"
+          ? line.partida?.estado === "Inactiva"
+          : line.presupuesto?.estado === "Inactivo") && (
+          <Tag inactive>Histórico</Tag>
+        )}
       </>
     ),
   },
@@ -1029,7 +1273,7 @@ export function RepartoSeguimientoPanel({
         <Alert>
           <strong>Línea histórica.</strong>{" "}
           {avisos.d8.map((aviso) => aviso.motivo).join(" ")} No se crea un
-          pendiente nuevo hacia un Presupuesto inactivo.
+          pendiente nuevo hacia una entidad inactiva.
         </Alert>
       )}
       {avisos.contexto.length > 0 && (
@@ -1188,6 +1432,9 @@ export function RepartoMensual({
   const [createKey, setCreateKey] = useState(() => crypto.randomUUID());
   const [generateKey, setGenerateKey] = useState(() => crypto.randomUUID());
   const [addKey, setAddKey] = useState(() => crypto.randomUUID());
+  // SPEC36 amendment C — the plan source is chosen before the reparto exists and
+  // sent to the server, which fixes it forever. D′ is never activated implicitly.
+  const [fuentePlan, setFuentePlan] = useState<RepartoFuentePlan>("PlanCiclo");
   const [generationErrors, setGenerationErrors] = useState<GeneracionError[]>(
     [],
   );
@@ -1206,6 +1453,7 @@ export function RepartoMensual({
     setEditing(null);
     setExcluding(null);
     setAdding(false);
+    setFuentePlan("PlanCiclo");
     setCreateKey(crypto.randomUUID());
     setGenerateKey(crypto.randomUUID());
     setAddKey(crypto.randomUUID());
@@ -1251,26 +1499,43 @@ export function RepartoMensual({
       // Never leave a stale `puedeCompletar:true` on screen when the refresh
       // fails: invalidate the panel instead.
       setSeguimiento(null);
-      setError((e as Error).message);
+      setError(mensajeError(e));
     }
   }
 
-  async function cargar() {
+  /**
+   * Reads the Cycle's reparto and its preview together. The reparto, when it
+   * exists, owns the plan source: the preview is requested with that source and
+   * the selector is synced, so the panel never asks for a source the server
+   * would reject with 409 FUENTE_PLAN_INMUTABLE.
+   */
+  async function cargar(fuente?: RepartoFuentePlan) {
     const current = ++request.current;
     setLoading(true);
     setError("");
     setNotice("");
     try {
-      const [propuestaResult, repartoResult, saldosResult] =
-        await Promise.allSettled([
-          api(`/ciclos/${ciclo.id}/reparto/propuesta`),
-          api<{ reparto: RepartoWireDTO }>(`/ciclos/${ciclo.id}/reparto`),
-          api("/saldos?estado=Activa&page=1"),
-        ]);
+      const [repartoResult, saldosResult] = await Promise.allSettled([
+        api<{ reparto: RepartoWireDTO }>(`/ciclos/${ciclo.id}/reparto`),
+        api("/saldos?estado=Activa&page=1"),
+      ]);
       if (current !== request.current) return;
-      if (propuestaResult.status === "rejected")
-        throw propuestaResult.reason;
-      const p = normalizePropuesta(propuestaResult.value);
+      let r: RepartoDTO | null = null;
+      if (repartoResult.status === "fulfilled") {
+        r = normalizeReparto(repartoResult.value, ciclo);
+      } else if (
+        !(repartoResult.reason instanceof ApiError) ||
+        repartoResult.reason.status !== 404
+      ) {
+        throw repartoResult.reason;
+      }
+      const source: RepartoFuentePlan = r?.fuentePlan ?? fuente ?? fuentePlan;
+      const propuestaResult = await api(
+        `/ciclos/${ciclo.id}/reparto/propuesta?` +
+          new URLSearchParams({ fuentePlan: source }),
+      );
+      if (current !== request.current) return;
+      const p = normalizePropuesta(propuestaResult);
       const saldosRaw =
         saldosResult.status === "fulfilled"
           ? asRecord(saldosResult.value)?.saldos
@@ -1289,31 +1554,24 @@ export function RepartoMensual({
               )
           : [];
       setPropuesta({ ...p, origenes });
+      // The declared source of the reparto always wins: it never changes.
+      setFuentePlan(r?.fuentePlan ?? p.fuentePlan);
       if (!origenComun && p.origenComunSugerido)
         setOrigenComun(p.origenComunSugerido.id);
-      let r: RepartoDTO | null = null;
-      if (repartoResult.status === "fulfilled") {
-        r = normalizeReparto(repartoResult.value, p.ciclo);
-      } else if (
-        !(repartoResult.reason instanceof ApiError) ||
-        repartoResult.reason.status !== 404
-      ) {
-        throw repartoResult.reason;
-      }
       setReparto(r);
       if (r?.origenComun) setOrigenComun(r.origenComun.id);
       if (r && r.estado !== "Borrador") {
         try {
           await cargarSeguimiento(r.id);
         } catch (e) {
-          if (current === request.current) setError((e as Error).message);
+          if (current === request.current) setError(mensajeError(e));
         }
       } else {
         setSeguimiento(null);
       }
     } catch (e) {
       if (current === request.current) {
-        setError((e as Error).message);
+        setError(mensajeError(e));
         if (e instanceof ApiError) setFieldErrors(e.fields);
       }
     } finally {
@@ -1341,15 +1599,8 @@ export function RepartoMensual({
 
   function propuestaLineas(origen: string): ProposalLine[] {
     return (propuesta?.items ?? [])
-      .filter((item) => item.elegible && item.propuesta)
-      .map((item) => ({
-        clase: "Presupuesto" as const,
-        presupuesto: item.presupuesto.id,
-        origen,
-        destino: item.presupuesto.destino,
-        importe: item.propuesta!.importe,
-        fechaPrevista: item.propuesta!.fechaPrevista || today(),
-      }));
+      .map((item) => payloadLineaPropuesta(item, origen))
+      .filter((line): line is ProposalLine => line !== null);
   }
 
   async function createProposalLines(repartoId: number, origen: string) {
@@ -1360,7 +1611,7 @@ export function RepartoMensual({
       (fresh?.lineas ?? []).map((line) =>
         proposalIdentity({
           clase: line.clase,
-          presupuesto: line.presupuesto?.id ?? null,
+          referencia: line.partida?.id ?? line.presupuesto?.id ?? null,
           importe: line.importe,
           destino: line.destino?.id ?? null,
         }),
@@ -1370,7 +1621,14 @@ export function RepartoMensual({
       // The server rejects origin === destination; never attempt it and let
       // the panel explain why the proposal is skipped.
       if (!line.destino || line.destino === origen) return false;
-      return !existing.has(proposalIdentity(line));
+      return !existing.has(
+        proposalIdentity({
+          clase: line.clase,
+          referencia: referenciaLinea(line),
+          importe: line.importe,
+          destino: line.destino,
+        }),
+      );
     });
     try {
       for (const line of lineas) {
@@ -1403,16 +1661,19 @@ export function RepartoMensual({
   }
 
   async function preparar() {
-    if (!propuesta) return;
+    // Never create a reparto from a preview that is still being replaced by
+    // another plan source: the source and the proposal must match.
+    if (!propuesta || loading) return;
     setBusy(true);
     resetFieldErrors();
     try {
       const data = await api(
         `/ciclos/${ciclo.id}/reparto`,
         "POST",
-        // PlanCiclo sigue siendo el origen operativo: D′ no se activa sin una
-        // decisión explícita y su selector llega con la Issue #411.
-        { fuentePlan: "PlanCiclo", origenComun: origenComun || null },
+        // The source is chosen once, before the reparto exists, and the server
+        // fixes it: `PlanCiclo` stays the operational default and D′ is never
+        // activated implicitly (SPEC36 §0.1).
+        payloadCrearReparto(fuentePlan, origenComun),
         { "idempotency-key": createKey },
       );
       const creado = asRecord(data)?.creado !== false;
@@ -1441,7 +1702,17 @@ export function RepartoMensual({
       );
       if (!refreshed) setReparto(r);
     } catch (e) {
-      setError((e as Error).message);
+      // A reparto created concurrently with another source is never switched:
+      // the server answer wins for the next attempt.
+      if (
+        e instanceof ApiError &&
+        e.code === "FUENTE_PLAN_INMUTABLE" &&
+        (e.data?.fuentePlan === "PlanCiclo" || e.data?.fuentePlan === "Dprima")
+      ) {
+        setFuentePlan(e.data.fuentePlan);
+        void cargar(e.data.fuentePlan);
+      }
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1479,7 +1750,7 @@ export function RepartoMensual({
         reparto.id,
         refreshed?.estado ?? reparto.estado,
       );
-      setError((e as Error).message);
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1505,7 +1776,7 @@ export function RepartoMensual({
       setReparto(r);
       setNotice("Borrador guardado. Puedes cerrar y continuar más tarde.");
     } catch (e) {
-      setError((e as Error).message);
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1568,7 +1839,7 @@ export function RepartoMensual({
         setNotice("Sin cambios en la línea.");
         return;
       }
-      setError((e as Error).message);
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1614,7 +1885,7 @@ export function RepartoMensual({
         incluida ? "Línea incluida de nuevo." : "Línea excluida sin crear pendiente.",
       );
     } catch (e) {
-      setError((e as Error).message);
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1668,7 +1939,7 @@ export function RepartoMensual({
         reparto.id,
         refreshed?.estado ?? reparto.estado,
       );
-      setError((e as Error).message);
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1723,7 +1994,7 @@ export function RepartoMensual({
         );
         setFieldErrors(e.fields);
       }
-      setError((e as Error).message);
+      setError(mensajeError(e));
       // The generation transaction rolled back, but reloading keeps the panel
       // aligned with the persisted draft after any failure.
       await reloadReparto(reparto.id).catch(() => null);
@@ -1751,7 +2022,7 @@ export function RepartoMensual({
       await cargarSeguimiento(reparto.id);
       setNotice("Reparto completado. Conserva el seguimiento de sus líneas.");
     } catch (e) {
-      setError((e as Error).message);
+      setError(mensajeError(e));
       if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
@@ -1765,7 +2036,7 @@ export function RepartoMensual({
     (reparto?.lineas ?? []).map((line) =>
       proposalIdentity({
         clase: line.clase,
-        presupuesto: line.presupuesto?.id ?? null,
+        referencia: line.partida?.id ?? line.presupuesto?.id ?? null,
         importe: line.importe,
         destino: line.destino?.id ?? null,
       }),
@@ -1775,12 +2046,12 @@ export function RepartoMensual({
     (item) => item.elegible && item.propuesta,
   );
   const propuestasDisponibles = propuestasCandidatas.filter((item) => {
-    const destino = item.presupuesto.destino;
+    const destino = entidadItem(item)?.destino ?? null;
     if (!destino || destino === origenComun) return false;
     return !existingLineIdentities.has(
       proposalIdentity({
-        clase: "Presupuesto",
-        presupuesto: item.presupuesto.id,
+        clase: item.clase,
+        referencia: item.referencia,
         importe: item.propuesta!.importe,
         destino,
       }),
@@ -1790,7 +2061,7 @@ export function RepartoMensual({
     origenComun === ""
       ? []
       : propuestasCandidatas.filter(
-          (item) => item.presupuesto.destino === origenComun,
+          (item) => entidadItem(item)?.destino === origenComun,
         );
   const propuestasPendientes = propuestasDisponibles.length;
   const estado: RepartoEstado = reparto?.estado ?? "Borrador";
@@ -1808,9 +2079,10 @@ export function RepartoMensual({
         <div className="ui-form-section-copy">
           <h2 className="ui-form-section-title">Reparto mensual</h2>
           <p className="ui-form-section-description">
-            Prepara Transferencias pendientes desde el equivalente mensual E2.3
-            del Plan del ciclo. No ejecuta pagos ni da el plan por ejecutado; los
-            hechos reales siguen siendo Movimientos.
+            Prepara Transferencias pendientes desde el plan mensual del origen
+            elegido: E2.3 por Presupuesto (PlanCiclo) o Plan mensual D′ por
+            Partida raíz (Dprima). No ejecuta pagos ni da el plan por ejecutado;
+            los hechos reales siguen siendo Movimientos.
           </p>
         </div>
         {!open ? (
@@ -1856,22 +2128,37 @@ export function RepartoMensual({
             </Alert>
           )}
           {notice && <p role="status">{notice}</p>}
-          {loading ? (
+          {loading && !propuesta ? (
             <Skeleton lines={4} label="Cargando reparto mensual" />
           ) : propuesta ? (
             <>
-              <section className="panel" aria-label="Propuesta E2.3">
-                <h3>Propuesta E2.3 · Ciclo {ciclo.id}</h3>
+              <section
+                className="panel"
+                aria-label={
+                  propuesta.fuentePlan === "Dprima"
+                    ? "Propuesta D′"
+                    : "Propuesta E2.3"
+                }
+              >
+                <h3>
+                  {propuesta.fuentePlan === "Dprima"
+                    ? "Propuesta D′ · Plan mensual"
+                    : "Propuesta E2.3"}{" "}
+                  · Ciclo {ciclo.id}
+                </h3>
                 <p>
-                  Del mes, Ejecutado, Pendiente y Estado se leen del plan
-                  mensual; el reparto no los recalcula ni prorratea el Plan
-                  anual.
+                  {propuesta.fuentePlan === "Dprima"
+                    ? "Del mes, Ejecutado, Pendiente y Estado se leen del Plan mensual D′ por Partida raíz; el reparto no los recalcula ni prorratea el Plan anual."
+                    : "Del mes, Ejecutado, Pendiente y Estado se leen del plan mensual; el reparto no los recalcula ni prorratea el Plan anual."}
                 </p>
                 {propuesta.sinPlan ? (
                   <EmptyState title="Sin plan" icon="○">
-                    El Ciclo no tiene líneas de planificación. No se inventan
-                    líneas ni importes; solo puedes decidir transferencias
-                    adicionales.
+                    El Ciclo no tiene líneas de planificación en{" "}
+                    {propuesta.fuentePlan === "Dprima"
+                      ? "el Plan mensual D′"
+                      : "el plan del ciclo"}
+                    . No se inventan líneas ni importes; solo puedes decidir
+                    transferencias adicionales.
                   </EmptyState>
                 ) : propuesta.periodo.motivo ? (
                   <Alert>
@@ -1881,14 +2168,19 @@ export function RepartoMensual({
                   </Alert>
                 ) : null}
                 {propuesta.items.length === 0 ? (
-                  <EmptyState title="Sin presupuestos" icon="○">
-                    No hay Presupuestos que mostrar en este Ciclo.
+                  <EmptyState title="Sin líneas del plan" icon="○">
+                    {propuesta.fuentePlan === "Dprima"
+                      ? "No hay Partidas raíz publicadas en el Plan mensual D′ de este Ciclo."
+                      : "No hay Presupuestos que mostrar en este Ciclo."}
                   </EmptyState>
                 ) : (
-                  <RepartoPropuestaTabla items={propuesta.items} />
+                  <RepartoPropuestaTabla
+                    items={propuesta.items}
+                    fuentePlan={propuesta.fuentePlan}
+                  />
                 )}
                 <p className="help">
-                  {propuesta.motivoOrigen ??
+                  {propuesta.origenComunMotivo ??
                     "El origen común es un valor por defecto. Cambiarlo no reescribe las líneas ya configuradas ni infiere una cuenta de nómina por nombre o banco."}
                 </p>
               </section>
@@ -1896,6 +2188,38 @@ export function RepartoMensual({
               {!reparto && (
                 <section className="panel" aria-label="Preparar borrador">
                   <h3>Preparar borrador</h3>
+                  <Field
+                    id="reparto-fuente-plan"
+                    label="Origen del plan"
+                    help="Decide de dónde se lee el plan mensual de este Ciclo. Queda fijado al crear el reparto y no se puede cambiar después."
+                    error={fieldErrors.fuentePlan}
+                  >
+                    <select
+                      value={fuentePlan}
+                      disabled={busy}
+                      onChange={(e) => {
+                        const next = e.target.value as RepartoFuentePlan;
+                        setFuentePlan(next);
+                        // The preview is read from the chosen source; nothing is
+                        // written and no reparto is created here.
+                        resetFieldErrors();
+                        void cargar(next);
+                      }}
+                    >
+                      <option value="PlanCiclo">
+                        Plan del ciclo · Presupuesto (E2.3)
+                      </option>
+                      <option value="Dprima">
+                        Plan mensual D′ · Partida raíz (no activado por defecto)
+                      </option>
+                    </select>
+                  </Field>
+                  <p className="help">
+                    <strong>{fuentePlanLabel(fuentePlan)}.</strong> D′ no está
+                    activado por defecto: solo se usa si lo eliges aquí. La
+                    procedencia es inmutable: un reparto no mezcla Presupuesto y
+                    Partida ni cambia de origen después de generarse.
+                  </p>
                   <Field
                     id="reparto-origen-comun"
                     label="Origen común"
@@ -1922,7 +2246,7 @@ export function RepartoMensual({
                   <div className="actions">
                     <button
                       className="primary"
-                      disabled={busy}
+                      disabled={busy || loading}
                       onClick={preparar}
                     >
                       Preparar reparto del ciclo
@@ -1947,6 +2271,12 @@ export function RepartoMensual({
                       disponibles, pero no se edita, añade ni genera.
                     </Alert>
                   )}
+                  <p className="help">
+                    <strong>Procedencia del reparto:</strong>{" "}
+                    {fuentePlanLabel(reparto.fuentePlan ?? "PlanCiclo")}. Es de
+                    solo lectura: no se mezcla con el otro origen ni cambia al
+                    crear o generar líneas.
+                  </p>
                   <Field
                     id="reparto-origen-comun-borrador"
                     label="Origen común"
@@ -1974,7 +2304,10 @@ export function RepartoMensual({
                     <Alert>
                       El origen común coincide con el destino de{" "}
                       {colisionesOrigen
-                        .map((item) => item.presupuesto.nombre)
+                        .map(
+                          (item) =>
+                            entidadItem(item)?.nombre ?? item.referencia,
+                        )
                         .join(", ")}
                       . Esas líneas no se crean porque origen y destino deben ser
                       distintos.
