@@ -276,13 +276,20 @@ function App() {
                     const active = isNavigationActive(item, path);
                     const startsLegacy =
                       item.legacy && !group.items[index - 1]?.legacy;
+                    const startsSecondary =
+                      item.secondary && !group.items[index - 1]?.secondary;
                     return (
                       <Fragment key={item.href}>
                         {startsLegacy && (
                           <p className="nav-legacy-label">Heredado</p>
                         )}
+                        {startsSecondary && (
+                          <p className="nav-legacy-label nav-secondary-label">
+                            Auxiliar
+                          </p>
+                        )}
                         <a
-                          className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}`}
+                          className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}${item.secondary ? " nav-link-secondary" : ""}`}
                           href={item.href}
                           aria-current={active ? "page" : undefined}
                           onClick={(e) => {

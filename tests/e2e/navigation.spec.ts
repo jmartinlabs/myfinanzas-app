@@ -166,6 +166,12 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   const casos = sections.filter({ hasText: "Casos y gastos especiales" });
   await casos.locator(".nav-group-toggle").click();
   await expect(casos.getByRole("link", { name: "Comida", exact: true })).toBeVisible();
+  // VIS-25: Revisión Comida es auxiliar, no legado.
+  await expect(casos.locator(".nav-secondary-label")).toContainText("Auxiliar");
+  await expect(casos.locator(".nav-legacy-label")).toHaveCount(0);
+  await expect(
+    casos.getByRole("link", { name: "Revisión Comida", exact: true }),
+  ).toHaveClass(/nav-link-secondary/);
   await expect(
     casos.getByRole("link", { name: "Comida · hechos", exact: true }),
   ).toHaveCount(0);
