@@ -1546,6 +1546,22 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("blocks only itself", text)
         self.assertNotIn("the inventory is not a queue", text)
 
+    def test_work_issue_requires_loading_orchestrate_before_processing(self):
+        """A reference to another Skill is not a load: the obligation must be explicit."""
+        text = self.SKILL.read_text(encoding="utf-8")
+        for token in ("**This Skill never runs alone.**", "A reference is not a load",
+                      "Hermes: `/orchestrate` or `skill_view('orchestrate')`",
+                      "Claude Code: `/orchestrate`", "the Skill by name",
+                      "Skill that owns each phase", "must not claim it applied them",
+                      "before** reading the queue"):
+            self.assertIn(token, text)
+        marker = text.index("This Skill never runs alone")
+        for following in ("## Selection order", "## Procedure", "## Context recovery"):
+            self.assertLess(marker, text.index(following), following)
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("carga `$orchestrate` antes de leer la cola", agents)
+        self.assertIn("/work-issue hermes", agents)
+
 
 class ContractTests(unittest.TestCase):
     def test_statuses_match_the_project_definition(self):
