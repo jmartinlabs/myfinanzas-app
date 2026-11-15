@@ -138,6 +138,10 @@ class ValidationTests(unittest.TestCase):
    ('.agents/skills/dev/SKILL.md', 'negative/integration cases before code'),
    ('.agents/skills/dev/SKILL.md', 'authorized scope includes branch/PR publication'),
    ('.agents/skills/task/SKILL.md', 'execution platform and operation owners before code'),
+   ('.agents/skills/task/SKILL.md', '~:Inspect `git status` including untracked files'),
+   ('.agents/skills/task/SKILL.md', '~:never overwrite, discard, stage or claim them'),
+   ('specs/methodology/epic-orchestration.md', '~:local draft, a registered proposal and a published proposal'),
+   ('specs/methodology/epic-orchestration.md', '~:A local commit alone'),
    ('.agents/skills/task/SKILL.md', 'branch/PR publication follows'),
    ('.agents/skills/task/SKILL.md', 'A required check that fails and can be corrected'),
    ('.agents/skills/tweak/SKILL.md', 'Branch/PR publication follows'),
@@ -145,7 +149,7 @@ class ValidationTests(unittest.TestCase):
   )
   for name,token in cases:
    with self.subTest(name=name,token=token):
-    p=self.root/name; original=p.read_text()
+    p=self.root/name; original=p.read_text(); token=token.removeprefix('~:')
     self.assertIn(token,original)
     try:
      p.write_text(original.replace(token,'REMOVED'))

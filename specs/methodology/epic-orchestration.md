@@ -32,6 +32,12 @@ independent ready work that commits no protected decision: brainstorming or a sp
 draft, a bounded investigation, a work packet for already approved and authorized DEV, or QA
 test design. Do not wait for an unnecessary instruction.
 
+Distinguish a local draft, a registered proposal and a published proposal by evidence, never by
+assertion: a local draft lives only in a working tree and is portable to no other session; a
+registered proposal is persisted in a commit whose SHA can be cited; a published proposal carries
+the remote evidence the project's process requires, such as a push and PR. A local commit alone
+does not prove remote publication.
+
 Preparation never promotes a draft, authorizes DEV, starts QA verification, merges or deploys.
 Replan when a task completes, a result or return arrives, a blocker appears, or an approval or
 dependency changes; consolidate verified results and pending decisions and raise only user or
