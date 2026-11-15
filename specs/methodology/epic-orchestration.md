@@ -6,15 +6,15 @@
 
 This policy applies to complex **Full** work and to Standard work with several independent workstreams. It extends [adaptive workflows](workflows.md) rather than replacing `$roadmap`, `$spec` or `$dev`. Quick remains single-stream by default.
 
-## Persistent board and single writer
+## Persistent state and its single source of truth
 
-Maintain `specs/epic-board.md` when multiple epics or workstreams genuinely require scheduling. For a single feature reuse its progress/testplan. Reconcile the smallest relevant Git/spec/test/approval evidence at session start and major gates; mark missing evidence unknown and never manufacture permission.
+The GitHub Project (Status) is the operational board; `specs/epic-board.md` is historical and must not be maintained as live state. For a single feature reuse its progress/testplan. Reconcile the smallest relevant Git/spec/test/approval evidence at session start and major gates; mark missing evidence unknown and never manufacture permission.
 
-The coordinator is the **only writer** of the shared board. Delegates return concise results, SHA and evidence. Update changed fields at authorization, candidate, QA, blocker or PR milestones, not on every worker message. Approved decisions remain canonical in the specs/guidelines.
+Transitions follow the `$work-issue` protocol: the **user** moves `Backlog → Ready {Phase}`, reviews/accepts and sets `Done`; the **authorized agent** reserves `Ready → {Phase} In Progress`, delivers `{Phase} In Review` and records `Blocked`; the **coordinator** assigns ownership, verifies compliance and reconciles results without authorizing a phase on the user's behalf. Delegates return concise results, SHA and evidence. Keep `Status`, priority, owner and the Issue's next action current at authorization, candidate, QA, blocker or PR milestones, not on every worker message. Approved decisions remain canonical in the specs/guidelines.
 
-Each row has a unique feature ID and tracks stage, scope/dependencies, approval, assigned role, isolated branch/checkout (if applicable), blockers, evidence link, next action and last verification. A ready task is not the same as an approved spec. A PR opened is not a merge.
-Link one current summary; after integration replace stale pending labels with verified
-SHA/PR/check state and retain the historical record as superseded.
+Each Issue carries its unique feature ID and records stage, scope/dependencies, approval, assigned role, isolated branch/checkout (if applicable), blockers, evidence link, next action and last verification. A ready task is not the same as an approved spec. A PR opened is not a merge.
+Link one current summary and keep no second board; after integration replace stale pending
+labels with verified SHA/PR/check state.
 
 ## Stage/gate rules
 
@@ -35,8 +35,7 @@ test design. Do not wait for an unnecessary instruction.
 Preparation never promotes a draft, authorizes DEV, starts QA verification, merges or deploys.
 Replan when a task completes, a result or return arrives, a blocker appears, or an approval or
 dependency changes; consolidate verified results and pending decisions and raise only user or
-advisor decisions that require authorization. Keep the existing board row or current summary
-current with a verifiable next action. Create no second scheduler, queue or status system, and no
+advisor decisions that require authorization. Keep the Issue's `Status` and next action current with a verifiable next step. Create no second scheduler, queue or status system, and no
 artificial task to keep an agent busy. If no independent work is ready, record the pending
 decision or hard dependency and stop.
 
@@ -47,8 +46,8 @@ decision or hard dependency and stop.
 3. Recompute independent **ready** work when a gate, relevant dependency or the look-ahead changes: approved AND authorized implementation; candidate verification; independent spec drafting up to approval; bounded investigation with hypothesis/exit condition; QA test design; and work packets for approved, authorized DEV. Do not wait for an explicit instruction to prepare ready work that commits no protected decision.
 4. Prefer user priorities and critical-path work, but do not starve next-feature preparation because an unrelated investigation is running. When any work is blocked **or merely waiting**, advance the next independent ready item instead of idling. If nothing useful is ready, record the pending decision or hard dependency and stop; never create artificial work.
 5. Delegate substantial ready work to specialists when the client supports it. Prefer one complete implementation packet per authorized feature, then independent QA/review. Parallelize only distinct ready work worth the overhead; concurrent edits require disjoint ownership and authorized isolated checkouts, otherwise serialize. Keep one executor per task.
-6. At major milestones (task completion, result, blocker, candidate, QA, PR) update only changed state and the board's next independent action, and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → publish/update the PR when the scope authorizes it. Do not ask again for unchanged prior permission. A correctable failed check does not end the run. Preparation does not promote a draft or bypass a gate.
-7. End an active run with a concise board summary: completed, underway, waiting on user, blocked, newly ready, and exact next action. State the responsible party, exact human action (or none) and reason for waiting. No claim of background processing between sessions; rescan on next invocation.
+6. At major milestones (task completion, result, blocker, candidate, QA, PR) update only changed state and the Issue's next independent action, and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → publish/update the PR when the scope authorizes it. Do not ask again for unchanged prior permission. A correctable failed check does not end the run. Preparation does not promote a draft or bypass a gate.
+7. End an active run with a concise session summary: completed, underway, waiting on user, blocked, newly ready, and exact next action. State the responsible party, exact human action (or none) and reason for waiting. No claim of background processing between sessions; rescan on next invocation.
 
 Use [dynamic agent management](dynamic-agents.md) with **one executor per task**, substantial autonomous work delegated when supported, and independent QA when required. More workers only when parallelism provides real benefit. This is advisory, not a Codex runtime limit; preserve all financial, security and PR merge approval gates.
 
@@ -57,7 +56,7 @@ Each investigation needs a falsifiable hypothesis, discriminating probe and evid
 
 ## Independent specialist work packets
 
-The coordinator gives each delegate: feature ID, role, source spec and approval state, concrete deliverables, read/write files, dependencies, prohibited actions, validation checks, and a result format (outcome, evidence, blockers, proposed next work). See [role contracts](../../.agents/roles/README.md) and the [work packet template](../../templates/agent-work-packet.md). Specialists cannot promote draft to approved, merge a PR or update the shared board themselves.
+The coordinator gives each delegate: feature ID, role, source spec and approval state, concrete deliverables, read/write files, dependencies, prohibited actions, validation checks, and a result format (outcome, evidence, blockers, proposed next work). See [role contracts](../../.agents/roles/README.md) and the [work packet template](../../templates/agent-work-packet.md). Specialists cannot promote draft to approved, merge a PR or move the Project `Status` outside `$work-issue`.
 Mixed-client workers, preflight, advance escalation notices, fresh context and resource
 isolation follow dynamic-agents.md; no parallel scheduler or implied cross-client control.
 

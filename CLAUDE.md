@@ -8,9 +8,10 @@ sustituye ni reinterpreta `AGENTS.md` ni las Skills existentes.
 
 - Verificar al inicio `AGENTS.md`, las normas locales en
   `specs/methodology/myfinanzas-coordination.md`, Git/GitHub y el checkpoint relevante.
-  Consultar `specs/project.md`, `specs/setup-progress.md`, `specs/epic-board.md`
-  y especificaciones aprobadas según la tarea, su riesgo y las decisiones necesarias.
-  El tablero es reanudable, no prueba autónoma de autorización ni verdad de CI.
+  Consultar `specs/project.md`, `specs/setup-progress.md` y las especificaciones aprobadas
+  según la tarea, su riesgo y las decisiones necesarias. El estado operativo y el gate de fase
+  están en GitHub Issues + Project #4; el histórico `specs/epic-board.md` no refleja el estado
+  actual ni prueba autorización o CI.
 - Invocar `/orchestrate` en Claude Code; su contrato canónico sigue siendo
   `.agents/skills/orchestrate/SKILL.md`. Los otros comandos `/spec`, `/dev`,
   etc. delegan en las Skills equivalentes existentes.

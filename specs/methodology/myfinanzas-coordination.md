@@ -9,8 +9,8 @@ el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora caus
 1. Instrucciones y autorizaciones expresas del usuario; política Git/GitHub de AGENTS.md.
 2. Roadmap, especificaciones y decisiones aprobadas como fuentes canónicas. Referencia
    financiera única v5.11(7), candidata NO estable; jamás inventar reglas económicas.
-3. Contratos de coordinación de esta carpeta y perfiles reutilizables. El tablero es
-   un índice reanudable, no evidencia de aprobación por sí solo. Reconciliarlo siempre.
+3. Contratos de coordinación de esta carpeta y perfiles reutilizables. El estado operativo
+   es el `Status` del Project #4; el tablero Markdown es histórico y no prueba aprobación.
 
 $orchestrate usa [Quick/Standard/Full por riesgo](workflows.md) sin volver a inicializar el proyecto; una petición Quick no autoriza decisiones financieras, desarrollo nuevo ni operaciones protegidas.
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
@@ -33,8 +33,8 @@ proveedor.
   la implementación, las pruebas, la QA independiente, la documentación, las ramas,
   worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos (SPEC,
   investigación, paquete DEV ya autorizado o diseño QA) sin esperar instrucciones innecesarias;
-  consolida resultados y decisiones pendientes y mantén el tablero con una siguiente acción
-  verificable. No crees un segundo scheduler ni trabajo artificial.
+  consolida resultados y decisiones pendientes y mantén el Project y su Issue con una siguiente
+  acción verificable. No crees un segundo scheduler ni trabajo artificial.
   Puede fusionar PR **documentales no normativos** dentro de specs aprobadas tras CI,
   siempre que no cambien reglas financieras, alcance, estado de aprobación, roadmap,
   seguridad ni contratos generados. No fusiona PR funcionales.
@@ -118,7 +118,12 @@ registra qué falta y quién lo resuelve. Las tareas independientes ya autorizad
 En hitos significativos —inicio/cierre de entrega, handoff y antes de un lote intensivo de CI— el coordinador consulta una vez el consumo mensual; no hace polling. Avisa al superar **1.600 min** (referencia GitHub Free) y **2.400 min** (referencia GitHub Pro), indicando plan, restante y renovación cuando Billing los muestre. No repite el mismo umbral en el mismo ciclo sin un cambio relevante. Billing/Included usage es la fuente de cuota; el total de la API incluye minutos gratuitos de repos públicos y no se usa sin filtrar a repos privados. Las alertas son informativas: no bloquean trabajo, CI, PR ni merge, y no modifican planes, presupuestos ni suscripciones. Las alertas nativas 90/100 % se activan en Billing y no sustituyen estos umbrales.
 
 ## Scheduler, propiedad y ejecución
-Solo el coordinador escribe specs/epic-board.md, asigna ownership y reconcilia resultados.
+El coordinador organiza, asigna ownership y reconcilia resultados; `specs/epic-board.md` es
+histórico y no se actualiza por rutina. El `Status` lo mueven el **usuario**
+(`Backlog → Ready {Phase}`, revisión/aceptación, `Done` y el desbloqueo) y el **agente autorizado**
+(`Ready → {Phase} In Progress`, entrega en `{Phase} In Review` y `Blocked` solo desde su propia
+fase en curso) según el protocolo vigente de `$work-issue`; el coordinador verifica el
+cumplimiento y no autoautoriza fases.
 Crear el menor pool útil para tareas independientes listas, no un número fijo por rol.
 Preferir un único ejecutor por entrega; añadir subagentes solo si son independientes
 y su valor supera el coste de coordinación. Comprobar las herramientas y límites reales antes
@@ -170,7 +175,8 @@ constan las particularidades locales:
 realmente controlables y deja checkpoint mínimo en progress/board o
 `specs/session-handoff.md` si no hay documento adecuado. No ejecuta QA nueva, merge,
 despliegue ni reanudación. Una ejecución interrumpida por cuota no garantiza checkpoint.
-Solo el coordinador puede editar epic-board; delegados conservan su propio progreso.
+El `Status` sigue la regla del apartado de propiedad: usuario, agente autorizado y verificación
+del coordinador. Los delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff. Un informe
 intermedio o un check corregible no cierra el turno mientras quede trabajo autorizado:
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción
@@ -236,7 +242,7 @@ No se crean formularios, Skills, workflows ni herramientas de medición paralelo
   pendiente. No mantener consultas/actualizaciones sin información nueva ni prometer
   supervisión después del turno. Ante fallo, analizar la evidencia antes de relanzar;
   mantener la distinción fallo/cancelación/cola y las aprobaciones por PR.
-- Registrar métricas por hito en el tablero y, cuando existan, progress/testplan10:
+- Registrar métricas por hito en la Issue del Project y, cuando existan, progress/testplan10:
   sesión/agente/modelo, intervalo, candidato, pruebas/resultado/motivo de repetición,
   bloqueo operativo con inicio/fin/causa conocida, y hallazgos QA/corrección.
   Usar JSONL e informes existentes, sin activar hooks ni publicar registros sensibles.
@@ -276,7 +282,7 @@ hooks, scripts ni workflows. No autoriza merge, Excel, despliegue o B3/Dev32.
    Un timeout no acredita fallo/progreso/aprobación. Consultar estado si resuelve una
    decisión o hay señal de bloqueo/control justificado; no encadenar dormir, releer
    estado y recordar sin información nueva. Mantener el espaciado CI del piloto previo.
-3. **Contexto vigente.** Un resumen compacto en tablero: autorización/alcance, SHA
+3. **Contexto vigente.** Un resumen compacto en la Issue y el `Status` del Project: autorización/alcance, SHA
    integrado y candidato, PR, enlace a evidencia y próxima acción/gate. Actualizar por
    hito y conservar historia debajo sin copiarla otra vez. Reanudar verificando deltas
    Git/PR y leyendo solo fuentes necesarias o modificadas. Progreso/testplan son dueños

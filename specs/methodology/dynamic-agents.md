@@ -10,7 +10,7 @@ This document defines how `$orchestrate` chooses **how many specialist tasks to 
 
 Available reusable task profiles: [Functional](../../.agents/roles/functional.md), [Implementation](../../.agents/roles/implementation.md), [QA/Review](../../.agents/roles/qa-review.md) and [Infrastructure/DevOps](../../.agents/roles/infrastructure.md). They constrain behavior, but **do not register four running agents** or limit delegation to four instances. The coordinator may assign multiple independent tasks of the same profile or write a temporary, narrowly specified task role (for example, database investigation) using the same rules.
 
-The coordinator is the only scheduler and shared board writer. Subagents must not spawn further agents unless explicitly authorized by the coordinator in a supported runtime; avoid recursive uncontrolled delegation.
+The coordinator is the only scheduler; Project `Status` transitions follow `$work-issue`. Subagents must not spawn further agents unless explicitly authorized by the coordinator in a supported runtime; avoid recursive uncontrolled delegation.
 
 ## Dynamic selection algorithm
 
@@ -192,8 +192,8 @@ authorization, including instructions to merge. Record usage from attributed cli
 telemetry only. The bundled usage reader accounts for Codex only; other-client usage is
 unavailable unless separately collected, not zero or a complete cross-client total.
 
-At closure, update one current summary in the project's single current-state surface — the
-board when it exists, otherwise the progress document — with:
+At closure, update one current summary in the Project Issue (and in the progress document when
+one exists) with:
 authorized scope, revision, QA/check evidence, PR/merge state and next safe action.
 Replace stale current-state labels; preserve historical entries as explicitly superseded.
 Other documents link that summary rather than maintain competing statuses. Token/time
