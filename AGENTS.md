@@ -33,8 +33,8 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
   y [gate de cuota](specs/methodology/dynamic-agents.md#quota-and-dispatch-gate).
 - El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue`
-  (usuario: `Backlog → Ready`, revisión y `Done`; agente autorizado: reserva, `{Phase} In Review` y
-  `Blocked`; coordinador que organiza y verifica); sin tablero paralelo ni autoautorizar fases.
+  (usuario: `Backlog → Ready`, revisión, `Done`, desbloqueo; agente autorizado: reserva, `{Phase} In
+  Review` y `Blocked` solo desde su fase en curso); sin tablero paralelo ni autoautorizar fases.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
   Aprobar una spec no autoriza desarrollo.
 - Un ejecutor por tarea: delegar el trabajo autónomo sustancial, preferir segundo plano cuando

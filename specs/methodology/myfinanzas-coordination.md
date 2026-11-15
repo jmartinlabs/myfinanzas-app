@@ -120,9 +120,10 @@ En hitos significativos —inicio/cierre de entrega, handoff y antes de un lote 
 ## Scheduler, propiedad y ejecución
 El coordinador organiza, asigna ownership y reconcilia resultados; `specs/epic-board.md` es
 histórico y no se actualiza por rutina. El `Status` lo mueven el **usuario**
-(`Backlog → Ready {Phase}`, revisión/aceptación y `Done`) y el **agente autorizado**
-(`Ready → {Phase} In Progress`, entrega en `{Phase} In Review` y `Blocked`) según el protocolo
-vigente de `$work-issue`; el coordinador verifica el cumplimiento y no autoautoriza fases.
+(`Backlog → Ready {Phase}`, revisión/aceptación, `Done` y el desbloqueo) y el **agente autorizado**
+(`Ready → {Phase} In Progress`, entrega en `{Phase} In Review` y `Blocked` solo desde su propia
+fase en curso) según el protocolo vigente de `$work-issue`; el coordinador verifica el
+cumplimiento y no autoautoriza fases.
 Crear el menor pool útil para tareas independientes listas, no un número fijo por rol.
 Preferir un único ejecutor por entrega; añadir subagentes solo si son independientes
 y su valor supera el coste de coordinación. Comprobar las herramientas y límites reales antes

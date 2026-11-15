@@ -7,13 +7,13 @@ description: Stop an active agent session safely, consolidate recoverable work a
 
 This is an explicit **shutdown/transfer command**, not a request to resume, finish the feature, or start another workstream. It applies to the current authorized session only. Follow AGENTS.md and project-specific approval/security rules; this Skill does not grant new permissions.
 
-**MyFinanzas precedence:** follow `specs/methodology/myfinanzas-coordination.md` and local Git/GitHub policy. Never infer authorization for financial edits, E2.1 development, an outstanding PR merge, deployment or financial data use. Only the coordinator may update `specs/epic-board.md`; a delegated worker records its own checkpoint and reports to the coordinator. Respect branch/worktree ownership and prior unpublished work.
+**MyFinanzas precedence:** follow `specs/methodology/myfinanzas-coordination.md` and local Git/GitHub policy. Never infer authorization for financial edits, E2.1 development, an outstanding PR merge, deployment or financial data use. Project `Status` transitions follow `$work-issue`; a delegated worker records its own checkpoint and reports to the coordinator. Respect branch/worktree ownership and prior unpublished work.
 
 ## Inputs
 Read only the relevant current progress/checkpoint, Git status and active worker/tool state available in this session. Use existing task, branch, worktree, PR and approval evidence. Do not reload the entire project unless needed to prevent data loss.
 
 ## Outputs
-A small durable checkpoint in an existing feature progress file, setup-progress file or coordinator-owned epic board; if none is suitable, use `specs/session-handoff.md` (one current handoff, no new documentation tree). Return a concise shutdown receipt with checkpoint path, branch/commit SHA, pending changes, real worker-stop status and next-session instruction.
+A small durable checkpoint in an existing feature progress file, setup-progress file or the Issue's checkpoint; if none is suitable, use `specs/session-handoff.md` (one current handoff, no new documentation tree). Return a concise shutdown receipt with checkpoint path, branch/commit SHA, pending changes, real worker-stop status and next-session instruction.
 
 ## Procedure
 1. **Freeze scope immediately.** Stop issuing new development, research, long tests, delegation, scheduling or PR/merge actions. Override any automatic orchestrator handoff/ready queue. Allow only the minimum steps to reach a safe operation boundary and preserve state. Do not try to finish acceptance criteria.

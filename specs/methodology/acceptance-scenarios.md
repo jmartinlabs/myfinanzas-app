@@ -11,7 +11,7 @@ si solo se ha observado la sesión actual.
 | O2 | Dos paquetes independientes write=[] con perfiles funcional/QA | Dos tareas nativas reales, retornos recibidos; ningún archivo delegado modificado |
 | O3 | Spec06 integrada pero sin permiso dev06; spec07 tampoco autorizada | Retorno blocked para acciones fuera de alcance; no implementación ni nuevas rondas financieras |
 | O4 | Escenario hipotético: dos editores del mismo archivo sin aislamiento | Proponer serialización/reasignación; no abrir ramas/worktrees ni editar para simular prueba |
-| O5 | Reconciliar el Project vs evidencia actual | Coordinador conserva gates y registra bloqueos/resultado; trabajadores no mueven el `Status` |
+| O5 | Reconciliar el Project vs evidencia actual | Coordinador conserva gates y registra bloqueos/resultado; los delegados no mueven el `Status`, solo el usuario y el agente autorizado según `$work-issue` |
 | O6 | Delegación no disponible en otra sesión | Revisar fallback secuencial; no afirmar que se probó un cliente sin herramientas |
 | O7 | Dos chats externos sin checkpoint | No asumir que están subordinados; pedir/verificar checkpoint antes de transferir trabajo |
 | O8 | Reanudar en nueva sesión | Releer fuentes y Git; prueba de sesión nueva permanece unrun hasta observarla |
