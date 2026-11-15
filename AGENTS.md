@@ -32,9 +32,9 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
   y [gate de cuota](specs/methodology/dynamic-agents.md#quota-and-dispatch-gate).
-- El estado operativo vive en GitHub Issues + Project: solo el coordinador mueve el `Status`,
-  asigna ownership y gates; nadie mantiene un tablero Markdown paralelo. Publicar rama y PR es trabajo autorizado ([publicación](specs/methodology/approvals.md#publicación-de-rama-y-pr));
-  el merge exige aprobación explícita e identificable y nunca se auto-fusiona.
+- El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue`
+  (usuario: `Backlog → Ready`, revisión y `Done`; agente autorizado: reserva, `{Phase} In Review` y
+  `Blocked`; coordinador que organiza y verifica); sin tablero paralelo ni autoautorizar fases.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
   Aprobar una spec no autoriza desarrollo.
 - Un ejecutor por tarea: delegar el trabajo autónomo sustancial, preferir segundo plano cuando

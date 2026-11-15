@@ -118,8 +118,11 @@ registra qué falta y quién lo resuelve. Las tareas independientes ya autorizad
 En hitos significativos —inicio/cierre de entrega, handoff y antes de un lote intensivo de CI— el coordinador consulta una vez el consumo mensual; no hace polling. Avisa al superar **1.600 min** (referencia GitHub Free) y **2.400 min** (referencia GitHub Pro), indicando plan, restante y renovación cuando Billing los muestre. No repite el mismo umbral en el mismo ciclo sin un cambio relevante. Billing/Included usage es la fuente de cuota; el total de la API incluye minutos gratuitos de repos públicos y no se usa sin filtrar a repos privados. Las alertas son informativas: no bloquean trabajo, CI, PR ni merge, y no modifican planes, presupuestos ni suscripciones. Las alertas nativas 90/100 % se activan en Billing y no sustituyen estos umbrales.
 
 ## Scheduler, propiedad y ejecución
-Solo el coordinador mueve el `Status` del Project, asigna ownership y reconcilia resultados;
-`specs/epic-board.md` es histórico y no se actualiza por rutina.
+El coordinador organiza, asigna ownership y reconcilia resultados; `specs/epic-board.md` es
+histórico y no se actualiza por rutina. El `Status` lo mueven el **usuario**
+(`Backlog → Ready {Phase}`, revisión/aceptación y `Done`) y el **agente autorizado**
+(`Ready → {Phase} In Progress`, entrega en `{Phase} In Review` y `Blocked`) según el protocolo
+vigente de `$work-issue`; el coordinador verifica el cumplimiento y no autoautoriza fases.
 Crear el menor pool útil para tareas independientes listas, no un número fijo por rol.
 Preferir un único ejecutor por entrega; añadir subagentes solo si son independientes
 y su valor supera el coste de coordinación. Comprobar las herramientas y límites reales antes
@@ -171,7 +174,8 @@ constan las particularidades locales:
 realmente controlables y deja checkpoint mínimo en progress/board o
 `specs/session-handoff.md` si no hay documento adecuado. No ejecuta QA nueva, merge,
 despliegue ni reanudación. Una ejecución interrumpida por cuota no garantiza checkpoint.
-Solo el coordinador mueve el `Status` del Project; los delegados conservan su propio progreso.
+El `Status` sigue la regla del apartado de propiedad: usuario, agente autorizado y verificación
+del coordinador. Los delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff. Un informe
 intermedio o un check corregible no cierra el turno mientras quede trabajo autorizado:
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción

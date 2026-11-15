@@ -10,11 +10,11 @@ This policy applies to complex **Full** work and to Standard work with several i
 
 The GitHub Project (Status) is the operational board; `specs/epic-board.md` is historical and must not be maintained as live state. For a single feature reuse its progress/testplan. Reconcile the smallest relevant Git/spec/test/approval evidence at session start and major gates; mark missing evidence unknown and never manufacture permission.
 
-The coordinator is the **only writer** of the shared board. Delegates return concise results, SHA and evidence. Update changed fields at authorization, candidate, QA, blocker or PR milestones, not on every worker message. Approved decisions remain canonical in the specs/guidelines.
+Transitions follow the `$work-issue` protocol: the **user** moves `Backlog → Ready {Phase}`, reviews/accepts and sets `Done`; the **authorized agent** reserves `Ready → {Phase} In Progress`, delivers `{Phase} In Review` and records `Blocked`; the **coordinator** assigns ownership, verifies compliance and reconciles results without authorizing a phase on the user's behalf. Delegates return concise results, SHA and evidence. Keep `Status`, priority, owner and the Issue's next action current at authorization, candidate, QA, blocker or PR milestones, not on every worker message. Approved decisions remain canonical in the specs/guidelines.
 
-Each row has a unique feature ID and tracks stage, scope/dependencies, approval, assigned role, isolated branch/checkout (if applicable), blockers, evidence link, next action and last verification. A ready task is not the same as an approved spec. A PR opened is not a merge.
-Link one current summary; after integration replace stale pending labels with verified
-SHA/PR/check state and retain the historical record as superseded.
+Each Issue carries its unique feature ID and records stage, scope/dependencies, approval, assigned role, isolated branch/checkout (if applicable), blockers, evidence link, next action and last verification. A ready task is not the same as an approved spec. A PR opened is not a merge.
+Link one current summary and keep no second board; after integration replace stale pending
+labels with verified SHA/PR/check state.
 
 ## Stage/gate rules
 
