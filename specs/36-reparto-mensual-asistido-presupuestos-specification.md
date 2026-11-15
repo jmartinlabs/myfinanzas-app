@@ -2,15 +2,16 @@
 
 Status: **APROBADA PARA DESARROLLO — 2026-11-11.** D1–D10 aprobadas con las
 precisiones D8/D3; autorizados los incrementos 1 (mecanismo compartido de Transferencia
-pendiente) y 2 (reparto mensual asistido). **Enmienda C aprobada el 2026-11-11:** origen
-de plan sustituible `PlanCiclo`/`Dprima`, adaptador de solo lectura y un único motor;
-sustituye solo el acoplamiento exclusivo a E2.3. SPEC37 sigue sin autorización de DEV.
-La aprobación no convierte cada `[PROPUESTA]` en contrato cerrado ni autoriza datos
-reales, migraciones operativas o despliegue.
+pendiente), 2 (reparto mensual asistido) y 3 (v29, motor, API y UI). **Enmienda C aprobada
+el 2026-11-11:** origen de plan sustituible `PlanCiclo`/`Dprima`, adaptador de solo lectura
+y un único motor; sustituye solo el acoplamiento exclusivo a E2.3. SPEC37 sigue sin
+autorización de DEV. La aprobación no convierte cada `[PROPUESTA]` en contrato cerrado ni
+autoriza datos reales, migraciones operativas o despliegue.
 Approval source/date: **2026-11-11 — usuario**, aprobación explícita e identificable de
-D1–D10, de los incrementos 1–2 y de la alternativa C (texto en §0 y §0.1). v28/C28
-autorizados condicionalmente y confirmados por la comprobación física. La enmienda C no
-autoriza el motor de reparto ni v29.
+D1–D10, de los incrementos 1–3 y de la alternativa C (texto en §0, §0.1 y §0.2). v28/C28
+autorizados condicionalmente y confirmados por la comprobación física; v29/C29 y el motor
+quedan autorizados por §0.2. La enmienda C por sí sola no autorizaba el motor de reparto ni
+v29; la autorización vigente es la de §0.2.
 Context and brainstorming: [backlog de reparto mensual](backlog/reparto-mensual-asistido-presupuestos.md),
 [backlog de registro coordinado](backlog/registro-coordinado-gastos.md),
 [SPEC09 Plan del ciclo](09-plan-ciclo-specification.md),
@@ -77,8 +78,38 @@ ciclo/E2.3. No reabre D1–D10.
   para ambos orígenes.
 - **Sin duplicar maestros ni cálculos:** una cabecera de reparto, un motor de reglas y una
   tabla de líneas; el adaptador solo traduce la fuente.
-- **Límites:** esta enmienda no autoriza el motor de reparto, la activación general de D′,
-  migraciones de datos reales, retirada del legado, merge ni despliegue.
+- **Límites:** esta enmienda no autoriza por sí sola el motor de reparto, la activación
+  general de D′, migraciones de datos reales, retirada del legado, merge ni despliegue. La
+  autorización posterior del incremento 3 se registra en §0.2.
+
+### 0.2 Registro de aprobación — incremento 3 (2026-11-11)
+
+`[CONFIRMADO 2026-11-11 — usuario]` Texto sustantivo de la aprobación:
+
+> «Apruebo la implementación incremental de SPEC36, origen C y esquema v29.»
+
+`[CONFIRMADO]` Alcance autorizado:
+
+- **v29 reconstruida:** `repartos` con `fuente_plan` obligatorio y sin `DEFAULT`;
+  `reparto_lineas` con `clase='Partida'`, `partida` y exactamente una referencia por clase.
+  Se conservan IDs, filas, CHECKs, STRICT, índices, auditorías, intentos y los triggers
+  ajenos a la reconstrucción.
+- **Motor con `readRepartoPlan`:** un solo motor y un adaptador de solo lectura que
+  normaliza el origen activo sin recalcular Del mes, Ejecutado, Pendiente ni fórmulas.
+- **D′ implementado, no activado para uso general:** `PlanCiclo` sigue operativo hasta que
+  D′ alcance paridad funcional y aceptación; la selección de D′ requiere decisión explícita.
+- **API y UI aprobadas:** se autoriza su implementación incremental conforme a §10 y §11.
+- **Destinos compartidos:** sin propuesta automática de reparto y con
+  `ATRIBUCION_AMBIGUA` cuando no exista atribución única y fiable.
+- **Huella determinista D′:** la huella del origen D′ es estable y reproducible.
+- **Compatibilidad con #399:** el parche de compatibilidad del reparto existente forma
+  parte del alcance; no cambia la API/UI del motor en ese incremento.
+- **Secuencia:** #399 → v29 → motor → UI.
+- **Gates:** QA documental, migración, rollback, contrato C29, backup/restore y Rootless.
+
+`[CONFIRMADO]` Límites vigentes: sin datos reales, sin migración operativa, sin despliegue
+y sin SPEC37. La aprobación no declara por sí misma pruebas ejecutadas ni aceptación
+funcional.
 
 ## 1. Objetivo y alcance
 
@@ -111,7 +142,8 @@ No incluye:
 - Activar D′ como origen general mientras no exista paridad funcional y aceptación.
 - Convertir un pendiente en liquidez, reserva, ejecución presupuestaria, hecho de cierre
   o dato de informes.
-- Implementar API, SQLite, migraciones o UI en esta fase.
+- Fijar en este documento rutas, verbos, payloads o DDL; su implementación queda
+  autorizada por §0.2 y se especifica en los apartados técnicos.
 
 `[CONFIRMADO 2026-11-11]` La interpretación de E2.3 que permite «preparar» sin
 «automatizar Transferencias» ni «ejecutar el plan» fue aprobada explícitamente como D1
@@ -518,8 +550,8 @@ PRE-N · Reserva    No aplica            50,00 €    —           —         
 
 ## 11. API, persistencia y límites técnicos
 
-`[PROPUESTA]` Esta spec no autoriza abrir API ni SQLite. Solo describe operaciones
-lógicas, sin fijar rutas, verbos, payloads ni DDL:
+`[CONFIRMADO 2026-11-11]` La implementación de API y SQLite está autorizada por §0.2.
+Esta sección describe operaciones lógicas, sin fijar rutas, verbos, payloads ni DDL:
 
 1. Consultar el reparto de un Ciclo y sus líneas.
 2. Guardar o reabrir el borrador.
@@ -569,7 +601,7 @@ una lista vacía.
 
 ## 14. Exclusiones
 
-- Implementación, código, API, SQLite, migraciones, UI o despliegue.
+- Implementación, código, API, SQLite, migraciones, UI o despliegue **no se derivan de esta sección**: la autorización vigente del incremento 3 es §0.2 y se ejecuta en PRs separados.
 - Ejecución de Transferencias bancarias o integración con banco.
 - Nuevos Tipos de Movimiento, estados ficticios en Movimientos o maestros paralelos.
 - Cálculo de liquidez, reservas, objetivos de financiación o límites de fondos.
@@ -628,7 +660,7 @@ sintéticos.
 | AC-26 | Preparar un Ciclo con ambos orígenes disponibles | Cada reparto declara un único `fuente_plan`; no mezcla Presupuesto y Partida; no cambia de origen tras generar pendientes; el adaptador devuelve solo líneas del origen elegido | F36-PLAN, F36-DPRIMA | Enmienda C; §0.1 |
 | AC-27 | Leer una línea inactiva o con destino inactivo/no elegible | La línea histórica permanece visible con su motivo; no se genera un pendiente nuevo; el adaptador no recalcula Del mes, Ejecutado ni Pendiente | F36-PRE, F36-DPRIMA | Enmienda C; D8 |
 
-### 16.1 Anexo técnico — alcance físico mínimo para dos orígenes (no implementado)
+### 16.1 Anexo técnico — alcance físico mínimo para dos orígenes (implementado en v29)
 
 `[CONFIRMADO]` Comprobación física de v28:
 
@@ -638,7 +670,7 @@ sintéticos.
 - `transferencia_pendiente` conserva tabla, estados e idempotencia; solo se ajustan los
   triggers que la relacionan con las líneas de reparto en v29.
 
-`[PROPUESTA]` v29, **solo cuando se autorice el motor de reparto**. No es un `ALTER`
+`[CONFIRMADO 2026-11-11]` v29, autorizada por §0.2. No es un `ALTER`
 trivial:
 
 1. **Reconstrucción de `repartos`** para añadir `fuente_plan TEXT NOT NULL
@@ -665,10 +697,9 @@ trivial:
 4. `transferencia_pendiente` conserva su tabla, estados, idempotencia y confirmación por
    Movimiento; solo se ajustan los triggers que la relacionan con líneas de reparto.
 
-El primer incremento de la **enmienda C** es solo el **adaptador de lectura**; no requiere
-v29 y no debe incrementar el esquema por inercia. v29 se entregará con su migración,
-contrato C29, backup/restore, pruebas de triggers y gate rootless cuando el motor de
-reparto esté autorizado.
+El primer incremento de la **enmienda C** es solo el **adaptador de lectura**; no requería
+v29 y no debía incrementar el esquema por inercia. v29 se entregó con su migración,
+contrato C29, backup/restore, pruebas de triggers y gate rootless conforme a §0.2.
 
 ## 17. Decisiones aprobadas
 
@@ -692,8 +723,9 @@ en que cada decisión estaba pendiente; no describe el estado actual.
 ## 18. Trazabilidad y próximo gate
 
 - **Enmienda C (2026-11-11):** aprobada; solo cambia el origen del plan y la lectura de
-  D8. Próximo gate técnico: adaptador de lectura y pruebas, sin v29 ni motor de reparto.
-- **v29:** diseñada en §16.1; no autorizada hasta que se autorice el motor de reparto.
+  D8. La implementación del adaptador, v29, motor, API y UI se autoriza en §0.2.
+- **v29:** diseñada en §16.1, reconstruida y con C29 en revisión (#407); su autorización
+  vigente es la de §0.2.
 
 - Backlog de origen: [reparto mensual asistido](backlog/reparto-mensual-asistido-presupuestos.md),
   casos §13 y tensiones §11.3.
@@ -704,12 +736,12 @@ en que cada decisión estaba pendiente; no describe el estado actual.
 - Mecanismo compartido: §6 de este documento, consumido por
   [SPEC37](37-registro-coordinado-gastos-specification.md).
 - Roadmap y tablero: sin cambios; esta spec no crea entrega ni estado de tablero.
-- Gate superado el 2026-11-11: D1–D10 aprobadas y desarrollo incremental 1–2 autorizado
-  (§0). El incremento 1 entrega esquema, servicio y API del mecanismo compartido; el
-  incremento 2 entrega el reparto asistido y su UI.
+- Gate superado el 2026-11-11: D1–D10 aprobadas y desarrollo incremental 1–3 autorizado
+  (§0 y §0.2). Los incrementos 1 y 2 entregan esquema, servicio/API del mecanismo
+  compartido y reparto asistido; el incremento 3 entrega v29, motor, API y UI.
 - Siguiente gate: aprobación de las decisiones D1–D10 de SPEC37 antes de su DEV. Sin esa
   aprobación, SPEC37 no se inicia.
 
-Este documento queda aprobado para el desarrollo incremental 1–2 en el alcance del §0. No
-autoriza SPEC37, datos reales, migraciones operativas ni despliegue, y no declara ninguna
-prueba ejecutada ni aceptación funcional.
+Este documento queda aprobado para el desarrollo incremental 1–3 en el alcance de §0 y
+§0.2. No autoriza SPEC37, datos reales, migraciones operativas ni despliegue, y no declara
+ninguna prueba ejecutada ni aceptación funcional.

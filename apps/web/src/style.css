@@ -1,6 +1,7 @@
 /* Graphite Lime · G1 · capa visual aislada por data-theme. */
 @import "./graphite.css";
 @import "./inicio-shared.css";
+@import "./light-hybrid.css";
 
 :root {
   font-family:
@@ -316,6 +317,11 @@ small {
 .nav-link.nav-link-legacy {
   font-weight: 500;
 }
+/* VIS-25: acceso auxiliar (Revisión Comida), secundario sin ser legado. */
+.sidebar .nav-link.nav-link-secondary {
+  color: var(--sidebar-muted);
+  font-weight: 500;
+}
 .nav-group-toggle {
   display: flex;
   align-items: center;
@@ -529,6 +535,7 @@ small {
   flex-direction: row;
   align-items: center;
   gap: 7px;
+  min-height: var(--touch-min);
   white-space: nowrap;
   font-size: var(--text-xs) !important;
   margin: 0 !important;
@@ -4630,6 +4637,16 @@ textarea {
 }
 .e47-table tbody th {
   font-weight: 650;
+}
+/* G5f · Las columnas de la tabla fija miden ~73 px a 820 px y los badges de
+   estado no caben: su contenido desbordaba la celda, la tabla y —con las
+   métricas de fuente de Linux— el documento. Se les permite encoger y envolver
+   dentro de la celda en vez de empujar el ancho de la página. */
+.e47-table .ui-badge {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .e47-table-source {
   display: block;

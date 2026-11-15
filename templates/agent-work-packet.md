@@ -34,7 +34,7 @@
 - **Return schema:** complete `HANDOFF → CODEX` block on every interaction, including corrections, blockers and decisions; task/session, COMPLETED / PARTIAL / BLOCKED / CANCELLED, changes/files, branch/SHA/PR, tests PASS / FAIL / UNRUN with command/environment/candidate/evidence, risks/blockers, decisions and next action; see [coordinator communication](../specs/methodology/coordinator-communication.md)
 - **Usage evidence:** client source and coverage | unavailable; never infer consumption or control of external workers
 
-Coordinator updates `specs/epic-board.md` only after verifying the returned evidence and current canonical documents.
+Coordinator updates the Issue's `Status` and report only after verifying the returned evidence and current canonical documents.
 
 ## Copyable packet content for Agent Relay v1
 Fill every relevant placeholder before publishing the relay message. Include the applicable

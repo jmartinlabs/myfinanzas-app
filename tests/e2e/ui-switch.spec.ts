@@ -127,7 +127,7 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
 
   const expected = {
     "light-s": {
-      offBg: "rgb(236, 233, 226)",
+      offBg: "rgb(242, 235, 225)",
       positive: "rgb(30, 111, 122)",
       onText: "rgb(255, 255, 255)",
     },
@@ -137,7 +137,7 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
       onText: "rgb(20, 20, 20)",
     },
     "hybrid-s": {
-      offBg: "rgb(236, 233, 226)",
+      offBg: "rgb(242, 235, 225)",
       positive: "rgb(30, 111, 122)",
       onText: "rgb(255, 255, 255)",
     },

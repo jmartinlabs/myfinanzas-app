@@ -172,19 +172,19 @@ export function Dprima({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="PRESUPUESTOS Y PLANIFICACIÓN"
         title="Partidas"
-        description="¿En qué organizas tus gastos y aportaciones? El maestro y los Gastos Previstos comparten esta pantalla; Presupuestos y Plan anual siguen accesibles como histórico."
+        description="Organiza tus gastos por Partidas, prevé los gastos futuros y fija el plan mensual de cada ciclo. Presupuestos y Plan anual siguen accesibles como histórico."
       >
         <button type="button" className="secondary" onClick={() => go("/presupuestos")}>
-          Ver Presupuestos legado
+          Ver Presupuestos (histórico)
         </button>
         <button type="button" className="secondary" onClick={() => go("/plan-anual")}>
-          Ver Plan Anual legado
+          Ver Plan anual (histórico)
         </button>
       </PageHead>
       <nav className="dprima-subnav" aria-label="Secciones de Partidas">
         <a href="#partidas-maestro">Partidas</a>
         <a href="#gastos-previstos">Gastos previstos</a>
-        <a href="#plan-mensual-dprima">Plan mensual D′</a>
+        <a href="#plan-mensual-dprima">Plan mensual</a>
       </nav>
       {error && (
         <div tabIndex={-1} ref={alert}>
@@ -197,13 +197,17 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         </p>
       )}
 
-      <section className="panel" id="partidas-maestro" aria-label="Maestro de Partidas">
-        <h2>Maestro de Partidas</h2>
-        <p className="muted">
-          La jerarquía raíz/hija es independiente de Categoría/Subcategoría. Si
-          una raíz tiene hijas, los Gastos nuevos van a las hijas; la raíz
-          agrupa y financia.
-        </p>
+      <section className="panel" id="partidas-maestro" aria-label="Partidas registradas">
+        <h2>Partidas registradas</h2>
+        <p className="help">¿En qué organizas tus gastos y aportaciones?</p>
+        <details className="dprima-help">
+          <summary>Cómo se organizan las Partidas</summary>
+          <p className="muted">
+            La jerarquía raíz/hija es independiente de Categoría/Subcategoría. Si
+            una raíz tiene hijas, los Gastos nuevos van a las hijas; la raíz
+            agrupa y financia.
+          </p>
+        </details>
         {!partidas ? (
           <p role="status">Cargando Partidas…</p>
         ) : (
@@ -253,12 +257,16 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         )}
       </section>
 
-      <section className="panel" id="gastos-previstos" aria-label="Gastos Previstos">
-        <h2>Gastos Previstos</h2>
-        <p className="muted">
-          Etiquetas de mes financiado y líneas por hija. Los importes son
-          previsiones, no hechos. Un rango no se solapa con otro del mismo padre.
-        </p>
+      <section className="panel" id="gastos-previstos" aria-label="Gastos previstos">
+        <h2>Gastos previstos</h2>
+        <p className="help">¿Qué gastos tendrás que afrontar en el futuro?</p>
+        <details className="dprima-help">
+          <summary>Cómo se prevén</summary>
+          <p className="muted">
+            Etiquetas de mes financiado y líneas por hija. Los importes son
+            previsiones, no hechos. Un rango no se solapa con otro del mismo padre.
+          </p>
+        </details>
         <PlanCreateForm
           partidas={partidas?.raices ?? []}
           onCreate={(body) => call("/dprima/planificaciones", body)}
@@ -358,8 +366,9 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         )}
       </section>
 
-      <section className="panel" id="plan-mensual-dprima" aria-label="Plan Mensual D′">
-        <h2>Plan Mensual por raíz</h2>
+      <section className="panel" id="plan-mensual-dprima" aria-label="Plan mensual por Partida raíz">
+        <h2>Plan mensual por Partida raíz</h2>
+        <p className="help">¿Cuánto vas a destinar este ciclo?</p>
         <select
           aria-label="Ciclo del plan mensual"
           value={cycleId}
@@ -409,7 +418,12 @@ export function Dprima({ go }: { go: (p: string) => void }) {
       </section>
 
       <section className="panel dprima-technical" aria-label="Mapping de Presupuestos">
+        <p className="eyebrow">Configuración técnica</p>
         <h2>Mapping Presupuestos → Partidas</h2>
+        <p className="help">
+          Relación de solo lectura entre los Presupuestos históricos y sus
+          Partidas: se revisa aquí y no se opera desde esta pantalla.
+        </p>
         <p className="muted">
           Propuesta de diagnóstico. Un Presupuesto con varias Partidas exige una
           raíz explícita; no se reparte su objetivo. No se crean hijas,

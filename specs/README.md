@@ -5,7 +5,7 @@ Adaptación local Standard autorizada hasta tag v2.14.0/`98b5351`, sin reinicial
 Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
 [contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
 launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
-Un resumen vigente en tablero/progreso es dueño del estado; el resto enlaza ese resumen.
+El estado operativo y el gate de fase viven en GitHub Issues + Project #4; los progresos documentan el trabajo y el histórico [tablero](epic-board.md) no refleja el estado actual.
 Entrada de verificación v2.7.0 conservada, sin cambiar CI. Los estados inferiores son historia.
 
 # Document ownership and workflow
@@ -17,7 +17,7 @@ Implementación y verificaciones en [progress07](07-ciclos-operacion-progress.md
 con gate global API pendiente; sin merge de implementación ni despliegue.
 Referencia única v5.11(7) candidata, no estable. La cronología inferior es histórica.
 Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$orchestrate](../.agents/skills/orchestrate/SKILL.md),
-[contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
+[contrato local](methodology/myfinanzas-coordination.md), [tablero histórico](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 
 Contrato CI vigente: [local-first](methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27),
@@ -64,7 +64,7 @@ in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 | `guidelines/ui.md` | Applicable interface conventions or explicit not-applicable reason | init-project / dev |
 | `guidelines/quality.md` | Commands, checks, review and Definition of Done | bootstrap / dev |
 | `guidelines/security.md` | Threats, safeguards and authorization boundaries | init-project / dev |
-| `epic-board.md` | Estado/cola/gates/evidencias, nunca aprobación canónica | orchestrate, coordinador único |
+| `epic-board.md` | Histórico de decisiones y checkpoints; no es estado vigente ni autorización | coordinador (solo archivo) |
 | `methodology/` | Coordinación, roles, validación y procedencia de adopción | adopción / coordinador |
 | `roadmap.md` | Product outcomes, proposed increments, dependencies, acceptance and approval status | roadmap |
 | `functional-reference-v5.11.md` | Sanitized source provenance, financial rules and confirmed P1–P7 | STEP 4 source review |
@@ -72,7 +72,7 @@ in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 | `NN-slug-specification.md` | Approved behavior, contracts and acceptance checks | spec |
 | `NN-slug-progress.md` | Implementation tasks, evidence and next action | dev |
 | `NN-slug-testplan.md` | Acceptance-to-verification mapping and current results | dev |
-| `session-handoff.md` | Checkpoint temporal de apagado solo cuando ningún progreso/tablero existente encaja; se retira tras restaurar y consolidar el estado; si está rastreado, se elimina en el mismo cambio de la tarea, nunca en una PR creada solo para borrarlo; sin autoridad de reanudación automática | handoff |
+| `session-handoff.md` | Checkpoint temporal de apagado solo cuando ningún progreso o registro vigente encaja; se retira tras restaurar y consolidar el estado; si está rastreado, se elimina en el mismo cambio de la tarea, nunca en una PR creada solo para borrarlo; sin autoridad de reanudación automática | handoff |
 
 Use two-digit identifiers (01–99) and lowercase hyphenated slugs. Allocate the next
 unused number; never overwrite a document belonging to another feature. Beyond 99,

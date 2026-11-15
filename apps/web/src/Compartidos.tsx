@@ -91,18 +91,22 @@ export function Compartidos({
   path: string;
   go: (p: string) => void;
 }) {
-  if (path === base || path === "/")
-    return <SharedList go={go} />;
-  if (path === base + "/nuevo") return <NewShared go={go} />;
-  const contribution = path.match(/^\/compartidos\/(REF\d+)\/aportacion$/)?.[1];
-  if (contribution)
-    return <AportacionForm key={contribution} id={contribution} go={go} />;
-  const historical = path.match(/^\/compartidos\/(REF\d+)\/aportaciones$/)?.[1];
-  if (historical)
-    return <HistoricalAportaciones key={historical} id={historical} go={go} />;
-  const id = path.match(/^\/compartidos\/(REF\d+)$/)?.[1];
-  if (id) return <SharedDetail key={id} id={id} go={go} />;
-  return <Alert>Página no encontrada.</Alert>;
+  // Raíz única del módulo: permite aislar su capa visual sin tocar la
+  // composición, la navegación ni la lógica de cada vista.
+  const content = (() => {
+    if (path === base || path === "/") return <SharedList go={go} />;
+    if (path === base + "/nuevo") return <NewShared go={go} />;
+    const contribution = path.match(/^\/compartidos\/(REF\d+)\/aportacion$/)?.[1];
+    if (contribution)
+      return <AportacionForm key={contribution} id={contribution} go={go} />;
+    const historical = path.match(/^\/compartidos\/(REF\d+)\/aportaciones$/)?.[1];
+    if (historical)
+      return <HistoricalAportaciones key={historical} id={historical} go={go} />;
+    const id = path.match(/^\/compartidos\/(REF\d+)$/)?.[1];
+    if (id) return <SharedDetail key={id} id={id} go={go} />;
+    return <Alert>Página no encontrada.</Alert>;
+  })();
+  return <div className="shared-page">{content}</div>;
 }
 function SharedList({ go }: { go: (p: string) => void }) {
   const [data, setData] = useState<{ items: SharedCase[]; total: number } | null>(

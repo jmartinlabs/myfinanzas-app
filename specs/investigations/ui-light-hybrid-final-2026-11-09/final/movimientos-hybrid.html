@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="es" data-theme="hybrid-s" data-default-theme="hybrid-s">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get("theme")||document.documentElement.dataset.defaultTheme||"dark-s";</script>
+<title>Movimientos · Hybrid final</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../icons.css">
+<link rel="stylesheet" href="../base.css">
+<link rel="stylesheet" href="../movimientos.css">
+<link rel="stylesheet" href="../refinement/refinement.css">
+<link rel="stylesheet" href="movimientos-final.css">
+</head>
+<body data-page="movimientos">
+  <div class="app">
+    <div class="sidebar-backdrop" data-menu-close aria-hidden="true"></div>
+    <aside class="sidebar" aria-label="Navegación principal">
+      <button class="sidebar-close" type="button" data-menu-close aria-label="Cerrar menú">
+        <span class="icon i-x" aria-hidden="true"></span>
+      </button>
+      <a class="brand" href="#" aria-label="MyFinanzas, ir a Inicio">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-copy">
+          <span class="brand-word">My<span>Finanzas</span></span>
+          <span class="brand-sub">CONTROL FINANCIERO PERSONAL</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="main-nav" aria-label="Secciones">
+        <p class="nav-group">Mi espacio <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item" href="#" title="Inicio" aria-label="Inicio"><span class="icon nav-icon i-home" aria-hidden="true"></span><span class="nav-label">Inicio</span></a>
+        <a class="nav-item" href="#" title="Flujo mensual" aria-label="Flujo mensual"><span class="icon nav-icon i-flow" aria-hidden="true"></span><span class="nav-label">Flujo mensual</span></a>
+        <a class="nav-item" href="#" title="Pendientes y conciliación" aria-label="Pendientes y conciliación"><span class="icon nav-icon i-pending" aria-hidden="true"></span><span class="nav-label">Pendientes y conciliación</span><span class="nav-count">3</span></a>
+        <a class="nav-item" href="#" title="Anticipos" aria-label="Anticipos"><span class="icon nav-icon i-rotate" aria-hidden="true"></span><span class="nav-label">Anticipos</span></a>
+        <a class="nav-item" href="#" title="Compartidos" aria-label="Compartidos"><span class="icon nav-icon i-users" aria-hidden="true"></span><span class="nav-label">Compartidos</span></a>
+
+        <p class="nav-group">Patrimonio <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item" href="#" title="Saldos" aria-label="Saldos"><span class="icon nav-icon i-wallet" aria-hidden="true"></span><span class="nav-label">Saldos</span></a>
+        <a class="nav-item" href="#" title="Clasificación" aria-label="Clasificación"><span class="icon nav-icon i-layers" aria-hidden="true"></span><span class="nav-label">Clasificación</span></a>
+        <a class="nav-item" href="#" title="Inversiones" aria-label="Inversiones"><span class="icon nav-icon i-trend" aria-hidden="true"></span><span class="nav-label">Inversiones</span></a>
+        <a class="nav-item" href="#" title="Deudas" aria-label="Deudas"><span class="icon nav-icon i-card" aria-hidden="true"></span><span class="nav-label">Deudas</span></a>
+        <a class="nav-item" href="#" title="Vehículos" aria-label="Vehículos"><span class="icon nav-icon i-car" aria-hidden="true"></span><span class="nav-label">Vehículos</span></a>
+        <a class="nav-item" href="#" title="Referencias" aria-label="Referencias"><span class="icon nav-icon i-hash" aria-hidden="true"></span><span class="nav-label">Referencias</span></a>
+
+        <p class="nav-group">Operación <span class="icon i-chevron-down" aria-hidden="true"></span></p>
+        <a class="nav-item active" href="#" title="Movimientos" aria-label="Movimientos" aria-current="page"><span class="icon nav-icon i-move" aria-hidden="true"></span><span class="nav-label">Movimientos</span></a>
+        <a class="nav-item" href="#" title="Ciclos" aria-label="Ciclos"><span class="icon nav-icon i-calendar" aria-hidden="true"></span><span class="nav-label">Ciclos</span></a>
+        <a class="nav-item" href="#" title="Precierre" aria-label="Precierre"><span class="icon nav-icon i-clock" aria-hidden="true"></span><span class="nav-label">Precierre</span></a>
+        <a class="nav-item" href="#" title="Cierre" aria-label="Cierre"><span class="icon nav-icon i-check-circle" aria-hidden="true"></span><span class="nav-label">Cierre</span></a>
+        <a class="nav-item" href="#" title="Fotos" aria-label="Fotos"><span class="icon nav-icon i-image" aria-hidden="true"></span><span class="nav-label">Fotos</span></a>
+
+        <button class="nav-group nav-group--toggle" type="button" data-group-toggle aria-expanded="false">Planificación <span class="icon i-chevron-right" aria-hidden="true"></span></button>
+        <a class="nav-item" href="#" title="D′ · Partidas" aria-label="D′ · Partidas"><span class="icon nav-icon i-pie" aria-hidden="true"></span><span class="nav-label">D′ · Partidas</span></a>
+        <a class="nav-item" href="#" title="Comida · hechos" aria-label="Comida · hechos"><span class="icon nav-icon i-food" aria-hidden="true"></span><span class="nav-label">Comida · hechos</span></a>
+        <a class="nav-item" href="#" title="Revisión Comida" aria-label="Revisión Comida"><span class="icon nav-icon i-clipboard" aria-hidden="true"></span><span class="nav-label">Revisión Comida</span></a>
+        <a class="nav-item" href="#" title="Plan del ciclo" aria-label="Plan del ciclo"><span class="icon nav-icon i-range" aria-hidden="true"></span><span class="nav-label">Plan del ciclo</span></a>
+        <a class="nav-item" href="#" title="Nómina" aria-label="Nómina"><span class="icon nav-icon i-euro" aria-hidden="true"></span><span class="nav-label">Nómina</span></a>
+        <a class="nav-item" href="#" title="Plan anual" aria-label="Plan anual"><span class="icon nav-icon i-bars" aria-hidden="true"></span><span class="nav-label">Plan anual</span></a>
+        <a class="nav-item" href="#" title="Resumen anual" aria-label="Resumen anual"><span class="icon nav-icon i-file" aria-hidden="true"></span><span class="nav-label">Resumen anual</span></a>
+        <a class="nav-item" href="#" title="Presupuestos" aria-label="Presupuestos"><span class="icon nav-icon i-calc" aria-hidden="true"></span><span class="nav-label">Presupuestos</span></a>
+      </nav>
+
+
+      <div class="side-cycle">
+        <div class="side-cycle-head"><span>Ciclo 11</span><span class="badge badge--info">89%</span></div>
+        <strong>Noviembre 2026</strong>
+        <div class="side-cycle-meta"><span>Plan ejecutado</span><b>1.742 / 1.950 €</b></div>
+        <div class="mini-track"><span style="width:89%"></span></div>
+        <div class="side-cycle-meta" style="margin-top:6px"><span>21 días restantes</span><span>Abierto</span></div>
+      </div>
+
+      <div class="side-coverage">
+        <div class="side-cycle-head"><span>Cobertura</span><span class="badge badge--partial">Parcial</span></div>
+        <div class="side-cov-row"><span>Movimientos</span><b>09/11</b></div>
+        <div class="side-cov-row"><span>Saldos</span><b>08/11</b></div>
+        <div class="side-cov-row"><span>Inversión</span><b>05/11</b></div>
+      </div>
+
+      <div class="sidebar-foot">
+        <span class="status-dot" aria-hidden="true"></span>Ciclo 11 · 89% plan
+        <small>21 días restantes · corte 09/11</small>
+        <small>Datos ficticios · Excel v5.11 maestro</small>
+      </div>
+
+      <svg class="sidebar-wave" viewBox="0 0 248 220" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="bSideWave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2be4de" stop-opacity="0"/>
+            <stop offset="0.45" stop-color="#2be4de" stop-opacity="0.26"/>
+            <stop offset="1" stop-color="#1e6f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M-20 170C28 140 66 210 118 180s78-58 138-26 44 26 96 8" fill="none" stroke="url(#bSideWave)" stroke-width="0.9"/>
+        <path d="M-24 198C34 166 74 230 134 198s82-46 142-18 40 18 84 0" fill="none" stroke="url(#bSideWave)" stroke-width="0.75" opacity="0.6"/>
+      </svg>
+    </aside>
+
+    <div class="workspace">
+      <div class="mobile-bar">
+        <a class="mobile-brand" href="#" aria-label="MyFinanzas, ir a Inicio">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span class="brand-word">My<span>Finanzas</span></span>
+        </a>
+        <button class="menu-btn" type="button" data-menu-toggle aria-expanded="false" aria-controls="main-nav" aria-label="Abrir menú">
+          <span class="icon i-menu" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="mobile-context">
+        <span class="mobile-cycle"><span class="status-dot" aria-hidden="true"></span><strong>Ciclo 11 · Noviembre 2026</strong><span>· Abierto</span></span>
+        <label class="mobile-theme"><span class="icon i-moon" aria-hidden="true"></span>
+          <select class="theme-select" data-theme-select aria-label="Tema visual">
+            <option value="dark-s">Oscuro S</option>
+            <option value="light-s">Claro S</option>
+            <option value="hybrid-s">Híbrido S</option>
+          </select>
+        </label>
+      </div>
+      <div class="ambient" aria-hidden="true"></div>
+      <svg class="c-top-wave" viewBox="0 0 900 340" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="cTopWave" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2be4de" stop-opacity="0"/>
+            <stop offset="0.46" stop-color="#2be4de" stop-opacity="0.28"/>
+            <stop offset="1" stop-color="#1e6f7a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M-40 246C150 104 316 274 516 166S820 36 980 102" fill="none" stroke="url(#cTopWave)" stroke-width="1.05"/>
+        <path d="M-40 276C174 138 338 302 560 194S846 68 1000 138" fill="none" stroke="url(#cTopWave)" stroke-width="0.8" opacity="0.6"/>
+      </svg>
+
+      <header class="topbar">
+        <div class="cycle">
+          <span class="cycle-mark" aria-hidden="true"><span class="icon i-calendar"></span></span>
+          <span class="cycle-copy">
+            <span class="cycle-label">Ciclo financiado</span>
+            <span class="cycle-title">Ciclo 11 <span>·</span> Noviembre 2026</span>
+            <span class="cycle-sub">Abierto · corte disponible 09/11/2026</span>
+          </span>
+        </div>
+        <div class="top-actions">
+          <label class="theme-control"><span class="icon i-moon" aria-hidden="true"></span>
+            <select class="theme-select" data-theme-select aria-label="Tema visual">
+              <option value="dark-s">Oscuro S</option>
+              <option value="light-s">Claro S</option>
+              <option value="hybrid-s">Híbrido S</option>
+            </select>
+          </label>
+          <span class="env-pill"><span class="env-dot" aria-hidden="true"></span>Entorno local</span>
+          <span class="top-divider" aria-hidden="true"></span>
+          <button class="logout" type="button">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Núcleo financiero · Ciclo 11</p>
+            <h1>Movimientos</h1>
+            <p class="page-desc">Hechos ejecutados<span class="sep">·</span>Ingresos, Gastos, Transferencias, amortizaciones y devoluciones de gasto</p>
+          </div>
+          <div class="head-right">
+            <div class="head-meta"><span class="status-dot" aria-hidden="true"></span>Actualizado 08/11 · 19:42<span class="readonly"><span class="icon i-shield" aria-hidden="true"></span>Solo lectura</span></div>
+            <div class="page-actions">
+              <button class="btn btn-secondary" type="button">Ver cierre</button>
+              <button class="btn btn-primary" type="button"><span class="icon i-plus" aria-hidden="true"></span>Nuevo movimiento</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="page-note"><span class="icon i-info" aria-hidden="true"></span>Transferencias con Exterior: no disponibles todavía. Las inversiones tienen su propio registro.</p>
+
+        <section class="filter-card" data-filter-demo aria-label="Filtros de movimientos">
+          <div class="filter-main">
+            <div class="field field-search">
+              <label for="q">Buscar</label>
+              <div class="input-wrap"><span class="icon i-search" aria-hidden="true"></span><input class="input" id="q" type="search" placeholder="Concepto, nota o ID" autocomplete="off"></div>
+            </div>
+            <div class="field"><label for="tipo">Tipo</label><select class="select" id="tipo"><option>Todos</option><option>Ingreso</option><option>Gasto</option><option>Transferencia</option><option>Amortización deuda</option><option>Devolución de gasto</option></select></div>
+            <div class="field"><label for="deuda">Deuda</label><select class="select" id="deuda"><option>Todas</option><option>Préstamo vivienda</option><option>Financiación vehículo</option></select></div>
+            <div class="field"><label for="ciclo">Ciclo</label><select class="select" id="ciclo"><option>Ciclo 11 · Nov 2026</option><option>Ciclo 10 · Oct 2026</option><option>Todos los ciclos</option></select></div>
+            <div class="field"><label for="estado">Estado</label><select class="select" id="estado"><option>Vigente</option><option>Anulado</option><option>Todos</option></select></div>
+            <button class="filter-toggle" type="button" data-filter-toggle aria-expanded="false"><span class="icon i-filter" aria-hidden="true"></span>Filtros</button>
+          </div>
+          <details class="more-filters">
+            <summary>Más filtros</summary>
+            <div class="more-grid">
+              <div class="field"><label for="desde">Desde</label><input class="input" id="desde" type="date"></div>
+              <div class="field"><label for="hasta">Hasta</label><input class="input" id="hasta" type="date"></div>
+              <div class="field"><label for="saldo">Saldo</label><select class="select" id="saldo"><option>Todos</option><option>Cuenta principal</option><option>Cuenta secundaria</option></select></div>
+              <div class="field"><label for="referencia">Referencia</label><select class="select" id="referencia"><option>Todas</option><option>REF-012 · Comida</option><option>REF-008 · Hogar</option></select></div>
+              <div class="field"><label for="origen">Origen</label><select class="select" id="origen"><option>Todos</option><option>Cuenta principal</option><option>Tarjeta secundaria</option></select></div>
+              <div class="field"><label for="destino">Destino</label><select class="select" id="destino"><option>Todos</option><option>Fondo objetivo</option></select></div>
+              <div class="field"><label for="categoria">Categoría</label><select class="select" id="categoria"><option>Todas</option><option>Alimentación</option><option>Servicios</option></select></div>
+              <div class="field"><label for="partida">Partida</label><select class="select" id="partida"><option>Todas</option><option>Alimentación</option><option>Salud</option></select></div>
+            </div>
+          </details>
+          <div class="filter-chips"><span class="chip">Ciclo 11 · Noviembre 2026</span><span class="chip">Vigente</span><button class="text-link" type="button" data-clear-filters>Limpiar filtros</button></div>
+        </section>
+
+        <div class="list-meta">
+          <span class="list-count"><span class="status-dot" aria-hidden="true"></span><strong>128</strong> movimientos</span>
+          <span class="list-sort"><span class="icon i-sort" aria-hidden="true"></span>Fecha · más reciente primero</span>
+        </div>
+
+        <div class="list-layout">
+          <section class="list-card" aria-label="Registro de Movimientos">
+            <div class="table-scroll" role="region" aria-label="Tabla de Movimientos" tabindex="0">
+              <table class="mov-table">
+                <caption class="sr-only">Ingresos, Gastos, Transferencias, amortizaciones y devoluciones de gasto</caption>
+                <thead><tr><th scope="col">Fecha</th><th scope="col">Tipo / Subtipo</th><th scope="col">Concepto</th><th scope="col">Saldo</th><th scope="col">Partida</th><th scope="col" class="mov-amount">Importe</th></tr></thead>
+                <tbody>
+              <tr data-movement="318" tabindex="0" class="mov-row">
+                <td><span class="mov-date">08/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--green"><span class="icon i-arrow-down-left" aria-hidden="true"></span></span><span><span class="mov-type-name">Ingreso</span><span class="mov-type-sub">Nómina</span></span></span></td>
+                <td><span class="mov-concept">Nómina noviembre</span><span class="mov-id">#318</span></td>
+                <td><span class="mov-saldo">Cuenta principal</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">No aplica</span><span class="mov-ref">No aplica</span></td>
+                <td class="mov-amount amount-positive">+2.450,00 €</td>
+              </tr>
+              <tr data-movement="317" tabindex="0" aria-current="true" class="mov-row is-selected">
+                <td><span class="mov-date">07/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><span><span class="mov-type-name">Gasto</span><span class="mov-type-sub">Ordinario</span></span></span></td>
+                <td><span class="mov-concept">Compra semanal</span><span class="mov-id">#317</span></td>
+                <td><span class="mov-saldo">Cuenta principal</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">Alimentación</span><span class="mov-ref">REF-012 · Comida</span></td>
+                <td class="mov-amount amount-negative">-86,40 €</td>
+              </tr>
+              <tr data-movement="316" tabindex="0" class="mov-row">
+                <td><span class="mov-date">06/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--cyan"><span class="icon i-transfer" aria-hidden="true"></span></span><span><span class="mov-type-name">Transferencia</span><span class="mov-type-sub">Interna</span></span></span></td>
+                <td><span class="mov-concept">Traspaso a Fondo objetivo</span><span class="mov-id">#316</span></td>
+                <td><span class="mov-saldo">Cuenta principal → Fondo objetivo</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">No aplica</span><span class="mov-ref">Movimiento interno</span></td>
+                <td class="mov-amount ">600,00 €</td>
+              </tr>
+              <tr data-movement="315" tabindex="0" class="mov-row">
+                <td><span class="mov-date">05/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--amber"><span class="icon i-credit" aria-hidden="true"></span></span><span><span class="mov-type-name">Amortización deuda</span><span class="mov-type-sub">Deuda</span></span></span></td>
+                <td><span class="mov-concept">Cuota préstamo vivienda</span><span class="mov-id">#315</span></td>
+                <td><span class="mov-saldo">Cuenta principal</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">Préstamo vivienda</span><span class="mov-ref">Cuota mensual</span></td>
+                <td class="mov-amount amount-negative">-742,18 €</td>
+              </tr>
+              <tr data-movement="314" tabindex="0" class="mov-row">
+                <td><span class="mov-date">04/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--green"><span class="icon i-refund" aria-hidden="true"></span></span><span><span class="mov-type-name">Devolución de gasto</span><span class="mov-type-sub">Recuperación</span></span></span></td>
+                <td><span class="mov-concept">Devolución seguro hogar</span><span class="mov-id">#314</span></td>
+                <td><span class="mov-saldo">Cuenta principal</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">Seguros</span><span class="mov-ref">REF-008 · Hogar</span></td>
+                <td class="mov-amount amount-positive">+48,50 €</td>
+              </tr>
+              <tr data-movement="313" tabindex="0" class="mov-row">
+                <td><span class="mov-date">03/11/2026</span><span class="tag tag--inactive">Anulado</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><span><span class="mov-type-name">Gasto</span><span class="mov-type-sub">Servicios</span></span></span></td>
+                <td><span class="mov-concept">Cuota anual software</span><span class="mov-id">#313</span></td>
+                <td><span class="mov-saldo">Tarjeta secundaria</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">Servicios digitales</span><span class="mov-ref">No computa</span></td>
+                <td class="mov-amount amount-muted">-129,99 €</td>
+              </tr>
+              <tr data-movement="312" tabindex="0" class="mov-row">
+                <td><span class="mov-date">02/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><span><span class="mov-type-name">Gasto</span><span class="mov-type-sub">Salud</span></span></span></td>
+                <td><span class="mov-concept">Farmacia</span><span class="mov-id">#312</span></td>
+                <td><span class="mov-saldo">Cuenta principal</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">Salud</span><span class="mov-ref">No computa</span></td>
+                <td class="mov-amount amount-negative">-24,90 €</td>
+              </tr>
+              <tr data-movement="311" tabindex="0" class="mov-row">
+                <td><span class="mov-date">01/11/2026</span></td>
+                <td><span class="mov-type"><span class="icon-box icon-box--cyan"><span class="icon i-transfer" aria-hidden="true"></span></span><span><span class="mov-type-name">Transferencia</span><span class="mov-type-sub">Interna</span></span></span></td>
+                <td><span class="mov-concept">Aporte a Fondo objetivo</span><span class="mov-id">#311</span></td>
+                <td><span class="mov-saldo">Cuenta principal → Fondo objetivo</span><span class="mov-cycle">Ciclo 11 · Nov 2026</span></td>
+                <td><span class="mov-partida">No aplica</span><span class="mov-ref">Movimiento interno</span></td>
+                <td class="mov-amount ">200,00 €</td>
+              </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="detail-card" data-detail aria-label="Detalle de la operación seleccionada">
+            <div class="detail-head"><div><p class="detail-kicker">Operación seleccionada</p><h2><span data-field="tipo">Gasto</span> <span class="detail-sep">·</span> <span data-field="subtipo">Ordinario</span></h2></div><span class="badge badge--info" data-field="estado">Vigente</span></div>
+            <p class="detail-concept" data-field="concepto">Compra semanal</p>
+            <div class="detail-amount amount amount-kpi amount-negative" data-class data-field="importe">-86,40 €</div>
+            <div class="detail-fields">
+              <div><span>Fecha</span><strong data-field="fecha">07/11/2026</strong></div>
+              <div><span>Ciclo</span><strong data-field="ciclo">Ciclo 11 · Noviembre 2026</strong></div>
+              <div><span>Origen</span><strong data-field="origen">Cuenta principal</strong></div>
+              <div><span>Destino</span><strong data-field="destino">—</strong></div>
+              <div><span>Partida</span><strong data-field="partida">Alimentación</strong></div>
+              <div><span>Referencia</span><strong data-field="referencia">REF-012 · Comida</strong></div>
+            </div>
+            <div class="detail-note"><span class="icon i-info" aria-hidden="true"></span><p data-field="nota">Compra ordinaria de alimentación. Hecho sintético de demostración.</p></div>
+            <div class="detail-foot"><span class="meta">ID <b data-field="id">317</b></span><button class="btn btn-secondary" type="button"><span class="icon i-file" aria-hidden="true"></span>Abrir ficha completa</button></div>
+          </aside>
+        </div>
+
+        <div class="mobile-list" aria-label="Movimientos en tarjetas">
+          <article class="mov-mobile-card" data-movement="318" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--green"><span class="icon i-arrow-down-left" aria-hidden="true"></span></span><span><span class="mov-type-name">Ingreso · Nómina</span><span class="mov-mobile-date">08/11/2026</span></span></span>
+              <span class="mov-mobile-amount amount-positive">+2.450,00 €</span>
+            </div>
+            <h3>Nómina noviembre</h3>
+            <p>#318 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal</strong><span>Partida</span><strong>No aplica</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card is-selected" data-movement="317" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><span><span class="mov-type-name">Gasto · Ordinario</span><span class="mov-mobile-date">07/11/2026</span></span></span>
+              <span class="mov-mobile-amount amount-negative">-86,40 €</span>
+            </div>
+            <h3>Compra semanal</h3>
+            <p>#317 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal</strong><span>Partida</span><strong>Alimentación</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card" data-movement="316" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--cyan"><span class="icon i-transfer" aria-hidden="true"></span></span><span><span class="mov-type-name">Transferencia · Interna</span><span class="mov-mobile-date">06/11/2026</span></span></span>
+              <span class="mov-mobile-amount ">600,00 €</span>
+            </div>
+            <h3>Traspaso a Fondo objetivo</h3>
+            <p>#316 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal → Fondo objetivo</strong><span>Partida</span><strong>No aplica</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card" data-movement="315" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--amber"><span class="icon i-credit" aria-hidden="true"></span></span><span><span class="mov-type-name">Amortización deuda · Deuda</span><span class="mov-mobile-date">05/11/2026</span></span></span>
+              <span class="mov-mobile-amount amount-negative">-742,18 €</span>
+            </div>
+            <h3>Cuota préstamo vivienda</h3>
+            <p>#315 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal</strong><span>Partida</span><strong>Préstamo vivienda</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card" data-movement="314" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--green"><span class="icon i-refund" aria-hidden="true"></span></span><span><span class="mov-type-name">Devolución de gasto · Recuperación</span><span class="mov-mobile-date">04/11/2026</span></span></span>
+              <span class="mov-mobile-amount amount-positive">+48,50 €</span>
+            </div>
+            <h3>Devolución seguro hogar</h3>
+            <p>#314 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal</strong><span>Partida</span><strong>Seguros</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card" data-movement="313" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><span><span class="mov-type-name">Gasto · Servicios</span><span class="mov-mobile-date">03/11/2026</span></span></span>
+              <span class="mov-mobile-amount amount-muted">-129,99 €</span>
+            </div>
+            <h3>Cuota anual software</h3>
+            <p>#313 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Tarjeta secundaria</strong><span>Partida</span><strong>Servicios digitales</strong></div>
+            <div class="mov-mobile-foot"><span class="badge badge--muted">Anulado</span><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card" data-movement="312" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--red"><span class="icon i-arrow-up-right" aria-hidden="true"></span></span><span><span class="mov-type-name">Gasto · Salud</span><span class="mov-mobile-date">02/11/2026</span></span></span>
+              <span class="mov-mobile-amount amount-negative">-24,90 €</span>
+            </div>
+            <h3>Farmacia</h3>
+            <p>#312 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal</strong><span>Partida</span><strong>Salud</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+          <article class="mov-mobile-card" data-movement="311" tabindex="0">
+            <div class="mov-mobile-top">
+              <span class="mov-type"><span class="icon-box icon-box--cyan"><span class="icon i-transfer" aria-hidden="true"></span></span><span><span class="mov-type-name">Transferencia · Interna</span><span class="mov-mobile-date">01/11/2026</span></span></span>
+              <span class="mov-mobile-amount ">200,00 €</span>
+            </div>
+            <h3>Aporte a Fondo objetivo</h3>
+            <p>#311 · Ciclo 11</p>
+            <div class="mov-mobile-fields"><span>Saldo</span><strong>Cuenta principal → Fondo objetivo</strong><span>Partida</span><strong>No aplica</strong></div>
+            <div class="mov-mobile-foot"><a class="link-arrow" href="#">Ver detalle <span class="icon i-chevron-right" aria-hidden="true"></span></a></div>
+          </article>
+        </div>
+
+        <div class="list-footer">
+          <span class="page-info">Página <strong>1</strong> de <strong>2</strong> <span class="page-size"><span class="sep">·</span> 100 por página</span></span>
+          <div class="pager"><button class="page-btn" type="button" disabled><span class="icon i-chevron-left" aria-hidden="true"></span>Anterior</button><button class="page-btn" type="button">Siguiente<span class="icon i-chevron-right" aria-hidden="true"></span></button></div>
+        </div>
+
+        <div class="site-foot">
+          <p class="synthetic-note"><span class="icon i-info" aria-hidden="true"></span>Datos sintéticos de Fase C. Importes y estados son recursos de diseño; no son datos reales ni autorizan métricas nuevas en producción.</p>
+          <p class="right">Movimientos · Hybrid final · Prototipo aislado</p>
+        </div>
+
+        <div class="detail-sheet" data-detail-sheet aria-label="Detalle del movimiento">
+          <div class="detail-sheet-panel">
+            <div class="detail-sheet-top"><span class="detail-kicker">Detalle</span><button class="icon-btn" type="button" data-close-detail aria-label="Cerrar detalle"><span class="icon i-x" aria-hidden="true"></span></button></div>
+            <div data-detail>
+              <h2><span data-field="tipo">Gasto</span> <span class="detail-sep">·</span> <span data-field="subtipo">Ordinario</span></h2>
+              <p class="detail-concept" data-field="concepto">Compra semanal</p>
+              <div class="detail-amount amount amount-kpi amount-negative" data-class data-field="importe">-86,40 €</div>
+              <div class="detail-fields">
+                <div><span>Fecha</span><strong data-field="fecha">07/11/2026</strong></div>
+                <div><span>Ciclo</span><strong data-field="ciclo">Ciclo 11 · Noviembre 2026</strong></div>
+                <div><span>Origen</span><strong data-field="origen">Cuenta principal</strong></div>
+                <div><span>Destino</span><strong data-field="destino">—</strong></div>
+                <div><span>Partida</span><strong data-field="partida">Alimentación</strong></div>
+                <div><span>Referencia</span><strong data-field="referencia">REF-012 · Comida</strong></div>
+              </div>
+              <div class="detail-note"><span class="icon i-info" aria-hidden="true"></span><p data-field="nota">Compra ordinaria de alimentación. Hecho sintético de demostración.</p></div>
+              <div class="detail-foot"><span class="meta">ID <b data-field="id">317</b></span><button class="btn btn-secondary" type="button"><span class="icon i-file" aria-hidden="true"></span>Abrir ficha completa</button></div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <footer class="app-footer">
+        <span>MyFinanzas App</span>
+        <span class="mock-badge">Fase C · Datos sintéticos · No funcional</span>
+      </footer>
+    </div>
+  </div>
+  <script src="../app.js"></script>
+</body>
+</html>

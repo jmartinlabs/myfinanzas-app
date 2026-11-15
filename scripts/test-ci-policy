@@ -20,6 +20,7 @@ POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
 WORKFLOW = runpy.run_path(str(ROOT / 'scripts/ci_workflow.py'))
 CONTEXT = runpy.run_path(str(ROOT / 'scripts/ci_context.py'))
 LINUX = runpy.run_path(str(ROOT / 'scripts/ci_prepare_linux.py'))
+ENTRY = runpy.run_path(str(ROOT / 'scripts/verify'))
 
 
 def by_id(workflow, step_id):
@@ -453,49 +454,81 @@ class CiClassifierTests(unittest.TestCase):
         event.unlink()
         self.assertEqual(subprocess.check_output(command, env=env).strip(), b'full')
 
-    def test_ci_profiles_critical_unknown_renames_and_fast_allowlist(self):
-        profiles = POLICY['profile_records']
-        critical = [
-            'apps/api/src/app.ts', 'apps/web/src/Unknown.tsx', 'apps/web/src/amount.ts',
-            'scripts/verify', 'infra/Containerfile', 'bun.lock',
-            'apps/api/contract.md', 'tests/fixtures/expected.md', 'scripts/guide.md',
-            'specs/fixtures/README.md', 'AGENTS.md', 'specs/methodology/policy.md',
-            'templates/specification.md', 'unknown.txt',
+    def test_every_pr_path_stays_fast_and_only_markdown_selects_docs(self):
+        # No path escalates a PR any more: the API/E2E coverage belongs to the
+        # deploy tag's FULL run. Persistence, migration, schema, identity,
+        # release, harness, config and unknown paths all stay FAST.
+        paths = [
+            'apps/api/src/app.ts', 'apps/api/src/backup.ts', 'apps/api/src/backup-cli.ts',
+            'apps/api/src/database.ts', 'apps/api/src/database-schema.ts',
+            'apps/api/src/database-identity.ts', 'apps/api/src/private-state.ts',
+            'apps/api/src/schema-contract.ts', 'apps/api/src/sqlite-opening.ts',
+            'apps/api/src/e411-schema.ts', 'apps/api/src/app.test.ts',
+            'apps/api/src/amount.test.ts', 'apps/web/src/Amount.tsx',
+            'apps/web/src/style.css', 'scripts/verify', 'scripts/guide.md',
+            'infra/Containerfile', 'infra/migrations/27-to-28.json',
+            'infra/compatibility.py', 'infra/release.py', 'infra/smoke.py',
+            'bun.lock', 'package.json', '.github/workflows/validate.yml',
+            'AGENTS.md', 'specs/methodology/policy.md', 'templates/specification.md',
+            'apps/api/contract.md', 'tests/fixtures/expected.md', 'unknown.txt',
         ]
-        for path in critical:
-            for status in ('A', 'M', 'D'):
-                self.assertEqual(profiles((status + '\0' + path + '\0').encode()), 'critical')
-            for endpoints in ((path, 'apps/web/src/style.css'), ('apps/web/src/style.css', path)):
-                self.assertEqual(profiles(('R100\0' + '\0'.join(endpoints) + '\0').encode()), 'critical')
-        sensitive = [
-            'apps/api/src/backup.ts', 'apps/api/src/backup-cli.ts', 'apps/api/src/database.ts',
-            'apps/api/src/database-schema.ts', 'apps/api/src/database-identity.ts',
-            'apps/api/src/private-state.ts', 'apps/api/src/schema-contract.ts',
-            'apps/api/src/sqlite-opening.ts', 'apps/api/src/e411-schema.ts',
-            'infra/migrations/27-to-28.json', 'infra/compatibility.py', 'infra/release.py',
-            'infra/smoke.py',
-        ]
-        for path in sensitive:
-            for status in ('A', 'M', 'D'):
-                self.assertEqual(profiles((status + '\0' + path + '\0').encode()), 'full')
-            for endpoints in ((path, 'apps/web/src/style.css'), ('apps/web/src/style.css', path)):
-                self.assertEqual(profiles(('R100\0' + '\0'.join(endpoints) + '\0').encode()), 'full')
-        self.assertEqual(profiles(('M\0specs/project.md\0M\0apps/api/src/backup.ts\0').encode()), 'full')
-        for path in ('apps/api/src/app.test.ts', 'apps/api/src/security-review.test.ts'):
-            self.assertEqual(profiles(('M\0' + path + '\0').encode()), 'full')
-        self.assertNotEqual(profiles(('M\0apps/api/src/amount.test.ts\0').encode()), 'full')
-        self.assertNotEqual(profiles(('M\0apps/api/src/not-a-file.test.ts\0').encode()), 'full')
-        docs = ['specs/project.md', 'specs/investigations/new.md', 'docs/guide.md',
-                'README.md', 'specs/31-sqlite-produccion-x.md', 'unknown.md']
-        for path in docs:
-            self.assertEqual(profiles(('M\0' + path + '\0').encode()), 'docs')
-        self.assertEqual(profiles(b'M\0apps/web/src/style.css\0'), 'fast')
-        self.assertEqual(profiles(('M\0specs/project.md\0M\0apps/web/src/style.css\0').encode()), 'fast')
-        self.assertEqual(profiles(('R100\0specs/project.md\0specs/investigations/new.md\0').encode()), 'docs')
-        self.assertEqual(profiles(('R100\0specs/project.md\0apps/api/code.ts\0').encode()), 'critical')
-        self.assertEqual(profiles(b'M\0apps/web/../amount.css\0'), 'critical')
-        for bad in (b'', b'M\0', b'R100\0apps/web/a.css\0', b'Z\0apps/web/a.css\0', b'M\0bad\xff\0'):
-            self.assertEqual(profiles(bad), 'critical')
+        merge = ('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'integration')
+        select = POLICY['ci_profile']
+        base = self.base
+        for index, path in enumerate(paths):
+            with self.subTest(path=path):
+                branch = 'pr-' + str(index)
+                self.git('switch', '-q', '-c', branch, base)
+                self.write(path, 'fictional change ' + path)
+                head = self.commit()
+                self.git('switch', '-q', 'main')
+                self.git(*merge, branch)
+                event = {'pull_request': {'base': {'ref': 'test', 'sha': base},
+                                          'head': {'sha': head}}}
+                self.assertEqual(select(self.root, 'pull_request', event,
+                                        'refs/pull/7/merge'), 'fast')
+                # A non-merge checkout or an unverified snapshot also stays fast,
+                # never docs.
+                self.assertEqual(select(self.root, 'pull_request', event, head), 'fast')
+                base = self.git('rev-parse', 'HEAD').decode().strip()
+        for path in ('specs/backlog/demo.md', 'specs/project.md', 'docs/guide.md'):
+            with self.subTest(docs=path):
+                branch = 'docs-' + path.replace('/', '-')
+                self.git('switch', '-q', '-c', branch, base)
+                self.write(path, 'fictional documentation')
+                head = self.commit()
+                self.git('switch', '-q', 'main')
+                self.git(*merge, branch)
+                event = {'pull_request': {'base': {'ref': 'test', 'sha': base},
+                                          'head': {'sha': head}}}
+                self.assertEqual(select(self.root, 'pull_request', event,
+                                        'refs/pull/7/merge'), 'docs')
+                # Without the verified merge ref a docs diff cannot omit checks.
+                self.assertEqual(select(self.root, 'pull_request', event, head), 'fast')
+                base = self.git('rev-parse', 'HEAD').decode().strip()
+        # A dirty worktree never inherits the committed docs comparison.
+        self.git('switch', '-q', '-c', 'dirty-pr', base)
+        self.write('specs/backlog/dirty.md', 'fictional documentation')
+        head = self.commit()
+        self.git('switch', '-q', 'main')
+        self.git(*merge, 'dirty-pr')
+        self.write('specs/backlog/uncommitted.md', 'uncommitted')
+        event = {'pull_request': {'base': {'ref': 'test', 'sha': base}, 'head': {'sha': head}}}
+        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'fast')
+
+    def test_pr_selection_never_returns_the_removed_critical_profile(self):
+        # The retired profile must not come back through the selector or the gate.
+        self.assertNotIn('full_only_pattern', POLICY)
+        self.assertNotIn('profile_records', POLICY)
+        self.assertFalse(POLICY['ci_result_ok']('critical', {
+            name: 'success' for name in ('context', 'snapshot', 'plan', 'baseline', 'verify',
+                                         'bun', 'install')} | {'prepare': 'skipped',
+                                                             'browser': 'skipped'}))
+        self.assertTrue(POLICY['ci_result_ok']('fast', {
+            name: 'success' for name in ('context', 'snapshot', 'plan', 'baseline', 'verify',
+                                         'bun', 'install')} | {'prepare': 'skipped',
+                                                             'browser': 'skipped'}))
 
     def test_ci_profile_compares_entire_pr_and_verified_integration_base(self):
         self.git('switch', '-qc', 'feature')
@@ -509,9 +542,9 @@ class CiClassifierTests(unittest.TestCase):
                  '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'integration', 'feature')
         event = {'pull_request': {'base': {'ref': 'main', 'sha': base}, 'head': {'sha': head}}}
         select = POLICY['ci_profile']
-        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'critical')
+        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'fast')
         event['pull_request']['base'] = {'ref': 'test', 'sha': base}
-        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'critical')
+        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'fast')
         event['pull_request']['base']['sha'] = head
         with self.assertRaises(ValueError):
             select(self.root, 'pull_request', event, 'refs/pull/7/merge')
@@ -621,7 +654,7 @@ class CiClassifierTests(unittest.TestCase):
         self.git(*merge, 'advanced-code')
         code_event = {'pull_request': {'base': {'ref': 'main', 'sha': stale_code},
                                        'head': {'sha': code_head}}}
-        self.assertEqual(select(self.root, 'pull_request', code_event, 'refs/pull/7/merge'), 'critical')
+        self.assertEqual(select(self.root, 'pull_request', code_event, 'refs/pull/7/merge'), 'fast')
 
 
 
@@ -740,7 +773,8 @@ class CiWorkflowTests(unittest.TestCase):
         output = self.root / 'output'
         env = {**os.environ, 'GITHUB_OUTPUT': str(output)}
         step = by_id(self.candidate, 'plan')['run']
-        for body, expected in (("print('docs')", 0), ("print('fast')", 0), ("print('critical')", 0), ("print('full')", 0),
+        for body, expected in (("print('docs')", 0), ("print('fast')", 0), ("print('full')", 0),
+                               ("print('critical')", 1),
                                ("print('bogus')", 1), ("print('')", 1),
                                ("print('docs\\nfull')", 1), ('raise RuntimeError()', 1)):
             with self.subTest(body=body):
@@ -751,31 +785,143 @@ class CiWorkflowTests(unittest.TestCase):
                 if expected:
                     self.assertFalse(output.exists())
                 else:
-                    self.assertIn(output.read_text(), ('profile=docs\n', 'profile=fast\n', 'profile=critical\n', 'profile=full\n'))
+                    self.assertIn(output.read_text(), ('profile=docs\n', 'profile=fast\n', 'profile=full\n'))
 
 
-class FullOnlyTests(unittest.TestCase):
-    def test_list_is_unique_and_every_name_exists_in_the_api_suite(self):
-        names = POLICY['FULL_ONLY_TESTS']
-        self.assertTrue(names)
-        self.assertEqual(len(names), len(set(names)))
-        texts = '\n'.join(path.read_text(encoding='utf-8')
-                          for path in (ROOT / 'apps/api/src').glob('*.test.ts'))
-        for name in names:
-            self.assertIn(name, texts)
-        self.assertEqual(len(names), 33)
-        self.assertEqual(POLICY['full_only_expected'](), 36)
-        for prefix in POLICY['FULL_ONLY_PREFIXES']:
-            self.assertIn(prefix, texts)
+class CiApplicationProfileTests(unittest.TestCase):
+    """FAST is the PR venue; FULL owns API/SQLite and E2E on the deploy tag."""
 
-    def test_pattern_excludes_every_full_only_test_and_keeps_a_control(self):
-        pattern = POLICY['full_only_pattern']()
-        for name in POLICY['FULL_ONLY_TESTS']:
-            self.assertIsNone(re.fullmatch(pattern, name))
-        for suffix in ('bundle.tmp/auth.key', 'database.sqlite/bundle.tmp', 'database #?.sqlite/key #?.bin'):
-            self.assertIsNone(re.fullmatch(
-                pattern, '31 S3: reserved-name rejection / encrypted restore for ' + suffix))
-        self.assertIsNotNone(re.fullmatch(pattern, 'AC01: a regular critical test'))
+    def test_fast_is_a_strict_subset_and_full_runs_every_suite_once(self):
+        fast = ENTRY['application_checks']('fast')
+        full = ENTRY['application_checks']('full')
+        self.assertEqual(tuple(ENTRY['FAST_APPLICATION']), ('typecheck', 'build', 'web'))
+        self.assertEqual([check[0] for check in fast], ['typecheck', 'build', 'web'])
+        self.assertEqual([check[0] for check in full],
+                         ['typecheck', 'build', 'web', 'api', 'e2e'])
+        commands = {check[0]: check[1] for check in full}
+        # The complete API suite, unfiltered: no age-free variant survives.
+        self.assertEqual(commands['api'], ['bun', 'run', 'test'])
+        self.assertEqual(commands['e2e'], ['bun', 'run', 'test:e2e'])
+        self.assertEqual(commands['web'], ['bun', 'test', 'apps/web'])
+        for check in full:
+            self.assertEqual(len(check), 3, 'no filtered API variant may return')
+
+    def test_unknown_profile_never_narrows_coverage(self):
+        for profile in ('critical', 'invalid', '', 'DOCS'):
+            self.assertEqual([check[0] for check in ENTRY['application_checks'](profile)],
+                             ['typecheck', 'build', 'web', 'api', 'e2e'])
+
+    def test_docs_profile_is_never_executed_but_never_declared_green(self):
+        # docs returns the full set; the entry point skips it explicitly instead.
+        # Nothing may treat an unknown/documented profile as a narrow run.
+        self.assertEqual(ENTRY['application_checks']('docs'),
+                         ENTRY['application_checks']('full'))
+
+
+class CiHarnessSelectionTests(unittest.TestCase):
+    """FAST narrows harness regressions by declared inputs; every doubt runs all."""
+
+    def all_suites(self):
+        return tuple(name for name, _ in POLICY['HARNESS_INPUTS'])
+
+    def test_declarations_cover_the_verify_suites_exactly_once(self):
+        declared = [name for name, _ in POLICY['HARNESS_INPUTS']]
+        self.assertEqual(len(declared), len(set(declared)))
+        self.assertEqual(set(declared), set(ENTRY['HARNESS_SUITES']))
+        for name, inputs in POLICY['HARNESS_INPUTS']:
+            self.assertIsInstance(name, str)
+            for entry in inputs:
+                # Declarations are repository-relative prefixes or exact files.
+                self.assertTrue(entry and not entry.startswith('/') and '\\' not in entry, entry)
+                self.assertEqual(entry, entry.strip())
+
+    def test_application_only_paths_omit_every_harness_regression(self):
+        for paths in (('apps/web/src/amount.ts',), ('apps/api/src/database.ts', 'tests/e2e/a.spec.ts'),
+                      ['artifacts'.replace('artifacts', 'apps/web/src/style.css')]):
+            with self.subTest(paths=paths):
+                self.assertEqual(POLICY['harness_suites'](paths), ())
+                self.assertEqual(ENTRY['baseline_checks']('fast', harness=POLICY['harness_suites'](paths)),
+                                 ENTRY['baseline_checks']('docs'))
+
+    def test_contract_inputs_select_every_suite(self):
+        for path in ('templates/specification.md', '.agents/skills/relay/SKILL.md', 'AGENTS.md',
+                     'CLAUDE.md', 'scripts/verify', 'scripts/ci_policy.py',
+                     'specs/methodology/ci-policy.md', 'specs/guidelines/quality.md'):
+            with self.subTest(path=path):
+                self.assertEqual(POLICY['harness_suites']((path,)), self.all_suites())
+
+    def test_declared_inputs_select_only_their_own_suites(self):
+        cases = {
+            'infra/release.py': ('test-release',),
+            'README.md': ('test-validator',),
+            'docs/USAGE_REPORTS.md': ('test-validator', 'test-agent-usage'),
+            'package.json': ('test-checks', 'test-release'),
+            '.github/workflows/validate.yml': ('test-validator', 'test-checks',
+                                               'test-verification', 'test-release'),
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                self.assertEqual(POLICY['harness_suites']((path,)), expected)
+
+    def test_unknown_or_malformed_inputs_fail_closed(self):
+        for paths in (None, (), [], ['unknown/input.txt'], ['apps/web/src/a.ts', 'unknown/x'],
+                     ['.'], [''], ['apps//web'], ['../apps/web/a.ts'], [7], ['apps/web/a.ts', None]):
+            with self.subTest(paths=paths):
+                self.assertEqual(POLICY['harness_suites'](paths), self.all_suites())
+
+    def test_full_profile_and_docs_profile_keep_their_own_selection(self):
+        everything = ENTRY['baseline_checks']('full')
+        self.assertEqual(ENTRY['baseline_checks']('full', harness=()), everything)
+        self.assertEqual(ENTRY['baseline_checks']('full', harness=('test-release',)), everything)
+        omitted = [name for name, _, _ in ENTRY['baseline_checks']('docs')]
+        self.assertTrue(omitted)
+        for check in ENTRY['baseline_checks']('docs'):
+            self.assertNotIn(check[0], ENTRY['HARNESS_SUITES'])
+
+    def test_verified_git_comparison_drives_the_selection(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name) / 'repo'; root.mkdir()
+        def git(*args):
+            return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
+        git('init', '-q', '--initial-branch=main')
+        (root / 'AGENTS.md').write_text('fixture\n')
+        (root / 'apps/web').mkdir(parents=True)
+        (root / 'apps/web/app.ts').write_text('export const total = 1;\n')
+        git('add', '-A')
+        git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'base')
+        base = git('rev-parse', 'HEAD').decode().strip()
+        # Application-only change: no harness suite can regress.
+        (root / 'apps/web/app.ts').write_text('export const total = 2;\n')
+        git('add', '-A')
+        git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'app')
+        app = git('rev-parse', 'HEAD').decode().strip()
+        self.assertEqual(POLICY['harness_suites'](POLICY['changed_paths'](root, base, app)), ())
+        # Harness instruction change: the complete set returns.
+        (root / 'AGENTS.md').write_text('fixture changed\n')
+        git('add', '-A')
+        git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'harness')
+        harness = git('rev-parse', 'HEAD').decode().strip()
+        self.assertEqual(POLICY['harness_suites'](POLICY['changed_paths'](root, app, harness)),
+                         self.all_suites())
+        # An unverifiable comparison never narrows.
+        self.assertIsNone(POLICY['changed_paths'](root, 'f' * 40, harness))
+        self.assertEqual(POLICY['harness_suites'](None), self.all_suites())
+
+    def test_unverifiable_events_keep_every_suite(self):
+        # A manual dispatch has no comparison, and an unsupported push cannot be
+        # classified: both compose to the complete harness set, never a subset.
+        for event_name, event in (('workflow_dispatch', {}),
+                                  ('push', {'ref': 'refs/heads/feature', 'after': 'a' * 40})):
+            with self.subTest(event=event_name):
+                try:
+                    _, paths = POLICY['ci_comparison'](ROOT, event_name, event)
+                except ValueError:
+                    paths = None
+                self.assertEqual(POLICY['harness_suites'](paths), self.all_suites())
 
 
 class CiResultTests(unittest.TestCase):
@@ -805,7 +951,7 @@ class CiResultTests(unittest.TestCase):
 
     def test_single_job_result_matrix_rejects_every_missing_failed_skipped_cancelled_phase(self):
         gate = POLICY['ci_result_ok']
-        for profile in ('docs', 'fast', 'critical', 'full'):
+        for profile in ('docs', 'fast', 'full'):
             states = {name: 'success' for name in ('context','snapshot','plan','baseline','verify')}
             states.update({name: 'success' if profile != 'docs' else 'skipped' for name in ('bun','install')})
             states['prepare'] = 'success' if profile == 'full' else 'skipped'
@@ -1080,7 +1226,7 @@ class CiLinuxTests(unittest.TestCase):
             self.assertEqual(self.calls, [])
 
 
-class RootlessWorkflowTests(unittest.TestCase):
+class CiRootlessWorkflowTests(unittest.TestCase):
     """The deploy workflow may only build and deploy; suites live in the profiles."""
 
     def setUp(self):

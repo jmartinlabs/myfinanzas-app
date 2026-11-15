@@ -151,7 +151,7 @@ Estado · <Task ID> (<client>, <session>): <STATE> — <last known event>. Acci�
 ## 9. Full status (read-only, on request)
 
 When the user asks for the full state, orchestrate reports every open task from the existing sources
-(progress, setup or board summary and open checkpoints). Reread the sources or check Git and PR state only
+(progress, setup or Issue summary and open checkpoints). Reread the sources or check Git and PR state only
 if the user asks for verification, or if the summary is stale or unknown. For each open task show:
 
 - Task ID and functional name; client; session; state; and **provenance**: `verificado` (checked

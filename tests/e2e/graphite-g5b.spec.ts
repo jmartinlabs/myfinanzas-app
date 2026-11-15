@@ -274,6 +274,11 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
     "font-size",
     "12px",
   );
+  // Regresión: la ficha de Deudas conserva sus dos columnas (G5d no se filtra).
+  await expect(page.locator(".debt-detail .e44-facts").first()).toHaveCSS(
+    "grid-template-columns",
+    /^[^ ]+ [^ ]+$/,
+  );
   await expect(
     page.locator(".debt-detail .e44-history-desktop th").last(),
   ).toHaveCSS("font-size", "12px");

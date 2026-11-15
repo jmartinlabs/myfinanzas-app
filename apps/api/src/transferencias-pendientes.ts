@@ -60,8 +60,9 @@ type PendingRow = {
 type LineRow = {
   id: number;
   reparto: number;
-  clase: "Presupuesto" | "Adicional";
+  clase: "Presupuesto" | "Adicional" | "Partida";
   presupuesto: string | null;
+  partida: string | null;
   origen: string | null;
   destino: string | null;
   importe: number | null;
@@ -237,6 +238,39 @@ function budget(db: Database, id: string): BudgetRow | null {
   );
 }
 
+type PartidaRow = {
+  id: string;
+  nombre: string;
+  estado: "Activa" | "Inactiva";
+  padre_partida: string | null;
+};
+
+function partida(db: Database, id: string): PartidaRow | null {
+  return (
+    (db
+      .query(
+        "SELECT id,nombre,estado,padre_partida FROM partidas WHERE id=?",
+      )
+      .get(id) as PartidaRow | null) ?? null
+  );
+}
+
+/** Published D′ monthly plan row; Del mes/Ejecutado/Pendiente are not recomputed. */
+function monthlyPlan(
+  db: Database,
+  ciclo: string,
+  raiz: string,
+): { fuente: string; destino: string | null } | null {
+  return (
+    (db
+      .query(
+        "SELECT fuente,destino FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?",
+      )
+      .get(ciclo, raiz) as { fuente: string; destino: string | null } | null) ??
+    null
+  );
+}
+
 function movement(db: Database, id: string): MovementRow | null {
   const row = db
     .query(
@@ -345,6 +379,20 @@ function conditions(db: Database, row: PendingRow): Condicion {
               motivos.add("PRESUPUESTO_DESTINO");
           }
         }
+        if (l.clase === "Partida" && l.partida) {
+          const p = partida(db, l.partida);
+          if (!p) motivos.add("PARTIDA_NO_DISPONIBLE");
+          else {
+            if (p.estado !== "Activa") motivos.add("PARTIDA_INACTIVA");
+            const plan = monthlyPlan(db, l.ciclo, l.partida);
+            if (!plan) motivos.add("SIN_PLAN");
+            else {
+              if (plan.fuente !== "Aportación a saldo")
+                motivos.add("FUENTE_NO_APORTACION");
+              if (plan.destino !== row.destino) motivos.add("PARTIDA_DESTINO");
+            }
+          }
+        }
       }
     }
   }
@@ -370,6 +418,9 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
     l?.clase === "Presupuesto" && l.presupuesto
       ? budget(db, l.presupuesto)
       : null;
+  const p =
+    l?.clase === "Partida" && l.partida ? partida(db, l.partida) : null;
+  const planPartida = p && l ? monthlyPlan(db, l.ciclo, p.id) : null;
   const m = row.movimiento ? movement(db, row.movimiento) : null;
   return {
     id: row.id,
@@ -389,6 +440,7 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
           reparto: l.reparto,
           clase: l.clase,
           presupuesto: l.presupuesto,
+          partida: l.partida,
           incluida: l.incluida === 1,
           motivoExclusion: l.motivo_exclusion,
         }
@@ -402,6 +454,16 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
         }
       : null,
     presupuesto: b,
+    partida: p
+      ? {
+          id: p.id,
+          nombre: p.nombre,
+          estado: p.estado,
+          raiz: p.padre_partida === null,
+          fuente: planPartida?.fuente ?? null,
+          destino: planPartida?.destino ?? null,
+        }
+      : null,
     gasto: row.gasto,
     anticipo: row.anticipo,
     movimiento: m
@@ -532,6 +594,54 @@ export function crearTransferenciaPendiente(
         "PRESUPUESTO_DESTINO",
         "El destino de la línea no coincide con el destino actual del Presupuesto.",
         { destino: "El destino procede del Presupuesto y no es editable." },
+      );
+  }
+  if (l.clase === "Partida") {
+    // D8 on the active source entity: no new pending for an inactive Partida
+    // or for a Partida whose published D′ line no longer matches.
+    if (!l.partida)
+      throw new Problem(422, "VALIDATION", "La línea no referencia una Partida.");
+    const p = partida(db, l.partida);
+    if (!p)
+      throw new Problem(
+        422,
+        "PARTIDA_NO_DISPONIBLE",
+        "La Partida de la línea no está disponible.",
+      );
+    if (p.padre_partida !== null)
+      throw new Problem(
+        422,
+        "PARTIDA_NO_RAIZ",
+        "Solo una Partida raíz genera una Transferencia pendiente.",
+      );
+    if (p.estado !== "Activa")
+      throw new Problem(
+        422,
+        "PARTIDA_INACTIVA",
+        "No se crea un pendiente nuevo hacia una Partida inactiva.",
+        { partida: "Reactiva la Partida o excluye la línea." },
+      );
+    const plan = monthlyPlan(db, l.ciclo, p.id);
+    if (!plan)
+      throw new Problem(
+        422,
+        "SIN_PLAN",
+        "La Partida ya no tiene línea en el Plan mensual D′ de este Ciclo.",
+        { partida: "Revisa el Plan mensual D′ del Ciclo." },
+      );
+    if (plan.fuente !== "Aportación a saldo")
+      throw new Problem(
+        422,
+        "FUENTE_NO_APORTACION",
+        "Solo una Aportación a saldo genera Transferencia pendiente.",
+        { partida: "La fuente debe ser Aportación a saldo." },
+      );
+    if (plan.destino !== l.destino)
+      throw new Problem(
+        422,
+        "PARTIDA_DESTINO",
+        "El destino de la línea no coincide con el destino actual del Plan mensual D′.",
+        { destino: "El destino procede de la Partida y no es editable." },
       );
   }
   const previous = existingForLine(db, l.id);
@@ -684,6 +794,7 @@ function budgetEffect(db: Database, row: PendingRow) {
       return {
         aplica: false,
         presupuesto: l.presupuesto,
+        partida: null,
         fuente: null,
         destino: null,
         motivo: "El Presupuesto no está disponible.",
@@ -695,11 +806,42 @@ function budgetEffect(db: Database, row: PendingRow) {
     return {
       aplica,
       presupuesto: b.id,
+      partida: null,
       fuente: b.fuente,
       destino: b.destino,
       motivo: aplica
         ? "La Transferencia ejecuta la Aportación a saldo de su Presupuesto."
         : "La Transferencia ya no ejecuta esa Aportación a saldo; revisa el Presupuesto.",
+    };
+  }
+  if (l?.clase === "Partida" && l.partida) {
+    // The D′ monthly plan published for the pending Cycle is the only source of
+    // the Partida effect; nothing is recalculated here.
+    const p = partida(db, l.partida);
+    if (!p)
+      return {
+        aplica: false,
+        presupuesto: null,
+        partida: l.partida,
+        fuente: null,
+        destino: null,
+        motivo: "La Partida no está disponible.",
+      };
+    const plan = monthlyPlan(db, l.ciclo, p.id);
+    const aplica =
+      p.estado === "Activa" &&
+      plan !== null &&
+      plan.fuente === "Aportación a saldo" &&
+      plan.destino === row.destino;
+    return {
+      aplica,
+      presupuesto: null,
+      partida: p.id,
+      fuente: plan?.fuente ?? null,
+      destino: plan?.destino ?? null,
+      motivo: aplica
+        ? "La Transferencia ejecuta la Aportación a saldo de su Partida en el Plan mensual D′."
+        : "La Transferencia ya no ejecuta esa Aportación a saldo; revisa la Partida y el Plan mensual D′.",
     };
   }
   const active = db
@@ -711,6 +853,7 @@ function budgetEffect(db: Database, row: PendingRow) {
     return {
       aplica: true,
       presupuesto: active[0].id,
+      partida: null,
       fuente: active[0].fuente,
       destino: active[0].destino,
       motivo:
@@ -724,6 +867,7 @@ function budgetEffect(db: Database, row: PendingRow) {
   return {
     aplica: false,
     presupuesto: null,
+    partida: null,
     fuente: null,
     destino: row.destino,
     motivo:

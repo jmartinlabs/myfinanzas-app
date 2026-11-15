@@ -90,7 +90,7 @@ nuevo.
 
 1. Antes de pedir aprobación, identificar decisión y objeto: PR número + HEAD SHA;
    spec ID + revisión; entrega/alcance de desarrollo; entorno si corresponde.
-2. Tras autorizar, registrar en tablero o checkpoint: decisión, objeto/revisión y texto
+2. Tras autorizar, registrar en la Issue (y checkpoint si aplica): decisión, objeto/revisión y texto
    del mensaje **real del usuario**, con fecha. Un commit o nota de agente que diga
    «usuario aprobó» **no demuestra** que existió aprobación.
 3. No volver a pedir una autorización inequívoca ya concedida para el mismo objeto y

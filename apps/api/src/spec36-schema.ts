@@ -554,3 +554,378 @@ export function repartoMensualSchemaV28(db: Database) {
       "Migración v28 rechazada: claves foráneas inconsistentes.",
     );
 }
+
+/**
+ * SPEC36 — schema 29 (28 → 29). Reconstruction of the two distribution tables
+ * required by the approved C amendment (two plan sources, 2026-11-11):
+ *  - `repartos` gains `fuente_plan` (`PlanCiclo`|`Dprima`), mandatory and
+ *    without DEFAULT. Every v28 row is backfilled to `PlanCiclo`.
+ *  - `reparto_lineas` admits `clase='Partida'`, adds `partida` and requires
+ *    exactly one source reference per class (`presupuesto` XOR `partida`).
+ *
+ * SQLite cannot add a NOT NULL column without DEFAULT nor change a CHECK in
+ * place, so both tables are rebuilt. IDs, rows, CHECKs, STRICT mode, indexes
+ * and the FK from `transferencia_pendiente.reparto_linea` are preserved.
+ * `reparto_lineas` is copied before its triggers are recreated, so historical
+ * rows (including `Completado` distributions) are not reinterpreted.
+ *
+ * `transferencia_pendiente` keeps its table, states, idempotency and
+ * confirmation; only the two triggers relating it to a distribution line are
+ * replaced (D8 for `Presupuesto` and `Partida`). `reparto_audit_revision` is
+ * not touched.
+ *
+ * The caller disables `foreign_keys` before the opening IMMEDIATE transaction
+ * when upgrading a database that already contains v28 rows. Runs inside that
+ * transaction: a failure rolls every DDL and copy back.
+ */
+export function repartoMensualSchemaV29(db: Database) {
+  const version = (
+    db.query("SELECT version FROM schema_version").get() as {
+      version: number;
+    } | null
+  )?.version;
+  if (version !== 28)
+    throw new Error(
+      "Esquema previo inesperado para migración SPEC36 v29.",
+    );
+
+  db.exec(`
+    CREATE TEMP TABLE spec36_v29_repartos AS
+      SELECT id,ciclo,estado,origen_comun,revision,creado,actualizado
+      FROM repartos;
+    CREATE TEMP TABLE spec36_v29_reparto_lineas AS
+      SELECT id,reparto,clase,presupuesto,origen,destino,importe,
+        fecha_prevista,concepto,nota,incluida,motivo_exclusion,revision,
+        creado,actualizado
+      FROM reparto_lineas;
+
+    DROP TRIGGER transferencia_pendiente_linea_reparto;
+    DROP TRIGGER transferencia_pendiente_linea_reparto_update;
+    DROP TABLE reparto_lineas;
+    DROP TABLE repartos;
+
+    CREATE TABLE repartos(
+      id INTEGER PRIMARY KEY,
+      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,
+      fuente_plan TEXT NOT NULL
+        CHECK(fuente_plan IN ('PlanCiclo','Dprima')),
+      estado TEXT NOT NULL
+        CHECK(estado IN ('Borrador','Generado','Completado')),
+      origen_comun TEXT REFERENCES saldos(id) ON DELETE RESTRICT,
+      revision INTEGER NOT NULL CHECK(revision>0),
+      creado TEXT NOT NULL CHECK(
+        length(creado)=24
+        AND creado GLOB
+          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'
+      ),
+      actualizado TEXT NOT NULL CHECK(
+        length(actualizado)=24
+        AND actualizado GLOB
+          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'
+      ),
+      CHECK(actualizado>=creado)
+    ) STRICT;
+
+    CREATE TABLE reparto_lineas(
+      id INTEGER PRIMARY KEY,
+      reparto INTEGER NOT NULL REFERENCES repartos(id) ON DELETE RESTRICT,
+      clase TEXT NOT NULL
+        CHECK(clase IN ('Presupuesto','Adicional','Partida')),
+      presupuesto TEXT REFERENCES presupuestos(id) ON DELETE RESTRICT,
+      partida TEXT REFERENCES partidas(id) ON DELETE RESTRICT,
+      origen TEXT REFERENCES saldos(id) ON DELETE RESTRICT,
+      destino TEXT REFERENCES saldos(id) ON DELETE RESTRICT,
+      importe INTEGER CHECK(importe IS NULL OR importe>0),
+      fecha_prevista TEXT NOT NULL CHECK(
+        length(fecha_prevista)=10
+        AND fecha_prevista GLOB
+          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+        AND julianday(fecha_prevista) IS NOT NULL
+        AND date(julianday(fecha_prevista))=fecha_prevista
+      ),
+      concepto TEXT,
+      nota TEXT,
+      incluida INTEGER NOT NULL DEFAULT 1 CHECK(incluida IN (0,1)),
+      motivo_exclusion TEXT,
+      revision INTEGER NOT NULL CHECK(revision>0),
+      creado TEXT NOT NULL CHECK(
+        length(creado)=24
+        AND creado GLOB
+          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'
+      ),
+      actualizado TEXT NOT NULL CHECK(
+        length(actualizado)=24
+        AND actualizado GLOB
+          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'
+      ),
+      CHECK(actualizado>=creado),
+      CHECK(
+        (clase='Presupuesto'
+          AND presupuesto IS NOT NULL AND partida IS NULL)
+        OR (clase='Adicional'
+          AND presupuesto IS NULL AND partida IS NULL)
+        OR (clase='Partida'
+          AND presupuesto IS NULL AND partida IS NOT NULL)
+      ),
+      CHECK(
+        (incluida=1
+          AND origen IS NOT NULL AND destino IS NOT NULL
+          AND importe IS NOT NULL)
+        OR (incluida=0
+          AND motivo_exclusion IS NOT NULL
+          AND length(trim(motivo_exclusion))>0)
+      ),
+      CHECK(origen IS NULL OR origen!='S000'),
+      CHECK(destino IS NULL OR destino!='S000'),
+      CHECK(origen IS NULL OR destino IS NULL OR origen!=destino)
+    ) STRICT;
+
+    INSERT INTO repartos(
+      id,ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado)
+    SELECT id,ciclo,'PlanCiclo',estado,origen_comun,revision,creado,actualizado
+    FROM spec36_v29_repartos;
+
+    INSERT INTO reparto_lineas(
+      id,reparto,clase,presupuesto,partida,origen,destino,importe,
+      fecha_prevista,concepto,nota,incluida,motivo_exclusion,revision,
+      creado,actualizado)
+    SELECT id,reparto,clase,presupuesto,NULL,origen,destino,importe,
+      fecha_prevista,concepto,nota,incluida,motivo_exclusion,revision,
+      creado,actualizado
+    FROM spec36_v29_reparto_lineas;
+
+    CREATE UNIQUE INDEX repartos_ciclo_unico ON repartos(ciclo);
+    CREATE INDEX reparto_lineas_reparto ON reparto_lineas(reparto);
+
+    CREATE TRIGGER reparto_no_delete
+      BEFORE DELETE ON repartos
+      BEGIN SELECT RAISE(ABORT,'no delete'); END;
+    CREATE TRIGGER reparto_identidad_immutable
+      BEFORE UPDATE OF id,ciclo ON repartos
+      WHEN NEW.id IS NOT OLD.id OR NEW.ciclo IS NOT OLD.ciclo
+      BEGIN SELECT RAISE(ABORT,'immutable reparto identity'); END;
+    CREATE TRIGGER reparto_initial
+      BEFORE INSERT ON repartos
+      WHEN NEW.revision!=1 OR NEW.estado!='Borrador'
+      BEGIN SELECT RAISE(ABORT,'initial reparto requires revision 1 and Borrador'); END;
+    CREATE TRIGGER reparto_revision
+      BEFORE UPDATE ON repartos
+      WHEN NEW.revision!=OLD.revision+1
+      BEGIN SELECT RAISE(ABORT,'reparto revision must advance by one'); END;
+    CREATE TRIGGER reparto_terminal
+      BEFORE UPDATE ON repartos
+      WHEN OLD.estado='Completado'
+      BEGIN SELECT RAISE(ABORT,'completed reparto is immutable'); END;
+    CREATE TRIGGER reparto_transition
+      BEFORE UPDATE ON repartos
+      WHEN NEW.estado!=OLD.estado
+        AND NOT (
+          (OLD.estado='Borrador' AND NEW.estado='Generado')
+          OR (OLD.estado='Generado' AND NEW.estado='Completado')
+        )
+      BEGIN SELECT RAISE(ABORT,'invalid reparto state transition'); END;
+    CREATE TRIGGER reparto_origen_congelado
+      BEFORE UPDATE ON repartos
+      WHEN OLD.estado!='Borrador' AND NEW.origen_comun IS NOT OLD.origen_comun
+      BEGIN SELECT RAISE(ABORT,'reparto origin is frozen after generation'); END;
+    CREATE TRIGGER reparto_fuente_inmutable
+      BEFORE UPDATE OF fuente_plan ON repartos
+      WHEN NEW.fuente_plan IS NOT OLD.fuente_plan
+        AND (OLD.estado!='Borrador'
+          OR EXISTS (
+            SELECT 1 FROM reparto_lineas WHERE reparto=OLD.id
+          ))
+      BEGIN SELECT RAISE(ABORT,'reparto plan source is frozen after lines or generation'); END;
+
+    CREATE TRIGGER reparto_linea_no_delete
+      BEFORE DELETE ON reparto_lineas
+      BEGIN SELECT RAISE(ABORT,'no delete'); END;
+    CREATE TRIGGER reparto_linea_identidad_immutable
+      BEFORE UPDATE OF id,reparto ON reparto_lineas
+      WHEN NEW.id IS NOT OLD.id OR NEW.reparto IS NOT OLD.reparto
+      BEGIN SELECT RAISE(ABORT,'immutable reparto line identity'); END;
+    CREATE TRIGGER reparto_linea_initial
+      BEFORE INSERT ON reparto_lineas
+      WHEN NEW.revision!=1
+        OR (SELECT estado FROM repartos WHERE id=NEW.reparto)
+          NOT IN ('Borrador','Generado')
+      BEGIN SELECT RAISE(ABORT,'invalid initial reparto line'); END;
+    CREATE TRIGGER reparto_linea_revision
+      BEFORE UPDATE ON reparto_lineas
+      WHEN NEW.revision!=OLD.revision+1
+      BEGIN SELECT RAISE(ABORT,'reparto line revision must advance by one'); END;
+    CREATE TRIGGER reparto_linea_congelada
+      BEFORE UPDATE ON reparto_lineas
+      WHEN (SELECT estado FROM repartos WHERE id=OLD.reparto)<>'Borrador'
+        OR EXISTS (
+          SELECT 1 FROM transferencia_pendiente
+          WHERE reparto_linea=OLD.id
+        )
+      BEGIN SELECT RAISE(ABORT,'reparto line is frozen'); END;
+    CREATE TRIGGER reparto_linea_fuente_insert
+      BEFORE INSERT ON reparto_lineas
+      WHEN NOT EXISTS (
+        SELECT 1 FROM repartos r
+        WHERE r.id=NEW.reparto
+          AND (
+            NEW.clase='Adicional'
+            OR (NEW.clase='Presupuesto' AND r.fuente_plan='PlanCiclo')
+            OR (NEW.clase='Partida' AND r.fuente_plan='Dprima')
+          )
+      )
+      BEGIN SELECT RAISE(ABORT,'reparto line class must match plan source'); END;
+    CREATE TRIGGER reparto_linea_fuente_update
+      BEFORE UPDATE OF clase,reparto ON reparto_lineas
+      WHEN NOT EXISTS (
+        SELECT 1 FROM repartos r
+        WHERE r.id=NEW.reparto
+          AND (
+            NEW.clase='Adicional'
+            OR (NEW.clase='Presupuesto' AND r.fuente_plan='PlanCiclo')
+            OR (NEW.clase='Partida' AND r.fuente_plan='Dprima')
+          )
+      )
+      BEGIN SELECT RAISE(ABORT,'reparto line class must match plan source'); END;
+    CREATE TRIGGER reparto_linea_presupuesto_destino_insert
+      BEFORE INSERT ON reparto_lineas
+      WHEN (NEW.clase='Presupuesto' AND NEW.destino IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM presupuestos p
+          WHERE p.id=NEW.presupuesto AND p.destino=NEW.destino
+        ))
+        OR (NEW.clase='Partida' AND NEW.destino IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM repartos r
+          JOIN dprima_plan_mensual m
+            ON m.ciclo=r.ciclo AND m.raiz=NEW.partida
+          JOIN partidas p ON p.id=NEW.partida
+          WHERE r.id=NEW.reparto
+            AND m.destino=NEW.destino
+            AND p.estado='Activa'
+            AND p.padre_partida IS NULL
+        ))
+      BEGIN SELECT RAISE(ABORT,'reparto line must match its budget destination'); END;
+    CREATE TRIGGER reparto_linea_presupuesto_destino_update
+      BEFORE UPDATE OF clase,presupuesto,partida,destino ON reparto_lineas
+      WHEN (NEW.clase='Presupuesto' AND NEW.destino IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM presupuestos p
+          WHERE p.id=NEW.presupuesto AND p.destino=NEW.destino
+        ))
+        OR (NEW.clase='Partida' AND NEW.destino IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM repartos r
+          JOIN dprima_plan_mensual m
+            ON m.ciclo=r.ciclo AND m.raiz=NEW.partida
+          JOIN partidas p ON p.id=NEW.partida
+          WHERE r.id=NEW.reparto
+            AND m.destino=NEW.destino
+            AND p.estado='Activa'
+            AND p.padre_partida IS NULL
+        ))
+      BEGIN SELECT RAISE(ABORT,'reparto line must match its budget destination'); END;
+    CREATE TRIGGER reparto_linea_saldos_elegibles_insert
+      BEFORE INSERT ON reparto_lineas
+      WHEN (NEW.origen IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM saldos s
+          WHERE s.id=NEW.origen AND s.estado='Activa'
+            AND s.tipo!='Exterior' AND s.control!='Exterior'
+        ))
+        OR (NEW.destino IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM saldos s
+          WHERE s.id=NEW.destino AND s.estado='Activa'
+            AND s.tipo!='Exterior' AND s.control!='Exterior'
+        ))
+      BEGIN SELECT RAISE(ABORT,'invalid reparto line saldo'); END;
+    CREATE TRIGGER reparto_linea_saldos_elegibles_update
+      BEFORE UPDATE OF origen,destino ON reparto_lineas
+      WHEN (NEW.origen IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM saldos s
+          WHERE s.id=NEW.origen AND s.estado='Activa'
+            AND s.tipo!='Exterior' AND s.control!='Exterior'
+        ))
+        OR (NEW.destino IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM saldos s
+          WHERE s.id=NEW.destino AND s.estado='Activa'
+            AND s.tipo!='Exterior' AND s.control!='Exterior'
+        ))
+      BEGIN SELECT RAISE(ABORT,'invalid reparto line saldo'); END;
+
+    CREATE TRIGGER transferencia_pendiente_linea_reparto
+      BEFORE INSERT ON transferencia_pendiente
+      WHEN NEW.origen_tipo='Reparto'
+        AND NOT EXISTS (
+          SELECT 1 FROM reparto_lineas l
+          JOIN repartos r ON r.id=l.reparto
+          WHERE l.id=NEW.reparto_linea
+            AND l.incluida=1
+            AND r.estado='Generado'
+            AND r.ciclo=NEW.ciclo_origen
+            AND l.origen IS NEW.origen
+            AND l.destino IS NEW.destino
+            AND l.importe IS NEW.importe
+            AND (
+              l.clase='Adicional'
+              OR (l.clase='Presupuesto' AND EXISTS (
+                SELECT 1 FROM presupuestos p
+                WHERE p.id=l.presupuesto
+                  AND p.estado='Activo'
+                  AND p.destino=NEW.destino
+              ))
+              OR (l.clase='Partida' AND EXISTS (
+                SELECT 1 FROM partidas p
+                JOIN dprima_plan_mensual m
+                  ON m.ciclo=r.ciclo AND m.raiz=p.id
+                WHERE p.id=l.partida
+                  AND p.estado='Activa'
+                  AND p.padre_partida IS NULL
+                  AND m.destino=NEW.destino
+              ))
+            )
+        )
+      BEGIN SELECT RAISE(ABORT,'pending must match an included line of its cycle'); END;
+    CREATE TRIGGER transferencia_pendiente_linea_reparto_update
+      BEFORE UPDATE OF reparto_linea,origen,destino,importe,ciclo_origen
+        ON transferencia_pendiente
+      WHEN NEW.origen_tipo='Reparto'
+        AND NOT EXISTS (
+          SELECT 1 FROM reparto_lineas l
+          JOIN repartos r ON r.id=l.reparto
+          WHERE l.id=NEW.reparto_linea
+            AND l.incluida=1
+            AND r.estado='Generado'
+            AND r.ciclo=NEW.ciclo_origen
+            AND l.origen IS NEW.origen
+            AND l.destino IS NEW.destino
+            AND l.importe IS NEW.importe
+            AND (
+              l.clase='Adicional'
+              OR (l.clase='Presupuesto' AND EXISTS (
+                SELECT 1 FROM presupuestos p
+                WHERE p.id=l.presupuesto
+                  AND p.estado='Activo'
+                  AND p.destino=NEW.destino
+              ))
+              OR (l.clase='Partida' AND EXISTS (
+                SELECT 1 FROM partidas p
+                JOIN dprima_plan_mensual m
+                  ON m.ciclo=r.ciclo AND m.raiz=p.id
+                WHERE p.id=l.partida
+                  AND p.estado='Activa'
+                  AND p.padre_partida IS NULL
+                  AND m.destino=NEW.destino
+              ))
+            )
+        )
+      BEGIN SELECT RAISE(ABORT,'pending must match an included line of its cycle'); END;
+
+    DROP TABLE spec36_v29_reparto_lineas;
+    DROP TABLE spec36_v29_repartos;
+
+    UPDATE schema_version SET version=29;
+  `);
+  if (db.query("PRAGMA foreign_key_check").all().length)
+    throw new Error(
+      "Migración v29 rechazada: claves foráneas inconsistentes.",
+    );
+}

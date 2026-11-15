@@ -14,7 +14,7 @@ import {
   verifyAdmittedContract,
   verifyContract,
 } from "./schema-contract";
-import { repartoMensualSchemaV28 } from "./spec36-schema";
+import { repartoMensualSchemaV28, repartoMensualSchemaV29 } from "./spec36-schema";
 import { materializeContract } from "../test-support/inversiones-schema";
 
 process.env.NODE_ENV = "test";
@@ -24,6 +24,7 @@ const t2 = "2026-01-02T00:00:00.000Z";
 const t3 = "2026-01-03T00:00:00.000Z";
 const c27 = "C27-E411-FOTOS-PERIODO";
 const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
+const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec36-"));
 const fp = "a".repeat(64);
 
@@ -55,6 +56,7 @@ function budget(
 
 type RepartoOptions = Partial<{
   ciclo: string;
+  fuente_plan: string;
   estado: string;
   origen_comun: string | null;
   revision: number;
@@ -63,15 +65,16 @@ type RepartoOptions = Partial<{
 function reparto(db: Database, options: RepartoOptions = {}): number {
   const row = {
     ciclo: "1",
+    fuente_plan: "PlanCiclo",
     estado: "Borrador",
     origen_comun: "S001",
     revision: 1,
     ...options,
   };
   db.run(
-    `INSERT INTO repartos(ciclo,estado,origen_comun,revision,creado,actualizado)
-     VALUES(?,?,?,?,?,?)`,
-    [row.ciclo, row.estado, row.origen_comun, row.revision, t, t],
+    `INSERT INTO repartos(ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado)
+     VALUES(?,?,?,?,?,?,?)`,
+    [row.ciclo, row.fuente_plan, row.estado, row.origen_comun, row.revision, t, t],
   );
   return (
     db.query("SELECT last_insert_rowid() AS id").get() as { id: number }
@@ -82,6 +85,7 @@ type LineOptions = Partial<{
   reparto: number;
   clase: string;
   presupuesto: string | null;
+  partida: string | null;
   origen: string | null;
   destino: string | null;
   importe: number | null;
@@ -98,6 +102,7 @@ function line(db: Database, options: LineOptions = {}): number {
     reparto: 1,
     clase: "Presupuesto",
     presupuesto: "PRE0001",
+    partida: null,
     origen: "S001",
     destino: "S002",
     importe: 10000,
@@ -110,13 +115,14 @@ function line(db: Database, options: LineOptions = {}): number {
     ...options,
   };
   db.run(
-    `INSERT INTO reparto_lineas(reparto,clase,presupuesto,origen,destino,importe,
+    `INSERT INTO reparto_lineas(reparto,clase,presupuesto,partida,origen,destino,importe,
        fecha_prevista,concepto,nota,incluida,motivo_exclusion,revision,creado,actualizado)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       row.reparto,
       row.clase,
       row.presupuesto,
+      row.partida,
       row.origen,
       row.destino,
       row.importe,
@@ -317,7 +323,151 @@ function v27(path: string) {
   });
 }
 
-test("SPEC36 v28: C28 is exact and deterministic", () => {
+function v28WithData(path: string) {
+  materializeContract(path, c28, (db) => {
+    const time = t;
+    const time2 = t2;
+    const time3 = t3;
+    const insertSaldo = db.prepare(
+      `INSERT INTO saldos VALUES(?,?,?,?,'Activa',NULL,0,0,0,NULL,NULL,NULL,NULL,1,?,?)`,
+    );
+    for (const [id, nombre, tipo, control] of [
+      ["S001", "Cuenta ficticia", "Efectivo", "Movimientos"],
+      ["S002", "Destino ficticio", "Efectivo", "Movimientos"],
+      ["S003", "Terminal ficticio", "Efectivo", "Terminal"],
+    ])
+      insertSaldo.run(id, nombre, tipo, control, time, time);
+    insertSaldo.finalize();
+    for (const id of ["1", "2", "3"])
+      db.run(
+        "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES(?,?,0,?)",
+        [id, `2026-0${id}-01`, time],      );
+    db.run(
+      `INSERT INTO presupuestos(id,nombre,fuente,destino,estado,revision,creado,actualizado)
+       VALUES('PRE0001','Presupuesto histórico','Aportación a saldo','S002','Activo',1,?,?)`,
+      [time, time],
+    );
+
+    function header(id: number, ciclo: string): void {
+      db.run(
+        `INSERT INTO repartos(id,ciclo,estado,origen_comun,revision,creado,actualizado)
+         VALUES(?,?,'Borrador','S001',1,?,?)`,
+        [id, ciclo, time, time],
+      );
+      db.run(
+        `INSERT INTO reparto_audit(reparto,revision,accion,anterior,posterior,instante,actor)
+         VALUES(?,1,'alta',NULL,'{}',?,'usuario-ficticio')`,
+        [id, time],
+      );
+    }
+    function line(
+      id: number,
+      reparto: number,
+      importe: number,
+      fecha = "2026-01-05",
+    ): void {
+      db.run(
+        `INSERT INTO reparto_lineas(id,reparto,clase,presupuesto,origen,destino,
+           importe,fecha_prevista,concepto,nota,incluida,motivo_exclusion,
+           revision,creado,actualizado)
+         VALUES(?,?,'Presupuesto','PRE0001','S001','S002',?,?,'Ficticia','',1,NULL,1,?,?)`,
+        [id, reparto, importe, fecha, time, time],
+      );
+    }
+    function generate(reparto: number): void {
+      db.run(
+        "UPDATE repartos SET estado='Generado',revision=2,actualizado=? WHERE id=?",
+        [time2, reparto],
+      );
+      db.run(
+        `INSERT INTO reparto_audit(reparto,revision,accion,anterior,posterior,instante,actor)
+         VALUES(?,2,'generacion','{}','{}',?,'usuario-ficticio')`,
+        [reparto, time2],
+      );
+    }
+    function pending(
+      id: number,
+      linea: number,
+      ciclo: string,
+      importe: number,
+      fecha = "2026-01-05",
+    ): void {
+      db.run(
+        `INSERT INTO transferencia_pendiente(id,estado,importe,origen,destino,
+           ciclo_origen,fecha_prevista,fecha_efectiva,concepto,nota,origen_tipo,
+           reparto_linea,gasto,anticipo,movimiento,motivo_cancelacion,revision,
+           creado,actualizado)
+         VALUES(?,'Pendiente de realizar',?,'S001','S002',?,?,NULL,
+           'Ficticio','','Reparto',?,NULL,NULL,NULL,NULL,1,?,?)`,
+        [id, importe, ciclo, fecha, linea, time, time],
+      );
+      db.run(
+        `INSERT INTO transferencia_pendiente_audit(pendiente,revision,accion,anterior,posterior,instante,actor)
+         VALUES(?,1,'alta',NULL,'{}',?,'usuario-ficticio')`,
+        [id, time],
+      );
+    }
+
+    // 1 — open draft without pendings.
+    header(1, "1");
+    line(1, 1, 10000);
+
+    // 2 — generated distribution with a still-pending transfer.
+    header(2, "2");
+    line(2, 2, 10000);
+    generate(2);
+    pending(1, 2, "2", 10000);
+
+    // 3 — completed distribution: one confirmed and one cancelled transfer.
+    header(3, "3");
+    line(3, 3, 10000);
+    line(4, 3, 5000);
+    generate(3);
+    pending(2, 3, "3", 10000);
+    pending(3, 4, "3", 5000);
+    db.run(
+      `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,
+         anulado,revision,creado,actualizado)
+       VALUES('1','2026-01-06','Transferencia',10000,'S001','S002',
+         'Transferencia ficticia','',0,1,?,?)`,
+      [time, time],
+    );
+    db.run(
+      `UPDATE transferencia_pendiente SET estado='Confirmada',movimiento='1',
+         fecha_efectiva='2026-01-06',revision=2,actualizado=? WHERE id=2`,
+      [time2],
+    );
+    db.run(
+      `INSERT INTO transferencia_pendiente_audit(pendiente,revision,accion,anterior,posterior,instante,actor)
+       VALUES(2,2,'confirmacion','{}','{}',?,'usuario-ficticio')`,
+      [time2],
+    );
+    db.run(
+      `UPDATE transferencia_pendiente SET estado='Cancelada',
+         motivo_cancelacion='Motivo ficticio',revision=2,actualizado=? WHERE id=3`,
+      [time2],
+    );
+    db.run(
+      `INSERT INTO transferencia_pendiente_audit(pendiente,revision,accion,anterior,posterior,instante,actor)
+       VALUES(3,2,'cancelacion','{}','{}',?,'usuario-ficticio')`,
+      [time2],
+    );
+    db.run(
+      "UPDATE repartos SET estado='Completado',revision=3,actualizado=? WHERE id=3",
+      [time3],
+    );
+    db.run(
+      `INSERT INTO reparto_audit(reparto,revision,accion,anterior,posterior,instante,actor)
+       VALUES(3,3,'completado','{}','{}',?,'usuario-ficticio')`,
+      [time3],
+    );
+    db.run(
+      "INSERT INTO transferencia_pendiente_attempts VALUES('generacion','k','hash','{}',1)",
+    );
+  });
+}
+
+test("SPEC36: C28 stays frozen and byte-identical", () => {
   const c = contract(c28);
   expect(c.id).toBe(c28);
   expect(c.schemaVersion).toBe(28);
@@ -326,20 +476,34 @@ test("SPEC36 v28: C28 is exact and deterministic", () => {
   expect(c.sha256).toBe(
     "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
   );
-  expect(contracts().at(-1)?.id).toBe(c28);
   expect(contract(c27).sha256).toBe(
     "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23",
   );
 });
 
-test("SPEC36 v28: a fresh schema matches C28 exactly", () => {
+test("SPEC36 v29: C29 is exact and deterministic", () => {
+  const c = contract(c29);
+  expect(c.id).toBe(c29);
+  expect(c.schemaVersion).toBe(29);
+  expect(c.sourceCommit).toBe("86ded4b");
+  expect(c.objects).toHaveLength(375);
+  expect(c.sha256).toBe(
+    "be488dcc8809370096f76d0214712c731a1eacf661a59327e36e9705d20ea4cc",
+  );
+  expect(contracts().at(-1)?.id).toBe(c29);
+  expect(contract(c28).sha256).toBe(
+    "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
+  );
+});
+
+test("SPEC36 v29: a fresh schema matches C29 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 28,
+      version: 29,
     });
-    expect(manifest(db)).toEqual(contract(c28).objects);
-    expect(verifyContract(db, 28)).toBe(c28);
+    expect(manifest(db)).toEqual(contract(c29).objects);
+    expect(verifyContract(db, 29)).toBe(c29);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     for (const table of [
       "repartos",
@@ -376,7 +540,7 @@ test("SPEC36 v28: a fresh schema matches C28 exactly", () => {
   }
 });
 
-test("SPEC36 v28: v27→v28 is additive and preserves rows, IDs, audits and attempts", () => {
+test("SPEC36 v29: v27→v29 is additive and preserves rows, IDs, audits and attempts", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
@@ -397,7 +561,7 @@ test("SPEC36 v28: v27→v28 is additive and preserves rows, IDs, audits and atte
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 28,
+        version: 29,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect({
@@ -409,8 +573,8 @@ test("SPEC36 v28: v27→v28 is additive and preserves rows, IDs, audits and atte
         audit: db.query("SELECT * FROM audit ORDER BY id").all(),
         identity: db.query("SELECT * FROM database_origin").all(),
       }).toEqual(rows);
-      expect(manifest(db)).toEqual(contract(c28).objects);
-      expect(verifyContract(db, 28)).toBe(c28);
+      expect(manifest(db)).toEqual(contract(c29).objects);
+      expect(verifyContract(db, 29)).toBe(c29);
 
       const previous = new Map(
         contract(c27).objects.map((object) => [
@@ -419,14 +583,14 @@ test("SPEC36 v28: v27→v28 is additive and preserves rows, IDs, audits and atte
         ]),
       );
       const current = new Map(
-        contract(c28).objects.map((object) => [
+        contract(c29).objects.map((object) => [
           `${object.type}:${object.name}`,
           object,
         ]),
       );
       for (const [key, object] of previous)
         expect(current.get(key)).toEqual(object);
-      expect(current.size - previous.size).toBe(52);
+      expect(current.size - previous.size).toBe(55);
       for (const table of [
         "repartos",
         "reparto_lineas",
@@ -446,41 +610,489 @@ test("SPEC36 v28: v27→v28 is additive and preserves rows, IDs, audits and atte
   }
 });
 
-test("SPEC36 v28: a failing DDL rolls back the whole v28 migration", () => {
+test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => {
   const dir = root();
   try {
-    const path = join(dir, "v27.sqlite");
-    v27(path);
-    const db = new Database(path);
+    const path = join(dir, "v28.sqlite");
+    v28WithData(path);
+    const source = new Database(path);
+    const before = {
+      repartos: source
+        .query(
+          `SELECT id,ciclo,estado,origen_comun,revision,creado,actualizado
+           FROM repartos ORDER BY id`,
+        )
+        .all(),
+      lineas: source
+        .query(
+          `SELECT id,reparto,clase,presupuesto,origen,destino,importe,
+             fecha_prevista,concepto,nota,incluida,motivo_exclusion,revision,
+             creado,actualizado
+           FROM reparto_lineas ORDER BY id`,
+        )
+        .all(),
+      pendientes: source
+        .query("SELECT * FROM transferencia_pendiente ORDER BY id")
+        .all(),
+      repartoAudit: source
+        .query("SELECT * FROM reparto_audit ORDER BY id")
+        .all(),
+      pendingAudit: source
+        .query("SELECT * FROM transferencia_pendiente_audit ORDER BY id")
+        .all(),
+      attempts: source
+        .query("SELECT * FROM transferencia_pendiente_attempts ORDER BY key")
+        .all(),
+    };
+    expect(verifyContract(source, 28)).toBe(c28);
+    source.close();
+
+    const db = openDatabase(path);
     try {
-      // Conflict on the last created table forces a failure after tables,
-      // indexes and earlier triggers were already emitted.
-      db.exec("CREATE TABLE transferencia_pendiente_attempts(conflict TEXT) STRICT");
-      expect(() =>
-        db.transaction(() => repartoMensualSchemaV28(db)).immediate(),
-      ).toThrow();
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 27,
+        version: 29,
       });
-      for (const name of [
-        "repartos",
-        "reparto_lineas",
-        "transferencia_pendiente",
-        "reparto_audit",
-        "transferencia_pendiente_audit",
-        "repartos_ciclo_unico",
-        "reparto_no_delete",
-        "transferencia_pendiente_no_delete",
-      ])
-        expect(
-          db.query("SELECT name FROM sqlite_master WHERE name=?").get(name),
-        ).toBeNull();
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      expect(
+        db
+          .query(
+            `SELECT id,ciclo,fuente_plan,estado,origen_comun,revision,
+               creado,actualizado
+             FROM repartos ORDER BY id`,
+          )
+          .all(),
+      ).toEqual(
+        (before.repartos as Record<string, unknown>[]).map((row) => ({
+          id: row.id,
+          ciclo: row.ciclo,
+          fuente_plan: "PlanCiclo",
+          estado: row.estado,
+          origen_comun: row.origen_comun,
+          revision: row.revision,
+          creado: row.creado,
+          actualizado: row.actualizado,
+        })),
+      );
+      expect(
+        db
+          .query(
+            `SELECT id,reparto,clase,presupuesto,origen,destino,importe,
+               fecha_prevista,concepto,nota,incluida,motivo_exclusion,revision,
+               creado,actualizado
+             FROM reparto_lineas ORDER BY id`,
+          )
+          .all(),
+      ).toEqual(before.lineas);
+      expect(
+        db
+          .query("SELECT COUNT(*) AS n FROM reparto_lineas WHERE partida IS NOT NULL")
+          .get(),
+      ).toEqual({ n: 0 });
+      expect(
+        db.query("SELECT * FROM transferencia_pendiente ORDER BY id").all(),
+      ).toEqual(before.pendientes);
+      expect(
+        db.query("SELECT * FROM reparto_audit ORDER BY id").all(),
+      ).toEqual(before.repartoAudit);
+      expect(
+        db.query("SELECT * FROM transferencia_pendiente_audit ORDER BY id").all(),
+      ).toEqual(before.pendingAudit);
+      expect(
+        db
+          .query("SELECT * FROM transferencia_pendiente_attempts ORDER BY key")
+          .all(),
+      ).toEqual(before.attempts);
+      expect(manifest(db)).toEqual(contract(c29).objects);
+      expect(verifyContract(db, 29)).toBe(c29);
+      const fresh = store();
+      try {
+        expect(manifest(fresh)).toEqual(manifest(db));
+        expect(verifyContract(fresh, 29)).toBe(c29);
+      } finally {
+        fresh.close();
+      }
+      const previous = new Map(
+        contract(c28).objects.map((object) => [
+          `${object.type}:${object.name}`,
+          object,
+        ]),
+      );
+      const current = new Map(
+        contract(c29).objects.map((object) => [
+          `${object.type}:${object.name}`,
+          object,
+        ]),
+      );
+      expect(
+        current.get("trigger:reparto_audit_revision"),
+      ).toEqual(previous.get("trigger:reparto_audit_revision"));
+      const addedTriggers = [...current.keys()]
+        .filter((key) => key.startsWith("trigger:") && !previous.has(key))
+        .sort();
+      expect(addedTriggers).toEqual([
+        "trigger:reparto_fuente_inmutable",
+        "trigger:reparto_linea_fuente_insert",
+        "trigger:reparto_linea_fuente_update",
+      ]);
+      const removedTriggers = [...previous.keys()]
+        .filter((key) => key.startsWith("trigger:") && !current.has(key))
+        .sort();
+      expect(removedTriggers).toEqual([]);
+      const modifiedTriggers = [...previous.entries()]
+        .filter(
+          ([key, object]) =>
+            key.startsWith("trigger:") &&
+            current.has(key) &&
+            JSON.stringify(current.get(key)) !== JSON.stringify(object),
+        )
+        .map(([key]) => key)
+        .sort();
+      expect(modifiedTriggers).toEqual([
+        "trigger:reparto_linea_presupuesto_destino_insert",
+        "trigger:reparto_linea_presupuesto_destino_update",
+        "trigger:transferencia_pendiente_linea_reparto",
+        "trigger:transferencia_pendiente_linea_reparto_update",
+      ]);
+      expect(current.size - previous.size).toBe(3);
     } finally {
       db.close();
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("SPEC36 v29: a failing DDL rolls back the whole v29 migration", () => {
+  const dir = root();
+  try {
+    const path = join(dir, "v28.sqlite");
+    v28WithData(path);
+    const db = new Database(path);
+    try {
+      const before = {
+        version: db.query("SELECT version FROM schema_version").get(),
+        repartos: db.query("SELECT * FROM repartos ORDER BY id").all(),
+        lineas: db.query("SELECT * FROM reparto_lineas ORDER BY id").all(),
+        pendientes: db
+          .query("SELECT * FROM transferencia_pendiente ORDER BY id")
+          .all(),
+      };
+      db.exec("PRAGMA foreign_keys=OFF");
+      // The conflict on a new v29 trigger is reached after both tables were
+      // dropped, recreated and copied, exercising the full rollback.
+      db.exec(
+        "CREATE TRIGGER reparto_fuente_inmutable BEFORE INSERT ON transferencia_pendiente BEGIN SELECT 1; END",
+      );
+      expect(() =>
+        db.transaction(() => repartoMensualSchemaV29(db)).immediate(),
+      ).toThrow();
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual(
+        before.version,
+      );
+      expect(db.query("SELECT * FROM repartos ORDER BY id").all()).toEqual(
+        before.repartos,
+      );
+      expect(db.query("SELECT * FROM reparto_lineas ORDER BY id").all()).toEqual(
+        before.lineas,
+      );
+      expect(
+        db.query("SELECT * FROM transferencia_pendiente ORDER BY id").all(),
+      ).toEqual(before.pendientes);
+      db.exec("DROP TRIGGER reparto_fuente_inmutable");
+      expect(manifest(db)).toEqual(contract(c28).objects);
+      expect(verifyContract(db, 28)).toBe(c28);
+      expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally {
+      db.exec("PRAGMA foreign_keys=ON");
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function classification(db: Database) {
+  db.run(
+    `INSERT INTO categorias VALUES('CAT0001','Ficticia',NULL,'Gasto','Gasto',0,'Activa',1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO subcategorias VALUES('SUB0001','Ficticia','CAT0001','Activa',1,?,?)`,
+    [t, t],
+  );
+}
+
+function partida(
+  db: Database,
+  id = "PAR0001",
+  estado = "Activa",
+  padre: string | null = null,
+) {
+  db.run(
+    `INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,padre_partida)
+     VALUES(?,'Partida ficticia','SUB0001',?,1,?,?,?)`,
+    [id, estado, t, t, padre],
+  );
+}
+
+function dprimaPlan(
+  db: Database,
+  ciclo = "1",
+  raiz = "PAR0001",
+  destino = "S002",
+) {
+  db.run(
+    `INSERT INTO dprima_plan_mensual(ciclo,raiz,fuente,destino,base,esencial,
+       del_mes,corte_sugerencia,revision,creado,actualizado)
+     VALUES(?,?,'Aportación a saldo',?,NULL,NULL,10000,NULL,1,?,?)`,
+    [ciclo, raiz, destino, t, t],
+  );
+}
+
+test("SPEC36 v29: fuente_plan is mandatory and immutable once lines exist", () => {
+  const db = store();
+  try {
+    cycle(db);
+    expect(() =>
+      db.run(
+        `INSERT INTO repartos(ciclo,estado,origen_comun,revision,creado,actualizado)
+         VALUES('1','Borrador','S001',1,?,?)`,
+        [t, t],
+      ),
+    ).toThrow();
+    const id = reparto(db);
+    expect(
+      db.query("SELECT fuente_plan FROM repartos WHERE id=?").get(id),
+    ).toEqual({ fuente_plan: "PlanCiclo" });
+    db.run(
+      "UPDATE repartos SET fuente_plan='Dprima',revision=2,actualizado=? WHERE id=?",
+      [t2, id],
+    );
+    expect(
+      db.query("SELECT fuente_plan FROM repartos WHERE id=?").get(id),
+    ).toEqual({ fuente_plan: "Dprima" });
+
+    cycle(db, "2", "2026-02-01");
+    budget(db);
+    const withLine = reparto(db, { ciclo: "2", fuente_plan: "PlanCiclo" });
+    line(db, { reparto: withLine });
+    expect(() =>
+      db.run(
+        "UPDATE repartos SET fuente_plan='Dprima',revision=revision+1,actualizado=? WHERE id=?",
+        [t2, withLine],
+      ),
+    ).toThrow("reparto plan source is frozen after lines or generation");
+    generate(db, withLine);
+    expect(() =>
+      db.run(
+        "UPDATE repartos SET fuente_plan='Dprima',revision=revision+1,actualizado=? WHERE id=?",
+        [t2, withLine],
+      ),
+    ).toThrow("reparto plan source is frozen after lines or generation");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: class and plan source match; Partida uses the D′ destination", () => {
+  const db = store();
+  try {
+    cycle(db);
+    cycle(db, "2", "2026-02-01");
+    budget(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db, "1");
+    dprimaPlan(db, "2");
+    const plan = reparto(db, { fuente_plan: "PlanCiclo" });
+    const dprima = reparto(db, {
+      ciclo: "2",
+      fuente_plan: "Dprima",
+      origen_comun: "S001",
+    });
+
+    expect(() =>
+      line(db, { reparto: dprima, clase: "Presupuesto", presupuesto: "PRE0001" }),
+    ).toThrow("reparto line class must match plan source");
+    expect(() =>
+      line(db, {
+        reparto: plan,
+        clase: "Partida",
+        presupuesto: null,
+        partida: "PAR0001",
+      }),
+    ).toThrow("reparto line class must match plan source");
+    const partidaLine = line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    expect(partidaLine).toBeGreaterThan(0);
+    expect(() =>
+      line(db, {
+        reparto: dprima,
+        clase: "Partida",
+        presupuesto: null,
+        partida: "PAR0001",
+        destino: "S003",
+      }),
+    ).toThrow("reparto line must match its budget destination");
+    expect(() =>
+      line(db, {
+        reparto: plan,
+        clase: "Adicional",
+        presupuesto: null,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      line(db, {
+        reparto: dprima,
+        clase: "Adicional",
+        presupuesto: null,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      line(db, {
+        reparto: dprima,
+        clase: "Partida",
+        presupuesto: "PRE0001",
+        partida: "PAR0001",
+      }),
+    ).toThrow();
+
+    // Historical inactive Partida cannot receive a new line.
+    partida(db, "PAR0002", "Inactiva");
+    dprimaPlan(db, "2", "PAR0002", "S002");
+    expect(() =>
+      line(db, {
+        reparto: dprima,
+        clase: "Partida",
+        presupuesto: null,
+        partida: "PAR0002",
+      }),
+    ).toThrow("reparto line must match its budget destination");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: D8 rejects a new pending without an active D′ line", () => {
+  const db = store();
+  try {
+    cycle(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    const first = line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    const second = line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    generate(db, dprima);
+    expect(
+      pending(db, { ciclo_origen: "1", reparto_linea: first }),
+    ).toBeGreaterThan(0);
+
+    // A pending whose destination no longer matches the D′ plan is rejected.
+    db.run("DELETE FROM dprima_plan_mensual");
+    expect(() =>
+      pending(db, {
+        ciclo_origen: "1",
+        reparto_linea: second,
+        destino: "S002",
+      }),
+    ).toThrow("pending must match an included line of its cycle");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: reparto_linea_fuente_update rejects a class change", () => {
+  const db = store();
+  try {
+    cycle(db);
+    budget(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    const lineId = line(db, {
+      reparto: dprima,
+      clase: "Adicional",
+      presupuesto: null,
+    });
+    expect(() =>
+      db.run(
+        `UPDATE reparto_lineas SET clase='Presupuesto',presupuesto='PRE0001',
+           destino='S002',revision=revision+1,actualizado=? WHERE id=?`,
+        [t2, lineId],
+      ),
+    ).toThrow("reparto line class must match plan source");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: reparto_linea_presupuesto_destino_update rejects a Partida destination", () => {
+  const db = store();
+  try {
+    cycle(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    const lineId = line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    expect(() =>
+      db.run(
+        `UPDATE reparto_lineas SET destino='S003',revision=revision+1,
+           actualizado=? WHERE id=?`,
+        [t2, lineId],
+      ),
+    ).toThrow("reparto line must match its budget destination");
+  } finally {
+    db.close();
+  }
+});
+
+test("SPEC36 v29: transferencia_pendiente_linea_reparto_update rejects a Partida mismatch", () => {
+  const db = store();
+  try {
+    cycle(db);
+    classification(db);
+    partida(db, "PAR0001", "Activa");
+    dprimaPlan(db);
+    const dprima = reparto(db, { fuente_plan: "Dprima" });
+    line(db, {
+      reparto: dprima,
+      clase: "Partida",
+      presupuesto: null,
+      partida: "PAR0001",
+    });
+    generate(db, dprima);
+    const pendingId = pending(db, { ciclo_origen: "1", reparto_linea: 1 });
+    expect(() =>
+      db.run(
+        `UPDATE transferencia_pendiente SET destino='S003',
+           revision=revision+1,actualizado=? WHERE id=?`,
+        [t2, pendingId],
+      ),
+    ).toThrow("pending must match an included line of its cycle");
+  } finally {
+    db.close();
   }
 });
 
@@ -897,20 +1509,20 @@ test("SPEC36 v28: attempts are keyed for idempotent generation and confirmation"
   }
 });
 
-test("SPEC36 v28: unknown v29 is rejected before mutating", () => {
+test("SPEC36 v29: unknown v30 is rejected before mutating", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
     v27(path);
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=29");
-      expect(verifyContract(db, 29)).toBeNull();
+      db.exec("UPDATE schema_version SET version=30");
+      expect(verifyContract(db, 30)).toBeNull();
       expect(() => verifyAdmittedContract(db)).toThrow(
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 30,
       });
       expect(
         db
@@ -931,7 +1543,7 @@ test("SPEC36 v28: unknown v29 is rejected before mutating", () => {
 });
 
 test.skipIf(process.platform !== "linux")(
-  "SPEC36 v28: encrypted backup/restore preserves v28 and clears pending attempts",
+  "SPEC36 v29: encrypted backup/restore preserves v29 and clears pending attempts",
   () => {
     const dir = root();
     try {
@@ -971,8 +1583,11 @@ test.skipIf(process.platform !== "linux")(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 28,
+            version: 29,
           });
+          expect(
+            copy.query("SELECT fuente_plan FROM repartos").get(),
+          ).toEqual({ fuente_plan: "PlanCiclo" });
           expect(
             copy
               .query("SELECT id,estado,revision FROM transferencia_pendiente")

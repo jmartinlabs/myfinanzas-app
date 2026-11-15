@@ -91,27 +91,27 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
 
   await select.selectOption("light-s");
   await expect(html).toHaveAttribute("data-theme", "light-s");
-  await expect(body).toHaveCSS("background-color", "rgb(247, 245, 241)");
-  await expect(sidebar).toHaveCSS("background-color", "rgb(236, 233, 226)");
+  await expect(body).toHaveCSS("background-color", "rgb(246, 242, 234)");
+  await expect(sidebar).toHaveCSS("background-color", "rgb(238, 230, 219)");
   await page.reload();
   await expect(select).toHaveValue("light-s");
-  await expect(body).toHaveCSS("background-color", "rgb(247, 245, 241)");
+  await expect(body).toHaveCSS("background-color", "rgb(246, 242, 234)");
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
   await page.screenshot({ path: "artifacts/theme/light-s-1440.png", fullPage: true });
 
   await select.selectOption("hybrid-s");
   await expect(html).toHaveAttribute("data-theme", "hybrid-s");
-  await expect(sidebar).toHaveCSS("background-color", "rgb(31, 31, 31)");
-  await expect(body).toHaveCSS("background-color", "rgb(247, 245, 241)");
+  await expect(sidebar).toHaveCSS("background-color", "rgb(16, 24, 28)");
+  await expect(body).toHaveCSS("background-color", "rgb(242, 237, 227)");
   await expect(page.locator(".panel").first()).toHaveCSS(
     "background-color",
-    "rgb(255, 252, 247)",
+    "rgb(255, 253, 249)",
   );
   await page.reload();
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
   await page.screenshot({ path: "artifacts/theme/hybrid-s-1440.png", fullPage: true });
   await expect(select).toHaveValue("hybrid-s");
-  await expect(sidebar).toHaveCSS("background-color", "rgb(31, 31, 31)");
+  await expect(sidebar).toHaveCSS("background-color", "rgb(16, 24, 28)");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".mobile-list li")).toHaveCount(5);
@@ -142,7 +142,7 @@ test("el tema se aplica antes de React y no hay flash de otro tema", async ({
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light-s");
   await expect(page.locator("html")).toHaveCSS(
     "background-color",
-    "rgb(247, 245, 241)",
+    "rgb(246, 242, 234)",
   );
   await expect(page.locator("#root")).toBeEmpty();
 });

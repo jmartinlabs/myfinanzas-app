@@ -1,0 +1,203 @@
+/* ==========================================================================
+   Fase final · Movimientos Light / Hybrid
+   Filtros, tabla y detalle claros; el héroe de Inicio conserva el acento oscuro.
+   ========================================================================== */
+
+html[data-theme="light-s"] .filter-card,
+html[data-theme="hybrid-s"] .filter-card {
+  border-color: #d8cdbf;
+  border-left: 3px solid var(--accent);
+  border-radius: 16px;
+  background: linear-gradient(160deg, #fffdf9 0%, #f7f0e6 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 16px 38px rgba(78, 53, 33, 0.08);
+}
+
+html[data-theme="hybrid-s"] .filter-card {
+  background: linear-gradient(160deg, #fffdf9 0%, #f5eee4 100%);
+}
+
+html[data-theme="light-s"] .filter-main,
+html[data-theme="hybrid-s"] .filter-main {
+  padding: 18px 20px 14px;
+}
+
+html[data-theme="light-s"] .more-filters,
+html[data-theme="hybrid-s"] .more-filters {
+  border-top-color: #e2d7c9;
+  background: rgba(247, 240, 230, 0.55);
+}
+
+html[data-theme="light-s"] .filter-chips,
+html[data-theme="hybrid-s"] .filter-chips {
+  padding-bottom: 14px;
+}
+
+html[data-theme="light-s"] .chip,
+html[data-theme="hybrid-s"] .chip {
+  border-color: #a9cfcb;
+  background: #e4efed;
+  color: #146b73;
+}
+
+html[data-theme="light-s"] .list-card,
+html[data-theme="hybrid-s"] .list-card {
+  border-color: #d8cdbf;
+  border-top: 2px solid var(--accent);
+  border-radius: 16px;
+  background: #fffdf9;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 20px 44px rgba(78, 53, 33, 0.09);
+}
+
+html[data-theme="light-s"] .mov-table th,
+html[data-theme="hybrid-s"] .mov-table th {
+  background: #f3ede4;
+}
+
+html[data-theme="light-s"] .mov-row:hover,
+html[data-theme="hybrid-s"] .mov-row:hover {
+  background: #f7f0e6;
+}
+
+html[data-theme="light-s"] .mov-row.is-selected,
+html[data-theme="hybrid-s"] .mov-row.is-selected {
+  background: linear-gradient(90deg, #e4efed 0%, #f6faf8 100%);
+  box-shadow: inset 3px 0 0 #1e6f7a;
+}
+
+/* Detalle claro: foco por borde, tipografía y sombra, no por fondo oscuro. */
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel {
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: 16px;
+  background: linear-gradient(158deg, #fffdf9 0%, #f7f0e6 100%);
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 18px 42px rgba(78, 53, 33, 0.1);
+}
+
+html[data-theme="hybrid-s"] .detail-card,
+html[data-theme="hybrid-s"] .detail-sheet-panel {
+  border-color: #bfae9d;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(158deg, #fffdf9 0%, #f5ede2 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 22px 48px rgba(53, 40, 28, 0.12);
+}
+
+html[data-theme="hybrid-s"] .detail-card .detail-head {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2d7c9;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card h2,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-concept,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel h2,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-concept {
+  color: var(--text);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-fields strong,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-foot .meta b,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-fields strong,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-foot .meta b {
+  color: var(--text-2);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-kicker,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-fields span,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-foot .meta,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-note,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-kicker,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-fields span,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-foot .meta,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-note {
+  color: var(--muted);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-fields,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-foot,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-fields,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-foot {
+  border-color: var(--border-soft);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-note,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-note {
+  border-color: #e2d7c9;
+  background: #f7f0e6;
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-note .icon,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-note .icon {
+  color: var(--accent-ink);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-head .badge--info,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-head .badge--info {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .amount-positive,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .amount-positive {
+  color: var(--positive);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .amount-negative,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .amount-negative {
+  color: var(--negative);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .amount-muted,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .amount-muted {
+  color: var(--muted);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .btn-secondary,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .btn-secondary {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card .detail-sep,
+:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-sheet-panel .detail-sep {
+  color: var(--muted-2);
+}
+
+html[data-theme="light-s"] .list-footer,
+html[data-theme="hybrid-s"] .list-footer {
+  padding-top: 14px;
+}
+
+html[data-theme="light-s"] .page-btn,
+html[data-theme="hybrid-s"] .page-btn {
+  background: #fffdf9;
+  border-color: #d8cdbf;
+}
+
+html[data-theme="light-s"] .detail-sheet-panel,
+html[data-theme="hybrid-s"] .detail-sheet-panel {
+  border-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .detail-card {
+    display: none;
+  }
+}
+
+/* Corrección de especificidad: el encabezado del detalle vuelve a ser oscuro
+   sobre la superficie clara, también en Hybrid. */
+html[data-theme="hybrid-s"] .detail-card .detail-head h2,
+html[data-theme="hybrid-s"] .detail-sheet-panel h2 {
+  color: var(--text);
+}

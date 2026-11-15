@@ -4108,3 +4108,2757 @@ html[data-theme="graphite-lime"] .vehicle-integrity-page .integrity-list .text-b
     padding: var(--space-4);
   }
 }
+
+/* G5d · Referencias: catálogo, ficha y formulario ------------------------- */
+
+html[data-theme="graphite-lime"] :is(.references-page, .references-detail-page, .reference-form-page) > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] :is(.references-page, .references-detail-page, .reference-form-page) > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] :is(.references-page, .references-detail-page, .reference-form-page) > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] :is(.references-page, .references-detail-page, .reference-form-page) > .page-head .muted {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] :is(.references-page, .references-detail-page, .reference-form-page) > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .references-page > .help {
+  max-width: 96ch;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .references-page > .help a {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+/* Catálogo --------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .references-list {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .references-list .filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .references-list .filters label {
+  display: block;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.references-list .filters, .reference-form-page .ui-field) :is(input, select):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .references-list .filters input,
+html[data-theme="graphite-lime"] .references-list .filters select {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .references-list > [role="status"] {
+  margin: 0;
+  padding: 12px var(--space-4) 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.4px;
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-table-wrap {
+  padding: 10px var(--space-4) 0;
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-table th {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-table .ui-row-inactive,
+html[data-theme="graphite-lime"] .references-list .ui-data-list-item.ui-row-inactive {
+  opacity: 0.66;
+}
+
+html[data-theme="graphite-lime"] .references-list .table-id {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.4px;
+}
+
+html[data-theme="graphite-lime"] .references-list .mobile-list {
+  padding: 10px var(--space-4) 0;
+}
+
+html[data-theme="graphite-lime"] .references-list .mobile-list .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .references-list .ui-data-list-value {
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .references-list .empty {
+  padding: var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .references-list .empty h2 {
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .references-list .empty p {
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .references-list .list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px var(--space-4);
+  border-top: 1px solid var(--graphite-card-border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .references-list .list-footer .actions {
+  display: flex;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .references-list .list-footer .text-button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .references-list .list-footer .text-button:disabled {
+  opacity: 0.45;
+}
+
+/* Ficha ------------------------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .references-detail-page > .text-button:first-child {
+  width: fit-content;
+  min-height: var(--touch-min);
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .references-detail-page > .text-button:first-child:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .references-detail-page > .ui-form-section {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .references-detail-page .ui-form-section-head {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .references-detail-page .ui-form-section-title {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .references-detail-page dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px 18px;
+  margin: 0 0 12px;
+}
+
+html[data-theme="graphite-lime"] .references-detail-page dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .references-detail-page dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] .references-detail-page .help,
+html[data-theme="graphite-lime"] .references-detail-page p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+html[data-theme="graphite-lime"] .references-detail-page .ui-form-section > button,
+html[data-theme="graphite-lime"] .references-detail-page .actions button {
+  min-height: var(--touch-min);
+}
+
+/* Formulario ------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .reference-form-page .saldo-form {
+  display: grid;
+  gap: 14px;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-form-section {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-form-section-head {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-form-section-title {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-field input,
+html[data-theme="graphite-lime"] .reference-form-page .ui-field select {
+  min-height: 44px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  font-size: 14px;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-field[data-invalid="true"] :is(input, select, textarea) {
+  border-color: var(--error);
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .ui-field-help,
+html[data-theme="graphite-lime"] .reference-form-page .help {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px var(--space-4);
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .form-footer .actions {
+  display: flex;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .reference-form-page .form-footer button {
+  min-height: var(--touch-min);
+}
+
+/* Responsive ------------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .references-list .filters {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .references-list .filters label:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .references-list .filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .references-list .list-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  html[data-theme="graphite-lime"] .references-list .list-footer .actions {
+    justify-content: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .references-list .list-footer .text-button {
+    flex: 1;
+  }
+
+  html[data-theme="graphite-lime"] .reference-form-page .form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .reference-form-page .form-footer .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  html[data-theme="graphite-lime"] .references-detail-page dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* G5f · Cierre, Fotos y Resumen anual ------------------------------------- */
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head .muted,
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .panel {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .ui-table th {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page table.table, .fotos-page .fotos-table, .e47-page .e47-table) th {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page table.table, .fotos-page .fotos-table, .e47-page .e47-table) td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page table.table, .fotos-page .fotos-table, .e47-page .e47-table) tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) dt,
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .help,
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-card {
+  border-top-color: var(--graphite-card-border);
+  border-right-color: var(--graphite-card-border);
+  border-bottom-color: var(--graphite-card-border);
+  background: var(--surface);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .e47-page .e47-card[data-clase="real"] {
+  border-left-color: var(--positive);
+}
+
+html[data-theme="graphite-lime"] .e47-page .e47-card[data-clase="plan"] {
+  border-left-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-filters {
+  border-color: var(--graphite-card-border);
+  background: var(--surface);
+}
+
+html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .e47-filters :is(input, select) {
+  min-height: 44px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .fotos-page .fotos-boundary {
+  border-color: var(--graphite-card-border);
+  background: var(--surface);
+}
+
+/* G5f · En la tabla del Resumen anual las columnas miden ~73 px a 820 px: el
+   badge recupera la escala base (10 px) y el hueco justo para no desbordar la
+   celda ni el documento con las métricas de fuente de Linux. */
+html[data-theme="graphite-lime"] .e47-table .ui-badge {
+  padding: 2px 2px;
+  gap: 1px;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+html[data-theme="graphite-lime"] :is(.e47-page, .cierre-page, .fotos-page) :is(.e47-source, .e47-table-source, .e47-coverage-meta, .e47-card-motivo, .ui-amount-note) {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .cierre-page .cierre-fingerprint,
+html[data-theme="graphite-lime"] .cierre-page .cierre-immutable {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] :is(.cierre-page, .fotos-page, .e47-page) .actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* G5e-1 · Anticipos: catálogo, ficha, formulario y revisión -------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .muted {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .page-head .actions button,
+html[data-theme="graphite-lime"] .anticipo-page > .panel button,
+html[data-theme="graphite-lime"] .anticipo-list .panel a {
+  min-height: var(--touch-min);
+}
+
+/* Ficha y formularios ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel {
+  margin-top: 16px;
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel > h2 {
+  margin-bottom: 12px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel > p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page > .panel > .tag {
+  margin-bottom: 10px;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics {
+  gap: 12px;
+  margin: 18px 0;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric {
+  gap: 6px;
+  padding: 14px;
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric strong {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.4px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics .metric small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid > div {
+  padding: 12px 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid dd {
+  margin: 5px 0 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .detail-grid dd p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Pares de devolución ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair {
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-bottom: 10px;
+  padding: 14px;
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair:hover {
+  border-color: var(--accent-border);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair:focus-within {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair input {
+  margin-top: 0;
+  accent-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair strong {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair small,
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-pair p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Operaciones, ciclos y auditoría ---------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table {
+  padding: 4px 0 0;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tbody tr.annulled td {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table tr.annulled .tag,
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled .tag {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item.annulled {
+  border-left: 3px solid var(--border);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table .tag {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-table .ui-table button {
+  margin: 4px 0;
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-value {
+  font-size: 13px;
+}
+
+/* Estado y evidencia llevan texto además del chip: se apilan a la izquierda. */
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .mobile-list .ui-data-list-field[data-kind="status"] .ui-data-list-value p {
+  margin: 4px 0 0;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation {
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation h3 {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation strong {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-operation p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details {
+  margin: 0 0 8px;
+  border-bottom: 1px solid var(--graphite-card-border);
+  padding-bottom: 6px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details summary {
+  min-height: var(--touch-min);
+  padding-block: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details summary:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details summary::marker {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page details p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Formularios y revisión ------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid {
+  gap: 14px 16px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid label:not(.check-label) {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-grid > p {
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .check-label {
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .check-label input {
+  accent-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-actions {
+  gap: 10px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .form-actions button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .panel.anticipo-review {
+  border: 2px solid var(--focus);
+  background-image: var(--graphite-card-bg);
+  box-shadow: 0 0 0 1px rgb(215 255 94 / 0.18);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .panel.anticipo-review h2 {
+  color: var(--accent);
+}
+
+/* Catálogo de fichas ----------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .anticipo-page > p[role="status"] {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.4px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list {
+  gap: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel {
+  padding: 16px;
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel:hover {
+  border-color: var(--accent-border);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 {
+  margin-bottom: 6px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 a:hover,
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel h2 a:focus-visible {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel .tag {
+  margin-bottom: 6px;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list .panel p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .anticipo-page .anticipo-list > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--graphite-card-border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* Responsive ------------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 761–1050: la tabla de operaciones no cabe en su panel; se usa la misma
+ * tarjeta que ya existe a 390, con paridad de campos y acciones. */
+@media (min-width: 761px) and (max-width: 1050px) {
+  html[data-theme="graphite-lime"] .anticipo-page .desktop-list.anticipo-table {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .mobile-list.ui-data-list {
+    display: grid;
+    gap: 10px;
+    padding: 4px 0 0;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .anticipo-page > .panel {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .anticipo-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .form-actions button {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .anticipo-page .anticipo-table button {
+    width: auto;
+  }
+}
+
+/* G5e-2 · Pendientes y conciliación: catálogo, detalle y estados ---------- */
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head .muted {
+  margin-top: 4px;
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .back:hover {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .notice {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .notice strong {
+  color: var(--text);
+}
+
+/* Catálogo --------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 14px;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters label {
+  display: block;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters :is(select, input) {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters :is(select, input):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-search-action .primary {
+  min-height: var(--touch-min);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px var(--space-4);
+  border-bottom: 1px solid var(--graphite-card-border);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar p {
+  color: var(--text);
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar span {
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .ui-table-wrap {
+  overflow-x: auto;
+  padding: 8px var(--space-4) 0;
+}
+
+/* La tabla usa su ancho natural: las 9 columnas no caben con reparto fijo. */
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table {
+  min-width: 0;
+  table-layout: auto;
+  width: 100%;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  vertical-align: bottom;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td {
+  font-size: 13px;
+  vertical-align: top;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(3),
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(4) {
+  white-space: normal;
+  color: var(--muted);
+}
+
+/* Con `normal` el único punto de corte de la fecha sería la barra `/`: se marca
+   cada fecha para que el guion entre inicio y fin sea el único corte válido. */
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(3) .pendiente-ciclo-fecha {
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table :is(th, td):nth-child(1) {
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .ui-table-amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .table-id {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .pendiente-alerts {
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table .pendiente-motive {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td:nth-child(2) a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-table td[data-kind="actions"] a,
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-action a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .tag {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .tag.inactive {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards {
+  gap: 10px;
+  padding: 10px var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-value {
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Motivo y alertas ocupan todo el ancho de la tarjeta. */
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .ui-data-list-field[data-label="Motivo y alertas"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .pendiente-alerts ul,
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards .pendiente-motive {
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty {
+  min-height: 0;
+  margin: 0;
+  padding: 20px var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty h2 {
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty p {
+  max-width: 78ch;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton {
+  padding: 14px var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton > p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton li {
+  border-color: var(--graphite-card-border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-fallos {
+  margin: 14px var(--space-4);
+  border-radius: 10px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-fallos h2 {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-fallos ul {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 10px;
+  padding: 10px var(--space-4);
+  border-top: 1px solid var(--graphite-card-border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer .text-button {
+  min-height: var(--touch-min);
+  padding-inline: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer .text-button:disabled {
+  color: var(--disabled-text);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .page-foot {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Detalle ---------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel {
+  margin-top: 16px;
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+/* El catálogo conserva su padding 0; cada bloque interno aporta el suyo. */
+html[data-theme="graphite-lime"] .pendientes-page > .panel:not(.pendientes-list) {
+  padding: var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > h2 {
+  margin-bottom: 12px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .notice {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--accent-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid {
+  gap: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid > div {
+  padding: 12px 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid dd {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-detail-grid dd small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-motive {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-alerts ul {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendientes-contextos {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .table-scroll {
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics th {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics td {
+  padding: 10px 12px;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics tbody tr + tr td {
+  border-top: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions .text-button {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Responsive ------------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters .search,
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-search-action {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 761–1439: con las 9 columnas y las fechas completas la tabla solo respira en
+ * el layout de 1440; por debajo se usa la tarjeta ya existente, con paridad de
+ * campos y acciones. */
+@media (min-width: 761px) and (max-width: 1439px) {
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .desktop-list {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .panel:not(.pendientes-list) {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .pendientes-list {
+    padding: 0;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-toolbar,
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer {
+    padding: 10px var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .list-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-cards {
+    padding: 10px var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-skeleton,
+  html[data-theme="graphite-lime"] .pendientes-page .pendientes-list .empty {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page > .panel > .actions :is(button, .text-button) {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics tbody tr + tr td {
+    border-top: 0;
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics tr {
+    border-bottom: 1px solid var(--graphite-card-border);
+  }
+
+  html[data-theme="graphite-lime"] .pendientes-page .pendiente-metrics td::before {
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+}
+
+/* G5e-3 · Compartidos: catálogo, ficha y formularios ---------------------- */
+
+html[data-theme="graphite-lime"] .shared-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .muted {
+  margin-top: 4px;
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .shared-page > .page-head .actions button {
+  min-height: var(--touch-min);
+}
+
+/* Chips de estado: el texto debe seguir legible sobre superficie oscura. */
+html[data-theme="graphite-lime"] .shared-page .tag {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.state-closed {
+  border-color: var(--control-border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.state-partial {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.state-review {
+  border-color: var(--error-border);
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+html[data-theme="graphite-lime"] .shared-page .tag.inactive {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+/* Catálogo --------------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .shared-page .shared-list {
+  padding: 10px var(--space-4) 4px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: var(--radius);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table {
+  min-width: 0;
+  table-layout: auto;
+  width: 100%;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table td {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table td:nth-child(n + 4) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-list .ui-table a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards {
+  gap: 10px;
+  padding: 10px var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-value {
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="actions"] {
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-cards .ui-data-list-field[data-kind="actions"] :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state h2 {
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state p {
+  max-width: 78ch;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .empty-state button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-scope-note {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-scope-note h2 {
+  margin-bottom: 8px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-scope-note p {
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Ficha ------------------------------------------------------------------ */
+
+html[data-theme="graphite-lime"] .shared-page > .panel,
+html[data-theme="graphite-lime"] .shared-page .shared-layout > .panel {
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page > .panel {
+  margin-bottom: 16px;
+  padding: var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .shared-page > .panel > h2,
+html[data-theme="graphite-lime"] .shared-page .shared-layout > .panel > h2 {
+  margin-bottom: 10px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-state {
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-state > p:not(.shared-alert) {
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-state .muted,
+html[data-theme="graphite-lime"] .shared-page .shared-actions .muted,
+html[data-theme="graphite-lime"] .shared-page .shared-layout .muted,
+html[data-theme="graphite-lime"] .shared-page > .panel .muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-alert {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--error-border);
+  border-left: 3px solid var(--error);
+  border-radius: 8px;
+  background: var(--error-soft);
+  color: var(--error);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head h2 {
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions :is(button, .text-button) {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-aportaciones {
+  margin-top: 10px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-aportaciones li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-aportaciones li small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics {
+  gap: 10px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics .metric {
+  padding: 12px 14px;
+  border-color: var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics dd {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.4px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-metrics small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .detail-grid dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Participantes: la tabla de 6 columnas no cabe en el panel; se usa la
+ * tarjeta existente, con los mismos campos y acciones. */
+html[data-theme="graphite-lime"] .shared-page [aria-label="Participantes"] .desktop-list {
+  display: none;
+}
+
+html[data-theme="graphite-lime"] .shared-page [aria-label="Participantes"] .shared-cards {
+  display: grid;
+  padding: 0;
+}
+
+
+/* Gastos, partidas, movimientos e historia --------------------------------- */
+
+html[data-theme="graphite-lime"] .shared-page .shared-expenses li,
+html[data-theme="graphite-lime"] .shared-page .shared-partidas li,
+html[data-theme="graphite-lime"] .shared-page .shared-related li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-expenses li small,
+html[data-theme="graphite-lime"] .shared-page .shared-related li small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-expenses li.shared-invalid {
+  padding-inline: 10px;
+  border-left: 3px solid var(--error);
+  border-radius: 6px;
+  background: var(--error-soft);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-partidas h3,
+html[data-theme="graphite-lime"] .shared-page .shared-layout h3 {
+  margin: 14px 0 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-history li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .field-error {
+  color: var(--error);
+  font-size: 12px;
+}
+
+/* Impacto y formularios ---------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact h2,
+html[data-theme="graphite-lime"] .shared-page .shared-impact h3 {
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact .muted,
+html[data-theme="graphite-lime"] .shared-page .shared-impact p:not(.shared-alert) {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact table td {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-contribution {
+  margin-top: 16px;
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-contribution p:not(.shared-alert) {
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-contribution .muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact .form-actions,
+html[data-theme="graphite-lime"] .shared-page .shared-contribution .form-actions,
+html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-impact .form-actions button,
+html[data-theme="graphite-lime"] .shared-page .shared-contribution .form-actions button,
+html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form {
+  display: grid;
+  gap: 14px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section {
+  padding: var(--space-4);
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section-head {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section-title {
+  font-size: 15px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field :is(input, select, textarea) {
+  min-height: var(--touch-min);
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field :is(input, select, textarea):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field[data-invalid="true"] :is(input, select, textarea) {
+  border-color: var(--error);
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .ui-field-help,
+html[data-theme="graphite-lime"] .shared-page .shared-form .muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions {
+  margin-top: 0;
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+  html[data-theme="graphite-lime"] .shared-page .shared-list {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page > .page-head ~ .shared-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .shared-page > .panel,
+  html[data-theme="graphite-lime"] .shared-page > .panel.shared-state,
+  html[data-theme="graphite-lime"] .shared-page .shared-layout > .panel,
+  html[data-theme="graphite-lime"] .shared-page .shared-impact,
+  html[data-theme="graphite-lime"] .shared-page .shared-contribution,
+  html[data-theme="graphite-lime"] .shared-page .shared-form .ui-form-section,
+  html[data-theme="graphite-lime"] .shared-page .shared-scope-note,
+  html[data-theme="graphite-lime"] .shared-page .empty-state {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-cards {
+    padding: 10px 0;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-section-head .actions :is(button, .text-button),
+  html[data-theme="graphite-lime"] .shared-page .shared-impact .form-actions button,
+  html[data-theme="graphite-lime"] .shared-page .shared-contribution .form-actions button,
+  html[data-theme="graphite-lime"] .shared-page .shared-form .form-actions button {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .shared-page .shared-expenses li,
+  html[data-theme="graphite-lime"] .shared-page .shared-partidas li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+/* G5e-4 · Nómina: histórico, cobros, pronóstico y auditoría ---------------- */
+
+html[data-theme="graphite-lime"] .payroll-page > .page-head {
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .page-head .eyebrow {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.4px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .page-head h1 {
+  letter-spacing: -0.9px;
+  line-height: 1.06;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .page-head .muted {
+  margin-top: 4px;
+  max-width: 92ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .page-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Vistas (Histórico · Cobros · Pronóstico) */
+html[data-theme="graphite-lime"] .payroll-page > .actions[role="group"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .actions[role="group"] button {
+  min-height: var(--touch-min);
+  padding-inline: 16px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* Filtros del histórico --------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .payroll-page > .filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
+  align-items: end;
+  gap: 12px 14px;
+  margin-bottom: 14px;
+  padding: var(--space-4);
+  border: 1px solid var(--graphite-card-border);
+  border-radius: var(--radius);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .filters label {
+  display: block;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .filters :is(input, select) {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .filters :is(input, select):focus-visible {
+  border-color: var(--focus);
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .filters button {
+  min-height: var(--touch-min);
+  font-weight: 650;
+}
+
+/* Estado vacío: el mensaje sustituye a una tabla sin filas. */
+html[data-theme="graphite-lime"] .payroll-page > .empty {
+  min-height: 0;
+  margin: 0 0 14px;
+  padding: 18px var(--space-4);
+  border: 1px dashed var(--graphite-card-border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+}
+
+/* Solo se oculta la tabla cuando el módulo no tiene ninguna paga: el mensaje
+ * de vacío ya está presente. Con un filtro sin resultados la tabla y su
+ * caption se conservan (comportamiento base). */
+html[data-theme="graphite-lime"] .payroll-page:has(> .empty) .payroll-table {
+  display: none;
+}
+
+/* Tabla de pagas documentadas --------------------------------------------- */
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table {
+  margin-bottom: 14px;
+  padding: 8px var(--space-4) 12px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: var(--radius);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+  overflow-x: auto;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table table {
+  table-layout: auto;
+  min-width: 0;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table th {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table td {
+  font-size: 13px;
+  vertical-align: top;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table .payroll-id {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-date {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table .actions button {
+  min-height: var(--touch-min);
+  margin: 0;
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-table details {
+  margin-top: 8px;
+}
+
+/* Tarjetas de paga --------------------------------------------------------- */
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards {
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .ui-data-list-item {
+  padding: 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .ui-data-list-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .ui-data-list-value {
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .ui-data-list-field[data-kind="status"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: start;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .ui-data-list-field[data-kind="actions"] {
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards .actions button {
+  min-height: var(--touch-min);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards dd {
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards details {
+  margin: 10px 0;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards details summary,
+html[data-theme="graphite-lime"] .payroll-page .payroll-table details summary {
+  min-height: var(--touch-min);
+  padding-block: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .payroll-cards details p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Paneles, formularios y revisión ----------------------------------------- */
+
+html[data-theme="graphite-lime"] .payroll-page > .panel,
+html[data-theme="graphite-lime"] .payroll-page > details.panel {
+  margin-top: 16px;
+  border-color: var(--graphite-card-border);
+  background-image: var(--graphite-card-bg);
+  box-shadow: var(--graphite-card-shadow);
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .panel {
+  padding: var(--space-4);
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .panel > h2 {
+  margin-bottom: 10px;
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > .panel > p {
+  max-width: 90ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > details.panel > summary {
+  min-height: var(--touch-min);
+  padding: 14px var(--space-4);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+html[data-theme="graphite-lime"] .payroll-page > details.panel > summary::marker {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .payroll-page > details.panel > p {
+  margin: 0;
+  padding: 4px var(--space-4) 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid {
+  gap: 14px 16px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid label:not(.check-label) {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):focus-visible {
+  border-color: var(--focus);
+}
+
+/* Casillas: la base las apila en columna y les da ancho completo; aquí van
+ * en línea con su etiqueta y conservan 20x20 con objetivo de 44 px. */
+html[data-theme="graphite-lime"] .payroll-page .form-grid label:has(> input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-min);
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid label:has(> input[type="checkbox"]) input {
+  flex: 0 0 auto;
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel > label:not(:has(> input[type="checkbox"])) {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel > label:not(:has(> input[type="checkbox"])) :is(input, select, textarea) {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 6px;
+  border-color: var(--control-border);
+  background: var(--graphite-input-bg);
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .form-grid > p {
+  max-width: 90ch;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel .actions button {
+  min-height: var(--touch-min);
+}
+
+
+html[data-theme="graphite-lime"] .payroll-page .panel[aria-label="Confirmación de Nómina"] {
+  border: 2px solid var(--focus);
+  box-shadow: 0 0 0 1px rgb(215 255 94 / 0.18);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel[aria-label="Confirmación de Nómina"] > h2 {
+  color: var(--accent);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel details article {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--graphite-card-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel details article h3 {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel details article dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--graphite-card-border);
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel details article dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel details article dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+html[data-theme="graphite-lime"] .payroll-page .panel details article p {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+  html[data-theme="graphite-lime"] .payroll-page .payroll-table {
+    display: none;
+  }
+
+  html[data-theme="graphite-lime"] .payroll-page .payroll-table + .payroll-cards {
+    display: grid;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="graphite-lime"] .payroll-page > .filters {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .payroll-page > .filters button,
+  html[data-theme="graphite-lime"] .payroll-page .panel .actions button {
+    width: 100%;
+  }
+
+  html[data-theme="graphite-lime"] .payroll-page > .panel,
+  html[data-theme="graphite-lime"] .payroll-page > details.panel > summary {
+    padding: var(--space-3);
+  }
+
+  html[data-theme="graphite-lime"] .payroll-page .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="graphite-lime"] .payroll-page .payroll-cards dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

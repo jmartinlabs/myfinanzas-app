@@ -784,8 +784,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(28);
-        expect(bundle.manifest.app).toBe("e36.1-v28");
+        expect(bundle.manifest.schema).toBe(29);
+        expect(bundle.manifest.app).toBe("e36.3-v29");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
@@ -987,7 +987,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 28 }, { version: 28 }]);
+    expect(upgraded).toEqual([{ version: 29 }, { version: 29 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

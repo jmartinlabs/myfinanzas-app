@@ -147,14 +147,17 @@ function Link({
   to,
   go,
   children,
+  className,
 }: {
   to: string;
   go: (p: string) => void;
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <a
       href={to}
+      className={className}
       onClick={(e) => {
         e.preventDefault();
         go(to);
@@ -660,9 +663,11 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
         document.querySelector<HTMLElement>("h1")?.focus(),
       );
   }, [data]);
+  // VIS-13: retorno con la flecha que usa el resto de la aplicación y con el
+  // glifo fuera del nombre accesible.
   const back = (
-    <Link to={base} go={go}>
-      Volver a Movimientos
+    <Link to={base} go={go} className="back">
+      <span aria-hidden="true">‹</span> Volver a Movimientos
     </Link>
   );
   if (error)

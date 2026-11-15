@@ -584,7 +584,9 @@ function InstrumentDetail({
     [error, setError] = useState(""),
     [retry, setRetry] = useState(0),
     [motivo, setMotivo] = useState(""),
+    [motivoError, setMotivoError] = useState(""),
     [busy, setBusy] = useState(false);
+  const motivoRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     setData(null);
     setAudit([]);
@@ -604,7 +606,15 @@ function InstrumentDetail({
     };
   }, [id, retry]);
   async function changeState(active: boolean) {
-    if (!data || !motivo.trim()) return;
+    if (!data) return;
+    // VIS-18: el motivo se exige con error visible junto al campo, no ocultando
+    // el botón ni ignorando la pulsación.
+    if (!motivo.trim()) {
+      setMotivoError("Indica el motivo para cambiar el estado del Instrumento.");
+      motivoRef.current?.focus();
+      return;
+    }
+    setMotivoError("");
     setBusy(true);
     try {
       await api(`/instrumentos/${id}/${active ? "reactivar" : "desactivar"}`, "POST", {
@@ -729,7 +739,7 @@ function InstrumentDetail({
           go(BASE);
         }}
       >
-        ‹ Volver
+        ‹ Volver a Instrumentos
       </a>
       <PageHead
         eyebrow={`${instrumento.id} · INSTRUMENTO`}
@@ -744,13 +754,36 @@ function InstrumentDetail({
         </button>
         <button
           className="secondary"
-          disabled={busy || !motivo.trim()}
+          disabled={busy}
           onClick={() => changeState(instrumento.estado === "Inactiva")}
         >
           {instrumento.estado === "Inactiva" ? "Reactivar" : "Desactivar"}
         </button>
       </PageHead>
       {error && <Alert>{error}</Alert>}
+      <section className="panel" aria-labelledby="estado-instrumento-title">
+        <div className="panel-head">
+          <h2 id="estado-instrumento-title">Estado del Instrumento</h2>
+          <span className="help">
+            Cambiar el estado afecta a las nuevas Compras y queda en la auditoría.
+          </span>
+        </div>
+        <Field
+          id="motivoEstado"
+          label="Motivo para desactivar o reactivar"
+          error={motivoError}
+          help="Se exige al cambiar el estado; queda registrado con la acción."
+        >
+          <input
+            ref={motivoRef}
+            value={motivo}
+            onChange={(event) => {
+              setMotivo(event.target.value);
+              if (motivoError) setMotivoError("");
+            }}
+          />
+        </Field>
+      </section>
       <section className="panel" aria-label="Identidad del Instrumento">
         <dl className="detail-grid">
           <div>
@@ -814,16 +847,6 @@ function InstrumentDetail({
           Valoración y resultado: {data.valoracion.estado} ·{" "}
           {data.valoracion.motivo}. No disponible hasta E4.3. No se muestra 0.
         </p>
-        <div className="form-grid">
-          <label>
-            Motivo para desactivar o reactivar
-            <input
-              value={motivo}
-              onChange={(event) => setMotivo(event.target.value)}
-              aria-label="Motivo de estado del Instrumento"
-            />
-          </label>
-        </div>
       </section>
       <section className="panel" aria-labelledby="compras-instrumento-title">
         <div className="panel-head">

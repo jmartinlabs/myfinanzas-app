@@ -1,11 +1,13 @@
 # Epic execution board
 
-> Copy to `specs/epic-board.md` **only if concurrent epic/workstream coordination is needed**. Example rows below are field guidance, not real approved tasks; remove them when initializing.
+> **Historical format.** The operational state lives in GitHub Issues + Project (`$work-issue`); a
+> file copied from this template is an archive that must not be maintained as live state. The rows
+> below are field guidance, not real approved tasks.
 
 Repository: UNDECIDED
 Last reconciled (date + source commit/PR): UNVERIFIED
 Coordinator next action: Inspect canonical spec/roadmap/progress before assigning work.
-Current summary owner/link: this board or the existing progress document; no competing statuses.
+Current summary owner/link: the Project Issue; no competing statuses.
 External clients / IDs / start-stop owners / notification routes: NONE VERIFIED.
 
 | Item | Priority | Spec status / approval evidence | Dev status | QA status | Hard dependencies | Owner / isolated branch | Blocker / decision needed | Next independent action | Evidence / last verified |

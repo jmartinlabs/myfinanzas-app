@@ -117,7 +117,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="references-page">
       <PageHead
         eyebrow="CASOS IDENTIFICABLES"
         title="Referencias"
@@ -245,7 +245,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
@@ -308,7 +308,7 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
   }, [confirm]);
   const r = data?.item;
   return (
-    <div className="reference-detail">
+    <div className="reference-detail references-detail-page">
       <button className="text-button" onClick={() => go(base)}>
         Volver a Referencias
       </button>
@@ -554,7 +554,7 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
   }
   if (data?.item.tipo === "Vehículo")
     return (
-      <>
+      <div className="reference-form-page">
         <PageHead
           eyebrow={id!}
           title={data.item.nombre}
@@ -572,10 +572,10 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
             Abrir ficha de vehículo
           </button>
         </FormSection>
-      </>
+      </div>
     );
   return (
-    <>
+    <div className="reference-form-page">
       <PageHead
         eyebrow={id ?? "NUEVO CASO"}
         title={id ? "Editar referencia" : "Nueva referencia"}
@@ -711,6 +711,6 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
           </div>
         </form>
       )}
-    </>
+    </div>
   );
 }

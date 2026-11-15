@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Review index, tracked working files and reachable commit history; never print values."""
+from contextlib import contextmanager
 from pathlib import Path
 import re
 import subprocess
@@ -18,8 +19,26 @@ PATTERNS = (
 )
 
 
+# A rule can only match when its literal is present. Each literal is a necessary
+# condition of the pattern above, so skipping a blob without it cannot hide a
+# finding; it only avoids running six regular expressions over every historical
+# blob. The match itself stays authoritative, and `test-checks` proves each rule
+# still fires on its own fixture.
+PREFILTER = {
+    'private-key': (b'-----begin ',),
+    'github-token': (b'gh', b'github_pat_'),
+    'aws-key': (b'akia',),
+    'api-token': (b'sk-',),
+    'credential-assignment': (b'password', b'api_key', b'access_token', b'secret'),
+    'url-credentials': (b'://',),
+}
+
+
 def inspect_content(data):
-    rules = [name for name, pattern in PATTERNS if re.search(pattern, data)]
+    lower = data.lower()
+    rules = [name for name, pattern in PATTERNS
+             if any(literal in lower for literal in PREFILTER[name])
+             and re.search(pattern, data)]
     if data.startswith(b'SQLite format 3\x00'):
         rules.append('sqlite-content')
     return rules
@@ -27,6 +46,50 @@ def inspect_content(data):
 
 def inspect_path(path):
     return bool(SENSITIVE.search(path)) and Path(path).name != '.env.example'
+
+
+@contextmanager
+def batch_reader(root):
+    """One long-lived `git cat-file --batch` instead of a process per object.
+
+    Each historical blob is still inspected byte-for-byte; only the process
+    launch per object is removed, which dominated the scan of a full history.
+    """
+    process = subprocess.Popen(['git', '-C', str(root), 'cat-file', '--batch'],
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    try:
+        def read(oid):
+            try:
+                process.stdin.write(oid.encode() if isinstance(oid, str) else oid)
+                process.stdin.write(b'\n')
+                process.stdin.flush()
+                header = process.stdout.readline()
+            except (BrokenPipeError, OSError) as error:
+                raise ValueError('history unreadable') from error
+            fields = header.split()
+            if len(fields) != 3 or fields[1] in (b'missing', b'ambiguous'):
+                raise ValueError('missing object in history')
+            size = int(fields[2])
+            chunks = []
+            remaining = size
+            while remaining:
+                chunk = process.stdout.read(remaining)
+                if not chunk:
+                    raise ValueError('truncated object in history')
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            process.stdout.read(1)
+            return b''.join(chunks)
+        yield read
+    finally:
+        try:
+            process.stdin.close()
+        except OSError:
+            pass
+        process.wait()
+        process.stdout.close()
+        process.stderr.close()
 
 
 def scan(root):
@@ -38,42 +101,50 @@ def scan(root):
     findings = set()
     content_seen = set()
     commits = git('rev-list', 'HEAD').decode().splitlines()
-    for commit in commits:
-        for rule in inspect_content(git('show', '-s', '--format=%B', commit)):
-            findings.add((commit[:7], '(commit-message)', rule))
-        records = git('ls-tree', '-rz', commit).split(b'\0')
+    reachable = set(commits)
+    messages = git('log', '--no-color', '--format=%H%x00%B%x00', 'HEAD').split(b'\0')
+    with batch_reader(root) as read_blob:
+        for index in range(0, len(messages) - 1, 2):
+            commit = messages[index].strip().decode('utf-8', errors='replace')
+            if commit not in reachable:
+                continue
+            for rule in inspect_content(messages[index + 1]):
+                findings.add((commit[:7], '(commit-message)', rule))
+        for commit in commits:
+            records = git('ls-tree', '-rz', commit).split(b'\0')
+            for record in records:
+                if not record:
+                    continue
+                header, raw_path = record.split(b'\t', 1)
+                mode, kind, oid = header.split()
+                path = raw_path.decode('utf-8', errors='replace')
+                if inspect_path(path):
+                    findings.add((commit[:7], path, 'sensitive-path'))
+                if mode == b'120000':
+                    findings.add((commit[:7], path, 'symlink-review'))
+                if kind == b'blob' and oid not in content_seen:
+                    content_seen.add(oid)
+                    for rule in inspect_content(read_blob(oid.decode())):
+                        findings.add((commit[:7], path, rule))
+        records = git('ls-files', '--stage', '-z').split(b'\0')
         for record in records:
             if not record:
                 continue
             header, raw_path = record.split(b'\t', 1)
-            mode, kind, oid = header.split()
+            mode, oid, stage = header.split()
             path = raw_path.decode('utf-8', errors='replace')
+            if stage != b'0':
+                findings.add(('index', path, 'unmerged-index'))
             if inspect_path(path):
-                findings.add((commit[:7], path, 'sensitive-path'))
+                findings.add(('index', path, 'sensitive-path'))
             if mode == b'120000':
-                findings.add((commit[:7], path, 'symlink-review'))
-            if kind == b'blob' and oid not in content_seen:
-                content_seen.add(oid)
-                for rule in inspect_content(git('cat-file', 'blob', oid.decode())):
-                    findings.add((commit[:7], path, rule))
-    for record in git('ls-files', '--stage', '-z').split(b'\0'):
-        if not record:
-            continue
-        header, raw_path = record.split(b'\t', 1)
-        mode, oid, stage = header.split()
-        path = raw_path.decode('utf-8', errors='replace')
-        if stage != b'0':
-            findings.add(('index', path, 'unmerged-index'))
-        if inspect_path(path):
-            findings.add(('index', path, 'sensitive-path'))
-        if mode == b'120000':
-            findings.add(('index', path, 'symlink-review'))
-        for rule in inspect_content(git('cat-file', 'blob', oid.decode())):
-            findings.add(('index', path, rule))
-        local = root / path
-        if local.is_file() and not local.is_symlink():
-            for rule in inspect_content(local.read_bytes()):
-                findings.add(('working-tree', path, rule))
+                findings.add(('index', path, 'symlink-review'))
+            for rule in inspect_content(read_blob(oid.decode())):
+                findings.add(('index', path, rule))
+            local = root / path
+            if local.is_file() and not local.is_symlink():
+                for rule in inspect_content(local.read_bytes()):
+                    findings.add(('working-tree', path, rule))
     return sorted(findings), len(commits), len(content_seen)
 
 

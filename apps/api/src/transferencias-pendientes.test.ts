@@ -78,7 +78,7 @@ function seedReparto(
     ).n,
   );
   db.run(
-    "INSERT INTO repartos(id,ciclo,estado,origen_comun,revision,creado,actualizado) VALUES(?,?,'Borrador','S001',1,?,?)",
+    "INSERT INTO repartos(id,ciclo,fuente_plan,estado,origen_comun,revision,creado,actualizado) VALUES(?,?,'PlanCiclo','Borrador','S001',1,?,?)",
     [id, ciclo, stamp, stamp],
   );
   const lineIds: number[] = [];

@@ -328,7 +328,7 @@ test("E4.11 I3: trimestre y año componen varios ciclos sin escribir E4.9", () =
     identidad: {
       versionAgregado: "A1",
       versionApp: "0.0.0-fixture",
-      versionEsquema: 28,
+      versionEsquema: 29,
       actor: "usuario-unico",
       motivo: null,
     },
@@ -2113,7 +2113,7 @@ test("E4.11 I3: rutas GET/POST, 405 y snapshot sin escrituras colaterales", asyn
     origen: "Foto",
     id: 1,
     periodo: { ejercicio: 2026, trimestre: 1 },
-    identidad: { versionAgregado: "A1", versionEsquema: 28 },
+    identidad: { versionAgregado: "A1", versionEsquema: 29 },
     replayed: false,
   });
 

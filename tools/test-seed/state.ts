@@ -113,14 +113,14 @@ export function validateMarker(
   return null;
 }
 
-export function assertSchema28(db: Database) {
+export function assertSchema29(db: Database) {
   const rows = db.query("SELECT version FROM schema_version").all() as {
     version: number;
   }[];
   if (rows.length !== 1 || rows[0].version !== schemaVersion)
     throw new SeedError(
       2,
-      "El esquema no es exactamente 28; no se migra ni se repara.",
+      "El esquema no es exactamente 29; no se migra ni se repara.",
       "schema",
     );
 }

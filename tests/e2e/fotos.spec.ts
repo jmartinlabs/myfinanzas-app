@@ -8,6 +8,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { schemaVersion } from "../../apps/api/src/database-identity";
 
 /**
  * E4.11 I6 — E2E, accesibilidad y evidencia de `/fotos`.
@@ -242,7 +243,9 @@ test("E4.11 UI/API: foto v1 inmutable tras T2/T3 y contraste vivo etiquetado", a
       photo.getByText("01/01/2026 → 31/01/2026", { exact: true }),
     ).toBeVisible();
     await expect(photo.getByText("usuario-unico", { exact: true })).toBeVisible();
-    await expect(photo.getByText(/0\.0\.0-e2e · 27/)).toBeVisible();
+    await expect(
+      photo.getByText(new RegExp(`0\\.0\\.0-e2e · ${schemaVersion}`)),
+    ).toBeVisible();
     await expect(
       photo.getByText("2027-06-15 12:00 UTC", { exact: true }),
     ).toBeVisible();
@@ -265,7 +268,7 @@ test("E4.11 UI/API: foto v1 inmutable tras T2/T3 y contraste vivo etiquetado", a
       foto: {
         version: 1,
         appVersion: "0.0.0-e2e",
-        schemaVersion: 27,
+        schemaVersion,
         ventana: { inicio: "2026-01-01", fin: "2026-01-31" },
       },
     });

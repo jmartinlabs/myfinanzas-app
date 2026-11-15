@@ -258,8 +258,9 @@ export type TransferenciaPendienteDTO = {
   repartoLinea: {
     id: number;
     reparto: number;
-    clase: "Presupuesto" | "Adicional";
+    clase: "Presupuesto" | "Adicional" | "Partida";
     presupuesto: string | null;
+    partida?: string | null;
     incluida: boolean;
     motivoExclusion: string | null;
   } | null;
@@ -337,6 +338,12 @@ export type TransferenciaPendienteImpactoDTO = {
 
 export type RepartoEstado = "Borrador" | "Generado" | "Completado";
 
+/**
+ * Active plan source of a reparto (SPEC36 amendment C). It is declared once per
+ * Cycle and never switches: it cannot be mixed or changed after generating.
+ */
+export type RepartoFuentePlan = "PlanCiclo" | "Dprima";
+
 // Server-decided completion blockers; the client only renders them.
 export type RepartoMotivoNoCompletar = {
   code: string;
@@ -354,13 +361,23 @@ export type RepartoLineaPendienteDTO = {
 
 export type RepartoLineaDTO = {
   id: number;
-  clase: "Presupuesto" | "Adicional";
+  clase: "Presupuesto" | "Adicional" | "Partida";
   presupuesto: {
     id: string;
     nombre: string;
     fuente: string;
     destino: string | null;
     estado: string;
+  } | null;
+  // D′ origin entity (SPEC36 amendment C). Wire-only for now: the UI increment
+  // (Issue #411) is the consumer that renders it.
+  partida?: {
+    id: string;
+    nombre: string;
+    estado: string;
+    raiz?: boolean;
+    fuente?: string | null;
+    destino?: string | null;
   } | null;
   origen: SaldoResumenDTO | null;
   destino: SaldoResumenDTO | null;
@@ -379,6 +396,8 @@ export type RepartoLineaDTO = {
 export type RepartoDTO = {
   id: number;
   ciclo: { id: string; inicio: string; fin: string | null };
+  /** Active plan source declared by the reparto (SPEC36 amendment C). */
+  fuentePlan?: "PlanCiclo" | "Dprima";
   estado: RepartoEstado;
   origenComun: SaldoResumenDTO | null;
   revision: number;
@@ -405,23 +424,36 @@ export type RepartoWireDTO = Omit<RepartoDTO, "ciclo" | "lineas"> & {
 };
 
 export type RepartoPropuestaItemDTO = {
-  presupuesto: {
-    id: string;
-    nombre: string;
-    fuente: string;
-    destino: string | null;
-    estado: string;
-  };
+  /** Entity class published by the active plan source (amendment C). */
+  clase: "Presupuesto" | "Partida";
+  /** Entity id of the origin: Presupuesto (E2.3) or Partida raíz (D′). */
+  referencia: string;
+  /** Presupuesto entity for `PlanCiclo`; null for `Dprima`. */
+  presupuesto: RepartoEntidadDTO | null;
+  /** Partida entity for `Dprima`; null for `PlanCiclo`. */
+  partida: RepartoEntidadDTO | null;
   delMes: string | null;
   ejecutado: string | null;
   pendiente: string | null;
   estado: string | null;
   motivo: string | null;
   sinPlanificar: boolean;
+  /** Entity state normalized by the server: Activa, Inactiva or unknown. */
+  entidadEstado: "Activa" | "Inactiva" | null;
+  importeSugerido: string | null;
+  propuestaAutomatica: boolean;
   elegible: boolean;
+  /** Server-owned reasons: MANTENER_EN_ORIGEN, NO_APLICA, PARTIDA_INACTIVA… */
+  motivos: string[];
+  lineasExistentes: { id: number; importe: string }[];
+  efectoAcumulado: string | null;
+  restante: string | null;
+  excedePendiente: boolean;
+  // --- Derived by the web normalizer; never recomputed from values the server
+  // already decided. Kept so older payloads stay renderable.
   motivoNoElegible: string | null;
   propuesta: {
-    clase: "Presupuesto" | "Adicional";
+    clase: "Presupuesto" | "Partida";
     origen: string | null;
     destino: string | null;
     importe: string;
@@ -429,13 +461,27 @@ export type RepartoPropuestaItemDTO = {
   } | null;
   mantenerEnOrigen: boolean;
   sinPropuesta: boolean;
-  efectoAcumulado: string | null;
-  restante: string | null;
-  excedePendiente: boolean;
+};
+
+/**
+ * Origin entity of a proposal line. `estado` keeps the server wording
+ * (Activo/Inactivo for Presupuesto, Activa/Inactiva for Partida) and is null
+ * when the source does not publish it.
+ */
+export type RepartoEntidadDTO = {
+  id: string;
+  nombre: string;
+  fuente: string;
+  destino: string | null;
+  estado: string | null;
 };
 
 export type RepartoPropuestaDTO = {
   ciclo: { id: string; inicio: string; fin: string | null };
+  /** Source read for this preview; the reparto's own source once it exists. */
+  fuentePlan: RepartoFuentePlan;
+  /** Existing reparto of the Cycle, or null before it is created. */
+  reparto: RepartoDTO | null;
   revision: number;
   contextRevision: string;
   sinPlan: boolean;
@@ -446,9 +492,11 @@ export type RepartoPropuestaDTO = {
     motivo: string | null;
   };
   origenComunSugerido: SaldoResumenDTO | null;
-  motivoOrigen: string | null;
+  origenComunMotivo: string | null;
   origenes: SaldoResumenDTO[];
   items: RepartoPropuestaItemDTO[];
+  /** Preview notices (e.g. SIN_REPARTO). Informative; no financial meaning. */
+  avisos: string[];
 };
 
 export type RepartoSeguimientoDTO = {
@@ -466,7 +514,13 @@ export type RepartoSeguimientoDTO = {
   puedeCompletar: boolean;
   motivosNoCompletar: RepartoMotivoNoCompletar[];
   avisos: {
-    d8: { linea: number; presupuesto: string | null; motivo: string }[];
+    d8: {
+      linea: number;
+      presupuesto: string | null;
+      /** Partida entity of a `Dprima` line (amendment C). */
+      partida?: string | null;
+      motivo: string;
+    }[];
     d6: {
       pendientes: number;
       incluidosEnFoto: boolean;
@@ -476,6 +530,7 @@ export type RepartoSeguimientoDTO = {
     contexto: {
       linea: number;
       presupuesto: string | null;
+      partida?: string | null;
       motivos: string[];
     }[];
     cicloCerrado: boolean;

@@ -1,0 +1,375 @@
+/* ==========================================================================
+   MyFinanzas · Fase C · Tokens semánticos
+   Tres temas con la misma estructura y componentes. Solo variables: los
+   componentes no conocen el tema. Los valores son propuesta de prototipo.
+   ========================================================================== */
+
+:root {
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+
+  --fs-label: 12px;
+  --fs-meta: 12.5px;
+  --fs-small: 12px;
+  --fs-body: 14px;
+  --fs-table: 13px;
+  --fs-card-title: 17px;
+  --fs-section: 20px;
+  --fs-kpi: 28px;
+  --fs-hero: 50px;
+
+  --lh-tight: 1.15;
+  --lh-snug: 1.35;
+  --lh-normal: 1.55;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-pill: 999px;
+
+  --sidebar-w: 264px;
+  --content-max: 1450px;
+  --control-h: 44px;
+  --focus-width: 3px;
+}
+
+/* ============================== Dark-s ============================== */
+:root,
+html[data-theme="dark-s"] {
+  color-scheme: dark;
+
+  --bg: #091115;
+  --bg-2: #0b171c;
+  --bg-deep: #080e11;
+  --bg-image:
+    radial-gradient(ellipse 1080px 580px at 82% -10%, rgba(30, 111, 122, 0.28), transparent 64%),
+    radial-gradient(ellipse 700px 500px at 100% 108%, rgba(43, 228, 222, 0.045), transparent 62%),
+    linear-gradient(145deg, #091115 0%, #0b171c 56%, #080e11 100%);
+
+  --surface: #111c21;
+  --surface-2: #17252b;
+  --surface-3: #0b1418;
+  --surface-hover: #203239;
+  --surface-rgb: 17, 28, 33;
+  --deep-rgb: 8, 14, 17;
+  --card-bg: linear-gradient(160deg, rgba(23, 37, 43, 0.94), rgba(12, 21, 26, 0.98));
+  --card-border: #304148;
+
+  --sidebar: #0b1115;
+  --sidebar-2: #080d10;
+  --sidebar-text: #f7f5f1;
+  --sidebar-muted: #9aa4a6;
+  --sidebar-border: rgba(48, 65, 72, 0.6);
+  --sidebar-hover: rgba(32, 50, 57, 0.6);
+  --sidebar-active-bg: linear-gradient(90deg, #086e70, #12464c);
+  --sidebar-active-text: #ffffff;
+  --sidebar-active-border: rgba(43, 228, 222, 0.36);
+  --sidebar-glow: 0 0 18px rgba(43, 228, 222, 0.1);
+
+  --text: #f7f5f1;
+  --text-2: #c9c3b9;
+  --muted: #9aa4a6;
+  --muted-2: #7f8b8e;
+
+  --border: #304148;
+  --border-soft: rgba(48, 65, 72, 0.42);
+  --border-strong: #47727a;
+  --control-border: #47727a;
+
+  --accent: #2be4de;
+  --accent-ink: #73d7d4;
+  --accent-soft: rgba(43, 228, 222, 0.08);
+  --accent-border: rgba(43, 228, 222, 0.28);
+
+  --orange: #e4572e;
+  --orange-hi: #f06a45;
+  --on-orange: #121a1c;
+
+  --positive: #6fe0b0;
+  --positive-soft: rgba(111, 224, 176, 0.08);
+  --positive-border: rgba(111, 224, 176, 0.28);
+  --negative: #ff9a8c;
+  --negative-soft: rgba(255, 154, 140, 0.08);
+  --negative-border: rgba(255, 154, 140, 0.26);
+  --warning: #f2c14e;
+  --warning-soft: rgba(242, 193, 78, 0.08);
+  --warning-border: rgba(242, 193, 78, 0.28);
+  --error: #ff7b72;
+  --error-soft: rgba(255, 123, 114, 0.08);
+  --error-border: rgba(255, 123, 114, 0.28);
+
+  --focus: #2be4de;
+  --row-hover: rgba(32, 50, 57, 0.52);
+  --selected-bg: rgba(43, 228, 222, 0.09);
+  --selected-border: #2be4de;
+  --table-head: rgba(8, 14, 17, 0.36);
+  --input-bg: rgba(8, 14, 17, 0.7);
+
+  --shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
+  --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.18);
+  --topbar-bg: rgba(9, 17, 21, 0.66);
+
+  --hero-bg:
+    radial-gradient(ellipse 540px 300px at 16% -18%, rgba(30, 111, 122, 0.38), transparent 66%),
+    radial-gradient(ellipse 420px 260px at 94% -24%, rgba(30, 111, 122, 0.17), transparent 66%),
+    linear-gradient(135deg, #152329 0%, #0c161b 100%);
+  --hero-bg-solid: #14252a;
+  --hero-text: #f7f5f1;
+  --hero-muted: #b9b2a7;
+  --hero-border: #304148;
+  --hero-glow: rgba(30, 111, 122, 0.38);
+  --hero-chart: #2be4de;
+  --hero-chart-2: #73d7d4;
+  --hero-ring: #2be4de;
+  --hero-positive: #6fe0b0;
+  --hero-positive-soft: rgba(111, 224, 176, 0.08);
+  --hero-positive-border: rgba(111, 224, 176, 0.28);
+  --hero-warning: #f2c14e;
+  --hero-plan: #73d7d4;
+  --hero-plan-soft: rgba(30, 111, 122, 0.18);
+  --hero-plan-border: rgba(115, 215, 212, 0.28);
+
+  --wave-opacity: 0.7;
+  --top-wave-opacity: 0.48;
+  --ambient-opacity: 0.9;
+  --sidebar-wave-opacity: 0.6;
+}
+
+/* ============================== Light-s ============================== */
+html[data-theme="light-s"] {
+  color-scheme: light;
+
+  --bg: #f6f1e8;
+  --bg-2: #fbf8f2;
+  --bg-deep: #efe8dc;
+  --bg-image:
+    radial-gradient(ellipse 980px 540px at 82% -10%, rgba(20, 107, 115, 0.1), transparent 64%),
+    linear-gradient(145deg, #fbf8f2 0%, #f4ede3 58%, #eee6da 100%);
+
+  --surface: #fffdf9;
+  --surface-2: #f5f0e7;
+  --surface-3: #ede6db;
+  --surface-hover: #f0e9df;
+  --surface-rgb: 255, 253, 249;
+  --deep-rgb: 239, 232, 221;
+  --card-bg: #fffdf9;
+  --card-border: #d8d0c3;
+
+  --sidebar: #efe8dd;
+  --sidebar-2: #f7f2ea;
+  --sidebar-text: #1f2528;
+  --sidebar-muted: #5f6b6e;
+  --sidebar-border: #d8d0c3;
+  --sidebar-hover: #e8e0d4;
+  --sidebar-active-bg: linear-gradient(90deg, #146b73, #1c7f84);
+  --sidebar-active-text: #ffffff;
+  --sidebar-active-border: #146b73;
+  --sidebar-glow: 0 6px 18px rgba(20, 107, 115, 0.14);
+
+  --text: #1f2528;
+  --text-2: #3f4a4d;
+  --muted: #5f6b6e;
+  --muted-2: #7a8587;
+
+  --border: #d8d0c3;
+  --border-soft: rgba(31, 37, 40, 0.1);
+  --border-strong: #a99b8b;
+  --control-border: #8f8172;
+
+  --accent: #0b7f86;
+  --accent-ink: #146b73;
+  --accent-soft: #e1efed;
+  --accent-border: #a9cfcb;
+
+  --orange: #e4572e;
+  --orange-hi: #d94f24;
+  --on-orange: #1a1a1a;
+
+  --positive: #0f7a55;
+  --positive-soft: #e6f2ec;
+  --positive-border: #b7d8c8;
+  --negative: #b23a2a;
+  --negative-soft: #f8e9e6;
+  --negative-border: #e3b7ae;
+  --warning: #8a5a00;
+  --warning-soft: #fff3d6;
+  --warning-border: #e8c97a;
+  --error: #9b2c2c;
+  --error-soft: #fbeaea;
+  --error-border: #e3b5b5;
+
+  --focus: #146b73;
+  --row-hover: #f5f0e8;
+  --selected-bg: #e4f1ef;
+  --selected-border: #146b73;
+  --table-head: #f1ebe1;
+  --input-bg: #fffdf9;
+
+  --shadow: 0 18px 40px rgba(40, 45, 45, 0.1);
+  --shadow-soft: 0 8px 22px rgba(40, 45, 45, 0.07);
+  --topbar-bg: rgba(251, 248, 242, 0.84);
+
+  --hero-bg:
+    radial-gradient(ellipse 540px 300px at 82% 0%, rgba(20, 107, 115, 0.11), transparent 64%),
+    linear-gradient(140deg, #fffdf9 0%, #f3ece1 100%);
+  --hero-bg-solid: #fffdf9;
+  --hero-text: #1f2528;
+  --hero-muted: #5f6b6e;
+  --hero-border: #d8d0c3;
+  --hero-glow: rgba(20, 107, 115, 0.12);
+  --hero-chart: #0b7f86;
+  --hero-chart-2: #146b73;
+  --hero-ring: #146b73;
+  --hero-positive: #0f7a55;
+  --hero-positive-soft: #e6f2ec;
+  --hero-positive-border: #b7d8c8;
+  --hero-warning: #8a5a00;
+  --hero-plan: #146b73;
+  --hero-plan-soft: #e1efed;
+  --hero-plan-border: #a9cfcb;
+
+  --wave-opacity: 0.16;
+  --top-wave-opacity: 0.16;
+  --ambient-opacity: 0.5;
+  --sidebar-wave-opacity: 0.1;
+}
+
+/* ============================== Hybrid-s ============================== */
+html[data-theme="hybrid-s"] {
+  color-scheme: light;
+
+  --bg: #f3eee4;
+  --bg-2: #faf6ef;
+  --bg-deep: #eee6da;
+  --bg-image:
+    radial-gradient(ellipse 900px 520px at 82% -10%, rgba(20, 107, 115, 0.09), transparent 64%),
+    linear-gradient(145deg, #faf6ef 0%, #f4ede3 58%, #eee6da 100%);
+
+  --surface: #fffdf9;
+  --surface-2: #f4efe6;
+  --surface-3: #ebe4d9;
+  --surface-hover: #f0e9df;
+  --surface-rgb: 255, 253, 249;
+  --deep-rgb: 239, 232, 221;
+  --card-bg: #fffdf9;
+  --card-border: #d8d0c3;
+
+  --sidebar: #11181b;
+  --sidebar-2: #0c1215;
+  --sidebar-text: #f7f5f1;
+  --sidebar-muted: #b9b2a7;
+  --sidebar-border: rgba(247, 245, 241, 0.14);
+  --sidebar-hover: #203239;
+  --sidebar-active-bg: linear-gradient(90deg, #1e6f7a, #155b63);
+  --sidebar-active-text: #ffffff;
+  --sidebar-active-border: rgba(43, 228, 222, 0.3);
+  --sidebar-glow: 0 0 18px rgba(43, 228, 222, 0.08);
+
+  --text: #1f2528;
+  --text-2: #3f4a4d;
+  --muted: #5f6b6e;
+  --muted-2: #7a8587;
+
+  --border: #d8d0c3;
+  --border-soft: rgba(31, 37, 40, 0.1);
+  --border-strong: #a99b8b;
+  --control-border: #8f8172;
+
+  --accent: #0b7f86;
+  --accent-ink: #146b73;
+  --accent-soft: #e1efed;
+  --accent-border: #a9cfcb;
+
+  --orange: #e4572e;
+  --orange-hi: #d94f24;
+  --on-orange: #1a1a1a;
+
+  --positive: #0f7a55;
+  --positive-soft: #e6f2ec;
+  --positive-border: #b7d8c8;
+  --negative: #b23a2a;
+  --negative-soft: #f8e9e6;
+  --negative-border: #e3b7ae;
+  --warning: #8a5a00;
+  --warning-soft: #fff3d6;
+  --warning-border: #e8c97a;
+  --error: #9b2c2c;
+  --error-soft: #fbeaea;
+  --error-border: #e3b5b5;
+
+  --focus: #146b73;
+  --row-hover: #f5f0e8;
+  --selected-bg: #e4f1ef;
+  --selected-border: #146b73;
+  --table-head: #f1ebe1;
+  --input-bg: #fffdf9;
+
+  --shadow: 0 18px 40px rgba(40, 45, 45, 0.1);
+  --shadow-soft: 0 8px 22px rgba(40, 45, 45, 0.07);
+  --topbar-bg: rgba(250, 246, 239, 0.84);
+
+  --hero-bg:
+    radial-gradient(ellipse 560px 300px at 16% -18%, rgba(30, 111, 122, 0.36), transparent 66%),
+    radial-gradient(ellipse 380px 240px at 96% -20%, rgba(30, 111, 122, 0.16), transparent 66%),
+    linear-gradient(140deg, #14252a 0%, #0d1a1f 100%);
+  --hero-bg-solid: #14252a;
+  --hero-text: #f7f5f1;
+  --hero-muted: #b9b2a7;
+  --hero-border: #304148;
+  --hero-glow: rgba(30, 111, 122, 0.38);
+  --hero-chart: #2be4de;
+  --hero-chart-2: #73d7d4;
+  --hero-ring: #2be4de;
+  --hero-positive: #6fe0b0;
+  --hero-positive-soft: rgba(111, 224, 176, 0.08);
+  --hero-positive-border: rgba(111, 224, 176, 0.28);
+  --hero-warning: #f2c14e;
+  --hero-plan: #73d7d4;
+  --hero-plan-soft: rgba(30, 111, 122, 0.18);
+  --hero-plan-border: rgba(115, 215, 212, 0.28);
+
+  --wave-opacity: 0.22;
+  --top-wave-opacity: 0.2;
+  --ambient-opacity: 0.55;
+  --sidebar-wave-opacity: 0.5;
+}
+
+/* Colores de datos sobre el bloque oscuro híbrido. */
+:root,
+html[data-theme="dark-s"],
+html[data-theme="hybrid-s"] {
+  --hero-negative: #ff9a8c;
+  --hero-warning: #f2c14e;
+  --hero-error: #ff7b72;
+  --hero-info: #73d7d4;
+}
+
+html[data-theme="light-s"] {
+  --hero-negative: #b23a2a;
+  --hero-warning: #8a5a00;
+  --hero-error: #9b2c2c;
+  --hero-info: #146b73;
+}
+
+/* Solid references for contrast checks and active navigation. */
+:root,
+html[data-theme="dark-s"] {
+  --sidebar-active-solid: #086e70;
+}
+
+html[data-theme="light-s"] {
+  --sidebar-active-solid: #146b73;
+}
+
+html[data-theme="hybrid-s"] {
+  --sidebar-active-solid: #1e6f7a;
+}

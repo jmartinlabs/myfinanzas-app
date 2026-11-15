@@ -1060,7 +1060,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       </td>
                     </tr>
                     <tr>
-                      <th scope="row">Ajuste S_aj</th>
+                      <th scope="row">Ajuste por Recuperado</th>
                       <td>
                         {ciclo.ajusteCompartidos.sAjustado === null ? (
                           <Amount value={null} state="No disponible" showNote={false} />

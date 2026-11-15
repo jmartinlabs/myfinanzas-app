@@ -235,7 +235,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     await expect(
       page.getByRole("heading", { name: "Partidas", exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("Maestro de Partidas", { exact: true })).toBeVisible();
+    await expect(page.getByText("Partidas registradas", { exact: true })).toBeVisible();
     await expect(
       page.getByText("Raíz aportación E2E", { exact: false }).first(),
     ).toBeVisible();
@@ -373,7 +373,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     // 390: la tabla de líneas conserva el contenido en una región desplazable.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dprima");
-    await expect(page.getByText("Maestro de Partidas", { exact: true })).toBeVisible();
+    await expect(page.getByText("Partidas registradas", { exact: true })).toBeVisible();
     await page
       .locator("tbody tr", { hasText: "2026-11" })
       .getByRole("button", { name: "Abrir" })

@@ -628,7 +628,14 @@ export function createApp(db: Database, options: AppOptions) {
               "La propuesta de reparto es de solo lectura.",
             );
           }
-          return reply(previewReparto(db, cicloId, now()));
+          return reply(
+            previewReparto(
+              db,
+              cicloId,
+              now(),
+              new URL(req.url).searchParams.get("fuentePlan") ?? undefined,
+            ),
+          );
         }
         if (req.method === "GET")
           return reply(getRepartoPorCiclo(db, cicloId, now()));
