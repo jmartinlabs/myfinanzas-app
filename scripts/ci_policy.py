@@ -83,6 +83,7 @@ HARNESS_INPUTS = (
     ('test-evidence', ()),
     ('test-release', ('infra/', 'package.json', 'bun.lock', '.github/workflows/')),
     ('test-work-issue', ()),
+    ('test-delegation-route', ()),
     ('test-agent-usage', ('.codex/', 'docs/USAGE_REPORTS.md')),
     ('test-auto-agent-usage', ('.codex/',)),
 )
