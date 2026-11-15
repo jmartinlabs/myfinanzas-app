@@ -8,7 +8,7 @@ This policy applies to complex **Full** work and to Standard work with several i
 
 ## Persistent board and single writer
 
-Maintain `specs/epic-board.md` when multiple epics or workstreams genuinely require scheduling. For a single feature reuse its progress/testplan. Reconcile the smallest relevant Git/spec/test/approval evidence at session start and major gates; mark missing evidence unknown and never manufacture permission.
+The GitHub Project (Status) is the operational board; `specs/epic-board.md` is historical and must not be maintained as live state. For a single feature reuse its progress/testplan. Reconcile the smallest relevant Git/spec/test/approval evidence at session start and major gates; mark missing evidence unknown and never manufacture permission.
 
 The coordinator is the **only writer** of the shared board. Delegates return concise results, SHA and evidence. Update changed fields at authorization, candidate, QA, blocker or PR milestones, not on every worker message. Approved decisions remain canonical in the specs/guidelines.
 

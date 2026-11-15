@@ -1,3 +1,8 @@
+> **Documento histórico.** Este tablero conserva decisiones, checkpoints y evidencias de su
+> fecha y **no refleja el estado actual ni autoriza nada**. El seguimiento operativo y el gate
+> de fase viven en GitHub Issues + [Project MyFinanzas · Development](https://github.com/users/jmartinlabs/projects/4);
+> se actualiza por hitos relevantes, no tras cada PR, y sus estados pueden estar desactualizados.
+
 ## Identificadores canónicos y etapas — reconciliado 2026-11-10e
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:

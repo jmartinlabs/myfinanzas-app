@@ -6,9 +6,9 @@ candidata vigente: `MyFinanzas2026_v5.11(7).xlsx` ([contexto](specs/project.md))
 ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad hasta el traspaso.
 
 ## Antes de actuar
-- Contrasta Git/PR y el checkpoint relevante. El [tablero](specs/epic-board.md) es el
-  seguimiento central, pero sus estados no son autorización: no tomes información
-  desactualizada como permiso vigente.
+- Contrasta Git/PR y el `Status` del Project **MyFinanzas · Development** (#4): es el único
+  seguimiento operativo y el gate de fase. El [tablero](specs/epic-board.md) es **histórico**:
+  conserva decisiones y checkpoints, puede estar desactualizado y no es permiso vigente.
 - Carga solo lo aplicable: [contexto](specs/project.md), [roadmap](specs/roadmap.md),
   [referencia funcional](specs/functional-reference-v5.11.md) y las guías
   [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
@@ -32,8 +32,8 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
   y [gate de cuota](specs/methodology/dynamic-agents.md#quota-and-dispatch-gate).
-- Solo el coordinador escribe el [tablero](specs/epic-board.md); cada agente recibe ownership
-  y gates. Publicar rama y PR es trabajo autorizado ([publicación](specs/methodology/approvals.md#publicación-de-rama-y-pr));
+- El estado operativo vive en GitHub Issues + Project: solo el coordinador mueve el `Status`,
+  asigna ownership y gates; nadie mantiene un tablero Markdown paralelo. Publicar rama y PR es trabajo autorizado ([publicación](specs/methodology/approvals.md#publicación-de-rama-y-pr));
   el merge exige aprobación explícita e identificable y nunca se auto-fusiona.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
   Aprobar una spec no autoriza desarrollo.

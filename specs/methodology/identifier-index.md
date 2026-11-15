@@ -65,7 +65,7 @@ solo se aplica al crear cada spec:
 
 `DEV43` no coincide con el número de spec de E4.3 (`23`): el número de DEV es histórico y
 no debe inferirse del número de spec. Las referencias no listadas no se reutilizan sin
-contrastar el tablero.
+contrastar el Project y el histórico.
 
 ## Bloques DEV por funcionalidad
 

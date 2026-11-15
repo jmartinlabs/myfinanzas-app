@@ -41,7 +41,7 @@ Forma de uso: `E4.10 · SPEC`, `E4.10 · DEV`, `E4.10 · QA`, `E4.10 · MERGE`.
 
 ## 4. Trazabilidad
 
-- Un único tablero operativo: `specs/epic-board.md`.
+- Un único tablero operativo: el Project de GitHub; `specs/epic-board.md` es histórico.
 - Una fila por `E4.x` con: estados `SPEC/DEV/QA/MERGE`, bloques DEV, aceptación, documentos,
   paquetes, owner/rama, evidencia y siguiente acción.
 - [identifier-index.md](identifier-index.md) conserva las equivalencias históricas
