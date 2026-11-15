@@ -11,6 +11,14 @@ ownership and QA remain in [orchestrate](../orchestrate/SKILL.md); this Skill on
 *which* Issue an agent may take and records it. Implementation: `scripts/work-issue`;
 regression suite: `scripts/test-work-issue`.
 
+**This Skill never runs alone.** A reference is not a load: a client injects only the Skill
+that was invoked, so `orchestrate` is loaded explicitly with each client's own mechanism
+(Hermes: `/orchestrate` or `skill_view('orchestrate')`; Claude Code: `/orchestrate`; Codex
+and OpenCode: the Skill by name) **before** reading the queue, reserving or executing a
+phase, and the Skill that owns each phase (`spec`, `dev`, `task`, `tweak`) is loaded before
+that phase runs. Without those loads the delegation, execution-mode, model-selection, quota
+and independent-QA rules are not in context, and the session must not claim it applied them.
+
 ## Skill and tool — two different things
 
 - **`$work-issue` (this Skill)** is the *procedure*: when an Issue may be taken, in which
@@ -23,9 +31,11 @@ regression suite: `scripts/test-work-issue`.
   transition a phase permits). It creates no branch, PR, merge or approval, executes no phase
   and has no session or memory of its own between calls.
 - Therefore `@work-issue opencode` asks the **agent** to run a session over that agent's
-  queue, while `scripts/work-issue next --agent opencode` is one read-only call inside that
-  session. Naming the agent in the Skill invocation names the queue; the tool needs
-  `--agent` on `next`/`take`/`move` only because it cannot carry a session.
+  queue (in Hermes and Claude Code a leading `@` is a file mention: there the invocation is
+  `/work-issue hermes` or the Skill named in the request), while `scripts/work-issue next
+  --agent opencode` is one read-only call inside that session. Naming the agent in the Skill
+  invocation names the queue; the tool needs `--agent` on `next`/`take`/`move` only because it
+  cannot carry a session.
 
 ## Inputs
 - An explicit request to take work (`work-issue`, `@work-issue opencode`, `coge una Issue
