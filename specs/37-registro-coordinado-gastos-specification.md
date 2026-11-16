@@ -631,14 +631,15 @@ expediente. La aprobación no autoriza desarrollo (§0.4).
 - Mecanismo compartido: [SPEC36 §6](36-reparto-mensual-asistido-presupuestos-specification.md#6-mecanismo-compartido-de-transferencia-pendiente).
 - Roadmap y tablero: sin cambios; esta spec no crea entrega ni estado de tablero.
 - Decisiones: **D1–D10 aprobadas el 2026-11-16** (§0), con AC-42 y AC-43 incorporados a §16.
-- Preparación de desarrollo: los incrementos propuestos y el paquete del gate `v30` están en
+- Preparación de desarrollo: los incrementos y el paquete del gate `v30` están en
   [incrementos de desarrollo de SPEC37](investigations/spec37-dev-increments-2026-11-16.md)
-  (#484). Ese documento no autoriza nada; cada incremento necesita su propio gate.
-- Próximo gate: **autorización de desarrollo separada**, que debe incluir el esquema v30 descrito
-  en §0.3 y §11. Aprobar las decisiones no la concede.
+  (#484). El **desarrollo de I1–I6 está autorizado globalmente** por decisión del usuario del
+  2026-11-16 (registrada en #484), con `I1` antes de `I2–I6` y una PR de código por incremento.
+- Próximo gate: el **merge de la PR documental #485** y, después, `I1` (`G-v30`). Cada PR de código
+  necesita su propia autorización de merge; el desarrollo autorizado no es aceptación funcional.
 - Gate ajeno: la incorporación del aviso de pendientes al precierre corresponde a
   [SPEC26/E4.8](26-e48-precierre-specification.md) mediante `E4.8-AC-17`, no aprobado aquí.
 
-Este documento está aprobado en sus decisiones D1–D10 y en los criterios AC-42 y AC-43. No
-autoriza desarrollo, no ejecuta pruebas, no modifica las specs base y no autoriza merge ni
-despliegue.
+Este documento está aprobado en sus decisiones D1–D10 y en los criterios AC-42 y AC-43. No autoriza
+merge ni despliegue, no ejecuta pruebas y no modifica las specs base; los criterios permanecen
+`UNRUN` hasta su ejecución real.

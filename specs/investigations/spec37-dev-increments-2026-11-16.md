@@ -1,13 +1,21 @@
 # SPEC37 · Incrementos de desarrollo y gate de esquema v30 (2026-11-16)
 
-**Estado: propuesta de la fase `Specification` de #484. Este documento no aprueba nada, no
-autoriza desarrollo y no toca el esquema.** Prepara la secuencia de incrementos de
+**Estado: paquete de la fase `Specification` de #484, bajo la autorización global de desarrollo
+I1–I6 del 2026-11-16.** Este documento describe la secuencia y el gate `v30` de
 [SPEC37](../37-registro-coordinado-gastos-specification.md), cuyo contrato D1–D10 y cuyos
-`AC-42`/`AC-43` fueron aprobados el 2026-11-16 (SPEC37 §0), y el paquete del gate `v30`.
+`AC-42`/`AC-43` fueron aprobados el 2026-11-16 (SPEC37 §0). La autorización global sustituye la
+propuesta anterior de pedir permiso por incremento; **no convierte ningún `UNRUN` en `PASS` ni
+autoriza merges**.
 
 - **Base medida:** `test` `0e1f34d` (2026-11-16), esquema **`v29`**.
-- **No autoriza:** DEV, API, UI, SQLite, `v30`, migración, datos reales, Excel, importación, VPS
-  ni merge. Aprobar este documento no autoriza el primero de los incrementos.
+- **Autorizado (usuario, 2026-11-16):** el desarrollo de **I1–I6 como conjunto**, con `I1`
+  obligatoriamente antes de `I2–I6`, una PR de código por incremento, CI y revisión en cada una, y
+  **autorización humana de merge para cada PR**. No hace falta una aprobación nueva para empezar.
+- **No autoriza:** merge automático de ninguna PR, despliegues, cambios en `main`, migración de
+  bases reales, datos reales o Excel, VPS, SPEC26/E4.8 ni `E4.8-AC-17`.
+- **Parada obligatoria:** cambio material de contrato, finanzas o arquitectura; migración no
+  aditiva o destructiva; preflight con duplicados; fallo nuevo de integridad o regresión; uso de
+  datos reales; alteración de gates; ampliación de alcance.
 - **No reabre:** las decisiones D1–D10, AC-42/AC-43, el mecanismo compartido de SPEC36 §6 ni el
   análisis de #412.
 - **Etiquetas:** `DEMOSTRADO` = leído en el código de la base indicada; `DOCUMENTADO` = spec o
@@ -17,6 +25,8 @@ autoriza desarrollo y no toca el esquema.** Prepara la secuencia de incrementos 
   tabla a **triggers**, porque `ALTER TABLE … ADD CONSTRAINT` no existe en SQLite y un `CHECK` de
   tabla obligaría a reconstruir la tabla. Ambas cosas se midieron en SQLite 3.43.2 (§2.1). Se
   mantienen preflight de duplicados, `v31` como centinela, backup/restore, pruebas y no regresión.
+- **Revisión 2 (2026-11-16, autorización global):** §§1–8 siguen siendo la descripción técnica; lo
+  que cambia es el régimen de autorización (§3, §7 y §8), ya no incremento a incremento.
 
 ## 1. Paridad con `test` `0e1f34d`
 
@@ -42,10 +52,10 @@ existente, contrato que hay que **extender** y contrato que **no existe**.
 extensión del pendiente + una operación coordinada + UI; el resto son contratos ya entregados que
 solo necesitan regresión.
 
-## 2. Gate `G-v30` — propuesta de esquema
+## 2. Gate `G-v30` — esquema propuesto
 
-`[PROPUESTA]` Un único gate de esquema, previo a los incrementos que lo consumen, con su propia
-PR y su propia autorización. **No se ejecuta aquí.**
+`[DOCUMENTADO]` Un único gate de esquema, `I1`, previo a los incrementos que lo consumen, con su
+propia PR de código y su propia autorización de merge. **No se ejecuta aquí.**
 
 ### 2.1 Contenido mínimo
 
@@ -126,10 +136,12 @@ significados en la misma columna.
 6. Backup/restore `v30` con un pendiente `RegistroCoordinado` y su auditoría.
 7. No regresión: la suite de pendientes y de Reparto sigue en verde.
 
-## 3. Incrementos propuestos
+## 3. Incrementos
 
-`[PROPUESTA]` Un incremento por PR, con su propio gate de autorización y su propia evidencia. El
-orden no es estético: cada uno consume lo que el anterior deja estable.
+`[DOCUMENTADO]` Una PR de código por incremento, bajo la **autorización global I1–I6** del
+2026-11-16: no se pide permiso nuevo para empezar cada uno, pero cada PR conserva CI, revisión y
+**autorización humana de merge**. El orden no es estético: cada incremento consume lo que el
+anterior deja estable, y `I1` es condición previa de `I2–I6`.
 
 | # | Incremento | Depende de | Alcance | AC |
 | --- | --- | --- | --- | --- |
@@ -197,24 +209,35 @@ cobertura inmediata dentro de `I5`.
 | UI de dos modalidades en un formulario | Complejidad y errores de estado | Vista previa y 409 con borrador conservado (AC-22) antes de la confirmación |
 | PR grande en `I3` | Revisión costosa | Packet cerrado con contrato de `I3` y pruebas por AC; sin ampliar a UI |
 
-## 7. Paquete de decisión para el usuario
+## 7. Régimen de autorización y secuencia
 
-`[PROPUESTA]` Autorizar **en este orden**, cada uno con su gate:
+`[DOCUMENTADO]` **El usuario autorizó el 2026-11-16 el desarrollo conjunto de `I1–I6`** con una
+sola aprobación. Sustituye la propuesta anterior de autorizar incremento a incremento; no
+convierte ningún criterio `UNRUN` en evidencia ni autoriza merge.
 
-1. **`I1` · Gate `G-v30`** — es el único que bloquea a los demás. Autorizarlo significa aceptar el
-   contenido de §2.1 y sus pruebas; no autoriza todavía ningún incremento funcional.
-2. **`I2`** después de `I1` verificado en `test`.
-3. **`I3`** después de `I2`, y **`I4`** después de `I3`.
-4. **`I5`** después de `I4`; **`I6`** como cierre, con la regresión completa.
-
-`[PROPUESTA]` Si se prefiere reducir el número de gates, la única agrupación defendible es
-`I2+I3` en una sola entrega (el pendiente y la operación que lo crea), nunca `I3` partido por la
-mitad. Cualquier otra agrupación mezcla esquema con comportamiento y rompe la trazabilidad de AC.
-
-**Lo que este paquete no decide:** qué incremento se autoriza, cuándo, ni con qué alcance; eso es
-del usuario. Aprobar este documento no mueve el `Status` a `Ready Development`.
+- **Secuencia obligatoria:** `I1` → `I2` → `I3` → `I4` → `I5` → `I6`. `I1` se verifica antes de que
+  ningún consumidor use el esquema; las dependencias de cada fila de §3 se comprueban antes de
+  proseguir. El trabajo preparatorio independiente es libre, pero un consumidor no se integra
+  sobre un esquema no verificado.
+- **Sin nuevas solicitudes de permiso** para empezar `I2–I6`; sí CI, revisión y merge autorizado
+  por PR.
+- **Agrupación:** se mantiene una PR por incremento. La única agrupación defendible sigue siendo
+  `I2+I3` en una entrega (el pendiente y la operación que lo crea); `I3` no se parte, porque
+  partir la atomicidad produce el estado intermedio que el contrato prohíbe.
+- **Paradas que elevan al usuario:** cambio material de contrato, finanzas o arquitectura;
+  migración no aditiva o destructiva; preflight con duplicados; fallo nuevo de integridad o
+  regresión; uso de datos reales; alteración de gates; ampliación de alcance. Los detalles de
+  SPEC37 marcados `[PROPUESTA]` que impliquen una decisión material de UX o contrato se elevan; no
+  se aprueban en silencio.
+- **Fuera de alcance:** acceso o importación de Excel y datos reales, migración de bases reales,
+  operaciones VPS, despliegues, promoción `test → main`, merges no aprobados, cambios en
+  SPEC26/E4.8 y activación de `E4.8-AC-17`. Cerrar #484 con CI verde tampoco sustituye la
+  revisión de evidencia funcional.
 
 ## 8. Próximo gate
 
-Decisión del usuario sobre el paquete de §7. Hasta entonces: DT7 no interviene aquí, SPEC37 sigue
-aprobada en sus decisiones y sin DEV, `v30` no existe y los 43 AC siguen `UNRUN`.
+`[DOCUMENTADO]` Integrar **esta PR documental** en `test` con revisión y CI documental y con
+aprobación de merge independiente; el usuario mueve entonces #484 a `Ready Development`. A partir
+de ahí, `I1` (`G-v30`) abre el desarrollo autorizado, y su PR espera autorización de merge como
+cualquier otra. Hasta que `v30` exista y sus pruebas se ejecuten, los 43 AC siguen `UNRUN` y
+ningún incremento se declara aceptado.
