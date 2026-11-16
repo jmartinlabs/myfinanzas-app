@@ -1,10 +1,19 @@
 # SPEC37 — Expediente de decisiones D1–D10 (2026-11-16)
 
 **Estado: análisis de #412. Este expediente no aprueba nada y no autoriza DEV.** Reúne las
-diez decisiones de [SPEC37 §17](../37-registro-coordinado-gastos-specification.md#17-decisiones-que-requieren-aprobación)
+diez decisiones de [SPEC37 §17](../37-registro-coordinado-gastos-specification.md)
 para que el usuario pueda resolverlas de forma coherente, con la evidencia del código que hoy
-existe en `test`. Cada decisión sigue `[PENDIENTE]`; cada recomendación es `[PROPUESTA]` y no
-sustituye una decisión explícita e identificable.
+existe en `test`.
+
+> **Aprobadas el 2026-11-16.** El usuario aprobó D1–D10 con las precisiones de las revisiones 1 y
+> 2 e incorporó `AC-42` y `AC-43` a SPEC37 §16. El registro de la aprobación, con fecha,
+> responsable, alcance, precisiones y exclusiones, está en
+> [SPEC37 §0](../37-registro-coordinado-gastos-specification.md).
+> Este expediente conserva valor como evidencia y justificación de cada decisión; **no** es el
+> registro y no autoriza desarrollo.
+
+Cada recomendación se etiqueta `[PROPUESTA]` y no sustituye una decisión explícita e
+identificable; las ya aprobadas se señalan en su entrada con la remisión a SPEC37 §0.
 
 - **Base documental:** `test` `65915b2` (2026-11-16). Solo documentación; nada ejecutado.
 - **No modifica:** SPEC37 ni SPEC36. El registro de una aprobación corresponde a la spec
@@ -83,7 +92,7 @@ sustituye una decisión explícita e identificable.
   aprobación ya existe; mantenerla abierta obligaría a repetir un gate cerrado.
 - **Riesgo:** ninguno funcional. El riesgo real es leer D1 como aprobación de SPEC37 completa:
   no lo es.
-- **Efecto:** ninguno sobre los 41 AC. Fija que el DEV extiende `transferencia_pendiente`.
+- **Efecto:** ninguno sobre los 41 AC existentes. Fija que el DEV extiende `transferencia_pendiente`.
 
 ### D2 — Momento de alta de Referencia y ficha de Anticipo
 
@@ -431,10 +440,18 @@ exclusiones · efecto sobre AC`.
 
 ## 9. Próximo gate
 
-La revisión 2 resolvió los dos puntos bloqueantes de la revisión 1: D2 ya no exige que el Ciclo
-del Gasto siga abierto —`HISTORY_LOCKED` valida la fecha real del nuevo Movimiento y
-`ciclo_origen` es trazabilidad inmutable— y D6 declara la modalidad inmutable tras el alta,
-acotando lo que `gasto_revision`/`movement_audit` pueden detectar. Con eso, el gate es la
-aprobación del usuario de D1–D10 y, si procede, el registro formal en SPEC37 §0/§17, más la
-decisión sobre los AC propuestos `AC-42` y `AC-43`. Aprobarlas **no** autoriza desarrollo: SPEC37
-sigue en `DRAFT` y el `Ready Development` es un gate separado del usuario.
+`[CONFIRMADO]` **Cumplido el 2026-11-16:** el usuario aprobó D1–D10 con las precisiones de las
+revisiones 1 y 2 e incorporó `AC-42` y `AC-43` a SPEC37 §16. El registro está en
+[SPEC37 §0](../37-registro-coordinado-gastos-specification.md),
+con fecha, responsable, alcance, precisiones, coste del esquema v30 y exclusiones. Las
+revisiones 1 y 2 resolvieron, respectivamente, D2/D6/D10 y los dos puntos bloqueantes
+posteriores (`HISTORY_LOCKED` por la fecha real y modalidad inmutable).
+
+Lo que queda **no** depende de más análisis:
+
+1. **Autorización de desarrollo separada**, que debe incluir el esquema `v30` de §0.3 y §11.1.
+   Aprobar las decisiones no la concede.
+2. **`E4.8-AC-17`** (aviso de pendientes en el precierre) sigue en la spec propietaria SPEC26,
+   sin aprobar ni implementar por esta decisión.
+3. **Fixtures y UI** de §10 y §15 conservan `[PROPUESTA]`: entrarían en el alcance del desarrollo
+   autorizado, no de esta aprobación.
