@@ -1,10 +1,12 @@
 # DT7 · Hoja de decisiones y revisión privada (2026-11-10)
 
-**Base:** `test` `bff714e`. **Estado:** DT7 abierto; 59 AC de E4.5 `UNRUN`; M1 aprobado.
+**Base:** `test` `bff714e`. **Estado:** DT7 abierto; 59 AC de E4.5 `UNRUN`; M1 aprobado;
+**M4/M7/M15/M16 ratificadas el 2026-11-16; R-H1…R-H9 aprobados y trasladados; F1/M2 2023
+autorizada** (§7).
 **Uso:** una sola página accionable. Los criterios completos están en
 [inventario de evidencias](dt7-evidence-inventory-2026-11-10.md) y
-[cierre DT7](dt7-decision-closure-2026-11-05.md). Este documento no aprueba nada,
-no contiene datos reales y no cierra DT7.
+[cierre DT7](dt7-decision-closure-2026-11-05.md). Este documento no aprueba nada por sí mismo:
+solo registra decisiones del usuario, no contiene datos reales y no cierra DT7.
 
 ## 1. M1 · ejercicios incluidos — APROBADO 2026-11-10
 
@@ -34,7 +36,11 @@ histórico desde 2023.» (mensaje de coordinación del 2026-11-10; revisión fin
 evidencia: `MyFinanzas2026_v5.11(20261110-134135).xlsx`, privada, UNRUN · efecto: fija el universo, no acredita cobertura,
 importes ni aperturas; M2/M5/M8 sin cambios`.
 
-## 1.1 Siguiente paso: M2 de 2023
+## 1.1 Siguiente paso: M2 de 2023 — AUTORIZADO 2026-11-16
+
+**Autorización del usuario (2026-11-16, §7):** iniciar F1/M2 privada de 2023 **limitada a
+preparar** el inventario, el mapping y el procedimiento de conciliación. Sin acceso de agentes a
+datos financieros reales, sin importación y sin publicación de información privada.
 
 Primer ejercicio a mapear. Solo **metadatos estructurales**, sin importes:
 
@@ -50,6 +56,21 @@ Primer ejercicio a mapear. Solo **metadatos estructurales**, sin importes:
 dato debe venir de la revisión privada. La inclusión de 2023 no depende de que su apertura
 esté acreditada (decisión de alcance M1); M8 la valida aparte. La plantilla material de M2
 sigue **`UNRUN`** hasta completar el inventario privado.
+
+### Paquete de arranque de F1 (lo que se prepara sin datos)
+
+| Pieza | Quién | Estado |
+| --- | --- | --- |
+| Plantilla del inventario por ejercicio, solo encabezados y contratos de columna | Coordinador | Contrato en [laboratorio M2](dt7-m2-lab-2026-11-10.md) §1.2–§1.5; se entrega sin valores |
+| Contrato de mapping por ID, campo y archivo | Coordinador | [laboratorio M2](dt7-m2-lab-2026-11-10.md) §2; se entrega como checklist vacío |
+| Criterios de conciliación (0 filas / 0 céntimos) y su evidencia | Coordinador | [laboratorio M2](dt7-m2-lab-2026-11-10.md) §4; sin datos |
+| Cumplimentación del inventario y mapping de 2023 | Usuario, en privado; Álex revisa | `[PENDIENTE]`: no la hace ningún agente |
+| Conciliación de 2023 | Usuario, en privado | `[PENDIENTE]`: 0 filas / 0 céntimos |
+| Registro de la decisión M2 | Usuario | `[PENDIENTE]`: solo llega el estado, no los datos |
+
+**Salida de F1:** inventario y mapping de 2023 completos y conciliados en privado, con
+`DT7-EV-M2-01…04` verificables y sin un solo valor publicado. F1 **no** abre M5, M8, E45-A2,
+DEV ni importación.
 
 ## 2. Decisiones por bloque
 
@@ -110,5 +131,33 @@ sube al repositorio.
 
 - Mantener CI, tablero y correcciones de estabilidad ya autorizadas.
 - Preparar la plantilla M2 de 2023 y el contraste de estructura (sin valores), ya habilitado
-  por M1.
+  por M1 y **autorizado el 2026-11-16** (§1.1 y §7).
 - Nada de E4.5 DEV nuevo, E45-A2, importación, F2/F3/F4 ni datos reales.
+
+## 7. Registro de la decisión del usuario — 2026-11-16
+
+**Decisión del usuario (2026-11-16), tras la revisión favorable de Álex** sobre #424 y la
+revisión 1 de PR #483. Se registra el alcance; no se amplía. Detalle del paquete R-H en
+[el análisis de #424](dt7-424-analysis-2026-11-16.md) §9.
+
+| Acuerdo | Registro |
+| --- | --- |
+| **M4/M7/M15/M16** | `RATIFICADA · 2026-11-16 · usuario · conforme a [cierre DT7](dt7-decision-closure-2026-11-05.md) §2 · alcance: M4 NoAplica solo con evidencia; M7 representación por vínculo fiable; M15 disyunción acreditada sin prorrateos; M16 fecha económica solo con evidencia · efecto: ninguna regla nueva, no abre M2/M5/M8 ni DEV` |
+| **R-H1…R-H9** | `APROBADO · 2026-11-16 · usuario · alcance: nueve requisitos, incluida la separación R-H8 (restore técnicamente íntegro) / R-H9 (histórico financieramente acreditado) · exclusión: no autoriza ejecución, custodia efectiva, retención real ni cambios operativos` |
+| **Traslado documental a `vps-infra#42` y `#34`** | `AUTORIZADO Y REALIZADO · 2026-11-16 · solo documental, con trazabilidad y enlaces entre Issues · publicado en #42 (comment 6918562902) y #34 (comment 6918566976) · exclusión: no autoriza ejecución ni operación de infraestructura` |
+| **F1/M2 privada 2023** | `AUTORIZADA · 2026-11-16 · alcance: preparar inventario, mapping y procedimiento de conciliación · exclusiones: sin acceso de agentes a datos financieros reales, sin importación, sin publicación de información privada` |
+| **M5/M8 y E45-A2** | `SIN CAMBIOS · pendientes de evidencia` |
+| **DT7 y AC de E4.5** | `SIN CAMBIOS · DT7 abierto; los 59 AC de E4.5 siguen UNRUN` |
+
+**Texto de la aprobación (usuario, 2026-11-16):** «Tras la revisión favorable de Álex, APRUEBO:
+1. Ratificación de M4/M7/M15/M16 […]. 2. R-H1…R-H9, incluyendo la separación entre restauración
+técnicamente íntegra (R-H8) e histórico financieramente acreditado (R-H9). Autorizo
+exclusivamente su traslado documental a jmartinlabs/vps-infra#42 y #34, con trazabilidad y
+enlaces entre las Issues. 3. Inicio de F1/M2 privada de 2023, limitado a preparar el inventario,
+mapping y procedimiento de conciliación. Sin acceso de agentes a datos financieros reales, sin
+importación y sin publicación de información privada.»
+
+**Límites declarados en la misma decisión:** nada de desarrollo de E4.5, P6/P7, migraciones,
+importaciones, cambios operativos de infraestructura, acceso a datos personales, despliegues ni
+modificaciones del Excel. El cierre de #424 es la finalización del trabajo documental, **no** la
+aceptación funcional de DT7.
