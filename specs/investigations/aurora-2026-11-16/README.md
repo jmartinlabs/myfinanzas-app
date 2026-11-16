@@ -187,7 +187,7 @@ navegador y se fuerza `data-theme="aurora"` en el DOM. Es una maqueta de revisi�
 | Fuga a otros temas (estilos computados de `dark-s` antes/después de inyectar la capa) | **sin cambios** |
 | Paridad de tokens con el contrato | **66/66**, 0 extra, 0 ausentes, +7 de capa |
 | Degradados activos en Inicio | 14 superficies; 2 en Movimientos; ≥1 por catálogo |
-| Consola / errores de página | sin errores en las capturas |
+| Errores de página | la previsualización no los registra: `capture.mjs` no escucha `pageerror`; esa comprobación queda para el E2E de desarrollo |
 
 ### 4.2 Contraste (calculado sobre peor caso del degradado)
 
