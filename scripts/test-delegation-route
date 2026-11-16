@@ -167,6 +167,16 @@ class DelegationRouteCheck(unittest.TestCase):
         self.assertIn('not a list', result.stderr)
         self.assertNotIn('Traceback', result.stderr)
 
+    def test_absent_state_cannot_pass(self):
+        for state in (None, ''):
+            with self.subTest(state=state):
+                self.db.unlink(missing_ok=True)
+                self.build([('deleg_p', state, 1.0, None, payload(route()))])
+                result = self.run_check('--delegation', 'deleg_p', *ADVISOR)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn('(not completed): not verified', result.stderr)
+                self.assertNotIn('PASS', result.stdout)
+
     def test_json_document_reports_every_task(self):
         self.build([('deleg_o', 'completed', 1.0, 2.0,
                      payload(route(), route(label='worker', model='deepseek-v4.1-flash-1017',

@@ -11,15 +11,21 @@ Source: the Hermes profile's `state.db` → `async_delegations.result_json`, one
 task carrying `status` and `route.backend/label/provider/model/reasoning_effort`. No
 network, no model calls, read-only.
 
+Expectations are arguments, never constants: they come from the `options` entry the caller
+dispatched with (name, provider, model, effort). The runtime does not persist that option —
+it keeps the resolved route per task and `task_json.model`, the model resolved at dispatch —
+so take the expected values from the option used at dispatch, not from the config as it
+reads afterwards.
+
 Exit codes: 0 every task finished and matched every requested expectation; 1 a task did
-not finish successfully, or did not match; 2 no verdict is possible here (no expectation,
-no state.db, unreadable metadata, or malformed `result_json`) — never a pass.
+not finish successfully, or did not match, or the delegation never completed; 2 no verdict
+is possible here (no expectation, no state.db, unreadable metadata, or malformed
+`result_json`) — never a pass.
 
 Examples:
-    scripts/check-delegation-route --profile engineering-lead --latest \
-        --expect-label advisor --expect-provider openai-codex --expect-effort low
-    scripts/check-delegation-route --state-db /tmp/state.db --delegation deleg_abc \
-        --expect-label advisor --expect-model gpt-6.1-sol --json
+    scripts/check-delegation-route --profile <profile> --delegation deleg_abc \
+        --expect-label <option> --expect-provider <provider> --expect-effort <effort>
+    scripts/check-delegation-route --state-db /tmp/state.db --latest --expect-label <option> --json
 """
 import argparse
 import json
@@ -120,10 +126,12 @@ def main(argv=None):
     source.add_argument('--profile', help='Hermes profile name, e.g. engineering-lead')
     target = parser.add_mutually_exclusive_group()
     target.add_argument('--delegation', help='delegation id, e.g. deleg_27ce6a52')
-    target.add_argument('--latest', action='store_true', help='the most recent delegation (default)')
-    parser.add_argument('--expect-label', help='route label the tasks must have run on, e.g. advisor')
+    target.add_argument('--latest', action='store_true',
+                        help='the most recent delegation (default); prefer --delegation <id> '
+                             'while other sessions may also delegate')
+    parser.add_argument('--expect-label', help='option name the tasks must have run on, e.g. advisor')
     parser.add_argument('--expect-model', help='exact model id the tasks must have run on')
-    parser.add_argument('--expect-provider', help='provider the tasks must have run on, e.g. openai-codex')
+    parser.add_argument('--expect-provider', help='provider the tasks must have run on')
     parser.add_argument('--expect-effort', help='reasoning effort the route must have carried, e.g. low')
     parser.add_argument('--json', action='store_true', help='print one JSON document')
     args = parser.parse_args(argv)
@@ -145,7 +153,7 @@ def main(argv=None):
         print(f'FAIL delegation {delegation_id} ({state}) has no results yet: not verified',
               file=sys.stderr)
         return 1
-    if state and state != 'completed':
+    if state != 'completed':
         print(f'FAIL delegation {delegation_id} state={state} (not completed): not verified',
               file=sys.stderr)
         return 1
