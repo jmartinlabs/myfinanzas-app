@@ -171,7 +171,9 @@ export function backup(
                                                               ? "e4.11-v27"
                                                               : sourceVersion === 28
                                                                 ? "e36.1-v28"
-                                                                : "e36.3-v29",
+                                                                : sourceVersion === 29
+                                                                  ? "e36.3-v29"
+                                                                  : "e37.1-v30",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),

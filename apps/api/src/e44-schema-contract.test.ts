@@ -21,7 +21,7 @@ import { Auth, provision, totp } from "./auth";
 const t = "2026-01-01T00:00:00.000Z";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e44-"));
 const c26 = "C26-E410-REAPERTURA-V26";
-const c29 = "C29-REPARTO-ORIGEN-86DED4B";
+const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const c22 = "C22-E35-FIN-NETA";
 
@@ -68,7 +68,7 @@ function v22(path: string) {
   });
 }
 
-test("E4.4 AC-24: C23 stays frozen and the v22→v29 upgrade exposes the exact C29 contract", () => {
+test("E4.4 AC-24: C23 stays frozen and the v22→v30 upgrade exposes the exact C30 contract", () => {
   const c23Contract = contract(c23);
   expect(c23Contract.schemaVersion).toBe(23);
   expect(c23Contract.objects).toHaveLength(270);
@@ -82,8 +82,8 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v29 upgrade exposes the exact C
   const fresh = new Database(":memory:");
   try {
     prepareSchema(fresh, { origin: "demo", key_hash: null });
-    expect(manifest(fresh)).toEqual(contract(c29).objects);
-    expect(verifyContract(fresh, 29)).toBe(c29);
+    expect(manifest(fresh)).toEqual(contract(c30).objects);
+    expect(verifyContract(fresh, 30)).toBe(c30);
   } finally {
     fresh.close();
   }
@@ -111,10 +111,10 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v29 upgrade exposes the exact C
     const upgraded = openDatabase(upgradedPath);
     try {
       expect(upgraded.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 30,
       });
-      expect(manifest(upgraded)).toEqual(contract(c29).objects);
-      expect(verifyContract(upgraded, 29)).toBe(c29);
+      expect(manifest(upgraded)).toEqual(contract(c30).objects);
+      expect(verifyContract(upgraded, 30)).toBe(c30);
     } finally {
       upgraded.close();
     }
@@ -126,7 +126,7 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v29 upgrade exposes the exact C
 // publishNewDirectory is Linux-specific (libc.so.6/renameat2); the canonical
 // backup gate runs on Linux CI. On macOS this test is reported as skipped.
 test.skipIf(process.platform !== "linux")(
-  "E4.4 AC-24: v29 backup/manifest/restore keeps new fields, reconciliation and MFA",
+  "E4.4 AC-24: v30 backup/manifest/restore keeps new fields, reconciliation and MFA",
   async () => {
   process.env.NODE_ENV = "test";
   const dir = root();
@@ -177,8 +177,8 @@ test.skipIf(process.platform !== "linux")(
 
     const { bundle } = decryptBundle(identity, source);
     expect(bundle.manifest).toMatchObject({
-      app: "e36.3-v29",
-      schema: 29,
+      app: "e37.1-v30",
+      schema: 30,
       origin: "demo",
     });
 
@@ -186,7 +186,7 @@ test.skipIf(process.platform !== "linux")(
     const copy = openDatabase(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 30,
       });
       expect(
         copy

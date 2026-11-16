@@ -144,7 +144,7 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-describe("FT-1 minimal v29", () => {
+describe("FT-1 minimal v30", () => {
   test("init/apply/verify/status happy path and frozen dataset evidence", () => {
     const root = fixtureRoot();
     expect(status(root).status).toBe("empty");
@@ -165,9 +165,11 @@ describe("FT-1 minimal v29", () => {
     const manifest = readManifest(root);
     expect(manifest.dataset.id).toBe("FT-1");
     expect(manifest.dataset.version).toBe(1);
-    expect(manifest.source.schema).toBe(29);
-    expect(manifest.source.schema_contract).toBe("C29-REPARTO-ORIGEN-86DED4B");
-    expect(manifest.source.data_contract).toBe("e36.3-v29");
+    expect(manifest.source.schema).toBe(30);
+    expect(manifest.source.schema_contract).toBe(
+      "C30-SPEC37-COORDINADO-0E1F34D",
+    );
+    expect(manifest.source.data_contract).toBe("e37.1-v30");
     expect(manifest.source.commit).toBe(COMMIT);
     expect(manifest.counts.saldos).toBe(6);
     expect(manifest.counts.movimientos).toBe(6);
@@ -361,7 +363,7 @@ describe("FT-1 minimal v29", () => {
     expect(dbBytes(root).equals(database)).toBe(true);
   });
 
-  test("schema other than 29 is rejected without migration", () => {
+  test("schema other than 30 is rejected without migration", () => {
     const root = fixtureRoot();
     expect(init(root).code).toBe(0);
     const db = openFixtureDb(root);
