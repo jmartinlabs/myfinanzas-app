@@ -12,7 +12,6 @@ import {
   Table,
   type TableColumn,
 } from "./ui";
-import type { ThemeId } from "./themes";
 
 /**
  * E4.6 — Resumen de inicio.
@@ -1151,13 +1150,7 @@ function GraphiteCoverage({
   );
 }
 
-export function Inicio({
-  go,
-  theme,
-}: {
-  go: (path: string) => void;
-  theme?: ThemeId;
-}) {
+export function Inicio({ go }: { go: (path: string) => void }) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -1237,7 +1230,7 @@ export function Inicio({
         : "No disponible";
 
   return (
-    <div className={`inicio-page${theme === "casa" ? " inicio-casa" : ""}`}>
+    <div className="inicio-page">
       <PageHead
         eyebrow="RESUMEN FINANCIERO · SOLO LECTURA"
         title="Inicio"
