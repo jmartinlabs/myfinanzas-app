@@ -13,9 +13,11 @@ sustituye una decisión explícita e identificable.
   el `Ready Development` de #412.
 - **Regla:** el silencio no aprueba. Aprobar en bloque vale solo si el usuario identifica qué
   incluye y qué excluye. Aprobar una recomendación no autoriza desarrollo.
-- **Revisión 1 (2026-11-16, tras la revisión supervisora de PR #482):** se precisan D2
-  (`ciclo_origen`, referencia prevista, atomicidad), D6 (línea base verificable y pendientes
-  activos duplicados) y D10 (aviso observable, AC y spec propietaria). El resto no cambia.
+- **Revisión 2 (2026-11-16, tras la revisión supervisora de la revisión 1 en PR #482):** D2 deja
+  de exigir el Ciclo del Gasto abierto al confirmar —`HISTORY_LOCKED` se decide por la fecha
+  real del nuevo Movimiento— y D6 declara la modalidad **inmutable** tras el alta, acotando
+  `gasto_revision`/`movement_audit` a propiedades del Gasto. Se proponen `AC-42` y `AC-43` para
+  SPEC37 §16, sin incorporarlos.
 
 ## 1. Cómo leerlo
 
@@ -58,11 +60,11 @@ sustituye una decisión explícita e identificable.
 | # | Tema | Naturaleza | Recomendación | Coste técnico si se aprueba |
 | --- | --- | --- | --- | --- |
 | D1 | Mecanismo compartido | Confirmación por referencia | Aprobar tal cual | Ninguno: se extiende el registro existente |
-| D2 | Alta de Referencia/ficha de Anticipo | Funcional + técnica | Aprobar; exige referencia prevista persistida, alta de ficha en transacción, `ciclo_origen` = Ciclo del Gasto y revalidación al confirmar | Esquema v30 (1 columna) + variante en transacción + rechazo explícito si el Gasto no tiene Ciclo |
+| D2 | Alta de Referencia/ficha de Anticipo | Funcional + técnica | Aprobar; exige referencia prevista persistida, alta de ficha en transacción, `ciclo_origen` = Ciclo histórico del Gasto y revalidación por la fecha real al confirmar | Esquema v30 (1 columna) + variante en transacción + rechazo explícito si el Gasto no tiene Ciclo; `AC-42` propuesto |
 | D3 | «Máximo permitido» de la barra | Funcional | Aprobar: informativo, sin bloqueo nuevo | Ninguno |
 | D4 | Gasto real con financiación pendiente | Funcional | Aprobar tal cual | Ninguno: el esquema ya lo exige |
 | D5 | Vinculación de Transferencia existente | Funcional + técnica | Aprobar; la igualdad de Referencia en B exige ampliar `vincular` solo para `RegistroCoordinado` | Ajuste acotado en el flujo de vinculación |
-| D6 | Gasto anulado o modificado con pendiente | Funcional + técnica | Aprobar; bloqueo por condición con línea base por revisión, sin cuarto estado y un solo pendiente activo por Gasto | Motivos de revisión nuevos + `gasto_revision` + índice único parcial en v30 |
+| D6 | Gasto anulado o modificado con pendiente | Funcional + técnica | Aprobar; bloqueo por condición con línea base por revisión, sin cuarto estado, un solo pendiente activo por Gasto y modalidad inmutable | Motivos de revisión nuevos + `gasto_revision` + `modalidad` + índice único parcial en v30; `AC-43` propuesto |
 | D7 | Entidad de operación compuesta | Técnica | Aprobar: sin entidad; una clave de intento para la operación | Esquema v30 (1 tabla de intentos) |
 | D8 | Terminales | Funcional | Aprobar tal cual | Ninguno |
 | D9 | Referencias Viaje/Evento | Alcance | Aprobar: no habilitarlas | Ninguno |
@@ -93,15 +95,37 @@ sustituye una decisión explícita e identificable.
   no existe; el alta rechaza `referencia` (`DEMOSTRADO`); y `validateAnticipo` exige la ficha
   antes de escribir la Transferencia (`DEMOSTRADO`). Sin una referencia prevista persistida,
   AC-39 («la Referencia deja de ser elegible antes de confirmar») no se puede detectar.
-- **Precisión 1 · `ciclo_origen` (`[PROPUESTA]`, 2026-11-16):** en el flujo coordinado,
-  `ciclo_origen` es el **Ciclo del Gasto** —el que la financiación sirve—, no el de la fecha
-  real de la Transferencia. Es trazabilidad, no imputación: la Transferencia confirmada
-  pertenece al Ciclo de su propia fecha (§8.5), aunque caiga en otro Ciclo. El Ciclo de un
-  Gasto **no se almacena**, se deriva de su fecha (`DEMOSTRADO`), y puede no existir si la
-  fecha queda fuera de todo Ciclo; como `ciclo_origen` es `NOT NULL` (`DEMOSTRADO`), el alta
-  del pendiente **se rechaza con motivo** cuando el Gasto no cae en ningún Ciclo, en lugar de
-  inventar uno o de usar la fecha prevista. La confirmación revalida que `ciclo_origen` sigue
-  abierto: si la ventana está cerrada, `HISTORY_LOCKED` sin escritura (§8.6).
+- **Precisión 1 · `ciclo_origen` (`[PROPUESTA]`, 2026-11-16; corregida en la revisión 2):** en el
+  flujo coordinado, `ciclo_origen` es el **Ciclo del Gasto** —el que la financiación sirve—, no
+  el de la fecha real de la Transferencia. Es trazabilidad, no imputación: la Transferencia
+  confirmada pertenece al Ciclo de su propia fecha (§8.5), aunque caiga en otro Ciclo. El Ciclo
+  de un Gasto **no se almacena**, se deriva de su fecha (`DEMOSTRADO`), y puede no existir si la
+  fecha queda fuera de todo Ciclo; como `ciclo_origen` es `NOT NULL` (`DEMOSTRADO`), el alta del
+  pendiente **se rechaza con motivo** cuando el Gasto no cae en ningún Ciclo, en lugar de
+  inventar uno o de usar la fecha prevista.
+- **Precisión 1.b · qué valida `HISTORY_LOCKED` (`[PROPUESTA]`, revisión 2):** la confirmación
+  **no** exige que el Ciclo del Gasto siga abierto. Un pendiente no caduca y no se invalida
+  porque el Ciclo de su Gasto se haya cerrado: la protección histórica se decide por la **fecha
+  real del nuevo Movimiento** y por las reglas de escritura aplicables a esa fecha (§8.6). Con
+  el Ciclo de octubre cerrado y noviembre abierto, confirmar con fecha real de noviembre es
+  válido; replicar el cierre de octubre sería imputación retroactiva, justo lo que §8.5 excluye.
+  `ciclo_origen` permanece **inmutable** tras el alta: solo describe de qué Ciclo viene la
+  necesidad de financiación.
+  - **Caso sintético de regresión:** Gasto de 100,00 € con fecha en el Ciclo de octubre (cerrado);
+    pendiente de 60,00 € creado en octubre y no realizado al cierre; el usuario confirma el
+    2026-11-05 con noviembre abierto. Resultado esperado: una única Transferencia con fecha
+    2026-11-05, que pertenece al Ciclo de noviembre; `ciclo_origen` sigue siendo octubre; sin
+    `HISTORY_LOCKED`; sin imputación a octubre; posición y ejecución presupuestaria se leen del
+    Ciclo del hecho real. Con la fecha real dentro de octubre cerrado, en cambio:
+    `HISTORY_LOCKED`, sin escritura y pendiente conservado.
+  - **AC de regresión propuesto** para SPEC37 §16 (no incorporado aquí; añadirlo exige la
+    aprobación de esa spec):
+
+    > `AC-42 · Confirmar un pendiente cuyo Ciclo de Gasto está cerrado con una fecha real de un
+    > Ciclo abierto` → se registra una única Transferencia en el Ciclo de la fecha real,
+    > `ciclo_origen` no cambia, no hay `HISTORY_LOCKED` y no se imputa nada al Ciclo cerrado. Con
+    > la fecha real dentro del Ciclo cerrado → `HISTORY_LOCKED`, sin escritura y pendiente
+    > conservado.
 - **Precisión 2 · creación atómica frente a reutilización (`[PROPUESTA]`):** son dos caminos
   distintos y el DEV no puede confundirlos.
   - **Referencia nueva:** en la confirmación se crean Referencia, ficha y Transferencia real en
@@ -112,11 +136,12 @@ sustituye una decisión explícita e identificable.
     estado y dirección (AC-10, AC-11, AC-12).
 - **Precisión 3 · revalidación al confirmar (`[PROPUESTA]`):** la confirmación revalida, dentro
   de la transacción y contra el estado vigente, no contra la vista previa: importe positivo,
-  dos Saldos activos y distintos sin `S000` ni `Exterior`, fecha bancaria real no futura,
-  `ciclo_origen` abierto, Gasto real y no anulado, y Referencia prevista todavía elegible. El
+  dos Saldos activos y distintos sin `S000` ni `Exterior`, fecha bancaria real no futura **y
+  escribible según su propio Ciclo**, Gasto real y no anulado, y Referencia prevista todavía
+  elegible. `ciclo_origen` **no** se revalida: es inmutable y no gobierna la escritura. El
   resultado se decide con el estado de ese instante; cualquier desviación pasa a «Requiere
   revisión» o se rechaza con `409` según §12.
-- **Recomendación:** aprobar D2 con estas tres precisiones y aceptar que su cumplimiento exige,
+- **Recomendación:** aprobar D2 con estas precisiones y aceptar que su cumplimiento exige,
   en el DEV autorizado, una columna `anticipo_previsto` validada por formato, la variante en
   transacción del alta de ficha y la revalidación descrita. No se crea ninguna entidad nueva.
 - **Alternativa descartada:** no guardar la referencia prevista y obligar a elegirla en la
@@ -126,9 +151,13 @@ sustituye una decisión explícita e identificable.
 - **Alternativa descartada para `ciclo_origen`:** usar la fecha prevista de la Transferencia.
   Atribuiría el pendiente a un Ciclo que puede no existir o no ser el que la financiación sirve,
   y separaría el pendiente del Gasto que lo origina.
+- **Alternativa descartada para `HISTORY_LOCKED`:** exigir que el Ciclo del Gasto siga abierto al
+  confirmar. Bloquearía operaciones reales y legítimas —un pendiente de octubre confirmado en
+  noviembre— y contradiría §8.5–§8.6, que sitúan la protección histórica en la fecha real del
+  hecho, no en el Ciclo de la necesidad que lo originó.
 - **Riesgo:** aprobar D2 sin asumir el coste deja el DEV bloqueado entre §7 y el esquema; y
   aceptar un Gasto sin Ciclo crearía pendientes sin ciclo en lugar de rechazarlos.
-- **Efecto:** §4, §7, §8.5, §8.6, AC-09, AC-10, AC-32 y AC-39.
+- **Efecto:** §4, §7, §8.5, §8.6, AC-09, AC-10, AC-32 y AC-39; propuesta de `AC-42` para §16.
 
 ### D3 — «Máximo permitido» de la barra
 
@@ -177,27 +206,33 @@ sustituye una decisión explícita e identificable.
 
 ### D6 — Gasto anulado o modificado con pendiente
 
-- **Texto propuesto:** si el Gasto vinculado cambia de importe, fecha, Partida, Saldo pagador o
-  modalidad, o se anula, el pendiente pasa a «Requiere revisión» con motivo y la confirmación
-  queda bloqueada. El usuario decide entre cancelar con motivo o vincular otro Gasto real.
-  Nunca hay confirmación automática ni contra un Gasto anulado.
+- **Texto propuesto:** si el Gasto vinculado cambia de importe, fecha, Partida o Saldo pagador,
+  o se anula, el pendiente pasa a «Requiere revisión» con motivo y la confirmación queda
+  bloqueada. El usuario decide entre cancelar con motivo o vincular otro Gasto real. Nunca hay
+  confirmación automática ni contra un Gasto anulado. **La modalidad es del pendiente, no del
+  Gasto**, y es **inmutable tras el alta** (precisión 3).
 - **Evidencia:** «Requiere revisión» ya es una **condición** calculada, no un estado
   (`DOCUMENTADO` en SPEC36 §6.3, `DEMOSTRADO` en `conditions()`); hoy no existe ningún motivo
   para `RegistroCoordinado` (`DEMOSTRADO`), por lo que la regla es una extensión real.
 - **Precisión 1 · línea base verificable (`[PROPUESTA]`, 2026-11-16):** el pendiente guarda
   `gasto_revision`, la revisión del Gasto en el momento del alta. La comparación es
-  **estructural y no heurística**:
+  **estructural y no heurística**, y su alcance es **solo el Gasto**:
   - Toda rectificación o anulación del Gasto incrementa `revision` y escribe una fila en
     `movement_audit` con `anterior` y `posterior` (`DEMOSTRADO`), de modo que la revisión por sí
-    sola detecta *si* cambió y la auditoría explica *qué* cambió. No hace falta copiar los
+    sola detecta *si cambió* y la auditoría explica *qué* cambió. No hace falta copiar los
     valores ni guardar una huella: serían una segunda copia de la verdad del Movimiento.
   - Si la revisión vigente del Gasto **coincide** con `gasto_revision`, no hay cambio que
     revisar: la línea base está intacta.
   - Si **difiere**, el pendiente pasa a «Requiere revisión» (`GASTO_NO_COINCIDE`) y la
-    diferencia se lee en `movement_audit`. El pendiente no copia importe, fecha, Partida, Saldo
-    pagador ni modalidad: la verdad vigente es el Movimiento.
+    diferencia se lee en `movement_audit`. El pendiente no copia importe, fecha, Partida ni
+    Saldo pagador: la verdad vigente es el Movimiento.
   - Si el Gasto figura **anulado**, el motivo es `GASTO_ANULADO` y la confirmación queda
     bloqueada (AC-30), sin cancelación automática.
+  - **Límite explícito:** `movement_audit` **no** cubre propiedades que no están en el
+    Movimiento —la modalidad del pendiente o su referencia prevista, entre otras—. Para esas
+    propiedades el mecanismo no es la auditoría del Gasto, sino su inmutabilidad tras el alta
+    (precisión 3) o la auditoría del propio pendiente
+    (`transferencia_pendiente_audit`, con `anterior`/`posterior` por revisión, `DEMOSTRADO`).
 - **Precisión 2 · pendientes activos duplicados (`[PROPUESTA]`):** como máximo **un pendiente
   activo** (`Pendiente de realizar`) por Gasto. Varios activos sobre el mismo Gasto financiarían
   dos veces el mismo hecho y romperían la lectura de liquidez. Los pendientes ya resueltos
@@ -205,18 +240,39 @@ sustituye una decisión explícita e identificable.
   esquema actual solo tiene un índice **no único** sobre `gasto` (`DEMOSTRADO`), así que la
   regla exige un índice único parcial (`WHERE estado='Pendiente de realizar'`) en el v30; el
   rechazo debe ser un error de dominio con motivo, no una violación de restricción.
-- **Recomendación:** aprobar con estas dos precisiones. Motivos nuevos: `GASTO_ANULADO`,
+- **Precisión 3 · modalidad inmutable tras el alta (`[PROPUESTA]`, revisión 2):** la modalidad
+  (A pago directo / B financiación con Anticipo) se fija al crear el pendiente y **no se edita**.
+  Cambiarla no es un ajuste de datos: invierte la dirección de la Transferencia y cambia la
+  exigencia de Referencia de Anticipo, es decir, es otra operación financiera. La vía es
+  **cancelar con motivo y crear un pendiente nuevo**, que deja dos hechos auditados y ninguno
+  reinterpretado. Consecuencias:
+  - No hay que detectar «cambio de modalidad»: es imposible por contrato.
+  - Se cumple sin duplicar la verdad del pendiente: la modalidad vive en el pendiente y su
+    inmutabilidad la protege; el Gasto no la conoce.
+  - El v30 debe persistirla explícitamente (`modalidad` en el pendiente, con su `CHECK`), no
+    inferirla de la presencia de referencia prevista.
+  - **AC propuesto** para SPEC37 §16 (no incorporado; añadirlo exige la aprobación de esa spec):
+
+    > `AC-43 · Intentar editar la modalidad de un pendiente existente` → rechazo con motivo, sin
+    > escritura y sin cambios en importe, dirección ni Referencia; la única vía es cancelar con
+    > motivo y crear otro pendiente, y la cancelación conserva la trazabilidad de ambos.
+- **Recomendación:** aprobar con estas tres precisiones. Motivos nuevos: `GASTO_ANULADO`,
   `GASTO_NO_COINCIDE` y `REFERENCIA_NO_ELEGIBLE`. Re-vincular un pendiente ya confirmado sigue
   sin ser posible (`vincular` exige estado `Pendiente de realizar`), lo que es coherente.
-- **Alternativa descartada para la línea base:** copiar en el pendiente importe, fecha, Partida,
-  Saldo pagador y modalidad. Duplica la verdad del Movimiento y crea dos fuentes que pueden
-  divergir; se descarta.
+- **Alternativa descartada para la línea base:** copiar en el pendiente importe, fecha, Partida y
+  Saldo pagador. Duplica la verdad del Movimiento y crea dos fuentes que pueden divergir; se
+  descarta.
+- **Alternativa descartada para la modalidad:** permitir editarla y registrarla en la auditoría
+  del pendiente (que ya guarda `anterior`/`posterior`). Es técnicamente posible, pero admite
+  convertir un pendiente A en B —o al revés— con la Transferencia y la Referencia ya elegidas, y
+  obliga a revalidar dirección y Referencia como si fuera un alta. Se descarta.
 - **Alternativa descartada para los duplicados:** permitir varios pendientes activos por Gasto.
   Obligaría a decidir cuál financia el Gasto y abriría doble cómputo de financiación.
 - **Riesgo:** sin el índice parcial, el límite queda en manos del código y una ejecución
   concurrente puede crear dos activos. Sin `gasto_revision`, una rectificación silenciosa no se
-  detecta.
-- **Efecto:** §9.2, AC-23 y AC-30.
+  detecta. Sin la inmutabilidad de la modalidad, un pendiente puede cambiar de naturaleza sin
+  dejar más rastro que una fila de auditoría.
+- **Efecto:** §9.2, AC-23 y AC-30; propuesta de `AC-43` para §16.
 
 ### D7 — Entidad de operación compuesta
 
@@ -309,23 +365,28 @@ quedar visibles antes del `Ready Development`.
 2. **Alta de ficha en transacción (D2):** `createAnticipo` abre su propia transacción y no hay
    variante `InTransaction`; sin ella la operación coordinada de modalidad B no puede ser
    atómica ni dejar la ficha fuera del rollback.
-3. **`ciclo_origen` (D2, precisado):** es el Ciclo del Gasto, derivado de su fecha; si el Gasto
-   no cae en ningún Ciclo, el alta del pendiente se rechaza con motivo, porque la columna es
-   `NOT NULL` y no se inventa un Ciclo.
-4. **Revalidación al confirmar (D2):** importe, Saldos, fecha real, `ciclo_origen` abierto,
-   Gasto vigente y Referencia elegible se revalidan dentro de la transacción contra el estado
-   vigente, no contra la vista previa.
+3. **`ciclo_origen` (D2, precisado):** es el Ciclo histórico del Gasto, derivado de su fecha; si
+   el Gasto no cae en ningún Ciclo, el alta del pendiente se rechaza con motivo, porque la
+   columna es `NOT NULL` y no se inventa un Ciclo. Es inmutable y **no** gobierna la escritura.
+4. **Revalidación al confirmar (D2):** importe, Saldos, fecha real **escribible según su propio
+   Ciclo**, Gasto vigente y Referencia elegible se revalidan dentro de la transacción contra el
+   estado vigente, no contra la vista previa. `HISTORY_LOCKED` se decide por la fecha real del
+   nuevo Movimiento, nunca por la apertura actual del Ciclo del Gasto.
 5. **Línea base del Gasto (D6):** `gasto_revision` en el pendiente; la detección usa la
    revisión y la explicación sale de `movement_audit`, sin copiar los valores del Movimiento.
+   Cubre solo propiedades del Gasto: no la modalidad ni la referencia prevista del pendiente.
 6. **Un solo pendiente activo por Gasto (D6):** índice único parcial
    (`WHERE estado='Pendiente de realizar'`) en el v30; el esquema actual solo tiene un índice
    no único.
-7. **Motivos de revisión ausentes (D6):** `conditions()` no tiene rama `RegistroCoordinado` ni
+7. **Modalidad inmutable (D6):** el v30 persiste `modalidad` en el pendiente con su `CHECK` y la
+   inmutabilidad se aplica en el servicio; cambiarla exige cancelar con motivo y crear otro
+   pendiente.
+8. **Motivos de revisión ausentes (D6):** `conditions()` no tiene rama `RegistroCoordinado` ni
    motivos para Gasto anulado, Gasto rectificado o Referencia no elegible.
-8. **Ampliación de `vincular` (D5):** la admisión de Referencia debe ser condicional por
+9. **Ampliación de `vincular` (D5):** la admisión de Referencia debe ser condicional por
    `origen_tipo` para no alterar el flujo de Reparto.
-9. **Intento de la operación (D7):** hace falta una tabla de intentos para la clave compuesta.
-10. **Aviso en el precierre (D10):** requiere un AC propio en SPEC26/E4.8 y su aprobación; sin
+10. **Intento de la operación (D7):** hace falta una tabla de intentos para la clave compuesta.
+11. **Aviso en el precierre (D10):** requiere un AC propio en SPEC26/E4.8 y su aprobación; sin
     él, D10 se queda en la alerta de la bandeja y no toca el precierre.
 
 ## 6. Frontera con el mecanismo compartido y las reglas vigentes
@@ -370,9 +431,10 @@ exclusiones · efecto sobre AC`.
 
 ## 9. Próximo gate
 
-La revisión 1 resolvió las tres precisiones pedidas: D2 (`ciclo_origen`, referencia prevista y
-atomicidad), D6 (línea base por revisión y un solo pendiente activo por Gasto) y D10 (aviso
-observable, AC en la spec propietaria y gate sin anticipar E4.9). Con eso, el gate es la
-revisión del usuario de D1–D10 con este expediente delante y, si procede, el registro formal de
-la respuesta en SPEC37 §0. Aprobarlas **no** autoriza desarrollo: SPEC37 sigue en `DRAFT` y el
-`Ready Development` es un gate separado del usuario.
+La revisión 2 resolvió los dos puntos bloqueantes de la revisión 1: D2 ya no exige que el Ciclo
+del Gasto siga abierto —`HISTORY_LOCKED` valida la fecha real del nuevo Movimiento y
+`ciclo_origen` es trazabilidad inmutable— y D6 declara la modalidad inmutable tras el alta,
+acotando lo que `gasto_revision`/`movement_audit` pueden detectar. Con eso, el gate es la
+aprobación del usuario de D1–D10 y, si procede, el registro formal en SPEC37 §0/§17, más la
+decisión sobre los AC propuestos `AC-42` y `AC-43`. Aprobarlas **no** autoriza desarrollo: SPEC37
+sigue en `DRAFT` y el `Ready Development` es un gate separado del usuario.
