@@ -12,6 +12,11 @@ autoriza desarrollo y no toca el esquema.** Prepara la secuencia de incrementos 
   análisis de #412.
 - **Etiquetas:** `DEMOSTRADO` = leído en el código de la base indicada; `DOCUMENTADO` = spec o
   aprobación registrada; `UNRUN` = no ejecutado.
+- **Revisión 1 (2026-11-16, tras la revisión supervisora de PR #485):** el trigger de modalidad usa
+  `IS NOT` —`!=` deja pasar `NULL → 'A'`— y la coherencia por `origen_tipo` pasa de `CHECK` de
+  tabla a **triggers**, porque `ALTER TABLE … ADD CONSTRAINT` no existe en SQLite y un `CHECK` de
+  tabla obligaría a reconstruir la tabla. Ambas cosas se midieron en SQLite 3.43.2 (§2.1). Se
+  mantienen preflight de duplicados, `v31` como centinela, backup/restore, pruebas y no regresión.
 
 ## 1. Paridad con `test` `0e1f34d`
 
@@ -44,15 +49,33 @@ PR y su propia autorización. **No se ejecuta aquí.**
 
 ### 2.1 Contenido mínimo
 
+`[DEMOSTRADO]` La estrategia es **aditiva**: tres columnas `NULL` con su `CHECK` de columna, un
+índice único parcial, una tabla y **triggers** para las reglas que cruzan columnas. Se verificó en
+SQLite 3.43.2 (`bun:sqlite`) qué es posible sin reconstruir la tabla: `ALTER TABLE … ADD COLUMN …
+CHECK` funciona y rechaza escrituras inválidas; `ALTER TABLE … ADD CONSTRAINT` **no existe**, y por
+eso la coherencia entre `origen_tipo` y las columnas nuevas no puede ser un `CHECK` de tabla.
+
 | Elemento | Propuesta | Por qué |
 | --- | --- | --- |
 | `transferencia_pendiente.anticipo_previsto TEXT NULL` | `CHECK` con el formato ya vigente de Referencia: `GLOB 'REF[0-9]*' AND substr(…,4) NOT GLOB '*[^0-9]*' AND length(…)>=6` | D2: guardar la intención sin crear ficha; hoy solo hay `anticipo` con `FK` a ficha existente |
 | `transferencia_pendiente.gasto_revision INTEGER NULL` | `CHECK(gasto_revision IS NULL OR gasto_revision>0)` | D6: línea base verificable del Gasto |
-| `transferencia_pendiente.modalidad TEXT NULL` | `CHECK(modalidad IN ('A','B'))` | D6: modalidad del pendiente, persistida |
+| `transferencia_pendiente.modalidad TEXT NULL` | `CHECK(modalidad IS NULL OR modalidad IN ('A','B'))` | D6: modalidad del pendiente, persistida |
 | Índice `transferencia_pendiente_gasto_activo` | `UNIQUE ... (gasto) WHERE gasto IS NOT NULL AND estado='Pendiente de realizar'` | D6: un solo pendiente activo por Gasto |
 | Tabla `operacion_coordinada_attempts(key, hash, response, expires)` | Patrón idéntico a `movement_attempts` | D7: idempotencia de la operación compuesta sin entidad de negocio |
-| Trigger `transferencia_pendiente_modalidad_inmutable` | `BEFORE UPDATE OF modalidad … WHEN NEW.modalidad!=OLD.modalidad RAISE(ABORT)` | AC-43: la inmutabilidad no depende solo del servicio |
-| `CHECK` de coherencia por origen | `RegistroCoordinado` → `gasto NOT NULL`, `modalidad NOT NULL`, `reparto_linea NULL`; `Reparto` → `modalidad NULL`, `gasto_revision NULL`, `anticipo_previsto NULL` | Evitar estados imposibles y no romper las filas existentes |
+| Trigger `transferencia_pendiente_modalidad_inmutable` | `BEFORE UPDATE OF modalidad ON transferencia_pendiente WHEN NEW.modalidad IS NOT OLD.modalidad BEGIN SELECT RAISE(ABORT,'modalidad inmutable'); END;` | AC-43: la inmutabilidad no depende del servicio |
+| Triggers de coherencia `…_coherencia_insert` / `…_coherencia_update` | `BEFORE INSERT`/`BEFORE UPDATE` que abortan si `origen_tipo='RegistroCoordinado'` y (`gasto IS NULL` o `modalidad IS NULL` o `reparto_linea IS NOT NULL`), o si `origen_tipo='Reparto'` y (`modalidad`/`gasto_revision`/`anticipo_previsto` no son `NULL`) | Evitar estados imposibles sin reconstruir la tabla |
+
+`[DEMOSTRADO]` **La inmutabilidad necesita `IS NOT`, no `!=`.** Con `WHEN NEW.modalidad !=
+OLD.modalidad`, el paso `NULL → 'A'` **no dispara** el trigger (en SQL un `NULL` comparado con `!=`
+da `NULL`, que no es verdadero) y la modalidad cambiaría en silencio; con `IS NOT` aborta. La
+prueba se hizo con las dos variantes sobre la misma tabla: la primera dejó el valor en `'A'`, la
+segunda lo rechazó. Lo mismo aplica al paso inverso `'A' → NULL`.
+
+`[PROPUESTA]` **Alternativa elevada explícitamente:** si se prefiere un `CHECK` de tabla en lugar
+de triggers, la única vía es **reconstruir** `transferencia_pendiente` (tabla nueva, copia, rename)
+y eso deja de ser una migración aditiva: exige copia previa verificada, conciliación de filas y
+rollback por restore, y convierte `G-v30` en un cambio de mayor riesgo. Se recomienda triggers; la
+reconstrucción no se propone.
 
 `[PROPUESTA]` `anticipo` (la `FK` a ficha existente) **se conserva**: la referencia prevista va en
 `anticipo_previsto` y la real se escribe al confirmar. No se duplica la referencia con dos
@@ -60,9 +83,15 @@ significados en la misma columna.
 
 ### 2.2 Compatibilidad y migración
 
-- `[DEMOSTRADO]` La migración es **aditiva** (columnas `NULL`, un índice y una tabla): no
-  reconstruye tablas ni reescribe filas. Las filas `Reparto` existentes quedan con `NULL` en las
-  columnas nuevas y satisfacen los `CHECK` por la rama `Reparto`.
+- `[DEMOSTRADO]` La migración es **aditiva** (tres columnas `NULL` con `CHECK` de columna, un
+  índice único parcial, una tabla de intentos y dos pares de triggers): no reconstruye tablas ni
+  reescribe filas. Las filas `Reparto` existentes quedan con `NULL` en las columnas nuevas y son
+  coherentes por construcción. `[DEMOSTRADO]` Un `CHECK` añadido con `ADD COLUMN` no se evalúa
+  contra las filas ya existentes, y aquí no hace falta porque el valor nuevo es `NULL`.
+- `[DEMOSTRADO]` La coherencia entre `origen_tipo` y las columnas nuevas **no puede ser un `CHECK`
+  de tabla**: `ALTER TABLE … ADD CONSTRAINT` no existe en SQLite. Se resuelve con triggers, que es
+  el mismo mecanismo que el proyecto ya usa para invariantes (`movement_audit` inmutable,
+  `referencia_id_immutable`).
 - `[PROPUESTA]` **Preflight obligatorio antes del índice único**: consulta que cuente pendientes
   activos duplicados por Gasto. Hoy la columna existe pero **nadie escribe** `RegistroCoordinado`
   (`DEMOSTRADO`: el alta solo inserta `'Reparto'` y `gasto` va `NULL`), así que el resultado
@@ -83,14 +112,19 @@ significados en la misma columna.
 `[PROPUESTA]` Contrato de esquema, migración y restore, siguiendo el patrón ya usado en
 `spec36-schema.test.ts` y `deudas-v23-migration.test.ts`:
 
-1. `v29 → v30` aditiva: IDs, auditoría, MFA y filas existentes intactas.
+1. `v29 → v30` aditiva: IDs, auditoría, MFA y filas existentes intactas, sin reconstrucción.
 2. `v30` rechaza filas imposibles: `RegistroCoordinado` sin `gasto` o sin `modalidad`, `Reparto`
-   con `modalidad`, dos pendientes activos del mismo Gasto, `anticipo_previsto` mal formado.
-3. Trigger de modalidad inmutable: `UPDATE` de `modalidad` aborta; el resto de `UPDATE`s del
-   pendiente sigue funcionando.
-4. Centinela: `v31` (no `v30`) es ahora la versión desconocida.
-5. Backup/restore `v30` con un pendiente `RegistroCoordinado` y su auditoría.
-6. No regresión: la suite de pendientes y de Reparto sigue en verde.
+   con `modalidad`, `gasto_revision` o `anticipo_previsto`, dos pendientes activos del mismo Gasto
+   e `anticipo_previsto` mal formado.
+3. **Trigger de modalidad inmutable, con el caso NULL explícito:** `NULL → 'A'` aborta,
+   `'A' → NULL` aborta, `'A' → 'B'` aborta, `'A' → 'A'` no aborta y un `UPDATE` de otra columna del
+   pendiente sigue funcionando. Estos dos primeros casos son los que un `!=` deja pasar
+   (`DEMOSTRADO` en la sonda de §2.1).
+4. **Triggers de coherencia:** `INSERT`/`UPDATE` que dejen un `RegistroCoordinado` sin `gasto` o sin
+   `modalidad`, o un `Reparto` con columnas de registro coordinado, abortan; las filas válidas pasan.
+5. Centinela: `v31` (no `v30`) es ahora la versión desconocida.
+6. Backup/restore `v30` con un pendiente `RegistroCoordinado` y su auditoría.
+7. No regresión: la suite de pendientes y de Reparto sigue en verde.
 
 ## 3. Incrementos propuestos
 
@@ -159,7 +193,7 @@ cobertura inmediata dentro de `I5`.
 | Índice único parcial sobre datos existentes | La migración falla a mitad | Preflight de duplicados antes de crearlo; abortar con informe si no es 0 |
 | Atomicidad de tres escrituras (REF + ficha + Transferencia) | Ficha huérfana o Movimiento sin ficha | Transacción única + variante `InTransaction` + prueba de fallo en la tercera escritura |
 | Ampliación de `vincular` | Regresión silenciosa en Reparto | Condición por `origen_tipo` + prueba de no regresión del flujo de Reparto en `I4` |
-| Trigger de modalidad inmutable | Bloquea correcciones legítimas del pendiente | Trigger limitado a `UPDATE OF modalidad`; el resto del pendiente sigue editable |
+| Trigger de modalidad inmutable | Bloquea correcciones legítimas del pendiente | Trigger limitado a `UPDATE OF modalidad`, con `IS NOT` (cubre `NULL`) y prueba de los cuatro pasos; el resto del pendiente sigue editable |
 | UI de dos modalidades en un formulario | Complejidad y errores de estado | Vista previa y 409 con borrador conservado (AC-22) antes de la confirmación |
 | PR grande en `I3` | Revisión costosa | Packet cerrado con contrato de `I3` y pruebas por AC; sin ampliar a UI |
 
