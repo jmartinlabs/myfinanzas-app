@@ -208,6 +208,24 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
     fullPage: true,
   });
 
+  // Inicio: composición compartida, sin variante por tema y sin desbordamiento.
+  await page.goto("/inicio");
+  await expect(page.locator(".inicio-page")).toBeVisible();
+  await expect(page.locator("[data-inicio-section]").first()).toBeVisible();
+  await expect(page.locator(".inicio-page")).toHaveAttribute("class", "inicio-page");
+  await expect(page.locator(".inicio-casa")).toHaveCount(0);
+  await expectNoOverflow();
+  await page.screenshot({
+    path: "artifacts/theme/casa-inicio-390.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expectNoOverflow();
+  await page.screenshot({
+    path: "artifacts/theme/casa-inicio-1440.png",
+    fullPage: true,
+  });
+
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await select.selectOption("graphite-lime");

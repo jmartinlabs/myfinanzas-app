@@ -366,7 +366,7 @@ function App() {
             </p>
           )}
           {path.startsWith("/inicio") ? (
-            <Inicio go={go} theme={theme} />
+            <Inicio go={go} />
           ) : path.startsWith("/dprima") ? (
             <Dprima go={go} />
           ) : path.startsWith("/comida") ? (
