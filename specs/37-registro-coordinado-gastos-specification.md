@@ -631,6 +631,9 @@ expediente. La aprobación no autoriza desarrollo (§0.4).
 - Mecanismo compartido: [SPEC36 §6](36-reparto-mensual-asistido-presupuestos-specification.md#6-mecanismo-compartido-de-transferencia-pendiente).
 - Roadmap y tablero: sin cambios; esta spec no crea entrega ni estado de tablero.
 - Decisiones: **D1–D10 aprobadas el 2026-11-16** (§0), con AC-42 y AC-43 incorporados a §16.
+- Preparación de desarrollo: los incrementos propuestos y el paquete del gate `v30` están en
+  [incrementos de desarrollo de SPEC37](investigations/spec37-dev-increments-2026-11-16.md)
+  (#484). Ese documento no autoriza nada; cada incremento necesita su propio gate.
 - Próximo gate: **autorización de desarrollo separada**, que debe incluir el esquema v30 descrito
   en §0.3 y §11. Aprobar las decisiones no la concede.
 - Gate ajeno: la incorporación del aviso de pendientes al precierre corresponde a
