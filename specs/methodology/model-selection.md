@@ -27,6 +27,47 @@ self-report is insufficient. Missing metadata means **effective selection unveri
 not a passed check. A mismatch stops further dispatch and requires investigation at a
 safe boundary; never compensate by escalating.
 
+### Delegation routes (`delegation.backend: model_map`)
+A route is a **slot** defined by an entry in `delegation.backends.model_map.options` — name,
+provider, model, optional reasoning effort — not a fixed model. `worker`, `advisor` or any other
+name may change provider, model or effort without touching the verifier, its tests or this
+document. Today's configuration is coordinator and `worker` on DeepSeek, and `advisor` on
+`openai-codex` + `gpt-6.1-sol` with effort `low`, reserved for critical reviews; the advisor slot
+never replaces independent QA.
+
+Measured failure mode (Hermes `model_map`, 2026-11-15): a per-task route parameter sometimes
+never reaches the tool. The emitted call carries only `goal`/`context`, no error is raised, and
+the task runs on the backend's `default` route — an `advisor` review silently executed by
+`worker`. Of four dispatches, the two with a `goal` above ~2 500 characters lost it and the two
+with a short `goal` (material in `context`) kept it. Keep `goal` short and put the payload in
+`context`; the runtime copies arguments verbatim and the route resolved correctly whenever the
+field arrived, so the loss is upstream of the plugin, not a routing bug to work around.
+
+Before accepting a routed result, read the effective route from metadata: while it runs,
+`delegate_task(action='list')` reports each child's `model`; afterwards,
+`scripts/check-delegation-route --profile <profile> --delegation <id> --expect-label <option>
+[--expect-provider <provider>] [--expect-model <model>] [--expect-effort <effort>]` reads it from
+`state.db`. It passes only when every task finished `completed` and matched every requested
+expectation; a task that did not finish, a mismatch, unreadable or malformed metadata, or a call
+without any expectation never yields PASS (exit 2 is "no verdict", never a pass).
+
+Where the expectations come from, and what the runtime can answer:
+
+- **Recovered per task** by the check: route `label`, `provider`, `model`, `reasoning_effort` and
+  the task's `status`.
+- **Not recovered**: the option name requested at dispatch. Hermes keeps `task_json.model` — the
+  model resolved at dispatch, blank when the tasks of a batch took different routes — but not the
+  `option` parameter, nor the requested provider or effort. The coordinator therefore supplies the
+  expectations from the option entry it actually dispatched with.
+- Take them from **that** entry, not from the runtime's resolved values and not from the config as
+  it reads after the run: the configuration can change between dispatch and check, and a model
+  configured now is not the one expected then.
+- Prefer `--delegation <id>` over `--latest`: with concurrent sessions the newest row may belong to
+  another delegation.
+
+A mismatch or unverifiable metadata means the review was not performed on that route: stop the
+child, do not report it as done, and re-dispatch or record the blocker.
+
 ## Portable advice
 | Work | Suggested tier | Suggested reasoning |
 | --- | --- | --- |
