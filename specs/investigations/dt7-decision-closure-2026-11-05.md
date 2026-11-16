@@ -5,6 +5,11 @@ decisiones M3/M6 están aceptadas, M9–M13 ratificadas y **M1 aprobada el 2026-
 siguen pendientes. Este documento no es un PASS, no cierra DT7 y no autoriza DEV, datos reales,
 importación, P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
 
+**Actualización 2026-11-16:** el usuario **ratifica M4/M7/M15/M16** (registro en
+[la hoja de decisiones](dt7-decision-sheet-2026-11-10.md) §7) y aprueba el paquete R-H1…R-H9. La
+matriz de §5 refleja ese estado; §1, §6 y §8 conservan el snapshot del 2026-11-05 y no se
+reescriben.
+
 **Revisión 2026-11-05:** Álex emite **APTO CON TRES AJUSTES**. El usuario acepta M3/M6,
 ratifica M9–M13, mantiene M4/M7/M15/M16 como propuestas aceptadas, confirma M14 A y deja
 M1/M2/M5/M8 pendientes de evidencia privada real.
@@ -332,8 +337,8 @@ sigue en E4.4.
 
 ## 5. Matriz de cierre
 
-Estados: `APROBADA` (M1, 2026-11-10); `PENDIENTE DE EVIDENCIA` (M2/M5/M8); `ACEPTADA COMO PROPUESTA` (M4/M7/M15/M16,
-sin decisión formal); `ACEPTADA (2026-11-05)` (M3/M6); `CONFIRMADO (A); implementación
+Estados: `APROBADA` (M1, 2026-11-10); `PENDIENTE DE EVIDENCIA` (M2/M5/M8); `RATIFICADA (2026-11-16)` (M4/M7/M15/M16,
+por decisión del usuario registrada en la hoja de decisiones §7); `ACEPTADA (2026-11-05)` (M3/M6); `CONFIRMADO (A); implementación
 PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
 | ID | Grupo | Recomendación / decisión | Evidencia | Estado |
@@ -341,10 +346,10 @@ PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 | M1 | B | Años y primero incluido | Privada por año, `UNRUN` | `APROBADA (2026-11-10)` |
 | M2 | B | Partidas/fuentes por año | Privada por fuente | `PENDIENTE DE EVIDENCIA` |
 | M3 | A | Identidad estable; coordenada en cualquier fuente; conservación ante cambios | Fuentes sin ID | `ACEPTADA (2026-11-05)` |
-| M4 | A | `NoAplica` solo con evidencia | Esquema/muestra | `ACEPTADA COMO PROPUESTA` |
+| M4 | A | `NoAplica` solo con evidencia | Esquema/muestra | `RATIFICADA (2026-11-16)` |
 | M5 | B | Aprobar/pendiente/rechazar/dividir registro | Expediente 2026 | `PENDIENTE DE EVIDENCIA` |
 | M6 | A | Mapping de Partida y de Referencia separados; D4 | Spec/Q5=A | `ACEPTADA (2026-11-05)` |
-| M7 | A | Vínculo de origen o tupla+huella | Movimiento/registro | `ACEPTADA COMO PROPUESTA` |
+| M7 | A | Vínculo de origen o tupla+huella | Movimiento/registro | `RATIFICADA (2026-11-16)` |
 | M8 | B | Saldos con apertura o «ninguno» | Lista/evidencia | `PENDIENTE DE EVIDENCIA` |
 | M9 | C | Usuario aprueba excepciones financieras | Expediente | `RATIFICADA (2026-11-05)` |
 | M10 | C | 100 % y 0 céntimos; sin tolerancia | Recálculo independiente | `RATIFICADA (2026-11-05)` |
@@ -352,8 +357,8 @@ PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 | M12 | C | Revisor independiente + aprobación del usuario | Firma | `RATIFICADA (2026-11-05)` |
 | M13 | C | P6/P7 no autorizado | — | `RATIFICADA (2026-11-05)` |
 | M14 | A | Cuatro opciones A confirmadas; implementación futura | C1–C8/AC-58 | `CONFIRMADO (A); implementación PENDIENTE` |
-| M15 | A | Vínculo o disyunción; sin prorrateo | AC-39/44 | `ACEPTADA COMO PROPUESTA` |
-| M16 | A | Fecha solo con evidencia | AC-42 | `ACEPTADA COMO PROPUESTA` |
+| M15 | A | Vínculo o disyunción; sin prorrateo | AC-39/44 | `RATIFICADA (2026-11-16)` |
+| M16 | A | Fecha solo con evidencia | AC-42 | `RATIFICADA (2026-11-16)` |
 
 ## 6. Secuencia de cierre propuesta
 
