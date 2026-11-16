@@ -43,10 +43,12 @@ field arrived, so the loss is upstream of the plugin, not a routing bug to work 
 Before accepting a routed result, read the effective route from metadata: while it runs,
 `delegate_task(action='list')` reports each child's `model`; afterwards,
 `scripts/check-delegation-route --profile <profile> --latest --expect-label advisor
-[--expect-model gpt-6.1-sol]` reads it from `state.db` (0 match, 1 mismatch, 2 unverifiable, and
-exit 2 is a skip, never a pass). A mismatch or unreadable metadata means the review was not
-performed on that route: stop the child, do not report it as done, and re-dispatch or record
-the blocker.
+--expect-provider openai-codex --expect-effort low [--expect-model gpt-6.1-sol]` reads it from
+`state.db`. It passes only when every task finished `completed` and matched every requested
+expectation; a task that did not finish, a mismatch, unreadable or malformed metadata, or a call
+without any expectation never yields PASS (exit 2 is "no verdict", never a pass). A mismatch or
+unverifiable metadata means the review was not performed on that route: stop the child, do not
+report it as done, and re-dispatch or record the blocker.
 
 ## Portable advice
 | Work | Suggested tier | Suggested reasoning |

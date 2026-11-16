@@ -12,17 +12,21 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts' / 'check-delegation-route'
+ADVISOR = ['--expect-label', 'advisor', '--expect-model', 'gpt-6.1-sol',
+           '--expect-provider', 'openai-codex', '--expect-effort', 'low']
 
 
-def route(backend='model_map', label='advisor', provider='openai-codex', model='gpt-6.1-sol'):
+def route(backend='model_map', label='advisor', provider='openai-codex', model='gpt-6.1-sol',
+          effort='low'):
     return {'backend': backend, 'label': label, 'provider': provider, 'model': model,
-            'reasoning_effort': 'low', 'service_tier': 'normal'}
+            'reasoning_effort': effort, 'service_tier': 'normal'}
 
 
-def payload(*routes):
+def payload(*routes, statuses=None):
+    statuses = statuses or ['completed'] * len(routes)
     return json.dumps({'results': [
-        {'task_index': index, 'status': 'completed', 'route': value}
-        for index, value in enumerate(routes)]})
+        {'task_index': index, 'status': status, 'route': value}
+        for index, (value, status) in enumerate(zip(routes, statuses))]})
 
 
 class DelegationRouteCheck(unittest.TestCase):
@@ -44,82 +48,138 @@ class DelegationRouteCheck(unittest.TestCase):
         return subprocess.run([sys.executable, str(SCRIPT), '--state-db', str(self.db), *arguments],
                               capture_output=True, text=True)
 
-    def test_adviser_route_passes(self):
+    def test_full_route_passes(self):
         self.build([('deleg_a', 'completed', 1.0, 2.0, payload(route()))])
-        result = self.run_check('--delegation', 'deleg_a', '--expect-label', 'advisor',
-                                '--expect-model', 'gpt-6.1-sol')
+        result = self.run_check('--delegation', 'deleg_a', *ADVISOR)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('PASS task=0', result.stdout)
-        self.assertIn('1/1 tasks on the requested route', result.stdout)
+        self.assertIn('1/1 tasks finished on the requested route', result.stdout)
 
     def test_silent_fallback_to_default_route_fails(self):
-        worker = route(provider='alibaba-token-plan', label='worker', model='deepseek-v4.1-flash-1017')
+        worker = route(provider='alibaba-token-plan', label='worker',
+                       model='deepseek-v4.1-flash-1017', effort='high')
         self.build([('deleg_b', 'completed', 1.0, 2.0, payload(worker))])
-        result = self.run_check('--delegation', 'deleg_b', '--expect-label', 'advisor')
+        result = self.run_check('--delegation', 'deleg_b', *ADVISOR)
         self.assertEqual(result.returncode, 1)
         self.assertIn('FAIL task=0', result.stdout)
-        self.assertIn('label=worker', result.stdout)
-        self.assertIn('0/1 tasks on the requested route', result.stdout)
+        self.assertIn('label=worker (expected advisor)', result.stdout)
+        self.assertIn('provider=alibaba-token-plan (expected openai-codex)', result.stdout)
+        self.assertIn('effort=high (expected low)', result.stdout)
 
-    def test_model_mismatch_fails_even_with_the_right_label(self):
-        self.build([('deleg_c', 'completed', 1.0, 2.0, payload(route(label='advisor', model='glm-5.3')))])
-        result = self.run_check('--delegation', 'deleg_c', '--expect-label', 'advisor',
-                                '--expect-model', 'gpt-6.1-sol')
+    def test_provider_mismatch_fails_with_the_right_label_and_model(self):
+        self.build([('deleg_c', 'completed', 1.0, 2.0,
+                     payload(route(provider='alibaba-token-plan')))])
+        result = self.run_check('--delegation', 'deleg_c', *ADVISOR)
         self.assertEqual(result.returncode, 1)
-        self.assertIn('model=glm-5.3', result.stdout)
+        self.assertIn('provider=alibaba-token-plan (expected openai-codex)', result.stdout)
+
+    def test_effort_mismatch_fails_with_the_right_label_and_model(self):
+        self.build([('deleg_d', 'completed', 1.0, 2.0, payload(route(effort='high')))])
+        result = self.run_check('--delegation', 'deleg_d', *ADVISOR)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('effort=high (expected low)', result.stdout)
+
+    def test_missing_effort_is_not_a_pass_when_one_is_expected(self):
+        self.build([('deleg_e', 'completed', 1.0, 2.0, payload(route(effort='')))])
+        result = self.run_check('--delegation', 'deleg_e', *ADVISOR)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('effort=- (expected low)', result.stdout)
+
+    def test_unfinished_task_fails_even_with_the_right_route(self):
+        self.build([('deleg_f', 'completed', 1.0, 2.0, payload(route(), statuses=['interrupted']))])
+        result = self.run_check('--delegation', 'deleg_f', *ADVISOR)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('status=interrupted (not completed)', result.stdout)
+
+    def test_failed_task_fails_even_with_the_right_route(self):
+        self.build([('deleg_g', 'completed', 1.0, 2.0, payload(route(), statuses=['error']))])
+        result = self.run_check('--delegation', 'deleg_g', *ADVISOR)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('status=error (not completed)', result.stdout)
+
+    def test_delegation_state_that_did_not_complete_fails(self):
+        self.build([('deleg_h', 'interrupted', 1.0, 2.0, payload(route()))])
+        result = self.run_check('--delegation', 'deleg_h', *ADVISOR)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('state=interrupted (not completed)', result.stderr)
+        self.assertNotIn('PASS', result.stdout)
 
     def test_one_bad_task_in_a_batch_fails_the_check(self):
-        self.build([('deleg_d', 'completed', 1.0, 2.0,
-                     payload(route(), route(label='worker', model='deepseek-v4.1-flash-1017')))])
-        result = self.run_check('--delegation', 'deleg_d', '--expect-label', 'advisor')
+        self.build([('deleg_i', 'completed', 1.0, 2.0,
+                     payload(route(), route(label='worker', model='deepseek-v4.1-flash-1017',
+                                            provider='alibaba-token-plan', effort='high')))])
+        result = self.run_check('--delegation', 'deleg_i', *ADVISOR)
         self.assertEqual(result.returncode, 1)
         self.assertIn('PASS task=0', result.stdout)
         self.assertIn('FAIL task=1', result.stdout)
         self.assertIn('1/2 tasks', result.stdout)
 
-    def test_report_without_expectations_never_invents_a_route(self):
-        self.build([('deleg_e', 'completed', 1.0, 2.0, payload(route(label='worker', model='deepseek-v4.1-flash-1017')))])
-        result = self.run_check('--delegation', 'deleg_e')
-        self.assertEqual(result.returncode, 0)
-        self.assertIn('label=worker', result.stdout)
+    def test_no_expectation_never_emits_pass(self):
+        self.build([('deleg_j', 'completed', 1.0, 2.0, payload(route()))])
+        result = self.run_check('--delegation', 'deleg_j')
+        self.assertEqual(result.returncode, 2)
+        self.assertNotIn('PASS', result.stdout)
+        self.assertIn('never emitted without an expectation', result.stderr)
 
     def test_latest_reads_the_newest_delegation(self):
         self.build([
-            ('deleg_old', 'completed', 1.0, 2.0, payload(route(label='worker', model='deepseek-v4.1-flash-1017'))),
+            ('deleg_old', 'completed', 1.0, 2.0,
+             payload(route(label='worker', model='deepseek-v4.1-flash-1017',
+                           provider='alibaba-token-plan', effort='high'))),
             ('deleg_new', 'completed', 3.0, 4.0, payload(route()))])
-        result = self.run_check('--latest', '--expect-label', 'advisor')
+        result = self.run_check('--latest', *ADVISOR)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('delegation deleg_new', result.stdout)
 
     def test_running_delegation_without_results_is_a_failure_not_a_pass(self):
-        self.build([('deleg_f', 'running', 1.0, None, None)])
-        result = self.run_check('--delegation', 'deleg_f', '--expect-label', 'advisor')
+        self.build([('deleg_k', 'running', 1.0, None, None)])
+        result = self.run_check('--delegation', 'deleg_k', *ADVISOR)
         self.assertEqual(result.returncode, 1)
         self.assertIn('no results yet', result.stderr)
+        self.assertNotIn('PASS', result.stdout)
 
     def test_missing_metadata_is_a_skip(self):
-        result = subprocess.run([sys.executable, str(SCRIPT), '--state-db', str(self.directory / 'absent.db'),
-                                 '--expect-label', 'advisor'], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, str(SCRIPT), '--state-db',
+                                 str(self.directory / 'absent.db'), *ADVISOR],
+                                capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn('SKIP', result.stderr)
         self.assertEqual(result.stdout, '')
 
     def test_unknown_delegation_is_a_skip(self):
-        self.build([('deleg_g', 'completed', 1.0, 2.0, payload(route()))])
-        result = self.run_check('--delegation', 'deleg_missing', '--expect-label', 'advisor')
+        self.build([('deleg_l', 'completed', 1.0, 2.0, payload(route()))])
+        result = self.run_check('--delegation', 'deleg_missing', *ADVISOR)
         self.assertEqual(result.returncode, 2)
         self.assertIn('not found', result.stderr)
 
+    def test_malformed_result_json_is_unverified_not_a_crash(self):
+        self.build([('deleg_m', 'completed', 1.0, 2.0, '{"results": [')])
+        result = self.run_check('--delegation', 'deleg_m', *ADVISOR)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('unreadable result_json', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertEqual(result.stdout, '')
+
+    def test_results_that_are_not_a_list_are_unverified(self):
+        self.build([('deleg_n', 'completed', 1.0, 2.0, json.dumps({'results': {'task': 0}}))])
+        result = self.run_check('--delegation', 'deleg_n', *ADVISOR)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('not a list', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
     def test_json_document_reports_every_task(self):
-        self.build([('deleg_h', 'completed', 1.0, 2.0,
-                     payload(route(), route(label='worker', model='deepseek-v4.1-flash-1017')))])
-        result = self.run_check('--delegation', 'deleg_h', '--expect-label', 'advisor', '--json')
+        self.build([('deleg_o', 'completed', 1.0, 2.0,
+                     payload(route(), route(label='worker', model='deepseek-v4.1-flash-1017',
+                                            provider='alibaba-token-plan', effort='high')))])
+        result = self.run_check('--delegation', 'deleg_o', *ADVISOR, '--json')
         self.assertEqual(result.returncode, 1)
         document = json.loads(result.stdout)
-        self.assertEqual(document['delegation'], 'deleg_h')
+        self.assertEqual(document['delegation'], 'deleg_o')
         self.assertEqual(document['failures'], 1)
         self.assertEqual([task['status'] for task in document['tasks']], ['PASS', 'FAIL'])
+        self.assertEqual([task['finished'] for task in document['tasks']], [True, True])
         self.assertEqual(document['tasks'][1]['observed']['model'], 'deepseek-v4.1-flash-1017')
+        self.assertEqual(document['expected']['provider'], 'openai-codex')
 
 
 if __name__ == '__main__':

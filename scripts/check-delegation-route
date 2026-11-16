@@ -4,17 +4,20 @@
 A delegation that names a route is only valid if that route applied: a per-task route
 parameter can fail to reach the tool, and the task then runs on the backend's default
 route with no error at all. This check answers, from the client's own records, which
-provider/model each task actually ran on, and fails when it is not the requested one.
+provider/model/effort each task ran on and whether it finished, and never emits PASS
+without an explicit expectation to compare against.
 
 Source: the Hermes profile's `state.db` → `async_delegations.result_json`, one entry per
-task carrying `route.backend/label/provider/model`. No network, no model calls, read-only.
+task carrying `status` and `route.backend/label/provider/model/reasoning_effort`. No
+network, no model calls, read-only.
 
-Exit codes: 0 every task matches; 1 a task does not match, or the delegation has no
-results yet; 2 the metadata is unavailable here (no state.db, unreadable, or above this
-schema) — which is a skip, never a pass.
+Exit codes: 0 every task finished and matched every requested expectation; 1 a task did
+not finish successfully, or did not match; 2 no verdict is possible here (no expectation,
+no state.db, unreadable metadata, or malformed `result_json`) — never a pass.
 
 Examples:
-    scripts/check-delegation-route --profile engineering-lead --latest --expect-label advisor
+    scripts/check-delegation-route --profile engineering-lead --latest \
+        --expect-label advisor --expect-provider openai-codex --expect-effort low
     scripts/check-delegation-route --state-db /tmp/state.db --delegation deleg_abc \
         --expect-label advisor --expect-model gpt-6.1-sol --json
 """
@@ -26,10 +29,11 @@ import sqlite3
 import sys
 
 UNAVAILABLE = 2
+EXPECTATIONS = ('label', 'model', 'provider', 'effort')
 
 
 class Unavailable(Exception):
-    """The runtime metadata cannot be read here: a skip, never a pass."""
+    """No verdict is possible here: unreadable or malformed metadata. Never a pass."""
 
 
 def state_db_path(args):
@@ -65,9 +69,19 @@ def read_delegation(path, delegation):
         connection.close()
     if row is None:
         raise Unavailable(f'delegation {delegation or "latest"} not found in {path}')
-    delegation_id, state, results = row
-    payload = json.loads(results) if results else {}
-    return delegation_id, state, payload.get('results') or []
+    delegation_id, state, raw = row
+    try:
+        payload = json.loads(raw) if raw else {}
+    except (TypeError, ValueError) as error:
+        raise Unavailable(f'delegation {delegation_id} has unreadable result_json: {error}')
+    if not isinstance(payload, dict):
+        raise Unavailable(f'delegation {delegation_id} result_json is not an object')
+    results = payload.get('results')
+    if results is None:
+        return delegation_id, state, []
+    if not isinstance(results, list):
+        raise Unavailable(f'delegation {delegation_id} results is not a list')
+    return delegation_id, state, results
 
 
 def route_of(entry):
@@ -75,30 +89,32 @@ def route_of(entry):
     return route if isinstance(route, dict) else {}
 
 
-def verdicts(results, expect_label, expect_model):
-    """One line per task: what ran, and whether it is the route that was asked for."""
+def verdicts(results, expected):
+    """One line per task: what ran, whether it finished and whether it is the route asked for."""
     lines, failures = [], 0
     for entry in results:
         route = route_of(entry)
         observed = {'label': route.get('label') or '', 'model': route.get('model') or '',
-                    'provider': route.get('provider') or '', 'backend': route.get('backend') or ''}
-        wrong = []
-        if expect_label and observed['label'] != expect_label:
-            wrong.append(f'label={observed["label"] or "-"} (expected {expect_label})')
-        if expect_model and observed['model'] != expect_model:
-            wrong.append(f'model={observed["model"] or "-"} (expected {expect_model})')
+                    'provider': route.get('provider') or '',
+                    'effort': route.get('reasoning_effort') or '',
+                    'backend': route.get('backend') or ''}
+        finished = (entry.get('status') if isinstance(entry, dict) else None) == 'completed'
+        wrong = [] if finished else [f"status={entry.get('status') if isinstance(entry, dict) else '-'} (not completed)"]
+        for key in EXPECTATIONS:
+            if expected[key] and observed[key] != expected[key]:
+                wrong.append(f'{key}={observed[key] or "-"} (expected {expected[key]})')
         status = 'FAIL' if wrong else 'PASS'
         failures += bool(wrong)
         lines.append({
-            'task': entry.get('task_index'), 'status': status,
-            'expected': {'label': expect_label, 'model': expect_model}, 'observed': observed,
-            'reason': ', '.join(wrong)})
+            'task': entry.get('task_index') if isinstance(entry, dict) else None,
+            'status': status, 'finished': finished, 'expected': expected,
+            'observed': observed, 'reason': ', '.join(wrong)})
     return lines, failures
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description='Check the route and model a delegation really ran on, from runtime metadata.')
+        description='Check the route, model, provider, effort and completion a delegation really had.')
     source = parser.add_mutually_exclusive_group()
     source.add_argument('--state-db', help='path to the profile state.db (default: $HERMES_HOME/state.db)')
     source.add_argument('--profile', help='Hermes profile name, e.g. engineering-lead')
@@ -107,8 +123,18 @@ def main(argv=None):
     target.add_argument('--latest', action='store_true', help='the most recent delegation (default)')
     parser.add_argument('--expect-label', help='route label the tasks must have run on, e.g. advisor')
     parser.add_argument('--expect-model', help='exact model id the tasks must have run on')
+    parser.add_argument('--expect-provider', help='provider the tasks must have run on, e.g. openai-codex')
+    parser.add_argument('--expect-effort', help='reasoning effort the route must have carried, e.g. low')
     parser.add_argument('--json', action='store_true', help='print one JSON document')
     args = parser.parse_args(argv)
+
+    expected = {'label': args.expect_label, 'model': args.expect_model,
+                'provider': args.expect_provider, 'effort': args.expect_effort}
+    if not any(expected.values()):
+        print('SKIP no verdict: give at least one of --expect-label/--expect-model/'
+              '--expect-provider/--expect-effort; PASS is never emitted without an expectation',
+              file=sys.stderr)
+        return UNAVAILABLE
 
     try:
         delegation_id, state, results = read_delegation(state_db_path(args), args.delegation)
@@ -116,22 +142,27 @@ def main(argv=None):
         print(f'SKIP delegation route unverified: {error}', file=sys.stderr)
         return UNAVAILABLE
     if not results:
-        print(f'FAIL delegation {delegation_id} ({state}) has no results yet: route unverified',
+        print(f'FAIL delegation {delegation_id} ({state}) has no results yet: not verified',
+              file=sys.stderr)
+        return 1
+    if state and state != 'completed':
+        print(f'FAIL delegation {delegation_id} state={state} (not completed): not verified',
               file=sys.stderr)
         return 1
 
-    lines, failures = verdicts(results, args.expect_label, args.expect_model)
+    lines, failures = verdicts(results, expected)
     if args.json:
-        print(json.dumps({'delegation': delegation_id, 'state': state, 'tasks': lines,
-                          'failures': failures}, indent=2))
+        print(json.dumps({'delegation': delegation_id, 'state': state, 'expected': expected,
+                          'tasks': lines, 'failures': failures}, indent=2))
     else:
         for line in lines:
             observed = line['observed']
             detail = (f"backend={observed['backend']} label={observed['label'] or '-'} "
-                      f"model={observed['model'] or '-'} provider={observed['provider'] or '-'}")
+                      f"model={observed['model'] or '-'} provider={observed['provider'] or '-'} "
+                      f"effort={observed['effort'] or '-'}")
             print(f"{line['status']} task={line['task']} {detail}"
                   + (f" — {line['reason']}" if line['reason'] else ''))
-        print(f"delegation {delegation_id}: {len(lines) - failures}/{len(lines)} tasks on the requested route")
+        print(f"delegation {delegation_id}: {len(lines) - failures}/{len(lines)} tasks finished on the requested route")
     return 1 if failures else 0
 
 
