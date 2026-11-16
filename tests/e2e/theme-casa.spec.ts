@@ -216,6 +216,35 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(errors).toEqual([]);
 });
 
+test("Casa: Inicio sin variante estructural y sin desbordamiento a 1440/390", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/theme", { recursive: true });
+  await authenticate(page);
+  await page.getByLabel("Apariencia").selectOption("casa");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
+
+  await page.goto("/inicio");
+  await expect(page.locator(".inicio-page")).toBeVisible();
+  await expect(page.locator("[data-inicio-section]").first()).toBeVisible();
+
+  // G1: ninguna apariencia añade una clase de tema al contenedor de Inicio.
+  await expect(page.locator(".inicio-page")).toHaveAttribute("class", "inicio-page");
+  await expect(page.locator(".inicio-casa")).toHaveCount(0);
+
+  const expectNoOverflow = async () =>
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+
+  await expectNoOverflow();
+  await page.screenshot({ path: "artifacts/theme/casa-inicio-1440.png", fullPage: true });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoOverflow();
+  await page.screenshot({ path: "artifacts/theme/casa-inicio-390.png", fullPage: true });
+});
+
 test("Casa se aplica antes de React y un tema desconocido cae a dark-s", async ({
   page,
 }) => {
