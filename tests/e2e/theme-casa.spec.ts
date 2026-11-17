@@ -229,10 +229,138 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   });
 
 
+  // Movimientos: dirección del importe y tipo con glifo, solo color y forma (#421).
+  // El fixture de temas no trae Movimientos; se crean dos por la API real para
+  // medir el renderizado (Ingreso → inflow; Transferencia → neutral). Un Gasto
+  // exigiría una Partida, que este fixture no provisiona: su color lo cubre la
+  // prueba de contrato CSS `apps/web/test/casa-movimientos-semantica.test.ts`.
+  const post = (path: string, body: Record<string, unknown>) =>
+    page.evaluate(
+      async ({ path, body }) => {
+        const session = await (await fetch("/api/auth/session")).json();
+        const response = await fetch("/api" + path, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-csrf-token": session.csrf,
+            "idempotency-key": crypto.randomUUID(),
+          },
+          body: JSON.stringify(body),
+        });
+        return { status: response.status, data: await response.json() };
+      },
+      { path, body },
+    );
+  // El alta exige la vista previa de impacto: su `fingerprint` sella el contexto.
+  const crearMovimiento = async (body: Record<string, unknown>) => {
+    const impacto = await post("/movimientos/impacto", body);
+    expect(impacto.status, JSON.stringify(impacto.data)).toBeLessThan(300);
+    const fingerprint = (impacto.data as { fingerprint?: string }).fingerprint;
+    expect(fingerprint).toBeTruthy();
+    return post("/movimientos", { ...body, fingerprint });
+  };
+  const ingreso = await crearMovimiento({
+    tipo: "Ingreso",
+    fecha: "2026-01-10",
+    importe: "100.00",
+    saldo: "S001",
+    subtipo: "Nómina",
+    concepto: "Ingreso ficticio Casa",
+    nota: "",
+  });
+  expect(ingreso.status, JSON.stringify(ingreso.data)).toBeLessThan(300);
+  const traspaso = await crearMovimiento({
+    tipo: "Transferencia",
+    fecha: "2026-01-11",
+    importe: "25.00",
+    origen: "S001",
+    destino: "S002",
+    concepto: "Transferencia ficticia Casa",
+    nota: "",
+  });
+  expect(traspaso.status, JSON.stringify(traspaso.data)).toBeLessThan(300);
+
+  await page.goto("/movimientos");
+  await expect(page.locator(".movements-page")).toBeVisible();
+  const readAmounts = () =>
+    page
+      .locator(".movement-amount")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          flow: node.getAttribute("data-flow"),
+          color: getComputedStyle(node).color,
+          text: node.textContent ?? "",
+        })),
+      );
+  const amounts = await readAmounts();
+  expect(amounts.length).toBeGreaterThanOrEqual(2);
+  const inflow = amounts.find((a) => a.flow === "inflow");
+  const neutral = amounts.find((a) => a.flow === "neutral");
+  expect(inflow?.text).toContain("100,00");
+  expect(inflow?.color).toBe("rgb(30, 75, 58)");
+  expect(neutral?.text).toContain("25,00");
+  expect(neutral?.color).toBe("rgb(93, 93, 82)");
+
+  const readIcons = () =>
+    page
+      .locator(".movement-type")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const icon = node.querySelector(".movement-type-icon");
+          return {
+            tipo: node.getAttribute("data-tipo"),
+            width: icon ? getComputedStyle(icon).width : null,
+            glyph: icon ? getComputedStyle(icon, "::before").content : null,
+          };
+        }),
+      );
+  const icons = await readIcons();
+  const ingresoIcon = icons.find((i) => i.tipo === "Ingreso");
+  const traspasoIcon = icons.find((i) => i.tipo === "Transferencia");
+  expect(ingresoIcon?.width).toBe("22px");
+  expect(ingresoIcon?.glyph).toContain("↓");
+  expect(traspasoIcon?.glyph).toContain("⇄");
+  await expectNoOverflow();
+  await page.screenshot({
+    path: "artifacts/theme/casa-movimientos-1440.png",
+    fullPage: true,
+  });
+
+  // Paridad tabla/tarjetas: el mismo importe y el mismo glifo en la tarjeta.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".movements-cards")).toBeVisible();
+  const cardAmounts = await page
+    .locator(".movements-cards .movement-amount")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        flow: node.getAttribute("data-flow"),
+        color: getComputedStyle(node).color,
+      })),
+    );
+  expect(cardAmounts.some((c) => c.flow === "inflow" && c.color === "rgb(30, 75, 58)")).toBe(true);
+  await expect(page.locator(".movements-cards .movement-type-icon").first()).toHaveCSS(
+    "width",
+    "22px",
+  );
+  await expectNoOverflow();
+  await page.screenshot({
+    path: "artifacts/theme/casa-movimientos-390.png",
+    fullPage: true,
+  });
+
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/inicio");
+  await expect(page.locator(".inicio-page")).toBeVisible();
   await select.selectOption("graphite-lime");
   await expect(html).toHaveAttribute("data-theme", "graphite-lime");
   await expect(body).toHaveCSS("background-color", "rgb(11, 12, 11)");
+
+  // Aislamiento: el icono de Graphite no hereda la caja de Casa.
+  await page.goto("/movimientos");
+  await expect(page.locator(".movement-type-icon").first()).toHaveCSS(
+    "width",
+    "28px",
+  );
   await expect(errors).toEqual([]);
 });
 

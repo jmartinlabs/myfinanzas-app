@@ -341,6 +341,22 @@ carga/error/vacío de esa fuente, distinguir estados y no sustituirlos por un ci
 supuesto. El corte y selección de ciclo mantienen decisiones DT3 aplicables antes de
 su entrega, sin resolverlas aquí. Tampoco inferir estado financiero a partir del temporal.
 
+### Importes y dirección del movimiento — 2026-11-17
+
+El importe se muestra **siempre positivo**; la dirección la comunica el **Tipo**, no un signo. La
+interfaz no añade `+`/`−` ni colorea importes por cuenta propia: `movementFlow` deriva
+`inflow`/`outflow`/`neutral` del Tipo y lo publica como `data-flow`, coherente con `CHECK(importe>0)`
+y con SPEC04. Añadir un signo contradiría el contrato y duplicaría el Tipo.
+
+Cada apariencia decide **estética**, no semántica: color del importe según `data-flow` y glifo del
+Tipo (`.movement-type-icon`, con `data-tipo` en el DOM). El color nunca es la única señal: el Tipo
+—texto y glifo— está siempre presente, de modo que la lectura funciona sin percepción cromática. Casa
+incorpora ambas capas en `casa.css` §1G.
+
+La etiqueta de columna **«Saldo»** designa el Saldo afectado (o `origen → destino`) y su ciclo, no una
+posición monetaria; tabla y tarjetas comparten la misma definición. Un renombrado afectaría a las
+cinco apariencias y requiere su propia autorización: no se hace como parte de un ajuste visual.
+
 ### Patrones reutilizables previstos, no componentes implementados
 | Patrón visual | Contrato previsto |
 | --- | --- |
