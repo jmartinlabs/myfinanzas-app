@@ -17,8 +17,9 @@ export type NavigationItem = {
   /** Acceso heredado: se muestra después de las entradas principales. */
   readonly legacy?: boolean;
   /**
-   * Acceso auxiliar: secundario y accesible, sin carácter de legado. Se marca
-   * con `Auxiliar` en la navegación (VIS-25: Revisión Comida no es legado).
+   * Acceso subordinado: se muestra justo bajo su entrada principal con sangría
+   * y tono atenuado, sin encabezado propio. No es legado (VIS-25: Revisión
+   * Comida sigue vigente).
    */
   readonly secondary?: boolean;
 };
@@ -26,6 +27,16 @@ export type NavigationItem = {
 export type NavigationGroup = {
   readonly id: string;
   readonly label: string;
+  /**
+   * Advertencia informativa junto al título del grupo. No desactiva enlaces,
+   * no retira funciones y no anuncia fecha de baja.
+   */
+  readonly hint?: string;
+  /**
+   * Grupo secundario de funciones en desuso: se pliega salvo que contenga la
+   * página activa. No altera rutas ni comportamiento.
+   */
+  readonly legacy?: boolean;
   readonly items: readonly NavigationItem[];
 };
 
@@ -35,7 +46,7 @@ export const navigationDirect: readonly NavigationItem[] = [
   { href: "/movimientos", label: "Movimientos", icon: "↔" },
 ];
 
-/** Cinco grupos desplegables; conservan las 22 entradas restantes. */
+/** Cinco grupos desplegables; conservan las 20 entradas principales. */
 export const navigationGroups: readonly NavigationGroup[] = [
   {
     id: "resumen-control",
@@ -72,18 +83,6 @@ export const navigationGroups: readonly NavigationGroup[] = [
         icon: "≡",
         activePrefix: "/clasificacion",
       },
-      {
-        href: "/presupuestos",
-        label: "Presupuestos (legado)",
-        icon: "⊞",
-        legacy: true,
-      },
-      {
-        href: "/plan-anual",
-        label: "Plan anual (legado)",
-        icon: "▧",
-        legacy: true,
-      },
     ],
   },
   {
@@ -115,9 +114,36 @@ export const navigationGroups: readonly NavigationGroup[] = [
   },
 ];
 
+/**
+ * Grupo independiente y plegable al final del menú (UI-02 · #504): contiene
+ * exclusivamente las dos rutas históricas, con sus `href` intactos. La
+ * advertencia es informativa: no desactiva enlaces ni anuncia una fecha.
+ */
+export const navigationLegacyGroup: NavigationGroup = {
+  id: "funciones-anteriores",
+  label: "Funciones anteriores",
+  hint: "Retirada prevista",
+  legacy: true,
+  items: [
+    {
+      href: "/presupuestos",
+      label: "Presupuestos (legado)",
+      icon: "⊞",
+      legacy: true,
+    },
+    { href: "/plan-anual", label: "Plan anual (legado)", icon: "▧", legacy: true },
+  ],
+};
+
+/** Orden de representación: accesos directos, grupos y «Funciones anteriores». */
+export const navigationAllGroups: readonly NavigationGroup[] = [
+  ...navigationGroups,
+  navigationLegacyGroup,
+];
+
 export const navigationItems: readonly NavigationItem[] = [
   ...navigationDirect,
-  ...navigationGroups.flatMap((group) => group.items),
+  ...navigationAllGroups.flatMap((group) => group.items),
 ];
 
 export function isNavigationActive(item: NavigationItem, path: string): boolean {
@@ -128,7 +154,7 @@ export function isNavigationActive(item: NavigationItem, path: string): boolean 
 /** Grupo que contiene la página activa, para abrirlo automáticamente. */
 export function activeNavigationGroup(path: string): string | null {
   return (
-    navigationGroups.find((group) =>
+    navigationAllGroups.find((group) =>
       group.items.some((item) => isNavigationActive(item, path)),
     )?.id ?? null
   );

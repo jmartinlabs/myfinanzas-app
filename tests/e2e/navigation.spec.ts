@@ -133,13 +133,21 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   expect(hrefs).not.toContain("/");
   expect(hrefs).not.toContain("/saldos/nuevo");
 
+  // UI-02 (#504): cinco grupos principales y «Funciones anteriores» al final.
   const expectedGroups = [
     ["Resumen y control", ["/flujo-mensual", "/pendientes", "/resumen-anual"]],
     ["Patrimonio", ["/saldos", "/inversiones", "/deudas"]],
-    ["Presupuestos y planificación", ["/dprima", "/planes-ciclo", "/nomina", "/clasificacion/partidas", "/presupuestos", "/plan-anual"]],
+    ["Presupuestos y planificación", ["/dprima", "/planes-ciclo", "/nomina", "/clasificacion/partidas"]],
     ["Casos y gastos especiales", ["/referencias", "/anticipos", "/compartidos", "/vehiculos", "/comida", "/revision-comida"]],
     ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre", "/fotos"]],
+    ["Funciones anteriores", ["/presupuestos", "/plan-anual"]],
   ];
+  // Los dos accesos directos viven fuera de los grupos, en su propio bloque.
+  expect(
+    await nav.locator(".nav-direct a").evaluateAll((links) =>
+      links.map((link) => link.getAttribute("href")),
+    ),
+  ).toEqual(["/inicio", "/movimientos"]);
   const sections = nav.locator(".nav-section");
   expect(await nav.locator(".nav-group-toggle").count()).toBe(expectedGroups.length);
   expect(await sections.count()).toBe(expectedGroups.length);
@@ -154,21 +162,31 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     ).toEqual(expected);
   }
 
-  // Las entradas heredadas quedan visualmente separadas y Comida es única.
+  // #504: las rutas históricas ya no viven en «Presupuestos y planificación»;
+  // no quedan encabezados «Heredado» ni «Auxiliar» en la navegación.
   const presupuestos = sections.filter({ hasText: "Presupuestos y planificación" });
   await presupuestos.locator(".nav-group-toggle").click();
+  await expect(presupuestos.locator(".nav-legacy-label")).toHaveCount(0);
+  await expect(presupuestos.locator(".nav-link-legacy")).toHaveCount(0);
+  await expect(nav.getByText("Heredado", { exact: true })).toHaveCount(0);
+  await expect(nav.getByText("Auxiliar", { exact: true })).toHaveCount(0);
+  const funciones = sections.filter({ hasText: "Funciones anteriores" });
+  await expect(funciones).toHaveClass(/nav-section-legacy/);
+  await expect(funciones.locator(".nav-group-hint")).toContainText(
+    "Retirada prevista",
+  );
+  await funciones.locator(".nav-group-toggle").click();
   await expect(
-    presupuestos.locator(".nav-legacy-label"),
-  ).toContainText("Heredado");
-  await expect(
-    presupuestos.locator(".nav-link-legacy").first(),
+    funciones.locator(".nav-link-legacy").first(),
   ).toContainText("Presupuestos (legado)");
+  await funciones.locator(".nav-group-toggle").click();
   const casos = sections.filter({ hasText: "Casos y gastos especiales" });
   await casos.locator(".nav-group-toggle").click();
   await expect(casos.getByRole("link", { name: "Comida", exact: true })).toBeVisible();
-  // VIS-25: Revisión Comida es auxiliar, no legado.
-  await expect(casos.locator(".nav-secondary-label")).toContainText("Auxiliar");
+  // VIS-25 / #504: Revisión Comida queda subordinada a Comida, sin encabezado
+  // y sin carácter de legado.
   await expect(casos.locator(".nav-legacy-label")).toHaveCount(0);
+  await expect(casos.locator(".nav-secondary-label")).toHaveCount(0);
   await expect(
     casos.getByRole("link", { name: "Revisión Comida", exact: true }),
   ).toHaveClass(/nav-link-secondary/);
@@ -193,7 +211,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   await expect(
     nav.locator("#nav-group-patrimonio"),
   ).toBeVisible();
-  for (const id of ["resumen-control", "presupuestos-planificacion", "casos-gastos", "ciclos-cierres"])
+  for (const id of ["resumen-control", "presupuestos-planificacion", "casos-gastos", "ciclos-cierres", "funciones-anteriores"])
     await expect(nav.locator(`#nav-group-${id}`)).toBeHidden();
   await expect(
     nav.locator('.nav-group-toggle[aria-expanded="true"]'),

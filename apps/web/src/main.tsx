@@ -19,14 +19,14 @@ import { Referencias } from "./Referencias";
 import { Vehiculos } from "./Vehiculos";
 import { Inversiones } from "./Inversiones";
 import { Movimientos } from "./Movimientos";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Saldo } from "./api";
 import {
   activeNavigationGroup,
   isNavigationActive,
+  navigationAllGroups,
   navigationDirect,
-  navigationGroups,
   navigationTitle,
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
@@ -246,31 +246,38 @@ function App() {
           <span aria-hidden="true">☰</span>
         </button>
         <nav id="main-nav" aria-label="Secciones" ref={mainNavRef}>
-          {navigationDirect.map((item) => {
-            const active = isNavigationActive(item, path);
-            return (
-              <a
-                key={item.href}
-                className={active ? "nav-active" : "nav-link"}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go(item.href);
-                }}
-              >
-                <span className="nav-icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span className="nav-label">{item.label}</span>
-              </a>
-            );
-          })}
-          {navigationGroups.map((group) => {
+          <div className="nav-direct">
+            {navigationDirect.map((item) => {
+              const active = isNavigationActive(item, path);
+              return (
+                <a
+                  key={item.href}
+                  className={active ? "nav-active" : "nav-link"}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go(item.href);
+                  }}
+                >
+                  <span className="nav-icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span className="nav-label">{item.label}</span>
+                </a>
+              );
+            })}
+          </div>
+          {navigationAllGroups.map((group) => {
             const groupBodyId = `nav-group-${group.id}`;
             const open = openGroups.includes(group.id);
             return (
-              <div className="nav-section" key={group.id}>
+              <div
+                className={
+                  "nav-section" + (group.legacy ? " nav-section-legacy" : "")
+                }
+                key={group.id}
+              >
                 <button
                   type="button"
                   className="nav-group-toggle"
@@ -278,43 +285,33 @@ function App() {
                   aria-controls={groupBodyId}
                   onClick={() => toggleGroup(group.id)}
                 >
-                  <span>{group.label}</span>
+                  <span className="nav-group-label">{group.label}</span>
+                  {group.hint && (
+                    <span className="nav-group-hint">{group.hint}</span>
+                  )}
                   <span className="nav-group-chevron" aria-hidden="true">
                     {open ? "⌃" : "⌄"}
                   </span>
                 </button>
                 <div id={groupBodyId} className="nav-group-body" hidden={!open}>
-                  {group.items.map((item, index) => {
+                  {group.items.map((item) => {
                     const active = isNavigationActive(item, path);
-                    const startsLegacy =
-                      item.legacy && !group.items[index - 1]?.legacy;
-                    const startsSecondary =
-                      item.secondary && !group.items[index - 1]?.secondary;
                     return (
-                      <Fragment key={item.href}>
-                        {startsLegacy && (
-                          <p className="nav-legacy-label">Heredado</p>
-                        )}
-                        {startsSecondary && (
-                          <p className="nav-legacy-label nav-secondary-label">
-                            Auxiliar
-                          </p>
-                        )}
-                        <a
-                          className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}${item.secondary ? " nav-link-secondary" : ""}`}
-                          href={item.href}
-                          aria-current={active ? "page" : undefined}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            go(item.href);
-                          }}
-                        >
-                          <span className="nav-icon" aria-hidden="true">
-                            {item.icon}
-                          </span>
-                          <span className="nav-label">{item.label}</span>
-                        </a>
-                      </Fragment>
+                      <a
+                        key={item.href}
+                        className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}${item.secondary ? " nav-link-secondary" : ""}`}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          go(item.href);
+                        }}
+                      >
+                        <span className="nav-icon" aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        <span className="nav-label">{item.label}</span>
+                      </a>
                     );
                   })}
                 </div>

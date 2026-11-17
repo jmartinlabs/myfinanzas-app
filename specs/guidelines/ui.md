@@ -75,6 +75,28 @@ historia de E1.1–E1.5 y no reabren decisiones.
   táctil, se cierra con `Escape` sin atrapar el foco y no expone rutas, secretos ni configuración.
   Solo usa tokens existentes y no cambia estructura ni contenido entre temas.
 
+### Jerarquía del menú lateral
+
+Estado vigente tras UI-02 (#504). Solo presentación: no añade, retira ni renombra rutas.
+
+- **Accesos directos.** «Inicio» y «Movimientos» viven fuera de los grupos, al principio del
+  menú, con una separación sutil (regla de 1 px con `--sidebar-border`) antes de los grupos.
+  La marca deja aire suficiente antes del primer destino.
+- **Cinco grupos principales plegables**, en caja normal (sin mayúsculas sostenidas ni tracking
+  excesivo), con etiquetas que envuelven sin truncarse: «Resumen y control», «Patrimonio»,
+  «Presupuestos y planificación», «Casos y gastos especiales» y «Ciclos y cierres».
+- **«Funciones anteriores»** es un grupo independiente, plegable y al final del menú, con la
+  indicación discreta «Retirada prevista». Contiene exclusivamente «Presupuestos (legado)»
+  (`/presupuestos`) y «Plan anual (legado)» (`/plan-anual`), ya fuera de «Presupuestos y
+  planificación». La advertencia es **informativa**: no desactiva enlaces, no retira funciones
+  y no anuncia fecha de baja. El grupo se pliega salvo que contenga la página activa y se abre
+  y resalta automáticamente al cargar, recargar o navegar con atrás/adelante a esas rutas.
+- **Sin encabezados internos** «Heredado» ni «Auxiliar». «Revisión Comida» se muestra justo bajo
+  «Comida», subordinada por sangría y tono, y **no** es una función anterior.
+- Se conservan todas las rutas, `aria-current`, la navegación por teclado, el plegado manual de
+  grupos, el cierre con Escape del menú móvil, el foco, el scroll de los grupos y los seis temas
+  sin paletas nuevas.
+
 ### Accesibilidad
 
 - **Objetivo de los bloques UI** (no una declaración de cumplimiento actual): texto normal
