@@ -8,7 +8,9 @@ import { openDatabase } from "../src/database";
 import { createApp } from "../src/app";
 
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
-const dir = ".local/e2e-theme";
+// Puerto y estado del contexto de la run (#508); defaults para uso manual.
+const PORT = Number(process.env.E2E_PORT ?? 3013);
+const dir = process.env.E2E_STATE_DIR ?? ".local/e2e-theme";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite");
@@ -19,7 +21,7 @@ BunRuntime.runMain(
     HttpServer.serve(
       createApp(db, { key, origin: process.env.APP_ORIGIN }),
     ).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3013 })),
+      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: PORT })),
     ),
   ),
 );

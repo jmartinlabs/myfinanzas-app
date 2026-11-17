@@ -1,16 +1,20 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fixtureContext } from "./fixture";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const API_PORT = 3013;
+// Puerto y estado propios de la ejecución (#508).
+const fixture = fixtureContext("theme");
+const API_PORT = fixture.port;
 let child: ReturnType<typeof spawn> | undefined;
 
 test.beforeAll(async ({ request }) => {
   child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/theme-server.ts"], {
     stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
+    env: fixture.env,
   });
   await expect
     .poll(
@@ -44,7 +48,7 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-theme/bootstrap.txt", "utf8"));
+    .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia temas " + randomUUID(),
   );
