@@ -11,7 +11,7 @@ Base medida: `test` `0e1f34d`, esquema `v29`. Datos reales fuera de alcance.
 | --- | --- | --- |
 | **I1 · Gate `G-v30`** | **implementado / en revisión** | `apps/api/src/spec37-schema.ts`, contrato `C30-SPEC37-COORDINADO-0E1F34D`, `spec37-schema.test.ts` |
 | **I2 · Registro del pendiente coordinado** | **implementado / en revisión** | `transferencias-pendientes.ts` (`crearPendienteCoordinado`) + `spec37-i2-pendiente-coordinado.test.ts` |
-| I3 · Operación coordinada atómica | pendiente | depende de I2 |
+| **I3 · Operación coordinada atómica** | **implementado / en revisión** | `registro-coordinado.ts` + `createAnticipoInTransaction` + `spec37-i3-operacion-atomica.test.ts` |
 | I4 · Confirmación, vínculo y cancelación | pendiente | depende de I3 |
 | I5 · UI, bandeja y alertas | pendiente | depende de I4 |
 | I6 · Regresión y E2E de los 43 AC | pendiente | depende de I5; los AC siguen `UNRUN` |
@@ -63,3 +63,20 @@ Base medida: `test` `0e1f34d`, esquema `v29`. Datos reales fuera de alcance.
 mínimos**», pero el `CHECK` de v30 solo acepta `REF` + dígitos. Hoy I2 solo admite una Referencia
 existente; representar la intención con nombre exigiría columna o formato nuevo y es una decisión
 material para el usuario (I3/I4), no una inferencia del implementador.
+
+
+## I3 · contenido entregado
+
+- `registrarOperacionCoordinada` escribe **en una sola transacción IMMEDIATE**: ficha de Anticipo
+  (solo modalidad B nueva), Transferencia, Gasto y pendiente, en ese orden (§4). El Gasto siempre se
+  registra íntegro desde el Saldo pagador (D4).
+- `createAnticipoInTransaction`: el alta de ficha deja de ser dueña de la transacción; `createAnticipo`
+  conserva su comportamiento público envolviéndola. Sin cambios en sus errores ni en sus intentos.
+- Idempotencia con `operacion_coordinada_attempts`: replay devuelve la respuesta guardada; el mismo
+  payload con otra clave es `409 IDEMPOTENCY_CONFLICT`; dos procesos con la misma clave dejan un Gasto,
+  una Transferencia y un intento.
+- Ruta `POST /api/operaciones-coordinadas` autenticada, con CSRF y `movementGuard`.
+- Decisiones interpretativas documentadas en la cabecera del módulo, no en la spec: la operación exige
+  exactamente un acompañante (no duplica el alta simple de `/api/movimientos`); la dirección se valida
+  contra el Saldo pagador del Gasto (422 si no coincide); en modalidad B el `rol` es siempre `Adelanto`
+  y las devoluciones son otro hecho (§5.4).

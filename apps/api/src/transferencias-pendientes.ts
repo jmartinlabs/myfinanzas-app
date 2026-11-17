@@ -551,6 +551,12 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
   };
 }
 
+/**
+ * Forma pública del pendiente (`pendingDto`). Se exporta como tipo para que
+ * los consumidores de SPEC37 (I3) puedan componerlo sin abrir la tabla.
+ */
+export type TransferenciaPendiente = ReturnType<typeof pendingDto>;
+
 function existingForLine(db: Database, lineId: number): PendingRow | null {
   return (
     (db

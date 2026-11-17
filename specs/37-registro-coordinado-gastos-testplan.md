@@ -2,7 +2,7 @@
 
 Specification: [aprobada](37-registro-coordinado-gastos-specification.md) (D1–D10, AC-42/AC-43,
 2026-11-16). Incrementos: [expediente](investigations/spec37-dev-increments-2026-11-16.md) (#484).
-Estado: **I1 (`G-v30`) fusionado en `test`; I2 ejecutado, en revisión**; I3–I6 y los 43 AC siguen `UNRUN`.
+Estado: **I1 e I2 fusionados en `test`; I3 ejecutado, en revisión**; I4–I6 y los 43 AC siguen `UNRUN`.
 
 Ámbito de este documento ahora: **I1**. Los 43 AC se incorporarán a la tabla de trazabilidad al
 implementarse su incremento; no se declaran ejecutados por adelantado.
@@ -50,6 +50,22 @@ se ejecuta en Linux CI, donde el árbol temporal sí es de confianza. No se decl
 | Negativos | Alta inválida | 19 rechazos de dominio y segundo activo → `409 GASTO_YA_GENERADO`, sin filas residuales | `validaciones del alta coordinada` |
 
 Evidencia: Linux (Debian 13, bun 1.4.3) `bun test apps/api` → **1232 pass / 0 fail / 0 omitidas**.
+
+## Trazabilidad de I3 (operación atómica)
+
+| AC | Acción / precondición | Resultado esperado | Prueba |
+| --- | --- | --- | --- |
+| AC-03 | Gasto + Transferencia reales | Ambos hechos, fechas propias, posiciones 960/440 y el flujo ve el Gasto una sola vez | `AC-03` |
+| AC-06 | Modalidad B con Referencia existente | E3.1 adelantado/neto 60,00, par y atribución correctos | `AC-06` |
+| AC-09 | Ficha y Referencia nuevas en la misma transacción; fechas hoy/límites | Sin huérfanos; no futuras y límites de Ciclo por fecha real | `AC-09` |
+| AC-14/AC-15 | Gasto con Partida | `budgetUsage` del Gasto = 1 fila; Aportación a saldo = 0; sin doble imputación | `AC-14/15` |
+| AC-20/AC-34 | Fallo forzado en la última escritura | Snapshot de 15 tablas idéntico; 0 movimientos, fichas ni pendientes | `AC-20/34` |
+| AC-21 | Dos procesos con la misma clave | Un Gasto, una Transferencia y un intento | `AC-21` |
+| AC-34/AC-40 | Replay y conflicto de hash | Misma respuesta y misma foto; otro payload → 409 sin escritura | `AC-34/40` |
+| AC-41 | Ruta sin sesión / Origin no confiable / sin clave | 401, 403, 422; con todo → 201 | `AC-41` |
+| D4/AC-26 | Gasto + pendiente sin compañero financiero | Solo el Gasto mueve liquidez; ni ficha ni Movimiento de Transferencia | `D4/AC-26` |
+
+Evidencia: Linux (Debian 13, bun 1.4.3) `bun test apps/api` → **1248 pass / 0 fail / 0 omitidas**.
 
 ## Suite completa
 
