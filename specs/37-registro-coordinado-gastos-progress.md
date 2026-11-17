@@ -1,11 +1,13 @@
 # 37 — Registro coordinado de gastos: Progress
 
-Status: **I1–I5 implementados, en revisión.** SPEC37 [aprobada](37-registro-coordinado-gastos-specification.md)
+Status: **I1–I5 implementados, en revisión; I6 ejecutado.** SPEC37 [aprobada](37-registro-coordinado-gastos-specification.md)
 en D1–D10 y AC-42/AC-43 (2026-11-16). Incrementos y paquete de esquema:
 [incrementos de desarrollo](investigations/spec37-dev-increments-2026-11-16.md) (#484), con
-autorización global I1–I6 del 2026-11-16. Test plan: [testplan](37-registro-coordinado-gastos-testplan.md).
+autorización global I1–I6 del 2026-11-16. Test plan: [testplan](37-registro-coordinado-gastos-testplan.md),
+con la matriz AC-01…AC-43: **36 `PASS` / 0 `FAIL` / 7 `UNRUN`**.
 
-Base medida: `test` `91c32f5` (I4), esquema `v31`. Datos reales fuera de alcance.
+Base medida: `test` `91c32f5` (I4), esquema `v31`. Rama de I6: `feat/spec37-i6-regresion-ac` sobre
+`438acd5` (head de I5). Datos reales fuera de alcance.
 
 | Incremento | Estado | Evidencia |
 | --- | --- | --- |
@@ -14,9 +16,7 @@ Base medida: `test` `91c32f5` (I4), esquema `v31`. Datos reales fuera de alcance
 | **I3 · Operación coordinada atómica** | **implementado / en revisión** | `registro-coordinado.ts` + `createAnticipoInTransaction` + `spec37-i3-operacion-atomica.test.ts` |
 | **I4 · Confirmación, vínculo y cancelación** | **implementado / en revisión** | `transferencias-pendientes.ts` (`confirmar`, `vincular`, `candidatos`, `atribucionAnticipo`) + `spec37-i4-confirmacion-vinculo.test.ts` |
 | **I4.5 · Gate `G-v31` (intención de Referencia)** | **implementado / en revisión** | `spec37-schema-v31.ts` + `transferencias-pendientes.ts` (`intencionAnticipo`, `confirmar`) + `spec37-i45-intencion-referencia.test.ts`, contrato `C31-SPEC37-INTENCION-91C32F5` |
-| **I5 · UI, bandeja y alertas** | **implementado / en revisión** | `GastoCoordinado.tsx` (sección reutilizable), `Movimientos.tsx` (alta unificada), `TransferenciaPendienteFicha.tsx` + `spec37-i5-coordinado.test.tsx` y `tests/e2e/spec37-i5-ui-coordinada.spec.ts`; `spec37-i5-efecto-aportacion.test.ts` |
-| I6 · Regresión y E2E de los 43 AC | pendiente | depende de I5; los AC siguen `UNRUN` |
-
+merge
 ## I1 · contenido entregado
 
 - Migración **aditiva** `v29 → v30` sobre `transferencia_pendiente`: columnas
@@ -217,20 +217,52 @@ material para el usuario (I3/I4), no una inferencia del implementador.
   por el alta normal. Ampliarlo exigiría tocar el contrato de la operación atómica.
 - **«Vista de Transferencias»** (§10.3) no existe como pantalla en la aplicación: la bandeja de
   pendientes de Movimientos es la superficie donde vive el registro y donde se ejercen las acciones.
-- Las capturas `fullPage` muestran la cabecera fija (`CICLO FINANCIADO`, Apariencia, Cerrar sesión) en
-  mitad de la página; es un artefacto de la captura completa, no del layout (las comprobaciones de
-  scroll horizontal pasan en 390 y 1440).
+- Las capturas `fullPage` a 1440 muestran la cabecera y el menú fijos en mitad de la página; es un
+  artefacto de la captura completa, no del layout (las comprobaciones de scroll horizontal pasan en 390
+  y 1440).
 
-### Verificación local de esta revisión (macOS 15.5, bun 1.4.3)
+## I6 · contenido entregado
 
-| Comando | Resultado |
-| --- | --- |
-| `bun run typecheck` | PASS |
-| `bun test apps/web` | 170 pass / 0 fail (24 ficheros) |
-| `bun test ./apps/api` | 1204 pass / 11 skip / 58 fail de 1273 — **los mismos 58 nombres** que la base sin estos cambios (1271 pruebas, 58 fail), 0 nuevos, 0 resueltos |
-| `bunx playwright test` del spec de I5 | 1 pass (18,7 s) |
-| `bunx playwright test` de temas (`theme*`) | 8 pass |
-| `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
+Cierra la matriz de los 43 criterios de [§16](37-registro-coordinado-gastos-specification.md) con
+prueba ejecutada por criterio. **36 `PASS` / 0 `FAIL` / 7 `UNRUN`**; la tabla completa, con prueba y
+comando por AC, está en el [testplan](37-registro-coordinado-gastos-testplan.md#matriz-ac-01ac-43--prueba-y-resultado).
+
+- **Ficheros nuevos** (ninguna suite de I1–I5 modificada):
+  `apps/api/src/spec37-i6-regresion.test.ts` (955 líneas, 10 pruebas),
+  `tests/e2e/spec37-i6-regresion.spec.ts` (282 líneas, 1 recorrido real con MFA) y
+  `apps/api/test-support/spec37-i6-server.ts` (servidor aislado en el puerto 3030).
+- **Cobertura nueva de API**: AC-01 (Gasto normal sin Transferencia, pendiente ni alerta), AC-02
+  (modalidad A sin Transferencia; la operación coordinada no inventa pendiente), AC-07/AC-08 (en B el
+  sobrante es dinero real y la Partida no amplía Presupuesto; la Transferencia positiva no se omite con
+  fondos suficientes), AC-16 (sin «Permite salida a Exterior» no se sustituye el Saldo), AC-17 motor
+  (importe por encima del disponible sin bloqueo nuevo), AC-19 (alta abandonada sin escritura), AC-23
+  (rectificar y anular el Gasto de un pendiente confirmado, y anular la Transferencia de Anticipo:
+  auditoría coherente, cero devoluciones inventadas, vínculo intacto), AC-25 (Terminal sin posición
+  convencional; Gasto sólo por permiso de Exterior) y AC-21 **concurrencia real de confirmación**
+  (dos procesos, una única Transferencia y una única auditoría `confirmacion`).
+- **E2E nuevo**: Gasto normal y modalidad A sin Transferencia por el formulario ordinario, más
+  «Cancelar» en el formulario coordinado con cero POST y contadores idénticos (AC-01, AC-02, AC-19),
+  con capturas a 1440 y 390 y sin scroll horizontal.
+- **Recuento real de los 43**: 36 `PASS` (con `bun test ./apps/api`, `bun test apps/web` y el E2E de
+  I6 ejecutados en este incremento), 0 `FAIL` y 7 `UNRUN`: AC-17, AC-18, AC-22, AC-24, AC-27 y AC-38
+  porque su mitad material es de navegador y el **E2E de I5 no se pudo ejecutar** aquí, y AC-28 por
+  límite técnico.
+- **AC-28 sigue fuera**: el motor E2/SPEC09 atribuye «Aportación a saldo» por la línea de Reparto, no
+  por el destino de una Transferencia ordinaria; está medido (una Transferencia real hacia el destino
+  de ese Presupuesto deja `budgetUsage` en 0 filas). Demostrarlo exige cambiar la atribución de E2 o
+  inventar una relación nueva: **decisión pendiente del usuario**, sin lógica financiera nueva en I6.
+- **Bloqueo de entorno**: `bunx playwright test` (config del repo) no arranca porque los puertos 3001 y
+  5173 los ocupa otro checkout en marcha (`myfinanzas-app-vscode`, `bun tools/demo/cli.ts`) y el config
+  usa `reuseExistingServer: false`. El E2E de I6 se ejecutó igualmente con su propio servidor aislado
+  y sirviendo el build real de este árbol en el puerto 5180 (`.local/serve-dist.ts`,
+  `.local/pw-i6.config.ts`, ambos ignorados por Git). No se mató ningún proceso ajeno ni se tocó el
+  config compartido. Las suites E2E de I5 y de temas quedan pendientes de CI.
+- **Evidencia**: `bun test ./apps/api/src/spec37-i6-regresion.test.ts` → 10 pass / 0 fail / 89 expect();
+  las seis suites de SPEC37 → 66 pass / 1 skip / 0 fail / 1545 expect(); `bun test apps/web` → 317
+  pass / 0 fail; `bun test ./apps/api` → 1211 pass / 11 skip / 58 fail de 1280, con el conjunto de
+  fallos **por nombre idéntico** al de la base `438acd5` (0 nuevos, 0 resueltos; los 2 de más sobre los
+  56 de I4.5 son las pruebas de `server-config` que esperan el puerto 3001 libre); `bun run typecheck`
+  y `bun run build` → PASS.
 
 Los 58 fallos son las familias de entorno ya documentadas (SPEC31, backup/restore cifrado, WAL y
 frontera de producción: `libc.so.6`/`renameat2`/permisos), ninguna en SPEC36/SPEC37,
