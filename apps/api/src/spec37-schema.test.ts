@@ -190,21 +190,35 @@ function v29WithData(path: string) {
 }
 
 const hasAge = (() => {
-  if (!Bun.which("age-keygen")) return false;
-  // `backup` exige un árbol privado de confianza: si el temporal del entorno no
-  // lo es (ocurre en macOS bajo algunos TMPDIR), la prueba no puede ejecutarse.
+  if (!Bun.which("age-keygen") || !Bun.which("age")) return false;
+  // `backup` exige un árbol privado de confianza y un destinatario age válido: se
+  // sondea de verdad (clave efímera + copia de una base mínima) para no omitir la
+  // prueba por un motivo que el propio entorno puede satisfacer.
   const dir = mkdtempSync(join(tmpdir(), ".tmp-spec37-probe-"));
-  const path = join(dir, "probe.sqlite");
   try {
-    const db = openDatabase(path);
+    const identity = join(dir, "identity.txt");
+    const keygen = Bun.spawnSync(["age-keygen", "-o", identity], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    if (keygen.exitCode !== 0) return false;
+    const recipient = Bun.spawnSync(["age-keygen", "-y", identity], {
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+      .stdout.toString()
+      .trim();
+    if (!recipient) return false;
+    const path = join(dir, "probe.sqlite");
+    const seeded = openDatabase(path);
+    seeded.close();
     const source = new Database(path);
     try {
-      backup(source, randomBytes(32), join(dir, "cut"), "age1probe");
-      return true;
+      backup(source, randomBytes(32), join(dir, "cut"), recipient);
     } finally {
       source.close();
-      db.close();
     }
+    return true;
   } catch {
     return false;
   } finally {

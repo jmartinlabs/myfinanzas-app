@@ -1,5 +1,10 @@
 import { assertBudgetContract } from "./budget-schema";
-import { inspectIdentity, assertMode, keyHash } from "./database-identity";
+import {
+  inspectIdentity,
+  assertMode,
+  keyHash,
+  schemaVersion,
+} from "./database-identity";
 import { verifyContract } from "./schema-contract";
 import {
   productionConfig,
@@ -51,7 +56,10 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29].includes(
+      ![
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+        24, 25, 26, 27, 28, 29, schemaVersion,
+      ].includes(
         versions[0].version,
       ) ||
       (expected !== undefined && versions[0].version !== expected)
@@ -282,7 +290,10 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29].includes(
+      ![
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+        24, 25, 26, 27, 28, 29, schemaVersion,
+      ].includes(
         bundle.manifest.schema,
       ) ||
       hash(bytes) !== bundle.manifest.sha256
