@@ -13,7 +13,14 @@ import { test, expect, describe } from "bun:test";
  * fuera de muestra.
  */
 
-const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime", "casa"] as const;
+const THEMES = [
+  "light-s",
+  "dark-s",
+  "hybrid-s",
+  "graphite-lime",
+  "casa",
+  "aurora",
+] as const;
 type Theme = (typeof THEMES)[number];
 
 const styleCss = readFileSync(
