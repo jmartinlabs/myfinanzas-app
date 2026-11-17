@@ -1,9 +1,18 @@
-import pw from "/Users/josemartin/Projects/myfinanzas-app/node_modules/@playwright/test/index.js";
+/**
+ * Captura de Aurora (y de las otras apariencias) para la evidencia de #489.
+ *
+ * Uso, desde la raíz del repositorio, con la app DEMO levantada:
+ *   DEMO_PORT=5174 bun run dev:demo
+ *   BASE=http://127.0.0.1:5174 OUT=/tmp/aurora-shots node specs/investigations/aurora-2026-11-17/final-capture.mjs
+ *
+ * Requiere `@playwright/test` y su Chromium. No modifica el repositorio: el
+ * tema se selecciona con el control «Apariencia» de la propia app.
+ */
+import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-const { chromium } = pw;
 
-const BASE = "http://127.0.0.1:5174";
-const OUT = "/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/aurora/final-shots";
+const BASE = process.env.BASE ?? "http://127.0.0.1:5174";
+const OUT = process.env.OUT ?? "artifacts/aurora-489";
 mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch();
@@ -13,30 +22,31 @@ const ctx = await browser.newContext({
 });
 const page = await ctx.newPage();
 const errors = [];
-page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
-page.on("console", (m) => {
-  if (m.type() === "error") errors.push("console: " + m.text());
+page.on("pageerror", (error) => errors.push("pageerror: " + error.message));
+page.on("console", (message) => {
+  if (message.type() === "error") errors.push("console: " + message.text());
 });
 
 async function shot(name, path, width, height, theme = "aurora") {
   await page.setViewportSize({ width, height });
   await page.goto(BASE + path, { waitUntil: "networkidle" });
-  await page.evaluate((t) => {
-    try { localStorage.setItem("mf-theme", t); } catch {}
-  }, theme);
   const select = page.getByLabel("Apariencia");
   if (await select.count()) await select.selectOption(theme);
-  else await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+  else
+    await page.evaluate(
+      (value) => document.documentElement.setAttribute("data-theme", value),
+      theme,
+    );
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - innerWidth,
   );
-  await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: false });
-  const themeNow = await page.evaluate(() =>
+  const applied = await page.evaluate(() =>
     document.documentElement.getAttribute("data-theme"),
   );
-  console.log(name, "theme=" + themeNow, "overflow=" + overflow);
+  await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: false });
+  console.log(name, "theme=" + applied, "overflow=" + overflow);
   return overflow;
 }
 
@@ -55,22 +65,14 @@ const sizes = [
 ];
 
 let bad = 0;
-for (const [path, label] of pages) {
-  for (const [w, h, tag] of sizes) {
-    if ((await shot(`aurora-${label}-${tag}`, path, w, h)) !== 0) bad++;
-  }
-}
+for (const [path, label] of pages)
+  for (const [width, height, tag] of sizes)
+    if ((await shot(`aurora-${label}-${tag}`, path, width, height)) !== 0) bad++;
 
-// Los otros cinco temas no deben haberse movido.
-for (const [theme, label] of [
-  ["dark-s", "dark-s"],
-  ["graphite-lime", "graphite-lime"],
-  ["casa", "casa"],
-  ["light-s", "light-s"],
-  ["hybrid-s", "hybrid-s"],
-]) {
-  await shot(`${label}-inicio-1440`, "/inicio", 1440, 1000, theme);
-  await shot(`${label}-movimientos-1440`, "/movimientos", 1440, 1000, theme);
+// No regresión: las otras cinco apariencias con el mismo código.
+for (const theme of ["dark-s", "graphite-lime", "casa", "light-s", "hybrid-s"]) {
+  await shot(`${theme}-inicio-1440`, "/inicio", 1440, 1000, theme);
+  await shot(`${theme}-movimientos-1440`, "/movimientos", 1440, 1000, theme);
 }
 
 console.log("overflow fuera de rango:", bad);

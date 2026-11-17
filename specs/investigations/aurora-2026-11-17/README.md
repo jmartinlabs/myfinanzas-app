@@ -70,6 +70,20 @@ estado, que ya vienen de tokens, y no reimplementa los glifos.
 | Capturas de las otras cinco apariencias | overflow 0 px, sin cambios de color de fondo |
 | Errores de página en las capturas | ninguno |
 
+## Reproducción
+
+Los dos scripts viven en este directorio y se ejecutan desde la raíz del repositorio; no
+modifican el proyecto.
+
+```bash
+DEMO_PORT=5174 bun run dev:demo                 # base DEMO ficticia
+
+BASE=http://127.0.0.1:5174 OUT=/tmp/aurora-shots \
+  node specs/investigations/aurora-2026-11-17/final-capture.mjs
+OUT=/tmp/aurora-shots \
+  node specs/investigations/aurora-2026-11-17/prod-board.mjs
+```
+
 ## Evidencia
 
 `specs/investigations/aurora-2026-11-17/evidence/`:
