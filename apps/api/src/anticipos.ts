@@ -603,52 +603,74 @@ function attempt<T>(
     })
     .immediate();
 }
+/**
+ * Alta de Referencia + ficha de Anticipo dentro de una transacción ya abierta
+ * (SPEC37 I3). No abre transacción propia ni escribe intento: quien llama es
+ * dueño de la transacción y de la idempotencia —la operación coordinada guarda
+ * su propio intento en `operacion_coordinada_attempts`, y una ficha huérfana
+ * solo podría quedar si el llamante confirmara parcialmente. Reutiliza la
+ * idempotencia de `createReference` con la misma clave de intento: al vivir en
+ * la transacción del llamante, el intento de referencia se revierte con ella.
+ *
+ * Mismo cuerpo y mismos errores que `createAnticipo`; la única diferencia es
+ * que no posee la transacción.
+ */
+export function createAnticipoInTransaction(
+  db: Database,
+  body: Record<string, unknown>,
+  key: string,
+  now = Date.now(),
+) {
+  if (
+    Object.keys(body).some(
+      (k) => !["nombre", "apertura", "evidencia"].includes(k),
+    )
+  )
+    fail("Campo no editable.");
+  const opening = body.apertura ? civil(body.apertura) : null,
+    evidence = opening
+      ? text(body.evidencia, "Evidencia de apertura Manual")
+      : null;
+  if (
+    opening &&
+    opening >
+      new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(
+        now,
+      )
+  )
+    fail("La apertura histórica no admite fecha futura.");
+  const r = createReference(
+    db,
+    { nombre: body.nombre, tipo: "Anticipo" },
+    key,
+    now,
+  );
+  db.run("UPDATE fichas_anticipos SET apertura=?,evidencia=? WHERE referencia=?", [
+    opening,
+    evidence,
+    r.id,
+  ]);
+  audit(
+    db,
+    r.id,
+    "alta ficha",
+    null,
+    { apertura: opening, evidencia: evidence },
+    null,
+    now,
+  );
+  return getAnticipo(db, r.id);
+}
+
 export function createAnticipo(
   db: Database,
   body: Record<string, unknown>,
   key: string,
   now = Date.now(),
 ) {
-  return attempt(db, body, key, "alta", now, () => {
-    if (
-      Object.keys(body).some(
-        (k) => !["nombre", "apertura", "evidencia"].includes(k),
-      )
-    )
-      fail("Campo no editable.");
-    const opening = body.apertura ? civil(body.apertura) : null,
-      evidence = opening
-        ? text(body.evidencia, "Evidencia de apertura Manual")
-        : null;
-    if (
-      opening &&
-      opening >
-        new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(
-          now,
-        )
-    )
-      fail("La apertura histórica no admite fecha futura.");
-    const r = createReference(
-      db,
-      { nombre: body.nombre, tipo: "Anticipo" },
-      key,
-      now,
-    );
-    db.run(
-      "UPDATE fichas_anticipos SET apertura=?,evidencia=? WHERE referencia=?",
-      [opening, evidence, r.id],
-    );
-    audit(
-      db,
-      r.id,
-      "alta ficha",
-      null,
-      { apertura: opening, evidencia: evidence },
-      null,
-      now,
-    );
-    return getAnticipo(db, r.id);
-  });
+  return attempt(db, body, key, "alta", now, () =>
+    createAnticipoInTransaction(db, body, key, now),
+  );
 }
 function checkContext(db: Database, body: Record<string, unknown>) {
   if (body.contexto !== anticipoRevision(db))
