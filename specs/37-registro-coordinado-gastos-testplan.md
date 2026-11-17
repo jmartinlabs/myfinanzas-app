@@ -2,9 +2,9 @@
 
 Specification: [aprobada](37-registro-coordinado-gastos-specification.md) (D1–D10, AC-42/AC-43,
 2026-11-16). Incrementos: [expediente](investigations/spec37-dev-increments-2026-11-16.md) (#484).
-Estado: **I1 e I2 fusionados en `test`; I3 ejecutado, en revisión**; I4–I6 y los 43 AC siguen `UNRUN`.
+Estado: **I1 e I2 fusionados en `test`; I3 e I4 ejecutados, en revisión**; I5–I6 y los 43 AC siguen `UNRUN`.
 
-Ámbito de este documento ahora: **I1**. Los 43 AC se incorporarán a la tabla de trazabilidad al
+Ámbito de este documento ahora: **I1–I4**. Los 43 AC se incorporarán a la tabla de trazabilidad al
 implementarse su incremento; no se declaran ejecutados por adelantado.
 
 ## Comandos y evidencia (I1)
@@ -67,16 +67,39 @@ Evidencia: Linux (Debian 13, bun 1.4.3) `bun test apps/api` → **1232 pass / 0 
 
 Evidencia: Linux (Debian 13, bun 1.4.3) `bun test apps/api` → **1248 pass / 0 fail / 0 omitidas**.
 
+## Trazabilidad de I4 (confirmación, vínculo y cancelación)
+
+| AC | Acción / precondición | Resultado esperado | Prueba |
+| --- | --- | --- | --- |
+| AC-35 | Confirmar un pendiente A en `Pendiente de realizar` con fecha real válida | Una única Transferencia con la fecha bancaria (no la prevista), Gasto intacto, posiciones 960/440, alerta retirada y auditoría `alta`+`confirmacion` | `AC-35/AC-10: confirmar modalidad A…` |
+| AC-33 | Fecha real futura y fecha real en ventana cerrada | `422 VALIDATION` y `409 HISTORY_LOCKED` en vista previa y confirmación, sin escritura y con el pendiente conservado | `AC-33: fecha futura y ventana cerrada…` |
+| AC-42 | Ciclo original del Gasto cerrado + fecha real de un Ciclo abierto; misma clase con fecha real cerrada | Se confirma sin `HISTORY_LOCKED`, el Movimiento pertenece al Ciclo de su fecha, `ciclo_origen` y cierres sin cambios; en ventana cerrada `409 HISTORY_LOCKED` sin escritura | `AC-42: el Ciclo original cerrado no bloquea…` |
+| AC-10 | Reutilizar una Referencia de Anticipo existente en modalidad B | Identidad, tipo y estado revalidados; la Transferencia lleva la Referencia y la atribución E3.1 (adelantado/neto 60,00); sin Referencia ni ficha nuevas | `AC-10: la Referencia de Anticipo existente…` |
+| AC-11 | Referencia inexistente, de tipo Viaje o inactiva | `REFERENCIA_NO_ELEGIBLE` → `409 REVIEW_REQUIRED`, sin Movimiento, sin Referencia ni ficha nuevas y sin sustitución; salida por cancelación motivada | `AC-11: Referencia inexistente, inactiva o de otro tipo…` |
+| AC-12 | Dirección declarada incompatible con el par del pendiente | `422 DIRECCION_INCOMPATIBLE` sin escritura; el par correcto se admite sin inversión | `AC-12: una dirección incompatible…` |
+| AC-13 | Devolución parcial (20,00) y completa (40,00) con la misma Referencia | E3.1: recuperado 20,00/neto 40,00 («Recuperación parcial») y luego 60,00/0,00 («Recuperado»); el pendiente confirmado no se reabre | `AC-13: devolución parcial y completa…` |
+| AC-31 | Vincular una Transferencia real ya registrada | Coincidencia exacta de dirección e importe, sin Movimiento nuevo y con la fila del hecho intacta; importe o dirección distintos → `422`; ya vinculado → `409` | `AC-31: vínculo con coincidencia exacta…` |
+| AC-31/D5 | Modalidad B y no regresión de Reparto | En B solo vale la Referencia exacta (`REFERENCIA_NO_COINCIDE`); el pendiente `Reparto` sigue rechazando toda Referencia (`REFERENCIA_NO_ADMITIDA`) y vincula la ordinaria | `AC-31: modalidad B solo vincula la Referencia exacta…` |
+| AC-36 | Editar importe y fecha prevista antes de ejecutar; Gasto rectificado | Sin Movimiento al editar, huella anterior → `409 IMPACT_CHANGED`, confirmación con el importe vigente; revisión distinta → `GASTO_NO_COINCIDE` y `409 REVIEW_REQUIRED` en confirmar y vincular | `AC-36: editar antes de ejecutar revalida…` |
+| AC-37 | Cancelar con motivo | Motivo obligatorio y no vacío (`422`), auditoría de pendiente y de sistema con el motivo, cero efecto financiero, alerta retirada y transiciones cerradas | `AC-37: cancelación motivada…` |
+
+Evidencia local (macOS 15.5, bun 1.4.3): `bun test apps/api/src/spec37-i4-confirmacion-vinculo.test.ts`
+→ **11 pass / 0 fail / 174 expect() calls**. `bun test apps/api` → **1192 pass / 11 skip / 56 fail**
+de 1259 pruebas: los 56 fallos son los de entorno preexistentes (backup/restore y frontera de
+producción, `Ancestro no confiable.`), verificados por **nombre** contra la lista de base y ninguno en
+SPEC36/SPEC37/`transferencias-pendientes`. No se declara PASS remoto: la evidencia CI queda ligada al
+SHA de la PR.
+
 ## Suite completa
 
 `bun test apps/api` — cifras del run final del incremento y comparación con la base `HEAD` para
-separar los fallos de entorno de los introducidos por el cambio: ver la PR de I1. Los fallos de
+separar los fallos de entorno de los introducidos por el cambio: ver la PR de I4. Los fallos de
 entorno preexistentes (rutas de producción bajo directorios no confiables, `Ancestro no
 confiable.`) se documentan aparte y no se atribuyen a v30.
 
 ## Contratos revisados, no ejecutados
 
-- I2–I6: alcance y AC asignados en el expediente (§3 y §4). Sin implementación ni pruebas.
+- I5–I6: alcance y AC asignados en el expediente (§3 y §4). Sin implementación ni pruebas.
 - Los 43 AC de SPEC37: `UNRUN`. La tabla de trazabilidad AC-01…AC-43 se completará en I6, con
   evidencia real por criterio; ninguna asignación de alcance se presenta como prueba.
 - `E4.8-AC-17` (aviso en precierre): fuera de esta spec; requiere su propio gate en SPEC26.
