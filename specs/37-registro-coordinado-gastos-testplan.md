@@ -267,7 +267,7 @@ AC-28 se reformula para el flujo coordinado. No se ha escrito ninguna prueba que
 
 - **E2E del repo bloqueado**: `bunx playwright test` (config del repo) **no arranca** en esta máquina.
   Los puertos **3001** y **5173** están ocupados por otro checkout en marcha
-  (`/Users/josemartin/Projects/myfinanzas-app-vscode`, PIDs 14980 y 14981, padre
+  (otro checkout del proyecto con su demo en marcha, PIDs 14980 y 14981, padre
   `bun tools/demo/cli.ts`) y el config usa `reuseExistingServer: false`. Mensaje exacto:
   `Error: http://127.0.0.1:3001/api/health is already used, make sure that nothing is running on the
   port/url or set reuseExistingServer:true in config.webServer.` No se ha matado ningún proceso ajeno
