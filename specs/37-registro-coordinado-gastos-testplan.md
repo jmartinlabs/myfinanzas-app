@@ -2,9 +2,9 @@
 
 Specification: [aprobada](37-registro-coordinado-gastos-specification.md) (D1–D10, AC-42/AC-43,
 2026-11-16). Incrementos: [expediente](investigations/spec37-dev-increments-2026-11-16.md) (#484).
-Estado: **I1 e I2 fusionados en `test`; I3 e I4 ejecutados, en revisión**; I5–I6 y los 43 AC siguen `UNRUN`.
+Estado: **I1 e I2 fusionados en `test`; I3, I4 e I4.5 ejecutados, en revisión**; I5–I6 y los 43 AC siguen `UNRUN`.
 
-Ámbito de este documento ahora: **I1–I4**. Los 43 AC se incorporarán a la tabla de trazabilidad al
+Ámbito de este documento ahora: **I1–I4.5**. Los 43 AC se incorporarán a la tabla de trazabilidad al
 implementarse su incremento; no se declaran ejecutados por adelantado.
 
 ## Comandos y evidencia (I1)
@@ -26,16 +26,16 @@ se ejecuta en Linux CI, donde el árbol temporal sí es de confianza. No se decl
 
 | Comprobación | Acción / precondición | Resultado esperado | Prueba |
 | --- | --- | --- | --- |
-| Migración aditiva | Base `v29` genuina (reconstruida y verificada contra `C29`), filas, identidad y auditoría | `v30`, `C29` sin objetos perdidos, único SQL modificado: la tabla extendida, filas intactas y columnas nuevas `NULL` | `v29 → v30 is additive…` |
+| Migración aditiva | Base `v29` genuina (reconstruida y verificada contra `C29`), filas, identidad y auditoría | Versión vigente, `C29` sin objetos perdidos, único SQL modificado: la tabla extendida, filas intactas y columnas nuevas `NULL` | `v29 → v31 is additive…` |
 | No regresión de Reparto | Pendiente `Reparto` heredado de `v29` | Se confirma con su Transferencia real después de migrar | `a migrated v30 keeps Reparto pendientes working` |
 | Preflight de duplicados | Base `v29` con dos pendientes activos del mismo Gasto | Aborta antes de escribir: versión sigue `29`, sin índice nuevo, filas intactas | `the preflight rejects duplicate active pendientes…` |
 | Inmutabilidad de `modalidad` | Fila con `NULL` y fila con `'A'` | `NULL→A`, `A→NULL`, `A→B` abortan con «modalidad inmutable»; el resto del pendiente sigue editable | `modalidad is immutable…` |
 | Coherencia por origen | `RegistroCoordinado` sin modalidad; `Reparto` con modalidad | Abortan en `INSERT` y en `UPDATE`; valores fuera de catálogo y formatos inválidos rechazados | `coherence by origin…` |
 | Un activo por Gasto | Dos altas para el mismo Gasto | La segunda aborta; otro Gasto permitido; al cancelar el primero se libera | `one active pendiente per Gasto` |
 | Tabla de intentos | Clave `(operacion,key)`, `response` JSON | Duplicado y `response` no JSON rechazados | `operacion_coordinada_attempts is keyed…` |
-| Centinela `v31` | Base con `schema_version=31` | Rechazo sin escrituras; manifiesto y versión intactos | `v31 is rejected before mutating` |
+| Centinela `v32` | Base con `schema_version=32` (centinela movido por `G-v31`) | Rechazo sin escrituras; manifiesto y versión intactos | `v32 is rejected before mutating` |
 | Backup/restore | Base `v30` con pendiente `RegistroCoordinado` | Restaura `v30`, conserva columnas nuevas y mantiene el trigger | `encrypted backup/restore…` (**skip local**, CI Linux) |
-| Contrato determinista | Dos bases nuevas | Manifiesto idéntico; `C30` con 380 objetos | `the v30 manifest is deterministic` |
+| Contrato determinista | Dos bases nuevas | Manifiesto idéntico; contrato vigente `C31` con 384 objetos y `C30` congelado con 380 | `the v31 manifest is deterministic` |
 
 ## Trazabilidad de I2 (pendiente coordinado)
 
@@ -90,12 +90,48 @@ producción, `Ancestro no confiable.`), verificados por **nombre** contra la lis
 SPEC36/SPEC37/`transferencias-pendientes`. No se declara PASS remoto: la evidencia CI queda ligada al
 SHA de la PR.
 
+## Trazabilidad de I4.5 (gate `G-v31`: intención de Referencia)
+
+| Comprobación | Acción / precondición | Resultado esperado | Prueba |
+| --- | --- | --- | --- |
+| Migración `v30`→`v31` aditiva | Base `v30` genuina (reconstruida retirando triggers y columnas de `v31` y verificada contra `C30`), con un pendiente B y su REF prevista | `v31` y `C31`; ningún objeto de `C30` desaparece; el único SQL distinto es `transferencia_pendiente`; filas, Movimientos e identidad intactos; las tres columnas nuevas `NULL` | `v30 → v31 es aditiva y conserva filas e identidad` |
+| Base `v30` real sigue operando | La misma base migrada | El trigger de inmutabilidad de `v30` sigue vigente; la REF prevista heredada convive con la forma XOR y las dos formas juntas se rechazan | `una base v30 genuina migra y sigue confirmando su Referencia prevista` |
+| AC-26/AC-32 | Alta con intención (nombre+apertura+evidencia) | Sin `referencias`, `fichas_anticipos`, `movimiento_anticipo` ni consumo de `counters`; foto financiera idéntica; la intención no se edita (`422 VALIDATION`) | `AC-26/AC-32: guardar la intención no crea Referencia, ficha, atribución ni contador` |
+| Intención mínima | Nombre solo; nombre+apertura+evidencia | Ambas formas válidas y persistidas tal cual en el DTO (`anticipoIntencion`) | `la intención admite nombre solo y con apertura+evidencia` |
+| XOR y coherencia (dominio) | B con REF e intención; B sin ninguna; evidencia sin apertura; A con intención | `422 VALIDATION` ×3 y `422 REFERENCIA_NO_ADMITIDA`; ningún pendiente ni hecho escrito | `los cuatro rechazos del alta` |
+| XOR y coherencia (esquema) | `INSERT` directo por SQL | B con ambas formas, B sin ninguna, A con intención, `Reparto` con intención, evidencia sin apertura y apertura sin nombre abortan; una sola forma se acepta; `CHECK` de columna rechaza nombre en blanco, apertura no `AAAA-MM-DD` y evidencia vacía | `el esquema impone el XOR y la coherencia también por SQL directo` |
+| D2 · confirmación atómica | Confirmar un pendiente con intención | Referencia nueva (`Anticipo`, `Activa`) con ID del sistema, ficha con apertura y evidencia, Movimiento con esa Referencia y atribución E3.1, un solo consumo de `counters`, pendiente confirmado con la intención intacta | `confirmar con intención crea Referencia, ficha y Movimiento juntos` |
+| D2 · rollback | Fallo forzado en la escritura del Movimiento (guardia que bloquea cuando la ficha ya existe) | `409 HISTORY_LOCKED` y nada sobrevive: ni Referencia, ni ficha, ni Movimiento, ni atribución, ni contador, ni intentos; pendiente y auditoría intactos | `un fallo al escribir el Movimiento revierte Referencia, ficha e intentos` |
+| AC-39 · el nombre no es identidad | Referencia preexistente con el mismo nombre que la intención | Se confirma y crea una Referencia **nueva** (dos filas con ese nombre); la preexistente y su ficha quedan intactas y la Transferencia usa la nueva | `un nombre repetido no bloquea ni reutiliza; crea una Referencia nueva` |
+| §9.1 · vínculo cerrado | Pendiente B con intención y una Transferencia ordinaria de dirección e importe exactos | Sin candidatos; `vincular` → `422 REFERENCIA_NO_COINCIDE` sin vínculo ni escritura; la salida es confirmar (crea su Referencia) o cancelar | `con intención no hay candidatos ni vínculo posible` |
+
+Evidencia local (macOS 15.5, bun 1.4.3):
+
+| Comando | Resultado |
+| --- | --- |
+| `bun test ./apps/api/src/spec37-i45-intencion-referencia.test.ts` | 10 pass / 0 fail / 469 expect() |
+| `bun test` de I2+I3+I4+esquema+`I4.5` | 55 pass / 1 skip / 0 fail / 1445 expect() |
+| `bun test ./apps/api` | 1201 pass / 11 skip / 56 fail de 1268 — **mismos 56 fallos de entorno por nombre** que la base `91c32f5` (0 nuevos, 0 resueltos) |
+| `bun run typecheck` | PASS |
+| `python3 scripts/check-project` | PASS |
+
+El `skip` es la prueba de backup/restore cifrado de I1 (árbol privado de confianza ausente en este
+`TMPDIR`); se ejecuta en Linux CI y no se declara PASS local.
+
+**No ejecutado en macOS (`UNRUN`, no PASS):** la etiqueta de backup `e37.2-v31`, la conservación de
+`e37.1-v30` y las dos listas de versiones admitidas del módulo de copia sólo se ejercitan donde la
+publicación atómica de la copia funciona: `private-state.ts` carga `libc.so.6` por FFI y en macOS esa
+ruta no existe, así que toda la familia backup/restore cae en los 56 fallos de entorno. Su evidencia
+queda ligada a la CI Linux y al SHA de la PR.
+
 ## Suite completa
 
-`bun test apps/api` — cifras del run final del incremento y comparación con la base `HEAD` para
-separar los fallos de entorno de los introducidos por el cambio: ver la PR de I4. Los fallos de
-entorno preexistentes (rutas de producción bajo directorios no confiables, `Ancestro no
-confiable.`) se documentan aparte y no se atribuyen a v30.
+`bun test ./apps/api` — run final de I4.5: **1202 pass / 11 skip / 56 fail** de 1269 pruebas en 87
+ficheros. Los 56 fallos son los de entorno preexistentes (rutas de producción bajo directorios no
+confiables, `Ancestro no confiable.`) y su conjunto **por nombre es idéntico** al de la base
+`91c32f5` (0 nuevos, 0 resueltos); ninguno está en SPEC36/SPEC37/`transferencias-pendientes` ni en
+las suites de migración. `bun test apps/api` (sin `./`) barre también el worktree ajeno
+`wt-i4fix/`, así que el run de atribución se invoca con ruta relativa explícita.
 
 ## Contratos revisados, no ejecutados
 

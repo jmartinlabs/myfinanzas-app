@@ -25,7 +25,7 @@ const t3 = "2026-01-03T00:00:00.000Z";
 const c27 = "C27-E411-FOTOS-PERIODO";
 const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
 const c29 = "C29-REPARTO-ORIGEN-86DED4B";
-const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
+const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec36-"));
 const fp = "a".repeat(64);
 // Columnas de `transferencia_pendiente` tal como existen en v29: las comparaciones
@@ -497,7 +497,7 @@ test("SPEC36: C28 stays frozen and byte-identical", () => {
   );
 });
 
-test("SPEC36 v29: C29 is exact and deterministic", () => {
+test("SPEC36 v31: C29 sigue congelado y C31 es exacto y determinista", () => {
   const c = contract(c29);
   expect(c.id).toBe(c29);
   expect(c.schemaVersion).toBe(29);
@@ -506,23 +506,23 @@ test("SPEC36 v29: C29 is exact and deterministic", () => {
   expect(c.sha256).toBe(
     "be488dcc8809370096f76d0214712c731a1eacf661a59327e36e9705d20ea4cc",
   );
-  expect(contracts().at(-1)?.id).toBe(c30);
-  const current = contract(c30);
-  expect(current.schemaVersion).toBe(30);
-  expect(current.objects).toHaveLength(380);
+  expect(contracts().at(-1)?.id).toBe(c31);
+  const current = contract(c31);
+  expect(current.schemaVersion).toBe(31);
+  expect(current.objects).toHaveLength(384);
   expect(contract(c28).sha256).toBe(
     "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
   );
 });
 
-test("SPEC36 v30: a fresh schema matches C30 exactly", () => {
+test("SPEC36 v31: a fresh schema matches C31 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 30,
+      version: 31,
     });
-    expect(manifest(db)).toEqual(contract(c30).objects);
-    expect(verifyContract(db, 30)).toBe(c30);
+    expect(manifest(db)).toEqual(contract(c31).objects);
+    expect(verifyContract(db, 31)).toBe(c31);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     for (const table of [
       "repartos",
@@ -559,7 +559,7 @@ test("SPEC36 v30: a fresh schema matches C30 exactly", () => {
   }
 });
 
-test("SPEC36 v30: v27→v30 is additive and preserves rows, IDs, audits and attempts", () => {
+test("SPEC36 v31: v27→v31 is additive and preserves rows, IDs, audits and attempts", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
@@ -580,7 +580,7 @@ test("SPEC36 v30: v27→v30 is additive and preserves rows, IDs, audits and atte
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 30,
+        version: 31,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect({
@@ -592,8 +592,8 @@ test("SPEC36 v30: v27→v30 is additive and preserves rows, IDs, audits and atte
         audit: db.query("SELECT * FROM audit ORDER BY id").all(),
         identity: db.query("SELECT * FROM database_origin").all(),
       }).toEqual(rows);
-      expect(manifest(db)).toEqual(contract(c30).objects);
-      expect(verifyContract(db, 30)).toBe(c30);
+      expect(manifest(db)).toEqual(contract(c31).objects);
+      expect(verifyContract(db, 31)).toBe(c31);
 
       const previous = new Map(
         contract(c27).objects.map((object) => [
@@ -629,7 +629,7 @@ test("SPEC36 v30: v27→v30 is additive and preserves rows, IDs, audits and atte
   }
 });
 
-test("SPEC36 v30: v28→v30 rebuild preserves every row, link and audit", () => {
+test("SPEC36 v31: v28→v31 rebuild preserves every row, link and audit", () => {
   const dir = root();
   try {
     const path = join(dir, "v28.sqlite");
@@ -669,7 +669,7 @@ test("SPEC36 v30: v28→v30 rebuild preserves every row, link and audit", () => 
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 30,
+        version: 31,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(
@@ -721,12 +721,12 @@ test("SPEC36 v30: v28→v30 rebuild preserves every row, link and audit", () => 
           .query("SELECT * FROM transferencia_pendiente_attempts ORDER BY key")
           .all(),
       ).toEqual(before.attempts);
-      expect(manifest(db)).toEqual(contract(c30).objects);
-      expect(verifyContract(db, 30)).toBe(c30);
+      expect(manifest(db)).toEqual(contract(c31).objects);
+      expect(verifyContract(db, 31)).toBe(c31);
       const fresh = store();
       try {
         expect(manifest(fresh)).toEqual(manifest(db));
-        expect(verifyContract(fresh, 30)).toBe(c30);
+        expect(verifyContract(fresh, 31)).toBe(c31);
       } finally {
         fresh.close();
       }
@@ -1538,20 +1538,20 @@ test("SPEC36 v28: attempts are keyed for idempotent generation and confirmation"
   }
 });
 
-test("SPEC36 v29: unknown v31 is rejected before mutating", () => {
+test("SPEC36 v29: unknown v32 is rejected before mutating", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
     v27(path);
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=31");
-      expect(verifyContract(db, 31)).toBeNull();
+      db.exec("UPDATE schema_version SET version=32");
+      expect(verifyContract(db, 32)).toBeNull();
       expect(() => verifyAdmittedContract(db)).toThrow(
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 31,
+        version: 32,
       });
       expect(
         db
@@ -1612,7 +1612,7 @@ test.skipIf(process.platform !== "linux")(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 30,
+            version: 31,
           });
           expect(
             copy.query("SELECT fuente_plan FROM repartos").get(),

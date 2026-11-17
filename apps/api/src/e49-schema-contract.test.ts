@@ -29,7 +29,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
 const c25 = "C25-E49-CIERRE-FINANCIERO";
-const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
+const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e49-contract-"));
 const fingerprint = "a".repeat(64);
@@ -165,29 +165,29 @@ test("E4.9 A: C14–C24 stay frozen and registered", () => {
   }
 });
 
-test("E4.10 A: a fresh schema matches C30 exactly", () => {
+test("E4.10 A: a fresh schema matches C31 exactly", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 30,
+      version: 31,
     });
-    expect(manifest(db)).toEqual(contract(c30).objects);
-    expect(verifyContract(db, 30)).toBe(c30);
+    expect(manifest(db)).toEqual(contract(c31).objects);
+    expect(verifyContract(db, 31)).toBe(c31);
   } finally {
     db.close();
   }
 });
 
-test("E4.10 A: the v24→v30 upgrade matches C30 exactly", () => {
+test("E4.10 A: the v24→v31 upgrade matches C31 exactly", () => {
   const dir = root();
   try {
     const path = join(dir, "v24.sqlite");
     materializeContract(path, c24);
     const db = openDatabase(path);
     try {
-      expect(manifest(db)).toEqual(contract(c30).objects);
-      expect(verifyContract(db, 30)).toBe(c30);
+      expect(manifest(db)).toEqual(contract(c31).objects);
+      expect(verifyContract(db, 31)).toBe(c31);
     } finally {
       db.close();
     }
@@ -252,17 +252,17 @@ test("E4.9 A: C25 has no ciclo_id and does not touch E4.1/E4.2/E4.3/E4.8", () =>
   }
 });
 
-test("E4.10 A: unknown v31 contract is rejected without writes", () => {
+test("E4.10 A: unknown v32 contract is rejected without writes", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
-    expect(verifyContract(db, 31)).toBe(null);
-    db.exec("UPDATE schema_version SET version=31");
+    expect(verifyContract(db, 32)).toBe(null);
+    db.exec("UPDATE schema_version SET version=32");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 31,
+      version: 32,
     });
   } finally {
     db.close();
@@ -322,8 +322,8 @@ test.skipIf(process.platform !== "linux")(
 
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
-        app: "e37.1-v30",
-        schema: 30,
+        app: "e37.2-v31",
+        schema: 31,
         origin: "demo",
       });
 
@@ -331,7 +331,7 @@ test.skipIf(process.platform !== "linux")(
       const copy = openDatabase(restored.database);
       try {
         expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 30,
+          version: 31,
         });
         expect(
           copy
@@ -524,7 +524,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 A: restoring a v31 package fails without a destination",
+  "E4.10 A: restoring a v32 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -545,7 +545,7 @@ test.skipIf(process.platform !== "linux")(
       mkdirSync(corrupt, { mode: 0o700 });
       const plaintext = join(corrupt, "bundle.tmp");
       const altered = structuredClone(bundle);
-      altered.manifest.schema = 31;
+      altered.manifest.schema = 32;
       writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
       cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
       expect(
