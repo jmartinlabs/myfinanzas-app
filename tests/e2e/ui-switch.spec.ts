@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { fixtureContext } from "./fixture";
 
 /**
  * UI · contraste del switch.
@@ -12,8 +14,10 @@ import { totp } from "../../apps/api/src/auth";
  * tres temas, sin sustituir colores por constantes del test.
  */
 
-const PORT = 3045;
-const DIR = ".local/e2e-ui-switch";
+// Puertos y estado propios de esta ejecución (#508): dos runs simultáneos de
+// esta misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("ui-switch");
+const PORT = fixture.port;
 const ARTIFACTS = "artifacts/ui-switch";
 const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
 let child: ChildProcess | undefined;
@@ -22,13 +26,13 @@ test.beforeAll(async ({ request }) => {
   child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/ui-switch-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+    { stdio: "pipe", env: fixture.env },
   );
   await expect
     .poll(
       async () => {
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`))
+          return (await request.get(`${fixture.baseURL}/api/health`))
             .status();
         } catch {
           return 0;
@@ -58,7 +62,7 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
+    .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia switch " + randomUUID());
