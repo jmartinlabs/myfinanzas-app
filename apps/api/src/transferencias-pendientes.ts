@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./problem";
+import { createAnticipoInTransaction } from "./anticipos";
 import { civil, cycleMaster, type Cycle } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
 import { decimal, money } from "./saldos";
@@ -58,6 +59,17 @@ import {
  * `confirmar` and `vincular` are both a resolution of the pending, so the
  * coordinated origin stays blocked while `conditions()` reports «Requiere
  * revisión» (§9.2). The Reparto origin keeps its I1 contract untouched.
+ *
+ * SPEC37 (increment 4.5, gate `G-v31`, §5.3/D2) adds the **intención** of
+ * Referencia. Modalidad B keeps exactly one form: an existing `anticipo_previsto`
+ * XOR an intent with `anticipo_nombre` (+ optional `anticipo_apertura` and
+ * `anticipo_evidencia`, same coherence rule as `fichas_anticipos`). Saving the
+ * intent writes no `referencias`, no `fichas_anticipos`, no `movimiento_anticipo`
+ * and no counter (AC-26, AC-32). `confirmar` materialises it inside its own
+ * transaction through `createAnticipoInTransaction` and uses the new Referencia
+ * in the real Transferencia, so a later failure reverts both. A Referencia is
+ * identified by its **ID**, never by its name: an intent that repeats an
+ * existing name creates a new Referencia and leaves the homonym untouched.
  */
 
 const states = ["Pendiente de realizar", "Confirmada", "Cancelada"] as const;
@@ -80,6 +92,9 @@ type PendingRow = {
   gasto_revision: number | null;
   modalidad: "A" | "B" | null;
   anticipo_previsto: string | null;
+  anticipo_nombre: string | null;
+  anticipo_apertura: string | null;
+  anticipo_evidencia: string | null;
   anticipo: string | null;
   movimiento: string | null;
   motivo_cancelacion: string | null;
@@ -428,11 +443,22 @@ function conditions(db: Database, row: PendingRow): Condicion {
       }
       // D2/D9: solo la modalidad B conserva Referencia prevista y solo puede
       // ser un Anticipo activo. Una Referencia que deja de ser elegible no se
-      // sustituye sola (AC-39).
+      // sustituye sola (AC-39). Desde I4.5 la B admite también una intención de
+      // alta: su identidad es el nombre y no se compara con las existentes, de
+      // modo que aquí solo se exige que la intención exista; la Referencia real
+      // se crea al confirmar.
       if (row.modalidad === "B") {
-        if (!row.anticipo_previsto || !anticipoElegible(db, row.anticipo_previsto))
+        if (
+          row.anticipo_previsto !== null &&
+          !anticipoElegible(db, row.anticipo_previsto)
+        )
           motivos.add("REFERENCIA_NO_ELEGIBLE");
-      } else if (row.modalidad === "A" && row.anticipo_previsto !== null)
+        else if (row.anticipo_previsto === null && row.anticipo_nombre === null)
+          motivos.add("REFERENCIA_NO_ELEGIBLE");
+      } else if (
+        row.modalidad === "A" &&
+        (row.anticipo_previsto !== null || row.anticipo_nombre !== null)
+      )
         motivos.add("REFERENCIA_NO_ELEGIBLE");
     }
     if (row.origen_tipo === "Reparto") {
@@ -547,6 +573,16 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
     gastoRevision: row.gasto_revision,
     modalidad: row.modalidad,
     anticipoPrevisto: row.anticipo_previsto,
+    // I4.5/D2: intención de alta persistida en el pendiente. No es una
+    // Referencia: no tiene ID ni ficha hasta que se confirme.
+    anticipoIntencion:
+      row.anticipo_nombre === null
+        ? null
+        : {
+            nombre: row.anticipo_nombre,
+            apertura: row.anticipo_apertura,
+            evidencia: row.anticipo_evidencia,
+          },
     anticipo: row.anticipo,
     movimiento: m
       ? {
@@ -767,6 +803,65 @@ export function crearTransferenciaPendiente(
 }
 
 /**
+ * Intención de Referencia de Anticipo (§5.3, D2; I4.5).
+ *
+ * Nombre obligatorio —la identidad de la intención— y `apertura`/`evidencia`
+ * opcionales con la misma regla que `fichas_anticipos` (`anticipo-schema.ts`):
+ * o no hay apertura ni evidencia, o hay apertura y evidencia no vacía. No crea
+ * nada: solo describe la Referencia que nacerá al confirmar, de modo que un
+ * pendiente nunca produce una Referencia huérfana ni una ficha vacía
+ * (AC-26/AC-32). Los formatos replican los validadores del alta de Anticipo
+ * (`createAnticipoInTransaction`), no los sustituyen.
+ */
+function intencionAnticipo(body: Record<string, unknown>) {
+  const raw = body.anticipoNombre;
+  if (raw !== undefined && raw !== null && typeof raw !== "string")
+    throw new Problem(422, "VALIDATION", "Nombre de Referencia prevista inválido.", {
+      anticipoNombre: "Nombre de la Referencia de Anticipo nueva.",
+    });
+  const nombre = typeof raw === "string" && raw !== "" ? raw : null;
+  const aperturaRaw = body.anticipoApertura;
+  const evidenciaRaw = body.anticipoEvidencia;
+  const sinApertura =
+    aperturaRaw === undefined || aperturaRaw === null || aperturaRaw === "";
+  const sinEvidencia =
+    evidenciaRaw === undefined || evidenciaRaw === null || evidenciaRaw === "";
+  if (nombre === null) {
+    if (!sinApertura || !sinEvidencia)
+      throw new Problem(422, "VALIDATION", "La intención de Referencia exige un nombre.", {
+        anticipoNombre: "Sin nombre no hay intención que registrar.",
+      });
+    return { nombre: null, apertura: null, evidencia: null };
+  }
+  if (!nombre.trim() || nombre.length > 120 || /[\u0000-\u001f\u007f]/.test(nombre))
+    throw new Problem(422, "VALIDATION", "Nombre de Referencia previsto inválido.", {
+      anticipoNombre: "Nombre obligatorio, máximo 120 caracteres.",
+    });
+  if (sinApertura) {
+    if (!sinEvidencia)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La evidencia de apertura exige una apertura.",
+        { anticipoEvidencia: "Sin apertura no hay evidencia que registrar." },
+      );
+    return { nombre, apertura: null, evidencia: null };
+  }
+  const apertura = civilField(
+    aperturaRaw,
+    "anticipoApertura",
+    "Indica una apertura válida.",
+  );
+  const evidencia = textField(
+    evidenciaRaw,
+    "anticipoEvidencia",
+    1000,
+    false,
+  ).trim();
+  return { nombre, apertura, evidencia };
+}
+
+/**
  * Alta del pendiente de origen `RegistroCoordinado` (SPEC37, incremento I2).
  *
  * Escribe solo la fila operativa y su auditoría: no crea Movimiento, no crea
@@ -786,6 +881,9 @@ function crearPendienteCoordinado(
         "gasto",
         "modalidad",
         "anticipoPrevisto",
+        "anticipoNombre",
+        "anticipoApertura",
+        "anticipoEvidencia",
         "importe",
         "origen",
         "destino",
@@ -844,9 +942,16 @@ function crearPendienteCoordinado(
       ? body.anticipoPrevisto
       : null;
 
+  const intencion = intencionAnticipo(body);
+
   // §7: un pendiente de modalidad A no genera Referencia. La B la exige y solo
   // admite Anticipo (D9); el formato replica el CHECK de v30, no lo sustituye.
-  if (modalidad === "A" && anticipoPrevisto !== null)
+  // I4.5: en B hay exactamente una forma de Referencia prevista, un ID
+  // existente XOR una intención de alta; nunca las dos ni ninguna.
+  if (
+    modalidad === "A" &&
+    (anticipoPrevisto !== null || intencion.nombre !== null)
+  )
     throw new Problem(
       422,
       "REFERENCIA_NO_ADMITIDA",
@@ -854,18 +959,31 @@ function crearPendienteCoordinado(
       { anticipoPrevisto: "La Referencia solo aplica a la modalidad B." },
     );
   if (modalidad === "B") {
-    if (anticipoPrevisto === null)
+    if (anticipoPrevisto !== null && intencion.nombre !== null)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La modalidad B admite una sola forma de Referencia prevista.",
+        {
+          anticipoPrevisto:
+            "Indica una Referencia existente o una intención de alta, no ambas.",
+        },
+      );
+    if (anticipoPrevisto === null && intencion.nombre === null)
       throw new Problem(
         422,
         "VALIDATION",
         "La modalidad B exige una Referencia de Anticipo prevista.",
-        { anticipoPrevisto: "Selecciona una Referencia de tipo Anticipo." },
+        {
+          anticipoPrevisto:
+            "Selecciona una Referencia de tipo Anticipo o indica el nombre de una nueva.",
+        },
       );
-    if (!/^REF[0-9]{3,}$/.test(anticipoPrevisto))
+    if (anticipoPrevisto !== null && !/^REF[0-9]{3,}$/.test(anticipoPrevisto))
       throw new Problem(422, "VALIDATION", "Formato de Referencia inválido.", {
         anticipoPrevisto: "Formato REF seguido de dígitos.",
       });
-    if (!anticipoElegible(db, anticipoPrevisto))
+    if (anticipoPrevisto !== null && !anticipoElegible(db, anticipoPrevisto))
       throw new Problem(
         422,
         "REFERENCIA_NO_ELEGIBLE",
@@ -919,10 +1037,11 @@ function crearPendienteCoordinado(
     const inserted = db.run(
       `INSERT INTO transferencia_pendiente(
         estado,importe,origen,destino,ciclo_origen,fecha_prevista,concepto,nota,
-        origen_tipo,gasto,gasto_revision,modalidad,anticipo_previsto,revision,
+        origen_tipo,gasto,gasto_revision,modalidad,anticipo_previsto,
+        anticipo_nombre,anticipo_apertura,anticipo_evidencia,revision,
         creado,actualizado
       ) VALUES('Pendiente de realizar',?,?,?,?,?,?,?,'RegistroCoordinado',
-        ?,?,?,?,1,?,?)`,
+        ?,?,?,?,?,?,?,1,?,?)`,
       [
         Number(importe.cents),
         origen,
@@ -935,6 +1054,9 @@ function crearPendienteCoordinado(
         gasto.revision,
         modalidad,
         anticipoPrevisto,
+        intencion.nombre,
+        intencion.apertura,
+        intencion.evidencia,
         time,
         time,
       ],
@@ -972,6 +1094,7 @@ function crearPendienteCoordinado(
     "gastoRevision",
     "modalidad",
     "anticipoPrevisto",
+    "anticipoIntencion",
   ], now);
   return pendingDto(db, after, now);
 }
@@ -1071,7 +1194,15 @@ function movementBody(
   row: PendingRow,
   fechaReal: string,
   anticipo?: Record<string, unknown>,
+  nuevaReferencia?: string,
 ) {
+  // D2/§5.3: en modalidad B la Referencia se revalida al confirmar y la
+  // Transferencia real la incorpora. Con Referencia prevista es la del
+  // pendiente; con intención (I4.5) es la que se acaba de crear dentro de la
+  // transacción de confirmación. Sin ninguna —la proyección previa de una
+  // intención— el Movimiento se plantea sin Referencia ni atribución: todavía
+  // no existen y no se inventan.
+  const referencia = nuevaReferencia ?? row.anticipo_previsto;
   return {
     tipo: "Transferencia",
     fecha: fechaReal,
@@ -1080,10 +1211,8 @@ function movementBody(
     destino: row.destino,
     concepto: row.concepto,
     nota: row.nota,
-    // D2/§5.3: en modalidad B la Referencia prevista se revalida al confirmar y
-    // la Transferencia real la incorpora. La modalidad A no lleva Referencia.
-    ...(row.modalidad === "B"
-      ? { referencia: row.anticipo_previsto, anticipo }
+    ...(row.modalidad === "B" && referencia
+      ? { referencia, anticipo }
       : {}),
   };
 }
@@ -1613,6 +1742,18 @@ export function confirmarTransferenciaPendiente(
       );
     // D2/§5.3: la Referencia prevista se revalida dentro de la transacción; la
     // atribución E3.1 es del hecho real que se escribe ahora.
+    //
+    // I4.5: en modalidad B la forma puede ser una intención de alta. Se
+    // materializa más abajo, ya dentro de la transacción, para no crear nada si
+    // la confirmación no se completa.
+    const intencion =
+      row.modalidad === "B" && row.anticipo_nombre !== null
+        ? {
+            nombre: row.anticipo_nombre,
+            apertura: row.anticipo_apertura,
+            evidencia: row.anticipo_evidencia,
+          }
+        : null;
     const anticipo =
       row.modalidad === "B" ? atribucionAnticipo(row, body.anticipo) : undefined;
     const impact = buildImpact(db, row, fechaReal, now, guard, anticipo);
@@ -1635,8 +1776,33 @@ export function confirmarTransferenciaPendiente(
       );
     const written = writeMovementInTransaction(
       db,
-      movementBody(row, fechaReal, anticipo),
-      { now, planned: impact.movimiento, guard },
+      // I4.5/D2: con intención de alta, la Referencia y su ficha nacen aquí,
+      // dentro de esta misma transacción y con la clave de intento de la
+      // confirmación. El pendiente nunca escribió un hecho (AC-26/AC-32) y, si
+      // algo falla después, Referencia, ficha, intentos y Movimiento se
+      // revierten juntos. La identidad de una Referencia es su ID: una
+      // intención cuyo nombre coincida con otra no reutiliza ni renombra nada.
+      movementBody(
+        row,
+        fechaReal,
+        anticipo,
+        intencion
+          ? createAnticipoInTransaction(
+              db,
+              {
+                nombre: intencion.nombre,
+                apertura: intencion.apertura,
+                evidencia: intencion.evidencia,
+              },
+              key,
+              now,
+            ).referencia.id
+          : undefined,
+      ),
+      // Con intención la huella del cliente cubre la proyección sin Referencia
+      // (no existía al previsualizar); el plan real se recalcula aquí, ya con
+      // la Referencia creada, y no se compara con esa huella.
+      { now, ...(intencion ? {} : { planned: impact.movimiento }), guard },
     );
     const movimientoId = written.movimiento.id;
     // `anticipo` es identidad inmutable del pendiente desde SPEC36 §6: la
@@ -1666,8 +1832,9 @@ export function confirmarTransferenciaPendiente(
       row,
       after,
       null,
-      // `anticipoPrevisto` no cambia al confirmar: ya se fijó en el alta y el
-      // esquema no permite reescribirlo, así que no es un campo modificado.
+      // Ni `anticipoPrevisto` ni `anticipoIntencion` cambian al confirmar: se
+      // fijaron en el alta y el esquema no permite reescribirlos, así que no son
+      // campos modificados. La Referencia real vive en el Movimiento.
       ["estado", "movimiento", "fechaEfectiva"],
       now,
     );
@@ -1734,7 +1901,23 @@ function pendingReferencia(row: PendingRow): string | null {
   return row.origen_tipo === "RegistroCoordinado" ? row.anticipo_previsto : null;
 }
 
+/**
+ * I4.5: con intención de alta la Referencia todavía no existe, así que ninguna
+ * Transferencia real puede llevarla. Vincular queda cerrado —no se inventa un
+ * vínculo por nombre—: la resolución es confirmar (crea Referencia y ficha) o
+ * cancelar con motivo.
+ */
+function intencionSinReferencia(row: PendingRow) {
+  return (
+    row.origen_tipo === "RegistroCoordinado" &&
+    row.modalidad === "B" &&
+    row.anticipo_previsto === null &&
+    row.anticipo_nombre !== null
+  );
+}
+
 function candidates(db: Database, row: PendingRow) {
+  if (intencionSinReferencia(row)) return [];
   const referencia = pendingReferencia(row);
   return (
     db
@@ -1818,7 +2001,19 @@ export function vincularTransferenciaPendiente(
         { movimientoId: "Selecciona una Transferencia." },
       );
     // D5: la Referencia solo se admite donde el origen la exige. Reparto
-    // conserva el contrato de I1 y sigue rechazando toda Referencia.
+    // conserva el contrato de I1 y sigue rechazando toda Referencia. Con
+    // intención de alta (I4.5) no hay Referencia con la que coincidir: la
+    // Transferencia real nace al confirmar, no se vincula una ordinaria.
+    if (intencionSinReferencia(row))
+      throw new Problem(
+        422,
+        "REFERENCIA_NO_COINCIDE",
+        "La Referencia prevista se crea al confirmar; ninguna Transferencia existente puede llevarla.",
+        {
+          movimientoId:
+            "Confirma el pendiente para crear la Referencia, o cancélalo con motivo.",
+        },
+      );
     if (row.origen_tipo !== "RegistroCoordinado") {
       if (m.referencia !== null)
         throw new Problem(

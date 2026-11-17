@@ -20,6 +20,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
+const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-"));
 
 function store() {
@@ -29,13 +30,21 @@ function store() {
 }
 
 /**
- * Reconstruye una base v29 genuina desde una v30 retirando exactamente lo que
- * añade I1. Se verifica contra C29: si el contrato cuadra, es una v29 por el mismo
- * criterio que usa el proyecto, no una imitación.
+ * Reconstruye una base v29 genuina desde la vigente retirando exactamente lo que
+ * añaden I1 (v30) e I4.5 (v31): primero los triggers, después las columnas, que
+ * son las que sus `CHECK` referencian. Se verifica contra C29: si el contrato
+ * cuadra, es una v29 por el mismo criterio que usa el proyecto, no una imitación.
  */
 function revertToV29(db: Database) {
   db.exec(`
     DROP INDEX transferencia_pendiente_gasto_activo;
+    DROP TRIGGER transferencia_pendiente_intencion_forma_insert;
+    DROP TRIGGER transferencia_pendiente_intencion_forma_update;
+    DROP TRIGGER transferencia_pendiente_intencion_datos_insert;
+    DROP TRIGGER transferencia_pendiente_intencion_datos_update;
+    ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_evidencia;
+    ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_apertura;
+    ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_nombre;
     DROP TABLE operacion_coordinada_attempts;
     DROP TRIGGER transferencia_pendiente_modalidad_inmutable;
     DROP TRIGGER transferencia_pendiente_modalidad_coherente_insert;
@@ -226,7 +235,7 @@ const hasAge = (() => {
   }
 })();
 
-test("SPEC37 I1: v29 → v30 is additive and leaves the new columns null", () => {
+test("SPEC37 I1: v29 → v31 is additive and leaves the new columns null", () => {
   const dir = root();
   try {
     const path = join(dir, "v29.sqlite");
@@ -265,9 +274,9 @@ test("SPEC37 I1: v29 → v30 is additive and leaves the new columns null", () =>
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 30,
+        version: 31,
       });
-      expect(verifyContract(db, 30)).toBe(c30);
+      expect(verifyContract(db, 31)).toBe(c31);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Ningún objeto de C29 desaparece y el único que cambia de forma es la tabla
@@ -328,7 +337,7 @@ test("SPEC37 I1: v29 → v30 is additive and leaves the new columns null", () =>
   }
 });
 
-test("SPEC37 I1: a migrated v30 keeps Reparto pendientes working", () => {
+test("SPEC37 I1: a migrated v31 keeps Reparto pendientes working", () => {
   const dir = root();
   try {
     const path = join(dir, "v29.sqlite");
@@ -336,7 +345,7 @@ test("SPEC37 I1: a migrated v30 keeps Reparto pendientes working", () => {
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 30,
+        version: 31,
       });
       // El pendiente heredado se confirma con su Transferencia real.
       transferencia(db, "7", 10000);
@@ -420,10 +429,14 @@ test("SPEC37 I1: modalidad is immutable, including NULL transitions", () => {
     classification(db);
     gasto(db, "1");
     // Se aíslan los triggers de coherencia para probar sólo la inmutabilidad: con
-    // ellos activos, cualquier cambio de modalidad ya está prohibido por origen.
+    // ellos activos, cualquier cambio de modalidad ya está prohibido por origen
+    // (y en v31 la forma de Referencia prevista también se aborted antes). La
+    // coherencia de v31 se acredita en su propio incremento.
     db.exec(`
       DROP TRIGGER transferencia_pendiente_modalidad_coherente_update;
-      DROP TRIGGER transferencia_pendiente_modalidad_coherente_insert;`);
+      DROP TRIGGER transferencia_pendiente_modalidad_coherente_insert;
+      DROP TRIGGER transferencia_pendiente_intencion_forma_update;
+      DROP TRIGGER transferencia_pendiente_intencion_forma_insert;`);
     const nula = coordinadoPendiente(db, { modalidad: null });
     // `NULL → 'A'` es el caso que un `!=` deja pasar en SQLite; `IS NOT` lo aborta.
     expect(() =>
@@ -544,20 +557,20 @@ test("SPEC37 I1: operacion_coordinada_attempts is keyed and JSON-validated", () 
   }
 });
 
-test("SPEC37 I1: v31 is rejected before mutating", () => {
+test("SPEC37 I1: v32 is rejected before mutating", () => {
   const dir = root();
   try {
-    const path = join(dir, "v31.sqlite");
+    const path = join(dir, "v32.sqlite");
     const seeded = openDatabase(path);
     cycle(seeded);
     const before = manifest(seeded);
     seeded.close();
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=31");
-      expect(verifyContract(db, 31)).toBeNull();
+      db.exec("UPDATE schema_version SET version=32");
+      expect(verifyContract(db, 32)).toBeNull();
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 31,
+        version: 32,
       });
       expect(() => prepareSchema(db, { origin: "demo", key_hash: null })).toThrow(
         "Esquema no compatible; no se modificará esta base.",
@@ -570,7 +583,7 @@ test("SPEC37 I1: v31 is rejected before mutating", () => {
     try {
       expect(manifest(check)).toEqual(before);
       expect(check.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 31,
+        version: 32,
       });
     } finally {
       check.close();
@@ -581,7 +594,7 @@ test("SPEC37 I1: v31 is rejected before mutating", () => {
 });
 
 test.skipIf(!hasAge)(
-  "SPEC37 I1: encrypted backup/restore preserves v30 and the new columns",
+  "SPEC37 I1: encrypted backup/restore preserves v31 and the new columns",
   () => {
     const dir = root();
     try {
@@ -620,9 +633,9 @@ test.skipIf(!hasAge)(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 30,
+            version: 31,
           });
-          expect(verifyContract(copy, 30)).toBe(c30);
+          expect(verifyContract(copy, 31)).toBe(c31);
           expect(
             copy
               .query(
@@ -648,13 +661,15 @@ test.skipIf(!hasAge)(
   },
 );
 
-test("SPEC37 I1: the v30 manifest is deterministic", () => {
+test("SPEC37 I1: the v31 manifest is deterministic", () => {
   const a = store();
   const b = store();
   try {
     expect(manifest(a)).toEqual(manifest(b));
+    expect(contract(c31).objects).toHaveLength(384);
+    expect(verifyContract(a, 31)).toBe(c31);
+    // C30 sigue siendo evidencia histórica: no se reescribe al añadir v31.
     expect(contract(c30).objects).toHaveLength(380);
-    expect(verifyContract(a, 30)).toBe(c30);
   } finally {
     a.close();
     b.close();

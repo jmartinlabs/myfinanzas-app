@@ -1,11 +1,11 @@
 # 37 — Registro coordinado de gastos: Progress
 
-Status: **I1–I4 implementados, en revisión.** SPEC37 [aprobada](37-registro-coordinado-gastos-specification.md)
+Status: **I1–I4.5 implementados, en revisión.** SPEC37 [aprobada](37-registro-coordinado-gastos-specification.md)
 en D1–D10 y AC-42/AC-43 (2026-11-16). Incrementos y paquete de esquema:
 [incrementos de desarrollo](investigations/spec37-dev-increments-2026-11-16.md) (#484), con
 autorización global I1–I6 del 2026-11-16. Test plan: [testplan](37-registro-coordinado-gastos-testplan.md).
 
-Base medida: `test` `0e1f34d`, esquema `v29`. Datos reales fuera de alcance.
+Base medida: `test` `91c32f5` (I4), esquema `v31`. Datos reales fuera de alcance.
 
 | Incremento | Estado | Evidencia |
 | --- | --- | --- |
@@ -13,7 +13,8 @@ Base medida: `test` `0e1f34d`, esquema `v29`. Datos reales fuera de alcance.
 | **I2 · Registro del pendiente coordinado** | **implementado / en revisión** | `transferencias-pendientes.ts` (`crearPendienteCoordinado`) + `spec37-i2-pendiente-coordinado.test.ts` |
 | **I3 · Operación coordinada atómica** | **implementado / en revisión** | `registro-coordinado.ts` + `createAnticipoInTransaction` + `spec37-i3-operacion-atomica.test.ts` |
 | **I4 · Confirmación, vínculo y cancelación** | **implementado / en revisión** | `transferencias-pendientes.ts` (`confirmar`, `vincular`, `candidatos`, `atribucionAnticipo`) + `spec37-i4-confirmacion-vinculo.test.ts` |
-| I5 · UI, bandeja y alertas | pendiente | depende de I4 |
+| **I4.5 · Gate `G-v31` (intención de Referencia)** | **implementado / en revisión** | `spec37-schema-v31.ts` + `transferencias-pendientes.ts` (`intencionAnticipo`, `confirmar`) + `spec37-i45-intencion-referencia.test.ts`, contrato `C31-SPEC37-INTENCION-91C32F5` |
+| I5 · UI, bandeja y alertas | pendiente | depende de I4.5 |
 | I6 · Regresión y E2E de los 43 AC | pendiente | depende de I5; los AC siguen `UNRUN` |
 
 ## I1 · contenido entregado
@@ -119,3 +120,37 @@ material para el usuario (I3/I4), no una inferencia del implementador.
   referencia prevista validada.
 - Sin cambios en `precierre.ts`, SPEC26, el esquema (`spec37-schema.ts`), `registro-coordinado.ts` ni la
   UI: I4 es API de resolución sobre el mecanismo único.
+
+## I4.5 · contenido entregado (gate `G-v31`, autorizado el 2026-11-17)
+
+- **Esquema `v31` aditivo** (`spec37-schema-v31.ts`): `anticipo_nombre`, `anticipo_apertura` y
+  `anticipo_evidencia` en `transferencia_pendiente`, `NULL` por defecto, con `CHECK` de columna
+  (nombre no vacío ≤120; apertura `AAAA-MM-DD`; evidencia no vacía) y dos pares de triggers
+  `BEFORE INSERT`/`BEFORE UPDATE`: forma de Referencia prevista (B con `anticipo_previsto` XOR
+  `anticipo_nombre`; A sin ninguna; `Reparto` sin las columnas nuevas) y coherencia de los datos
+  mínimos (la regla de `fichas_anticipos`: sin apertura no hay evidencia, y sin nombre no hay
+  apertura ni evidencia). La DDL de `v30` no se tocó.
+- **Alta con intención** (`crearPendienteCoordinado`): acepta `anticipoNombre` y, opcionalmente,
+  `anticipoApertura`/`anticipoEvidencia` como alternativa a `anticipoPrevisto`. Rechaza las dos
+  formas juntas (422 `VALIDATION`), ninguna en B (422 `VALIDATION`), la A con intención (422
+  `REFERENCIA_NO_ADMITIDA`) y evidencia sin apertura (422 `VALIDATION`). No escribe
+  `referencias`, `fichas_anticipos`, `movimiento_anticipo` ni `counters` (AC-26/AC-32).
+- **Confirmación** (`confirmarTransferenciaPendiente`): si el pendiente lleva intención, crea
+  Referencia y ficha con `createAnticipoInTransaction` **dentro de la transacción del intento** y
+  usa esa Referencia en la Transferencia real (D2). Un fallo posterior revierte Referencia, ficha,
+  intentos y Movimiento. La proyección previa no puede llevar la Referencia —no existe—, así que
+  la huella del cliente cubre el Movimiento sin ella y el plan real se recalcula ya con el ID
+  creado.
+- **El nombre no es identidad**: una intención que repite el nombre de una Referencia existente
+  crea una Referencia nueva con su ID; la preexistente queda intacta, sin reutilización, renombrado
+  ni bloqueo (AC-39 se cumple por ID).
+- **Vínculo cerrado con intención (§9.1)**: sin Referencia real no hay candidatos y `vincular`
+  responde `422 REFERENCIA_NO_COINCIDE`. Antes de I4.5 el pendiente B siempre llevaba
+  `anticipo_previsto`, así que el filtro de candidatos nunca veía `NULL`; con intención ese `NULL`
+  habría admitido una Transferencia ordinaria como vínculo. La salida sigue siendo confirmar (crea
+  Referencia y ficha) o cancelar con motivo.
+- **Bump completo**: `schemaVersion=31`, contrato `C31-SPEC37-INTENCION-91C32F5` (384 objetos),
+  despachador `<31`/`>=31`, listas de versiones admitidas con `30` explícito, etiqueta
+  `e37.2-v31` conservando `e37.1-v30`, centinelas movidos a `32` y `tools/test-seed` con
+  `SEED_DATA_CONTRACT=e37.2-v31` (deriva versión, contrato y SHA; la etiqueta de datos es literal).
+- Sin UI, sin tocar `precierre.ts` ni SPEC26, y sin cambios en `registro-coordinado.ts`.

@@ -141,7 +141,7 @@ test.skipIf(process.platform !== "linux")(
     const copy = openDatabase(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 30,
+        version: 31,
       });
       expect(counts(copy)).toEqual({
         cierres: { n: 1 },

@@ -149,7 +149,8 @@ anterior deja estable, y `I1` es condición previa de `I2–I6`.
 | **I2** | **Registro del pendiente coordinado** | I1 | Alta `origen_tipo='RegistroCoordinado'` con `gasto`, `modalidad`, `anticipo_previsto`, `gasto_revision`; motivos de revisión nuevos; unicidad de activo; modalidad inmutable en servicio y trigger; sin crear Movimiento ni ficha | AC-26, AC-29, AC-30, AC-32, AC-39, AC-43 |
 | **I3** | **Operación coordinada atómica** | I2 (+ variante `InTransaction` de alta de ficha) | Gasto + Transferencia ordinaria, Gasto + Transferencia de Anticipo, Gasto + pendiente; una transacción; tabla de intentos; rollback íntegro; alta de ficha en transacción | AC-03, AC-06, AC-09, AC-14, AC-15, AC-20, AC-21, AC-34, AC-40, AC-41 |
 | **I4** | **Confirmación, vínculo y cancelación** | I3 | Confirmar con fecha real y `HISTORY_LOCKED` por esa fecha; vincular con Referencia condicional por `origen_tipo`; cancelar con motivo; condiciones de revisión | AC-10, AC-11, AC-12, AC-13, AC-31, AC-33, AC-35, AC-36, AC-37, AC-42 |
-| **I5** | **UI coordinada, bandeja y alertas** | I4 | Formulario con modalidades, barra y campo exacto sincronizados, vista previa, 409 con borrador conservado, ficha del pendiente, alerta «Pendiente de realizar» en lista, Transferencias y detalle del Gasto, accesibilidad 390/1440 | AC-04, AC-05, AC-07, AC-08, AC-17, AC-18, AC-22, AC-24, AC-25, AC-27, AC-28, AC-38 |
+| **I4.5** | **Gate `G-v31` — intención de Referencia** | I4 | Solo esquema y alta/confirmación del pendiente: tres columnas `NULL` en `transferencia_pendiente` (`anticipo_nombre`, `anticipo_apertura`, `anticipo_evidencia`) con la regla de `fichas_anticipos`; en B **exactamente una** forma, `anticipo_previsto` XOR intención; nada se escribe en `referencias`, `fichas_anticipos` ni `movimiento_anticipo` al guardar; al confirmar se crean Referencia, ficha y Movimiento en la misma transacción reutilizando `createAnticipoInTransaction`. Sin UI | AC-26, AC-32, AC-39 |
+| **I5** | **UI coordinada, bandeja y alertas** | I4.5 | Formulario con modalidades, barra y campo exacto sincronizados, vista previa, 409 con borrador conservado, ficha del pendiente, alerta «Pendiente de realizar» en lista, Transferencias y detalle del Gasto, accesibilidad 390/1440 | AC-04, AC-05, AC-07, AC-08, AC-17, AC-18, AC-22, AC-24, AC-25, AC-27, AC-28, AC-38 |
 | **I6** | **Regresión y E2E** | I5 | Concurrencia real, regresión de Reparto, casos base (Gasto normal, A sin Transferencia, cancelar) y E2E de los recorridos críticos | AC-01, AC-02, AC-19, AC-23 |
 
 `[PROPUESTA]` `I3` es el incremento de mayor riesgo: toca dos motores en una transacción y estrena
@@ -161,6 +162,33 @@ existe variante `InTransaction` en `anticipos.ts`; `writeMovementInTransaction` 
 `crearTransferenciaPendiente` sí existen y son las únicas del proyecto. Extraer esa variante es
 trabajo de `I3`, con la misma forma que ya usa `movimientos.ts`.
 
+### 3.1 `I4.5` — gate `G-v31`, autorizado el 2026-11-17
+
+`[CONFIRMADO]` (usuario, 2026-11-17; registrado en #484). `I4` cerraba la modalidad B con una
+Referencia **existente**; §5.3 admite también «una intención de alta con nombre y datos mínimos».
+El incremento se resuelve como **opción A**, sin campos nuevos fuera de los aprobados:
+
+- **Esquema aditivo `v31`**: `anticipo_nombre`, `anticipo_apertura` y `anticipo_evidencia` en
+  `transferencia_pendiente`, `NULL` por defecto y con la misma coherencia que `fichas_anticipos`
+  (`(apertura IS NULL AND evidencia IS NULL) OR (apertura IS NOT NULL AND length(trim(evidencia))>0)`).
+  `anticipo_nombre` es obligatorio para las otras dos.
+- **Una sola forma en B**: `anticipo_previsto` (REF existente) XOR `anticipo_nombre` (intención).
+  La modalidad A no admite ninguna; `Reparto` conserva su contrato.
+- **Nada se crea al guardar**: el alta del pendiente no escribe en `referencias`,
+  `fichas_anticipos` ni `movimiento_anticipo`, y no consume `counters`. La Referencia y la ficha
+  nacen **solo al confirmar**, dentro de la misma transacción que el Movimiento, reutilizando
+  `createAnticipoInTransaction` (D2). Un fallo posterior revierte las tres cosas.
+- **El nombre no es identidad**: si la intención repite el nombre de una Referencia existente, la
+  confirmación crea una Referencia nueva con su ID y la preexistente queda intacta. No hay
+  reutilización, renombrado ni bloqueo por nombre (AC-39 se cumple por ID, no por nombre).
+- **Gate `G-v31`**: contrato `C31-SPEC37-INTENCION-91C32F5`, etiqueta de backup `e37.2-v31`
+  (conservando `e37.1-v30`), centinela `v32` y las seis ediciones coordinadas del bump.
+
+`[DEMOSTRADO]` La vista previa de una intención no puede proyectar la Referencia —no existe y su
+ID no se inventa—, así que el Movimiento se proyecta sin Referencia ni atribución E3.1; la huella
+del cliente cubre esa proyección y el plan real se recalcula dentro de la transacción, ya con la
+Referencia creada.
+
 ## 4. Matriz AC → incremento
 
 `[PROPUESTA]` Cobertura completa de §16 (43 criterios, ninguno ejecutado: todos siguen `UNRUN`).
@@ -169,16 +197,17 @@ trabajo de `I3`, con la misma forma que ya usa `movimientos.ts`.
 | AC | Incremento | AC | Incremento | AC | Incremento |
 | --- | --- | --- | --- | --- | --- |
 | AC-01 | I6 | AC-16 | I6 (regresión E1.4) | AC-31 | I4 |
-| AC-02 | I6 | AC-17 | I5 | AC-32 | I2 |
+| AC-32 | I2 (alta) / I4.5 (intención) | AC-39 | I2 (REF existente) / I4.5 (por ID) | | |
+| AC-02 | I6 | AC-17 | I5 | | |
 | AC-03 | I3 | AC-18 | I5 | AC-33 | I4 |
 | AC-04 | I5 | AC-19 | I6 | AC-34 | I3 |
 | AC-05 | I5 | AC-20 | I3 | AC-35 | I4 |
 | AC-06 | I3 | AC-21 | I3 | AC-36 | I4 |
 | AC-07 | I5 | AC-22 | I5 | AC-37 | I4 |
 | AC-08 | I5 | AC-23 | I6 (regresión E1.4/E3.1) | AC-38 | I5 |
-| AC-09 | I3 | AC-24 | I5 | AC-39 | I2 |
+| AC-09 | I3 | AC-24 | I5 | | |
 | AC-10 | I4 | AC-25 | I5 | AC-40 | I3 |
-| AC-11 | I4 | AC-26 | I2 | AC-41 | I3/I4 (rutas nuevas con los controles vigentes) |
+| AC-11 | I4 | AC-26 | I2 (alta) / I4.5 (intención) | AC-41 | I3/I4 (rutas nuevas con los controles vigentes) |
 | AC-12 | I4 | AC-27 | I5 | AC-42 | I4 |
 | AC-13 | I4 | AC-28 | I5 | AC-43 | I2 |
 | AC-14 | I3 | AC-29 | I2 | | |
@@ -215,7 +244,7 @@ cobertura inmediata dentro de `I5`.
 sola aprobación. Sustituye la propuesta anterior de autorizar incremento a incremento; no
 convierte ningún criterio `UNRUN` en evidencia ni autoriza merge.
 
-- **Secuencia obligatoria:** `I1` → `I2` → `I3` → `I4` → `I5` → `I6`. `I1` se verifica antes de que
+- **Secuencia obligatoria:** `I1` → `I2` → `I3` → `I4` → `I4.5` (`G-v31`, autorizado el 2026-11-17) → `I5` → `I6`. `I1` se verifica antes de que
   ningún consumidor use el esquema; las dependencias de cada fila de §3 se comprueban antes de
   proseguir. El trabajo preparatorio independiente es libre, pero un consumidor no se integra
   sobre un esquema no verificado.

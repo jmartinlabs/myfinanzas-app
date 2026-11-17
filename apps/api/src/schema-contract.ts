@@ -68,6 +68,7 @@ export const admitted = {
   28: "C28-REPARTO-PENDIENTE-6A31C23",
   29: "C29-REPARTO-ORIGEN-86DED4B",
   30: "C30-SPEC37-COORDINADO-0E1F34D",
+  31: "C31-SPEC37-INTENCION-91C32F5",
   // Historical evidence only; never an upgrade origin.
   historical14: "C14-COMPARTIDOS-FCE1107",
 } as const;
@@ -128,7 +129,9 @@ export function verifyContract(db: Database, version: number) {
                                     ? admitted[29]
                                     : version === 30
                                       ? admitted[30]
-                                      : null;
+                                      : version === 31
+                                        ? admitted[31]
+                                        : null;
   if (!id) return null;
   const expected = contract(id);
   if (
@@ -139,7 +142,7 @@ export function verifyContract(db: Database, version: number) {
   return expected.id;
 }
 
-/** Reads the version and verifies any admitted v14–v30 contract before mutating. */
+/** Reads the version and verifies any admitted v14–v31 contract before mutating. */
 export function verifyAdmittedContract(db: Database) {
   const exists = db
     .query(
