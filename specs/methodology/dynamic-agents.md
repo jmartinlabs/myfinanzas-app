@@ -205,30 +205,95 @@ savings still need measurement across comparable work, with scope and compaction
 - After two comparable non-informative debugging attempts, checkpoint evidence and escalate to a new hypothesis rather than repeating blindly.
 - A user `$handoff` request freezes new tasks, safely consolidates and stops controllable workers; it cannot stop external sessions. Quota warnings never waive financial QA or approval gates.
 
-## Escalado ante atasco o desvío de alcance
+## Supervisión, parada y revisión técnica crítica
 
-Un paquete delegado puede desviarse sin fallar: modifica mucho más de lo acordado, propone una
-operación que el paquete prohibía o encadena intentos sin información nueva. El coordinador no
-espera al informe final; comprueba el avance en puntos de control acotados y **detiene** al
-ejecutor cuando se cumple cualquiera de estos disparadores medibles:
+Un paquete delegado puede desviarse **sin fallar**: toca mucho más de lo acordado, propone una
+operación prohibida o encadena intentos sin información nueva. Esta sección define cómo se
+detecta, cómo se detiene sin dañar el entorno y a quién se pide criterio técnico. Es una
+capacidad del coordinador, no un producto ni un proveedor concreto.
 
-- **Radio de cambio**: toca más del doble de los ficheros que declaraba el paquete, o más de
-  diez ficheros fuera de su lista, o reescribe pruebas ajenas a la tarea.
+### Punto de control y supervisión honesta
+
+Al cerrar cada hito delimitado, y durante las ejecuciones largas con una cadencia de referencia
+**en torno a cinco minutos** (ajustable al runtime y a la tarea), el coordinador revisa algo más
+que «sigue vivo»: **diff y número de archivos**, comandos y procesos que ha lanzado, pruebas en
+curso, resultado incremental, tiempo/coste y **desviación respecto al paquete**.
+
+La supervisión depende de lo que el cliente **expone de verdad**. Si hay transcripción o estado
+consultable, se lee a intervalos acotados; si el cliente no permite observar una ejecución de
+fondo, el coordinador **no afirma que la vigila**: limita duración y alcance, divide el trabajo o
+elige una ejecución supervisable. Nunca se declara una observación automática inexistente.
+
+### Disparadores medibles
+
+Se detiene al ejecutor en cuanto se cumple cualquiera de estos:
+
+- **Radio de cambio**: más del doble de los ficheros que declaraba el paquete, más de diez fuera
+  de su lista, o reescritura de pruebas ajenas a la tarea.
 - **Silencio o repetición**: dos esperas de más de cinco minutos sin salida útil, o dos intentos
-  comparables sin información nueva (el caso de debugging de *Resource discipline*).
-- **Operación prohibida o insegura**: `kill`/limpieza de procesos ajenos, borrado de estado
-  compartido, escrituras destructivas o cualquier acción que el paquete excluía.
-- **Coste desproporcionado**: supera el doble del tiempo previsto sin un artefacto verificable.
+  comparables sin información nueva.
+- **Operación prohibida o de riesgo alto**: `kill` de procesos ajenos, borrado de estado
+  compartido, escrituras destructivas o cualquier acción excluida por el paquete. Este disparador
+  es **inmediato y no admite umbral**: se para aunque afecte a un solo fichero.
+- **Coste desproporcionado**: más del doble del tiempo previsto sin un artefacto verificable.
 
-Al detenerlo, el coordinador **preserva la evidencia** (diff, transcripción, estado), revierte lo
-que no corresponda y **consulta el slot `advisor`** —revisión técnica crítica, [model-selection]
-(model-selection.md)— con una pregunta acotada: qué parte del diseño no está resuelta, qué
-alternativas hay y qué recomienda. La respuesta del `advisor` no es una aprobación de negocio ni
-sustituye la QA independiente ni los gates de [approvals](approvals.md); desbloquea el diseño
-técnico para que el coordinador retome con alcance mínimo. La consulta y su conclusión se
-registran en la Issue.
+Los umbrales no son permiso para desviarse: una extensión legítima de varios ficheros se
+justifica en el circuito de la tarea y se autoriza, no se recorta para «cumplir el número». La
+verificación empieza por pruebas acotadas con salida observable; la suite completa puede ser
+parte del gate final, nunca el primer diagnóstico ni una ejecución canalizada que oculte errores.
 
-El asesor funcional (Álex) queda fuera de este circuito: no recibe consultas técnicas.
+### Parada y recuperación
+
+1. **Detectar y suspender** el trabajo afectado parando **solo tareas o procesos propios**, con
+   el mecanismo que soporte el cliente. Nunca matar por PID descubierto, patrón de puerto o nombre,
+   ni borrar carpetas compartidas.
+2. **Conservar evidencia**: identificador de tarea y paquete, instrucciones, ruta/modelo efectivo,
+   rama y SHA, diff, ficheros, logs, pruebas, motivo del stop y recursos bajo control.
+3. **Inspeccionar antes de revertir**: proteger cambios anteriores o ajenos y descartar solo lo
+   atribuible al ejecutor; sin limpiezas globales.
+4. **Registrar en la Issue**: disparador concreto, contención aplicada, causa probable, pregunta
+   técnica pendiente, resultado de la revisión y condición explícita de reanudación.
+5. **Reanudar** solo con paquete reducido, hipótesis comprobable, controles de seguridad y criterio
+   de parada. «Propuesta de recuperación» y «implementación validada» son estados distintos: la QA
+   independiente y las autorizaciones vigentes no se heredan.
+
+### Revisión técnica crítica, como capacidad
+
+El coordinador busca criterio técnico independiente con este orden, y registra cuál aplicó:
+
+1. **Revisión verificada** en el cliente o en otro compatible: un revisor distinto del ejecutor,
+   con su ruta/modelo efectivos comprobados por metadatos. En Hermes ese adaptador es el slot
+   `advisor`, pero el nombre y su disponibilidad no se imponen a otros entornos.
+2. **Alternativa competente** del mismo cliente o **relevo manual explícito** con el mismo
+   contexto (diseño, alternativas, evidencia), cuando la revisión verificada no existe.
+3. **Sin revisor disponible**: el coordinador puede diagnosticar y continuar **solo** tareas
+   pequeñas, reversibles, dentro del alcance aprobado y con verificaciones objetivas, dejando
+   constancia de la limitación. Si queda una decisión de arquitectura o material, una operación
+   insegura, una acción prohibida o el contrato exige revisión independiente, **se bloquea solo el
+   trabajo afectado**.
+
+Una revisión **no acreditada** (ruta no verificable o ejecutada por el mismo modelo que el
+ejecutor) se trata como ausente: se aplica el fallback anterior. `model-selection.md` documenta un
+fallo real del runtime en el que una llamada solicitada a `advisor` se ejecutó con el modelo
+`worker`; por eso la ruta se verifica siempre que el cliente la exponga. Ni el silencio ni el fallo
+de un revisor equivalen a aprobación, y ninguno sustituye la QA independiente, las autorizaciones
+o la seguridad.
+
+La asesoría técnica es independiente del **asesor financiero/funcional (Álex)**, que por contrato
+no recibe consultas técnicas; su circuito local no cambia.
+
+### Casos de aceptación documental
+
+- **Desvío masivo con revisor**: el ejecutor multiplica ficheros → se detiene en el punto de
+  control, se conserva evidencia, se revierte lo ajeno y se reanuda con paquete reducido tras la
+  revisión.
+- **Revisor ausente o mal enrutado**: la ruta no se puede verificar o el slot no existe → la
+  revisión se marca como no acreditada y se aplica el fallback (tarea pequeña y reversible, o
+  bloqueo del trabajo afectado).
+- **Operación prohibida**: `kill` de procesos ajenos o borrado compartido → parada inmediata, sin
+  esperar umbrales, con registro del motivo.
+- **Tarea benigna sin revisor**: cambio pequeño, reversible y verificado → continúa con la
+  limitación documentada, sin abrir gates nuevos.
 
 ## Prioritization and approvals
 
