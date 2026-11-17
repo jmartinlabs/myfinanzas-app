@@ -116,12 +116,6 @@ html[data-theme="graphite-lime"] .theme-picker select {
   background: var(--graphite-input-bg);
 }
 
-html[data-theme="graphite-lime"] .local-badge {
-  border-color: var(--border);
-  background: var(--graphite-input-bg);
-  color: var(--muted);
-}
-
 html[data-theme="graphite-lime"] .global-footer {
   border-top-color: var(--border);
   background: #080908;

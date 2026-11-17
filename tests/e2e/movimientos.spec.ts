@@ -127,7 +127,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     name: string,
     verify?: () => Promise<void>,
   ) => {
-    const picker = page.getByLabel("Apariencia");
+    const picker = page.getByLabel("Cambiar tema");
     const previousTheme =
       (await page.locator("html").getAttribute("data-theme")) ?? "dark-s";
     const previousViewport = page.viewportSize() ?? {
@@ -605,7 +605,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await page.setViewportSize({ width: 390, height: 844 });
     // UI DEV-06 I2: 6 capturas base (3 temas × 1440/390) y paridad tabla/carta.
     await expectMovementsParity(page);
-    const themeSelect = page.getByLabel("Apariencia");
+    const themeSelect = page.getByLabel("Cambiar tema");
     for (const theme of THEMES) {
       await themeSelect.selectOption(theme);
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);

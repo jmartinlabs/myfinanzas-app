@@ -61,7 +61,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
 }) => {
   mkdirSync("artifacts/graphite-g1", { recursive: true });
   await authenticate(page);
-  const themeSelect = page.getByLabel(/Tema visual|Apariencia/);
+  const themeSelect = page.getByLabel(/Cambiar tema|Tema/);
   await themeSelect.selectOption("graphite-lime");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
 

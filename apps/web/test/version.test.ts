@@ -3,7 +3,8 @@ import {
   NO_DATA,
   NO_VERSION_TEXT,
   environmentText,
-  footerLabel,
+  footerEnvironmentLabel,
+  footerIdentityLabel,
   parseVersionPayload,
   schemaLabel,
   shaLabel,
@@ -102,23 +103,29 @@ describe("parseVersionPayload", () => {
 });
 
 describe("texto del pie", () => {
-  test("release: una línea con versión y entorno servidos", () => {
-    expect(footerLabel(release)).toBe("MyFinanzas · v0.2.0 · TEST");
+  test("release: identidad y entorno servidos, con el entorno aparte (#503)", () => {
+    expect(footerIdentityLabel(release)).toBe("MyFinanzas · v0.2.0");
+    expect(footerEnvironmentLabel(release)).toBe("· TEST");
+    expect(
+      `${footerIdentityLabel(release)} ${footerEnvironmentLabel(release)}`,
+    ).toBe("MyFinanzas · v0.2.0 · TEST");
   });
 
   test("desarrollo: no se presenta 0.0.0-e49 como versión estable", () => {
-    expect(footerLabel(development)).toBe(
-      "MyFinanzas · build de desarrollo · DEMO",
+    expect(footerIdentityLabel(development)).toBe(
+      "MyFinanzas · build de desarrollo",
     );
+    expect(footerEnvironmentLabel(development)).toBe("· DEMO");
     expect(versionText(development)).toBe("Build de desarrollo");
-    expect(footerLabel(release)).not.toContain("0.0.0-e49");
+    expect(footerIdentityLabel(release)).not.toContain("0.0.0-e49");
   });
 
-  test("sin identidad verificable el fallback es explícito", () => {
-    expect(footerLabel(null)).toBe(NO_VERSION_TEXT);
-    expect(footerLabel(null)).toBe(
+  test("sin identidad verificable el fallback es explícito y sin entorno", () => {
+    expect(footerIdentityLabel(null)).toBe(NO_VERSION_TEXT);
+    expect(footerIdentityLabel(null)).toBe(
       "Versión no disponible · build de desarrollo",
     );
+    expect(footerEnvironmentLabel(null)).toBeNull();
     expect(versionText(null)).toBe("Build de desarrollo");
     expect(environmentText(null)).toBe(NO_DATA);
     expect(shaLabel(null)).toBe(NO_DATA);

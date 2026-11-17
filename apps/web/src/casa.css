@@ -190,12 +190,6 @@
   border-radius: 2px;
 }
 
-:root[data-theme="casa"] .local-badge {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  border-radius: 2px;
-}
-
 :root[data-theme="casa"] .content {
   padding: 34px 38px 44px;
 }

@@ -346,7 +346,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     });
 
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.getByLabel("Apariencia").selectOption("casa");
+    await page.getByLabel("Cambiar tema").selectOption("casa");
     await expect(page.locator(".inversion-detail-page")).toBeVisible();
     await page.screenshot({
       path: "artifacts/e4-1/casa-instrumento-1440.png",

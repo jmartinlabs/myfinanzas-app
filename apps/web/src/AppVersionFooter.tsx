@@ -4,7 +4,8 @@ import {
   PANEL_TITLE,
   SCHEMA_NOTE,
   environmentText,
-  footerLabel,
+  footerEnvironmentLabel,
+  footerIdentityLabel,
   parseVersionPayload,
   schemaLabel,
   shaLabel,
@@ -120,7 +121,10 @@ export function AppVersionFooter() {
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="app-version-label">{footerLabel(info)}</span>
+        <span className="app-version-label">{footerIdentityLabel(info)}</span>
+        {footerEnvironmentLabel(info) && (
+          <span className="app-version-env">{footerEnvironmentLabel(info)}</span>
+        )}
         <span className="app-version-caret" aria-hidden="true">
           {open ? "▾" : "▴"}
         </span>

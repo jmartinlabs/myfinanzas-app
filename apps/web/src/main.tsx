@@ -325,10 +325,12 @@ function App() {
         <header className="global-header">
           <CycleHeader path={path} />
           <div className="header-actions">
+            {/* #503 — etiqueta breve en la misma línea que el selector; el
+                nombre accesible contiene el texto visible (label-in-name). */}
             <label className="theme-picker">
-              Apariencia
+              <span className="theme-picker-label">Tema</span>
               <select
-                aria-label="Apariencia"
+                aria-label="Cambiar tema"
                 value={theme}
                 onChange={(event) => setTheme(event.target.value as ThemeId)}
               >
@@ -339,11 +341,6 @@ function App() {
                 ))}
               </select>
             </label>
-            {(demo || environment) && (
-              <span className={"local-badge" + (demo ? " demo-badge" : "")}>
-                {demo ? "DEMO · Datos ficticios" : environment}
-              </span>
-            )}
             {!demo && (
               <button className="text-button" onClick={logout}>
                 Cerrar sesión
