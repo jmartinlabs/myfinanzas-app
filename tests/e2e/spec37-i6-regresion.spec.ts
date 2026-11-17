@@ -187,19 +187,22 @@ test("SPEC37 I6: Gasto normal, modalidad A sin Transferencia y cancelación sin 
   const posicion = async () =>
     (await get("/saldos")).saldos.find((s: any) => s.id === aporta.id).posicion.importe;
 
-  /** Alta por el formulario ordinario de E1.4 (sin pendiente). */
+  /**
+   * Alta por la entrada unificada de I5 (§10.1): «Nuevo gasto» con el Gasto
+   * normal predeterminado —sin elegir modalidad— sobre los mismos campos.
+   */
   const registrarGasto = async (concepto: string, importe: string) => {
-    await page.goto("/movimientos/nuevo");
+    await page.goto("/movimientos/nuevo?tipo=Gasto");
     await expect(
-      page.getByRole("heading", { name: "Nuevo movimiento", exact: true }),
+      page.getByRole("heading", { name: "Nuevo gasto", exact: true }),
     ).toBeVisible();
-    await page.getByLabel("Tipo *", { exact: true }).selectOption("Gasto");
-    await page.getByLabel("Fecha económica *", { exact: true }).fill(hoy);
-    await page.getByLabel("Importe (€) *", { exact: true }).fill(importe);
-    await page
-      .getByLabel("Saldo origen *", { exact: true })
-      .selectOption(pagador.id);
-    await page.getByLabel("Partida *", { exact: true }).selectOption(partida.id);
+    await expect(
+      page.getByRole("radio", { name: "Gasto normal" }),
+    ).toBeChecked();
+    await page.getByLabel("Fecha del Gasto").fill(hoy);
+    await page.getByLabel("Importe del Gasto").fill(importe);
+    await page.getByLabel("Saldo pagador").selectOption(pagador.id);
+    await page.getByLabel(/^Partida/).selectOption(partida.id);
     await page.getByLabel("Concepto", { exact: true }).fill(concepto);
     await page.getByRole("button", { name: "Registrar movimiento", exact: true }).click();
     await expect(page.getByRole("heading", { name: concepto, exact: true })).toBeVisible();
@@ -247,10 +250,13 @@ test("SPEC37 I6: Gasto normal, modalidad A sin Transferencia y cancelación sin 
     if (request.method() !== "GET" && request.url().includes("/api/"))
       escrituras.push(`${request.method()} ${new URL(request.url()).pathname}`);
   });
-  await page.goto("/movimientos/coordinado");
+  await page.goto("/movimientos/nuevo?tipo=Gasto");
   await expect(
-    page.getByRole("heading", { name: "Nuevo Gasto coordinado", exact: true }),
+    page.getByRole("heading", { name: "Nuevo gasto", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("radio", { name: "Pago directo desde otro Saldo" })
+    .check();
   await page.getByLabel("Fecha del Gasto").fill(hoy);
   await page.getByLabel("Importe del Gasto").fill("60,00");
   await page.getByLabel("Saldo pagador").selectOption(pagador.id);

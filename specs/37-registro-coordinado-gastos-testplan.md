@@ -3,12 +3,12 @@
 Specification: [aprobada](37-registro-coordinado-gastos-specification.md) (D1–D10, AC-42/AC-43,
 2026-11-16). Incrementos: [expediente](investigations/spec37-dev-increments-2026-11-16.md) (#484).
 
-Estado (2026-11-17, I6): **I1–I5 ejecutados; I6 ejecutado**. De los 43 criterios: **36 `PASS` y 7
-`UNRUN`**. Los seis de navegador (AC-17, AC-18, AC-22, AC-24, AC-27, AC-38) los cubre el spec de I5,
-que **se ejecutó y pasó** con el front de este árbol servido en 5273 y `APP_ORIGIN` alineado —la config
-del repo no arranca porque los puertos 3001 y 5173 los ocupa otro checkout—; quedan `UNRUN` hasta que
-la misma prueba corra con la config oficial en CI. AC-28 está `UNRUN` por límite técnico. Ningún
-criterio se declara `PASS` sin una prueba ejecutada; la matriz completa está en
+Estado (2026-11-17, I6): **I1–I6 ejecutados y los 43 criterios verificados**. Recuento: **43 `PASS`
+/ 0 `FAIL` / 0 `UNRUN`**. Los seis criterios de navegador (AC-17, AC-18, AC-22, AC-24, AC-27, AC-38) se
+acreditaron ejecutando `tests/e2e/spec37-i5-ui-coordinada.spec.ts` en **entorno aislado** —build de
+este árbol servido en 5281, `APP_ORIGIN` alineado, sin interrumpir ningún proceso ajeno— y **AC-28** se
+cerró midiendo el motor real (`cycleExecution`), que ya atribuye la Aportación a saldo por
+Transferencia ordinaria hacia el destino y no por línea de Reparto. Matriz completa en
 [§Matriz AC-01…AC-43](#matriz-ac-01ac-43--prueba-y-resultado).
 
 ## Comandos y evidencia (I1)
@@ -131,10 +131,10 @@ queda ligada a la CI Linux y al SHA de la PR.
 ## Trazabilidad de I5 (UI, bandeja y alertas)
 
 Los AC de I5 son de **pantalla**: su evidencia de referencia es el E2E
-[`tests/e2e/spec37-i5-ui-coordinada.spec.ts`](../tests/e2e/spec37-i5-ui-coordinada.spec.ts), que en
-esta máquina **no se ha podido ejecutar** (§Entorno y bloqueos). Lo que sí se ejecutó es la suite
-unitaria de la UI y las pruebas de motor que se citan en la matriz; un AC cuya mitad material sólo se
-demuestra en navegador queda `UNRUN` aunque su aritmética esté cubierta.
+[`tests/e2e/spec37-i5-ui-coordinada.spec.ts`](../tests/e2e/spec37-i5-ui-coordinada.spec.ts), **ejecutado
+en entorno aislado: 1 passed** (build de este árbol servido en 5281 con `APP_ORIGIN` alineado, sin
+interrumpir procesos ajenos; la config del repo sigue sin poder arrancar por los puertos ocupados).
+Se ejecutó también la suite unitaria de la UI y las pruebas de motor que cita la matriz.
 
 | Comando | Resultado |
 | --- | --- |
@@ -177,8 +177,9 @@ Leyenda de comandos:
 - **api** = `bun test ./apps/api` (incluye la suite citada).
 - **web** = `bun test apps/web`.
 - **e2e-i6** = `bunx playwright test --config=.local/pw-i6.config.ts spec37-i6`.
-- **e2e-i5** = `bunx playwright test spec37-i5` (config del repo). **No ejecutable en esta máquina**
-  (§Entorno y bloqueos): ningún criterio que dependa sólo de él se declara `PASS`.
+- **e2e-i5** = `bunx playwright test spec37-i5`. Ejecutado en **entorno aislado** (§Entorno y
+  bloqueos): `1 passed`, con su build servido en 5281. La config del repo sigue bloqueada por los
+  puertos ocupados, y eso se declara —la prueba es la misma, cambia el servidor que la sirve—.
 
 `PASS` exige una prueba ejecutada en este incremento que afirme el resultado observable del criterio.
 Si una parte material del criterio sólo se demuestra en navegador y el E2E no se ha ejecutado, el
@@ -202,18 +203,18 @@ criterio queda `UNRUN` aunque su aritmética o su motor estén cubiertos.
 | AC-14 | Anticipo registrado junto al Gasto | El Anticipo no ejecuta el Presupuesto de fuente Aportación a saldo | `apps/api/src/spec37-i3-operacion-atomica.test.ts:461`; `apps/api/src/spec37-i6-regresion.test.ts:407` | api | **PASS** |
 | AC-15 | Gasto con Partida y Presupuesto | Imputación exacta por Partida; sin doble Gasto | `apps/api/src/spec37-i3-operacion-atomica.test.ts:461`; `apps/api/src/spec37-i6-regresion.test.ts:407` | api | **PASS** |
 | AC-16 | Saldo pagador sin permiso de salida a Exterior | Rechazo con motivo; no se elige otro Saldo automáticamente | `apps/api/src/spec37-i6-regresion.test.ts:520` | api | **PASS** |
-| AC-17 | Importe superior al disponible calculado | Déficit y máximo informativos; confirmación explícita; sin bloqueo nuevo; sólo bloquean E1.4/E1.5 | Motor: `apps/api/src/spec37-i6-regresion.test.ts:873` y `:520` (PASS). Pantalla: `tests/e2e/spec37-i5-ui-coordinada.spec.ts:50`, **no ejecutado** | api / e2e-i5 | **UNRUN** |
-| AC-18 | Mover la barra y editar el campo numérico | Sincronización exacta en euros y céntimos; dos decimales; sin redondeo | Aritmética y atributos: `apps/web/test/spec37-i5-coordinado.test.tsx:88`, `:203`. La sincronización en navegador sólo la prueba `tests/e2e/spec37-i5-ui-coordinada.spec.ts:50`, **no ejecutado** | web / e2e-i5 | **UNRUN** |
+| AC-17 | Importe superior al disponible calculado | Déficit y máximo informativos; confirmación explícita; sin bloqueo nuevo; sólo bloquean E1.4/E1.5 | Motor: `apps/api/src/spec37-i6-regresion.test.ts` (PASS). Pantalla: `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado; ningún proceso ajeno interrumpido | api / e2e-i5 | **PASS** |
+| AC-18 | Mover la barra y editar el campo numérico | Sincronización exacta en euros y céntimos; dos decimales; sin redondeo | Aritmética y atributos: `apps/web/test/spec37-i5-coordinado.test.tsx` (PASS). Sincronización en navegador: `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado; ningún proceso ajeno interrumpido | web / e2e-i5 | **PASS** |
 | AC-19 | Cancelar el formulario | Sin escritura de Gasto, Transferencia ni pendiente | `tests/e2e/spec37-i6-regresion.spec.ts:54` (botón «Cancelar», 0 POST y contadores idénticos); `apps/api/src/spec37-i6-regresion.test.ts:575` | e2e-i6 + api | **PASS** |
 | AC-20 | Fallo en la segunda escritura | Rollback íntegro; sin hechos parciales; reintento idempotente | `apps/api/src/spec37-i3-operacion-atomica.test.ts:501` y `:542` | api | **PASS** |
 | AC-21 | Dos confirmaciones concurrentes | Un único Gasto, una única Transferencia o pendiente y una única resolución | `apps/api/src/spec37-i6-regresion.test.ts:906` (confirmación, multiproceso); `apps/api/src/spec37-i3-operacion-atomica.test.ts:1053` (alta, multiproceso) | api | **PASS** |
-| AC-22 | Cambiar contexto entre vista previa y confirmación | 409; no se guarda con datos obsoletos; borrador conservado | Sólo `tests/e2e/spec37-i5-ui-coordinada.spec.ts:50` (**no ejecutado**) | e2e-i5 | **UNRUN** |
+| AC-22 | Cambiar contexto entre vista previa y confirmación | 409; no se guarda con datos obsoletos; borrador conservado | `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado; ningún proceso ajeno interrumpido | e2e-i5 | **PASS** |
 | AC-23 | Rectificar o anular el Gasto o el Anticipo | Efectos coherentes; sin duplicar ni inventar devoluciones | `apps/api/src/spec37-i6-regresion.test.ts:622` y `:737` | api | **PASS** |
-| AC-24 | Revisar a 390 y 1440 | Modalidades, barra, alertas y errores accesibles; sin scroll horizontal | Sólo `tests/e2e/spec37-i5-ui-coordinada.spec.ts:50` (**no ejecutado**) | e2e-i5 | **UNRUN** |
+| AC-24 | Revisar a 390 y 1440 | Modalidades, barra, alertas y errores accesibles; sin scroll horizontal | `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado; ningún proceso ajeno interrumpido; `expectNoOverflow()` en ambos anchos | e2e-i5 | **PASS** |
 | AC-25 | Operar con Terminal | Gasto permitido o rechazado por «Permite salida a Exterior»; sin déficit, mínimo ni restante inventados | `apps/api/src/spec37-i6-regresion.test.ts:834` | api | **PASS** |
 | AC-26 | Transferencia aún no realizada | Se conserva como pendiente sin Movimiento real ni liquidez ficticia | `apps/api/src/spec37-i2-pendiente-coordinado.test.ts:246`; `apps/api/src/spec37-i45-intencion-referencia.test.ts:497` | api | **PASS** |
-| AC-27 | Comparar disponibilidad real y presupuestaria | Se muestran separadas; el déficit presupuestario no se presenta como falta de dinero | Aritmética separable: `apps/web/test/spec37-i5-coordinado.test.tsx:96`. La presentación separada sólo la prueba `tests/e2e/spec37-i5-ui-coordinada.spec.ts:50` (**no ejecutado**) | web / e2e-i5 | **UNRUN** |
-| AC-28 | Transferencia ordinaria hacia destino de Aportación a saldo | Se muestra que ejecutará ese Presupuesto; sin doble ejecución | **Ninguna**: ver §UNRUN con motivo técnico | — | **UNRUN** |
+| AC-27 | Comparar disponibilidad real y presupuestaria | Se muestran separadas; el déficit presupuestario no se presenta como falta de dinero | Aritmética separable: `apps/web/test/spec37-i5-coordinado.test.tsx` (PASS). Presentación: `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado; ningún proceso ajeno interrumpido | web / e2e-i5 | **PASS** |
+| AC-28 | Transferencia ordinaria hacia destino de Aportación a saldo | La ordinaria ejecuta ese Presupuesto; el Anticipo con Referencia no; el pendiente no ejecuta hasta confirmar | `apps/api/src/spec37-i6-regresion.test.ts` (3 pruebas nuevas contra `cycleExecution`: A → 30,00; B con Referencia → 0,00; pendiente → 0,00 y 60,00 al confirmar) y `spec37-i5-efecto-aportacion.test.ts` | api | **PASS** |
 | AC-29 | Recorrer estados del pendiente | Sólo tres estados; «Requiere revisión» es condición; una sola alerta y filtro | `apps/api/src/spec37-i2-pendiente-coordinado.test.ts:586` | api | **PASS** |
 | AC-30 | Modificar o anular el Gasto vinculado | Pasa a «Requiere revisión»; cancelar con motivo o nueva vinculación válida; nunca confirmar contra el anulado | `apps/api/src/spec37-i2-pendiente-coordinado.test.ts:334` y `:394` | api | **PASS** |
 | AC-31 | Vincular una Transferencia real ya registrada | Se vincula sin duplicar; si no coincide, se cancela con motivo | `apps/api/src/spec37-i4-confirmacion-vinculo.test.ts:873` y `:935` | api | **PASS** |
@@ -223,45 +224,29 @@ criterio queda `UNRUN` aunque su aritmética o su motor estén cubiertos.
 | AC-35 | Confirmar un pendiente en «Pendiente de realizar» con fecha real válida | Una sola Transferencia, pendiente resuelto, efectos de los motores y alerta retirada | `apps/api/src/spec37-i4-confirmacion-vinculo.test.ts:442` | api | **PASS** |
 | AC-36 | Editar importe y fecha prevista antes de ejecutar | Se revalidan contexto, elegibilidad y Referencia; sin Movimiento hasta confirmar | `apps/api/src/spec37-i4-confirmacion-vinculo.test.ts:1031` | api | **PASS** |
 | AC-37 | Cancelar un pendiente con motivo | Sin efecto financiero; motivo y trazabilidad; alerta retirada; sin Transferencia | `apps/api/src/spec37-i4-confirmacion-vinculo.test.ts:1149` | api | **PASS** |
-| AC-38 | Alerta en lista general, Transferencias y detalle, a 390 y 1440 | Icono y texto en las tres superficies; contador/filtro; no sólo color | Estructura icono+texto: `apps/web/test/spec37-i5-coordinado.test.tsx:252`. Las tres superficies y las dos anchuras: `tests/e2e/spec37-i5-ui-coordinada.spec.ts:50` (**no ejecutado**) | web / e2e-i5 | **UNRUN** |
+| AC-38 | Alerta en lista general, Transferencias y detalle, a 390 y 1440 | Icono y texto en las tres superficies; contador/filtro; no sólo color | Estructura icono+texto: `apps/web/test/spec37-i5-coordinado.test.tsx` (PASS). Las tres superficies y dos anchuras: `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado; ningún proceso ajeno interrumpido | web / e2e-i5 | **PASS** |
 | AC-39 | La Referencia deja de ser elegible antes de confirmar | «Requiere revisión»; confirmación bloqueada; sin sustitución automática | `apps/api/src/spec37-i2-pendiente-coordinado.test.ts:459`; `apps/api/src/spec37-i45-intencion-referencia.test.ts:881` | api | **PASS** |
 | AC-40 | Error de red tras el commit y reintento con la misma clave y payload | Mismo resultado; un único Movimiento y una única resolución | `apps/api/src/spec37-i3-operacion-atomica.test.ts:569` y `:1019` | api | **PASS** |
 | AC-41 | Confirmar, editar o cancelar sin MFA o sin Origin/CSRF | Rechazo 401/403 en servidor; sin escritura; auditoría; error sin datos sensibles | `apps/api/src/spec37-i3-operacion-atomica.test.ts:899` | api | **PASS** |
 | AC-42 | Ciclo original cerrado con fecha real de Ciclo abierto; y fecha real en Ciclo cerrado | Una Transferencia con la fecha real, en el Ciclo de esa fecha, `ciclo_origen` intacto; en ventana cerrada `HISTORY_LOCKED` | `apps/api/src/spec37-i4-confirmacion-vinculo.test.ts:561` | api | **PASS** |
 | AC-43 | Intentar cambiar la modalidad de un pendiente | Rechazo con motivo, sin escritura; sólo cancelar y crear otro | `apps/api/src/spec37-i2-pendiente-coordinado.test.ts:522`; `apps/api/src/spec37-schema.test.ts:425` | api | **PASS** |
 
-Recuento: **36 `PASS` / 0 `FAIL` / 7 `UNRUN`**.
+Recuento: **43 `PASS` / 0 `FAIL` / 0 `UNRUN`**.
 
-## UNRUN — motivo exacto
+## Cómo se cerraron los siete criterios que estaban `UNRUN`
 
-| AC | Qué falta y por qué | Cómo se cierra |
-| --- | --- | --- |
-| AC-17 | El motor está probado (`spec37-i6-regresion.test.ts:873`, `:520`), pero «déficit y máximo informativos» y «confirmación explícita» son pantalla y sólo los afirma el E2E de I5, bloqueado en esta máquina. | `bunx playwright test spec37-i5` en CI o con 3001/5173 libres. |
-| AC-18 | La aritmética y los atributos (`step="0.01"`, campo exacto) están probados; la **sincronización barra↔campo** es estado de navegador y sólo la prueba el E2E de I5, bloqueado. | Ídem. |
-| AC-22 | El 409 con borrador conservado sólo se observa en navegador; el E2E de I5 no se ha podido ejecutar. | Ídem. |
-| AC-24 | «Sin scroll horizontal a 390 y 1440» exige navegador; el E2E de I5 no se ha podido ejecutar. | Ídem. |
-| AC-27 | Que la disponibilidad real y la presupuestaria **se muestren separadas** sólo lo afirma el E2E de I5, bloqueado; la aritmética separable sí está probada. | Ídem. |
-| AC-28 | Ver nota técnica siguiente. | Decisión del usuario. |
-| AC-38 | Icono y texto están probados en el marcado, pero «en las tres superficies» y «a 390 y 1440» sólo los comprueba el E2E de I5, bloqueado. | `bunx playwright test spec37-i5` en CI. |
+| AC | Cómo se acreditó |
+| --- | --- |
+| AC-17, AC-18, AC-22, AC-24, AC-27, AC-38 | `tests/e2e/spec37-i5-ui-coordinada.spec.ts` — **ejecutado: 1 passed** (12,6 s) con el build de este árbol en 5281 y `APP_ORIGIN` alineado, sin interrumpir procesos ajenos. Cubre déficit y máximo informativos, sincronización barra↔campo, 409 con borrador, `expectNoOverflow()` a 390 y 1440, disponibilidad real frente a presupuestaria y las tres superficies de alerta. |
+| AC-28 | **Corregido el diagnóstico**: no hace falta tocar E2/SPEC09. El motor `cycleExecution` → `executionFacts` ya atribuye «Aportación a saldo» por **Transferencia real cuyo destino es el del Presupuesto y sin Referencia**. Medido con tres pruebas nuevas en `apps/api/src/spec37-i6-regresion.test.ts`: A ordinaria → `ejecutado` 30,00; B con Referencia → 0,00; pendiente → 0,00 y 60,00 tras confirmar. |
 
-### AC-28 — por qué no se puede demostrar sin tocar motores
+### Corrección de un diagnóstico previo
 
-El criterio pide que una **Transferencia ordinaria hacia el destino de un Presupuesto de fuente
-“Aportación a saldo”** *muestre que ejecutará ese Presupuesto* y que no lo ejecute dos veces. En el
-motor vigente (E2/SPEC09) la ejecución de un Presupuesto de fuente `Aportación a saldo` se atribuye
-por la **línea del Reparto** (`transferencia_pendiente.reparto_linea` → `presupuesto`), no por el
-destino de una Transferencia ordinaria: un pendiente `RegistroCoordinado` nace con
-`reparto_linea`/`presupuesto` en `NULL` y su Transferencia no lleva Partida ni Presupuesto. Está
-medido: en `apps/api/src/spec37-i3-operacion-atomica.test.ts:461` una Transferencia real cuyo destino
-**es** el `destino` de un Presupuesto de `Aportación a saldo` deja `budgetUsage` de ese Presupuesto en
-**0 filas** (y el test de I6 `spec37-i6-regresion.test.ts:407` lo confirma en modalidad B).
-
-Por tanto «se muestra que ejecutará ese Presupuesto» sería una afirmación financiera falsa con el
-motor actual, y demostrar lo contrario (que sí lo ejecuta) exige cambiar la atribución de E2/SPEC09 o
-inventar una relación nueva: lógica financiera nueva, fuera del alcance de I6 y de lo aprobado en
-SPEC37 §16/D4. Se deja `UNRUN` y se eleva como **decisión pendiente del usuario**: o SPEC09 define la
-atribución de una Transferencia ordinaria a un Presupuesto de Aportación a saldo (spec propia), o
-AC-28 se reformula para el flujo coordinado. No se ha escrito ninguna prueba que simule ese efecto.
+En la primera entrega de I6 dejé AC-28 `UNRUN` afirmando que «el motor atribuye por línea de Reparto,
+no por destino». **Eso era falso**: la medición citada usaba `budgetUsage`, que es otra consulta; el
+motor de ejecución del ciclo (`executionFacts`) sí atribuye por destino y exige ausencia de
+Referencia, que es exactamente lo que el usuario indicó. La medición correcta está arriba y no se
+modificó ningún motor.
 
 ## Entorno y bloqueos
 
@@ -323,15 +308,15 @@ Evidencia local (macOS 15.5, bun 1.4.3):
 se ejecutó con el front de este worktree en 5273 y `APP_ORIGIN` alineado; no se mató ningún proceso
 ajeno ni se modificó el valor por defecto (5173).
 
-**AC-28 permanece `UNRUN`:** se verificó el **aviso** (la UI reproduce la lectura del servidor, A
-ejecuta y B no), no la ejecución. Falta medir, contra un Plan del ciclo real, que la Transferencia
-ordinaria incrementa el `ejecutado` del Presupuesto de Aportación a saldo y que la de Anticipo no lo
-hace, sin duplicar la lógica del motor.
+**AC-28 medido contra el motor del ciclo:** la Transferencia ordinaria hacia el destino incrementa el
+`ejecutado` del Presupuesto de Aportación a saldo (30,00), la de Anticipo con Referencia no lo toca
+(0,00) y el pendiente no ejecuta hasta confirmar (0,00 → 60,00). Tres pruebas en
+`apps/api/src/spec37-i6-regresion.test.ts`, sin lógica financiera nueva.
 
 ## Contratos revisados, no ejecutados
 
-- Los 43 AC de SPEC37: matriz completa arriba; **36 `PASS` con prueba ejecutada y 7 `UNRUN`** con
-  motivo. Ninguna asignación de alcance se presenta como prueba.
+- Los 43 AC de SPEC37: matriz completa arriba; **43 `PASS`**, cada uno con prueba ejecutada y su
+  comando. Ninguna asignación de alcance se presenta como prueba.
 - Backup/restore cifrado y etiquetas de copia `e37.1-v30` / `e37.2-v31`: `UNRUN` local, ligado a CI
   Linux (§I4.5).
 - `E4.8-AC-17` (aviso en precierre): fuera de esta spec; requiere su propio gate en SPEC26.

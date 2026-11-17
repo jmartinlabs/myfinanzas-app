@@ -4,7 +4,7 @@ Status: **I1–I5 implementados, en revisión; I6 ejecutado.** SPEC37 [aprobada]
 en D1–D10 y AC-42/AC-43 (2026-11-16). Incrementos y paquete de esquema:
 [incrementos de desarrollo](investigations/spec37-dev-increments-2026-11-16.md) (#484), con
 autorización global I1–I6 del 2026-11-16. Test plan: [testplan](37-registro-coordinado-gastos-testplan.md),
-con la matriz AC-01…AC-43: **36 `PASS` / 0 `FAIL` / 7 `UNRUN`**.
+con la matriz AC-01…AC-43: **43 `PASS` / 0 `FAIL` / 0 `UNRUN`**.
 
 Base medida: `test` `91c32f5` (I4), esquema `v31`. Rama de I6: `feat/spec37-i6-regresion-ac` sobre
 `438acd5` (head de I5). Datos reales fuera de alcance.
@@ -224,7 +224,7 @@ material para el usuario (I3/I4), no una inferencia del implementador.
 ## I6 · contenido entregado
 
 Cierra la matriz de los 43 criterios de [§16](37-registro-coordinado-gastos-specification.md) con
-prueba ejecutada por criterio. **36 `PASS` / 0 `FAIL` / 7 `UNRUN`**; la tabla completa, con prueba y
+prueba ejecutada por criterio. **43 `PASS` / 0 `FAIL` / 0 `UNRUN`**; la tabla completa, con prueba y
 comando por AC, está en el [testplan](37-registro-coordinado-gastos-testplan.md#matriz-ac-01ac-43--prueba-y-resultado).
 
 - **Ficheros nuevos** (ninguna suite de I1–I5 modificada):
@@ -243,14 +243,13 @@ comando por AC, está en el [testplan](37-registro-coordinado-gastos-testplan.md
 - **E2E nuevo**: Gasto normal y modalidad A sin Transferencia por el formulario ordinario, más
   «Cancelar» en el formulario coordinado con cero POST y contadores idénticos (AC-01, AC-02, AC-19),
   con capturas a 1440 y 390 y sin scroll horizontal.
-- **Recuento real de los 43**: 36 `PASS` (con `bun test ./apps/api`, `bun test apps/web` y el E2E de
-  I6 ejecutados en este incremento), 0 `FAIL` y 7 `UNRUN`: AC-17, AC-18, AC-22, AC-24, AC-27 y AC-38
-  porque su mitad material es de navegador y el **E2E de I5 no se pudo ejecutar** aquí, y AC-28 por
-  límite técnico.
-- **AC-28 sigue fuera**: el motor E2/SPEC09 atribuye «Aportación a saldo» por la línea de Reparto, no
-  por el destino de una Transferencia ordinaria; está medido (una Transferencia real hacia el destino
-  de ese Presupuesto deja `budgetUsage` en 0 filas). Demostrarlo exige cambiar la atribución de E2 o
-  inventar una relación nueva: **decisión pendiente del usuario**, sin lógica financiera nueva en I6.
+- **Recuento real de los 43**: **43 `PASS` / 0 `FAIL` / 0 `UNRUN`**, con `bun test ./apps/api`,
+  `bun test apps/web`, el E2E de I6 y el E2E de I5 ejecutados en **entorno aislado**.
+- **AC-28 resuelto sin tocar motores**: `cycleExecution` → `executionFacts` ya atribuye «Aportación a
+  saldo» por **Transferencia real con el destino del Presupuesto y sin Referencia**. Tres pruebas
+  nuevas lo miden: A ordinaria ejecuta (30,00), B con Referencia no (0,00) y el pendiente no ejecuta
+  hasta confirmar (0,00 → 60,00). **Diagnóstico anterior corregido**: la medición que lo declaraba
+  imposible usaba `budgetUsage`, que es otra consulta, no el motor del ciclo.
 - **Bloqueo de entorno**: `bunx playwright test` (config del repo) no arranca porque los puertos 3001 y
   5173 los ocupa otro checkout en marcha (`myfinanzas-app-vscode`, `bun tools/demo/cli.ts`) y el config
   usa `reuseExistingServer: false`. El E2E de I6 se ejecutó igualmente con su propio servidor aislado

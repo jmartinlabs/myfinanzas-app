@@ -11,6 +11,7 @@ import { createSaldo, getSaldo } from "./saldos";
 import { createReference } from "./referencias";
 import { createBudget, budgetUsage } from "./presupuestos";
 import { getAnticipo } from "./anticipos";
+import { cycleExecution } from "./planes-ciclo";
 import { getMovement, previewMovement, writeMovement } from "./movimientos";
 import { Problem } from "./problem";
 import { registrarOperacionCoordinada } from "./registro-coordinado";
@@ -952,4 +953,79 @@ test("SPEC37-I6 AC-21: dos confirmaciones concurrentes dejan una única Transfer
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+/**
+ * AC-28 — el flujo coordinado no necesita ningún motor nuevo: la ejecución de un
+ * Presupuesto «Aportación a saldo» la decide `executionFacts` por la
+ * Transferencia real (destino del Presupuesto y **sin** Referencia). Estas
+ * pruebas lo miden contra `cycleExecution`, que es el motor real, en los tres
+ * casos: A ordinaria, B con Referencia y pendiente sin confirmar.
+ */
+function ejecutado(f: Fixture) {
+  const item = cycleExecution(f.db, f.ciclo, now).items.find(
+    (i) => i.presupuesto.id === f.presupuestoAportacion,
+  );
+  return item?.ejecutado;
+}
+
+test("SPEC37-I6 AC-28: una Transferencia ordinaria real ejecuta la Aportación a saldo de su destino", () => {
+  const f = fixture();
+  expect(ejecutado(f)).toBe("0.00");
+  realMovement(f, {
+    tipo: "Transferencia",
+    fecha: "2026-01-10",
+    importe: "30.00",
+    origen: f.habitual,
+    destino: f.pago,
+    concepto: "Aportación ficticia I6",
+    nota: "",
+  });
+  expect(ejecutado(f)).toBe("30.00");
+});
+
+test("SPEC37-I6 AC-28: una Transferencia de Anticipo (con Referencia) no ejecuta la Aportación a saldo", () => {
+  const f = fixture();
+  const referencia = crearAnticipoReferencia(f).id;
+  registrarOperacionCoordinada(
+    f.db,
+    {
+      gasto: {
+        fecha: "2026-01-20",
+        importe: "100.00",
+        saldo: f.pago,
+        partida: f.partida,
+        concepto: "Gasto ficticio I6 AC-28 B",
+        nota: "",
+      },
+      transferencia: {
+        fecha: "2026-01-18",
+        importe: "80.00",
+        origen: f.adelanta,
+        destino: f.pago,
+        referencia,
+        atribucion: {
+          evidencia: "Extracto ficticio I6",
+          procedencia: "Banco ficticio I6",
+        },
+        concepto: "Transferencia de Anticipo ficticia I6",
+        nota: "",
+      },
+    },
+    randomUUID(),
+    now,
+  );
+  // El hecho existe y mueve dinero, pero el motor R3 no lo imputa a la
+  // Aportación a saldo: la Referencia lo excluye.
+  expect(ejecutado(f)).toBe("0.00");
+});
+
+test("SPEC37-I6 AC-28: un pendiente coordinado no ejecuta nada hasta confirmarlo", () => {
+  const f = fixture();
+  const gastoId = gasto(f);
+  const item = pendienteA(f, gastoId);
+  expect(ejecutado(f)).toBe("0.00");
+  confirmar(f, item.id);
+  // Al confirmar nace la Transferencia real ordinaria y el motor la imputa.
+  expect(ejecutado(f)).toBe("60.00");
 });
