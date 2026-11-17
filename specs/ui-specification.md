@@ -288,8 +288,8 @@ los otros temas.
 
 Ratificada por el usuario en [#489](https://github.com/jmartinlabs/myfinanzas-app/issues/489) al
 aprobar las decisiones D1–D5 del análisis
-el análisis de la [PR #491](https://github.com/jmartinlabs/myfinanzas-app/pull/491) y la
-evidencia de [`aurora-2026-11-17`](investigations/aurora-2026-11-17/README.md). Amplía el catálogo con una
+[`aurora-2026-11-16`](investigations/aurora-2026-11-16/README.md) y de su evidencia visual en
+[`aurora-2026-11-17`](investigations/aurora-2026-11-17/README.md). Amplía el catálogo con una
 sexta apariencia oscura independiente; no reabre Dark, Graphite, Casa ni la composición.
 
 **Decisiones fijadas:**
