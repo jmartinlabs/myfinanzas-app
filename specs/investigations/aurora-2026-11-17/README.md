@@ -69,6 +69,7 @@ estado, que ya vienen de tokens, y no reimplementa los glifos.
 | Capturas 6 pantallas × 1440/820/390 | overflow **0 px** en las 18 |
 | Capturas de las otras cinco apariencias | overflow 0 px, sin cambios de color de fondo |
 | Errores de página en las capturas | ninguno |
+| E2E completo local (`bunx playwright test`) | **92 passed, 7 failed**; los 4 fallos relevantes (`catalog`, `comida-dprima`, `inicio:1238`, `navigation:108`) **reproducen igual en la base `origin/test`** sin este cambio; los otros 3 son carreras de arranque de servidor (`bootstrap.txt`/puerto) |
 
 ## Reproducción
 
