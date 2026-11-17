@@ -2,14 +2,20 @@ import { test, expect } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { TransferenciaPendienteDTO } from "../src/api";
 import {
-  GastoCoordinado,
+  SeccionAltaCoordinada,
+  coordinadoVacio,
   deficit,
+  erroresCoordinado,
   etiquetaModalidad,
+  etiquetaModalidadAlta,
   importeApi,
   mensajeCoordinado,
   payloadCoordinado,
   posicionEstimada,
   remanente,
+  type CoordinadoForm,
+  type ModalidadAlta,
+  type ModoTransferencia,
 } from "../src/GastoCoordinado";
 import {
   AlertaPendienteDeRealizar,
@@ -118,24 +124,30 @@ test("§3 las etiquetas visibles son las de la spec", () => {
 });
 
 test("payloadCoordinado: la modalidad decide qué forma de Referencia viaja", () => {
-  const base = {
+  const gasto = {
     fecha: "2026-11-15",
-    importe: "60,00",
+    // El llamador envía el importe ya normalizado (`importeApi`); el payload no
+    // lo reinterpreta.
+    importe: "60.00",
     saldo: "S002",
     partida: "PAR-1",
     concepto: "Compra",
     nota: "",
-    modalidad: "A" as const,
+  };
+  const valores: CoordinadoForm = {
+    ...coordinadoVacio("2026-11-15"),
     origen: "S001",
-    importeTransferencia: "30,00",
-    fechaPrevista: "2026-11-20",
-    formaReferencia: "existente" as const,
+    importe: "30,00",
+    fecha: "2026-11-20",
     referencia: "REF001",
     anticipoNombre: "Anticipo",
     anticipoApertura: "2026-11-01",
     anticipoEvidencia: "evidencia",
+    evidencia: "Extracto",
+    procedencia: "Banco",
   };
-  const a = payloadCoordinado(base);
+
+  const a = payloadCoordinado({ gasto, modalidad: "A", modo: "pendiente", valores });
   expect(a.gasto).toEqual({
     fecha: "2026-11-15",
     importe: "60.00",
@@ -156,14 +168,15 @@ test("payloadCoordinado: la modalidad decide qué forma de Referencia viaja", ()
   // A no admite Referencia: aunque el formulario conserve un valor antiguo.
   expect("anticipoPrevisto" in a.pendiente!).toBe(false);
 
-  const existente = payloadCoordinado({ ...base, modalidad: "B" });
+  const existente = payloadCoordinado({ gasto, modalidad: "B", modo: "pendiente", valores });
   expect(existente.pendiente!.anticipoPrevisto).toBe("REF001");
   expect("anticipoNombre" in existente.pendiente!).toBe(false);
 
   const intencion = payloadCoordinado({
-    ...base,
+    gasto,
     modalidad: "B",
-    formaReferencia: "intencion",
+    modo: "pendiente",
+    valores: { ...valores, formaReferencia: "intencion" },
   });
   expect(intencion.pendiente!.anticipoNombre).toBe("Anticipo");
   expect(intencion.pendiente!.anticipoApertura).toBe("2026-11-01");
@@ -172,13 +185,113 @@ test("payloadCoordinado: la modalidad decide qué forma de Referencia viaja", ()
 
   // Sin apertura no se envía evidencia: la regla del esquema no se sortea.
   const sinApertura = payloadCoordinado({
-    ...base,
+    gasto,
     modalidad: "B",
-    formaReferencia: "intencion",
-    anticipoApertura: "",
+    modo: "pendiente",
+    valores: { ...valores, formaReferencia: "intencion", anticipoApertura: "" },
   });
   expect("anticipoApertura" in sinApertura.pendiente!).toBe(false);
   expect("anticipoEvidencia" in sinApertura.pendiente!).toBe(false);
+});
+
+test("payloadCoordinado: la Transferencia ya realizada viaja como hecho real", () => {
+  const gasto = {
+    fecha: "2026-11-15",
+    importe: "60.00",
+    saldo: "S002",
+    partida: "PAR-1",
+    concepto: "Compra",
+    nota: "",
+  };
+  const valores: CoordinadoForm = {
+    ...coordinadoVacio("2026-11-15"),
+    origen: "S001",
+    importe: "40,00",
+    fecha: "2026-11-14",
+    referencia: "REF001",
+    evidencia: "Extracto",
+    procedencia: "Banco",
+  };
+
+  // A realizada: Transferencia ordinaria, sin Referencia ni atribución.
+  const a = payloadCoordinado({ gasto, modalidad: "A", modo: "realizada", valores });
+  expect(a.pendiente).toBeUndefined();
+  expect(a.transferencia).toEqual({
+    fecha: "2026-11-14",
+    importe: "40.00",
+    origen: "S001",
+    destino: "S002",
+    concepto: "Compra",
+    nota: "",
+  });
+
+  // B realizada: Referencia existente + atribución E3.1 del hecho real.
+  const b = payloadCoordinado({ gasto, modalidad: "B", modo: "realizada", valores });
+  expect(b.pendiente).toBeUndefined();
+  expect(b.transferencia).toMatchObject({
+    fecha: "2026-11-14",
+    importe: "40.00",
+    origen: "S001",
+    destino: "S002",
+    referencia: "REF001",
+    atribucion: { evidencia: "Extracto", procedencia: "Banco" },
+  });
+  expect("anticipoNuevo" in b.transferencia!).toBe(false);
+
+  // B realizada con Referencia nueva: el alta viaja junto a la Transferencia.
+  const nueva = payloadCoordinado({
+    gasto,
+    modalidad: "B",
+    modo: "realizada",
+    valores: {
+      ...valores,
+      formaReferencia: "intencion",
+      anticipoNombre: "Anticipo nuevo",
+      anticipoApertura: "2026-11-01",
+      anticipoEvidencia: "Resguardo",
+    },
+  });
+  expect(nueva.transferencia).toMatchObject({
+    anticipoNuevo: {
+      nombre: "Anticipo nuevo",
+      apertura: "2026-11-01",
+      evidencia: "Resguardo",
+    },
+    atribucion: { evidencia: "Extracto", procedencia: "Banco" },
+  });
+  expect("referencia" in nueva.transferencia!).toBe(false);
+});
+
+test("erroresCoordinado exige lo que el servidor exige, sin inventar reglas", () => {
+  const vacio = coordinadoVacio("");
+  expect(Object.keys(erroresCoordinado("A", "pendiente", vacio)).sort()).toEqual([
+    "fecha",
+    "importe",
+    "origen",
+  ]);
+
+  const completo: CoordinadoForm = {
+    ...vacio,
+    fecha: "2026-11-17",
+    origen: "S001",
+    importe: "30,00",
+    referencia: "REF001",
+  };
+  expect(erroresCoordinado("A", "pendiente", completo)).toEqual({});
+  // B necesita Referencia aunque el resto esté completo.
+  expect(
+    Object.keys(
+      erroresCoordinado("B", "pendiente", { ...completo, referencia: "" }),
+    ),
+  ).toEqual(["referencia"]);
+  // B ya realizada exige además la atribución del Anticipo.
+  expect(
+    Object.keys(erroresCoordinado("B", "realizada", completo)).sort(),
+  ).toEqual(["evidencia", "procedencia"]);
+  // Un importe no positivo no se acepta como cero.
+  expect(
+    erroresCoordinado("A", "pendiente", { ...completo, importe: "0" }).importe,
+  ).toContain("mayor que cero");
 });
 
 test("los errores se mapean por code sin inventar códigos nuevos", () => {
@@ -200,53 +313,100 @@ test("los errores se mapean por code sin inventar códigos nuevos", () => {
   expect(otro).toBe("Mensaje del servidor.");
 });
 
-test("el formulario coordinado conserva etiquetas, ids y modalidades", () => {
-  const html = renderToStaticMarkup(<GastoCoordinado go={() => {}} />);
+test("§3 las tres opciones del alta usan los nombres de la spec", () => {
+  expect(etiquetaModalidadAlta("normal")).toBe("Gasto normal");
+  expect(etiquetaModalidadAlta("A")).toBe("Pago directo desde otro Saldo");
+  expect(etiquetaModalidadAlta("B")).toBe("Financiación mediante Anticipo");
+});
 
+function seccion(
+  modalidad: ModalidadAlta,
+  modo: ModoTransferencia = "pendiente",
+  over: Partial<CoordinadoForm> = {},
+) {
+  return renderToStaticMarkup(
+    <SeccionAltaCoordinada
+      id="mov-coordinado"
+      modalidad={modalidad}
+      modo={modo}
+      valores={{ ...coordinadoVacio("2026-11-17"), ...over }}
+      onModalidad={() => {}}
+      onModo={() => {}}
+      onChange={() => {}}
+      saldos={[
+        saldo("S001", "Cuenta principal", "500.00"),
+        saldo("S002", "Cuenta pagadora", "40.00"),
+      ]}
+      pagador={saldo("S002", "Cuenta pagadora", "40.00")}
+      referencias={[
+        { id: "REF001", nombre: "Anticipo sintético", tipo: "Anticipo", estado: "Activa" },
+      ]}
+      hoy="2026-11-17"
+      importeGasto="60,00"
+      errors={{}}
+    />,
+  );
+}
+
+test("§10.1 el alta ofrece Gasto normal, A y B en la misma pantalla", () => {
+  const normal = seccion("normal");
+  expect(normal.match(/name="mov-coordinado-modalidad"/g)?.length).toBe(3);
+  expect(normal).toContain("Gasto normal");
+  expect(normal).toContain("Pago directo desde otro Saldo");
+  expect(normal).toContain("Financiación mediante Anticipo");
+  // El Gasto normal es el predeterminado y no abre la Transferencia asociada.
+  expect(normal).toContain('checked="" value="normal"');
+  expect(normal).not.toContain("Saldo que aporta");
+  expect(normal).not.toContain('type="range"');
+  expect(normal).toContain("sin Transferencia, sin pendiente y sin alerta");
+});
+
+test("§10.1 modalidad A: Transferencia real o pendiente, sin Referencia de Anticipo", () => {
+  const html = seccion("A", "pendiente", { origen: "S001", importe: "40,00" });
   for (const id of [
-    "coordinado-fecha",
-    "coordinado-importe",
-    "coordinado-saldo",
-    "coordinado-partida",
-    "coordinado-concepto",
-    "coordinado-nota",
-    "coordinado-origen",
-    "coordinado-importeTransferencia",
-    "coordinado-fechaPrevista",
+    "mov-coordinado-origen",
+    "mov-coordinado-importe",
+    "mov-coordinado-fecha",
   ]) {
     expect(html).toContain(`id="${id}"`);
     expect(html).toContain(`for="${id}"`);
     expect(html).toContain(`id="${id}-error"`);
   }
-
-  for (const label of [
-    "Fecha del Gasto *",
-    "Importe del Gasto (€) *",
-    "Saldo pagador *",
-    "Partida *",
-    "Saldo que aporta *",
-    "Importe de la Transferencia prevista (€) *",
-    "Fecha prevista *",
-  ])
-    expect(html).toContain(label);
-
-  // §10.1: las dos modalidades con los nombres de §3, más la barra sincronizada.
-  expect(html.match(/name="coordinado-modalidad"/g)?.length).toBe(2);
-  expect(html).toContain("Pago directo desde otro Saldo");
-  expect(html).toContain("Financiación mediante Anticipo");
+  expect(html).toContain("Saldo que aporta");
+  expect(html).toContain("Importe de la Transferencia prevista (€)");
+  expect(html).toContain("Fecha prevista");
   expect(html).toContain("Barra del importe previsto");
   expect(html).toContain('type="range"');
   expect(html).toContain('step="0.01"');
-  expect(html).toContain("Vista previa");
-
-  // La modalidad A es la predeterminada y no ofrece Referencia de Anticipo.
-  expect(html).toContain(
-    'type="radio" name="coordinado-modalidad" checked="" value="A"',
-  );
+  expect(html).toContain("Transferencia ya realizada");
+  // §6: mínimo informativo 60 − 40 = 20 y posición posterior 40 + 40 − 60 = 20.
+  expect(html).toContain("Mínimo informativo: 20,00 €");
+  expect(html).toContain("Remanente sobre el déficit: 20,00 €");
+  expect(html).toContain("Disponible posterior estimado en S002: 20,00 €");
+  expect(html).toContain("Posición estimada de S001");
   expect(html).not.toContain("Referencia de Anticipo existente");
-  expect(html).toContain("Disponibilidad real");
-  // Sin Saldo elegido no se publica un cero disfrazado de posición.
-  expect(html).toContain("Déficit verificable: No disponible");
+});
+
+test("§10.1 modalidad A con Transferencia ya realizada cambia la fecha a real", () => {
+  const html = seccion("A", "realizada");
+  expect(html).toContain("Importe de la Transferencia realizada (€)");
+  expect(html).toContain("Fecha real de la Transferencia");
+  expect(html).toContain('max="2026-11-17"');
+  expect(html).toContain("Barra del importe de la Transferencia");
+  expect(html).toContain("El Gasto y la Transferencia se registran juntos");
+});
+
+test("§5.3 modalidad B: Referencia existente o intención, y atribución si ya se realizó", () => {
+  const pendienteB = seccion("B");
+  expect(pendienteB).toContain("Saldo que adelanta");
+  expect(pendienteB).toContain("Referencia de Anticipo existente");
+  expect(pendienteB).toContain("Intención de Referencia nueva");
+  // La atribución E3.1 es del hecho real, no del pendiente.
+  expect(pendienteB).not.toContain("Evidencia de la Transferencia de Anticipo");
+
+  const realizadaB = seccion("B", "realizada");
+  expect(realizadaB).toContain("Evidencia de la Transferencia de Anticipo");
+  expect(realizadaB).toContain("Procedencia de la Transferencia de Anticipo");
 });
 
 test("la alerta de §10.3 lleva icono y texto, no solo color", () => {

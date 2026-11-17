@@ -2,9 +2,9 @@
 
 Specification: [aprobada](37-registro-coordinado-gastos-specification.md) (D1–D10, AC-42/AC-43,
 2026-11-16). Incrementos: [expediente](investigations/spec37-dev-increments-2026-11-16.md) (#484).
-Estado: **I1 e I2 fusionados en `test`; I3, I4 e I4.5 ejecutados, en revisión**; I5–I6 y los 43 AC siguen `UNRUN`.
+Estado: **I1–I5 implementados, en revisión**; I6 y los 43 AC siguen `UNRUN` (AC-28 incluido).
 
-Ámbito de este documento ahora: **I1–I4.5**. Los 43 AC se incorporarán a la tabla de trazabilidad al
+Ámbito de este documento ahora: **I1–I5**. Los 43 AC se incorporarán a la tabla de trazabilidad al
 implementarse su incremento; no se declaran ejecutados por adelantado.
 
 ## Comandos y evidencia (I1)
@@ -133,9 +133,43 @@ confiables, `Ancestro no confiable.`) y su conjunto **por nombre es idéntico** 
 las suites de migración. `bun test apps/api` (sin `./`) barre también el worktree ajeno
 `wt-i4fix/`, así que el run de atribución se invoca con ruta relativa explícita.
 
+## I5 · UI unificada, Transferencia realizada o pendiente y aviso presupuestario
+
+| Comprobación | Acción / precondición | Resultado esperado | Prueba |
+| --- | --- | --- | --- |
+| §10.1 · entrada unificada | «Nuevo gasto» con la modalidad predeterminada | Tres opciones en la misma pantalla (Gasto normal, A, B); sin modalidad no hay Transferencia, barra ni pendiente; el Gasto normal se registra por `POST /api/movimientos` | `SPEC37 I5: alta unificada…` (e2e) y `§10.1 el alta ofrece Gasto normal, A y B…` (unitaria) |
+| §4 · Transferencia ya realizada | Modalidad A con «Transferencia ya realizada» | Gasto + Transferencia real en una transacción, sin pendiente; ambos hechos consultables | `SPEC37 I5: alta unificada…` (bloque 3) |
+| §4 · Transferencia pendiente | Modalidad A sin marcar la casilla | Gasto + pendiente con modalidad A, `anticipoPrevisto` nulo y `movimiento` nulo | `SPEC37 I5: alta unificada…` (bloque 2) |
+| AC-28 · aviso (no el AC) | Vista previa con modalidad A y con modalidad B | A: el servidor informa de que la Transferencia ordinaria ejecuta la Aportación a saldo de su destino. B: informa de que una Transferencia con Referencia no la ejecuta. El alta no estima importes ejecutados | `efectoAportacion distingue la Transferencia con Referencia…` y `el pendiente coordinado B no declara ejecución…` (API); e2e `previa-a`/`previa-b` |
+| Aviso en la ficha | Confirmación de un pendiente B con un Presupuesto «Aportación a saldo» hacia el destino | `efectoPresupuestario.aplica = false` con motivo de Referencia de Anticipo | `el pendiente coordinado B no declara ejecución…` |
+| Payload de las dos formas | `payloadCoordinado` con modo pendiente y realizado, A y B | `pendiente` XOR `transferencia`; B real lleva Referencia o alta nueva **más** atribución E3.1; A real no lleva atribución | `payloadCoordinado: …` (dos pruebas) |
+| Validación local mínima | Importe vacío en modalidad B | Se bloquea antes de llamar al servidor con «Indica un importe exacto mayor que cero»; no se genera vista previa | e2e bloque B |
+| AC-22 · 409 | Coincidencia creada entre la vista previa y el registro | 409 con las coincidencias, borrador intacto (importe, concepto, modalidad, Saldo) y registro posible tras marcarlas | e2e `conflicto-409` |
+| AC-24 · apariencias y anchos | Alta con A y con B en las seis apariencias | Misma estructura; sin scroll horizontal a 390 ni 1440 | e2e (cada captura) y capturas por tema |
+
+Evidencia local (macOS 15.5, bun 1.4.3):
+
+| Comando | Resultado |
+| --- | --- |
+| `bun test apps/web` | 170 pass / 0 fail en 24 ficheros |
+| `bun test ./apps/api/src/spec37-i5-efecto-aportacion.test.ts` | 2 pass / 0 fail / 9 expect() |
+| `bun test ./apps/api` | 1204 pass / 11 skip / 58 fail de 1273 — mismos 58 nombres que la base sin estos cambios (1271 pruebas, 58 fail): 0 nuevos, 0 resueltos |
+| `bunx playwright test tests/e2e/spec37-i5-ui-coordinada.spec.ts` | 1 pass |
+| `bunx playwright test tests/e2e/theme*.spec.ts` | 8 pass |
+| `bun run build` | PASS |
+
+**Bloqueo de entorno:** 3001 y 5173 estaban ocupados por otra sesión de otro checkout, así que el E2E
+se ejecutó con el front de este worktree en 5273 y `APP_ORIGIN` alineado; no se mató ningún proceso
+ajeno ni se modificó el valor por defecto (5173).
+
+**AC-28 permanece `UNRUN`:** se verificó el **aviso** (la UI reproduce la lectura del servidor, A
+ejecuta y B no), no la ejecución. Falta medir, contra un Plan del ciclo real, que la Transferencia
+ordinaria incrementa el `ejecutado` del Presupuesto de Aportación a saldo y que la de Anticipo no lo
+hace, sin duplicar la lógica del motor.
+
 ## Contratos revisados, no ejecutados
 
-- I5–I6: alcance y AC asignados en el expediente (§3 y §4). Sin implementación ni pruebas.
+- I6: alcance y AC asignados en el expediente (§3 y §4). Sin implementación ni pruebas.
 - Los 43 AC de SPEC37: `UNRUN`. La tabla de trazabilidad AC-01…AC-43 se completará en I6, con
   evidencia real por criterio; ninguna asignación de alcance se presenta como prueba.
 - `E4.8-AC-17` (aviso en precierre): fuera de esta spec; requiere su propio gate en SPEC26.

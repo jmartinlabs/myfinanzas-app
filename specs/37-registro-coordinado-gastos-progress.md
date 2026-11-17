@@ -1,6 +1,6 @@
 # 37 — Registro coordinado de gastos: Progress
 
-Status: **I1–I4.5 implementados, en revisión.** SPEC37 [aprobada](37-registro-coordinado-gastos-specification.md)
+Status: **I1–I5 implementados, en revisión.** SPEC37 [aprobada](37-registro-coordinado-gastos-specification.md)
 en D1–D10 y AC-42/AC-43 (2026-11-16). Incrementos y paquete de esquema:
 [incrementos de desarrollo](investigations/spec37-dev-increments-2026-11-16.md) (#484), con
 autorización global I1–I6 del 2026-11-16. Test plan: [testplan](37-registro-coordinado-gastos-testplan.md).
@@ -14,7 +14,7 @@ Base medida: `test` `91c32f5` (I4), esquema `v31`. Datos reales fuera de alcance
 | **I3 · Operación coordinada atómica** | **implementado / en revisión** | `registro-coordinado.ts` + `createAnticipoInTransaction` + `spec37-i3-operacion-atomica.test.ts` |
 | **I4 · Confirmación, vínculo y cancelación** | **implementado / en revisión** | `transferencias-pendientes.ts` (`confirmar`, `vincular`, `candidatos`, `atribucionAnticipo`) + `spec37-i4-confirmacion-vinculo.test.ts` |
 | **I4.5 · Gate `G-v31` (intención de Referencia)** | **implementado / en revisión** | `spec37-schema-v31.ts` + `transferencias-pendientes.ts` (`intencionAnticipo`, `confirmar`) + `spec37-i45-intencion-referencia.test.ts`, contrato `C31-SPEC37-INTENCION-91C32F5` |
-| I5 · UI, bandeja y alertas | **implementado / en revisión** | `GastoCoordinado.tsx`, `TransferenciaPendienteFicha.tsx`, `Movimientos.tsx` + `spec37-i5-coordinado.test.tsx` (11) y `tests/e2e/spec37-i5-ui-coordinada.spec.ts` |
+| **I5 · UI, bandeja y alertas** | **implementado / en revisión** | `GastoCoordinado.tsx` (sección reutilizable), `Movimientos.tsx` (alta unificada), `TransferenciaPendienteFicha.tsx` + `spec37-i5-coordinado.test.tsx` y `tests/e2e/spec37-i5-ui-coordinada.spec.ts`; `spec37-i5-efecto-aportacion.test.ts` |
 | I6 · Regresión y E2E de los 43 AC | pendiente | depende de I5; los AC siguen `UNRUN` |
 
 ## I1 · contenido entregado
@@ -155,58 +155,87 @@ material para el usuario (I3/I4), no una inferencia del implementador.
   `SEED_DATA_CONTRACT=e37.2-v31` (deriva versión, contrato y SHA; la etiqueta de datos es literal).
 - Sin UI, sin tocar `precierre.ts` ni SPEC26, y sin cambios en `registro-coordinado.ts`.
 
-## I5 · contenido entregado
+## I5 · contenido entregado (revisión del usuario del 2026-11-17)
 
-- **Formulario coordinado** (`apps/web/src/GastoCoordinado.tsx`, ruta `/movimientos/coordinado`): Gasto real
-  (fecha no futura, importe exacto con céntimos, Saldo pagador, Partida, concepto y nota) + modalidad A/B
-  con las etiquetas de §3 y Transferencia **prevista** (Saldo que aporta/adelanta, importe con barra
-  sincronizada y fecha prevista). En B, Referencia de Anticipo **existente o intención** (nombre y,
-  opcionalmente, apertura y evidencia).
-- **Vista previa de impacto** (§10.2) antes de registrar: modalidad, Saldo que paga, importe del Gasto,
-  dirección e importe de la Transferencia, Referencia prevista, disponible anterior y posterior estimado,
-  Ciclo y Gasto íntegro del ciclo, todo desde el plan de `/movimientos/impacto` o una resta explícita
-  sobre la posición publicada. No se inventan cálculos de módulos pendientes.
+- **Alta unificada en «Nuevo gasto»** (`apps/web/src/Movimientos.tsx`): el formulario de Gasto ofrece,
+  en la misma pantalla y con los **mismos campos**, el **Gasto normal** (predeterminado), la modalidad A
+  y la B. Sin modalidad se registra el Gasto normal por el camino existente (`POST /api/movimientos`);
+  con A o B se añade la Transferencia asociada y se registra por `POST /api/operaciones-coordinadas`.
+  `Nuevo gasto` es la entrada principal de la lista de Movimientos; `Nuevo movimiento` sigue disponible
+  para el resto de Tipos y la ruta heredada `/movimientos/coordinado` abre esta misma pantalla.
+- **Sección reutilizable** (`apps/web/src/GastoCoordinado.tsx`): la modalidad, el modo de la
+  Transferencia, la barra y la Referencia de Anticipo son una sección controlada que el formulario de
+  Gasto monta solo al crear (nunca al rectificar ni anular). No hay un segundo formulario de Gasto.
+- **Transferencia ya realizada o pendiente**: la casilla «Transferencia ya realizada» decide el
+  acompañante. Marcada, la operación escribe Gasto + Transferencia real en una transacción (§4) y no
+  crea pendiente; sin marcar se mantiene el comportamiento anterior (Gasto + pendiente). En modalidad B
+  ya realizada se piden **evidencia y procedencia** de la atribución E3.1, que el servidor exige.
+- **Aviso presupuestario corregido**: una Transferencia **ordinaria sin Referencia** ejecuta la
+  «Aportación a saldo» de su destino según R3 (`executionFacts`), y una **de Anticipo con Referencia no**
+  la ejecuta. El cliente no decide eso: la vista previa muestra literalmente la respuesta de
+  `GET /api/presupuestos/efecto-aportacion`, y la ficha del pendiente sigue mostrando
+  `efectoPresupuestario`. `budgetEffect` se corrigió para una modalidad B (antes atribuía la Aportación
+  a saldo del destino sin mirar la Referencia) reutilizando la misma función, sin duplicar criterio.
+- **Vista previa de impacto** (§10.2): impacto del Gasto desde `/movimientos/impacto` más un resumen de
+  la Transferencia (modo, dirección, importe, fecha, Referencia), disponible anterior y posterior
+  estimado, mínimo informativo y remanente. El alta **no estima** importes ejecutados.
 - **Déficit, mínimo y remanente** (§6): `MAX(0, Gasto − Disponible real)` y remanente positivo, con
   «No disponible» cuando la posición no es calculable (nunca 0). Disponibilidad real y presupuestaria
   se muestran separadas.
-- **Registro atómico** por `POST /api/operaciones-coordinadas`: Gasto y pendiente en una transacción;
-  el formulario envía `pendiente.modalidad`, dirección, importes y la forma de Referencia, sin cálculos
-  ni estados.
 - **Ficha del pendiente** ampliada: modalidad, Gasto vinculado con su revisión, Referencia prevista
   (existente o intención), motivos de revisión del origen coordinado y acciones **confirmar**,
   **editar importe y fecha prevista**, **vincular** (candidatos con coincidencia exacta) y **cancelar con motivo**.
-- **Confirmación de modalidad B** exige `evidencia` y `procedencia` (campos obligatorios y botón de
-  revisión bloqueado sin ellos); el API ya las validaba y el formulario no las deduce.
-- **Alerta «Pendiente de realizar»** con icono y texto en las tres superficies: lista general de
-  Movimientos, bandeja de pendientes y detalle del Gasto. La bandeja muestra además modalidad, Gasto y
-  el contador «Requieren atención».
-- **409 sin perder el borrador** (AC-22): el conflicto de coincidencia (y cualquier 409/422 de la
-  operación) conserva campos, modalidad, vista previa y clave de intento; los `code` del API se mapean a
-  mensajes legibles sin inventar códigos.
-- **Ajuste de API mínimo y aditivo** (`registro-coordinado.ts`): la operación coordinada acepta y
-  propaga `anticipoNombre`, `anticipoApertura` y `anticipoEvidencia` del bloque `pendiente`. Sin esto no
-  era posible expresar por la ruta atómica la intención que `I2`/`I4.5` ya soportan en el mecanismo
-  único. No cambia el contrato de `Reparto`, ni el esquema, ni ninguna regla financiera; cubierto por
-  una prueba nueva en `spec37-i3-operacion-atomica.test.ts`.
-- **Correcciones encontradas al conectar la UI** (comportamiento previo, no contrato nuevo): las acciones
-  de la ficha responden `{ item }` y ahora se desenvuelven antes de actualizar la pantalla; el aviso de
-  éxito sobrevive a la revisión nueva del mismo pendiente; la bandeja mostraba sus filas solo por debajo
-  de 760 px y ahora se ve en todos los anchos (es la única superficie de esos registros).
+- **Alerta «Pendiente de realizar»** con icono y texto en la lista general de Movimientos, la bandeja de
+  pendientes y el detalle del Gasto; contador «Requieren atención» en la bandeja.
+- **409 sin perder el borrador** (AC-22): el conflicto de coincidencia conserva campos, modalidad, vista
+  previa y clave de intento, muestra las coincidencias y exige marcarlas antes de reintentar; los `code`
+  del API se mapean a mensajes legibles sin inventar códigos.
+
+### Ajuste de API mínimo y aditivo de esta revisión
+
+- **`GET /api/presupuestos/efecto-aportacion?destino=&conReferencia=1`** (solo lectura): devuelve
+  `{aplica, presupuesto, fuente, destino, motivo}` con el mismo criterio de atribución que ya usaba el
+  mecanismo de Transferencia pendiente. Era imprescindible para que el aviso de la modalidad A/B saliera
+  del servidor y no del cliente; no escribe nada, no cambia el esquema y no altera ningún contrato previo.
+- **`budgetEffect`** (lectura de la ficha del pendiente) pasa a delegar en `efectoAportacion`: una
+  modalidad B deja de anunciar ejecución de la Aportación a saldo. Cubierto por
+  `spec37-i5-efecto-aportacion.test.ts`.
+- **Soporte de pruebas**: los servidores E2E (`spec37-i5-server.ts`, `theme-server.ts`) aceptan
+  `APP_ORIGIN` para poder verificar en local con el puerto 5173 ocupado. El valor por defecto sigue
+  siendo `http://127.0.0.1:5173`, así que CI no cambia.
 
 ### Límites y materias pendientes de decisión
 
-- **AC-28 no se cubre en I5**: la ejecución de un Presupuesto de «Aportación a saldo» por una
-  Transferencia ordinaria depende del vínculo presupuestario del hecho real, que el pendiente coordinado
-  no tiene (`budgetEffect` solo mira la línea de reparto). No se añadió lógica para simularlo; la vista
-  previa declara que la Transferencia prevista no ejecuta presupuesto y la confirmación muestra el
-  `efectoPresupuestario` que el servidor publique.
-- **Dónde vive el formulario**: §10.1 describe el alta dentro de «Nuevo gasto», pero la operación
-  coordinada exige exactamente un acompañante (Transferencia real o pendiente). Se implementó como
-  pantalla propia `/movimientos/coordinado`, enlazada desde Movimientos; el Gasto sin Transferencia sigue
-  en el formulario ordinario. Es una decisión de ubicación, no de semántica, y requiere confirmación del
-  usuario si se prefiere integrarlo en el formulario existente.
+- **AC-28 sigue `UNRUN`**: se ha corregido el aviso y se ha demostrado que la UI muestra la lectura del
+  motor (A ejecuta, B no), pero **no** se ha medido la ejecución contra el Plan del ciclo en los dos
+  escenarios. Falta comprobar, con un Plan del ciclo y `GET /api/planes-ciclo/:id/ejecucion/:PRE`, que
+  la Transferencia ordinaria suma al `ejecutado` del Presupuesto y que la de Anticipo no suma; ambas
+  comprobaciones deben hacerse sobre el motor existente, sin duplicar lógica. No se declara cubierto.
+- **La operación coordinada no admite Referencia ni desglose de Deuda en el Gasto** (`gastoFields` de
+  `registro-coordinado.ts`): al elegir A/B el formulario retira esos campos y lo explica, en vez de
+  enviarlos y recibir un 422. Un Gasto con Referencia de Viaje/Evento o con capital/intereses se registra
+  por el alta normal. Ampliarlo exigiría tocar el contrato de la operación atómica.
 - **«Vista de Transferencias»** (§10.3) no existe como pantalla en la aplicación: la bandeja de
   pendientes de Movimientos es la superficie donde vive el registro y donde se ejercen las acciones.
-- Las capturas `fullPage` a 1440 muestran la cabecera y el menú fijos en mitad de la página; es un
-  artefacto de la captura completa, no del layout (las comprobaciones de scroll horizontal pasan en 390
-  y 1440).
+- Las capturas `fullPage` muestran la cabecera fija (`CICLO FINANCIADO`, Apariencia, Cerrar sesión) en
+  mitad de la página; es un artefacto de la captura completa, no del layout (las comprobaciones de
+  scroll horizontal pasan en 390 y 1440).
+
+### Verificación local de esta revisión (macOS 15.5, bun 1.4.3)
+
+| Comando | Resultado |
+| --- | --- |
+| `bun run typecheck` | PASS |
+| `bun test apps/web` | 170 pass / 0 fail (24 ficheros) |
+| `bun test ./apps/api` | 1204 pass / 11 skip / 58 fail de 1273 — **los mismos 58 nombres** que la base sin estos cambios (1271 pruebas, 58 fail), 0 nuevos, 0 resueltos |
+| `bunx playwright test` del spec de I5 | 1 pass (18,7 s) |
+| `bunx playwright test` de temas (`theme*`) | 8 pass |
+| `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
+
+Los 58 fallos son las familias de entorno ya documentadas (SPEC31, backup/restore cifrado, WAL y
+frontera de producción: `libc.so.6`/`renameat2`/permisos), ninguna en SPEC36/SPEC37,
+`transferencias-pendientes`, `presupuestos`, `movimientos` ni `repartos`.
+
+**Bloqueo de entorno:** los puertos 3001 y 5173 estaban ocupados por otra sesión de otro checkout
+(`/Users/josemartin/Projects/myfinanzas-app-vscode`), así que las pruebas E2E se ejecutaron con el front
+de este worktree en **5273** y `APP_ORIGIN` alineado; no se mató ningún proceso ajeno.

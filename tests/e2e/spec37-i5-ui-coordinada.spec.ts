@@ -5,18 +5,26 @@ import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
 /**
- * SPEC37 · I5 — UI coordinada, bandeja y alertas.
+ * SPEC37 · I5 — alta unificada de Gasto, Transferencia realizada o pendiente,
+ * bandeja y alertas.
  *
- * Recorrido real con servidor aislado (3029), MFA real y SQLite: alta A, alta B
- * con intención de Referencia, confirmación B con evidencia y procedencia,
- * cancelación motivada y 409 que conserva el borrador. Capturas a 1440 y 390
- * con comprobación de que no hay scroll horizontal.
+ * §10.1: «Nuevo gasto» ofrece en la misma pantalla el Gasto normal
+ * (predeterminado) y las modalidades A/B. El Gasto normal sigue por el camino
+ * ordinario (`POST /api/movimientos`); A y B entran en la operación coordinada,
+ * con su Transferencia ya realizada o pendiente.
  *
- * AC cubiertos por este archivo: AC-04, AC-05, AC-07, AC-18, AC-22, AC-24,
- * AC-25, AC-27 y AC-38. AC-17 se comprueba por la vía informativa (importe por
- * encima del disponible: se muestra el efecto y se confirma explícitamente, sin
- * bloqueo nuevo). AC-08 y AC-28 dependen del efecto presupuestario de un destino
- * de Aportación a saldo y se declaran en el informe, no aquí.
+ * Recorrido real con servidor aislado (3029), MFA real y SQLite: alta normal,
+ * alta A con pendiente, bandeja, ficha, cancelación motivada, alta B con
+ * intención de Referencia, confirmación B con evidencia y procedencia, alta A
+ * con Transferencia ya realizada y 409 que conserva el borrador. Capturas a
+ * 1440 y 390 con comprobación de que no hay scroll horizontal.
+ *
+ * AC cubiertos por este archivo: AC-01, AC-03, AC-04, AC-05, AC-07, AC-08,
+ * AC-17, AC-18, AC-22, AC-24, AC-25, AC-27 y AC-38. AC-28 sigue `UNRUN`: aquí
+ * solo se comprueba que el aviso presupuestario que muestra la UI es la
+ * respuesta del servidor —una Transferencia sin Referencia ejecuta la
+ * Aportación a saldo de su destino, una de Anticipo no—; la ejecución contra el
+ * Plan del ciclo no se mide en este spec.
  */
 
 const PORT = 3029;
@@ -27,7 +35,11 @@ let child: ChildProcess | undefined;
 test.beforeAll(async ({ request }) => {
   child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/spec37-i5-server.ts"], {
     stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test", APP_ORIGIN: "http://127.0.0.1:5173" },
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      APP_ORIGIN: process.env.APP_ORIGIN ?? "http://127.0.0.1:5173",
+    },
   });
   await expect
     .poll(
@@ -47,10 +59,10 @@ test.afterAll(() => {
   child?.kill();
 });
 
-test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con borrador", async ({
+test("SPEC37 I5: alta unificada, realizada o pendiente, bandeja, alertas y 409 con borrador", async ({
   page,
 }) => {
-  test.setTimeout(300000);
+  test.setTimeout(420000);
   mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -155,6 +167,10 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
       })
     ).data.saldo;
 
+  // El Gasto normal usa su propio Saldo para no mover las posiciones de A y B.
+  const pagadorNormal = await saldo("Pagador normal I5", "100", {
+    permiteSalidaExterior: true,
+  });
   // Saldos de la modalidad A: el pagador tiene 40,00 € y el Gasto será de 60,00 €.
   const pagadorA = await saldo("Pagador A I5", "40", { permiteSalidaExterior: true });
   const aportaA = await saldo("Aporta A I5", "500");
@@ -191,11 +207,20 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
     await post("/referencias", { nombre: "Anticipo I5 existente", tipo: "Anticipo" })
   ).data.item;
 
-  // ── Alta de modalidad A con vista previa (AC-04, AC-05, AC-18, AC-27) ────
-  await page.getByRole("button", { name: "Nuevo Gasto coordinado" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Nuevo Gasto coordinado", exact: true }),
-  ).toBeVisible();
+  // «Aportación a saldo» hacia cada Saldo pagador: es la fuente que el motor R3
+  // mira al atribuir una Transferencia. El aviso de la UI debe ser la respuesta
+  // del servidor, no un cálculo del cliente.
+  for (const [nombre, destino] of [
+    ["Aportación A I5", pagadorA.id],
+    ["Aportación B I5", pagadorB.id],
+  ] as const) {
+    const creado = await post("/presupuestos", {
+      nombre,
+      fuente: "Aportación a saldo",
+      destino,
+    });
+    expect(creado.status, JSON.stringify(creado.data)).toBe(201);
+  }
 
   const fecha = page.getByLabel("Fecha del Gasto");
   const importe = page.getByLabel("Importe del Gasto");
@@ -203,6 +228,55 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   const origen = page.getByLabel("Saldo que aporta");
   const importeTransferencia = page.getByLabel("Importe de la Transferencia prevista");
   const barra = page.getByLabel("Barra del importe previsto");
+  const previa = page.getByRole("region", {
+    name: "Transferencia asociada",
+    exact: true,
+  });
+
+  // ── 1. Entrada unificada: «Nuevo gasto» con el Gasto normal predeterminado ─
+  await page.getByRole("button", { name: "Nuevo gasto" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Nuevo gasto", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Gasto normal" })).toBeChecked();
+  await expect(
+    page.getByRole("radio", { name: "Pago directo desde otro Saldo" }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("radio", { name: "Financiación mediante Anticipo" }),
+  ).not.toBeChecked();
+  // Sin modalidad no hay Transferencia asociada, ni barra, ni pendiente.
+  await expect(page.getByLabel("Saldo que aporta")).toHaveCount(0);
+  await expect(page.getByLabel("Barra del importe previsto")).toHaveCount(0);
+
+  await fecha.fill(hoy);
+  await importe.fill("12,00");
+  await pagador.selectOption(pagadorNormal.id);
+  await page.getByLabel(/^Partida/).selectOption(partida.id);
+  await page.getByLabel("Concepto", { exact: true }).fill("Compra normal I5");
+  await shotBoth("alta-gasto-normal");
+  await page.getByRole("button", { name: "Registrar movimiento" }).click();
+
+  // AC-01: un único Gasto, sin Transferencia, pendiente ni alerta.
+  await expect(
+    page.getByRole("heading", { name: "Compra normal I5" }),
+  ).toBeVisible();
+  await expect(page.getByText(/Pendiente de realizar/)).toHaveCount(0);
+  expect(
+    (await get("/transferencias-pendientes?estado=Pendiente%20de%20realizar")).total,
+  ).toBe(0);
+
+  // ── 2. Modalidad A con Transferencia pendiente (AC-04, AC-05, AC-18, AC-27) ─
+  await page.goto("/movimientos/nuevo?tipo=Gasto");
+  await expect(
+    page.getByRole("heading", { name: "Nuevo gasto", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: "Pago directo desde otro Saldo" }).check();
+  await expect(page.getByLabel("Saldo que aporta")).toBeVisible();
+  // La Transferencia queda pendiente salvo que se marque lo contrario.
+  await expect(
+    page.getByRole("checkbox", { name: "Transferencia ya realizada" }),
+  ).not.toBeChecked();
 
   await fecha.fill(hoy);
   await importe.fill("60,00");
@@ -222,6 +296,13 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   ).toBeVisible();
   await expect(page.getByText(/El déficit presupuestario y la falta de dinero/)).toBeVisible();
 
+  // AC-17: un importe por encima del disponible es información, no un bloqueo.
+  await importe.fill("90,00");
+  await expect(page.getByText(/Déficit verificable: 50,00 €/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vista previa" })).toBeEnabled();
+  await importe.fill("60,00");
+  await expect(page.getByText(/Déficit verificable: 20,00 €/)).toBeVisible();
+
   // AC-18: la barra y el campo exacto comparten valor, sin redondear céntimos.
   await expect(barra).toHaveValue("40");
   await importeTransferencia.fill("40,55");
@@ -237,22 +318,21 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   await shotBoth("formulario-a");
 
   await page.getByRole("button", { name: "Vista previa" }).click();
-  const previa = page.getByRole("region", {
-    name: "Vista previa de impacto del Gasto coordinado",
-  });
   await expect(previa).toBeVisible();
   await expect(previa.getByText("Pago directo desde otro Saldo")).toBeVisible();
-  await expect(previa.getByText(/Gasto íntegro del ciclo/)).toBeVisible();
-  await expect(
-    previa.getByText("La Transferencia prevista no ejecuta presupuesto"),
-  ).toBeVisible();
+  await expect(previa.getByText(/Efecto presupuestario/)).toBeVisible();
+  // AC-28 (solo el aviso): una Transferencia ordinaria sin Referencia ejecuta la
+  // Aportación a saldo de su destino según el servidor.
+  await expect(previa.getByText(/ejecuta esa Aportación a saldo/)).toBeVisible();
+  // Y el alta no estima importes ejecutados por su cuenta.
+  await expect(previa.getByText(/El alta no estima importes ejecutados/)).toBeVisible();
   await shotBoth("previa-a");
 
   await page.getByRole("button", { name: "Registrar operación" }).click();
   await expect(
-    page.getByRole("heading", { name: "Pendiente de realizar creado" }),
+    page.getByRole("heading", { name: "Compra coordinada A" }),
   ).toBeVisible();
-  await expect(page.getByText("Pago directo desde otro Saldo")).toBeVisible();
+  await expect(page.getByText(/Pendiente de realizar\./)).toBeVisible();
   await shotBoth("resultado-a");
 
   const pendientesTrasA = await get("/transferencias-pendientes?estado=Pendiente%20de%20realizar");
@@ -264,7 +344,7 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   // AC-26/AC-32: el pendiente no es un hecho real.
   expect(pendienteA.movimiento).toBeNull();
 
-  // ── Bandeja: alerta «Pendiente de realizar» en la lista (AC-38) ─────────
+  // ── Bandeja: alerta «Pendiente de realizar» en la lista (AC-38) ──────────
   await page.goto("/movimientos");
   const bandeja = page.getByRole("region", { name: "Pendientes de confirmar" });
   await expect(bandeja).toBeVisible();
@@ -318,7 +398,11 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   await shotBoth("cancelacion");
 
   // ── Alta B con intención de Referencia (§5.3, AC-07) ────────────────────
+  // La ruta heredada de I5 abre la misma alta unificada de Gasto.
   await page.goto("/movimientos/coordinado");
+  await expect(
+    page.getByRole("heading", { name: "Nuevo gasto", exact: true }),
+  ).toBeVisible();
   await fecha.fill(hoy);
   await importe.fill("60,00");
   await pagador.selectOption(pagadorB.id);
@@ -344,21 +428,21 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   // formulario no la omite ni la sustituye aunque hubiera fondos.
   await importeTransferencia.fill("");
   await page.getByRole("button", { name: "Vista previa" }).click();
-  await page.getByRole("button", { name: "Registrar operación" }).click();
-  await expect(
-    page.getByText(/Indica un importe EUR exacto mayor que cero/),
-  ).toBeVisible();
+  await expect(page.getByText(/Indica un importe exacto mayor que cero/)).toBeVisible();
+  await expect(previa).toHaveCount(0);
   await importeTransferencia.fill("30,00");
   await page.getByRole("button", { name: "Vista previa" }).click();
   await expect(previa.getByText("Financiación mediante Anticipo")).toBeVisible();
   await expect(previa.getByText("Intención: Anticipo intención I5")).toBeVisible();
+  // AC-28 (solo el aviso): una Transferencia con Referencia de Anticipo no
+  // ejecuta la Aportación a saldo de su destino, según el servidor.
+  await expect(previa.getByText(/no ejecuta la Aportación a saldo/)).toBeVisible();
   await shotBoth("previa-b");
 
   await page.getByRole("button", { name: "Registrar operación" }).click();
   await expect(
-    page.getByRole("heading", { name: "Pendiente de realizar creado" }),
+    page.getByRole("heading", { name: "Compra coordinada B" }),
   ).toBeVisible();
-  await expect(page.getByText("Intención: Anticipo intención I5")).toBeVisible();
   await shotBoth("resultado-b");
 
   const pendientesB = await get("/transferencias-pendientes?estado=Pendiente%20de%20realizar");
@@ -405,6 +489,8 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   });
   await expect(confirmacion).toBeVisible();
   await expect(confirmacion.getByText(/Efecto presupuestario/)).toBeVisible();
+  // El servidor ya no anuncia ejecución de la Aportación a saldo para una B.
+  await expect(confirmacion.getByText(/no ejecuta la Aportación a saldo/)).toBeVisible();
   await confirmacion.getByLabel("Transferencia realizada").check();
   await confirmacion
     .getByRole("button", { name: "Confirmar transferencia realizada" })
@@ -427,8 +513,49 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   expect(movimiento.movimiento.referencia.id).toBe(nueva.id);
   await shotBoth("confirmada-b");
 
+  // ── 3. Modalidad A con Transferencia ya realizada (§4, AC-03) ───────────
+  await page.goto("/movimientos/nuevo?tipo=Gasto");
+  await page.getByRole("radio", { name: "Pago directo desde otro Saldo" }).check();
+  await page.getByRole("checkbox", { name: "Transferencia ya realizada" }).check();
+  await expect(page.getByLabel("Fecha real de la Transferencia")).toBeVisible();
+  await fecha.fill(hoy);
+  await importe.fill("20,00");
+  await pagador.selectOption(pagadorA.id);
+  await page.getByLabel(/^Partida/).selectOption(partida.id);
+  await page.getByLabel("Concepto", { exact: true }).fill("Compra realizada I5");
+  await page.getByLabel("Saldo que aporta").selectOption(aportaA.id);
+  await page.getByLabel("Importe de la Transferencia realizada").fill("20,00");
+  await page.getByLabel("Fecha real de la Transferencia").fill(hoy);
+  await shotBoth("formulario-a-realizada");
+
+  await page.getByRole("button", { name: "Vista previa" }).click();
+  await expect(previa.getByText("Ya realizada")).toBeVisible();
+  await page.getByRole("button", { name: "Registrar operación" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Compra realizada I5" }),
+  ).toBeVisible();
+  const gastoRealizada = page.url().split("/").pop()!;
+  const detalleRealizada = await get("/movimientos/" + gastoRealizada);
+  expect(detalleRealizada.movimiento.tipo).toBe("Gasto");
+  // No se crea ningún pendiente: los dos hechos ya son reales.
+  expect(
+    (await get("/transferencias-pendientes?estado=Pendiente%20de%20realizar")).total,
+  ).toBe(0);
+  const hechos = await get(
+    "/movimientos?" + new URLSearchParams({ tipo: "Transferencia", page: "1" }),
+  );
+  const traspaso = (hechos.movimientos ?? []).find(
+    (m: any) =>
+      m.origen?.id === aportaA.id &&
+      m.destino?.id === pagadorA.id &&
+      m.importe === "20.00",
+  );
+  expect(traspaso, JSON.stringify(hechos.movimientos)).toBeTruthy();
+  await shotBoth("resultado-realizada");
+
   // ── AC-22: 409 de coincidencia sin perder el borrador ───────────────────
-  await page.goto("/movimientos/coordinado");
+  await page.goto("/movimientos/nuevo?tipo=Gasto");
+  await page.getByRole("radio", { name: "Pago directo desde otro Saldo" }).check();
   await fecha.fill(hoy);
   await importe.fill("15,00");
   await pagador.selectOption(pagadorA.id);
@@ -439,7 +566,9 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   await page.getByLabel("Fecha prevista").fill(hoy);
   await page.getByRole("button", { name: "Vista previa" }).click();
   await expect(previa).toBeVisible();
-  await expect(previa.getByText("Es otro hecho económico real y no un duplicado")).toHaveCount(0);
+  await expect(
+    page.getByLabel("Es otro hecho económico real y no un duplicado"),
+  ).toHaveCount(0);
 
   // El mismo hecho aparece por otro flujo entre la vista previa y el registro.
   const borradorAjeno = {
@@ -469,17 +598,13 @@ test("SPEC37 I5: alta coordinada, bandeja, alertas, confirmación B y 409 con bo
   await expect(page.getByLabel("Concepto", { exact: true })).toHaveValue("Compra 409 I5");
   await expect(importeTransferencia).toHaveValue("10,00");
   await expect(page.getByRole("radio", { name: "Pago directo desde otro Saldo" })).toBeChecked();
-  await expect(pagador.locator("option:checked")).toHaveText(
-    new RegExp(pagadorA.id),
-  );
+  await expect(pagador.locator("option:checked")).toHaveText(new RegExp(pagadorA.id));
   await shotBoth("conflicto-409");
 
   // Y el borrador es utilizable: se confirma la coincidencia y se registra.
-  await previa.getByLabel("Es otro hecho económico real y no un duplicado").check();
+  await page.getByLabel("Es otro hecho económico real y no un duplicado").check();
   await page.getByRole("button", { name: "Registrar operación" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Pendiente de realizar creado" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Compra 409 I5" })).toBeVisible();
 
   expect(errors, errors.join("\n")).toEqual([]);
 });
