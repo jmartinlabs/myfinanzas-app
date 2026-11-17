@@ -958,6 +958,12 @@
   background: var(--bg);
 }
 
+/* #502 — la barra de acciones pegajosa de Casa se detiene sobre el pie
+   persistente; así el CTA nunca queda tapado por él. */
+:root[data-theme="casa"] .movement-form-page .saldo-form .form-footer {
+  bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
+}
+
 :root[data-theme="casa"] .movement-form-page .movement-impact .ui-form-section-title,
 :root[data-theme="casa"] .movement-form-page .movement-impact h2 {
   font-family: var(--font-display);
