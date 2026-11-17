@@ -1572,7 +1572,7 @@ test("SPEC36 v29: unknown v31 is rejected before mutating", () => {
 });
 
 test.skipIf(process.platform !== "linux")(
-  "SPEC36 v29: encrypted backup/restore preserves v29 and clears pending attempts",
+  "SPEC36 v30: encrypted backup/restore preserves v30 and clears pending attempts",
   () => {
     const dir = root();
     try {
@@ -1612,7 +1612,7 @@ test.skipIf(process.platform !== "linux")(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 29,
+            version: 30,
           });
           expect(
             copy.query("SELECT fuente_plan FROM repartos").get(),

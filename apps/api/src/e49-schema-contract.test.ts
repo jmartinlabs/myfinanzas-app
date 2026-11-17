@@ -524,7 +524,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 A: restoring a v30 package fails without a destination",
+  "E4.10 A: restoring a v31 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -545,7 +545,7 @@ test.skipIf(process.platform !== "linux")(
       mkdirSync(corrupt, { mode: 0o700 });
       const plaintext = join(corrupt, "bundle.tmp");
       const altered = structuredClone(bundle);
-      altered.manifest.schema = 30;
+      altered.manifest.schema = 31;
       writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
       cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
       expect(
