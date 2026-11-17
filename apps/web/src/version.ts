@@ -110,3 +110,23 @@ export function shaLabel(info: AppVersionInfo | null): string {
 export function schemaLabel(info: AppVersionInfo | null): string {
   return info ? `SQLite v${info.schema}` : NO_DATA;
 }
+
+/**
+ * Indicador de entorno del shell (#503). Una sola fuente: el `environment`
+ * servido por `/api/version`. Sin identidad verificable no se inventa
+ * «Datos ficticios» ni «Local».
+ */
+export function environmentBadge(info: AppVersionInfo | null): string {
+  switch (info?.environment) {
+    case "DEMO":
+      return "DEMO · Datos ficticios";
+    case "DEV":
+      return "DEV · Desarrollo";
+    case "TEST":
+      return "TEST · Entorno de pruebas";
+    case "PROD":
+      return "PROD";
+    default:
+      return "Entorno no disponible";
+  }
+}

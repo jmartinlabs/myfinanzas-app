@@ -10,6 +10,7 @@ import {
   shaLabel,
   shortShaText,
   versionText,
+  environmentBadge,
   type AppVersionInfo,
 } from "../src/version";
 
@@ -139,4 +140,22 @@ describe("texto del pie", () => {
     expect(schemaLabel(release)).toBe("SQLite v31");
     expect(versionText(release)).not.toBe(schemaLabel(release));
   });
+});
+
+test("#503 el indicador de entorno usa el valor servido, sin inferir por host", () => {
+  const base = {
+    app: { version: "0.2.0", sha: null, label: "release" as const },
+    schema: 31,
+  };
+  expect(environmentBadge({ ...base, environment: "DEMO" })).toBe(
+    "DEMO · Datos ficticios",
+  );
+  expect(environmentBadge({ ...base, environment: "DEV" })).toBe(
+    "DEV · Desarrollo",
+  );
+  expect(environmentBadge({ ...base, environment: "TEST" })).toBe(
+    "TEST · Entorno de pruebas",
+  );
+  expect(environmentBadge({ ...base, environment: "PROD" })).toBe("PROD");
+  expect(environmentBadge(null)).toBe("Entorno no disponible");
 });

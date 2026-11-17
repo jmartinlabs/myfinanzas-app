@@ -233,7 +233,8 @@ test("#503 selector compacto, etiqueta «Tema» y un solo indicador de entorno",
 
   // Un solo indicador de entorno: el del final de la navegación.
   const deskIndicator = await expectSingleEnvIndicator(page, "sidebar-bottom");
-  expect(deskIndicator).toContain("Datos ficticios");
+  // El entorno sale del servidor (`APP_ENV=TEST` en el fixture), no del host.
+  expect(deskIndicator).toContain("TEST · Entorno de pruebas");
   await expect(page.locator(".app-version-env")).toBeHidden();
   await expectNoHorizontalScroll(page);
   await page.screenshot({ path: `${SHOTS}/shell-1440.png`, fullPage: false });
@@ -310,6 +311,52 @@ test("#503 selector compacto, etiqueta «Tema» y un solo indicador de entorno",
   await page.reload();
   await expect(select).toHaveValue("dark-s");
   await expectSingleEnvIndicator(page, "app-version-env");
+
+  // ── Una sola fuente de entorno: el valor servido por /api/version ────────
+  // Se recorren los cuatro entornos y el fallo de la fuente sin tocar el
+  // backend: el front no debe inferir «Local» ni «Datos ficticios» por host.
+  const entornos: [string, string][] = [
+    ["DEMO", "DEMO · Datos ficticios"],
+    ["DEV", "DEV · Desarrollo"],
+    ["TEST", "TEST · Entorno de pruebas"],
+    ["PROD", "PROD"],
+  ];
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const [environment, esperado] of entornos) {
+    await page.route("**/api/version", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          app: { version: "0.2.0", sha: "a1b2c3d4e5f6", label: "release" },
+          environment,
+          schema: 31,
+        }),
+      }),
+    );
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Saldos", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".sidebar-bottom")).toContainText(esperado);
+    await page.unroute("**/api/version");
+  }
+  // Sin fuente fiable no se inventa entorno.
+  await page.route("**/api/version", (route) =>
+    route.fulfill({ status: 503, contentType: "application/json", body: "{}" }),
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Saldos", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".sidebar-bottom")).toContainText(
+    "Entorno no disponible",
+  );
+  await page.unroute("**/api/version");
+  await page.reload();
+  await expect(page.locator(".sidebar-bottom")).toContainText(
+    "TEST · Entorno de pruebas",
+  );
 
   expect(errors).toEqual([]);
 });

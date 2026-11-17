@@ -1,12 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { api } from "./api";
+import { loadVersionInfo } from "./version-source";
 import {
   PANEL_TITLE,
   SCHEMA_NOTE,
   environmentText,
   footerEnvironmentLabel,
   footerIdentityLabel,
-  parseVersionPayload,
   schemaLabel,
   shaLabel,
   versionText,
@@ -38,13 +37,9 @@ export function AppVersionFooter() {
   };
   useEffect(() => {
     let alive = true;
-    api<unknown>("/version")
-      .then((data) => {
-        if (alive) setInfo(parseVersionPayload(data));
-      })
-      .catch(() => {
-        if (alive) setInfo(null);
-      });
+    loadVersionInfo().then((data) => {
+      if (alive) setInfo(data);
+    });
     return () => {
       alive = false;
     };

@@ -31,7 +31,8 @@ import {
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
 import { AppVersionFooter } from "./AppVersionFooter";
-import { environmentLabel } from "./environment";
+import { loadVersionInfo } from "./version-source";
+import { environmentBadge, type AppVersionInfo } from "./version";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
@@ -46,8 +47,6 @@ import {
 import "./style.css";
 import "./casa.css";
 function App() {
-  const environment = environmentLabel();
-  const localEnvironment = environment === "Entorno local";
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
@@ -64,6 +63,18 @@ function App() {
       const id = activeNavigationGroup(location.pathname + location.search);
       return id ? [id] : [];
     });
+  // Entorno e identidad servidos por /api/version: una sola carga compartida
+  // con el pie, sin inferir el entorno por hostname (#503).
+  const [versionInfo, setVersionInfo] = useState<AppVersionInfo | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadVersionInfo().then((data) => {
+      if (alive) setVersionInfo(data);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const mainNavRef = useRef<HTMLElement>(null);
   const check = () => {
@@ -313,11 +324,7 @@ function App() {
         </nav>
         <div className="sidebar-bottom">
           <span className="local-dot" />{" "}
-          {demo
-            ? "DEMO · Datos ficticios"
-            : localEnvironment
-              ? "Local · Datos ficticios"
-              : "Datos ficticios"}
+          {environmentBadge(versionInfo)}
           <small>Excel v5.11 sigue como maestro</small>
         </div>
       </aside>
