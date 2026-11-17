@@ -206,11 +206,12 @@ material para el usuario (I3/I4), no una inferencia del implementador.
 
 ### Límites y materias pendientes de decisión
 
-- **AC-28 sigue `UNRUN`**: se ha corregido el aviso y se ha demostrado que la UI muestra la lectura del
-  motor (A ejecuta, B no), pero **no** se ha medido la ejecución contra el Plan del ciclo en los dos
-  escenarios. Falta comprobar, con un Plan del ciclo y `GET /api/planes-ciclo/:id/ejecucion/:PRE`, que
-  la Transferencia ordinaria suma al `ejecutado` del Presupuesto y que la de Anticipo no suma; ambas
-  comprobaciones deben hacerse sobre el motor existente, sin duplicar lógica. No se declara cubierto.
+- **AC-28 cerrado `PASS`** (histórico: en la primera entrega de I6 quedó `UNRUN`). El motor no necesitó
+  cambios: `cycleExecution` → `executionFacts` imputa «Aportación a saldo» por Transferencia real con
+  el destino del Presupuesto y **sin** Referencia. Medido con tres pruebas en
+  `spec37-i6-regresion.test.ts`: A ordinaria 30,00; B con Referencia 0,00; pendiente 0,00 y 60,00 al
+  confirmar. El diagnóstico anterior se apoyaba en `budgetUsage`, que es otra consulta, y quedó
+  corregido en el testplan.
 - **La operación coordinada no admite Referencia ni desglose de Deuda en el Gasto** (`gastoFields` de
   `registro-coordinado.ts`): al elegir A/B el formulario retira esos campos y lo explica, en vez de
   enviarlos y recibir un 422. Un Gasto con Referencia de Viaje/Evento o con capital/intereses se registra
@@ -250,13 +251,14 @@ comando por AC, está en el [testplan](37-registro-coordinado-gastos-testplan.md
   nuevas lo miden: A ordinaria ejecuta (30,00), B con Referencia no (0,00) y el pendiente no ejecuta
   hasta confirmar (0,00 → 60,00). **Diagnóstico anterior corregido**: la medición que lo declaraba
   imposible usaba `budgetUsage`, que es otra consulta, no el motor del ciclo.
-- **Bloqueo de entorno**: `bunx playwright test` (config del repo) no arranca porque los puertos 3001 y
+- **Entorno de los E2E**: la config del repo no arranca porque los puertos 3001 y
   5173 los ocupa otro checkout en marcha (`myfinanzas-app-vscode`, `bun tools/demo/cli.ts`) y el config
-  usa `reuseExistingServer: false`. El E2E de I6 se ejecutó igualmente con su propio servidor aislado
-  y sirviendo el build real de este árbol en el puerto 5180 (`.local/serve-dist.ts`,
-  `.local/pw-i6.config.ts`, ambos ignorados por Git). No se mató ningún proceso ajeno ni se tocó el
-  config compartido. Las suites E2E de I5 y de temas quedan pendientes de CI.
-- **Evidencia**: `bun test ./apps/api/src/spec37-i6-regresion.test.ts` → 10 pass / 0 fail / 89 expect();
+  usa `reuseExistingServer: false`. Los tres E2E se ejecutaron igualmente con **entorno aislado**: el
+  build real de este árbol servido en 5281 y, en I6, su propio servidor de API. No se mató ningún
+  proceso ajeno ni se tocó el config compartido. E2E de I6 **1 passed**; E2E de I5 **1 passed (12,6 s)**,
+  que acredita AC-17, AC-18, AC-22, AC-24, AC-27 y AC-38.
+- **Evidencia**: `bun test ./apps/api/src/spec37-i6-regresion.test.ts` → 13 pass / 0 fail (10 de I6 y
+  3 de AC-28);
   las seis suites de SPEC37 → 66 pass / 1 skip / 0 fail / 1545 expect(); `bun test apps/web` → 317
   pass / 0 fail; `bun test ./apps/api` → 1211 pass / 11 skip / 58 fail de 1280, con el conjunto de
   fallos **por nombre idéntico** al de la base `438acd5` (0 nuevos, 0 resueltos; los 2 de más sobre los

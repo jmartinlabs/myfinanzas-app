@@ -122,7 +122,7 @@ Evidencia local (macOS 15.5, bun 1.4.3):
 El `skip` es la prueba de backup/restore cifrado de I1 (árbol privado de confianza ausente en este
 `TMPDIR`); se ejecuta en Linux CI y no se declara PASS local.
 
-**No ejecutado en macOS (`UNRUN`, no PASS):** la etiqueta de backup `e37.2-v31`, la conservación de
+**Ejecutado en Linux, no en macOS:** la etiqueta de backup `e37.2-v31`, la conservación de
 `e37.1-v30` y las dos listas de versiones admitidas del módulo de copia sólo se ejercitan donde la
 publicación atómica de la copia funciona: `private-state.ts` carga `libc.so.6` por FFI y en macOS esa
 ruta no existe, así que toda la familia backup/restore cae en los 56 fallos de entorno. Su evidencia
@@ -250,7 +250,8 @@ modificó ningún motor.
 
 ## Entorno y bloqueos
 
-- **E2E del repo bloqueado**: `bunx playwright test` (config del repo) **no arranca** en esta máquina.
+- **E2E con la config del repo, bloqueado**: `bunx playwright test` (config del repo) **no arranca** en
+  esta máquina.
   Los puertos **3001** y **5173** están ocupados por otro checkout en marcha
   (otro checkout del proyecto con su demo en marcha, PIDs 14980 y 14981, padre
   `bun tools/demo/cli.ts`) y el config usa `reuseExistingServer: false`. Mensaje exacto:
@@ -260,11 +261,13 @@ modificó ningún motor.
 - **Cómo se ejecutó el E2E de I6 igualmente**: el spec nuevo levanta su **propio** servidor de API
   aislado (puerto 3030, MFA real, SQLite en `.local/e2e-spec37-i6`) y todas las llamadas `/api/**` se
   redirigen allí. Para la web se sirvió el **build real de este árbol** (`bun run build` →
-  `apps/web/dist`) en el puerto 5180 con `.local/serve-dist.ts` y `.local/pw-i6.config.ts` (ambos
-  ignorados por Git; no forman parte de la entrega). `E2E_APP_ORIGIN` permite al spec declarar ese
-  origen; por defecto usa `http://127.0.0.1:5173`, el del config del repo.
-- **Consecuencia**: las suites E2E de I5 y de temas **no se han re-ejecutado** aquí. Los AC que sólo
-  ellas demuestran quedan `UNRUN`; no se cita ninguna cifra de una ejecución ajena.
+  `apps/web/dist`) con un config temporal fuera de Git (en la pasada final, puerto **5281**; antes
+  5180). `E2E_APP_ORIGIN` permite al spec declarar ese origen; por defecto usa
+  `http://127.0.0.1:5173`, el del config del repo, así que CI no cambia.
+- **Resuelto en la entrega final de I6**: el E2E de I5 se ejecutó con el mismo esquema aislado
+  (**1 passed**, 12,6 s) y con él los seis criterios de navegador pasaron a `PASS`; el E2E de I6 se
+  actualizó a la entrada unificada y también pasa (**1 passed**). Las cifras son de ejecuciones hechas
+  aquí, no de CI ajeno.
 
 ## Suite completa
 
@@ -304,19 +307,19 @@ Evidencia local (macOS 15.5, bun 1.4.3):
 | `bunx playwright test tests/e2e/theme*.spec.ts` | 8 pass |
 | `bun run build` | PASS |
 
-**Bloqueo de entorno:** 3001 y 5173 estaban ocupados por otra sesión de otro checkout, así que el E2E
-se ejecutó con el front de este worktree en 5273 y `APP_ORIGIN` alineado; no se mató ningún proceso
-ajeno ni se modificó el valor por defecto (5173).
+**Entorno aislado:** 3001 y 5173 estaban ocupados por otra sesión de otro checkout, así que los E2E se
+ejecutaron sirviendo el build real de este árbol en 5281 (en una pasada previa, 5273) con `APP_ORIGIN`
+alineado; no se mató ningún proceso ajeno ni se modificó el valor por defecto (5173).
 
 **AC-28 medido contra el motor del ciclo:** la Transferencia ordinaria hacia el destino incrementa el
 `ejecutado` del Presupuesto de Aportación a saldo (30,00), la de Anticipo con Referencia no lo toca
 (0,00) y el pendiente no ejecuta hasta confirmar (0,00 → 60,00). Tres pruebas en
 `apps/api/src/spec37-i6-regresion.test.ts`, sin lógica financiera nueva.
 
-## Contratos revisados, no ejecutados
+## Materias fuera de esta entrega
 
 - Los 43 AC de SPEC37: matriz completa arriba; **43 `PASS`**, cada uno con prueba ejecutada y su
   comando. Ninguna asignación de alcance se presenta como prueba.
-- Backup/restore cifrado y etiquetas de copia `e37.1-v30` / `e37.2-v31`: `UNRUN` local, ligado a CI
-  Linux (§I4.5).
+- Backup/restore cifrado y etiquetas de copia `e37.1-v30` / `e37.2-v31`: `UNRUN` en macOS (FFI a
+  `libc.so.6`), **PASS en Linux** en el gate de I4.5 (46 pass, migración + copia + contratos).
 - `E4.8-AC-17` (aviso en precierre): fuera de esta spec; requiere su propio gate en SPEC26.
