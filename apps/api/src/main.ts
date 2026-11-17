@@ -40,7 +40,10 @@ const program = Effect.acquireRelease(
         }),
       ).pipe(
         Layer.provide(
-          BunHttpServer.layer({ hostname, port: 3001 }),
+          BunHttpServer.layer({
+            hostname,
+            port: Number(process.env.API_PORT ?? 3001),
+          }),
         ),
       ),
     ),
