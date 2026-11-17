@@ -74,9 +74,11 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
 
-  await expect(select.locator("option")).toHaveCount(5);
+  await expect(select.locator("option")).toHaveCount(6);
   await expect(select.locator("option").nth(4)).toHaveAttribute("value", "casa");
   await expect(select.locator("option").nth(4)).toHaveText("Casa");
+  await expect(select.locator("option").nth(5)).toHaveAttribute("value", "aurora");
+  await expect(select.locator("option").nth(5)).toHaveText("Aurora");
 
   await select.selectOption("casa");
   await expect(html).toHaveAttribute("data-theme", "casa");

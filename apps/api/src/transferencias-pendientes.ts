@@ -27,9 +27,17 @@ import {
  *
  * Schema v28 freezes a Reparto line once a pending references it. Therefore a
  * Reparto-origin pending cannot change importe/origen/destino: the schema would
- * reject it. Those fields stay editable only for the future
- * `RegistroCoordinado` origin (SPEC37), and are rejected here with a domain
- * error instead of leaking a SQLite constraint.
+ * reject it. Those fields stay editable only for the `RegistroCoordinado`
+ * origin (SPEC37), and are rejected here with a domain error instead of leaking
+ * a SQLite constraint.
+ *
+ * SPEC37 (increment 2) adds the `RegistroCoordinado` origin: a pending that
+ * points at a real Gasto, never at a line. It stores the Gasto, the current
+ * `gasto_revision` as baseline, the immutable `modalidad` (A or B) and, only in
+ * modalidad B, the planned Anticipo reference. All of that is operational: the
+ * insert writes no Movimiento, no ficha de Anticipo and no liquidity (AC-26,
+ * AC-32). `ciclo_origen` is the historical traceability of the Gasto's own date
+ * (D2), not the open cycle.
  */
 
 const states = ["Pendiente de realizar", "Confirmada", "Cancelada"] as const;
@@ -49,6 +57,9 @@ type PendingRow = {
   origen_tipo: "Reparto" | "RegistroCoordinado";
   reparto_linea: number | null;
   gasto: string | null;
+  gasto_revision: number | null;
+  modalidad: "A" | "B" | null;
+  anticipo_previsto: string | null;
   anticipo: string | null;
   movimiento: string | null;
   motivo_cancelacion: string | null;
@@ -120,6 +131,21 @@ function identifier(value: unknown, field = "id"): number {
   if (!Number.isSafeInteger(id) || id < 1)
     throw new Problem(422, "VALIDATION", "Identificador inválido.", {
       [field]: "Indica un identificador positivo.",
+    });
+  return id;
+}
+
+/** Un Gasto es un Movimiento real: su ID es el identificador estable del hecho. */
+function movementIdentifier(value: unknown, field: string): string {
+  const id =
+    typeof value === "number" && Number.isSafeInteger(value) && value > 0
+      ? String(value)
+      : typeof value === "string" && /^\d+$/.test(value)
+        ? value
+        : "";
+  if (!id)
+    throw new Problem(422, "VALIDATION", "Indica un Gasto registrado.", {
+      [field]: "Identificador numérico de un Movimiento de tipo Gasto.",
     });
   return id;
 }
@@ -216,6 +242,18 @@ function assertEligible(db: Database, id: string, field: string) {
       { [field]: "Selecciona un Saldo interno activo y operativo." },
       { motivo: reason },
     );
+}
+
+/**
+ * D9: modalidad B solo admite Referencias de Anticipo. La lista de §5.1 se
+ * reduce aquí a lo verificable sin ficha: existencia, tipo y estado. El par de
+ * Saldos y la ficha se revalidan al confirmar (I4), no en el alta.
+ */
+function anticipoElegible(db: Database, id: string) {
+  const row = db
+    .query("SELECT tipo,estado FROM referencias WHERE id=?")
+    .get(id) as { tipo: string; estado: string } | null;
+  return row !== null && row.tipo === "Anticipo" && row.estado === "Activa";
 }
 
 function line(db: Database, id: number): LineRow | null {
@@ -356,6 +394,27 @@ function conditions(db: Database, row: PendingRow): Condicion {
     const destinationReason = ineligibleReason(db, row.destino);
     if (destinationReason) motivos.add("SALDO_DESTINO_NO_ELEGIBLE");
     const l = row.reparto_linea ? line(db, row.reparto_linea) : null;
+    if (row.origen_tipo === "RegistroCoordinado") {
+      // D6: la línea base es `gasto_revision`. Un Gasto ausente, anulado o con
+      // otra revisión bloquea la confirmación; no se reinterpreta el pendiente.
+      const g = row.gasto ? movement(db, row.gasto) : null;
+      if (!g) motivos.add("GASTO_NO_DISPONIBLE");
+      else if (g.anulado === 1) motivos.add("GASTO_ANULADO");
+      else {
+        if (g.tipo !== "Gasto") motivos.add("GASTO_NO_DISPONIBLE");
+        // Sin línea base no hay coincidencia demostrable: también se revisa.
+        if (row.gasto_revision === null || g.revision !== row.gasto_revision)
+          motivos.add("GASTO_NO_COINCIDE");
+      }
+      // D2/D9: solo la modalidad B conserva Referencia prevista y solo puede
+      // ser un Anticipo activo. Una Referencia que deja de ser elegible no se
+      // sustituye sola (AC-39).
+      if (row.modalidad === "B") {
+        if (!row.anticipo_previsto || !anticipoElegible(db, row.anticipo_previsto))
+          motivos.add("REFERENCIA_NO_ELEGIBLE");
+      } else if (row.modalidad === "A" && row.anticipo_previsto !== null)
+        motivos.add("REFERENCIA_NO_ELEGIBLE");
+    }
     if (row.origen_tipo === "Reparto") {
       if (!l) motivos.add("LINEA_NO_DISPONIBLE");
       else {
@@ -465,6 +524,9 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
         }
       : null,
     gasto: row.gasto,
+    gastoRevision: row.gasto_revision,
+    modalidad: row.modalidad,
+    anticipoPrevisto: row.anticipo_previsto,
     anticipo: row.anticipo,
     movimiento: m
       ? {
@@ -489,6 +551,12 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
   };
 }
 
+/**
+ * Forma pública del pendiente (`pendingDto`). Se exporta como tipo para que
+ * los consumidores de SPEC37 (I3) puedan componerlo sin abrir la tabla.
+ */
+export type TransferenciaPendiente = ReturnType<typeof pendingDto>;
+
 function existingForLine(db: Database, lineId: number): PendingRow | null {
   return (
     (db
@@ -507,6 +575,9 @@ export function crearTransferenciaPendiente(
   body: Record<string, unknown>,
   now = Date.now(),
 ): ReturnType<typeof pendingDto> {
+  // El origen lo elige el payload: `gasto` es registro coordinado (SPEC37) y
+  // `lineaId` es reparto (SPEC36). Ninguno de los dos caminos cambia al otro.
+  if (body.gasto !== undefined) return crearPendienteCoordinado(db, body, now);
   for (const key of Object.keys(body))
     if (!["lineaId", "origenOperativo", "referencia"].includes(key))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
@@ -672,6 +743,216 @@ export function crearTransferenciaPendiente(
   const id = Number(result.lastInsertRowid);
   const after = pending(db, id)!;
   audit(db, id, 1, "alta", null, after, null, ["estado", "importe", "origen", "destino", "fechaPrevista", "concepto", "nota"], now);
+  return pendingDto(db, after, now);
+}
+
+/**
+ * Alta del pendiente de origen `RegistroCoordinado` (SPEC37, incremento I2).
+ *
+ * Escribe solo la fila operativa y su auditoría: no crea Movimiento, no crea
+ * ficha de Anticipo y no toca ninguna partida de liquidez (AC-26, AC-32). El
+ * Gasto es un hecho real previo y aquí solo se vincula. `ciclo_origen` es el
+ * Ciclo histórico de la fecha real del Gasto (D2) y la modalidad queda fijada
+ * al alta: ni `editar` ni el trigger de esquema permiten cambiarla (AC-43).
+ */
+function crearPendienteCoordinado(
+  db: Database,
+  body: Record<string, unknown>,
+  now: number,
+): ReturnType<typeof pendingDto> {
+  for (const key of Object.keys(body))
+    if (
+      ![
+        "gasto",
+        "modalidad",
+        "anticipoPrevisto",
+        "importe",
+        "origen",
+        "destino",
+        "fechaPrevista",
+        "concepto",
+        "nota",
+      ].includes(key)
+    )
+      throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
+
+  const gastoId = movementIdentifier(body.gasto, "gasto");
+  const gasto = movement(db, gastoId);
+  if (!gasto) throw new Problem(404, "NOT_FOUND", "Movimiento no encontrado.");
+  if (gasto.tipo !== "Gasto")
+    throw new Problem(
+      422,
+      "GASTO_NO_DISPONIBLE",
+      "El Movimiento vinculado no es un Gasto.",
+      { gasto: "Selecciona un Movimiento de tipo Gasto." },
+    );
+  if (gasto.anulado === 1)
+    throw new Problem(
+      422,
+      "GASTO_ANULADO",
+      "El Gasto está anulado y no admite un pendiente nuevo.",
+      { gasto: "Selecciona un Gasto vigente." },
+    );
+
+  // D2: `ciclo_origen` es la trazabilidad histórica del Gasto, no el Ciclo
+  // abierto. La columna es NOT NULL, así que un Gasto fuera de Ciclo no entra.
+  const ciclo = cycleForDate(db, gasto.fecha);
+  if (!ciclo)
+    throw new Problem(
+      409,
+      "CICLO_NO_DISPONIBLE",
+      "La fecha del Gasto no pertenece a ningún Ciclo registrado.",
+      { gasto: "El Gasto debe caer dentro de un Ciclo registrado." },
+    );
+
+  if (body.modalidad !== "A" && body.modalidad !== "B")
+    throw new Problem(422, "VALIDATION", "Indica la modalidad del pendiente.", {
+      modalidad: "Modalidad A (pago directo) o B (Anticipo).",
+    });
+  const modalidad = body.modalidad;
+
+  if (
+    body.anticipoPrevisto !== undefined &&
+    body.anticipoPrevisto !== null &&
+    typeof body.anticipoPrevisto !== "string"
+  )
+    throw new Problem(422, "VALIDATION", "Referencia prevista inválida.", {
+      anticipoPrevisto: "Identificador de Referencia o vacío.",
+    });
+  const anticipoPrevisto =
+    typeof body.anticipoPrevisto === "string" && body.anticipoPrevisto !== ""
+      ? body.anticipoPrevisto
+      : null;
+
+  // §7: un pendiente de modalidad A no genera Referencia. La B la exige y solo
+  // admite Anticipo (D9); el formato replica el CHECK de v30, no lo sustituye.
+  if (modalidad === "A" && anticipoPrevisto !== null)
+    throw new Problem(
+      422,
+      "REFERENCIA_NO_ADMITIDA",
+      "La modalidad A no admite Referencia de Anticipo.",
+      { anticipoPrevisto: "La Referencia solo aplica a la modalidad B." },
+    );
+  if (modalidad === "B") {
+    if (anticipoPrevisto === null)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La modalidad B exige una Referencia de Anticipo prevista.",
+        { anticipoPrevisto: "Selecciona una Referencia de tipo Anticipo." },
+      );
+    if (!/^REF[0-9]{3,}$/.test(anticipoPrevisto))
+      throw new Problem(422, "VALIDATION", "Formato de Referencia inválido.", {
+        anticipoPrevisto: "Formato REF seguido de dígitos.",
+      });
+    if (!anticipoElegible(db, anticipoPrevisto))
+      throw new Problem(
+        422,
+        "REFERENCIA_NO_ELEGIBLE",
+        "La Referencia prevista no es un Anticipo activo.",
+        { anticipoPrevisto: "Selecciona una Referencia de tipo Anticipo activa." },
+      );
+  }
+
+  const importe = amount(body.importe);
+  for (const side of ["origen", "destino"] as const)
+    if (typeof body[side] !== "string" || !body[side])
+      throw new Problem(422, "VALIDATION", "Saldo inválido.", {
+        [side]: "Selecciona un Saldo interno activo.",
+      });
+  const origen = body.origen as string;
+  const destino = body.destino as string;
+  if (origen === destino)
+    throw new Problem(422, "VALIDATION", "Origen y destino deben ser distintos.");
+  assertEligible(db, origen, "origen");
+  assertEligible(db, destino, "destino");
+  if (body.fechaPrevista === undefined)
+    throw new Problem(422, "VALIDATION", "Indica la fecha prevista.", {
+      fechaPrevista: "Fecha prevista obligatoria.",
+    });
+  const fechaPrevista = civilField(body.fechaPrevista, "fechaPrevista");
+  const concepto =
+    body.concepto === undefined
+      ? ""
+      : textField(body.concepto, "concepto", 2000);
+  const nota =
+    body.nota === undefined ? "" : textField(body.nota, "nota", 4000);
+
+  // D6: un único pendiente activo por Gasto. Los resueltos no cuentan.
+  const previous = db
+    .query(
+      "SELECT id FROM transferencia_pendiente WHERE gasto=? AND estado='Pendiente de realizar'",
+    )
+    .get(gasto.id) as { id: number } | null;
+  if (previous)
+    throw new Problem(
+      409,
+      "GASTO_YA_GENERADO",
+      "El Gasto ya tiene una Transferencia pendiente activa.",
+      { gasto: "Resuelve o cancela el pendiente existente antes de crear otro." },
+      { pendiente: previous.id },
+    );
+
+  const time = new Date(now).toISOString();
+  let id: number;
+  try {
+    const inserted = db.run(
+      `INSERT INTO transferencia_pendiente(
+        estado,importe,origen,destino,ciclo_origen,fecha_prevista,concepto,nota,
+        origen_tipo,gasto,gasto_revision,modalidad,anticipo_previsto,revision,
+        creado,actualizado
+      ) VALUES('Pendiente de realizar',?,?,?,?,?,?,?,'RegistroCoordinado',
+        ?,?,?,?,1,?,?)`,
+      [
+        Number(importe.cents),
+        origen,
+        destino,
+        ciclo.id,
+        fechaPrevista,
+        concepto,
+        nota,
+        gasto.id,
+        gasto.revision,
+        modalidad,
+        anticipoPrevisto,
+        time,
+        time,
+      ],
+    );
+    id = Number(inserted.lastInsertRowid);
+  } catch (error) {
+    // El índice único parcial es la última red; se traduce a dominio para no
+    // filtrar un constraint de SQLite.
+    if (
+      error instanceof Error &&
+      /UNIQUE|transferencia_pendiente_gasto_activo/.test(error.message)
+    )
+      throw new Problem(
+        409,
+        "GASTO_YA_GENERADO",
+        "El Gasto ya tiene una Transferencia pendiente activa.",
+        {
+          gasto:
+            "Resuelve o cancela el pendiente existente antes de crear otro.",
+        },
+      );
+    throw error;
+  }
+  const after = pending(db, id)!;
+  audit(db, id, 1, "alta", null, after, null, [
+    "estado",
+    "importe",
+    "origen",
+    "destino",
+    "cicloOrigen",
+    "fechaPrevista",
+    "concepto",
+    "nota",
+    "gasto",
+    "gastoRevision",
+    "modalidad",
+    "anticipoPrevisto",
+  ], now);
   return pendingDto(db, after, now);
 }
 
@@ -1034,6 +1315,16 @@ export function editarTransferenciaPendiente(
 ) {
   const id = identifier(idValue);
   return conIntento(db, "actualizar", { id, ...body }, key, now, () => {
+    // AC-43: la modalidad pertenece al pendiente y es inmutable. Cambiarla no
+    // se hace aquí: exige cancelar con motivo y crear otro pendiente, de modo
+    // que el original conserva su trazabilidad sin reinterpretarse.
+    if ("modalidad" in body)
+      throw new Problem(
+        422,
+        "MODALIDAD_INMUTABLE",
+        "La modalidad del pendiente no se puede cambiar; cancela con motivo y crea otro pendiente.",
+        { modalidad: "La modalidad es inmutable tras el alta." },
+      );
     for (const name of Object.keys(body))
       if (
         ![

@@ -262,6 +262,7 @@ import {
   candidatosTransferenciaPendiente,
   vincularTransferenciaPendiente,
 } from "./transferencias-pendientes";
+import { registrarOperacionCoordinada } from "./registro-coordinado";
 import {
   actualizarLineaReparto,
   actualizarReparto,
@@ -491,6 +492,20 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      // SPEC37 I3 — operación coordinada atómica: Gasto + Transferencia real o
+      // Gasto + pendiente, en una sola transacción IMMEDIATE. La idempotencia
+      // vive en `operacion_coordinada_attempts`, no en una entidad nueva (D7).
+      if (path === "/api/operaciones-coordinadas" && req.method === "POST") {
+        const result = registrarOperacionCoordinada(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          options.movementGuard,
+        );
+        headers.set("location", "/api/movimientos/" + result.gasto.movimiento.id);
+        return reply(result, 201);
+      }
       // SPEC36 I1 — shared Transferencia pendiente. Writes are authenticated
       // and CSRF-checked by `auth.session`; each one owns one IMMEDIATE tx.
       const pendingTransfers = path.match(
