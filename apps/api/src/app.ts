@@ -343,7 +343,10 @@ export function createApp(db: Database, options: AppOptions) {
   const auth = new Auth(
     db,
     options.key,
-    options.origin,
+    // Los servidores de fixture pueden omitir el origen: en una ejecución E2E
+    // el contexto de la run publica `APP_ORIGIN` y todos hablan con el mismo
+    // (issue #508). Sin la variable, `Auth` conserva su valor por defecto.
+    options.origin ?? process.env.APP_ORIGIN,
     options.now,
     options.demo?.origins,
   );
