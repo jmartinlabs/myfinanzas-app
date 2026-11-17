@@ -10,7 +10,7 @@ Base medida: `test` `0e1f34d`, esquema `v29`. Datos reales fuera de alcance.
 | Incremento | Estado | Evidencia |
 | --- | --- | --- |
 | **I1 · Gate `G-v30`** | **implementado / en revisión** | `apps/api/src/spec37-schema.ts`, contrato `C30-SPEC37-COORDINADO-0E1F34D`, `spec37-schema.test.ts` |
-| I2 · Registro del pendiente coordinado | pendiente | depende de I1 verificado en `test` |
+| **I2 · Registro del pendiente coordinado** | **implementado / en revisión** | `transferencias-pendientes.ts` (`crearPendienteCoordinado`) + `spec37-i2-pendiente-coordinado.test.ts` |
 | I3 · Operación coordinada atómica | pendiente | depende de I2 |
 | I4 · Confirmación, vínculo y cancelación | pendiente | depende de I3 |
 | I5 · UI, bandeja y alertas | pendiente | depende de I4 |
@@ -40,3 +40,26 @@ Base medida: `test` `0e1f34d`, esquema `v29`. Datos reales fuera de alcance.
 - El trigger de modalidad se prueba con los cuatro pasos (`NULL→A`, `A→NULL`, `A→B` abortan;
   el resto del pendiente sigue editable) aislando los triggers de coherencia, y se documenta por
   qué: con ellos activos ningún cambio de modalidad es posible por origen.
+
+## I2 · contenido entregado
+
+- Alta de pendiente `origen_tipo='RegistroCoordinado'`: Gasto real no anulado, `modalidad` A/B,
+  `anticipo_previsto` (obligatoria en B, rechazada en A), `gasto_revision` como línea base e
+  importe/origen/destino/fecha/concepto/nota. **No crea Movimiento, ficha, Adelantado,
+  Recuperado, Neto ni liquidez** (AC-26, AC-32).
+- `ciclo_origen` = Ciclo histórico de la **fecha real del Gasto** (D2); un Gasto fuera de Ciclo
+  se rechaza porque la columna es `NOT NULL`.
+- Motivos de revisión del origen coordinado: `GASTO_NO_DISPONIBLE`, `GASTO_ANULADO`,
+  `GASTO_NO_COINCIDE`, `REFERENCIA_NO_ELEGIBLE`. «Requiere revisión» sigue siendo condición y no
+  un cuarto estado (AC-29).
+- Un único pendiente activo por Gasto: comprobación de dominio y traducción del índice único
+  parcial a `409 GASTO_YA_GENERADO`, sin filtrar el constraint.
+- `modalidad` inmutable: `editar` la rechaza antes de escribir y el trigger de v30 la cubre.
+- El camino `Reparto` no cambia: sus 17 pruebas siguen intactas.
+
+## Contrato pendiente de decisión (no bloquea I2)
+
+§5.3 admite como referencia prevista «un ID existente **o una intención de alta con nombre y datos
+mínimos**», pero el `CHECK` de v30 solo acepta `REF` + dígitos. Hoy I2 solo admite una Referencia
+existente; representar la intención con nombre exigiría columna o formato nuevo y es una decisión
+material para el usuario (I3/I4), no una inferencia del implementador.
