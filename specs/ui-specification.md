@@ -80,7 +80,7 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 
 - Los tokens semánticos vigentes son los de `apps/web/public/themes.css`; los componentes
   consumen `var(--…)` y no conocen el tema.
-- El selector existente se etiqueta **«Tema»** y conserva un único control; el nombre accesible
+- El selector existente **no muestra etiqueta visible** desde #503 y conserva un único control; el nombre accesible
   («Cambiar tema») contiene el texto visible (label-in-name) y el ancho del control lo fija el
   catálogo actual, no una medida fija (#503). No se añade otro selector ni se cambia el
   mecanismo de persistencia. La ampliación del catálogo se hace
@@ -159,7 +159,7 @@ Alcance autorizado para 1A:
 - Tokens de tipografía, espaciado y superficies, y CSS específico de Casa en un archivo aislado
   (`casa.css`), sin duplicar `style.css` ni usar `!important`.
 - Registro en `themes.ts` y ampliación de la lista `known` de `theme-boot.js`.
-- Selector único (etiqueta vigente **«Tema»**, #503) con cinco opciones: Claro, Oscuro, Mixto,
+- Selector único (sin etiqueta visible desde #503) con cinco opciones: Claro, Oscuro, Mixto,
   Grafito y Casa.
 - Persistencia en `mf-theme`; `dark-s` sigue siendo el valor inicial.
 - Sin `data-experience`, `mf-experience` ni un segundo script de arranque.

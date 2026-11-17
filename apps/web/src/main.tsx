@@ -335,7 +335,6 @@ function App() {
             {/* #503 — etiqueta breve en la misma línea que el selector; el
                 nombre accesible contiene el texto visible (label-in-name). */}
             <label className="theme-picker">
-              <span className="theme-picker-label">Tema</span>
               <select
                 aria-label="Cambiar tema"
                 value={theme}

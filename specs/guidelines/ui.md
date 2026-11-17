@@ -14,7 +14,8 @@ historia de E1.1–E1.5 y no reabren decisiones.
 
 > **Enmienda Casa de cuentas (2026-11-10).** Se aprueba `casa` («Casa») como quinta apariencia
 > y se autoriza su base visual 1A: tokens, tipografía, espaciado, superficies y CSS aislado.
-> El selector existente pasa a etiquetarse «Apariencia» —«Tema» desde #503— y conserva un único
+> El selector existente **no lleva etiqueta visible** desde #503: se muestra solo el control con el
+> tema activo y su indicador, con nombre accesible y foco visible, y conserva un único
 > control con cinco opciones. `mf-theme` y `dark-s` no cambian; no se introduce `data-experience` ni una segunda
 > persistencia. 1A no modifica Inicio, Movimientos, navegación ni formularios. La composición
 > editorial de Inicio (1B) y Señal requieren autorización separada.
@@ -47,7 +48,7 @@ historia de E1.1–E1.5 y no reabren decisiones.
 - Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
   no se cambia el mecanismo. Las enmiendas añaden Casa y Aurora al final del catálogo, sin
   reordenar las apariencias anteriores ni sustituir `mf-theme`. La etiqueta visible es
-  «Tema», con seis opciones desde el 2026-11-17 (#503 la renombró desde «Apariencia» y ajustó
+  sin texto visible, con seis opciones desde el 2026-11-17 (#503 retiró la etiqueta «Apariencia» y ajustó
   el ancho del control al catálogo).
 
 ### Tipografía, shell y espaciado

@@ -457,9 +457,6 @@ small {
   font-weight: 650;
   color: var(--muted);
 }
-.theme-picker-label {
-  white-space: nowrap;
-}
 /* #503 — el ancho lo fija el catálogo (la opción más larga y la flecha), no
    una medida fija: sin recortar opciones y con el área táctil intacta. */
 .theme-picker select {

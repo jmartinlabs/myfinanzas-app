@@ -152,30 +152,38 @@ async function expectNoHorizontalScroll(page: Page) {
 }
 
 /**
- * «Tema» y el `select` comparten línea: la etiqueta no está encima ni suelta,
- * está a la izquierda y con el mismo centro vertical.
+ * Decisión final: el encabezado muestra **solo** el `select` con el tema actual.
+ * No hay texto visible «Tema», pero sí nombre accesible y foco visible.
  */
-async function expectLabelInlineWithSelect(page: Page) {
-  const label = page.locator(".theme-picker-label");
+async function expectSelectOnly(page: Page) {
   const select = page.getByLabel("Cambiar tema");
-  await expect(label).toBeVisible();
   await expect(select).toBeVisible();
-  const labelBox = (await label.boundingBox())!;
-  const selectBox = (await select.boundingBox())!;
-  expect(labelBox.y + labelBox.height).toBeLessThanOrEqual(
-    selectBox.y + selectBox.height,
-  );
-  expect(labelBox.y).toBeGreaterThanOrEqual(selectBox.y);
-  expect(labelBox.x + labelBox.width).toBeLessThanOrEqual(selectBox.x + 1);
-  const labelCenter = labelBox.y + labelBox.height / 2;
-  const selectCenter = selectBox.y + selectBox.height / 2;
-  expect(Math.abs(labelCenter - selectCenter)).toBeLessThanOrEqual(4);
-  // Ni el control ni la etiqueta se recortan: el texto visible está entero.
-  expect(labelBox.width).toBeGreaterThan(0);
-  return { labelBox, selectBox };
+  await expect(page.locator(".theme-picker-label")).toHaveCount(0);
+  const picker = page.locator(".theme-picker");
+  await expect(picker).toHaveCount(1);
+  const box = (await select.boundingBox())!;
+  const host = (await picker.boundingBox())!;
+  // Sin etiqueta a la izquierda: el control ocupa el ancho disponible del host.
+  expect(box.width).toBeGreaterThan(host.width - 2);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  // Sin texto suelto ni elementos de etiqueta: solo el select.
+  expect(await picker.locator("span, p, strong, b, em").count()).toBe(0);
+  expect(
+    await picker.evaluate(
+      (element) =>
+        Array.from(element.childNodes).filter(
+          (node) =>
+            node.nodeType === Node.TEXT_NODE &&
+            (node.textContent ?? "").trim().length > 0,
+        ).length,
+    ),
+  ).toBe(0);
+  // El valor visible es el nombre del tema activo (lo fija el catálogo).
+  await expect(select).toHaveValue(/light-s|dark-s|hybrid-s|graphite-lime|casa|aurora/);
+  return { selectBox: box, hostBox: host };
 }
 
-test("#503 selector compacto, etiqueta «Tema» y un solo indicador de entorno", async ({
+test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno", async ({
   page,
 }) => {
   test.setTimeout(300000);
@@ -188,11 +196,11 @@ test("#503 selector compacto, etiqueta «Tema» y un solo indicador de entorno",
   await expect(page.getByRole("combobox", { name: /tema/i })).toHaveCount(1);
   await expect(select).toHaveAttribute("aria-label", /tema/i);
   await expect(page.locator(".local-badge")).toHaveCount(0);
-  await expect(page.locator(".theme-picker-label")).toHaveText("Tema");
+  await expect(page.locator(".theme-picker-label")).toHaveCount(0);
 
   // ── 1440 ────────────────────────────────────────────────────────────────
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const { selectBox } = await expectLabelInlineWithSelect(page);
+  const { selectBox } = await expectSelectOnly(page);
   const afterWidth = selectBox.width;
   const rootFontSize = await page.evaluate(() =>
     parseFloat(getComputedStyle(document.documentElement).fontSize),
@@ -280,20 +288,20 @@ test("#503 selector compacto, etiqueta «Tema» y un solo indicador de entorno",
     expect(
       await page.evaluate(() => localStorage.getItem("mf-theme")),
     ).toBe(id);
-    await expectLabelInlineWithSelect(page);
+    await expectSelectOnly(page);
     await expectNoHorizontalScroll(page);
     await expectSingleEnvIndicator(page, "sidebar-bottom");
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", id);
     await expect(select).toHaveValue(id);
-    await expectLabelInlineWithSelect(page);
+    await expectSelectOnly(page);
   }
   await page.screenshot({ path: `${SHOTS}/theme-casa-1440.png`, fullPage: false });
 
   // ── 390 (menú móvil cerrado) ────────────────────────────────────────────
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".sidebar nav")).toBeHidden();
-  const mobile = await expectLabelInlineWithSelect(page);
+  const mobile = await expectSelectOnly(page);
   expect(mobile.selectBox.height).toBeGreaterThanOrEqual(44);
   expect(mobile.selectBox.width).toBeLessThanOrEqual(390);
   const mobileIndicator = await expectSingleEnvIndicator(
