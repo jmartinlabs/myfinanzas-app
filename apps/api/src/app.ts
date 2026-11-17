@@ -179,6 +179,11 @@ import type { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
 import { Auth } from "./auth";
 import {
+  appVersionIdentity,
+  resolveEnvironment,
+} from "./app-version";
+import { schemaVersion } from "./database-identity";
+import {
   createSaldo,
   getSaldo,
   listSaldos,
@@ -369,6 +374,17 @@ export function createApp(db: Database, options: AppOptions) {
         return reply({
           configured: auth.configured(),
           ...(options.demo ? { demo: true } : {}),
+        });
+      // #502 — identidad de release del artefacto servido, en el mismo estilo
+      // que /api/health: GET público de solo metadatos (versión, SHA corto,
+      // entorno y esquema) para que un smoke de despliegue pueda comprobar qué
+      // artefacto está activo. Nunca rutas, secretos, cadenas de conexión ni
+      // configuración; la prueba de contrato lo verifica.
+      if (path === "/api/version" && req.method === "GET")
+        return reply({
+          app: appVersionIdentity(),
+          environment: resolveEnvironment({ demo: options.demo !== undefined }),
+          schema: schemaVersion,
         });
       if (
         options.demo &&

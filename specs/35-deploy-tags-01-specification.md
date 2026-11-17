@@ -160,6 +160,38 @@ su aprobación: una divergencia, un conflicto resuelto, un cambio extra, un comm
 integración sin cambio de árbol, un `reviewed` ya contenido en la base de integración o una
 evidencia no verificable exigen QA nueva. (D3 cerrada 2026-11-11.)
 
+### 3.1 Versionado de aplicación (SemVer pre-1.0)
+
+`[CONFIRMADO 2026-11-17 · Issue #502]` La versión pública de la aplicación es **SemVer
+pre-1.0** y se decide aquí, no en el código ni en la UI:
+
+- `0.X.Y`: entregas a TEST. **Patch** para correcciones de una release; **minor** para
+  entregas funcionales relevantes. `0.2.0` es solo una candidata para la siguiente entrega
+  relevante: **no se asigna automáticamente**.
+- **No se sube versión por PR ni por merge.** Añadir una funcionalidad a `test` no cambia el
+  número; la versión se fija cuando se congela y publica una release con tag autorizado,
+  conservando el SHA congelado del §3.
+- `v1.0.0` será un **hito de primera PROD aceptada** y exige decisión explícita; no se deduce
+  del paso del tiempo ni del número de entregas.
+- El historial real de releases y tags publicados se conserva; un tag publicado no se
+  renumera para reflejar una entrega posterior.
+
+Relación con los tags de despliegue (§3): el nombre `deploy-test-vX.Y.Z` / `deploy-prod-vX.Y.Z`
+**es** la versión de aplicación de esa entrega, y el artefacto desplegado la declara en
+`APP_VERSION` (o en `package.json.version` en el commit del tag). La identidad que muestra la
+aplicación —`GET /api/version`, que reutiliza `resolveAppVersion`— debe coincidir con la del tag
+y su SHA: TEST y PROD muestran el artefacto efectivamente desplegado, no la última versión de
+`test` o `main`.
+
+Se distinguen siempre tres números que no se sustituyen entre sí: **versión de aplicación**
+(este apartado), **versión del esquema SQLite** (`schemaVersion`, actualmente 31; contrato de
+datos) y **versión del maestro Excel** (`MyFinanzas2026_v5.11`). Ni el esquema ni el Excel
+gobiernan la numeración de la app. Mientras un build no declare versión de release, la UI
+muestra «build de desarrollo» y **no** `0.0.0-e49`, que es solo el fallback interno.
+
+Esta sección **no autoriza** crear tags, publicar releases ni desplegar: eso sigue siendo la
+acción operativa de un publicador autorizado (§8).
+
 ## 4. Flujo TEST
 
 ### 4.1 Disparador y validaciones previas
