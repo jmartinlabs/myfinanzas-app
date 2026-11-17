@@ -8,9 +8,15 @@ import {
   type TransferenciaPendienteListaDTO,
 } from "./api";
 import {
+  etiquetaModalidad,
+  importeApi,
+  mensajeCoordinado,
+} from "./GastoCoordinado";
+import {
   Alert,
   EmptyState,
   Field,
+  FormGrid,
   focusFirstInvalidField,
   Skeleton,
   Tag,
@@ -41,8 +47,19 @@ const revisionLabels: Record<string, string> = {
   PRESUPUESTO_DESTINO: "El destino del Presupuesto cambió.",
   SALDO_NO_ELEGIBLE: "Un Saldo ya no es elegible.",
   SALDO_NO_DISPONIBLE: "Un Saldo no está disponible.",
+  SALDO_ORIGEN_NO_ELEGIBLE: "El Saldo de origen ya no es elegible.",
+  SALDO_DESTINO_NO_ELEGIBLE: "El Saldo de destino ya no es elegible.",
   MOVIMIENTO_ANULADO: "El Movimiento vinculado está anulado.",
+  MOVIMIENTO_NO_DISPONIBLE: "El Movimiento vinculado no está disponible.",
+  MOVIMIENTO_NO_COINCIDE: "El Movimiento vinculado ya no coincide.",
   DUPLICADO: "Hay una Transferencia coincidente que debe revisarse.",
+  // SPEC37 §9.2 — la línea base del pendiente coordinado es `gastoRevision`.
+  GASTO_NO_DISPONIBLE: "El Gasto vinculado no está disponible.",
+  GASTO_ANULADO: "El Gasto está anulado: no se confirma contra él. Revisa y decide.",
+  GASTO_NO_COINCIDE:
+    "El Gasto cambió (importe, fecha, Partida o Saldo pagador) desde el alta del pendiente.",
+  REFERENCIA_NO_ELEGIBLE:
+    "La Referencia de Anticipo prevista ya no es elegible. No se sustituye sola.",
 };
 
 function motivoRevision(motivo: string) {
@@ -59,6 +76,20 @@ function normalizeItem(value: TransferenciaPendienteDTO): TransferenciaPendiente
   };
 }
 
+/**
+ * Las acciones del mecanismo único (`confirmar`, `cancelar`, `vincular`,
+ * `editar`) responden `{ item }`. Se desenvuelve aquí, en un solo lugar, para
+ * que ninguna pantalla consumidora reciba la envoltura como si fuera la ficha.
+ */
+function desenvuelto(
+  value: TransferenciaPendienteDTO | { item?: TransferenciaPendienteDTO },
+): TransferenciaPendienteDTO {
+  const envelope = value as { item?: TransferenciaPendienteDTO };
+  if (envelope && typeof envelope.item === "object" && envelope.item !== null)
+    return envelope.item;
+  return value as TransferenciaPendienteDTO;
+}
+
 export type TransferenciaPendienteFichaProps = {
   pendiente: TransferenciaPendienteDTO;
   onChanged?: (item: TransferenciaPendienteDTO) => void;
@@ -66,6 +97,43 @@ export type TransferenciaPendienteFichaProps = {
   go?: (path: string) => void;
   className?: string;
 };
+
+/**
+ * §10.3 — alerta única de «Pendiente de realizar».
+ *
+ * La usan las tres superficies: lista general de Movimientos, bandeja de
+ * pendientes y detalle del Gasto. El glifo es decorativo y el texto es el que
+ * informa: la alerta nunca depende solo del color.
+ */
+export function AlertaPendienteDeRealizar({ detalle }: { detalle?: string }) {
+  return (
+    <p className="pendiente-alerta">
+      <span className="pendiente-alerta-icono" aria-hidden="true">
+        !
+      </span>
+      <span>
+        <strong>Pendiente de realizar.</strong>{" "}
+        {detalle ??
+          "La Transferencia todavía no es un hecho real: no mueve saldos, no ejecuta presupuesto y no computa en el motor de Anticipos."}
+      </span>
+    </p>
+  );
+}
+
+/**
+ * §10.3 — la misma alerta en formato compacto para celdas de lista. Conserva
+ * el glifo y el texto completo: no hay una versión que dependa solo del color.
+ */
+export function EtiquetaPendienteDeRealizar() {
+  return (
+    <span className="pendiente-alerta pendiente-alerta-chip">
+      <span className="pendiente-alerta-icono" aria-hidden="true">
+        !
+      </span>
+      <span>Pendiente de realizar</span>
+    </span>
+  );
+}
 
 export function TransferenciaPendienteFicha({
   pendiente: raw,
@@ -75,13 +143,29 @@ export function TransferenciaPendienteFicha({
   className,
 }: TransferenciaPendienteFichaProps) {
   const pendiente = normalizeItem(raw);
-  const [mode, setMode] = useState<"ver" | "confirmar" | "cancelar">("ver");
+  const [mode, setMode] = useState<
+    "ver" | "confirmar" | "cancelar" | "editar" | "vincular"
+  >("ver");
   const [fechaReal, setFechaReal] = useState(today());
   const [impact, setImpact] =
     useState<TransferenciaPendienteImpactoDTO | null>(null);
   const [realizada, setRealizada] = useState(false);
   const [aceptarCoincidencia, setAceptarCoincidencia] = useState(false);
   const [motivo, setMotivo] = useState("");
+  // §8.4 y E3.1: la Transferencia de Anticipo exige la atribución del hecho
+  // real. El API la valida; el formulario no la inventa ni la deduce.
+  const [evidencia, setEvidencia] = useState("");
+  const [procedencia, setProcedencia] = useState("");
+  const [edicion, setEdicion] = useState({
+    importe: "",
+    fechaPrevista: "",
+    concepto: "",
+    nota: "",
+  });
+  const [candidatos, setCandidatos] = useState<
+    { id: string; fecha: string; importe: string; origen: string; destino: string }[]
+  >([]);
+  const [candidatosCargados, setCandidatosCargados] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -97,12 +181,22 @@ export function TransferenciaPendienteFicha({
     setRealizada(false);
     setAceptarCoincidencia(false);
     setMotivo("");
+    setEvidencia("");
+    setProcedencia("");
+    setCandidatos([]);
+    setCandidatosCargados(false);
     setError("");
     setFieldErrors({});
     setKey(crypto.randomUUID());
-    setNotice("");
     setFechaReal(today());
   }, [pendiente.id, pendiente.revision]);
+
+  // El aviso de éxito sobrevive a la revisión nueva del mismo pendiente: el
+  // API devuelve la ficha ya actualizada y borrarlo dejaría la acción sin
+  // confirmación visible. Solo se limpia al cambiar de pendiente.
+  useEffect(() => {
+    setNotice("");
+  }, [pendiente.id]);
 
   useEffect(() => {
     if (!error) return;
@@ -124,7 +218,17 @@ export function TransferenciaPendienteFicha({
       const data = await api<TransferenciaPendienteImpactoDTO>(
         `/transferencias-pendientes/${pendiente.id}/impacto`,
         "POST",
-        { fechaReal },
+        {
+          fechaReal,
+          ...(pendiente.modalidad === "B"
+            ? {
+                anticipo: {
+                  evidencia: evidencia.trim(),
+                  procedencia: procedencia.trim(),
+                },
+              }
+            : {}),
+        },
       );
       setImpact({
         ...data,
@@ -152,13 +256,23 @@ export function TransferenciaPendienteFicha({
     setError("");
     setFieldErrors({});
     try {
-      const item = await api<TransferenciaPendienteDTO>(
+      const respuesta = await api<
+        TransferenciaPendienteDTO | { item?: TransferenciaPendienteDTO }
+      >(
         `/transferencias-pendientes/${pendiente.id}/confirmar`,
         "POST",
         {
           revision: pendiente.revision,
           fechaReal,
           fingerprint: impact.fingerprint,
+          ...(pendiente.modalidad === "B"
+            ? {
+                anticipo: {
+                  evidencia: evidencia.trim(),
+                  procedencia: procedencia.trim(),
+                },
+              }
+            : {}),
           ...(impact.duplicados.length
             ? { aceptarCoincidencia }
             : {}),
@@ -168,13 +282,99 @@ export function TransferenciaPendienteFicha({
       setNotice("Transferencia confirmada. El Movimiento real ya existe.");
       setMode("ver");
       setImpact(null);
-      onChanged?.(normalizeItem(item));
+      onChanged?.(normalizeItem(desenvuelto(respuesta)));
     } catch (e) {
-      setError((e as Error).message);
+      setError(
+        e instanceof ApiError
+          ? mensajeCoordinado(e.code, e.message)
+          : (e as Error).message,
+      );
       if (e instanceof ApiError) {
         setFieldErrors(e.fields);
         if (e.status === 409) setImpact(null);
       }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function editar() {
+    setBusy(true);
+    setError("");
+    setFieldErrors({});
+    try {
+      const respuesta = await api<
+        TransferenciaPendienteDTO | { item?: TransferenciaPendienteDTO }
+      >(
+        `/transferencias-pendientes/${pendiente.id}`,
+        "PATCH",
+        {
+          revision: pendiente.revision,
+          // El campo admite la coma decimal española; el API exige el formato
+          // canónico con punto y dos decimales exactos.
+          importe: importeApi(edicion.importe),
+          fechaPrevista: edicion.fechaPrevista,
+          concepto: edicion.concepto,
+          nota: edicion.nota,
+        },
+        { "idempotency-key": key },
+      );
+      setNotice("Pendiente actualizado. La modalidad y el Gasto no han cambiado.");
+      setMode("ver");
+      onChanged?.(normalizeItem(desenvuelto(respuesta)));
+    } catch (e) {
+      setError(
+        e instanceof ApiError
+          ? mensajeCoordinado(e.code, e.message)
+          : (e as Error).message,
+      );
+      if (e instanceof ApiError) setFieldErrors(e.fields);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function buscarCandidatos() {
+    setBusy(true);
+    setError("");
+    try {
+      const data = await api<{ items: typeof candidatos }>(
+        `/transferencias-pendientes/${pendiente.id}/candidatos`,
+      );
+      setCandidatos(Array.isArray(data.items) ? data.items : []);
+      setCandidatosCargados(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function vincular(movimientoId: string) {
+    setBusy(true);
+    setError("");
+    setFieldErrors({});
+    try {
+      const respuesta = await api<
+        TransferenciaPendienteDTO | { item?: TransferenciaPendienteDTO }
+      >(
+        `/transferencias-pendientes/${pendiente.id}/vincular`,
+        "POST",
+        { revision: pendiente.revision, movimientoId },
+        { "idempotency-key": key },
+      );
+      setNotice(
+        "Pendiente vinculado a la Transferencia existente. No se ha creado ni modificado ningún Movimiento.",
+      );
+      setMode("ver");
+      onChanged?.(normalizeItem(desenvuelto(respuesta)));
+    } catch (e) {
+      setError(
+        e instanceof ApiError
+          ? mensajeCoordinado(e.code, e.message)
+          : (e as Error).message,
+      );
+      if (e instanceof ApiError) setFieldErrors(e.fields);
     } finally {
       setBusy(false);
     }
@@ -185,7 +385,9 @@ export function TransferenciaPendienteFicha({
     setError("");
     setFieldErrors({});
     try {
-      const item = await api<TransferenciaPendienteDTO>(
+      const respuesta = await api<
+        TransferenciaPendienteDTO | { item?: TransferenciaPendienteDTO }
+      >(
         `/transferencias-pendientes/${pendiente.id}/cancelar`,
         "POST",
         { revision: pendiente.revision, motivo },
@@ -193,7 +395,7 @@ export function TransferenciaPendienteFicha({
       );
       setNotice("Pendiente cancelado con motivo; no hay efecto financiero.");
       setMode("ver");
-      onChanged?.(normalizeItem(item));
+      onChanged?.(normalizeItem(desenvuelto(respuesta)));
     } catch (e) {
       setError((e as Error).message);
       if (e instanceof ApiError) setFieldErrors(e.fields);
@@ -227,10 +429,28 @@ export function TransferenciaPendienteFicha({
         </Tag>
       </div>
 
+      {pendienteDeRealizar && (
+        <AlertaPendienteDeRealizar
+          detalle={
+            pendiente.modalidad === "B"
+              ? "El Gasto ya es real; la Transferencia de Anticipo todavía no existe, así que no hay Referencia ni ficha creadas y el motor de Anticipos no computa nada."
+              : "El Gasto ya es real; la Transferencia ordinaria todavía no existe, así que no mueve saldos ni ejecuta presupuesto."
+          }
+        />
+      )}
+
       <dl className="detail-grid">
         <div>
           <dt>Importe</dt>
           <dd>{amount(pendiente.importe)}</dd>
+        </div>
+        <div>
+          <dt>Modalidad</dt>
+          <dd>
+            {pendiente.modalidad
+              ? etiquetaModalidad(pendiente.modalidad)
+              : "No aplica"}
+          </dd>
         </div>
         <div>
           <dt>Origen → destino</dt>
@@ -261,6 +481,45 @@ export function TransferenciaPendienteFicha({
           <dt>Procedencia</dt>
           <dd>{origenTipo(pendiente.origenTipo)}</dd>
         </div>
+        {pendiente.gasto && (
+          <div>
+            <dt>Gasto vinculado</dt>
+            <dd>
+              {go ? (
+                <a
+                  href={`/movimientos/${pendiente.gasto}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go(`/movimientos/${pendiente.gasto}`);
+                  }}
+                >
+                  #{pendiente.gasto}
+                </a>
+              ) : (
+                `#${pendiente.gasto}`
+              )}
+              {pendiente.gastoRevision !== null
+                ? ` · revisión ${pendiente.gastoRevision}`
+                : " · sin línea base"}
+            </dd>
+          </div>
+        )}
+        {pendiente.modalidad === "B" && (
+          <div>
+            <dt>Referencia de Anticipo prevista</dt>
+            <dd>
+              {pendiente.anticipoPrevisto
+                ? `${pendiente.anticipoPrevisto} · Referencia existente`
+                : pendiente.anticipoIntencion
+                  ? `Intención de alta: ${pendiente.anticipoIntencion.nombre}${
+                      pendiente.anticipoIntencion.apertura
+                        ? ` · apertura ${date(pendiente.anticipoIntencion.apertura)}`
+                        : ""
+                    }`
+                  : "No informada"}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Concepto</dt>
           <dd>{pendiente.concepto || "Sin concepto"}</dd>
@@ -349,6 +608,36 @@ export function TransferenciaPendienteFicha({
             className="secondary"
             disabled={busy}
             onClick={() => {
+              setMode("editar");
+              setError("");
+              setNotice("");
+              setEdicion({
+                importe: pendiente.importe,
+                fechaPrevista: pendiente.fechaPrevista,
+                concepto: pendiente.concepto,
+                nota: pendiente.nota,
+              });
+            }}
+          >
+            Editar importe y fecha prevista
+          </button>
+          <button
+            className="secondary"
+            disabled={busy}
+            onClick={() => {
+              setMode("vincular");
+              setError("");
+              setNotice("");
+              setCandidatos([]);
+              setCandidatosCargados(false);
+            }}
+          >
+            Vincular a una Transferencia existente
+          </button>
+          <button
+            className="secondary"
+            disabled={busy}
+            onClick={() => {
               setMode("cancelar");
               setError("");
               setNotice("");
@@ -383,8 +672,54 @@ export function TransferenciaPendienteFicha({
               }}
             />
           </Field>
+          {pendiente.modalidad === "B" && (
+            <FormGrid>
+              <Field
+                id={`pendiente-${pendiente.id}-evidencia`}
+                label="Evidencia de la Transferencia de Anticipo *"
+                help="Hecho real que respalda el adelanto; el API lo exige y no se deduce."
+                required
+                error={fieldErrors["anticipo.evidencia"] ?? fieldErrors.evidencia}
+              >
+                <input
+                  maxLength={1000}
+                  value={evidencia}
+                  onChange={(e) => {
+                    setEvidencia(e.target.value);
+                    setImpact(null);
+                  }}
+                />
+              </Field>
+              <Field
+                id={`pendiente-${pendiente.id}-procedencia`}
+                label="Procedencia de la Transferencia de Anticipo *"
+                help="Origen documental de la evidencia. Se conserva con el hecho real."
+                required
+                error={
+                  fieldErrors["anticipo.procedencia"] ?? fieldErrors.procedencia
+                }
+              >
+                <input
+                  maxLength={1000}
+                  value={procedencia}
+                  onChange={(e) => {
+                    setProcedencia(e.target.value);
+                    setImpact(null);
+                  }}
+                />
+              </Field>
+            </FormGrid>
+          )}
           <div className="actions">
-            <button className="secondary" disabled={busy} onClick={revisar}>
+            <button
+              className="secondary"
+              disabled={
+                busy ||
+                (pendiente.modalidad === "B" &&
+                  (!evidencia.trim() || !procedencia.trim()))
+              }
+              onClick={revisar}
+            >
               Revisar confirmación
             </button>
             <button
@@ -466,6 +801,8 @@ export function TransferenciaPendienteFicha({
                       disabled={
                         busy ||
                         !realizada ||
+                        (pendiente.modalidad === "B" &&
+                          (!evidencia.trim() || !procedencia.trim())) ||
                         (impact.duplicados.length > 0 && !aceptarCoincidencia)
                       }
                       onClick={confirmar}
@@ -515,6 +852,159 @@ export function TransferenciaPendienteFicha({
               Volver a la ficha
             </button>
           </div>
+        </section>
+      )}
+
+      {pendienteDeRealizar && mode === "editar" && (
+        <section aria-label={`Edición de la Transferencia pendiente ${pendiente.id}`}>
+          <h4>Editar importe y fecha prevista</h4>
+          <p>
+            La modalidad y el Gasto vinculado no se editan: la modalidad es
+            inmutable tras el alta y el Gasto pertenece al hecho real. Cambiar la
+            modalidad exige cancelar con motivo y crear otro pendiente.
+          </p>
+          <FormGrid>
+            <Field
+              id={`pendiente-${pendiente.id}-editar-importe`}
+              label="Importe previsto (€) *"
+              error={fieldErrors.importe}
+              required
+            >
+              <input
+                inputMode="decimal"
+                value={edicion.importe}
+                onChange={(e) =>
+                  setEdicion((v) => ({ ...v, importe: e.target.value }))
+                }
+              />
+            </Field>
+            <Field
+              id={`pendiente-${pendiente.id}-editar-fecha`}
+              label="Fecha prevista *"
+              error={fieldErrors.fechaPrevista}
+              required
+            >
+              <input
+                type="date"
+                value={edicion.fechaPrevista}
+                onChange={(e) =>
+                  setEdicion((v) => ({ ...v, fechaPrevista: e.target.value }))
+                }
+              />
+            </Field>
+            <Field
+              id={`pendiente-${pendiente.id}-editar-concepto`}
+              label="Concepto"
+              error={fieldErrors.concepto}
+            >
+              <input
+                value={edicion.concepto}
+                onChange={(e) =>
+                  setEdicion((v) => ({ ...v, concepto: e.target.value }))
+                }
+              />
+            </Field>
+            <Field
+              id={`pendiente-${pendiente.id}-editar-nota`}
+              label="Nota"
+              error={fieldErrors.nota}
+            >
+              <textarea
+                maxLength={4000}
+                value={edicion.nota}
+                onChange={(e) =>
+                  setEdicion((v) => ({ ...v, nota: e.target.value }))
+                }
+              />
+            </Field>
+          </FormGrid>
+          <div className="actions">
+            <button
+              className="primary"
+              disabled={
+                busy ||
+                !edicion.importe.trim() ||
+                !edicion.fechaPrevista
+              }
+              onClick={editar}
+            >
+              Guardar cambios del pendiente
+            </button>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => setMode("ver")}
+            >
+              Volver a la ficha
+            </button>
+          </div>
+        </section>
+      )}
+
+      {pendienteDeRealizar && mode === "vincular" && (
+        <section aria-label={`Vinculación de la Transferencia pendiente ${pendiente.id}`}>
+          <h4>Vincular a una Transferencia existente</h4>
+          <p>
+            Solo se admiten Transferencias reales con coincidencia exacta de
+            dirección e importe y, cuando la modalidad lo exige, de Referencia. El
+            hecho existente no se modifica ni se duplica; si el importe difiere,
+            cancela el pendiente y usa el procedimiento ordinario.
+          </p>
+          <div className="actions">
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={buscarCandidatos}
+            >
+              Buscar Transferencias coincidentes
+            </button>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => setMode("ver")}
+            >
+              Volver a la ficha
+            </button>
+          </div>
+          {candidatosCargados &&
+            (candidatos.length === 0 ? (
+              <p className="help">
+                No hay ninguna Transferencia real que coincida exactamente. Con
+                una intención de Referencia todavía no existe Referencia con la
+                que coincidir: confirma la Transferencia o cancela con motivo.
+              </p>
+            ) : (
+              <ul className="ui-data-list" aria-label="Transferencias candidatas">
+                {candidatos.map((c) => (
+                  <li key={c.id} className="ui-data-list-item">
+                    <div className="ui-data-list-field">
+                      <span className="ui-data-list-label">Movimiento</span>
+                      <div className="ui-data-list-value">
+                        #{c.id} · {date(c.fecha)} · {eur(c.importe)}
+                      </div>
+                    </div>
+                    <div className="ui-data-list-field">
+                      <span className="ui-data-list-label">Dirección</span>
+                      <div className="ui-data-list-value">
+                        {c.origen} → {c.destino}
+                      </div>
+                    </div>
+                    <div className="ui-data-list-field" data-kind="actions">
+                      <span className="ui-data-list-label">Acción</span>
+                      <div className="ui-data-list-value">
+                        <button
+                          className="secondary"
+                          disabled={busy || pendiente.requiereRevision}
+                          onClick={() => vincular(c.id)}
+                        >
+                          Vincular el pendiente a #{c.id}
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ))}
         </section>
       )}
     </section>
@@ -630,7 +1120,7 @@ export function PendientesDeConfirmar({ go }: { go?: (path: string) => void }) {
         >
           {attentionOnly
             ? "Ningún pendiente tiene una condición de revisión."
-            : "Cuando prepares un reparto, sus Transferencias pendientes aparecerán aquí, separadas de los hechos ejecutados."}
+            : "Cuando registres un Gasto coordinado o prepares un reparto, sus Transferencias pendientes aparecerán aquí, separadas de los hechos ejecutados."}
         </EmptyState>
       ) : (
         <ul className="ui-data-list" aria-label="Lista de pendientes de confirmar">
@@ -670,6 +1160,40 @@ export function PendientesDeConfirmar({ go }: { go?: (path: string) => void }) {
                       ? "No confirmada · pendiente de realizar"
                       : "No es un Movimiento ejecutado"}
                   </small>
+                </div>
+              </div>
+              <div className="ui-data-list-field">
+                <span className="ui-data-list-label">Modalidad y Gasto</span>
+                <div className="ui-data-list-value">
+                  {item.modalidad
+                    ? etiquetaModalidad(item.modalidad)
+                    : "No aplica (Reparto mensual)"}
+                  {item.gasto && (
+                    <>
+                      {" · "}
+                      <a
+                        href={`/movimientos/${item.gasto}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          go?.(`/movimientos/${item.gasto}`);
+                        }}
+                      >
+                        Gasto #{item.gasto}
+                      </a>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="ui-data-list-field" data-kind="alert">
+                <span className="ui-data-list-label">Alerta</span>
+                <div className="ui-data-list-value">
+                  <AlertaPendienteDeRealizar
+                    detalle={
+                      item.requiereRevision
+                        ? "Requiere revisión antes de confirmar; la alerta no desaparece hasta confirmar o cancelar válidamente."
+                        : "El Gasto ya es real; la Transferencia todavía no."
+                    }
+                  />
                 </div>
               </div>
               <div className="ui-data-list-field" data-kind="actions">

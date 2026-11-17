@@ -14,7 +14,7 @@ Base medida: `test` `91c32f5` (I4), esquema `v31`. Datos reales fuera de alcance
 | **I3 · Operación coordinada atómica** | **implementado / en revisión** | `registro-coordinado.ts` + `createAnticipoInTransaction` + `spec37-i3-operacion-atomica.test.ts` |
 | **I4 · Confirmación, vínculo y cancelación** | **implementado / en revisión** | `transferencias-pendientes.ts` (`confirmar`, `vincular`, `candidatos`, `atribucionAnticipo`) + `spec37-i4-confirmacion-vinculo.test.ts` |
 | **I4.5 · Gate `G-v31` (intención de Referencia)** | **implementado / en revisión** | `spec37-schema-v31.ts` + `transferencias-pendientes.ts` (`intencionAnticipo`, `confirmar`) + `spec37-i45-intencion-referencia.test.ts`, contrato `C31-SPEC37-INTENCION-91C32F5` |
-| I5 · UI, bandeja y alertas | pendiente | depende de I4.5 |
+| I5 · UI, bandeja y alertas | **implementado / en revisión** | `GastoCoordinado.tsx`, `TransferenciaPendienteFicha.tsx`, `Movimientos.tsx` + `spec37-i5-coordinado.test.tsx` (11) y `tests/e2e/spec37-i5-ui-coordinada.spec.ts` |
 | I6 · Regresión y E2E de los 43 AC | pendiente | depende de I5; los AC siguen `UNRUN` |
 
 ## I1 · contenido entregado
@@ -154,3 +154,59 @@ material para el usuario (I3/I4), no una inferencia del implementador.
   `e37.2-v31` conservando `e37.1-v30`, centinelas movidos a `32` y `tools/test-seed` con
   `SEED_DATA_CONTRACT=e37.2-v31` (deriva versión, contrato y SHA; la etiqueta de datos es literal).
 - Sin UI, sin tocar `precierre.ts` ni SPEC26, y sin cambios en `registro-coordinado.ts`.
+
+## I5 · contenido entregado
+
+- **Formulario coordinado** (`apps/web/src/GastoCoordinado.tsx`, ruta `/movimientos/coordinado`): Gasto real
+  (fecha no futura, importe exacto con céntimos, Saldo pagador, Partida, concepto y nota) + modalidad A/B
+  con las etiquetas de §3 y Transferencia **prevista** (Saldo que aporta/adelanta, importe con barra
+  sincronizada y fecha prevista). En B, Referencia de Anticipo **existente o intención** (nombre y,
+  opcionalmente, apertura y evidencia).
+- **Vista previa de impacto** (§10.2) antes de registrar: modalidad, Saldo que paga, importe del Gasto,
+  dirección e importe de la Transferencia, Referencia prevista, disponible anterior y posterior estimado,
+  Ciclo y Gasto íntegro del ciclo, todo desde el plan de `/movimientos/impacto` o una resta explícita
+  sobre la posición publicada. No se inventan cálculos de módulos pendientes.
+- **Déficit, mínimo y remanente** (§6): `MAX(0, Gasto − Disponible real)` y remanente positivo, con
+  «No disponible» cuando la posición no es calculable (nunca 0). Disponibilidad real y presupuestaria
+  se muestran separadas.
+- **Registro atómico** por `POST /api/operaciones-coordinadas`: Gasto y pendiente en una transacción;
+  el formulario envía `pendiente.modalidad`, dirección, importes y la forma de Referencia, sin cálculos
+  ni estados.
+- **Ficha del pendiente** ampliada: modalidad, Gasto vinculado con su revisión, Referencia prevista
+  (existente o intención), motivos de revisión del origen coordinado y acciones **confirmar**,
+  **editar importe y fecha prevista**, **vincular** (candidatos con coincidencia exacta) y **cancelar con motivo**.
+- **Confirmación de modalidad B** exige `evidencia` y `procedencia` (campos obligatorios y botón de
+  revisión bloqueado sin ellos); el API ya las validaba y el formulario no las deduce.
+- **Alerta «Pendiente de realizar»** con icono y texto en las tres superficies: lista general de
+  Movimientos, bandeja de pendientes y detalle del Gasto. La bandeja muestra además modalidad, Gasto y
+  el contador «Requieren atención».
+- **409 sin perder el borrador** (AC-22): el conflicto de coincidencia (y cualquier 409/422 de la
+  operación) conserva campos, modalidad, vista previa y clave de intento; los `code` del API se mapean a
+  mensajes legibles sin inventar códigos.
+- **Ajuste de API mínimo y aditivo** (`registro-coordinado.ts`): la operación coordinada acepta y
+  propaga `anticipoNombre`, `anticipoApertura` y `anticipoEvidencia` del bloque `pendiente`. Sin esto no
+  era posible expresar por la ruta atómica la intención que `I2`/`I4.5` ya soportan en el mecanismo
+  único. No cambia el contrato de `Reparto`, ni el esquema, ni ninguna regla financiera; cubierto por
+  una prueba nueva en `spec37-i3-operacion-atomica.test.ts`.
+- **Correcciones encontradas al conectar la UI** (comportamiento previo, no contrato nuevo): las acciones
+  de la ficha responden `{ item }` y ahora se desenvuelven antes de actualizar la pantalla; el aviso de
+  éxito sobrevive a la revisión nueva del mismo pendiente; la bandeja mostraba sus filas solo por debajo
+  de 760 px y ahora se ve en todos los anchos (es la única superficie de esos registros).
+
+### Límites y materias pendientes de decisión
+
+- **AC-28 no se cubre en I5**: la ejecución de un Presupuesto de «Aportación a saldo» por una
+  Transferencia ordinaria depende del vínculo presupuestario del hecho real, que el pendiente coordinado
+  no tiene (`budgetEffect` solo mira la línea de reparto). No se añadió lógica para simularlo; la vista
+  previa declara que la Transferencia prevista no ejecuta presupuesto y la confirmación muestra el
+  `efectoPresupuestario` que el servidor publique.
+- **Dónde vive el formulario**: §10.1 describe el alta dentro de «Nuevo gasto», pero la operación
+  coordinada exige exactamente un acompañante (Transferencia real o pendiente). Se implementó como
+  pantalla propia `/movimientos/coordinado`, enlazada desde Movimientos; el Gasto sin Transferencia sigue
+  en el formulario ordinario. Es una decisión de ubicación, no de semántica, y requiere confirmación del
+  usuario si se prefiere integrarlo en el formulario existente.
+- **«Vista de Transferencias»** (§10.3) no existe como pantalla en la aplicación: la bandeja de
+  pendientes de Movimientos es la superficie donde vive el registro y donde se ejercen las acciones.
+- Las capturas `fullPage` a 1440 muestran la cabecera y el menú fijos en mitad de la página; es un
+  artefacto de la captura completa, no del layout (las comprobaciones de scroll horizontal pasan en 390
+  y 1440).

@@ -27,7 +27,16 @@ import {
   type TableColumn,
 } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
-import { PendientesDeConfirmar } from "./TransferenciaPendienteFicha";
+import { GastoCoordinado } from "./GastoCoordinado";
+import {
+  EtiquetaPendienteDeRealizar,
+  PendientesDeConfirmar,
+  TransferenciaPendienteFicha,
+} from "./TransferenciaPendienteFicha";
+import type {
+  TransferenciaPendienteDTO,
+  TransferenciaPendienteListaDTO,
+} from "./api";
 type Related = { id: string; nombre: string; estado?: string };
 type Partida = Related & {
   deuda: string | null;
@@ -205,6 +214,8 @@ export function Movimientos({
         go={go}
       />
     );
+  if (path.split("?")[0] === base + "/coordinado")
+    return <GastoCoordinado key="coordinado" go={go} />;
   if (path.split("?")[0] === base + "/nuevo")
     return (
       <MovementForm
@@ -260,7 +271,34 @@ function MovementList({
       total: number;
     } | null>(null),
     [error, setError] = useState(""),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    // §10.3 — índice Gastos con Transferencia pendiente activa, para la alerta
+    // en la lista general. El pendiente no es un Movimiento: no entra en los
+    // totales ni en los filtros de esta lista.
+    [pendientes, setPendientes] = useState<
+      Record<string, TransferenciaPendienteDTO>
+    >({});
+  useEffect(() => {
+    let live = true;
+    api<TransferenciaPendienteListaDTO>(
+      "/transferencias-pendientes?" +
+        new URLSearchParams({ estado: "Pendiente de realizar", page: "1" }),
+    )
+      .then((d) => {
+        if (!live) return;
+        const mapa: Record<string, TransferenciaPendienteDTO> = {};
+        for (const item of d.items ?? [])
+          if (item.gasto && item.estado === "Pendiente de realizar")
+            mapa[item.gasto] = item;
+        setPendientes(mapa);
+      })
+      .catch(() => {
+        if (live) setPendientes({});
+      });
+    return () => {
+      live = false;
+    };
+  }, [retry]);
   useEffect(() => {
     let live = true;
     setLoading(true);
@@ -360,6 +398,7 @@ function MovementList({
         <>
           {cellLink(m)}
           <small className="table-id">#{m.id}</small>
+          {pendientes[m.id] && <EtiquetaPendienteDeRealizar />}
         </>
       ),
     },
@@ -411,6 +450,9 @@ function MovementList({
         <button className="primary" onClick={() => go(base + "/nuevo")}>
           <span className="movement-new-icon" aria-hidden="true" />
           Nuevo movimiento
+        </button>
+        <button className="secondary" onClick={() => go(base + "/coordinado")}>
+          Nuevo Gasto coordinado
         </button>
       </PageHead>
       <p className="page-foot">
@@ -641,7 +683,28 @@ function MovementList({
 function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
   const [data, setData] = useState<Detail | null>(null),
     [error, setError] = useState(""),
-    [retry, setRetry] = useState(0);
+    [retry, setRetry] = useState(0),
+    // §10.3 — el detalle del Gasto muestra la alerta y la ficha del pendiente
+    // vinculado. Se lee el mecanismo único: no hay una segunda fuente.
+    [pendiente, setPendiente] = useState<TransferenciaPendienteDTO | null>(null),
+    [pendienteRetry, setPendienteRetry] = useState(0);
+  useEffect(() => {
+    let live = true;
+    api<TransferenciaPendienteListaDTO>(
+      "/transferencias-pendientes?" +
+        new URLSearchParams({ estado: "Pendiente de realizar", page: "1" }),
+    )
+      .then((d) => {
+        if (!live) return;
+        setPendiente((d.items ?? []).find((item) => item.gasto === id) ?? null);
+      })
+      .catch(() => {
+        if (live) setPendiente(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, pendienteRetry]);
   useEffect(() => {
     let live = true;
     setData(null);
@@ -722,6 +785,14 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
             representa una devolución bancaria.
           </p>
         </div>
+      )}
+      {pendiente && (
+        <TransferenciaPendienteFicha
+          pendiente={pendiente}
+          go={go}
+          onChanged={(item) => setPendiente(item)}
+          onReload={() => setPendienteRetry((v) => v + 1)}
+        />
       )}
       <FormGrid className="detail-grid movement-detail-grid">
         <FormSection title="Hecho registrado">
