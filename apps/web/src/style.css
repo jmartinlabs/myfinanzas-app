@@ -564,11 +564,18 @@ small {
   font-size: var(--text-xs);
   box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
 }
+/* Escritorio: el panel se ancla al propio disparador (encima y alineado con su
+   borde izquierdo), no al borde derecho del viewport. `max-width` lo mantiene
+   dentro de la pantalla si el disparador estuviera cerca del borde. */
 @media (min-width: 761px) {
   .app-version-panel {
-    left: auto;
-    right: 24px;
-    width: min(360px, calc(100vw - 48px));
+    position: absolute;
+    left: 0;
+    right: auto;
+    bottom: calc(100% + var(--space-2));
+    width: min(360px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - var(--footer-height) - env(safe-area-inset-bottom, 0px) - var(--space-6));
   }
 }
 /* La cabecera del panel queda pegada arriba: con scroll interno la «×» sigue

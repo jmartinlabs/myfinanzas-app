@@ -325,10 +325,33 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await page.keyboard.press("Escape");
   await page.getByLabel("Apariencia").selectOption({ value: "dark-s" });
 
-  // ── 1440 ────────────────────────────────────────────────────────────────
+  // ── 1440 y ventana ancha: el panel se abre junto al disparador ──────────
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expectPinnedFooter(page);
   await expect(versionToggle).toBeVisible();
+  for (const width of [1440, 2048]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await versionToggle.click();
+    await expect(panel).toBeVisible();
+    const trigger = (await versionToggle.boundingBox())!;
+    const opened = (await panel.boundingBox())!;
+    // Alineado con el borde izquierdo del disparador y por encima de él.
+    expect(Math.abs(opened.x - trigger.x), `ancho ${width}`).toBeLessThanOrEqual(2);
+    expect(opened.y + opened.height, `ancho ${width}`).toBeLessThanOrEqual(
+      trigger.y - 1,
+    );
+    // Sin desplazarse al extremo derecho ni salir del viewport.
+    expect(opened.x + opened.width, `ancho ${width}`).toBeLessThanOrEqual(width);
+    expect(opened.x + opened.width / 2, `ancho ${width}`).toBeLessThan(width / 2);
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await versionToggle.click();
+  await expect(panel).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/panel-1440-anclado.png`, fullPage: false });
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
   await page.screenshot({
     path: `${SHOTS}/pie-1440.png`,
     fullPage: false,
@@ -355,6 +378,12 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     await versionToggle.click();
     await expect(panel).toBeVisible();
     await expect(panel).toContainText(`SQLite v${SCHEMA}`);
+    // Segunda apariencia con el panel abierto: mismo anclaje, otra identidad.
+    if (id === "casa")
+      await page.screenshot({
+        path: `${SHOTS}/panel-1440-casa.png`,
+        fullPage: false,
+      });
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
     const themeOverflow = await page.evaluate(() => ({
