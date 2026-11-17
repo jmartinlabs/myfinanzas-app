@@ -1,0 +1,412 @@
+/* Aurora · sexta apariencia · capa de identidad
+ *
+ * Oscuro premium de fase C: azul-negro, reflejos radiales turquesa, luz
+ * ambiental y degradados profundos. Se importa desde `style.css` antes de las
+ * reglas base y todo selector queda bajo `html[data-theme="aurora"]`.
+ *
+ * Solo presentación: no define layout (display/grid/flex/gap/padding/margin/
+ * position/width/height/order), no fuerza declaraciones con prioridad y no
+ * toca otros temas. La luz ambiental se pinta con `background-image` sobre
+ * superficies existentes; no se añaden nodos ni pseudo-elementos de
+ * composición.
+ */
+
+html[data-theme="aurora"] {
+  --aurora-bg-image:
+    radial-gradient(
+      ellipse 1080px 580px at 82% -10%,
+      rgb(30 111 122 / 0.28),
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 700px 500px at 100% 108%,
+      rgb(43 228 222 / 0.05),
+      transparent 62%
+    ),
+    linear-gradient(145deg, #091115 0%, #0b171c 56%, #080e11 100%);
+  --aurora-ambient:
+    radial-gradient(
+      ellipse 760px 460px at 88% 4%,
+      rgb(30 111 122 / 0.26),
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse 620px 420px at 4% 96%,
+      rgb(43 228 222 / 0.06),
+      transparent 64%
+    );
+  --aurora-card-bg: linear-gradient(160deg, #17252b 0%, #0c1519 100%);
+  --aurora-card-border: #304148;
+  --aurora-card-shadow: 0 12px 30px rgb(0 0 0 / 0.26);
+  --aurora-topbar-bg: rgb(9 17 21 / 0.72);
+  --aurora-hero-bg:
+    radial-gradient(
+      ellipse 540px 300px at 16% -18%,
+      rgb(30 111 122 / 0.38),
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse 420px 260px at 94% -24%,
+      rgb(30 111 122 / 0.17),
+      transparent 66%
+    ),
+    linear-gradient(135deg, #152329 0%, #0c161b 100%);
+  --aurora-glow: rgb(43 228 222 / 0.14);
+}
+
+/* Fondo y luz ambiental -------------------------------------------------- */
+
+html[data-theme="aurora"] body {
+  background-color: var(--bg);
+  background-image: var(--aurora-bg-image);
+}
+
+html[data-theme="aurora"] .workspace {
+  background-image: var(--aurora-ambient);
+}
+
+@media (min-width: 820px) {
+  html[data-theme="aurora"] body {
+    background-attachment: fixed;
+  }
+}
+
+/* Shell ------------------------------------------------------------------ */
+
+html[data-theme="aurora"] .sidebar {
+  background-color: var(--sidebar);
+  background-image:
+    radial-gradient(
+      ellipse at 30% 100%,
+      rgb(30 111 122 / 0.3),
+      transparent 66%
+    ),
+    linear-gradient(180deg, #0b1115 0%, #080d10 100%);
+  border-right-color: var(--sidebar-border);
+}
+
+html[data-theme="aurora"] .brand {
+  letter-spacing: -1.3px;
+}
+
+html[data-theme="aurora"] .brand small {
+  color: var(--sidebar-muted);
+  letter-spacing: 1.55px;
+}
+
+html[data-theme="aurora"] .nav-legacy-label {
+  color: var(--sidebar-muted);
+  letter-spacing: 1.7px;
+}
+
+html[data-theme="aurora"] .nav-link,
+html[data-theme="aurora"] .nav-active {
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+html[data-theme="aurora"] .nav-link:hover {
+  border-color: var(--sidebar-border);
+  background: var(--sidebar-hover);
+}
+
+html[data-theme="aurora"] .nav-active {
+  border-color: rgb(43 228 222 / 0.36);
+  background-image: linear-gradient(90deg, #086e70, #12464c);
+  box-shadow: 0 0 18px var(--aurora-glow);
+}
+
+html[data-theme="aurora"] .nav-active::before {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+html[data-theme="aurora"] .nav-icon {
+  color: var(--sidebar-muted);
+}
+
+html[data-theme="aurora"] .nav-active .nav-icon {
+  color: currentColor;
+}
+
+html[data-theme="aurora"] .sidebar-bottom {
+  border-top-color: var(--sidebar-border);
+}
+
+html[data-theme="aurora"] .menu-toggle {
+  border: 1px solid var(--sidebar-border);
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text);
+}
+
+html[data-theme="aurora"] .menu-toggle:hover {
+  border-color: var(--accent-border);
+}
+
+html[data-theme="aurora"] .global-header {
+  background: var(--aurora-topbar-bg);
+  border-bottom-color: var(--sidebar-border);
+  backdrop-filter: blur(14px) saturate(118%);
+  -webkit-backdrop-filter: blur(14px) saturate(118%);
+}
+
+html[data-theme="aurora"] .global-footer {
+  border-top-color: var(--border);
+  background: var(--footer-bg);
+}
+
+html[data-theme="aurora"] .local-badge {
+  border-color: var(--border);
+  background: rgb(11 20 24 / 0.8);
+  color: var(--text);
+}
+
+html[data-theme="aurora"] .skip-link {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Lenguaje de página ----------------------------------------------------- */
+
+html[data-theme="aurora"] .eyebrow {
+  color: var(--accent);
+}
+
+html[data-theme="aurora"] .panel {
+  border-color: var(--aurora-card-border);
+  background-color: var(--surface);
+  background-image: var(--aurora-card-bg);
+  box-shadow: var(--aurora-card-shadow);
+}
+
+html[data-theme="aurora"] .panel-head {
+  border-bottom-color: var(--aurora-card-border);
+}
+
+html[data-theme="aurora"] .panel summary {
+  border-color: var(--border);
+}
+
+html[data-theme="aurora"] .notice {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+html[data-theme="aurora"] .alert {
+  border-color: var(--error-border);
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+html[data-theme="aurora"] .tag {
+  border-color: var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
+}
+
+/* Controles -------------------------------------------------------------- */
+
+html[data-theme="aurora"] .primary {
+  box-shadow: 0 10px 24px rgb(228 87 46 / 0.22);
+}
+
+html[data-theme="aurora"] .secondary,
+html[data-theme="aurora"] .text-button {
+  border-color: var(--border);
+  background: rgb(11 20 24 / 0.8);
+  color: var(--text);
+}
+
+html[data-theme="aurora"] .secondary:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+html[data-theme="aurora"] .theme-picker select {
+  border-color: var(--control-border);
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+html[data-theme="aurora"] input,
+html[data-theme="aurora"] select,
+html[data-theme="aurora"] textarea {
+  border-color: var(--control-border);
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+html[data-theme="aurora"] input::placeholder,
+html[data-theme="aurora"] textarea::placeholder {
+  color: var(--muted);
+}
+
+html[data-theme="aurora"] :focus-visible {
+  outline-color: var(--focus);
+}
+
+html[data-theme="aurora"] input:focus-visible,
+html[data-theme="aurora"] select:focus-visible,
+html[data-theme="aurora"] textarea:focus-visible {
+  box-shadow: 0 0 0 3px rgb(43 228 222 / 0.2);
+}
+
+html[data-theme="aurora"] input:disabled,
+html[data-theme="aurora"] select:disabled,
+html[data-theme="aurora"] textarea:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+}
+
+/* Tablas y tarjetas ------------------------------------------------------ */
+
+html[data-theme="aurora"] .ui-table th {
+  background: var(--table-head);
+  border-bottom-color: var(--border);
+  color: var(--muted);
+}
+
+html[data-theme="aurora"] .ui-table td {
+  border-top-color: var(--surface-2);
+}
+
+html[data-theme="aurora"] .ui-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+html[data-theme="aurora"] .ui-data-list-item {
+  border: 1px solid var(--aurora-card-border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  background-image: var(--aurora-card-bg);
+}
+
+html[data-theme="aurora"] .ui-badge {
+  border-color: var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
+}
+
+html[data-theme="aurora"] .ui-badge-ok {
+  border-color: var(--positive-border);
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+
+html[data-theme="aurora"] .ui-badge-partial {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+html[data-theme="aurora"] .ui-badge-nd {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+html[data-theme="aurora"] .ui-badge-info {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme="aurora"] .empty,
+html[data-theme="aurora"] .ui-table-empty {
+  color: var(--muted);
+}
+
+/* Inicio: hero de control, KPI y rail ------------------------------------ */
+
+html[data-theme="aurora"] .inicio-page .graphite-control {
+  border-color: var(--aurora-card-border);
+  background-color: #0e1a20;
+  background-image: var(--aurora-hero-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(43 228 222 / 0.08),
+    0 24px 60px rgb(0 0 0 / 0.32);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-control-cell {
+  border-left-color: rgb(48 65 72 / 0.7);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-kicker {
+  color: var(--accent);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-hero-amount .ui-amount-value {
+  color: var(--text);
+  text-shadow: 0 0 26px var(--aurora-glow);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-control-link a {
+  color: var(--accent);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-kpis {
+  border-color: var(--aurora-card-border);
+  background-color: #0c161b;
+  background-image:
+    radial-gradient(
+      ellipse 620px 220px at 12% -40%,
+      rgb(30 111 122 / 0.24),
+      transparent 70%
+    ),
+    linear-gradient(160deg, #101d23 0%, #0b1418 100%);
+  box-shadow: var(--aurora-card-shadow);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-kpi {
+  border-left-color: rgb(48 65 72 / 0.7);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-kpi-value .ui-amount-value {
+  color: var(--text);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-cycle,
+html[data-theme="aurora"] .inicio-page .graphite-rail-card {
+  border-color: var(--aurora-card-border);
+  background-color: var(--surface);
+  background-image: var(--aurora-card-bg);
+  box-shadow: var(--aurora-card-shadow);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-section-head .eyebrow {
+  color: var(--accent);
+}
+
+/* Movimientos: filtros, tabla, detalle y formularios --------------------- */
+
+html[data-theme="aurora"] .movements-list,
+html[data-theme="aurora"] .movement-detail,
+html[data-theme="aurora"] .movement-form-page .panel {
+  border-color: var(--aurora-card-border);
+  background-color: var(--surface);
+  background-image: var(--aurora-card-bg);
+  box-shadow: var(--aurora-card-shadow);
+}
+
+html[data-theme="aurora"] .movement-filters summary {
+  color: var(--muted);
+}
+
+html[data-theme="aurora"] .movement-detail[data-flow="negative"] .movement-amount {
+  color: var(--negative);
+}
+
+html[data-theme="aurora"] .movement-detail[data-flow="positive"] .movement-amount {
+  color: var(--positive);
+}
+
+/* Estados y movimiento reducido ----------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="aurora"] .movements-list .ui-table tbody tr,
+  html[data-theme="aurora"] .nav-link,
+  html[data-theme="aurora"] .nav-active {
+    transition: none;
+  }
+}

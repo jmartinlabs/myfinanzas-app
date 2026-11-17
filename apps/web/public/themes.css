@@ -358,3 +358,77 @@ html {
   --chip-border: #d5cfbe;
   --chip-text: #191c18;
 }
+
+/* Aurora · sexta apariencia. Oscuro premium de fase C: azul-negro, reflejos
+   turquesa, luz ambiental y degradados. Conserva los 66 tokens semánticos del
+   contrato, `dark-s` como valor inicial y `mf-theme` como única persistencia.
+   No modifica otros temas ni la composición. */
+:root[data-theme="aurora"] {
+  color-scheme: dark;
+  --bg: #091115;
+  --surface: #111c21;
+  --surface-2: #17252b;
+  --surface-3: #0b1418;
+  --sidebar: #0b1115;
+  --sidebar-text: #f7f5f1;
+  --sidebar-muted: #9aa4a6;
+  --sidebar-border: #23343a;
+  --sidebar-hover: #16262c;
+  --sidebar-active-bg: #0d6a6d;
+  --sidebar-active-text: #ffffff;
+  --sidebar-focus: #2be4de;
+  --brand-accent: #2be4de;
+  --text: #f7f5f1;
+  --muted: #9aa4a6;
+  --border: #304148;
+  --control-border: #527f88;
+  --action: #e4572e;
+  --on-action: #141414;
+  --action-hover: #f06a45;
+  --on-action-hover: #141414;
+  --action-active: #c94520;
+  --on-action-active: #ffffff;
+  --action-soft: #2a1e19;
+  --action-soft-border: #5c382c;
+  --accent: #2be4de;
+  --on-accent: #06181a;
+  --accent-soft: #102b30;
+  --accent-border: #1d545c;
+  --focus: #2be4de;
+  --positive: #6fe0b0;
+  --positive-soft: #12251f;
+  --positive-border: #2a4a3d;
+  --negative: #ff9a8c;
+  --negative-soft: #2a1d1a;
+  --negative-border: #553029;
+  --warning: #f2c14e;
+  --warning-soft: #2a2416;
+  --warning-border: #55462a;
+  --error: #ff7b72;
+  --error-soft: #2a1b19;
+  --error-border: #55302b;
+  --ok: #6fe0b0;
+  --row-hover: #172a31;
+  --selected: #16313a;
+  --disabled-bg: #16242a;
+  --disabled-text: #7f8b8e;
+  --shadow-1: rgb(0 0 0 / 0.34);
+  --shadow-2: rgb(0 0 0 / 0.46);
+  --strong-surface: #0b1418;
+  --on-strong: #f7f5f1;
+  --muted-on-strong: #9aa4a6;
+  --strong-border: #2b3d44;
+  --chart-1: #2be4de;
+  --chart-2: #73d7d4;
+  --chart-3: #9aa4a6;
+  --chart-4: #f7f5f1;
+  --chart-strong: #f7f5f1;
+  --chart-accent: #e4572e;
+  --header-bg: #0b171c;
+  --footer-bg: #080e11;
+  --input-bg: #0b1418;
+  --table-head: #0e1a20;
+  --chip-bg: #102028;
+  --chip-border: #2a424a;
+  --chip-text: #f7f5f1;
+}
