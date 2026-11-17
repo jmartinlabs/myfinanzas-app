@@ -171,3 +171,86 @@ test("sin animación propia: Aurora no declara @keyframes ni animation", () => {
   expect(auroraCss).not.toContain("@keyframes");
   expect(auroraCss).not.toMatch(/(^|[^-\w])animation(-name)?\s*:/);
 });
+
+test("el peor caso de la luz ambiental mantiene AA en texto secundario", () => {
+  const themesCss = readFileSync(
+    new URL("../public/themes.css", import.meta.url),
+    "utf8",
+  );
+  const block = themesCss.match(
+    /:root\[data-theme="aurora"\]\s*\{([\s\S]*?)\n\}/,
+  );
+  if (!block) throw new Error("No se encontró el bloque aurora");
+  const token = (name: string) => {
+    const found = block[1].match(new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, "i"));
+    if (!found) throw new Error(`Falta ${name}`);
+    return found[1];
+  };
+
+  // Composición declarada por la capa: fondo (dos radiales) y ambiente del
+  // workspace. Si alguien sube las opacidades, esta guarda falla.
+  const layer = auroraCss.match(
+    /html\[data-theme="aurora"\]\s*\{([\s\S]*?)\n\}/,
+  );
+  if (!layer) throw new Error("No se encontró la capa de tokens");
+  const tokenValue = (name: string) => {
+    const found = layer[1].match(new RegExp(`${name}:[\\s\\S]*?;`, "m"));
+    if (!found) throw new Error(`Falta ${name}`);
+    return found[0];
+  };
+  const alphaOf = (declaration: string, color: string) => {
+    const found = declaration.match(
+      new RegExp(`rgb\\(${color} / (0\\.\\d+)\\)`, "g"),
+    );
+    if (!found) throw new Error(`Sin ${color} en ${declaration.slice(0, 40)}`);
+    return Math.max(
+      ...found.map((entry) => Number(entry.match(/(0\.\d+)/)![1])),
+    );
+  };
+  const background = tokenValue("--aurora-bg-image");
+  const ambient = alphaOf(tokenValue("--aurora-ambient"), "30 111 122");
+  const backgroundTeal = alphaOf(background, "43 228 222");
+  const backgroundDeep = alphaOf(background, "30 111 122");
+
+  const parse = (value: string) => {
+    const n = parseInt(value.slice(1), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  };
+  const over = (
+    top: { r: number; g: number; b: number },
+    alpha: number,
+    base: { r: number; g: number; b: number },
+  ) => ({
+    r: top.r * alpha + base.r * (1 - alpha),
+    g: top.g * alpha + base.g * (1 - alpha),
+    b: top.b * alpha + base.b * (1 - alpha),
+  });
+  const luminance = ({ r, g, b }: { r: number; g: number; b: number }) => {
+    const channels = [r, g, b].map((channel) => {
+      const value = channel / 255;
+      return value <= 0.03928
+        ? value / 12.92
+        : Math.pow((value + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  };
+  const ratio = (
+    a: { r: number; g: number; b: number },
+    b: { r: number; g: number; b: number },
+  ) => {
+    const la = luminance(a);
+    const lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  };
+
+  const withBackground = over(
+    parse("#2be4de"),
+    backgroundTeal,
+    over(parse("#1e6f7a"), backgroundDeep, parse(token("--bg"))),
+  );
+  const worst = over(parse("#1e6f7a"), ambient, withBackground);
+
+  expect(ratio(parse(token("--text")), worst)).toBeGreaterThanOrEqual(4.5);
+  expect(ratio(parse(token("--muted")), worst)).toBeGreaterThanOrEqual(4.5);
+  expect(ratio(parse(token("--accent")), worst)).toBeGreaterThanOrEqual(4.5);
+});

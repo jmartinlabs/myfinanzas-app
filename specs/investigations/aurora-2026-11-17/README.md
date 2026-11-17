@@ -30,6 +30,14 @@
 comportamiento. Tampoco DOM, composición, rutas, navegación, datos, API, SQLite, contratos
 financieros ni importes.
 
+## Corrección durante la implementación
+
+La primera capa ambiental usaba `0.26` de opacidad en el radial del workspace. Al medir el peor
+caso compuesto (radial del fondo + radial turquesa + ambiente) el texto secundario caía a
+**4,26:1**, por debajo de AA. Se redujo a `0.12`, que deja el peor caso en **4,76:1**, y se añadió
+una guarda unitaria que recompone esos degradados desde el propio CSS y falla si alguien sube las
+opacidades.
+
 ## Decisión de diseño que conviene registrar
 
 La primera iteración de la capa tradujo los iconos de tipo de movimiento del prototipo
@@ -43,9 +51,10 @@ estado, que ya vienen de tokens, y no reimplementa los glifos.
 | Comprobación | Resultado |
 | --- | --- |
 | `bun run typecheck` | exit 0 |
-| `bun test apps/web/test` | **151 pass, 0 fail** |
+| `bun test apps/web/test` | **152 pass, 0 fail** |
 | `bun run build` | exit 0; CSS 326,73 kB (38,77 kB gzip) frente a 317,41 kB previos |
-| `aurora.css` | 12,4 kB, 0 propiedades de layout, 0 `!important` |
+| `aurora.css` | 12,5 kB, 0 propiedades de layout, 0 `!important` |
+| Peor caso de la luz ambiental (fondo + ambiente compuestos) | texto 9,97:1 · `--muted` **4,76:1** · acento 7,66:1 — guardado por prueba |
 | Capturas 6 pantallas × 1440/820/390 | overflow **0 px** en las 18 |
 | Capturas de las otras cinco apariencias | overflow 0 px, sin cambios de color de fondo |
 | Errores de página en las capturas | ninguno |

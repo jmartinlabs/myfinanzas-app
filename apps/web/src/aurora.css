@@ -27,7 +27,7 @@ html[data-theme="aurora"] {
   --aurora-ambient:
     radial-gradient(
       ellipse 760px 460px at 88% 4%,
-      rgb(30 111 122 / 0.26),
+      rgb(30 111 122 / 0.12),
       transparent 66%
     ),
     radial-gradient(
