@@ -30,7 +30,18 @@
 comportamiento. Tampoco DOM, composición, rutas, navegación, datos, API, SQLite, contratos
 financieros ni importes.
 
-## Corrección durante la implementación
+## Correcciones durante la implementación (QA independiente)
+
+1. **AA del texto secundario sobre el hero.** El radial del hero (`0.38`) dejaba `--muted` en
+   **3,95:1** en su punto más luminoso. Las notas y metadatos del hero usan ahora `#c9c3b9`
+   (5,75:1 sobre ese peor caso, 9,89:1 sobre `--surface`), y una guarda recompone el degradado del
+   hero para impedir retrocesos.
+2. **Caja de la navegación.** El borde de 1 px en `.nav-link`/`.nav-active` alteraba la caja. Se
+   sustituye por un `box-shadow` interior, y la guarda de layout ahora también prohíbe propiedades
+   de caja (`border*`, `box-sizing`).
+3. **Luz ambiental del workspace.** Ver el punto siguiente.
+
+## Corrección de la luz ambiental
 
 La primera capa ambiental usaba `0.26` de opacidad en el radial del workspace. Al medir el peor
 caso compuesto (radial del fondo + radial turquesa + ambiente) el texto secundario caía a
@@ -51,10 +62,10 @@ estado, que ya vienen de tokens, y no reimplementa los glifos.
 | Comprobación | Resultado |
 | --- | --- |
 | `bun run typecheck` | exit 0 |
-| `bun test apps/web/test` | **152 pass, 0 fail** |
-| `bun run build` | exit 0; CSS 326,73 kB (38,77 kB gzip) frente a 317,41 kB previos |
-| `aurora.css` | 12,5 kB, 0 propiedades de layout, 0 `!important` |
-| Peor caso de la luz ambiental (fondo + ambiente compuestos) | texto 9,97:1 · `--muted` **4,76:1** · acento 7,66:1 — guardado por prueba |
+| `bun test apps/web/test` | **153 pass, 0 fail** |
+| `bun run build` | exit 0; CSS 325,55 kB (38,66 kB gzip) frente a 317,41 kB previos |
+| `aurora.css` | 12,9 kB, 0 propiedades de layout, 0 `!important` |
+| Peor caso de la luz ambiental (fondo + ambiente compuestos) | texto 11,08:1 · `--muted` **4,76:1** · acento 7,66:1 — guardado por prueba |
 | Capturas 6 pantallas × 1440/820/390 | overflow **0 px** en las 18 |
 | Capturas de las otras cinco apariencias | overflow 0 px, sin cambios de color de fondo |
 | Errores de página en las capturas | ninguno |
@@ -64,7 +75,7 @@ estado, que ya vienen de tokens, y no reimplementa los glifos.
 `specs/investigations/aurora-2026-11-17/evidence/`:
 
 - `00-comparativa.jpg` — tablero: prototipo de fase C · Oscuro · Grafito · Aurora, más patrimonio,
-  responsive y la fila de no regresión de las otras cuatro apariencias.
+  responsive y la fila de no regresión con cuatro de las cinco apariencias previas.
 - `aurora-{inicio,movimientos,saldos,inversiones,deudas,referencias}-{1440,820,390}.jpg`.
 - `dark-s-*`, `graphite-lime-*`, `casa-*`, `light-s-*`, `hybrid-s-*`: Inicio y Movimientos de las
   cinco apariencias previas con el mismo código.

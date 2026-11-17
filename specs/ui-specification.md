@@ -45,7 +45,7 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Temas | **Seis apariencias** vigentes con **66 tokens** semánticos por tema (`themes.css`); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). Graphite Lime se integró en `test` con #356 (`bff714e`); Casa por la enmienda del 2026-11-10 y Aurora por la enmienda 2.6 del 2026-11-17. |
 | Shell | Sidebar 236 px; contenido `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px (`style.css`). |
 | Componentes | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` (`ui.tsx`). |
-| CSS | `style.css`: **4.784 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados (incluye alias locales); de los 66 tokens definidos, 30 sin uso; 0 usos de `var(--space)`. |
+| CSS | `style.css`: **6.614 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados (incluye alias locales); de los 66 tokens definidos, 30 sin uso; 0 usos de `var(--space)`. |
 | E4.6 | Integrada `cfbedb0` (#201); UX de Inicio aprobada en SPEC24. |
 | E4.9 | Integrada `0176ffc` (#200); QA APTO CON RESERVAS; UI y contratos de cierre existen. |
 | E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1` (no fusionado); 24 AC `UNRUN`. Sin UI de reapertura. |
@@ -289,7 +289,7 @@ los otros temas.
 Ratificada por el usuario en [#489](https://github.com/jmartinlabs/myfinanzas-app/issues/489) al
 aprobar las decisiones D1–D5 del análisis
 el análisis de la [PR #491](https://github.com/jmartinlabs/myfinanzas-app/pull/491) y la
-evidence de [`aurora-2026-11-17`](investigations/aurora-2026-11-17/README.md). Amplía el catálogo con una
+evidencia de [`aurora-2026-11-17`](investigations/aurora-2026-11-17/README.md). Amplía el catálogo con una
 sexta apariencia oscura independiente; no reabre Dark, Graphite, Casa ni la composición.
 
 **Decisiones fijadas:**
@@ -314,7 +314,7 @@ sexta apariencia oscura independiente; no reabre Dark, Graphite, Casa ni la comp
   `apps/web/public/theme-boot.js`.
 - Capa de identidad `apps/web/src/aurora.css`, importada de forma aditiva desde `style.css`:
   **solo presentación**, sin propiedades de layout, sin `!important` y sin reglas de otros temas.
-  Los degradados, el glow y la profundidad viven aquí; los 7 tokens `--aurora-*` están
+  Los degradados, el glow y la profundidad viven aquí; los 8 tokens `--aurora-*` están
   encapsulados en esa capa.
 - Pruebas: catálogo y paridad de tokens (`apps/web/test/themes.test.ts`), guarda estática de la
   capa (`apps/web/test/aurora-visual.test.ts`), AA (`ui-dev07-tokens.test.ts`) y E2E de

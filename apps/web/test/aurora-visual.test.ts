@@ -65,6 +65,19 @@ const LAYOUT = [
   "z-index",
 ];
 
+/** Propiedades de caja que cambiarían el tamaño del elemento. `border` y
+ * `padding` se excluyen del tema: el borde de la navegación se pinta con
+ * `box-shadow` interior precisamente para no alterar la caja. */
+const BOX = [
+  "border",
+  "border-width",
+  "border-top-width",
+  "border-right-width",
+  "border-bottom-width",
+  "border-left-width",
+  "box-sizing",
+];
+
 /** Devuelve las reglas del archivo como pares (selector, cuerpo). */
 function rules(css: string) {
   const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -125,7 +138,8 @@ test("la capa no define layout: la composición sigue siendo compartida", () => 
       const [property] = line.split(":");
       const name = (property ?? "").trim();
       if (!name || name.startsWith("--")) continue;
-      if (LAYOUT.includes(name)) offenders.push(`${rule.selector} → ${name}`);
+      if (LAYOUT.includes(name) || BOX.includes(name))
+        offenders.push(`${rule.selector} → ${name}`);
     }
   }
   expect(offenders).toEqual([]);
@@ -253,4 +267,55 @@ test("el peor caso de la luz ambiental mantiene AA en texto secundario", () => {
   expect(ratio(parse(token("--text")), worst)).toBeGreaterThanOrEqual(4.5);
   expect(ratio(parse(token("--muted")), worst)).toBeGreaterThanOrEqual(4.5);
   expect(ratio(parse(token("--accent")), worst)).toBeGreaterThanOrEqual(4.5);
+});
+
+test("el texto secundario del hero mantiene AA sobre su luz radial", () => {
+  const layer = auroraCss.match(
+    /html\[data-theme="aurora"\]\s*\{([\s\S]*?)\n\}/,
+  );
+  if (!layer) throw new Error("No se encontró la capa de tokens");
+  const hero = layer[1].match(/--aurora-hero-bg:[\s\S]*?;\n/);
+  if (!hero) throw new Error("Falta --aurora-hero-bg");
+  const alphas = [...hero[0].matchAll(/rgb\(30 111 122 \/ (0\.\d+)\)/g)].map(
+    ([, value]) => Number(value),
+  );
+  expect(alphas.length).toBeGreaterThanOrEqual(2);
+  const stops = [...hero[0].matchAll(/#[0-9a-f]{6}/gi)].map(([value]) => value);
+  expect(stops.length).toBeGreaterThanOrEqual(2);
+
+  const parse = (value: string) => {
+    const n = parseInt(value.slice(1), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  };
+  const over = (
+    top: { r: number; g: number; b: number },
+    alpha: number,
+    base: { r: number; g: number; b: number },
+  ) => ({
+    r: top.r * alpha + base.r * (1 - alpha),
+    g: top.g * alpha + base.g * (1 - alpha),
+    b: top.b * alpha + base.b * (1 - alpha),
+  });
+  const luminance = ({ r, g, b }: { r: number; g: number; b: number }) => {
+    const channels = [r, g, b].map((channel) => {
+      const value = channel / 255;
+      return value <= 0.03928
+        ? value / 12.92
+        : Math.pow((value + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  };
+  const ratio = (
+    a: { r: number; g: number; b: number },
+    b: { r: number; g: number; b: number },
+  ) => {
+    const la = luminance(a);
+    const lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  };
+
+  const worst = [...alphas]
+    .sort((a, b) => a - b)
+    .reduce((current, alpha) => over(parse("#1e6f7a"), alpha, current), parse(stops[1]));
+  expect(ratio(parse("#c9c3b9"), worst)).toBeGreaterThanOrEqual(4.5);
 });

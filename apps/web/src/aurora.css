@@ -101,19 +101,20 @@ html[data-theme="aurora"] .nav-legacy-label {
 
 html[data-theme="aurora"] .nav-link,
 html[data-theme="aurora"] .nav-active {
-  border: 1px solid transparent;
   border-radius: 10px;
+  box-shadow: inset 0 0 0 1px transparent;
 }
 
 html[data-theme="aurora"] .nav-link:hover {
-  border-color: var(--sidebar-border);
   background: var(--sidebar-hover);
+  box-shadow: inset 0 0 0 1px var(--sidebar-border);
 }
 
 html[data-theme="aurora"] .nav-active {
-  border-color: rgb(43 228 222 / 0.36);
   background-image: linear-gradient(90deg, #086e70, #12464c);
-  box-shadow: 0 0 18px var(--aurora-glow);
+  box-shadow:
+    inset 0 0 0 1px rgb(43 228 222 / 0.36),
+    0 0 18px var(--aurora-glow);
 }
 
 html[data-theme="aurora"] .nav-active::before {
@@ -134,7 +135,7 @@ html[data-theme="aurora"] .sidebar-bottom {
 }
 
 html[data-theme="aurora"] .menu-toggle {
-  border: 1px solid var(--sidebar-border);
+  border-color: var(--sidebar-border);
   background: var(--sidebar-hover);
   color: var(--sidebar-text);
 }
@@ -276,7 +277,7 @@ html[data-theme="aurora"] .ui-table tbody tr:hover {
 }
 
 html[data-theme="aurora"] .ui-data-list-item {
-  border: 1px solid var(--aurora-card-border);
+  border-color: var(--aurora-card-border);
   border-radius: 12px;
   background-color: var(--surface);
   background-image: var(--aurora-card-bg);
@@ -334,6 +335,10 @@ html[data-theme="aurora"] .inicio-page .graphite-control-cell {
 
 html[data-theme="aurora"] .inicio-page .graphite-kicker {
   color: var(--accent);
+}
+
+html[data-theme="aurora"] .inicio-page .graphite-control :is(.graphite-control-meta, .graphite-control-note, .graphite-plan-item > span:not(.ui-badge):not(.ui-amount-state), .graphite-facts dt, .graphite-kpi-meta) {
+  color: #c9c3b9;
 }
 
 html[data-theme="aurora"] .inicio-page .graphite-hero-amount .ui-amount-value {
