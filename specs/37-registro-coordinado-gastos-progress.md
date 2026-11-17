@@ -237,5 +237,5 @@ frontera de producción: `libc.so.6`/`renameat2`/permisos), ninguna en SPEC36/SP
 `transferencias-pendientes`, `presupuestos`, `movimientos` ni `repartos`.
 
 **Bloqueo de entorno:** los puertos 3001 y 5173 estaban ocupados por otra sesión de otro checkout
-(`/Users/josemartin/Projects/myfinanzas-app-vscode`), así que las pruebas E2E se ejecutaron con el front
+(el otro checkout del proyecto), así que las pruebas E2E se ejecutaron con el front
 de este worktree en **5273** y `APP_ORIGIN` alineado; no se mató ningún proceso ajeno.
