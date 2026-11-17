@@ -450,6 +450,55 @@ test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", (
   }
 });
 
+test("SPEC37-I4.5 G-v31: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
+  const dir = root();
+  try {
+    const path = join(dir, "v30-incoherente.sqlite");
+    const db = openDatabase(path);
+    try {
+      cycle(db);
+      classification(db);
+      gastoReal(db);
+      revertToV30(db);
+      // Estado que v30 admitía y v31 ya no: modalidad B sin ninguna de las dos
+      // formas de Referencia prevista (el trigger de v30 solo exigía modalidad,
+      // y por eso el alta directa por SQL lo dejaba pasar).
+      db.run(
+        `INSERT INTO transferencia_pendiente(estado,importe,origen,destino,
+           ciclo_origen,fecha_prevista,fecha_efectiva,concepto,nota,origen_tipo,
+           reparto_linea,gasto,anticipo,movimiento,motivo_cancelacion,revision,
+           creado,actualizado,modalidad)
+         VALUES('Pendiente de realizar',1000,'S001','S002','1','2026-01-05',NULL,
+           'Ficticio','','RegistroCoordinado',NULL,'1',NULL,NULL,NULL,1,?,?,'B')`,
+        [stamp, stamp],
+      );
+    } finally {
+      db.close();
+    }
+
+    // La migración real aborta antes de tocar el esquema y no cambia la versión.
+    expect(() => openDatabase(path)).toThrow(
+      "Migración v31 rechazada: hay pendientes coordinados con una forma de Referencia prevista incoherente.",
+    );
+    const check = new Database(path);
+    try {
+      expect(check.query("SELECT version FROM schema_version").get()).toEqual({
+        version: 30,
+      });
+      const columnas = (
+        check.query("PRAGMA table_info(transferencia_pendiente)").all() as {
+          name: string;
+        }[]
+      ).map((c) => c.name);
+      expect(columnas).not.toContain("anticipo_nombre");
+    } finally {
+      check.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("SPEC37-I4.5 G-v31: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
   const dir = root();
   try {

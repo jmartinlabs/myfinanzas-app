@@ -35,6 +35,27 @@ import type { Database } from "bun:sqlite";
  * SQLite dispare dos triggers `BEFORE UPDATE`.
  */
 export function spec37SchemaV31(db: Database) {
+  // Preflight: los triggers nuevos no revalidan filas existentes, así que un
+  // pendiente de v30 que ya incumpliera la forma de Referencia prevista quedaría
+  // dentro sin que nadie lo notara. Se detecta antes de escribir nada.
+  //  - B sin ninguna de las dos formas: v30 admitía ese estado porque su trigger
+  //    solo exigía `modalidad`, no la Referencia.
+  //  - A con Referencia prevista: v30 tampoco lo impedía por esquema.
+  const incoherente = db
+    .query(
+      `SELECT id FROM transferencia_pendiente
+        WHERE (origen_tipo='RegistroCoordinado' AND modalidad='B'
+               AND anticipo_previsto IS NULL)
+           OR (origen_tipo='RegistroCoordinado' AND modalidad='A'
+               AND anticipo_previsto IS NOT NULL)
+        LIMIT 1`,
+    )
+    .get() as { id: number } | null;
+  if (incoherente)
+    throw new Error(
+      "Migración v31 rechazada: hay pendientes coordinados con una forma de Referencia prevista incoherente.",
+    );
+
   db.exec(`
     ALTER TABLE transferencia_pendiente
       ADD COLUMN anticipo_nombre TEXT CHECK(
