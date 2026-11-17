@@ -19,12 +19,25 @@ historia de E1.1–E1.5 y no reabren decisiones.
 > persistencia. 1A no modifica Inicio, Movimientos, navegación ni formularios. La composición
 > editorial de Inicio (1B) y Señal requieren autorización separada.
 
+> **Enmienda Aurora (2026-11-17).** Se aprueba `aurora` («Aurora») como **sexta apariencia**,
+> oscura e independiente, a partir del prototipo premium de fase C ([#489](https://github.com/jmartinlabs/myfinanzas-app/issues/489),
+> decisiones D1–D5 del análisis de la [PR #491](https://github.com/jmartinlabs/myfinanzas-app/pull/491)). Es la última
+> entrada del selector, que pasa a seis opciones; `dark-s` sigue siendo el tema inicial y
+> `mf-theme` la única persistencia. La identidad (azul-negro, reflejos turquesa, degradados y luz
+> ambiental sin animación) vive en un bloque de 66 tokens más `apps/web/src/aurora.css`, una capa
+> **solo de presentación, sin propiedades de layout**, scoped a `html[data-theme="aurora"]`. No
+> reabre Dark, Light, Hybrid, Graphite ni Casa, ni la composición compartida. Aurora no entra en
+> `DEV07_THEMES` porque la matriz AA falla de forma explícita ante degradados; conserva medición
+> propia con referencias sólidas y aceptación visual humana.
+
 ### Temas y tokens
 
 - Temas **Dark (`dark-s`), Light (`light-s`) y Hybrid (`hybrid-s`)** implementados en `0b8aade`
   (#198); conservan identidad, tokens y comportamiento. **Graphite Lime (`graphite-lime`,
   «Grafito»)** está integrado en `bff714e` (#356). **Casa (`casa`)** queda aprobada como quinta
-  apariencia por la enmienda del 2026-11-10. El catálogo solo se amplía por decisión expresa; no
+  apariencia por la enmienda del 2026-11-10 y **Aurora (`aurora`, «Aurora»)** como sexta por la
+  enmienda del 2026-11-17 (§2.6 de [`ui-specification.md`](../ui-specification.md)). El catálogo
+  solo se amplía por decisión expresa; no
   se reabren los tres temas, **salvo la enmienda UI-P2
   ([`ui-specification.md` §2.5](../ui-specification.md)), que reabre únicamente la capa de
   identidad de Light y Hybrid para L1**.
@@ -32,8 +45,9 @@ historia de E1.1–E1.5 y no reabren decisiones.
   conocen el tema. `style.css` conserva un único hex de fallback
   (`var(--warning, #6b5412)`); el resto es tokenizado.
 - Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
-  no se cambia el mecanismo. La enmienda añade Casa al final del catálogo, sin reordenar las
-  cuatro apariencias actuales ni sustituir `mf-theme`. La etiqueta visible es «Apariencia».
+  no se cambia el mecanismo. Las enmiendas añaden Casa y Aurora al final del catálogo, sin
+  reordenar las apariencias anteriores ni sustituir `mf-theme`. La etiqueta visible es
+  «Apariencia», con seis opciones desde el 2026-11-17.
 
 ### Tipografía, shell y espaciado
 
