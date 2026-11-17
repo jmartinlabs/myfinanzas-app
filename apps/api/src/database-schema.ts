@@ -23,6 +23,7 @@ import {
   repartoMensualSchemaV28,
   repartoMensualSchemaV29,
 } from "./spec36-schema";
+import { spec37SchemaV30 } from "./spec37-schema";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -50,7 +51,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -110,7 +111,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -151,6 +152,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 27) fotosPeriodoSchemaV27(db);
         if (versions[0].version < 28) repartoMensualSchemaV28(db);
         if (versions[0].version < 29) repartoMensualSchemaV29(db);
+        if (versions[0].version < 30) spec37SchemaV30(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -278,6 +280,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (schemaVersion >= 27) fotosPeriodoSchemaV27(db);
       if (schemaVersion >= 28) repartoMensualSchemaV28(db);
       if (schemaVersion >= 29) repartoMensualSchemaV29(db);
+      if (schemaVersion >= 30) spec37SchemaV30(db);
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {
