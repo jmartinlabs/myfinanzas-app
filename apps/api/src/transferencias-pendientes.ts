@@ -1666,9 +1666,9 @@ export function confirmarTransferenciaPendiente(
       row,
       after,
       null,
-      anticipo
-        ? ["estado", "movimiento", "fechaEfectiva", "anticipoPrevisto"]
-        : ["estado", "movimiento", "fechaEfectiva"],
+      // `anticipoPrevisto` no cambia al confirmar: ya se fijó en el alta y el
+      // esquema no permite reescribirlo, así que no es un campo modificado.
+      ["estado", "movimiento", "fechaEfectiva"],
       now,
     );
     return pendingDto(db, after, now);

@@ -695,6 +695,18 @@ test("SPEC37-I4 AC-10: la Referencia de Anticipo existente se revalida y aliment
   expect(getMovement(f.db, gastoId).movimiento.referencia).toBeNull();
   expect(getSaldo(f.db, f.adelanta).posicion.importe).toBe("440.00");
   expect(getSaldo(f.db, f.pago).posicion.importe).toBe("960.00");
+  // La auditoría no lista `anticipoPrevisto` como campo modificado: su valor no
+  // cambia al confirmar —se fijó en el alta y el esquema no permite reescribirlo—.
+  const confirmacion = f.db
+    .query(
+      "SELECT campos FROM audit WHERE entidad=? AND accion='confirmacion'",
+    )
+    .get(`transferencia-pendiente:${item.id}`) as { campos: string };
+  expect(JSON.parse(confirmacion.campos)).toEqual([
+    "estado",
+    "movimiento",
+    "fechaEfectiva",
+  ]);
 });
 
 test("SPEC37-I4 AC-11: Referencia inexistente, inactiva o de otro tipo bloquean sin sustitución", () => {
