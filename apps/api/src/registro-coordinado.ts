@@ -99,6 +99,12 @@ const pendienteFields = [
   "destino",
   "fechaPrevista",
   "anticipoPrevisto",
+  // §5.3/§7: una intención de alta (nombre y datos mínimos) es la otra forma
+  // admitida de Referencia prevista en modalidad B. El pendiente no crea nada;
+  // la Referencia y su ficha nacen al confirmar (I4.5).
+  "anticipoNombre",
+  "anticipoApertura",
+  "anticipoEvidencia",
   "concepto",
   "nota",
 ] as const;
@@ -487,6 +493,11 @@ function ejecutar(
       destino,
       fechaPrevista: fechaIntencion(p.fechaPrevista, "fechaPrevista"),
       anticipoPrevisto: p.anticipoPrevisto,
+      // I5: la intención viaja tal cual al mecanismo único, que ya la valida
+      // (nombre obligatorio, apertura antes que evidencia, A sin ninguna).
+      anticipoNombre: p.anticipoNombre,
+      anticipoApertura: p.anticipoApertura,
+      anticipoEvidencia: p.anticipoEvidencia,
       concepto: typeof p.concepto === "string" ? p.concepto : "",
       nota: typeof p.nota === "string" ? p.nota : "",
     });

@@ -9,6 +9,75 @@ export const budgetSources = [
   "Aportación a saldo",
   "No aplica",
 ] as const;
+
+/**
+ * Efecto de una Transferencia sobre un Presupuesto de fuente «Aportación a saldo».
+ *
+ * Es la lectura del motor vigente, no una regla nueva: R3
+ * (`executionFacts` en `planes-ciclo.ts`) cuenta como ejecución de una
+ * Aportación a saldo solo las Transferencias cuyo destino es el Saldo del
+ * Presupuesto y que **no llevan Referencia**. Por eso una Transferencia de
+ * Anticipo (modalidad B, que siempre lleva Referencia) no ejecuta ese
+ * Presupuesto, y una Transferencia ordinaria (modalidad A) sí puede ejecutarlo.
+ *
+ * No calcula importes ejecutados: responde a qué Presupuesto atribuiría el
+ * motor el hecho real, con el mismo criterio que ya usaba el mecanismo de
+ * Transferencia pendiente (SPEC36 §6). La UI solo muestra esta respuesta.
+ */
+export type EfectoAportacion = {
+  aplica: boolean;
+  presupuesto: string | null;
+  fuente: string | null;
+  destino: string;
+  motivo: string;
+};
+
+export function efectoAportacion(
+  db: Database,
+  destino: string,
+  conReferencia: boolean,
+): EfectoAportacion {
+  if (conReferencia)
+    return {
+      aplica: false,
+      presupuesto: null,
+      fuente: null,
+      destino,
+      motivo:
+        "Una Transferencia con Referencia de Anticipo no ejecuta la Aportación a saldo de su Presupuesto: el motor R3 solo cuenta las Transferencias sin Referencia hacia ese destino.",
+    };
+  const active = db
+    .query(
+      "SELECT id,nombre,fuente,destino,estado FROM presupuestos WHERE fuente='Aportación a saldo' AND estado='Activo' AND destino=?",
+    )
+    .all(destino) as Pick<Budget, "id" | "nombre" | "fuente" | "destino">[];
+  if (active.length === 1)
+    return {
+      aplica: true,
+      presupuesto: active[0].id,
+      fuente: active[0].fuente,
+      destino,
+      motivo:
+        "La Transferencia ordinaria hacia el destino ejecuta esa Aportación a saldo.",
+    };
+  const inactive = db
+    .query(
+      "SELECT id FROM presupuestos WHERE fuente='Aportación a saldo' AND estado='Inactivo' AND destino=?",
+    )
+    .all(destino) as { id: string }[];
+  return {
+    aplica: false,
+    presupuesto: null,
+    fuente: null,
+    destino,
+    motivo:
+      active.length > 1
+        ? "Hay varias Aportaciones a saldo para el destino; no se puede atribuir."
+        : inactive.length
+          ? "Existe un Presupuesto histórico inactivo hacia el destino; la Transferencia no ejecuta su fuente."
+          : "El destino no ejecuta ninguna Aportación a saldo.",
+  };
+}
 export type Budget = {
   id: string;
   nombre: string;

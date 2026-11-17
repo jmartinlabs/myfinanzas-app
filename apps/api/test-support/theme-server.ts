@@ -16,7 +16,9 @@ const key = loadKey(db, dir + "/auth.key");
 writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key })).pipe(
+    HttpServer.serve(
+      createApp(db, { key, origin: process.env.APP_ORIGIN }),
+    ).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3013 })),
     ),
   ),

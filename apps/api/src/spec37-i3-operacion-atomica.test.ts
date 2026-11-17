@@ -792,6 +792,63 @@ test("SPEC37-I3 AC-06/AC-32: el pendiente en modalidad B conserva la referencia 
   expect(result.transferencia).toBeNull();
 });
 
+test("SPEC37-I3/I5: el alta coordinada admite una intención de Referencia sin materializarla", () => {
+  const f = fixture();
+  const antes = snapshot(f.db);
+  const nombre = "Anticipo intención coordinada I5";
+  const result = registrarOperacionCoordinada(
+    f.db,
+    {
+      gasto: gasto(f),
+      pendiente: pendienteA(f, {
+        modalidad: "B",
+        origen: f.adelanta,
+        anticipoNombre: nombre,
+        anticipoApertura: "2026-01-02",
+        anticipoEvidencia: "Resguardo ficticio de la apertura",
+      }),
+    },
+    randomUUID(),
+    now,
+  );
+
+  expect(result.modalidad).toBe("B");
+  expect(result.pendiente).toMatchObject({
+    modalidad: "B",
+    anticipoPrevisto: null,
+    anticipoIntencion: {
+      nombre,
+      apertura: "2026-01-02",
+      evidencia: "Resguardo ficticio de la apertura",
+    },
+    estado: "Pendiente de realizar",
+    movimiento: null,
+  });
+  // §5.3: la intención no crea Referencia ni ficha; nacen al confirmar.
+  expect(count(f.db, "SELECT COUNT(*) n FROM referencias WHERE nombre=?", nombre)).toBe(0);
+  expect(snapshot(f.db).fichas_anticipos).toEqual(antes.fichas_anticipos);
+  expect(result.transferencia).toBeNull();
+  expect(result.anticipo).toBeNull();
+  expect(count(f.db, "SELECT COUNT(*) n FROM movimientos")).toBe(1);
+
+  // La modalidad A sigue rechazando la intención: no se admite por la puerta
+  // de la operación coordinada lo que el mecanismo único prohíbe.
+  expectProblem(
+    () =>
+      registrarOperacionCoordinada(
+        f.db,
+        {
+          gasto: gasto(f, { fecha: "2026-01-21" }),
+          pendiente: pendienteA(f, { anticipoNombre: nombre }),
+        },
+        randomUUID(),
+        now,
+      ),
+    422,
+    "REFERENCIA_NO_ADMITIDA",
+  );
+});
+
 test("SPEC37-I3: el Gasto debe pagarse desde el Saldo que recibe la Transferencia", () => {
   const f = fixture();
   const antes = snapshot(f.db);

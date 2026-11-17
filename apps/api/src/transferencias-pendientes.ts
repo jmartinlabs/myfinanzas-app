@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./problem";
 import { createAnticipoInTransaction } from "./anticipos";
+import { efectoAportacion } from "./presupuestos";
 import { civil, cycleMaster, type Cycle } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
 import { decimal, money } from "./saldos";
@@ -1335,39 +1336,11 @@ function budgetEffect(db: Database, row: PendingRow) {
         : "La Transferencia ya no ejecuta esa Aportación a saldo; revisa la Partida y el Plan mensual D′.",
     };
   }
-  const active = db
-    .query(
-      "SELECT id,nombre,fuente,destino,estado FROM presupuestos WHERE fuente='Aportación a saldo' AND estado='Activo' AND destino=?",
-    )
-    .all(row.destino) as BudgetRow[];
-  if (active.length === 1)
-    return {
-      aplica: true,
-      presupuesto: active[0].id,
-      partida: null,
-      fuente: active[0].fuente,
-      destino: active[0].destino,
-      motivo:
-        "La Transferencia ordinaria hacia el destino ejecuta esa Aportación a saldo.",
-    };
-  const inactive = db
-    .query(
-      "SELECT id FROM presupuestos WHERE fuente='Aportación a saldo' AND estado='Inactivo' AND destino=?",
-    )
-    .all(row.destino) as { id: string }[];
-  return {
-    aplica: false,
-    presupuesto: null,
-    partida: null,
-    fuente: null,
-    destino: row.destino,
-    motivo:
-      active.length > 1
-        ? "Hay varias Aportaciones a saldo para el destino; no se puede atribuir."
-        : inactive.length
-          ? "Existe un Presupuesto histórico inactivo hacia el destino; la Transferencia no ejecuta su fuente."
-          : "El destino no ejecuta ninguna Aportación a saldo.",
-  };
+  // Sin línea de reparto (origen coordinado o línea Adicional), la atribución
+  // depende de la Referencia: R3 solo ejecuta una Aportación a saldo con
+  // Transferencias **sin** Referencia, así que una modalidad B nunca la ejecuta.
+  // El criterio vive en `efectoAportacion` y no se duplica aquí.
+  return { ...efectoAportacion(db, row.destino, row.modalidad === "B"), partida: null };
 }
 
 function impactPayload(

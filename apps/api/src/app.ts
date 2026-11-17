@@ -87,6 +87,7 @@ import {
   changeBudgetState,
   budgetParts,
   budgetUsage,
+  efectoAportacion,
 } from "./presupuestos";
 import {
   createDebt,
@@ -1704,6 +1705,23 @@ export function createApp(db: Database, options: AppOptions) {
             ).map((r) => getBudget(db, r.id)),
           }))(),
         );
+      // SPEC37 I5 — lectura del efecto de una Transferencia sobre una
+      // «Aportación a saldo» (§10.2). Solo responde la atribución que el motor
+      // R3 ya hace; no calcula importes ni escribe nada. El alta coordinada y la
+      // ficha del pendiente muestran esta misma respuesta.
+      if (path === "/api/presupuestos/efecto-aportacion" && req.method === "GET") {
+        const destino =
+          new URL(req.url).searchParams.get("destino")?.trim() ?? "";
+        if (!destino)
+          throw new Problem(422, "VALIDATION", "Indica el Saldo de destino.", {
+            destino: "Saldo del Presupuesto de Aportación a saldo.",
+          });
+        const conReferencia =
+          new URL(req.url).searchParams.get("conReferencia") === "1";
+        return reply(
+          db.transaction(() => efectoAportacion(db, destino, conReferencia))(),
+        );
+      }
       const budget = path.match(
         /^\/api\/presupuestos\/(PRE\d+)(?:\/(impacto|rectificar|desactivar|reactivar))?$/,
       );
