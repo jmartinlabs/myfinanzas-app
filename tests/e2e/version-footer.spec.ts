@@ -316,7 +316,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
 
   // Panel abierto también en Casa a 390×500 (identidad, no solo estructura).
   await page.setViewportSize({ width: 390, height: 500 });
-  await page.getByLabel("Apariencia").selectOption({ value: "casa" });
+  await page.getByLabel("Cambiar tema").selectOption({ value: "casa" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await versionToggle.click();
   await expect(panel).toBeVisible();
@@ -327,7 +327,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     fullPage: false,
   });
   await page.keyboard.press("Escape");
-  await page.getByLabel("Apariencia").selectOption({ value: "dark-s" });
+  await page.getByLabel("Cambiar tema").selectOption({ value: "dark-s" });
 
   // ── 1440 y ventana ancha: el panel se abre junto al disparador ──────────
   await page.setViewportSize({ width: 1440, height: 1000 });
