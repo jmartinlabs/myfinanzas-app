@@ -267,6 +267,7 @@ small {
 .app-shell {
   display: flex;
   min-height: 100vh;
+  padding-bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
 }
 .sidebar {
   width: var(--sidebar-width);
@@ -486,15 +487,118 @@ small {
   max-width: var(--content-max);
   margin: 0 auto;
 }
+/* #502 — pie persistente: visible sin desplazarse, fijado al borde inferior
+   del viewport. `.app-shell` reserva su altura real (safe-area incluida) para
+   que nunca tape acciones, CTA, avisos ni la navegación. */
 .global-footer {
+  position: fixed;
+  left: var(--sidebar-width);
+  right: 0;
+  bottom: 0;
+  z-index: 9;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-4);
+  min-height: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
-  padding: var(--space-4) 38px;
+  padding: 0 38px env(safe-area-inset-bottom, 0px);
   color: var(--muted);
   font-size: var(--text-xs);
   background: var(--surface-2);
+}
+.app-version {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.app-version-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.app-version-toggle:hover {
+  color: var(--accent);
+}
+.app-version-toggle:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+.app-version-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-version-caret {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.app-version-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + var(--space-2));
+  z-index: 1;
+  width: min(320px, calc(100vw - 32px));
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-xs);
+}
+.app-version-panel[hidden] {
+  display: none;
+}
+.app-version-title {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.app-version-panel dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+.app-version-panel dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-2);
+  font-size: var(--text-xs);
+}
+.app-version-panel dt {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.app-version-panel dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.app-version-note {
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
 }
 /* List */
 .catalog-panel {
@@ -1003,6 +1107,7 @@ select[aria-invalid="true"] {
     padding-inline: 10px;
   }
   .global-footer {
+    left: 206px;
     padding-inline: 25px;
   }
 }
@@ -1266,9 +1371,8 @@ select[aria-invalid="true"] {
     font-size: 12px;
   }
   .global-footer {
-    padding: var(--space-4);
-    flex-direction: column;
-    gap: var(--space-1);
+    left: 0;
+    padding: 0 var(--space-4) env(safe-area-inset-bottom, 0px);
     font-size: var(--text-xs);
   }
   .auth-shell {
@@ -4884,6 +4988,8 @@ textarea {
   --touch-min: 44px;
   --sidebar-width: 236px;
   --content-max: 1450px;
+  /* #502 — altura reservada por el pie persistente (sin safe-area). */
+  --footer-height: 44px;
 }
 
 /* UI · DEV-02 — cifras y estados

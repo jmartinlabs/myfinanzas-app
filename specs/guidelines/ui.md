@@ -57,6 +57,17 @@ historia de E1.1–E1.5 y no reabren decisiones.
 - **Casa 1A** añade tokens de tipografía editorial y un CSS aislado (`casa.css`). No cambia la
   tipografía de las cuatro apariencias actuales. La composición editorial de Inicio queda para 1B.
 - Shell: sidebar 236 px, contenido `max-width: 1450px`, breakpoints 1050/760 px y móvil 16 px.
+- **Pie persistente de versión (#502).** `footer.global-footer` está fijado al borde inferior del
+  viewport (no al final del documento) en todas las pantallas y apariencias: una línea compacta
+  `MyFinanzas · vX.Y.Z · TEST` con la identidad servida por `GET /api/version`, o
+  `MyFinanzas · build de desarrollo · DEV` sin release verificable (y «Versión no disponible ·
+  build de desarrollo» si la petición falla). `.app-shell` reserva la altura real del pie y
+  respeta `env(safe-area-inset-bottom)`; la barra de acciones pegajosa de Casa se detiene por
+  encima del pie. El texto de versión es un `button` con `aria-expanded`/`aria-controls` que abre
+  el panel «Información de la aplicación» (versión, entorno, SHA corto y esquema SQLite, con la
+  aclaración de que **el esquema no es la versión de la app**); funciona con ratón, teclado y
+  táctil, se cierra con `Escape` sin atrapar el foco y no expone rutas, secretos ni configuración.
+  Solo usa tokens existentes y no cambia estructura ni contenido entre temas.
 
 ### Accesibilidad
 
