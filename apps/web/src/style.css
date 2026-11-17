@@ -545,20 +545,68 @@ small {
   color: var(--muted);
   font-size: var(--text-xs);
 }
+/* Panel separado del pie fijo: se ancla por encima de su altura real, con
+   altura máxima ligada al viewport (dvh) y scroll interno cuando no cabe. */
 .app-version-panel {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + var(--space-2));
-  z-index: 1;
-  width: min(320px, calc(100vw - 32px));
-  max-height: 60vh;
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px) + var(--space-2));
+  z-index: 10;
+  max-height: calc(100dvh - var(--footer-height) - env(safe-area-inset-bottom, 0px) - var(--space-6));
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font-size: var(--text-xs);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
+}
+@media (min-width: 761px) {
+  .app-version-panel {
+    left: auto;
+    right: 24px;
+    width: min(360px, calc(100vw - 48px));
+  }
+}
+/* La cabecera del panel queda pegada arriba: con scroll interno la «×» sigue
+   alcanzable aunque el contenido sea largo o el viewport corto. */
+.app-version-head {
+  position: sticky;
+  top: calc(var(--space-4) * -1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-4) 0 var(--space-2);
+  margin: calc(var(--space-4) * -1) 0 0;
+  background: var(--surface);
+}
+.app-version-close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  margin: calc(var(--space-2) * -1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-md);
+  line-height: 1;
+  cursor: pointer;
+}
+.app-version-close:hover {
+  color: var(--text);
+}
+.app-version-close:focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
 }
 .app-version-panel[hidden] {
   display: none;

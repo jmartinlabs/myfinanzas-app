@@ -166,7 +166,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   // ── Panel con ratón y con teclado ────────────────────────────────────────
   await versionToggle.click();
   await expect(versionToggle).toHaveAttribute("aria-expanded", "true");
-  const panel = page.getByRole("group", {
+  const panel = page.getByRole("dialog", {
     name: "Información de la aplicación",
   });
   await expect(panel).toBeVisible();
@@ -203,6 +203,35 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     .click();
   await expect(panel).toBeHidden();
 
+  // ── Cierre explícito con «×», foco devuelto y clic dentro que no cierra ──
+  await versionToggle.click();
+  await expect(panel).toBeVisible();
+  const closeButton = page.getByRole("button", {
+    name: "Cerrar información de la aplicación",
+  });
+  await expect(closeButton).toBeVisible();
+  await expect(closeButton).toHaveText("×");
+  const closeBox = (await closeButton.boundingBox())!;
+  const closeParent = (await panel.boundingBox())!;
+  // Objetivo táctil suficiente y dentro del panel (no recortado por el borde).
+  expect(closeBox.width).toBeGreaterThanOrEqual(24);
+  expect(closeBox.height).toBeGreaterThanOrEqual(24);
+  expect(closeBox.x).toBeGreaterThanOrEqual(closeParent.x);
+  expect(closeBox.y).toBeGreaterThanOrEqual(closeParent.y);
+  expect(closeBox.x + closeBox.width).toBeLessThanOrEqual(
+    closeParent.x + closeParent.width,
+  );
+  expect(
+    await page.evaluate(() => document.activeElement?.className ?? ""),
+  ).toContain("app-version-close");
+  await panel.click({ position: { x: 8, y: 60 } });
+  await expect(panel).toBeVisible();
+  await closeButton.click();
+  await expect(panel).toBeHidden();
+  expect(
+    await page.evaluate(() => document.activeElement?.className ?? ""),
+  ).toContain("app-version-toggle");
+
   // ── Sin cadenas sensibles en pantalla ───────────────────────────────────
   const visibleText = await page.locator("body").innerText();
   for (const forbidden of [
@@ -217,6 +246,84 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     "127.0.0.1:3040",
   ])
     expect(visibleText).not.toContain(forbidden);
+
+  // ── Móvil 390×844 y 390×500: panel separado del pie, sin recortes ───────
+  const geometry = () =>
+    page.evaluate(() => {
+      const panelEl = document.querySelector<HTMLElement>(".app-version-panel")!;
+      const footerEl = document.querySelector<HTMLElement>("footer.global-footer")!;
+      const p = panelEl.getBoundingClientRect();
+      const f = footerEl.getBoundingClientRect();
+      return {
+        panelTop: p.top,
+        panelBottom: p.bottom,
+        footerTop: f.top,
+        viewport: window.innerHeight,
+        scrollHeight: panelEl.scrollHeight,
+        clientHeight: panelEl.clientHeight,
+        overflowY: getComputedStyle(panelEl).overflowY,
+        horizontal: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+  for (const height of [844, 500]) {
+    await page.setViewportSize({ width: 390, height });
+    await expectPinnedFooter(page);
+    await versionToggle.click();
+    await expect(panel).toBeVisible();
+    const box = await geometry();
+    // Separado del pie (no se monta sobre él) y dentro del viewport.
+    expect(box.panelBottom, `390x${height}`).toBeLessThanOrEqual(box.footerTop - 1);
+    expect(box.panelTop, `390x${height}`).toBeGreaterThanOrEqual(0);
+    expect(box.panelBottom, `390x${height}`).toBeLessThanOrEqual(box.viewport);
+    expect(box.horizontal, `390x${height}`).toBeLessThanOrEqual(0);
+    expect(box.overflowY).toBe("auto");
+    // Si no cabe, el panel se desplaza por dentro en lugar de recortarse.
+    if (box.scrollHeight > box.clientHeight) {
+      const scrolled = await page.evaluate(() => {
+        const el = document.querySelector<HTMLElement>(".app-version-panel")!;
+        el.scrollTop = el.scrollHeight;
+        return el.scrollTop;
+      });
+      expect(scrolled).toBeGreaterThan(0);
+      // Con el panel desplazado hasta el final, el cierre sigue alcanzable.
+      await expect(
+        page.getByRole("button", {
+          name: "Cerrar información de la aplicación",
+        }),
+      ).toBeInViewport();
+      await page.evaluate(() => {
+        const el = document.querySelector<HTMLElement>(".app-version-panel")!;
+        el.scrollTop = 0;
+      });
+    }
+    await page.screenshot({
+      path: `${SHOTS}/panel-390x${height}-abierto.png`,
+      fullPage: false,
+    });
+    // Recorte del panel completo: evidencia de su cabecera, cierre y scroll.
+    await panel.screenshot({
+      path: `${SHOTS}/panel-elemento-390x${height}.png`,
+    });
+    // El disparador del pie sigue accesible con el panel abierto.
+    await expect(versionToggle).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+  }
+
+  // Panel abierto también en Casa a 390×500 (identidad, no solo estructura).
+  await page.setViewportSize({ width: 390, height: 500 });
+  await page.getByLabel("Apariencia").selectOption({ value: "casa" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
+  await versionToggle.click();
+  await expect(panel).toBeVisible();
+  const casaBox = await geometry();
+  expect(casaBox.panelBottom).toBeLessThanOrEqual(casaBox.footerTop - 1);
+  await page.screenshot({
+    path: `${SHOTS}/panel-390x500-casa.png`,
+    fullPage: false,
+  });
+  await page.keyboard.press("Escape");
+  await page.getByLabel("Apariencia").selectOption({ value: "dark-s" });
 
   // ── 1440 ────────────────────────────────────────────────────────────────
   await page.setViewportSize({ width: 1440, height: 1000 });

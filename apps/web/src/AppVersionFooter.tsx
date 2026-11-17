@@ -30,6 +30,11 @@ export function AppVersionFooter() {
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const close = () => {
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
   useEffect(() => {
     let alive = true;
     api<unknown>("/version")
@@ -45,11 +50,13 @@ export function AppVersionFooter() {
   }, []);
   useEffect(() => {
     if (!open) return;
+    // El panel no es modal: al abrirse el foco entra en él (botón de cierre) y
+    // `Escape` lo devuelve al disparador del pie. Un puntero fuera lo cierra.
+    closeRef.current?.focus();
     const keydown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      setOpen(false);
-      buttonRef.current?.focus();
+      close();
     };
     const pointerdown = (event: Event) => {
       const target = event.target;
@@ -68,11 +75,23 @@ export function AppVersionFooter() {
       <div
         id={panelId}
         className="app-version-panel"
-        role="group"
+        role="dialog"
+        aria-modal="false"
         aria-label={PANEL_TITLE}
         hidden={!open}
       >
-        <p className="app-version-title">{PANEL_TITLE}</p>
+        <div className="app-version-head">
+          <p className="app-version-title">{PANEL_TITLE}</p>
+          <button
+            type="button"
+            ref={closeRef}
+            className="app-version-close"
+            aria-label="Cerrar información de la aplicación"
+            onClick={close}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
         <dl>
           <div>
             <dt>Versión de aplicación</dt>
