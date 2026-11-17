@@ -21,7 +21,7 @@ historia de E1.1–E1.5 y no reabren decisiones.
 
 > **Enmienda Aurora (2026-11-17).** Se aprueba `aurora` («Aurora») como **sexta apariencia**,
 > oscura e independiente, a partir del prototipo premium de fase C ([#489](https://github.com/jmartinlabs/myfinanzas-app/issues/489),
-> decisiones D1–D5 del [análisis](investigations/aurora-2026-11-16/README.md)). Es la última
+> decisiones D1–D5 del análisis de la [PR #491](https://github.com/jmartinlabs/myfinanzas-app/pull/491)). Es la última
 > entrada del selector, que pasa a seis opciones; `dark-s` sigue siendo el tema inicial y
 > `mf-theme` la única persistencia. La identidad (azul-negro, reflejos turquesa, degradados y luz
 > ambiental sin animación) vive en un bloque de 66 tokens más `apps/web/src/aurora.css`, una capa
