@@ -54,6 +54,15 @@ Codex u otro) puede ejercerlo, y el relevo exige el handoff de
 como coordinador sustituto por decisión del usuario; no se presupone que un proveedor pueda
 lanzar sesiones de otro, y sin despachador acreditado el trabajo no se declara iniciado.
 
+### Asesor técnico (`advisor`) — distinto del asesor funcional
+
+El slot `advisor` de [model-selection](model-selection.md) es una **revisión técnica crítica** y
+no se confunde con Álex: entra cuando el coordinador no tiene un diseño mínimo seguro —atasco,
+desvío de alcance, solución insegura o decisión de arquitectura con varias alternativas—, según
+los disparadores de [dynamic-agents](dynamic-agents.md#escalado-ante-atasco-o-desvío-de-alcance).
+Su respuesta desbloquea el diseño técnico; no autoriza negocio, no sustituye la QA independiente
+y no abre ningún gate.
+
 ### Materias que exigen consulta
 
 Solo las cinco anteriores. Las dudas técnicas, de implementación, refactorización,

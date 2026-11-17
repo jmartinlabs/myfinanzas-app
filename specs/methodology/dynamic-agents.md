@@ -205,6 +205,31 @@ savings still need measurement across comparable work, with scope and compaction
 - After two comparable non-informative debugging attempts, checkpoint evidence and escalate to a new hypothesis rather than repeating blindly.
 - A user `$handoff` request freezes new tasks, safely consolidates and stops controllable workers; it cannot stop external sessions. Quota warnings never waive financial QA or approval gates.
 
+## Escalado ante atasco o desvío de alcance
+
+Un paquete delegado puede desviarse sin fallar: modifica mucho más de lo acordado, propone una
+operación que el paquete prohibía o encadena intentos sin información nueva. El coordinador no
+espera al informe final; comprueba el avance en puntos de control acotados y **detiene** al
+ejecutor cuando se cumple cualquiera de estos disparadores medibles:
+
+- **Radio de cambio**: toca más del doble de los ficheros que declaraba el paquete, o más de
+  diez ficheros fuera de su lista, o reescribe pruebas ajenas a la tarea.
+- **Silencio o repetición**: dos esperas de más de cinco minutos sin salida útil, o dos intentos
+  comparables sin información nueva (el caso de debugging de *Resource discipline*).
+- **Operación prohibida o insegura**: `kill`/limpieza de procesos ajenos, borrado de estado
+  compartido, escrituras destructivas o cualquier acción que el paquete excluía.
+- **Coste desproporcionado**: supera el doble del tiempo previsto sin un artefacto verificable.
+
+Al detenerlo, el coordinador **preserva la evidencia** (diff, transcripción, estado), revierte lo
+que no corresponda y **consulta el slot `advisor`** —revisión técnica crítica, [model-selection]
+(model-selection.md)— con una pregunta acotada: qué parte del diseño no está resuelta, qué
+alternativas hay y qué recomienda. La respuesta del `advisor` no es una aprobación de negocio ni
+sustituye la QA independiente ni los gates de [approvals](approvals.md); desbloquea el diseño
+técnico para que el coordinador retome con alcance mínimo. La consulta y su conclusión se
+registran en la Issue.
+
+El asesor funcional (Álex) queda fuera de este circuito: no recibe consultas técnicas.
+
 ## Prioritization and approvals
 
 - A blocked financial specification blocks **only its own implementation**; independent specifications, investigation and provisional QA can progress.
