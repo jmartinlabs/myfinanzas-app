@@ -247,6 +247,37 @@ class ModelsSync(unittest.TestCase):
         self.assertIn('CATALOG_NOT_WRITTEN', out)
         self.assertFalse((self.root / MODULE['CATALOG']).exists())
 
+    def test_write_catalog_not_written_when_preflight_fails(self):
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save()
+        self.call('--apply', client='opencode')                    # genera config válida
+        generated = self.root / '.opencode/opencode.json'
+        generated.write_text('{"agents": {}}\n')                  # ajeno/manipulado → preflight falla
+        (self.root / MODULE['CATALOG']).unlink()
+        before = self.snapshot()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode',
+                        status=2, env=self.fake_cli())
+        self.assertIn('CONFLICT prior generated file changed or missing', out)
+        self.assertNotIn('CATALOG_WRITTEN', out)
+        self.assertFalse((self.root / MODULE['CATALOG']).exists())
+        self.assertEqual(before, self.snapshot())
+
+    def test_activate_rollback_reports_incomplete_instead_of_aborting(self):
+        # Un fallo de escritura no puede dejar contenido nuevo sin avisar del rollback incompleto.
+        if os.geteuid() == 0:
+            self.skipTest('chmod-based failure simulation is meaningless as root')
+        opencode = self.root / '.opencode/opencode.json'
+        agents = self.root / '.agents'
+        opencode.write_text('{"old": true}\n')
+        (self.root / MODULE['MANIFEST']).write_text('{"old": true}\n')   # existía: restaurarlo exige escribir
+        self.addCleanup(os.chmod, agents, 0o700)
+        os.chmod(agents, 0o500)                                   # el manifiesto no podrá escribirse
+        with self.assertRaises(MODULE['Refusal']) as caught:
+            MODULE['activate'](self.root, {'.opencode/opencode.json': b'{"new": true}\n',
+                                           MODULE['MANIFEST']: b'{"new": true}\n'})
+        self.assertIn('ROLLBACK INCOMPLETE', str(caught.exception))
+        self.assertEqual(opencode.read_text(), '{"old": true}\n')   # restaurado pese al fallo
+
     def test_overrides_and_explicit_allowlists(self):
         self.config['clients'] = {'codex': {'roles': {'implementation': {'effort': 'low'}}}}
         self.config['constraints'] = {'providers': ['provider-a'], 'models': ['future-large'], 'efforts': ['low']}

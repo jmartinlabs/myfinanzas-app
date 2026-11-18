@@ -369,15 +369,25 @@ def activate(root, outputs):
                 parent.mkdir(mode=0o700); directories.append(parent)
             changed.append(path)
             atomic_file(path, data, backups[path][1])
-    except BaseException:
+    except BaseException as error:
+        failed = []
         for path in reversed(changed):
             previous, mode = backups[path]
-            if previous is None:
-                path.unlink(missing_ok=True)
-            else:
-                atomic_file(path, previous, mode)
+            try:
+                if previous is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    atomic_file(path, previous, mode)
+            except OSError:
+                failed.append(str(path.relative_to(root)))
         for parent in reversed(directories):
-            parent.rmdir()
+            try:
+                parent.rmdir()
+            except OSError:
+                failed.append(str(parent.relative_to(root)))
+        if failed:
+            raise Refusal('ROLLBACK INCOMPLETE for ' + ', '.join(failed) +
+                          '; restore those paths manually before continuing') from error
         raise
     return len(changed)
 
@@ -523,12 +533,7 @@ def main(argv=None):
                 raise Refusal('REFUSED --apply is all-or-nothing; nothing written: ' + '; '.join(blockers))
             outputs = render(root, client, selected, all_sources)
             all_outputs.update(outputs)
-        if args.write_catalog and derived_catalog is not None:
-            if unverifiable:
-                print(f'CATALOG_NOT_WRITTEN {CATALOG}: refused because this run reports unsupported roles')
-            else:
-                atomic_file(destination(root, CATALOG), json_bytes(derived_catalog), 0o600)
-                print(f'CATALOG_WRITTEN {CATALOG} (Git ignored, untracked)')
+        applied = False
         if all_outputs or (root / MANIFEST).exists():
             preflight(root, all_outputs, all_sources, clients)
             for relative, data in all_outputs.items():
@@ -540,6 +545,15 @@ def main(argv=None):
                                                  fromfile=relative + ' (current)', tofile=relative + ' (proposed)')), end='')
             if args.apply:
                 print(f'CONFIG_ONLY applied: {activate(root, all_outputs)} changed files; dispatch generated aliases explicitly; restart/reload depends on client')
+                applied = True
+        if args.write_catalog and derived_catalog is not None:
+            if unverifiable or (args.apply and not applied):
+                # Never leave a derived catalog behind when the run did not complete cleanly.
+                print(f'CATALOG_NOT_WRITTEN {CATALOG}: this run is not clean '
+                      '(unsupported roles, client without native output or refused apply)')
+            else:
+                atomic_file(destination(root, CATALOG), json_bytes(derived_catalog), 0o600)
+                print(f'CATALOG_WRITTEN {CATALOG} (Git ignored, untracked)')
         print('Effective runtime selection UNVERIFIED; no model calls or coordinator changes.')
         return 2 if unverifiable else 0
     except Refusal as error:

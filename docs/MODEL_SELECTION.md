@@ -126,8 +126,9 @@ OpenCode sin `.opencode/agents/qa.md`) o cualquier validación falla, no se escr
 fichero: ni configuración nativa, ni manifiesto, ni catálogo derivado; los errores se informan y
 el proceso sale con código 2. La configuración previamente generada queda byte a byte intacta.
 `--check` sigue siendo diagnóstico: muestra los roles compatibles (con su diff propuesto) y los
-no soportados, sin escribir nada. `--write-catalog` también se difiere: solo escribe cuando el run
-termina sin roles no soportados (`CATALOG_NOT_WRITTEN` en caso contrario).
+no soportados, sin escribir nada. `--write-catalog` se difiere al **final**: solo escribe cuando el
+run completo termina limpio —sin roles no soportados, sin cliente sin salida nativa y con el apply
+hecho si se pidió—; en cualquier otro caso informa `CATALOG_NOT_WRITTEN`.
 
 `--apply` requires one explicit `--client`; it writes only private, Git-ignored, untracked
 repository-local destinations. Default preferences/catalog are read only from the **current
@@ -179,7 +180,9 @@ retiring source entries, ensure no remaining output depends on that source.
 
 Apply while the client is idle; activate/reload or restart it according to its actual version.
 Files are replaced atomically one by one (new files0600, directories0700); ordinary write
-failures roll back bytes and permissions and clean newly created paths. This is **not a
+failures roll back bytes and permissions and clean newly created paths; a path that cannot be
+restored is not hidden — the run aborts with `ROLLBACK INCOMPLETE for <paths>` to be repaired by
+hand. This is **not a
 crash-atomic transaction across files**, nor protection against a malicious same-UID process
 changing paths concurrently. No client/session is automatically activated. An unchanged
 second apply preserves mtimes. Canonical prompt files/permissions are never rewritten.
