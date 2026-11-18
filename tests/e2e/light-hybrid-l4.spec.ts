@@ -59,7 +59,7 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
   await login(page);
 
   const selectTheme = async (theme: string) => {
-    await page.getByLabel("Apariencia").selectOption(theme);
+    await page.getByLabel("Cambiar tema").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const noOverflow = async () =>

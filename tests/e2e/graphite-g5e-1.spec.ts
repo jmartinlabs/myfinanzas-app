@@ -77,7 +77,7 @@ test("G5e-1: Anticipos premium en Graphite, 1440/820/390", async ({ page }) => {
   await authenticate(page);
 
   const selectTheme = async (theme: string) => {
-    await page.getByLabel("Apariencia").selectOption(theme);
+    await page.getByLabel("Cambiar tema").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const noOverflow = async () =>

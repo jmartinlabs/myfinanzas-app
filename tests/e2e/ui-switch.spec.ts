@@ -82,7 +82,7 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
     page.getByRole("heading", { name: "Saldos", exact: true }),
   ).toBeVisible();
 
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   const html = page.locator("html");
   await page.getByRole("button", { name: "Nuevo Saldo" }).click();
   await expect(

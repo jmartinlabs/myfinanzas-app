@@ -72,14 +72,24 @@ export function parseVersionPayload(value: unknown): AppVersionInfo | null {
 }
 
 /**
- * Texto de una línea del pie. Sin identidad verificable
+ * Identidad de una línea del pie, **sin entorno**. El entorno se pinta aparte
+ * (`footerEnvironmentLabel`) para que el shell pueda mostrar un único
+ * indicador de entorno por breakpoint (#503). Sin identidad verificable
  * (`/api/version` falló o no respondió) el fallback es explícito.
  */
-export function footerLabel(info: AppVersionInfo | null): string {
+export function footerIdentityLabel(info: AppVersionInfo | null): string {
   if (!info) return NO_VERSION_TEXT;
   if (info.app.label === "release" && info.app.version)
-    return `MyFinanzas · v${info.app.version} · ${info.environment}`;
-  return `MyFinanzas · build de desarrollo · ${info.environment}`;
+    return `MyFinanzas · v${info.app.version}`;
+  return "MyFinanzas · build de desarrollo";
+}
+
+/**
+ * Entorno servido ya con su separador (`· TEST`), o `null` sin identidad
+ * verificable: en ese caso no se inventa un entorno.
+ */
+export function footerEnvironmentLabel(info: AppVersionInfo | null): string | null {
+  return info ? `· ${info.environment}` : null;
 }
 
 /** «vX.Y.Z» de release o el marcador de desarrollo; nunca `0.0.0-e49`. */
@@ -99,4 +109,24 @@ export function shaLabel(info: AppVersionInfo | null): string {
 
 export function schemaLabel(info: AppVersionInfo | null): string {
   return info ? `SQLite v${info.schema}` : NO_DATA;
+}
+
+/**
+ * Indicador de entorno del shell (#503). Una sola fuente: el `environment`
+ * servido por `/api/version`. Sin identidad verificable no se inventa
+ * «Datos ficticios» ni «Local».
+ */
+export function environmentBadge(info: AppVersionInfo | null): string {
+  switch (info?.environment) {
+    case "DEMO":
+      return "DEMO · Datos ficticios";
+    case "DEV":
+      return "DEV · Desarrollo";
+    case "TEST":
+      return "TEST · Entorno de pruebas";
+    case "PROD":
+      return "PROD";
+    default:
+      return "Entorno no disponible";
+  }
 }

@@ -76,7 +76,7 @@ test("Graphite Lime: catálogo, persistencia, colores, contraste y 1440/390", as
   const html = page.locator("html");
   const body = page.locator("body");
   const sidebar = page.locator(".sidebar");
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   const expectNoOverflow = async () =>
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),

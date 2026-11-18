@@ -228,7 +228,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   );
 
   // Cabecera global fija y selector compacto; etiqueta Graphite Lime.
-  const themeSelect = page.getByLabel("Apariencia");
+  const themeSelect = page.getByLabel("Cambiar tema");
   await expect(themeSelect.locator("option").nth(3)).toHaveText("Graphite Lime");
   await expect(page.locator(".global-header")).toHaveCSS("position", "sticky");
   expect(
@@ -318,7 +318,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   await page.keyboard.press("Escape");
 
   // Cinco temas a 390 con el menú abierto: sin desbordamiento horizontal.
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   for (const [id, file] of [
     ["dark-s", "390-dark-s-menu.png"],
     ["light-s", "390-light-s-menu.png"],

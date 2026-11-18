@@ -93,7 +93,7 @@ const noOverflow = async (page: Page) =>
   ).toBe(true);
 
 async function graphite(page: Page) {
-  await page.getByLabel("Apariencia").selectOption("graphite-lime");
+  await page.getByLabel("Cambiar tema").selectOption("graphite-lime");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
 }
 
@@ -134,11 +134,11 @@ test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
     });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator(".cierre-page")).toBeVisible();
   await noOverflow(page);
   await page.screenshot({ path: "artifacts/g5f/casa-cierre-1440.png", fullPage: true });
-  await page.getByLabel("Apariencia").selectOption("light-s");
+  await page.getByLabel("Cambiar tema").selectOption("light-s");
   await expect(page.locator(".cierre-page")).toBeVisible();
   await noOverflow(page);
   expect(errors).toEqual([]);
@@ -176,11 +176,11 @@ test("G5f: Fotos en Graphite, 1440/820/390", async ({ page }) => {
     });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator(".fotos-page")).toBeVisible();
   await noOverflow(page);
   await page.screenshot({ path: "artifacts/g5f/casa-fotos-1440.png", fullPage: true });
-  await page.getByLabel("Apariencia").selectOption("light-s");
+  await page.getByLabel("Cambiar tema").selectOption("light-s");
   await expect(page.locator(".fotos-page")).toBeVisible();
   await noOverflow(page);
   expect(errors).toEqual([]);
@@ -244,11 +244,11 @@ test("G5f: Resumen anual en Graphite, 1440/820/390", async ({ page }) => {
     });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator(".e47-page")).toBeVisible();
   await noOverflow(page);
   await page.screenshot({ path: "artifacts/g5f/casa-resumen-1440.png", fullPage: true });
-  await page.getByLabel("Apariencia").selectOption("light-s");
+  await page.getByLabel("Cambiar tema").selectOption("light-s");
   await expect(page.locator(".e47-page")).toBeVisible();
   await noOverflow(page);
   expect(errors).toEqual([]);

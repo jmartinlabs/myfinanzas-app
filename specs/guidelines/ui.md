@@ -14,8 +14,9 @@ historia de E1.1–E1.5 y no reabren decisiones.
 
 > **Enmienda Casa de cuentas (2026-11-10).** Se aprueba `casa` («Casa») como quinta apariencia
 > y se autoriza su base visual 1A: tokens, tipografía, espaciado, superficies y CSS aislado.
-> El selector existente pasa a etiquetarse «Apariencia» y conserva un único control con cinco
-> opciones. `mf-theme` y `dark-s` no cambian; no se introduce `data-experience` ni una segunda
+> El selector existente **no lleva etiqueta visible** desde #503: se muestra solo el control con el
+> tema activo y su indicador, con nombre accesible y foco visible, y conserva un único
+> control con cinco opciones. `mf-theme` y `dark-s` no cambian; no se introduce `data-experience` ni una segunda
 > persistencia. 1A no modifica Inicio, Movimientos, navegación ni formularios. La composición
 > editorial de Inicio (1B) y Señal requieren autorización separada.
 
@@ -47,7 +48,8 @@ historia de E1.1–E1.5 y no reabren decisiones.
 - Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
   no se cambia el mecanismo. Las enmiendas añaden Casa y Aurora al final del catálogo, sin
   reordenar las apariencias anteriores ni sustituir `mf-theme`. La etiqueta visible es
-  «Apariencia», con seis opciones desde el 2026-11-17.
+  sin texto visible, con seis opciones desde el 2026-11-17 (#503 retiró la etiqueta «Apariencia» y ajustó
+  el ancho del control al catálogo).
 
 ### Tipografía, shell y espaciado
 
@@ -57,11 +59,15 @@ historia de E1.1–E1.5 y no reabren decisiones.
 - **Casa 1A** añade tokens de tipografía editorial y un CSS aislado (`casa.css`). No cambia la
   tipografía de las cuatro apariencias actuales. La composición editorial de Inicio queda para 1B.
 - Shell: sidebar 236 px, contenido `max-width: 1450px`, breakpoints 1050/760 px y móvil 16 px.
-- **Pie persistente de versión (#502).** `footer.global-footer` está fijado al borde inferior del
+- **Pie persistente de versión (#502, entorno propio desde #503).** `footer.global-footer` está
+  fijado al borde inferior del
   viewport (no al final del documento) en todas las pantallas y apariencias: una línea compacta
-  `MyFinanzas · vX.Y.Z · TEST` con la identidad servida por `GET /api/version`, o
-  `MyFinanzas · build de desarrollo · DEV` sin release verificable (y «Versión no disponible ·
-  build de desarrollo» si la petición falla). `.app-shell` reserva la altura real del pie y
+  `MyFinanzas · vX.Y.Z` con la identidad servida por `GET /api/version`, o
+  `MyFinanzas · build de desarrollo` sin release verificable (y «Versión no disponible ·
+  build de desarrollo» si la petición falla). **#503** separa el entorno en su propio nodo
+  (`.app-version-env`, con el separador `·`) y lo oculta a partir de 761 px: en escritorio el
+  único indicador de entorno es `.sidebar-bottom`, al final de la navegación, y con el menú
+  móvil cerrado (≤760 px) el único es el del pie. `.app-shell` reserva la altura real del pie y
   respeta `env(safe-area-inset-bottom)`; la barra de acciones pegajosa de Casa se detiene por
   encima del pie. El texto de versión es un `button` con `aria-expanded`/`aria-controls` que abre
   el panel «Información de la aplicación» (versión, entorno, SHA corto y esquema SQLite, con la
@@ -114,6 +120,13 @@ plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
   `display: inline*` dentro de prosa/celda (`p`, `li`, `dd`, `dt`, `small`, `summary`, `td`,
   `th`) y en `#main` pueden medir menos; cualquier otro objetivo < 44 px falla. Es una excepción
   de tamaño pendiente de revisión manual, no un AA declarado.
+  - **Excepción declarada · selector de apariencia (#503).** El `select` del selector de
+    apariencia (`.theme-picker select`, fuera de `#main`) puede medir 36–38 px de alto **solo**
+    en escritorio con ratón: viewport ≥ 761 px, `pointer: fine` y sin `any-pointer: coarse`
+    (equipos híbridos quedan fuera). Conserva ≥ 44 px de ancho, borde de contraste ≥ 3:1,
+    nombre accesible, foco visible y teclado completo; en móvil y en cualquier entrada táctil
+    mide 44 px. La auditoría DEV-07 la aplica solo a ese control y solo con esas condiciones
+    simultáneas; cualquier otro control < 44 px sigue fallando y el resto de la regla no cambia.
 - **Overflow:** sin scroll horizontal de página a 390×844, 1440×1000 y 720×500, con `<details>`
   cerrados y abiertos.
 - **Movimiento reducido:** con `prefers-reduced-motion: reduce`, `transition-duration: 0s` y
