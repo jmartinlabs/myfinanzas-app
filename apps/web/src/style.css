@@ -448,41 +448,55 @@ small {
 }
 .theme-picker {
   display: flex;
-  /* #503 — la regla global `label` apila en columna; aquí la etiqueta «Tema» y
-     el selector comparten línea (nunca encima ni suelta). */
+  /* #503 — la regla global `label` apila en columna; aquí el marco y el
+     selector comparten línea (nunca encima ni suelta). */
   flex-direction: row;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-xs);
   font-weight: 650;
   color: var(--muted);
+  /* #503 — el cromo visible (borde, fondo y radio) vive en el contenedor: mide
+     44 px por defecto y 38 px en escritorio con puntero fino. El `select`
+     interno conserva SIEMPRE 44 px de alto y se centra sobre el marco, así que
+     sobresale 3 px por arriba y por abajo: baja la altura visible sin recortar
+     el objetivo interactivo (AA ≥ 44 px). */
+  --theme-picker-frame: var(--touch-min);
+  height: var(--theme-picker-frame);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
 }
-/* #503 — el ancho lo fija el catálogo (la opción más larga y la flecha), no
-   una medida fija: sin recortar opciones y con el área táctil intacta. */
-.theme-picker select {
+/* #503 — el `select` no dibuja cromo propio (lo dibuja el contenedor) y
+   mantiene el ancho del catálogo y 44 px de superficie interactiva. La
+   especificidad cubre las reglas genéricas de campo de cada tema, que si no
+   repintarían su caja de 44 px por fuera del marco. */
+:root[data-theme] label.theme-picker select,
+label.theme-picker select {
   width: auto;
   max-width: 100%;
   min-height: var(--touch-min);
   padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-size: var(--text-xs);
 }
-/* #503 — altura visual compacta en escritorio: el control de 44 px resultaba
-   voluminoso como único elemento de la cabecera. Con puntero fino y ancho de
-   escritorio baja a 38 px (texto y flecha centrados, anillo de foco completo);
-   en móvil y en cualquier entrada táctil se conserva el objetivo de 44 px
-   (--touch-min). El ancho no se toca: sigue fijándolo el catálogo. */
+/* #503 — altura visual compacta en escritorio: 38 px de marco (texto y flecha
+   centrados, anillo de foco completo). No se toca el ancho ni el objetivo
+   táctil del `select`. */
 @media (min-width: 761px) and (pointer: fine) {
-  .theme-picker select {
-    min-height: 38px;
+  .theme-picker {
+    --theme-picker-frame: 38px;
   }
 }
 /* #503 — equipos híbridos (portátil con pantalla táctil): `pointer: fine` solo
    describe el puntero principal, así que la mera existencia de un puntero
-   grueso (`any-pointer: coarse`) recupera el objetivo táctil completo. Va
-   después del bloque compacto para ganar el empate de cascada. */
+   grueso (`any-pointer: coarse`) devuelve el marco de 44 px. Va después del
+   bloque compacto para ganar el empate de cascada. */
 @media (min-width: 761px) and (any-pointer: coarse) {
-  .theme-picker select {
-    min-height: var(--touch-min);
+  .theme-picker {
+    --theme-picker-frame: var(--touch-min);
   }
 }
 .header-actions button {

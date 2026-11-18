@@ -173,12 +173,16 @@
   font-size: 17px;
 }
 
+/* #503 — el cromo del selector vive en el marco (`.theme-picker`); el `select`
+   solo aporta texto, flecha y superficie interactiva. */
 :root[data-theme="casa"] .theme-picker {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  background: var(--input-bg);
+  border-radius: 2px;
 }
 
 :root[data-theme="casa"] .theme-picker select {
@@ -186,8 +190,6 @@
   font-size: 12px;
   letter-spacing: 0;
   text-transform: none;
-  background: var(--input-bg);
-  border-radius: 2px;
 }
 
 :root[data-theme="casa"] .content {

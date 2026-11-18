@@ -218,9 +218,14 @@ html[data-theme="aurora"] .secondary:hover {
   background: var(--accent-soft);
 }
 
-html[data-theme="aurora"] .theme-picker select {
+/* #503 — el cromo del selector vive en el marco (`.theme-picker`); el `select`
+   solo aporta texto, flecha y superficie interactiva. */
+html[data-theme="aurora"] .theme-picker {
   border-color: var(--control-border);
   background: var(--input-bg);
+}
+
+html[data-theme="aurora"] .theme-picker select {
   color: var(--text);
 }
 

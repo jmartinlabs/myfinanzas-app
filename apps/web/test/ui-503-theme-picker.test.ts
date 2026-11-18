@@ -2,12 +2,13 @@ import { readFileSync } from "node:fs";
 import { test, expect } from "bun:test";
 
 /**
- * #503 — contrato CSS de la altura del selector de tema.
+ * #503 — contrato CSS del selector de tema: altura visual y objetivo táctil.
  *
- * El control se compacta solo en escritorio con puntero fino; el objetivo
- * táctil de 44 px (`--touch-min`) sigue siendo la base para móvil y cualquier
- * entrada táctil. El ancho no se toca (lo fija el catálogo) y la reducción de
- * altura no recorta padding, tipografía ni foco.
+ * El cromo visible (borde y fondo) lo dibuja el marco `.theme-picker`, de 38 px
+ * en escritorio con puntero fino, mientras el `select` real conserva 44 px de
+ * superficie interactiva (`--touch-min`). En móvil, con cualquier puntero
+ * grueso o sin puntero fino, el marco vuelve a 44 px. El ancho no se toca (lo
+ * fija el catálogo).
  */
 const styleCss = readFileSync(
   new URL("../src/style.css", import.meta.url),
@@ -37,50 +38,68 @@ function mediaBlock(media: string): string {
   throw new Error(`media query sin cierre: ${media}`);
 }
 
-test("#503 la base del selector conserva el objetivo táctil y el ancho del catálogo", () => {
-  const base = ruleBody(".theme-picker select");
-  expect(base).toContain("min-height: var(--touch-min)");
-  expect(base).toContain("width: auto");
-  expect(base).not.toMatch(/width:\s*9rem/);
+/** Altura de marco declarada dentro del bloque indicado. */
+function frameHeightIn(block: string): number {
+  const match = block.match(/--theme-picker-frame:\s*(\d+)px/);
+  expect(match?.[1], "falta --theme-picker-frame en px").toBeDefined();
+  return Number(match![1]);
+}
+
+test("#503 el marco dibuja el cromo y el select conserva 44 px de objetivo", () => {
+  const frame = ruleBody(".theme-picker");
+  // Altura visible por defecto táctil, con el cromo en el marco.
+  expect(frame).toContain("--theme-picker-frame: var(--touch-min)");
+  expect(frame).toContain("height: var(--theme-picker-frame)");
+  expect(frame).toContain("border: 1px solid var(--control-border)");
+  expect(frame).toContain("background: var(--surface)");
+
+  const select = ruleBody("label.theme-picker select");
+  // Objetivo AA intacto y sin cromo propio.
+  expect(select).toContain("min-height: var(--touch-min)");
+  expect(select).toContain("width: auto");
+  expect(select).toContain("border: 0");
+  expect(select).toContain("background: transparent");
+  expect(select).not.toMatch(/width:\s*9rem/);
 });
 
-test("#503 la altura compacta solo aplica con puntero fino en escritorio", () => {
+test("#503 la altura visual compacta solo cambia el marco con puntero fino", () => {
   const block = mediaBlock(COMPACT_MEDIA);
-  const compact = ruleBody(".theme-picker select", styleCss.indexOf(block));
-  // Altura dentro del objetivo acordado (36–38 px).
-  const height = Number(compact.match(/min-height:\s*(\d+)px/)?.[1]);
+  // Dentro del objetivo acordado (36–38 px).
+  const height = frameHeightIn(block);
   expect(height).toBeGreaterThanOrEqual(36);
   expect(height).toBeLessThanOrEqual(38);
-  // Solo altura: no se altera ancho, padding ni tipografía.
-  expect(compact).not.toMatch(/(^|[^-])width:/);
-  expect(compact).not.toMatch(/(^|[^-])height:/);
-  expect(compact).not.toContain("padding");
-  expect(compact).not.toContain("font-size");
+  // Solo el token del marco: ni ancho, ni objetivo del select, ni tipografía.
+  expect(block).toContain(".theme-picker {");
+  expect(block).not.toContain("select {");
+  expect(block).not.toMatch(/(^|[^-])width:/);
+  expect(block).not.toContain("min-height");
+  expect(block).not.toContain("font-size");
 });
 
-test("#503 el selector no tiene medidas fijas de ancho en ningún tema", () => {
+test("#503 un puntero grueso disponible restaura el marco de 44 px", () => {
+  // Un híbrido (portátil con pantalla táctil) declara `pointer: fine` por su
+  // ratón pero `any-pointer: coarse` por el tacto: el marco vuelve a 44 px.
+  const block = mediaBlock(TOUCH_MEDIA);
+  expect(block).toContain("--theme-picker-frame: var(--touch-min)");
+  expect(block).not.toContain("select {");
+  expect(block).not.toMatch(/(^|[^-])width:/);
+  expect(block).not.toContain("font-size");
+  // Debe ir después del bloque compacto para ganar el empate de cascada.
+  expect(styleCss.indexOf(TOUCH_MEDIA)).toBeGreaterThan(
+    styleCss.indexOf(COMPACT_MEDIA),
+  );
+});
+
+test("#503 el cromo de cada tema vive en el marco, no en el select", () => {
   for (const themeCss of ["graphite.css", "aurora.css", "casa.css"]) {
     const css = readFileSync(
       new URL(`../src/${themeCss}`, import.meta.url),
       "utf8",
     );
+    // Sin medidas fijas de ancho en el selector.
     expect(css).not.toMatch(/\.theme-picker select \{[^}]*width:/);
+    // Nada que repinte la caja de 44 px del select: fondo ni radio.
+    expect(css).not.toMatch(/\.theme-picker select \{[^}]*background:/);
+    expect(css).not.toMatch(/\.theme-picker select \{[^}]*border-radius:/);
   }
-});
-
-test("#503 un puntero grueso disponible restaura el objetivo táctil en escritorio", () => {
-  // Un híbrido (portátil con pantalla táctil) declara `pointer: fine` por su
-  // ratón pero `any-pointer: coarse` por el tacto: debe conservar 44 px.
-  const block = mediaBlock(TOUCH_MEDIA);
-  const touch = ruleBody(".theme-picker select", styleCss.indexOf(block));
-  expect(touch).toContain("min-height: var(--touch-min)");
-  // Solo altura: ni ancho, ni padding, ni tipografía.
-  expect(touch).not.toMatch(/(^|[^-])width:/);
-  expect(touch).not.toMatch(/(^|[^-])height:/);
-  expect(touch).not.toContain("padding");
-  expect(touch).not.toContain("font-size");
-  // Debe ir después del bloque compacto para ganar el empate de cascada.
-  expect(styleCss.indexOf(TOUCH_MEDIA)).toBeGreaterThan(
-    styleCss.indexOf(COMPACT_MEDIA),
-  );
 });

@@ -17,10 +17,11 @@ import { totp } from "../../apps/api/src/auth";
  * Comprueba, a 1440 y a 390:
  *  - el encabezado muestra solo el `select` (sin texto suelto ni etiqueta encima);
  *  - el ancho del selector lo fija el catálogo, no una medida fija de 9rem;
- *  - la altura es compacta en escritorio con puntero fino (36–38 px) y conserva
- *    el objetivo táctil de 44 px en móvil, con emulación táctil a ancho de
- *    escritorio y cuando existe cualquier puntero grueso (`any-pointer: coarse`,
- *    equipos híbridos), sin recortar texto, flecha ni anillo de foco;
+ *  - el marco visible baja a 36–38 px en escritorio con puntero fino mientras el
+ *    `select` conserva ≥44 px de superficie interactiva (AA); en móvil, con
+ *    emulación táctil aislada a ancho de escritorio y con cualquier puntero
+ *    grueso (`any-pointer: coarse`, equipos híbridos) el marco vuelve a 44 px;
+ *    sin recortar texto, flecha ni anillo de foco;
  *  - exactamente UN indicador de entorno visible por anchura, contado por
  *    visibilidad real en el DOM (no por presencia);
  *  - sin scroll horizontal;
@@ -146,24 +147,31 @@ async function expectSingleEnvIndicator(
 }
 
 /**
- * Métricas reales del selector: caja, `min-height` aplicado y alto de cabecera.
- * Con ellas se comprueba que el contenido cabe (sin recorte) y que el anillo de
- * foco (outline + offset = 6 px por lado) no se sale del encabezado.
+ * Métricas reales del selector: marco visible (`.theme-picker`), caja del
+ * `select`, y alto de cabecera. El marco manda en la altura visible; el
+ * `select` debe conservar ≥44 px de superficie interactiva y sobresalir de él.
  */
 async function selectMetrics(page: Page) {
   return page.evaluate(() => {
     const element = document.querySelector<HTMLSelectElement>(
       ".theme-picker select",
     )!;
+    const frame = document.querySelector<HTMLElement>(".theme-picker")!;
     const style = getComputedStyle(element);
+    const frameStyle = getComputedStyle(frame);
     const fontSize = parseFloat(style.fontSize);
     // El `select` nativo resuelve `line-height: normal` (no un px): se usa un
     // factor conservador sobre el tamaño de fuente para no dar por bueno un
     // recorte que sí existe.
     const declaredLineHeight = parseFloat(style.lineHeight);
     return {
+      frameHeight: frame.getBoundingClientRect().height,
+      frameBorder: frameStyle.borderTopWidth,
+      frameBackground: frameStyle.backgroundColor,
       height: element.getBoundingClientRect().height,
       minHeight: style.minHeight,
+      borderTop: style.borderTopWidth,
+      background: style.backgroundColor,
       fontSize,
       lineHeight: Number.isFinite(declaredLineHeight)
         ? declaredLineHeight
@@ -190,8 +198,9 @@ async function expectNoHorizontalScroll(page: Page) {
 }
 
 /**
- * Decisión final: el encabezado muestra **solo** el `select` con el tema actual.
- * No hay texto visible «Tema», pero sí nombre accesible y foco visible.
+ * Decisión final: el encabezado muestra **solo** el `select` con el tema actual
+ * dentro de un marco de 38 px; sin texto suelto, con nombre accesible, foco
+ * visible y ≥44 px de superficie interactiva en el propio `select`.
  */
 async function expectSelectOnly(page: Page, minHeight = 0) {
   const select = page.getByLabel("Cambiar tema");
@@ -201,8 +210,8 @@ async function expectSelectOnly(page: Page, minHeight = 0) {
   await expect(picker).toHaveCount(1);
   const box = (await select.boundingBox())!;
   const host = (await picker.boundingBox())!;
-  // Sin etiqueta a la izquierda: el control ocupa el ancho disponible del host.
-  expect(box.width).toBeGreaterThan(host.width - 2);
+  // Sin etiqueta a la izquierda: el `select` llena el marco salvo su borde.
+  expect(host.width - box.width).toBeLessThanOrEqual(2);
   expect(box.height).toBeGreaterThanOrEqual(minHeight);
   // Sin texto suelto ni elementos de etiqueta: solo el select.
   expect(await picker.locator("span, p, strong, b, em").count()).toBe(0);
@@ -238,15 +247,16 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
 
   // ── 1440 ────────────────────────────────────────────────────────────────
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const { selectBox } = await expectSelectOnly(page, 36);
+  const { selectBox, hostBox } = await expectSelectOnly(page, 44);
   const afterWidth = selectBox.width;
   const rootFontSize = await page.evaluate(() =>
     parseFloat(getComputedStyle(document.documentElement).fontSize),
   );
   // Antes: `width: 9rem` fijo. Se mide el mismo control con la regla anterior
-  // aplicada, no un número supuesto.
+  // aplicada (misma especificidad que la vigente, para que gane por orden), no
+  // un número supuesto.
   await page.addStyleTag({
-    content: "html .theme-picker select { width: 9rem; }",
+    content: ":root[data-theme] label.theme-picker select { width: 9rem; }",
   });
   const beforeWidth = (await select.boundingBox())!.width;
   await page.evaluate(() => {
@@ -257,20 +267,29 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   mkdirSync(SHOTS, { recursive: true });
   expect(beforeWidth).toBeCloseTo(9 * rootFontSize, 0);
   expect(afterWidth).toBeLessThan(beforeWidth);
-  console.log(
-    `#503 ancho del select a 1440: antes ${beforeWidth}px (9rem), después ${afterWidth}px; alto ${selectBox.height}px`,
-  );
-  // Altura compacta en escritorio con puntero fino (objetivo 36–38 px) y sin
-  // recortar la opción más larga («Graphite Lime»).
-  expect(selectBox.height).toBeGreaterThanOrEqual(36);
-  expect(selectBox.height).toBeLessThanOrEqual(38);
+
+  // ── Altura: marco visual 36–38 px y objetivo AA ≥44 px intacto ───────────
+  // El cromo (borde y fondo) vive en `.theme-picker`; el `select` real sigue
+  // midiendo 44 px, así que sobresale del marco y conserva la superficie
+  // interactiva que exige `specs/guidelines/ui.md`.
   const deskMetrics = await selectMetrics(page);
-  expect(deskMetrics.minHeight).toBe("38px");
+  expect(deskMetrics.frameHeight).toBeGreaterThanOrEqual(36);
+  expect(deskMetrics.frameHeight).toBeLessThanOrEqual(38);
+  expect(selectBox.height).toBeGreaterThanOrEqual(44);
+  expect(deskMetrics.minHeight).toBe("44px");
+  expect(selectBox.height - deskMetrics.frameHeight).toBeGreaterThanOrEqual(4);
+  expect(deskMetrics.borderTop).toBe("0px");
+  expect(deskMetrics.background).toBe("rgba(0, 0, 0, 0)");
+  expect(deskMetrics.frameBorder).toBe("1px");
+  expect(deskMetrics.frameBackground).not.toBe("rgba(0, 0, 0, 0)");
+  console.log(
+    `#503 ancho a 1440: antes ${beforeWidth}px (9rem), después ${afterWidth}px de select / ${hostBox.width}px de marco; marco ${deskMetrics.frameHeight}px, select ${selectBox.height}px`,
+  );
   // El contenido (línea, padding y bordes) cabe en la caja: nada se recorta.
   expect(
     deskMetrics.lineHeight + deskMetrics.paddingBlock + deskMetrics.borderBlock,
   ).toBeLessThanOrEqual(selectBox.height);
-  // La cabecera aloja el control con su anillo de foco (6 px por lado).
+  // La cabecera aloja el `select` con su anillo de foco (6 px por lado).
   expect(deskMetrics.headerHeight).toBeGreaterThanOrEqual(
     selectBox.height + 12,
   );
@@ -284,10 +303,10 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
 
   // Chromium no permite emular la combinación híbrida (puntero fino + tacto
   // disponible), así que esa guarda se comprueba en el CSS real del artefacto
-  // servido: debe existir `any-pointer: coarse` con el objetivo táctil, después
-  // del bloque compacto (gana el empate de cascada).
-  const themePickerRules = await page.evaluate(() => {
-    const found: { media: string; minHeight: string }[] = [];
+  // servido: `any-pointer: coarse` debe devolver el marco de 44 px y aparecer
+  // después del bloque compacto (gana el empate de cascada).
+  const frameRules = await page.evaluate(() => {
+    const found: { media: string; frame: string }[] = [];
     const walk = (rules: CSSRuleList, media = "") => {
       for (const rule of Array.from(rules)) {
         if (rule instanceof CSSMediaRule) {
@@ -297,11 +316,9 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
           walk(rule.cssRules, condition);
           continue;
         }
-        if (
-          rule instanceof CSSStyleRule &&
-          rule.selectorText === ".theme-picker select"
-        ) {
-          found.push({ media, minHeight: rule.style.minHeight });
+        if (rule instanceof CSSStyleRule) {
+          const frame = rule.style.getPropertyValue("--theme-picker-frame");
+          if (frame) found.push({ media, frame: frame.trim() });
         }
       }
     };
@@ -314,56 +331,60 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
     }
     return found;
   });
-  const hybridIndex = themePickerRules.findIndex(
+  const compactIndex = frameRules.findIndex(
+    (rule) =>
+      rule.media.includes("pointer:") &&
+      !rule.media.includes("any-pointer") &&
+      rule.media.includes("fine") &&
+      rule.media.includes("761px"),
+  );
+  const hybridIndex = frameRules.findIndex(
     (rule) =>
       rule.media.includes("any-pointer") &&
       rule.media.includes("coarse") &&
       rule.media.includes("761px"),
   );
-  expect(hybridIndex).toBeGreaterThanOrEqual(0);
-  expect(themePickerRules[hybridIndex].minHeight).toBe("var(--touch-min)");
-  expect(
-    themePickerRules.findIndex(
-      (rule) =>
-        rule.media.includes("pointer:") &&
-        !rule.media.includes("any-pointer") &&
-        rule.media.includes("fine"),
-    ),
-  ).toBeLessThan(hybridIndex);
+  expect(frameRules[compactIndex]?.frame).toBe("38px");
+  expect(hybridIndex).toBeGreaterThan(compactIndex);
+  expect(frameRules[hybridIndex].frame).toBe("var(--touch-min)");
 
-  // Con entrada táctil a ancho de escritorio (tableta) NO se compacta: el
-  // objetivo interactivo sigue en 44 px. Emulación real de Chromium (CDP), no
-  // una suposición sobre el media query. La emulación marca puntero principal y
-  // cualquier puntero como gruesos (no híbrido).
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Emulation.setTouchEmulationEnabled", {
+  // Con entrada táctil a ancho de escritorio (tableta) no se compacta: marco y
+  // objetivo de 44 px. La emulación se hace en una pestaña aislada del mismo
+  // contexto (cookies y `localStorage` compartidos) porque en Chromium Linux
+  // desactivar `Emulation.setTouchEmulationEnabled` no siempre devuelve
+  // `pointer: fine`, y esta página debe quedarse intacta.
+  const touchPage = await page.context().newPage();
+  const touchCdp = await page.context().newCDPSession(touchPage);
+  await touchCdp.send("Emulation.setTouchEmulationEnabled", {
     enabled: true,
     maxTouchPoints: 5,
   });
-  await expect
-    .poll(() =>
-      page.evaluate(() => ({
-        primary: matchMedia("(pointer: coarse)").matches,
-        any: matchMedia("(any-pointer: coarse)").matches,
-      })),
-    )
-    .toEqual({ primary: true, any: true });
-  const touchMetrics = await selectMetrics(page);
-  expect(touchMetrics.minHeight).toBe("44px");
+  await touchPage.goto(`${BASE}/saldos`);
+  await expect(
+    touchPage.getByRole("heading", { name: "Saldos", exact: true }),
+  ).toBeVisible();
+  const touchMetrics = await selectMetrics(touchPage);
+  expect(
+    await touchPage.evaluate(() => ({
+      primary: matchMedia("(pointer: coarse)").matches,
+      any: matchMedia("(any-pointer: coarse)").matches,
+    })),
+  ).toEqual({ primary: true, any: true });
+  expect(touchMetrics.frameHeight).toBeGreaterThanOrEqual(44);
   expect(touchMetrics.height).toBeGreaterThanOrEqual(44);
   console.log(
-    `#503 alto del select a 1440 con puntero fino ${selectBox.height}px; con emulación táctil ${touchMetrics.height}px`,
+    `#503 marco/select a 1440: puntero fino ${deskMetrics.frameHeight}/${selectBox.height}px; táctil ${touchMetrics.frameHeight}/${touchMetrics.height}px`,
   );
-  await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
-  await expect
-    .poll(() =>
-      page.evaluate(() => ({
-        primary: matchMedia("(pointer: fine)").matches,
-        anyCoarse: matchMedia("(any-pointer: coarse)").matches,
-      })),
-    )
-    .toEqual({ primary: true, anyCoarse: false });
-  expect((await selectMetrics(page)).minHeight).toBe("38px");
+  await touchPage.close();
+  // La página principal nunca cambió de puntero: sigue fina, con su marco
+  // compacto y sin tocar el `select`.
+  expect(
+    await page.evaluate(() => ({
+      fine: matchMedia("(pointer: fine)").matches,
+      anyCoarse: matchMedia("(any-pointer: coarse)").matches,
+    })),
+  ).toEqual({ fine: true, anyCoarse: false });
+  expect((await selectMetrics(page)).frameHeight).toBeLessThanOrEqual(38);
 
   // Un solo indicador de entorno: el del final de la navegación.
   const deskIndicator = await expectSingleEnvIndicator(page, "sidebar-bottom");
@@ -414,9 +435,12 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
     expect(
       await page.evaluate(() => localStorage.getItem("mf-theme")),
     ).toBe(id);
-    // La altura compacta no depende del tema (Graphite Lime incluido).
-    const themed = await expectSelectOnly(page, 36);
-    expect(themed.selectBox.height).toBeLessThanOrEqual(38);
+    // El marco compacto y el objetivo AA no dependen del tema.
+    const themed = await expectSelectOnly(page, 44);
+    const themedMetrics = await selectMetrics(page);
+    expect(themedMetrics.frameHeight).toBeGreaterThanOrEqual(36);
+    expect(themedMetrics.frameHeight).toBeLessThanOrEqual(38);
+    expect(themed.selectBox.height).toBeGreaterThanOrEqual(44);
     await expectNoHorizontalScroll(page);
     await expectSingleEnvIndicator(page, "sidebar-bottom");
     // Evidencia de la opción más larga («Graphite Lime») con la altura compacta.
@@ -437,10 +461,12 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".sidebar nav")).toBeHidden();
   const mobile = await expectSelectOnly(page, 44);
-  // En móvil se recupera el objetivo táctil completo, más alto que escritorio.
+  const mobileMetrics = await selectMetrics(page);
+  // En móvil el marco recupera los 44 px y el `select` los conserva.
+  expect(mobileMetrics.frameHeight).toBeGreaterThanOrEqual(44);
+  expect(mobileMetrics.frameHeight).toBeGreaterThan(deskMetrics.frameHeight);
   expect(mobile.selectBox.height).toBeGreaterThanOrEqual(44);
-  expect(mobile.selectBox.height).toBeGreaterThan(selectBox.height);
-  expect((await selectMetrics(page)).minHeight).toBe("44px");
+  expect(mobileMetrics.minHeight).toBe("44px");
   expect(mobile.selectBox.width).toBeLessThanOrEqual(390);
   const mobileIndicator = await expectSingleEnvIndicator(
     page,
