@@ -1,8 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { reservePorts } from "../../apps/api/test-support/e2e-context";
 
 /**
  * #503 — shell compacto: selector de tema al ancho del catálogo y un único
@@ -10,12 +11,12 @@ import { totp } from "../../apps/api/src/auth";
  *
  * Recorrido real sobre el artefacto construido (`bun run build`): un fixture
  * propio levanta la API con SQLite ficticio y sirve `apps/web/dist` con proxy
- * `/api` en **los puertos del contexto de la ejecución** (#508), de modo que no
- * depende del servidor de desarrollo de 5173 ni de la API de 3001. Los puertos
- * se leen de `E2E_WEB_PORT`/`E2E_API_PORT`, que publica el contexto de la
- * ejecución; si la spec arranca sin ellos falla de forma explícita en vez de
- * caer a un puerto fijo. Cada ejecución provisiona una única cuenta nueva en
- * `.local/e2e-shell` (el fixture borra el directorio).
+ * `/api`. Sus puertos se reservan **en esta spec** (#508): los del contexto de
+ * la ejecución ya los ocupan los dos `webServer` de `playwright.config.ts`, así
+ * que reutilizarlos moría con `EADDRINUSE` y los sondeos acababan hablando con
+ * otro servidor. No se usan literales ni se cae a 5173/3001. Cada ejecución
+ * provisiona una única cuenta nueva en `.local/e2e-shell` (el fixture borra el
+ * directorio).
  *
  * Comprueba, a 1440 y a 390:
  *  - el encabezado muestra solo el `select` (sin texto suelto ni etiqueta encima);
@@ -32,47 +33,68 @@ import { totp } from "../../apps/api/src/auth";
  *  - los seis temas cambian y persisten en `mf-theme`.
  */
 
-// #508 — puertos propios de la ejecución: `playwright.config.ts` publica
-// `E2E_WEB_PORT` y `E2E_API_PORT` en el entorno de las specs. Sin ellos la spec
-// falla de forma explícita: ni literales 5291/3041 ni caída silenciosa a
-// 5173/3001.
-function requiredPort(name: "E2E_WEB_PORT" | "E2E_API_PORT"): number {
-  const raw = process.env[name];
-  const port = Number(raw);
-  if (!raw || !Number.isInteger(port) || port < 1 || port > 65535)
-    throw new Error(
-      `Falta un puerto E2E válido (${name}): la ejecución debe arrancar con el contexto de #508.`,
-    );
-  return port;
-}
-
-const WEB_PORT = requiredPort("E2E_WEB_PORT");
-const API_PORT = requiredPort("E2E_API_PORT");
-const BASE = `http://127.0.0.1:${WEB_PORT}`;
-const API_HEALTH = `http://127.0.0.1:${API_PORT}/api/health`;
 const DIR = ".local/e2e-shell";
 const SHOTS = "artifacts/ui-503";
 const ENV_TOKEN = "TEST";
+
+/** Origen y salud del fixture propio; se fijan al reservar sus puertos. */
+let BASE = "";
+let API_HEALTH = "";
 let child: ChildProcess | undefined;
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin stderr)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture #503 terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test.beforeAll(async ({ request }) => {
+  // Puertos propios del fixture: libres en 127.0.0.1 en este momento, distintos
+  // de los del run (ya ocupados por los `webServer` del config).
+  const [apiPort, webPort] = reservePorts(2, "127.0.0.1");
+  BASE = `http://127.0.0.1:${webPort}`;
+  API_HEALTH = `http://127.0.0.1:${apiPort}/api/health`;
+
   child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/shell-server.ts"],
     {
-      stdio: "pipe",
+      stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...process.env,
         NODE_ENV: "test",
         APP_ENV: ENV_TOKEN,
-        E2E_WEB_PORT: String(WEB_PORT),
-        E2E_API_PORT: String(API_PORT),
+        // Explícitos: el fixture deriva de ellos su ORIGIN y el proxy `/api`.
+        E2E_API_PORT: String(apiPort),
+        E2E_WEB_PORT: String(webPort),
       },
     },
   );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
+
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
           return (await request.get(API_HEALTH)).status();
         } catch {
@@ -82,10 +104,20 @@ test.beforeAll(async ({ request }) => {
       { timeout: 30000 },
     )
     .toBe(200);
+  // El sondeo debe hablar con NUESTRO fixture: puerto reservado, proceso vivo y
+  // base ficticia provisionada por él (no otro servidor que ocupara el puerto).
+  expect(new URL(API_HEALTH).port).toBe(String(apiPort));
+  expect(new URL(BASE).port).toBe(String(webPort));
+  assertFixtureAlive();
+  expect(
+    existsSync(`${DIR}/bootstrap.txt`),
+    `El fixture no provisionó ${DIR}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
   // El artefacto tiene que estar servido antes de navegar.
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
           return (await request.get(`${BASE}/saldos`)).status();
         } catch {
@@ -99,6 +131,8 @@ test.beforeAll(async ({ request }) => {
 
 test.afterAll(() => {
   child?.kill();
+  child?.stdout?.destroy();
+  child?.stderr?.destroy();
 });
 
 async function login(page: Page) {
