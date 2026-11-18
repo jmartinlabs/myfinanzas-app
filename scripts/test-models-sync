@@ -187,24 +187,65 @@ class ModelsSync(unittest.TestCase):
                     self.assertIn('model: alternate\neffort: low', qa.read_text())
                 self.assertIn('0 changed files', self.call('--apply', client=client))
 
-    def test_opencode_qa_missing_is_reported_not_silent(self):
-        # Defect 1b: never drop `qa`, never emit an inert `agents.qa`.
+    def test_opencode_qa_missing_apply_is_all_or_nothing(self):
+        # Never drop `qa`, never emit an inert `agents.qa`, and never write a partial config.
         self.catalog['clients']['opencode']['models'].append(
             {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
         self.config['roles'] = {'review': CHOICE.copy(),
                                 'qa': {'provider': 'provider-a', 'model': 'alternate'}}
         self.save()
+        before = self.snapshot()
         out = self.call('--apply', client='opencode', status=2)
         self.assertIn('UNSUPPORTED OpenCode qa agent missing', out)
+        self.assertIn('REFUSED --apply is all-or-nothing', out)
         self.assertIn('  requested qa: provider-a/alternate', out)
-        data = json.loads((self.root / '.opencode/opencode.json').read_text())
-        self.assertEqual(data, {'agents': {'review': {'model': 'provider-a/future-large#high'}}})
+        self.assertFalse((self.root / '.opencode/opencode.json').exists())
+        self.assertFalse((self.root / MODULE['MANIFEST']).exists())
+        self.assertEqual(before, self.snapshot())          # bytes, mtime y modo intactos
+        # --check sigue diagnosticando y muestra la parte soportada sin escribir nada
+        check = self.call(client='opencode', status=2)   # catálogo declarado con efforts
+        self.assertIn('UNSUPPORTED OpenCode qa agent missing', check)
+        self.assertIn('+++ .opencode/opencode.json (proposed)', check)
+        self.assertEqual(before, self.snapshot())
+        # con el agente presente, aplica los dos roles
         (self.root / '.opencode/agents/qa.md').write_text(
             (self.root / '.opencode/agents/review.md').read_text())
         self.call('--apply', client='opencode')
         data = json.loads((self.root / '.opencode/opencode.json').read_text())
         self.assertEqual(data, {'agents': {'review': {'model': 'provider-a/future-large#high'},
                                            'qa': {'model': 'provider-a/alternate'}}})
+
+    def test_apply_refusal_preserves_previous_generated_config(self):
+        # Un apply fallido no toca la configuración generada antes ni su manifiesto.
+        (self.root / '.opencode/agents/qa.md').write_text(
+            (self.root / '.opencode/agents/review.md').read_text())
+        self.catalog['clients']['opencode']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
+        self.config['roles'] = {'review': CHOICE.copy(),
+                                'qa': {'provider': 'provider-a', 'model': 'alternate'}}
+        self.save()
+        self.call('--apply', client='opencode')                   # estado previo válido
+        previous = (self.root / '.opencode/opencode.json').read_bytes()
+        manifest = (self.root / MODULE['MANIFEST']).read_bytes()
+        (self.root / '.opencode/agents/qa.md').unlink()          # ya no puede aplicarse
+        before = self.snapshot()
+        out = self.call('--apply', client='opencode', status=2)
+        self.assertIn('REFUSED --apply is all-or-nothing', out)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual((self.root / '.opencode/opencode.json').read_bytes(), previous)
+        self.assertEqual((self.root / MODULE['MANIFEST']).read_bytes(), manifest)
+
+    def test_write_catalog_skipped_when_run_reports_unsupported_roles(self):
+        self.config['roles'] = {'review': {'provider': 'provider-a', 'model': 'future-large'},
+                                'qa': {'provider': 'provider-a', 'model': 'alternate'}}
+        self.catalog['clients']['opencode']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode',
+                        status=2, env=self.fake_cli(models=('provider-a/future-large', 'provider-a/alternate')))
+        self.assertIn('CATALOG_NOT_WRITTEN', out)
+        self.assertFalse((self.root / MODULE['CATALOG']).exists())
 
     def test_overrides_and_explicit_allowlists(self):
         self.config['clients'] = {'codex': {'roles': {'implementation': {'effort': 'low'}}}}

@@ -457,14 +457,13 @@ def main(argv=None):
         require(config_path.exists(), 'UNCONFIGURED selector missing; copy .agents/models.example.yaml to .agents/models.local.yaml or pass --config')
         config = read_json(config_path)
         config_schema(config)
+        derived_catalog = None
         if args.catalog_from:
             catalog = catalog_from_cli(args.catalog_from, root)
             listed = catalog['clients'][args.catalog_from]['models']
             print(f'CATALOG_DERIVED source={catalog["source"]} observed_at={catalog["observed_at"]} '
                   f'client-version={catalog["clients"][args.catalog_from]["version"]} models={len(listed)} in-memory')
-            if args.write_catalog:
-                atomic_file(destination(root, CATALOG), json_bytes(catalog), 0o600)
-                print(f'CATALOG_WRITTEN {CATALOG} (Git ignored, untracked)')
+            derived_catalog = catalog
         else:
             catalog_path = Path(args.catalog) if args.catalog else root / CATALOG
             catalog = read_json(catalog_path) if catalog_path.exists() else None
@@ -497,9 +496,11 @@ def main(argv=None):
                 unverifiable = True
                 continue
             requested_qa = 'qa' in selected
+            blockers = []
             if client == 'opencode' and requested_qa and not (root / '.opencode/agents/qa.md').is_file():
                 # Never drop a requested role silently, and never emit an inert `agents.qa`.
-                print('  UNSUPPORTED OpenCode qa agent missing (.opencode/agents/qa.md); agents.qa not generated')
+                blockers.append('UNSUPPORTED OpenCode qa agent missing (.opencode/agents/qa.md)')
+                print(f'  {blockers[-1]}; agents.qa not generated')
                 selected.pop('qa')
                 unverifiable = True
             for choice in selected.values():
@@ -517,8 +518,17 @@ def main(argv=None):
             if client == 'opencode' and 'review' in selected and not requested_qa:
                 # The review agent is a read-only audit; QA is a different agent when it exists.
                 print('  QA execution UNSUPPORTED: review mapping is read-only audit')
+            if args.apply and blockers:
+                # --apply is all-or-nothing per client: a single unsupported role aborts it.
+                raise Refusal('REFUSED --apply is all-or-nothing; nothing written: ' + '; '.join(blockers))
             outputs = render(root, client, selected, all_sources)
             all_outputs.update(outputs)
+        if args.write_catalog and derived_catalog is not None:
+            if unverifiable:
+                print(f'CATALOG_NOT_WRITTEN {CATALOG}: refused because this run reports unsupported roles')
+            else:
+                atomic_file(destination(root, CATALOG), json_bytes(derived_catalog), 0o600)
+                print(f'CATALOG_WRITTEN {CATALOG} (Git ignored, untracked)')
         if all_outputs or (root / MANIFEST).exists():
             preflight(root, all_outputs, all_sources, clients)
             for relative, data in all_outputs.items():

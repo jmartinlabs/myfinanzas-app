@@ -121,6 +121,14 @@ input also exit2. Exit0 means local configuration validation/generation only: **
 never runtime PASS. All clients always report effective runtime **UNVERIFIED** until separate
 attributable metadata verifies requested versus observed selection after dispatch.
 
+**`--apply` es todo o nada por cliente.** Si un solo rol solicitado no es aplicable (por ejemplo
+OpenCode sin `.opencode/agents/qa.md`) o cualquier validación falla, no se escribe **ningún**
+fichero: ni configuración nativa, ni manifiesto, ni catálogo derivado; los errores se informan y
+el proceso sale con código 2. La configuración previamente generada queda byte a byte intacta.
+`--check` sigue siendo diagnóstico: muestra los roles compatibles (con su diff propuesto) y los
+no soportados, sin escribir nada. `--write-catalog` también se difiere: solo escribe cuando el run
+termina sin roles no soportados (`CATALOG_NOT_WRITTEN` en caso contrario).
+
 `--apply` requires one explicit `--client`; it writes only private, Git-ignored, untracked
 repository-local destinations. Default preferences/catalog are read only from the **current
 Git root**, with no home, other checkout or profile guessing. `--root` must identify a Git
@@ -136,7 +144,7 @@ refused. Do not commit or paste private generated diffs.
 | --- | --- | --- |
 | Codex | `.codex/agents/models-local-<role>.toml`, dispatch `models-local-<role>` | Standalone custom-agent TOML with name, description, canonical developer instructions, model, optional reasoning effort. No coordinator `.codex/config.toml` edit. Provider/permissions inherit from the session; a different provider refuses. Desktop spawn consumption of CLI agent files is unverified: CONFIG_ONLY. |
 | Claude Code | `.claude/agents/models-local-<role>.md`, dispatch `models-local-<role>` | Copies the existing native role, changing only declared name/model/effort and preserving prompt/tools/permissions. Simple scalar frontmatter only; complex/unknown syntax refuses. Provider inherits; a different provider refuses. Existing tracked agents remain available under their original names; explicitly dispatch the generated alias. |
-| OpenCode V2 | `.opencode/opencode.json`, existing native role names | Generates plural `agents` with `provider/model#variant`, no root/coordinator model. Markdown prompts and permissions remain untouched. An existing Markdown `model` refuses because precedence is unverified. `review` retains its existing restricted query plugin. `qa` is written **only** when `.opencode/agents/qa.md` exists; otherwise the run prints `UNSUPPORTED OpenCode qa agent missing`, generates no inert `agents.qa` and exits2. |
+| OpenCode V2 | `.opencode/opencode.json`, existing native role names | Generates plural `agents` with `provider/model#variant`, no root/coordinator model. Markdown prompts and permissions remain untouched. An existing Markdown `model` refuses because precedence is unverified. `review` retains its existing restricted query plugin. `qa` is written **only** when `.opencode/agents/qa.md` exists; otherwise the run prints `UNSUPPORTED OpenCode qa agent missing` and exits2 — with `--check` it still shows the supported part, with `--apply` it refuses without writing anything. |
 | Hermes | No generated output | Profile `config_path` comes from `get_hermes_home`, not the current repository. Rich `model_map` requires the advanced-delegation plugin. Check reports MANUAL/UNSUPPORTED; apply refuses without writes. Configure an explicitly reviewed profile manually; verify the actual route with `scripts/check-delegation-route` using dispatch-time expectations. |
 
 For Codex/Claude, `review` and `qa` read the **same** native prompt (`.agents/roles/qa-review.md`
