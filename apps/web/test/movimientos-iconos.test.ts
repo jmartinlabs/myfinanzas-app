@@ -132,3 +132,27 @@ test("#448 no queda ocultación general del chip a ≤1000 px", () => {
       /movement-type-icon[^}]*display:\s*none/,
     );
 });
+
+test("#448 cada Tipo conserva su juego exacto de trazos", () => {
+  // El conjunto se congela: quitar o añadir un trazo a un glifo rompe la prueba
+  // (una sola `path` de menos no la detectaba la comprobación de presencia).
+  const esperado: Record<string, string[]> = {
+    "Ingreso": ["M12 5v9", "M8 10l4 4 4-4", "M5 19h14"],
+    "Gasto": ["M12 19V10", "M8 14l4-4 4 4", "M5 5h14"],
+    "Transferencia": ["M4 9h13", "M14 6l3 3-3 3", "M20 15H7", "M10 12l-3 3 3 3"],
+    "Amortización deuda": ["M6 19V5", "M12 19V10", "M18 19V14"],
+    "Devolución de gasto": [
+      "M5 8h8a5.5 5.5 0 0 1 0 11H9",
+      "M9 4 5 8l4 4",
+    ],
+  };
+  for (const tipo of TIPOS) {
+    const desde = mapa.indexOf(`"${tipo}": [`);
+    expect(desde, tipo).toBeGreaterThanOrEqual(0);
+    const bloque = mapa.slice(desde, mapa.indexOf("]", desde));
+    const trazos = [...bloque.matchAll(/"([^"]+)"/g)]
+      .slice(1)
+      .map((match) => match[1]);
+    expect(trazos, tipo).toEqual(esperado[tipo]);
+  }
+});

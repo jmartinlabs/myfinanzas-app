@@ -246,7 +246,15 @@ test("#448 · cinco glifos propios en tabla y tarjeta, seis apariencias, sin des
       fullPage: true,
     });
 
-    // 4) 820: donde hay tarjetas los iconos siguen visibles; donde hay tabla,
+    // 4) 1050: criterio de aceptación; la tabla sigue con iconos y sin
+    //    desbordamiento (no hay regla de ocultación por ancho).
+    await page.setViewportSize({ width: 1050, height: 1000 });
+    const lista1050 = await visibleList(page);
+    for (const tipo of TIPOS)
+      await expectChippedType(page, lista1050, tipo);
+    await expectNoOverflow(page);
+
+    // 5) 820: donde hay tarjetas los iconos siguen visibles; donde hay tabla,
     //    también. Nunca ocultación general por ancho.
     await page.setViewportSize({ width: 820, height: 1000 });
     const lista820 = await visibleList(page);
