@@ -32,14 +32,13 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
   y [gate de cuota](specs/methodology/model-selection.md#quota-and-dispatch-gate).
-- El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue`
-  (usuario: `Backlog → Ready`, revisión, `Done`, desbloqueo; agente autorizado: reserva, `{Phase} In
-  Review` y `Blocked` solo desde su fase en curso); sin tablero paralelo ni autoautorizar fases.
+- **Modelos por rol**: fuente privada única (`.agents/models.local.yaml`, [selector](docs/MODEL_SELECTION.md)); el rol es el identificador de despacho: `option: <rol>` en Hermes, agente `models-local-<rol>` con agentes nativos.
+- El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue` (usuario:
+  `Backlog → Ready`, revisión, `Done`, desbloqueo; agente: reserva, `{Phase} In Review`, `Blocked`); sin tablero paralelo.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
   Aprobar una spec no autoriza desarrollo.
-- Un ejecutor por tarea: delegar el trabajo autónomo sustancial, preferir segundo plano cuando
-  permita avanzar trabajo independiente autorizado y conservar la QA independiente; no crear
-  agentes artificiales.
+- Un ejecutor por tarea: delegar lo sustancial, segundo plano si permite avanzar en paralelo y QA
+  independiente siempre; sin agentes artificiales.
 - [$handoff](.agents/skills/handoff/SKILL.md) consolida y para; continúa el alcance autorizado
   hasta completarlo o hasta un bloqueo real. Al parar, indica responsable, acción humana y
   estado según [comunicación](specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).
