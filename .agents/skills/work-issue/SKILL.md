@@ -15,8 +15,10 @@ regression suite: `scripts/test-work-issue`.
 that was invoked, so `orchestrate` is loaded explicitly with each client's own mechanism
 (Hermes: `/orchestrate` or `skill_view('orchestrate')`; Claude Code: `/orchestrate`; Codex
 and OpenCode: the Skill by name) **before** reading the queue, reserving or executing a
-phase, and the Skill that owns each phase (`spec`, `dev`, `task`, `tweak`) is loaded before
-that phase runs. Without those loads the delegation, execution-mode, model-selection, quota
+phase. The responsible actor loads its role and the Skill that owns each phase
+(`spec`, `dev`, `task`, `tweak`) before that phase runs; the coordinator need not load every
+executor Skill when delegating. Read once per actor; reload only changed or needed material
+after compaction. Without those loads the delegation, execution-mode, model-selection, quota
 and independent-QA rules are not in context, and the session must not claim it applied them.
 
 ## Skill and tool — two different things

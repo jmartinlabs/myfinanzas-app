@@ -42,10 +42,10 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 | Superficie | Estado comprobado |
 | --- | --- |
 | Navegación | **23 enlaces** de navegación en un único grupo «MI ESPACIO» (`main.tsx:179-493`); `/saldos/nuevo` es subvista y `/` es alias de Saldos. No se añaden rutas. |
-| Temas | Cuatro temas vigentes con **66 tokens** semánticos por tema (`themes.css`); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). Graphite Lime se integró en `test` con #356 (`bff714e`) y es seleccionable. |
+| Temas | **Seis apariencias** vigentes con **66 tokens** semánticos por tema (`themes.css`); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). Graphite Lime se integró en `test` con #356 (`bff714e`); Casa por la enmienda del 2026-11-10 y Aurora por la enmienda 2.6 del 2026-11-17. |
 | Shell | Sidebar 236 px; contenido `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px (`style.css`). |
 | Componentes | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` (`ui.tsx`). |
-| CSS | `style.css`: **4.784 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados (incluye alias locales); de los 66 tokens definidos, 30 sin uso; 0 usos de `var(--space)`. |
+| CSS | `style.css`: **6.614 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados (incluye alias locales); de los 66 tokens definidos, 30 sin uso; 0 usos de `var(--space)`. |
 | E4.6 | Integrada `cfbedb0` (#201); UX de Inicio aprobada en SPEC24. |
 | E4.9 | Integrada `0176ffc` (#200); QA APTO CON RESERVAS; UI y contratos de cierre existen. |
 | E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1` (no fusionado); 24 AC `UNRUN`. Sin UI de reapertura. |
@@ -283,6 +283,52 @@ L1 ([#437](https://github.com/jmartinlabs/myfinanzas-app/pull/437)) están **fus
 `specs/investigations/ui-light-hybrid-final-2026-11-09/final/tokens.md` es válida. L2 se entrega
 en su propia PR y mantiene el mismo límite: solo `light-s`/`hybrid-s`, sin tocar composición ni
 los otros temas.
+
+### 2.6 Enmienda Aurora · sexta apariencia (2026-11-17)
+
+Ratificada por el usuario en [#489](https://github.com/jmartinlabs/myfinanzas-app/issues/489) al
+aprobar las decisiones D1–D5 del análisis
+[`aurora-2026-11-16`](investigations/aurora-2026-11-16/README.md) y de su evidencia visual en
+[`aurora-2026-11-17`](investigations/aurora-2026-11-17/README.md). Amplía el catálogo con una
+sexta apariencia oscura independiente; no reabre Dark, Graphite, Casa ni la composición.
+
+**Decisiones fijadas:**
+
+- **D1:** el alcance completo de Aurora se autoriza como **una sola iniciativa de desarrollo**
+  (una rama, una PR y hitos internos), sin aprobaciones por pantalla.
+- **D2:** `aurora` es la **última** entrada del catálogo, etiqueta visible **Aurora** y
+  `colorScheme: dark`. `dark-s` sigue siendo `DEFAULT_THEME` y `mf-theme` la única persistencia.
+- **D3:** la identidad incluye luz ambiental **sin animación ni nodos nuevos**: degradados de
+  superficie y pseudo-elementos ya existentes. Sin `@keyframes`.
+- **D4:** se asumen dos desviaciones de AA frente al prototipo de fase C:
+  `--control-border #47727a → #527f88` (el valor del prototipo daba 2,96:1 sobre `--surface-2`) y
+  `--on-action #121a1c → #141414` (valor productivo, 5,00:1 frente a 4,79:1).
+- **D5:** la aceptación visual exige revisión humana del tablero comparativo; CI no declara
+  equivalencia visual.
+
+**Alcance técnico autorizado e integrado:**
+
+- 66 tokens en `apps/web/public/themes.css` (`:root[data-theme="aurora"]`), sin tocar los cinco
+  bloques existentes.
+- Entrada en `themeCatalog` (`apps/web/src/themes.ts`) y en la lista `known` de
+  `apps/web/public/theme-boot.js`.
+- Capa de identidad `apps/web/src/aurora.css`, importada de forma aditiva desde `style.css`:
+  **solo presentación**, sin propiedades de layout, sin `!important` y sin reglas de otros temas.
+  Los degradados, el glow y la profundidad viven aquí; los 8 tokens `--aurora-*` están
+  encapsulados en esa capa.
+- Pruebas: catálogo y paridad de tokens (`apps/web/test/themes.test.ts`), guarda estática de la
+  capa (`apps/web/test/aurora-visual.test.ts`), AA (`ui-dev07-tokens.test.ts`) y E2E de
+  selección, degradados, persistencia, arranque previo a React, fallback y 1440/820/390
+  (`tests/e2e/theme-aurora.spec.ts`).
+
+`dark-s`, `light-s`, `hybrid-s`, `graphite-lime` y `casa` conservan sus tokens, capas y
+comportamiento. No se modifica DOM, layout, rutas, navegación, datos, API, SQLite ni contratos
+financieros.
+
+**Límite de evidencia:** la matriz DEV-07 falla de forma explícita ante fondos con degradado, por
+lo que Aurora **no** entra en `DEV07_THEMES` y conserva su propia medición con referencias sólidas
+declaradas, igual que Graphite Lime. La aceptación visual es humana (D5).
+
 
 ## 3. Dependencias
 

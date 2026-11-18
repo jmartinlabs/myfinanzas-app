@@ -27,7 +27,27 @@ import {
   type TableColumn,
 } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
-import { PendientesDeConfirmar } from "./TransferenciaPendienteFicha";
+import {
+  ResumenAltaCoordinada,
+  SeccionAltaCoordinada,
+  coordinadoVacio,
+  erroresCoordinado,
+  mensajeCoordinado,
+  payloadCoordinado,
+  useEfectoAportacion,
+  type CoordinadoForm,
+  type ModalidadAlta,
+  type ModoTransferencia,
+} from "./GastoCoordinado";
+import {
+  EtiquetaPendienteDeRealizar,
+  PendientesDeConfirmar,
+  TransferenciaPendienteFicha,
+} from "./TransferenciaPendienteFicha";
+import type {
+  TransferenciaPendienteDTO,
+  TransferenciaPendienteListaDTO,
+} from "./api";
 type Related = { id: string; nombre: string; estado?: string };
 type Partida = Related & {
   deuda: string | null;
@@ -205,6 +225,10 @@ export function Movimientos({
         go={go}
       />
     );
+  if (path.split("?")[0] === base + "/coordinado")
+    // Ruta heredada de I5. El alta coordinada vive ahora en el formulario único
+    // de Gasto (§10.1), así que esta URL abre la misma pantalla.
+    return <MovementForm key="coordinado" go={go} initialType="Gasto" />;
   if (path.split("?")[0] === base + "/nuevo")
     return (
       <MovementForm
@@ -260,7 +284,34 @@ function MovementList({
       total: number;
     } | null>(null),
     [error, setError] = useState(""),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    // §10.3 — índice Gastos con Transferencia pendiente activa, para la alerta
+    // en la lista general. El pendiente no es un Movimiento: no entra en los
+    // totales ni en los filtros de esta lista.
+    [pendientes, setPendientes] = useState<
+      Record<string, TransferenciaPendienteDTO>
+    >({});
+  useEffect(() => {
+    let live = true;
+    api<TransferenciaPendienteListaDTO>(
+      "/transferencias-pendientes?" +
+        new URLSearchParams({ estado: "Pendiente de realizar", page: "1" }),
+    )
+      .then((d) => {
+        if (!live) return;
+        const mapa: Record<string, TransferenciaPendienteDTO> = {};
+        for (const item of d.items ?? [])
+          if (item.gasto && item.estado === "Pendiente de realizar")
+            mapa[item.gasto] = item;
+        setPendientes(mapa);
+      })
+      .catch(() => {
+        if (live) setPendientes({});
+      });
+    return () => {
+      live = false;
+    };
+  }, [retry]);
   useEffect(() => {
     let live = true;
     setLoading(true);
@@ -360,6 +411,7 @@ function MovementList({
         <>
           {cellLink(m)}
           <small className="table-id">#{m.id}</small>
+          {pendientes[m.id] && <EtiquetaPendienteDeRealizar />}
         </>
       ),
     },
@@ -408,8 +460,14 @@ function MovementList({
         title="Movimientos"
         description="Hechos ejecutados · Ingresos, Gastos, Transferencias, amortizaciones y devoluciones de gasto"
       >
-        <button className="primary" onClick={() => go(base + "/nuevo")}>
+        <button
+          className="primary"
+          onClick={() => go(base + "/nuevo?tipo=Gasto")}
+        >
           <span className="movement-new-icon" aria-hidden="true" />
+          Nuevo gasto
+        </button>
+        <button className="secondary" onClick={() => go(base + "/nuevo")}>
           Nuevo movimiento
         </button>
       </PageHead>
@@ -641,7 +699,28 @@ function MovementList({
 function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
   const [data, setData] = useState<Detail | null>(null),
     [error, setError] = useState(""),
-    [retry, setRetry] = useState(0);
+    [retry, setRetry] = useState(0),
+    // §10.3 — el detalle del Gasto muestra la alerta y la ficha del pendiente
+    // vinculado. Se lee el mecanismo único: no hay una segunda fuente.
+    [pendiente, setPendiente] = useState<TransferenciaPendienteDTO | null>(null),
+    [pendienteRetry, setPendienteRetry] = useState(0);
+  useEffect(() => {
+    let live = true;
+    api<TransferenciaPendienteListaDTO>(
+      "/transferencias-pendientes?" +
+        new URLSearchParams({ estado: "Pendiente de realizar", page: "1" }),
+    )
+      .then((d) => {
+        if (!live) return;
+        setPendiente((d.items ?? []).find((item) => item.gasto === id) ?? null);
+      })
+      .catch(() => {
+        if (live) setPendiente(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, pendienteRetry]);
   useEffect(() => {
     let live = true;
     setData(null);
@@ -722,6 +801,14 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
             representa una devolución bancaria.
           </p>
         </div>
+      )}
+      {pendiente && (
+        <TransferenciaPendienteFicha
+          pendiente={pendiente}
+          go={go}
+          onChanged={(item) => setPendiente(item)}
+          onReload={() => setPendienteRetry((v) => v + 1)}
+        />
       )}
       <FormGrid className="detail-grid movement-detail-grid">
         <FormSection title="Hecho registrado">
@@ -1040,6 +1127,19 @@ function MovementForm({
     [busy, setBusy] = useState(false),
     [conflict, setConflict] = useState(false),
     [refresh, setRefresh] = useState(0);
+  // SPEC37 I5 — §10.1: el alta de Gasto ofrece el Gasto normal (predeterminado) y
+  // las modalidades A/B en la misma pantalla. El Gasto normal sigue por el camino
+  // ordinario (`POST /api/movimientos`); A y B entran en la operación coordinada.
+  const [modalidad, setModalidad] = useState<ModalidadAlta>("normal"),
+    [modoTransferencia, setModoTransferencia] =
+      useState<ModoTransferencia>("pendiente"),
+    [coord, setCoord] = useState<CoordinadoForm>(() => coordinadoVacio("")),
+    [coordFields, setCoordFields] = useState<Record<string, string>>({}),
+    [coordError, setCoordError] = useState(""),
+    [coordDuplicados, setCoordDuplicados] = useState<
+      { id: string; fecha: string; importe: string; tipo?: string; concepto?: string }[]
+    >([]),
+    [coordAceptar, setCoordAceptar] = useState(false);
   const initialized = useRef(!!returnDraft),
     attempt = useRef(crypto.randomUUID()),
     alert = useRef<HTMLDivElement>(null),
@@ -1100,6 +1200,17 @@ function MovementForm({
         : {}),
       ...(key === "partida" ? { capital: "", intereses: "" } : {}),
     }));
+    // Otro Tipo no es el alta de Gasto: la modalidad vuelve a «Gasto normal» y la
+    // Transferencia asociada se descarta para no arrastrar datos de otra alta.
+    if (key === "tipo") {
+      setModalidad("normal");
+      setModoTransferencia("pendiente");
+      setCoord(coordinadoVacio(options?.hoy ?? ""));
+      setCoordFields({});
+      setCoordDuplicados([]);
+      setCoordAceptar(false);
+      setCoordError("");
+    }
     setPlan(null);
     setFields((v) => ({ ...v, [key]: "" }));
     setError("");
@@ -1111,6 +1222,111 @@ function MovementForm({
         document.querySelector<HTMLElement>(".movement-impact h2")?.focus(),
       );
   }, [plan]);
+  /**
+   * §10.1/§4 — el alta coordinada solo existe al crear un Gasto. Al rectificar o
+   * anular no se ofrece: la modalidad es del pendiente, inmutable tras el alta.
+   */
+  const coordinado = !id && !annul && form.tipo === "Gasto" && modalidad !== "normal";
+  /**
+   * §10.1 — en el alta de Gasto los campos usan los nombres de la spec (Saldo
+   * pagador, fecha del Gasto, importe del Gasto) porque conviven con la
+   * Transferencia, que tiene su propio Saldo de origen y su propio importe.
+   */
+  const altaGasto = !id && !annul && form.tipo === "Gasto";
+  const etiquetaSaldo = altaGasto
+    ? "Saldo pagador *"
+    : form.tipo === "Gasto" || form.tipo === "Amortización deuda"
+      ? "Saldo origen *"
+      : "Saldo receptor *";
+  const { efecto, error: efectoError } = useEfectoAportacion(
+    coordinado,
+    form.saldo,
+    modalidad,
+  );
+  /**
+   * Coincidencias visibles: las de la vista previa del Gasto y las que devuelve
+   * el 409 de la operación (pueden ser de la Transferencia, que se planifica
+   * dentro de la transacción). Ninguna se acepta sin marcar la casilla.
+   */
+  const duplicadosCoordinados = (() => {
+    const unidos = new Map<
+      string,
+      { id: string; fecha: string; importe: string; tipo?: string; concepto?: string }
+    >();
+    if (!coordinado)
+      return [] as {
+        id: string;
+        fecha: string;
+        importe: string;
+        tipo?: string;
+        concepto?: string;
+      }[];
+    for (const d of plan?.duplicados ?? [])
+      unidos.set(d.id, {
+        id: d.id,
+        fecha: d.fecha,
+        importe: d.importe,
+        tipo: d.tipo,
+        concepto: d.concepto,
+      });
+    for (const d of coordDuplicados) unidos.set(d.id, d);
+    return [...unidos.values()];
+  })();
+
+  const changeCoord = <K extends keyof CoordinadoForm>(
+    clave: K,
+    valor: CoordinadoForm[K],
+  ) => {
+    setCoord((v) => ({ ...v, [clave]: valor }));
+    setPlan(null);
+    setCoordFields((v) => ({ ...v, [clave]: "" }));
+    setCoordDuplicados([]);
+    setCoordAceptar(false);
+    setCoordError("");
+    attempt.current = crypto.randomUUID();
+  };
+
+  const cambiarModalidad = (valor: ModalidadAlta) => {
+    setModalidad(valor);
+    if (valor === "normal") {
+      setModoTransferencia("pendiente");
+      setCoord(coordinadoVacio(options?.hoy ?? ""));
+    } else {
+      // La operación coordinada no admite Referencia ni desglose de Deuda en el
+      // Gasto (`registro-coordinado.ts`): se retiran en vez de enviarlos y que el
+      // servidor los rechace.
+      setForm((v) => ({
+        ...v,
+        referencia: "",
+        capital: "",
+        intereses: "",
+      }));
+      setCoord((v) => ({
+        ...v,
+        fecha: v.fecha || options?.hoy || "",
+      }));
+    }
+    setPlan(null);
+    setFields({});
+    setCoordFields({});
+    setCoordDuplicados([]);
+    setCoordAceptar(false);
+    setCoordError("");
+    setError("");
+    setConflict(false);
+    attempt.current = crypto.randomUUID();
+  };
+
+  const cambiarModo = (valor: ModoTransferencia) => {
+    setModoTransferencia(valor);
+    setPlan(null);
+    setCoordFields({});
+    setCoordDuplicados([]);
+    setCoordAceptar(false);
+    setCoordError("");
+    attempt.current = crypto.randomUUID();
+  };
+
   const selected = options?.partidas.find((p) => p.id === form.partida),
     saldo = options?.saldos.find((s) => s.id === form.saldo);
   const selectedCycle =
@@ -1227,6 +1443,10 @@ function MovementForm({
     go(base + "/" + result.movimiento.id);
   }
   async function submit() {
+    if (coordinado) {
+      await submitCoordinado();
+      return;
+    }
     setBusy(true);
     setError("");
     setFields({});
@@ -1258,6 +1478,117 @@ function MovementForm({
         await confirm(p);
     } catch (e) {
       fail(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const gastoCoordinado = () => ({
+    fecha: form.fecha,
+    importe: form.importe.replace(",", "."),
+    saldo: form.saldo,
+    partida: form.partida,
+    concepto: form.concepto,
+    nota: form.nota,
+  });
+
+  /**
+   * §4/§10.2 — vista previa y registro de la operación coordinada. La primera
+   * pulsación pide el impacto real del Gasto a E1.4; la segunda escribe Gasto +
+   * Transferencia real o Gasto + pendiente en `POST /api/operaciones-coordinadas`.
+   * Nunca confirma sola: la operación tiene dos hechos y el usuario los ve antes.
+   */
+  async function submitCoordinado() {
+    if (!plan) {
+      const locales = erroresCoordinado(
+        modalidad as "A" | "B",
+        modoTransferencia,
+        coord,
+      );
+      if (options && modoTransferencia === "realizada" && coord.fecha > options.hoy)
+        locales.fecha = `Fecha máxima: ${date(options.hoy)} (España).`;
+      if (Object.keys(locales).length) {
+        setCoordFields(locales);
+        setCoordError(
+          "Revisa la Transferencia asociada. No se ha enviado nada al servidor.",
+        );
+        requestAnimationFrame(() => {
+          if (!focusFirstInvalidField(formEl.current)) alert.current?.focus();
+        });
+        return;
+      }
+    }
+    setBusy(true);
+    setError("");
+    setCoordError("");
+    setConflict(false);
+    try {
+      if (plan) {
+        const data = await api<{
+          gasto: { movimiento: { id: string } };
+        }>(
+          "/operaciones-coordinadas",
+          "POST",
+          {
+            ...payloadCoordinado({
+              gasto: gastoCoordinado(),
+              modalidad: modalidad as "A" | "B",
+              modo: modoTransferencia,
+              valores: coord,
+            }),
+            ...(duplicadosCoordinados.length
+              ? { aceptarCoincidencia: coordAceptar }
+              : {}),
+          },
+          { "idempotency-key": attempt.current },
+        );
+        // El Gasto es el hecho real identificable: su ficha muestra la alerta y
+        // la Transferencia (pendiente o confirmada) en un solo sitio.
+        go(base + "/" + data.gasto.movimiento.id);
+        return;
+      }
+      const p = await api<Plan>(base + "/impacto", "POST", body());
+      setPlan(p);
+      setCoordAceptar(false);
+    } catch (e) {
+      // AC-22: ningún 409/422 borra el borrador ni la modalidad. Las
+      // coincidencias no se aceptan solas: se muestran y se piden explícitamente.
+      const err = e instanceof ApiError ? e : null;
+      setError(
+        err ? mensajeCoordinado(err.code, err.message) : (e as Error).message,
+      );
+      const lista = (err?.data?.duplicados ?? []) as {
+        id: string;
+        fecha: string;
+        importe: string;
+        concepto?: string;
+      }[];
+      if (
+        err?.code === "DUPLICATE_REVIEW" &&
+        Array.isArray(lista) &&
+        lista.length
+      ) {
+        setCoordDuplicados(lista);
+        setCoordAceptar(false);
+        setConflict(false);
+      } else {
+        setConflict(err?.status === 409 || err?.status === 422);
+      }
+      if (err) {
+        const delGasto = ["saldo", "partida", "concepto", "nota"];
+        const enGasto: Record<string, string> = {};
+        const enCoord: Record<string, string> = {};
+        for (const [clave, valor] of Object.entries(err.fields ?? {})) {
+          const campo = clave.split(".").pop() as string;
+          if (delGasto.includes(campo)) enGasto[campo] = valor;
+          else enCoord[campo] = valor;
+        }
+        setFields(enGasto);
+        setCoordFields(enCoord);
+      }
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(formEl.current)) alert.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -1306,7 +1637,11 @@ function MovementForm({
     (form.tipo === "Gasto" || form.tipo === "Amortización deuda") &&
     selected?.referenciaObligatoria === true &&
     selected?.referenciaDisponible === false;
-  const button = plan
+  const button = coordinado
+    ? plan
+      ? "Registrar operación"
+      : "Vista previa"
+    : plan
     ? id
       ? annul
         ? "Confirmar anulación"
@@ -1335,12 +1670,16 @@ function MovementForm({
             ? annul
               ? "Anular movimiento"
               : "Rectificar movimiento"
-            : "Nuevo movimiento"
+            : form.tipo === "Gasto"
+              ? "Nuevo gasto"
+              : "Nuevo movimiento"
         }
         description={
           annul
             ? "Anula una captura errónea que no representa un hecho económico real. No es una devolución."
-            : "Ingreso, Gasto, Transferencia interna, Amortización deuda o Devolución de gasto"
+            : form.tipo === "Gasto"
+              ? "Gasto normal, pago directo desde otro Saldo (A) o financiación mediante Anticipo (B). El Gasto es siempre un hecho real e íntegro."
+              : "Ingreso, Gasto, Transferencia interna, Amortización deuda o Devolución de gasto"
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
@@ -1404,8 +1743,14 @@ function MovementForm({
                       <option>Devolución de gasto</option>
                     </select>,
                   )}
-                  {field("fecha", "Fecha económica *")}
-                  {field("importe", "Importe (€) *")}
+                  {field(
+                    "fecha",
+                    altaGasto ? "Fecha del Gasto *" : "Fecha económica *",
+                  )}
+                  {field(
+                    "importe",
+                    altaGasto ? "Importe del Gasto (€) *" : "Importe (€) *",
+                  )}
                   {field("concepto", "Concepto")}
                   {field(
                     "nota",
@@ -1473,17 +1818,9 @@ function MovementForm({
                     <>
                       {field(
                         "saldo",
-                        form.tipo === "Gasto" ||
-                          form.tipo === "Amortización deuda"
-                          ? "Saldo origen *"
-                          : "Saldo receptor *",
+                        etiquetaSaldo,
                         <select
-                          aria-label={
-                            form.tipo === "Gasto" ||
-                            form.tipo === "Amortización deuda"
-                              ? "Saldo origen *"
-                              : "Saldo receptor *"
-                          }
+                          aria-label={etiquetaSaldo}
                           value={form.saldo}
                           onChange={(e) => change("saldo", e.target.value)}
                         >
@@ -1575,7 +1912,15 @@ function MovementForm({
                     </p>
                   </>
                 )}
-                {form.tipo !== "Devolución de gasto" && field(
+                {coordinado && (
+                  <p className="help">
+                    El alta coordinada no admite otra Referencia en el Gasto: la
+                    única Referencia de la operación es la de Anticipo de la
+                    modalidad B. Mientras no se elija A o B, el Gasto admite su
+                    Referencia opcional.
+                  </p>
+                )}
+                {!coordinado && form.tipo !== "Devolución de gasto" && field(
                   "referencia",
                   (form.tipo === "Gasto" ||
                     form.tipo === "Amortización deuda") &&
@@ -1730,8 +2075,18 @@ function MovementForm({
                 >
                   Crear Viaje o Evento conservando borrador
                 </button>
-                {(form.tipo === "Gasto" ||
-                  form.tipo === "Amortización deuda") && (
+                {coordinado &&
+                  (form.tipo === "Gasto" ||
+                    form.tipo === "Amortización deuda") && (
+                    <p className="help">
+                      El desglose de Deuda (capital e intereses) no forma parte de
+                      la operación coordinada: un pago de Deuda se registra por el
+                      alta normal, sin Transferencia asociada.
+                    </p>
+                  )}
+                {!coordinado &&
+                  (form.tipo === "Gasto" ||
+                    form.tipo === "Amortización deuda") && (
                   <section aria-label="Desglose de Deuda">
                     <h3>Deuda vinculada</h3>
                     <p>
@@ -1819,6 +2174,33 @@ function MovementForm({
                     </p>
                   )}
               </FormSection>
+              {!id && !annul && form.tipo === "Gasto" && (
+                <FormSection
+                  title="Modalidad y financiación"
+                  description="El Gasto normal no lleva Transferencia. A y B registran además su Transferencia —ya realizada o pendiente— en la misma operación."
+                >
+                  <SeccionAltaCoordinada
+                    id="mov-coordinado"
+                    modalidad={modalidad}
+                    modo={modoTransferencia}
+                    valores={coord}
+                    onModalidad={cambiarModalidad}
+                    onModo={cambiarModo}
+                    onChange={changeCoord}
+                    saldos={saldos}
+                    pagador={saldo ?? null}
+                    referencias={options?.referencias ?? []}
+                    hoy={options?.hoy ?? ""}
+                    importeGasto={form.importe}
+                    errors={coordFields}
+                  />
+                  {coordError && (
+                    <p role="alert" className="field-error">
+                      {coordError}
+                    </p>
+                  )}
+                </FormSection>
+              )}
               <FormSection title="Contexto derivado">
                 <p>
                   Fecha prevista:{" "}
@@ -1908,7 +2290,7 @@ function MovementForm({
           )}
           {plan && (
             <>
-              {plan.duplicados.length > 0 && (
+              {(coordinado ? duplicadosCoordinados : plan.duplicados).length > 0 && (
                 <section
                   className="panel duplicate-warning"
                   aria-label="Advertencia de coincidencias"
@@ -1919,16 +2301,40 @@ function MovementForm({
                     registrar otro hecho real.
                   </p>
                   <ul>
-                    {plan.duplicados.map((d) => (
-                      <li key={d.id}>
-                        #{d.id} · {date(d.fecha)} · {d.tipo} · {eur(d.importe)}{" "}
-                        · {d.concepto}
-                      </li>
-                    ))}
+                    {(coordinado ? duplicadosCoordinados : plan.duplicados).map(
+                      (d) => (
+                        <li key={d.id}>
+                          #{d.id} · {date(d.fecha)} ·{d.tipo ? ` ${d.tipo} ·` : ""}{" "}
+                          {eur(d.importe)}
+                          {d.concepto ? ` · ${d.concepto}` : ""}
+                        </li>
+                      ),
+                    )}
                   </ul>
+                  {coordinado && (
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        checked={coordAceptar}
+                        onChange={(e) => setCoordAceptar(e.target.checked)}
+                      />
+                      Es otro hecho económico real y no un duplicado
+                    </label>
+                  )}
                 </section>
               )}
               <Impact plan={plan} />
+              {coordinado && (
+                <ResumenAltaCoordinada
+                  modalidad={modalidad}
+                  modo={modoTransferencia}
+                  valores={coord}
+                  pagador={saldo ?? null}
+                  efecto={efecto}
+                  efectoError={efectoError}
+                  importeGasto={form.importe}
+                />
+              )}
             </>
           )}
           <div className="form-footer">
@@ -1962,7 +2368,10 @@ function MovementForm({
                   !options ||
                   !!optionsError ||
                   conflict ||
-                  !!requiredRef
+                  !!requiredRef ||
+                  (coordinado &&
+                    duplicadosCoordinados.length > 0 &&
+                    !coordAceptar)
                 }
               >
                 {busy ? "Comprobando…" : button}

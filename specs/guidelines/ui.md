@@ -19,12 +19,25 @@ historia de E1.1–E1.5 y no reabren decisiones.
 > persistencia. 1A no modifica Inicio, Movimientos, navegación ni formularios. La composición
 > editorial de Inicio (1B) y Señal requieren autorización separada.
 
+> **Enmienda Aurora (2026-11-17).** Se aprueba `aurora` («Aurora») como **sexta apariencia**,
+> oscura e independiente, a partir del prototipo premium de fase C ([#489](https://github.com/jmartinlabs/myfinanzas-app/issues/489),
+> decisiones D1–D5 del [análisis](../investigations/aurora-2026-11-16/README.md)). Es la última
+> entrada del selector, que pasa a seis opciones; `dark-s` sigue siendo el tema inicial y
+> `mf-theme` la única persistencia. La identidad (azul-negro, reflejos turquesa, degradados y luz
+> ambiental sin animación) vive en un bloque de 66 tokens más `apps/web/src/aurora.css`, una capa
+> **solo de presentación, sin propiedades de layout**, scoped a `html[data-theme="aurora"]`. No
+> reabre Dark, Light, Hybrid, Graphite ni Casa, ni la composición compartida. Aurora no entra en
+> `DEV07_THEMES` porque la matriz AA falla de forma explícita ante degradados; conserva medición
+> propia con referencias sólidas y aceptación visual humana.
+
 ### Temas y tokens
 
 - Temas **Dark (`dark-s`), Light (`light-s`) y Hybrid (`hybrid-s`)** implementados en `0b8aade`
   (#198); conservan identidad, tokens y comportamiento. **Graphite Lime (`graphite-lime`,
   «Grafito»)** está integrado en `bff714e` (#356). **Casa (`casa`)** queda aprobada como quinta
-  apariencia por la enmienda del 2026-11-10. El catálogo solo se amplía por decisión expresa; no
+  apariencia por la enmienda del 2026-11-10 y **Aurora (`aurora`, «Aurora»)** como sexta por la
+  enmienda del 2026-11-17 (§2.6 de [`ui-specification.md`](../ui-specification.md)). El catálogo
+  solo se amplía por decisión expresa; no
   se reabren los tres temas, **salvo la enmienda UI-P2
   ([`ui-specification.md` §2.5](../ui-specification.md)), que reabre únicamente la capa de
   identidad de Light y Hybrid para L1**.
@@ -32,8 +45,9 @@ historia de E1.1–E1.5 y no reabren decisiones.
   conocen el tema. `style.css` conserva un único hex de fallback
   (`var(--warning, #6b5412)`); el resto es tokenizado.
 - Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
-  no se cambia el mecanismo. La enmienda añade Casa al final del catálogo, sin reordenar las
-  cuatro apariencias actuales ni sustituir `mf-theme`. La etiqueta visible es «Apariencia».
+  no se cambia el mecanismo. Las enmiendas añaden Casa y Aurora al final del catálogo, sin
+  reordenar las apariencias anteriores ni sustituir `mf-theme`. La etiqueta visible es
+  «Apariencia», con seis opciones desde el 2026-11-17.
 
 ### Tipografía, shell y espaciado
 
@@ -43,6 +57,17 @@ historia de E1.1–E1.5 y no reabren decisiones.
 - **Casa 1A** añade tokens de tipografía editorial y un CSS aislado (`casa.css`). No cambia la
   tipografía de las cuatro apariencias actuales. La composición editorial de Inicio queda para 1B.
 - Shell: sidebar 236 px, contenido `max-width: 1450px`, breakpoints 1050/760 px y móvil 16 px.
+- **Pie persistente de versión (#502).** `footer.global-footer` está fijado al borde inferior del
+  viewport (no al final del documento) en todas las pantallas y apariencias: una línea compacta
+  `MyFinanzas · vX.Y.Z · TEST` con la identidad servida por `GET /api/version`, o
+  `MyFinanzas · build de desarrollo · DEV` sin release verificable (y «Versión no disponible ·
+  build de desarrollo» si la petición falla). `.app-shell` reserva la altura real del pie y
+  respeta `env(safe-area-inset-bottom)`; la barra de acciones pegajosa de Casa se detiene por
+  encima del pie. El texto de versión es un `button` con `aria-expanded`/`aria-controls` que abre
+  el panel «Información de la aplicación» (versión, entorno, SHA corto y esquema SQLite, con la
+  aclaración de que **el esquema no es la versión de la app**); funciona con ratón, teclado y
+  táctil, se cierra con `Escape` sin atrapar el foco y no expone rutas, secretos ni configuración.
+  Solo usa tokens existentes y no cambia estructura ni contenido entre temas.
 
 ### Accesibilidad
 
@@ -326,6 +351,22 @@ mostrar «Ciclo financiado: No disponible»; no inventar mes, ID, estado o fecha
 carga/error/vacío de esa fuente, distinguir estados y no sustituirlos por un ciclo
 supuesto. El corte y selección de ciclo mantienen decisiones DT3 aplicables antes de
 su entrega, sin resolverlas aquí. Tampoco inferir estado financiero a partir del temporal.
+
+### Importes y dirección del movimiento — 2026-11-17
+
+El importe se muestra **siempre positivo**; la dirección la comunica el **Tipo**, no un signo. La
+interfaz no añade `+`/`−` ni colorea importes por cuenta propia: `movementFlow` deriva
+`inflow`/`outflow`/`neutral` del Tipo y lo publica como `data-flow`, coherente con `CHECK(importe>0)`
+y con SPEC04. Añadir un signo contradiría el contrato y duplicaría el Tipo.
+
+Cada apariencia decide **estética**, no semántica: color del importe según `data-flow` y glifo del
+Tipo (`.movement-type-icon`, con `data-tipo` en el DOM). El color nunca es la única señal: el Tipo
+—texto y glifo— está siempre presente, de modo que la lectura funciona sin percepción cromática. Casa
+incorpora ambas capas en `casa.css` §1G.
+
+La etiqueta de columna **«Saldo»** designa el Saldo afectado (o `origen → destino`) y su ciclo, no una
+posición monetaria; tabla y tarjetas comparten la misma definición. Un renombrado afectaría a las
+cinco apariencias y requiere su propia autorización: no se hace como parte de un ajuste visual.
 
 ### Patrones reutilizables previstos, no componentes implementados
 | Patrón visual | Contrato previsto |

@@ -87,6 +87,7 @@ import {
   changeBudgetState,
   budgetParts,
   budgetUsage,
+  efectoAportacion,
 } from "./presupuestos";
 import {
   createDebt,
@@ -178,6 +179,11 @@ import type { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
 import { Auth } from "./auth";
 import {
+  appVersionIdentity,
+  resolveEnvironment,
+} from "./app-version";
+import { schemaVersion } from "./database-identity";
+import {
   createSaldo,
   getSaldo,
   listSaldos,
@@ -262,6 +268,7 @@ import {
   candidatosTransferenciaPendiente,
   vincularTransferenciaPendiente,
 } from "./transferencias-pendientes";
+import { registrarOperacionCoordinada } from "./registro-coordinado";
 import {
   actualizarLineaReparto,
   actualizarReparto,
@@ -341,7 +348,10 @@ export function createApp(db: Database, options: AppOptions) {
   const auth = new Auth(
     db,
     options.key,
-    options.origin,
+    // Los servidores de fixture pueden omitir el origen: en una ejecución E2E
+    // el contexto de la run publica `APP_ORIGIN` y todos hablan con el mismo
+    // (issue #508). Sin la variable, `Auth` conserva su valor por defecto.
+    options.origin ?? process.env.APP_ORIGIN,
     options.now,
     options.demo?.origins,
   );
@@ -364,6 +374,17 @@ export function createApp(db: Database, options: AppOptions) {
         return reply({
           configured: auth.configured(),
           ...(options.demo ? { demo: true } : {}),
+        });
+      // #502 — identidad de release del artefacto servido, en el mismo estilo
+      // que /api/health: GET público de solo metadatos (versión, SHA corto,
+      // entorno y esquema) para que un smoke de despliegue pueda comprobar qué
+      // artefacto está activo. Nunca rutas, secretos, cadenas de conexión ni
+      // configuración; la prueba de contrato lo verifica.
+      if (path === "/api/version" && req.method === "GET")
+        return reply({
+          app: appVersionIdentity(),
+          environment: resolveEnvironment({ demo: options.demo !== undefined }),
+          schema: schemaVersion,
         });
       if (
         options.demo &&
@@ -491,6 +512,20 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      // SPEC37 I3 — operación coordinada atómica: Gasto + Transferencia real o
+      // Gasto + pendiente, en una sola transacción IMMEDIATE. La idempotencia
+      // vive en `operacion_coordinada_attempts`, no en una entidad nueva (D7).
+      if (path === "/api/operaciones-coordinadas" && req.method === "POST") {
+        const result = registrarOperacionCoordinada(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          options.movementGuard,
+        );
+        headers.set("location", "/api/movimientos/" + result.gasto.movimiento.id);
+        return reply(result, 201);
+      }
       // SPEC36 I1 — shared Transferencia pendiente. Writes are authenticated
       // and CSRF-checked by `auth.session`; each one owns one IMMEDIATE tx.
       const pendingTransfers = path.match(
@@ -1689,6 +1724,23 @@ export function createApp(db: Database, options: AppOptions) {
             ).map((r) => getBudget(db, r.id)),
           }))(),
         );
+      // SPEC37 I5 — lectura del efecto de una Transferencia sobre una
+      // «Aportación a saldo» (§10.2). Solo responde la atribución que el motor
+      // R3 ya hace; no calcula importes ni escribe nada. El alta coordinada y la
+      // ficha del pendiente muestran esta misma respuesta.
+      if (path === "/api/presupuestos/efecto-aportacion" && req.method === "GET") {
+        const destino =
+          new URL(req.url).searchParams.get("destino")?.trim() ?? "";
+        if (!destino)
+          throw new Problem(422, "VALIDATION", "Indica el Saldo de destino.", {
+            destino: "Saldo del Presupuesto de Aportación a saldo.",
+          });
+        const conReferencia =
+          new URL(req.url).searchParams.get("conReferencia") === "1";
+        return reply(
+          db.transaction(() => efectoAportacion(db, destino, conReferencia))(),
+        );
+      }
       const budget = path.match(
         /^\/api\/presupuestos\/(PRE\d+)(?:\/(impacto|rectificar|desactivar|reactivar))?$/,
       );

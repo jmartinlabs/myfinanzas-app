@@ -9,10 +9,13 @@ export const SEED_FORMAT = 1;
 export const SEED_DATASET = "FT-1";
 export const SEED_DATASET_VERSION = 1;
 export const SEED_BUN = "1.4.3";
-export const SEED_DATA_CONTRACT = "e36.3-v29";
+/** Etiqueta del contrato de datos del seed; acompaña a `manifest.app` del backup. */
+export const SEED_DATA_CONTRACT = "e37.2-v31";
 export const SEED_SCHEMA_VERSION = schemaVersion;
-export const SEED_SCHEMA_CONTRACT = admitted[29];
-export const SEED_SCHEMA_CONTRACT_SHA256 = contract(admitted[29]).sha256;
+export const SEED_SCHEMA_CONTRACT = admitted[schemaVersion];
+export const SEED_SCHEMA_CONTRACT_SHA256 = contract(
+  admitted[schemaVersion],
+).sha256;
 
 export const DATABASE_RELATIVE = "state/database.sqlite";
 export const KEY_RELATIVE = "state/auth.key";

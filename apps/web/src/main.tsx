@@ -30,6 +30,7 @@ import {
   navigationTitle,
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
+import { AppVersionFooter } from "./AppVersionFooter";
 import { environmentLabel } from "./environment";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
@@ -366,7 +367,7 @@ function App() {
             </p>
           )}
           {path.startsWith("/inicio") ? (
-            <Inicio go={go} theme={theme} />
+            <Inicio go={go} />
           ) : path.startsWith("/dprima") ? (
             <Dprima go={go} />
           ) : path.startsWith("/comida") ? (
@@ -474,8 +475,7 @@ function App() {
           )}
         </main>
         <footer className="global-footer">
-          <span>MyFinanzas App</span>
-          <span>Acceso privado · Información de demostración</span>
+          <AppVersionFooter />
         </footer>
       </div>
     </div>

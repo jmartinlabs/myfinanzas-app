@@ -2,8 +2,24 @@
 
 > Copy into the coordinator's task context per delegate. This is NOT an agent-registration format or an instruction to create a worker when the environment cannot support it.
 
+## Native packet — required core
 - **Packet ID:** TASK-UNSET
-- **Epic / stream:** UNSET
+- **Objective and done criteria:** bounded outcome and acceptance checks
+- **Workflow / authorization:** Quick/tweak | Standard/task authorized scope | Full/dev approved spec AND separate DEV authorization; source/date
+- **Profile / role + phase Skill:** responsible actor loads both before phase work
+- **Write files and sole ownership:** allowed paths, exclusions and read-only inputs
+- **Working branch / isolated checkout:** verified base/candidate, dirty state and ownership
+- **Applicable rules / prohibited actions / stop conditions:** scope, gates and relevant safety rules
+- **Verification commands / expected evidence:** candidate/environment, raw logs, PASS/FAIL/UNRUN
+- **Return schema:** compact structured candidate/files/checks/risks/next action
+
+## Conditional details
+Add only applicable details below; no irrelevant placeholders are required. Never omit a
+relevant safety gate, external control route or model/quota restriction. Reuse the same packet.
+
+- **Packet ID:** TASK-UNSET
+- **Workflow / authorization:** Quick/tweak | Standard/task with scope authorization | Full/dev with approved spec AND separate development authorization
+- **Epic / stream:** UNSET when applicable
 - **Profile:** Functional | Implementation | QA | Infrastructure | bounded custom
 - **Client / version / session ID:** verified client/version or UNVERIFIED; runtime-controlled | external. Technical session ID only if known; otherwise stable functional session reference. Never invent an ID; corrections preserve Task ID and session.
 - **Start/stop owner and permitted communication route:** UNSET; Agent Relay v1 conversation ID (explicit); no automatic conversation
@@ -21,7 +37,7 @@
 - **Shared test resources:** separate ports, databases and temporary directories | not applicable
 - **Other active conflicting packets:** NONE / LIST
 - **Permitted actions:** UNSET
-- **Applicable rules:** UNSET — copy the 3–6 rules this task needs, one line each with its source link (for example approval gates touched, worktree/isolation, security or financial constraints, project-specific restrictions). The delegate reads this list instead of the full policies.
+- **Applicable rules:** UNSET — copy the 3–6 rules this task needs, one line each with its source link (for example approval gates touched, worktree/isolation, security or financial constraints, project-specific restrictions). The delegate reads applicable canonical role and phase Skill before acting; excerpts support scope-sized policy loading.
 - **Prohibited actions:** approvals, merge, production deployment, destructive operations unless separately authorized
 - **Verification commands / expected evidence:** UNSET
 - **Verification environment / candidate:** local versus CI platform; SHA plus pending changes; full gate and focal delta checks
@@ -31,7 +47,7 @@
 - **User decisions to request:** NONE / LIST
 - **Model selection:** requested model/effort; runtime assurance; observed model/effort and evidence or unverified; follow [model policy](../specs/methodology/model-selection.md)
 - **Quota gate:** source/time, five-hour and weekly remaining or unavailable; restrictive value; task-specific authorization and warning if required
-- **Return schema:** complete `HANDOFF → CODEX` block on every interaction, including corrections, blockers and decisions; task/session, COMPLETED / PARTIAL / BLOCKED / CANCELLED, changes/files, branch/SHA/PR, tests PASS / FAIL / UNRUN with command/environment/candidate/evidence, risks/blockers, decisions and next action; see [coordinator communication](../specs/methodology/coordinator-communication.md)
+- **Return schema:** native: compact structured candidate/files/checks/raw evidence/risks/next action; manual Agent Relay: complete `HANDOFF → CODEX` block on every interaction, including corrections, blockers and decisions; task/session, COMPLETED / PARTIAL / BLOCKED / CANCELLED, changes/files, branch/SHA/PR, tests PASS / FAIL / UNRUN with command/environment/candidate/evidence, risks/blockers, decisions and next action; see [coordinator communication](../specs/methodology/coordinator-communication.md)
 - **Usage evidence:** client source and coverage | unavailable; never infer consumption or control of external workers
 
 Coordinator updates the Issue's `Status` and report only after verifying the returned evidence and current canonical documents.
@@ -79,3 +95,5 @@ use [the follow-up shape](../specs/methodology/coordinator-communication.md#5-co
 Coordinator replies explicitly state the human next action and whether to relay anything.
 A final or stopped reply names the responsible party, exact human action (or none) and
 reason for waiting under [the closure contract](../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).
+
+Ownership transfer requires finish/stop acknowledgement and checkpoint before parent writes.

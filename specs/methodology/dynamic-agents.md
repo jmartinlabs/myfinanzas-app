@@ -40,14 +40,13 @@ explicit, identifiable approval.
 ## Execution mode: direct, foreground, background
 
 Choose the mode per task before dispatch, with the lowest cost that still delivers the required
-outcome. Do not create a delegate for a trivial task, and do not defer in background work whose
-result is needed to continue. The mode changes neither the project gates nor the evidence required.
+outcome. Do not create a delegate for a trivial task. Foreground/background express logical
+dependency and must map to verified runtime semantics, not invented synchronous execution. The mode changes neither the project gates nor the evidence required.
 
 - **Direct (coordinator).** Small corrections, low-cost operations, coordination, financial or
   functional decisions that need immediate user interaction, consolidation, supervision and brief
   verifications where delegation costs more than it saves.
-- **Foreground subagent.** The coordinator needs the result immediately, the task is short enough
-  for reasonable synchronous delegation, or dependencies prevent useful work until it returns.
+- **Foreground subagent.** The coordinator needs the result immediately, including on an asynchronous API; dependencies prevent useful independent work until it returns.
 - **Background subagent.** Substantial approved specification creation or review, autonomous
   authorized DEV implementation, bounded investigations and audits, independent QA once a
   verifiable candidate exists, and other delimited work that needs no continuous supervision.
@@ -74,33 +73,7 @@ worktree when applicable); and whether the coordinator stays available. Add no e
 repeated status messages. Never claim a subagent, a background mode or isolation that was not
 verified.
 
-## Quota and dispatch gate
-For Codex, query remaining subscription quota when a supported client tool exists:
-execution start and before new assignments after meaningful milestones or quota warnings.
-Reuse a recent reading within the same dispatch batch; no continuous polling, new service
-or automatic paid consumption. Identify source and reading time. Prefer per-limit data;
-compute remaining as `max(0, min(100, 100 - usedPercent))` for valid numeric values.
-Use the minimum remaining across the five-hour (300 minutes) and weekly (10080 minutes)
-windows. Missing/null/invalid values are unavailable, never zero or an invented percentage.
-Partial data is incomplete: apply restrictions from known windows and disclose the gap;
-unknown data never proves normal quota or blocks authorized work solely by assumption.
-Token accounting in the usage reader is not subscription quota. Do not infer Codex quota
-from Claude/OpenCode usage or assume this desktop tool exists in other clients.
-
-- **More than 25% remaining:** normal allocation by complexity and quality: prioritize
-  Codex for complex/critical work; consider enabled OpenCode for bounded verifiable work.
-- **25% or less:** warn; no new Codex task or subagent, **including QA**, without explicit
-  authorization for that identified task. General development approval is insufficient.
-  Propose an Agent Relay v1 conversation only if enabled and suitable. Required QA stays pending until
-  authorized or otherwise independently performed under the existing quality contract.
-- **5% or less:** warn and stop initiating new tasks. Previous authorizations do not
-  suffice: require a new explicit task authorization after this warning. Preserve state
-  and existing advances at safe boundaries; do not destructively interrupt running work.
-  Do not launch another Codex task merely to save a checkpoint; preserve it in the current
-  session where possible. No automatic replacement workers or paid quota reset.
-
-Record task-specific exceptions and their relation to the warning in the existing packet
-or current summary. A warning is not approval; quota exceptions never waive QA or merges.
+Quota dispatch follows the single canonical [quota and dispatch gate](model-selection.md#quota-and-dispatch-gate).
 
 ## Portable coordination v2.8.0
 
@@ -218,7 +191,7 @@ This repository contains **instructions and templates**, not executable subagent
 
 ## Result contract for each work packet
 
-Return: one complete `HANDOFF → CODEX` block per [coordinator communication](coordinator-communication.md#4-mandatory-return), including when blocked or awaiting a decision: packet ID and origin session; completed/partial/blocked/cancelled status; changed and read files; commit/revision if applicable; real tests and results (passed/failed/unrun) with environment and evidence; unresolved decisions, file collisions or blockers; and next independent action. The coordinator reconciles the board and decides whether to launch a new packet. No delegate may self-approve decisions, merge PRs or change the board; publication remains inside the authorized scope.
+For manual Agent Relay return: one complete `HANDOFF → CODEX` block per [coordinator communication](coordinator-communication.md#4-mandatory-return), including when blocked or awaiting a decision: packet ID and origin session; completed/partial/blocked/cancelled status; changed and read files; commit/revision if applicable; real tests and results (passed/failed/unrun) with environment and evidence; unresolved decisions, file collisions or blockers; and next independent action. The coordinator reconciles the Issue/Project and decides whether to launch a new packet. No delegate may self-approve decisions, merge PRs or change the board; publication remains inside the authorized scope.
 
 ## Example: two ongoing MyFinanzas chats
 
@@ -229,3 +202,62 @@ Return: one complete `HANDOFF → CODEX` block per [coordinator communication](c
 5. User remains the approver for consequential financial decisions, Full specifications, merges and production deployment.
 
 See the [illustrated migration steps](../../docs/GUIA_VISUAL_ORQUESTACION.md#7-migrar-dos-chats-existentes-a-un-coordinador) for a graphical walkthrough.
+
+## Dispatch decision and ownership transfer
+Before substantial bounded autonomous work, record one short decision in the existing summary:
+delegate with expected benefit, or direct with a concrete reason (capability, isolation,
+quota, indivisible context or coordination cost). No universal minutes/files threshold applies.
+Reevaluate when scope grows, acceptance criteria or modules are added, or repeated correction
+rounds change the economics. Never manufacture parallel work.
+
+The coordinator loads orchestrate and packet rules; the executor loads its role and selected
+phase Skill before phase work; QA loads its role and applicable verification rules before review.
+Read once per actor; reload only changed or needed material after compaction, preserving access
+to canonical approvals. Packet excerpts do not replace responsible-actor Skill loading.
+
+Active worker-owned files are off limits to parent writes. Before transferring ownership,
+obtain a finish/stop acknowledgement and checkpoint (candidate, dirty files, checks, next action),
+then explicitly name the new owner. A timeout or interrupt request alone is not acknowledgement.
+Prefer returning bounded corrections to the same worker when its context remains useful.
+
+Use bounded event waits and actual start/stop control; never invent persistence or weaken
+recovery/no-continuation rules when mapping modes to the runtime.
+
+## Native and manual returns
+Native workers may return compact structured results: packet ID, candidate and changed files,
+acceptance evidence with command/environment/raw-log links, PASS/FAIL/UNRUN, risks and next action.
+Manual Agent Relay still requires the complete HANDOFF → CODEX on every interaction under
+[coordinator communication](coordinator-communication.md#4-mandatory-return).
+
+
+## Supervision, stop and critical technical review
+Agree measurable packet-specific checkpoints and triggers, not blanket polling. For long tasks
+with real exposed state, around five minutes is an adjustable reference; inspect bounded diff,
+file count, commands/owned processes, tests, useful progress, elapsed time and actual cost only
+when available. Without observable state, bound duration/scope and require a logged return;
+do not claim live monitoring. Use bounded event waits between checkpoints.
+
+Four trigger classes: change radius; silence/repetition; prohibited risk; cost without a useful
+artifact. A doubled expected file count/time or two non-informative attempts are diagnostic
+examples adjusted to the packet, never permission for out-of-scope writes. Any unapproved scope departure requires stop and clarification. A prohibited or unsafe
+operation requires immediate stop with no threshold and containment. Begin diagnostics with
+focal observable checks unless required baseline checks are already known necessary; the final
+required suite remains mandatory and may run first when justified.
+
+Stop only owned tasks/processes through supported controls. Preserve a snapshot of packet,
+route requested/observed, candidate, dirty files, logs, trigger and controlled resources. Inspect
+and preserve previous/other changes before selective reversible recovery of attributable edits;
+no global cleanup/reset or process killing by port/name. Obtain acknowledgement before ownership
+transfer. Record trigger/action, observed fact versus suspected cause, reviewer and resume
+condition in the existing Issue. Resume with a reduced packet, falsifiable hypothesis and all
+original gates; recovery proposal is not validated implementation.
+
+### Critical technical review as a capability
+Use an independent executor/context; a different model is not necessary for independence.
+Prefer a verified appropriate route when designated (Hermes may use advisor). Record requested
+versus observed identity: mismatch means the designated route failed; unavailable metadata means
+identity unverified, not proof of mismatch. Reuse [route verification](model-selection.md).
+An alternative competent reviewer in the same client or explicit manual handoff is valid;
+never launch another client automatically. Without a reviewer continue only objectively checked
+benign small reversible authorized work, recording the limitation; block material/unsafe work
+and required independent QA. Silence is never approval. Álex remains financial/functional only.

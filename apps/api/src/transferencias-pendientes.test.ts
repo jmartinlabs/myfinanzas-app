@@ -383,9 +383,9 @@ function seedRegistroCoordinado(db: Database, ciclo: string) {
   const result = db.run(
     `INSERT INTO transferencia_pendiente(
       estado,importe,origen,destino,ciclo_origen,fecha_prevista,concepto,
-      nota,origen_tipo,gasto,revision,creado,actualizado
+      nota,origen_tipo,gasto,modalidad,revision,creado,actualizado
     ) VALUES('Pendiente de realizar',6000,'S001','S002',?,'2026-01-05',
-      'Registro ficticio','','RegistroCoordinado',?,1,?,?)`,
+      'Registro ficticio','','RegistroCoordinado',?,'A',1,?,?)`,
     [ciclo, gasto.id, stamp, stamp],
   );
   return Number(result.lastInsertRowid);

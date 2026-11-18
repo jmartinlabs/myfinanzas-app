@@ -17,7 +17,7 @@ E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redun
 La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
 v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
 autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. Los clientes externos (hoy OpenCode) se habilitan por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
+El coordinador conserva su modelo. Los subagentes respetan las restricciones explícitas del selector privado, si existen, y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](model-selection.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. Los clientes externos (hoy OpenCode) se habilitan por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
 
 ## Reparto de responsabilidades — rol de coordinador, asesor y usuario
 
@@ -164,7 +164,7 @@ constan las particularidades locales:
   decisiones financieras siguen protegidas, la QA es independiente y el merge exige aprobación
   explícita e identificable.
 - Los escritores concurrentes requieren ownership disjunto y worktrees aislados; sin aislamiento
-  seguro se serializa. El techo de modelo y el gate de cuota siguen aplicando a toda tarea Codex,
+  seguro se serializa. Las restricciones explícitas del selector privado y el gate de cuota siguen aplicando a toda tarea Codex,
   incluida QA.
 - Agent Relay v1 continúa siendo solo transporte, sin cambios de protocolo.
 - Antecedente local: E3.5 y DEV22 en OpenCode (2026-11-01) acreditaron viabilidad técnica del
@@ -319,3 +319,9 @@ plataforma correcta, repeticiones justificadas y menos consultas sin informació
 sin perder cobertura/QA/controles. Sin porcentajes prometidos ni máximo de pruebas ajeno
 al riesgo. Evaluar conservar/ajustar/revertir al cierre; traslado reutilizable a la
 plantilla requiere evidencia y autorización propias.
+
+### Revisión técnica crítica
+La capacidad y sus controles viven en [dynamic agents](dynamic-agents.md#critical-technical-review-as-a-capability).
+Hermes puede usar advisor verificado; una alternativa competente o relevo manual explícito no
+cambia gates. Álex mantiene solo asesoría financiera/funcional. La ausencia de revisor bloquea
+trabajo material/inseguro y QA obligatoria; no autoriza operaciones excluidas.

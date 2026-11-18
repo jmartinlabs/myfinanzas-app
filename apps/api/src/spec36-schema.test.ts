@@ -25,8 +25,14 @@ const t3 = "2026-01-03T00:00:00.000Z";
 const c27 = "C27-E411-FOTOS-PERIODO";
 const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
 const c29 = "C29-REPARTO-ORIGEN-86DED4B";
+const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec36-"));
 const fp = "a".repeat(64);
+// Columnas de `transferencia_pendiente` tal como existen en v29: las comparaciones
+// entre una base anterior y la migrada usan esta lista, no `SELECT *`, porque v30
+// añade `anticipo_previsto`, `gasto_revision` y `modalidad`.
+const pendingV29Columns =
+  "id,estado,importe,origen,destino,ciclo_origen,fecha_prevista,fecha_efectiva,concepto,nota,origen_tipo,reparto_linea,gasto,anticipo,movimiento,motivo_cancelacion,revision,creado,actualizado";
 
 function store() {
   const db = new Database(":memory:", { strict: true });
@@ -164,6 +170,9 @@ type PendingOptions = Partial<{
   anticipo: string | null;
   movimiento: string | null;
   motivo_cancelacion: string | null;
+  anticipo_previsto: string | null;
+  gasto_revision: number | null;
+  modalidad: string | null;
   revision: number;
 }>;
 
@@ -184,14 +193,18 @@ function pending(db: Database, options: PendingOptions = {}): number {
     anticipo: null,
     movimiento: null,
     motivo_cancelacion: null,
+    anticipo_previsto: null,
+    gasto_revision: null,
+    modalidad: null,
     revision: 1,
     ...options,
   };
   db.run(
     `INSERT INTO transferencia_pendiente(estado,importe,origen,destino,
        ciclo_origen,fecha_prevista,fecha_efectiva,concepto,nota,origen_tipo,
-       reparto_linea,gasto,anticipo,movimiento,motivo_cancelacion,revision,creado,actualizado)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       reparto_linea,gasto,anticipo,movimiento,motivo_cancelacion,
+       anticipo_previsto,gasto_revision,modalidad,revision,creado,actualizado)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       row.estado,
       row.importe,
@@ -208,6 +221,9 @@ function pending(db: Database, options: PendingOptions = {}): number {
       row.anticipo,
       row.movimiento,
       row.motivo_cancelacion,
+      row.anticipo_previsto,
+      row.gasto_revision,
+      row.modalidad,
       row.revision,
       t,
       t,
@@ -481,7 +497,7 @@ test("SPEC36: C28 stays frozen and byte-identical", () => {
   );
 });
 
-test("SPEC36 v29: C29 is exact and deterministic", () => {
+test("SPEC36 v31: C29 sigue congelado y C31 es exacto y determinista", () => {
   const c = contract(c29);
   expect(c.id).toBe(c29);
   expect(c.schemaVersion).toBe(29);
@@ -490,20 +506,23 @@ test("SPEC36 v29: C29 is exact and deterministic", () => {
   expect(c.sha256).toBe(
     "be488dcc8809370096f76d0214712c731a1eacf661a59327e36e9705d20ea4cc",
   );
-  expect(contracts().at(-1)?.id).toBe(c29);
+  expect(contracts().at(-1)?.id).toBe(c31);
+  const current = contract(c31);
+  expect(current.schemaVersion).toBe(31);
+  expect(current.objects).toHaveLength(384);
   expect(contract(c28).sha256).toBe(
     "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
   );
 });
 
-test("SPEC36 v29: a fresh schema matches C29 exactly", () => {
+test("SPEC36 v31: a fresh schema matches C31 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 29,
+      version: 31,
     });
-    expect(manifest(db)).toEqual(contract(c29).objects);
-    expect(verifyContract(db, 29)).toBe(c29);
+    expect(manifest(db)).toEqual(contract(c31).objects);
+    expect(verifyContract(db, 31)).toBe(c31);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     for (const table of [
       "repartos",
@@ -540,7 +559,7 @@ test("SPEC36 v29: a fresh schema matches C29 exactly", () => {
   }
 });
 
-test("SPEC36 v29: v27→v29 is additive and preserves rows, IDs, audits and attempts", () => {
+test("SPEC36 v31: v27→v31 is additive and preserves rows, IDs, audits and attempts", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
@@ -561,7 +580,7 @@ test("SPEC36 v29: v27→v29 is additive and preserves rows, IDs, audits and atte
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect({
@@ -573,8 +592,8 @@ test("SPEC36 v29: v27→v29 is additive and preserves rows, IDs, audits and atte
         audit: db.query("SELECT * FROM audit ORDER BY id").all(),
         identity: db.query("SELECT * FROM database_origin").all(),
       }).toEqual(rows);
-      expect(manifest(db)).toEqual(contract(c29).objects);
-      expect(verifyContract(db, 29)).toBe(c29);
+      expect(manifest(db)).toEqual(contract(c31).objects);
+      expect(verifyContract(db, 31)).toBe(c31);
 
       const previous = new Map(
         contract(c27).objects.map((object) => [
@@ -610,7 +629,7 @@ test("SPEC36 v29: v27→v29 is additive and preserves rows, IDs, audits and atte
   }
 });
 
-test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => {
+test("SPEC36 v31: v28→v31 rebuild preserves every row, link and audit", () => {
   const dir = root();
   try {
     const path = join(dir, "v28.sqlite");
@@ -632,7 +651,7 @@ test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => 
         )
         .all(),
       pendientes: source
-        .query("SELECT * FROM transferencia_pendiente ORDER BY id")
+        .query(`SELECT ${pendingV29Columns} FROM transferencia_pendiente ORDER BY id`)
         .all(),
       repartoAudit: source
         .query("SELECT * FROM reparto_audit ORDER BY id")
@@ -650,7 +669,7 @@ test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => 
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(
@@ -689,7 +708,7 @@ test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => 
           .get(),
       ).toEqual({ n: 0 });
       expect(
-        db.query("SELECT * FROM transferencia_pendiente ORDER BY id").all(),
+        db.query(`SELECT ${pendingV29Columns} FROM transferencia_pendiente ORDER BY id`).all(),
       ).toEqual(before.pendientes);
       expect(
         db.query("SELECT * FROM reparto_audit ORDER BY id").all(),
@@ -702,12 +721,12 @@ test("SPEC36 v29: v28→v29 rebuild preserves every row, link and audit", () => 
           .query("SELECT * FROM transferencia_pendiente_attempts ORDER BY key")
           .all(),
       ).toEqual(before.attempts);
-      expect(manifest(db)).toEqual(contract(c29).objects);
-      expect(verifyContract(db, 29)).toBe(c29);
+      expect(manifest(db)).toEqual(contract(c31).objects);
+      expect(verifyContract(db, 31)).toBe(c31);
       const fresh = store();
       try {
         expect(manifest(fresh)).toEqual(manifest(db));
-        expect(verifyContract(fresh, 29)).toBe(c29);
+        expect(verifyContract(fresh, 31)).toBe(c31);
       } finally {
         fresh.close();
       }
@@ -796,7 +815,7 @@ test("SPEC36 v29: a failing DDL rolls back the whole v29 migration", () => {
         before.lineas,
       );
       expect(
-        db.query("SELECT * FROM transferencia_pendiente ORDER BY id").all(),
+        db.query(`SELECT ${pendingV29Columns} FROM transferencia_pendiente ORDER BY id`).all(),
       ).toEqual(before.pendientes);
       db.exec("DROP TRIGGER reparto_fuente_inmutable");
       expect(manifest(db)).toEqual(contract(c28).objects);
@@ -1229,8 +1248,14 @@ test("SPEC36 v28: a confirmed pending matches its non-annulled Transferencia", (
         reparto_linea: null,
         gasto: "1",
         importe: 5000,
+        modalidad: "A",
         ...overrides,
       });
+    const cancel = (pendingId: number) =>
+      db.run(
+        "UPDATE transferencia_pendiente SET estado='Cancelada',motivo_cancelacion='prueba',revision=revision+1 WHERE id=?",
+        [pendingId],
+      );
     const amount = coordinated({ gasto: "2", importe: 4000 });
     expect(() =>
       db.run(
@@ -1238,6 +1263,7 @@ test("SPEC36 v28: a confirmed pending matches its non-annulled Transferencia", (
         [amount],
       ),
     ).toThrow("confirmed pending must match a non-annulled Transferencia");
+    cancel(amount);
     const wrongDate = coordinated({ gasto: "2", importe: 5000 });
     expect(() =>
       db.run(
@@ -1245,6 +1271,7 @@ test("SPEC36 v28: a confirmed pending matches its non-annulled Transferencia", (
         [wrongDate],
       ),
     ).toThrow("confirmed pending must match a non-annulled Transferencia");
+    cancel(wrongDate);
     const annulled = coordinated({ gasto: "3" });
     expect(() =>
       db.run(
@@ -1252,6 +1279,7 @@ test("SPEC36 v28: a confirmed pending matches its non-annulled Transferencia", (
         [annulled],
       ),
     ).toThrow("confirmed pending must match a non-annulled Transferencia");
+    cancel(annulled);
 
     // The partial unique index keeps one pending per real movement.
     const duplicate = coordinated({ gasto: "1" });
@@ -1295,6 +1323,7 @@ test("SPEC36 v28: provenance XOR separates Reparto and RegistroCoordinado", () =
         reparto_linea: null,
         gasto: "1",
         importe: 2000,
+        modalidad: "A",
       }),
     ).not.toThrow();
   } finally {
@@ -1509,20 +1538,20 @@ test("SPEC36 v28: attempts are keyed for idempotent generation and confirmation"
   }
 });
 
-test("SPEC36 v29: unknown v30 is rejected before mutating", () => {
+test("SPEC36 v29: unknown v32 is rejected before mutating", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
     v27(path);
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=30");
-      expect(verifyContract(db, 30)).toBeNull();
+      db.exec("UPDATE schema_version SET version=32");
+      expect(verifyContract(db, 32)).toBeNull();
       expect(() => verifyAdmittedContract(db)).toThrow(
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 30,
+        version: 32,
       });
       expect(
         db
@@ -1543,7 +1572,7 @@ test("SPEC36 v29: unknown v30 is rejected before mutating", () => {
 });
 
 test.skipIf(process.platform !== "linux")(
-  "SPEC36 v29: encrypted backup/restore preserves v29 and clears pending attempts",
+  "SPEC36 v30: encrypted backup/restore preserves v30 and clears pending attempts",
   () => {
     const dir = root();
     try {
@@ -1583,7 +1612,7 @@ test.skipIf(process.platform !== "linux")(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 29,
+            version: 31,
           });
           expect(
             copy.query("SELECT fuente_plan FROM repartos").get(),

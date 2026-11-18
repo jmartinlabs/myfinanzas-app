@@ -27,3 +27,10 @@ dist/
 *.qif
 playwright-report/
 test-results/
+# Private model preferences, observed catalog and generated native agents
+.agents/models.local.yaml
+.agents/models.catalog.local.json
+.agents/models.manifest.local.json
+.codex/agents/models-local-*.toml
+.claude/agents/models-local-*.md
+.opencode/opencode.json

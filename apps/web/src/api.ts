@@ -243,6 +243,19 @@ export type TransferenciaPendienteEstado =
   | "Confirmada"
   | "Cancelada";
 
+/**
+ * SPEC37 §3 — modalidad del pendiente. Se fija al crear el pendiente y es
+ * inmutable (AC-43): el API la rechaza en `PATCH`, así que aquí solo se lee.
+ */
+export type ModalidadCoordinada = "A" | "B";
+
+/** §5.3 — intención de Referencia: nombre y datos mínimos, sin ID ni ficha. */
+export type IntencionReferenciaDTO = {
+  nombre: string;
+  apertura: string | null;
+  evidencia: string | null;
+};
+
 export type TransferenciaPendienteDTO = {
   id: number;
   estado: TransferenciaPendienteEstado;
@@ -278,6 +291,10 @@ export type TransferenciaPendienteDTO = {
     estado: string;
   } | null;
   gasto: string | null;
+  gastoRevision: number | null;
+  modalidad: ModalidadCoordinada | null;
+  anticipoPrevisto: string | null;
+  anticipoIntencion: IntencionReferenciaDTO | null;
   anticipo: string | null;
   movimiento: {
     id: string;
@@ -334,6 +351,50 @@ export type TransferenciaPendienteImpactoDTO = {
   fingerprint: string;
   hoy: string;
   motivoNoDisponible?: string;
+};
+
+/**
+ * SPEC37 I3/I4 — respuesta de `POST /api/operaciones-coordinadas`.
+ *
+ * La operación escribe Gasto + (Transferencia real | pendiente) en una sola
+ * transacción; el cliente solo compone el payload (§11: no envía cálculos,
+ * estados ni posiciones).
+ */
+export type OperacionCoordinadaDTO = {
+  modalidad: ModalidadCoordinada;
+  gasto: Record<string, any>;
+  transferencia: Record<string, any> | null;
+  pendiente: TransferenciaPendienteDTO | null;
+  anticipo: Record<string, any> | null;
+};
+
+/** Payload del alta coordinada con pendiente (§4: Gasto real + pendiente). */
+export type PendienteCoordinadoPayload = {
+  modalidad: ModalidadCoordinada;
+  importe: string;
+  origen: string;
+  destino: string;
+  fechaPrevista: string;
+  concepto: string;
+  nota: string;
+  anticipoPrevisto?: string;
+  anticipoNombre?: string;
+  anticipoApertura?: string;
+  anticipoEvidencia?: string;
+};
+
+export type GastoCoordinadoPayload = {
+  gasto: {
+    fecha: string;
+    importe: string;
+    saldo: string;
+    partida: string;
+    concepto: string;
+    nota: string;
+  };
+  pendiente?: PendienteCoordinadoPayload;
+  transferencia?: Record<string, unknown>;
+  aceptarCoincidencia?: boolean;
 };
 
 export type RepartoEstado = "Borrador" | "Generado" | "Completado";

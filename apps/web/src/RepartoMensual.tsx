@@ -323,6 +323,14 @@ function asPendiente(value: unknown): TransferenciaPendienteDTO | null {
     reparto: (raw.reparto as TransferenciaPendienteDTO["reparto"]) ?? null,
     presupuesto: asPresupuesto(raw.presupuesto),
     gasto: typeof raw.gasto === "string" ? raw.gasto : null,
+    gastoRevision:
+      typeof raw.gastoRevision === "number" ? raw.gastoRevision : null,
+    modalidad: raw.modalidad === "A" || raw.modalidad === "B" ? raw.modalidad : null,
+    anticipoPrevisto:
+      typeof raw.anticipoPrevisto === "string" ? raw.anticipoPrevisto : null,
+    anticipoIntencion:
+      (raw.anticipoIntencion as TransferenciaPendienteDTO["anticipoIntencion"]) ??
+      null,
     anticipo: typeof raw.anticipo === "string" ? raw.anticipo : null,
     movimiento:
       (raw.movimiento as TransferenciaPendienteDTO["movimiento"]) ?? null,

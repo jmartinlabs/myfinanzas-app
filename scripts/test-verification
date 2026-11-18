@@ -313,6 +313,13 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(full['api'], ('api', ['bun', 'run', 'test'], 'bun'))
         self.assertEqual(full['e2e'], ('e2e', ['bun', 'run', 'test:e2e'], 'playwright'))
 
+    def test_private_model_inputs_preserve_conservative_harness_coverage(self):
+        for path in ('.claude/agents/implementation.md',
+                     '.opencode/agents/review.md', '.gitignore'):
+            with self.subTest(path=path):
+                self.assertEqual(set(ENTRY['POLICY']['harness_suites']([path])),
+                                 set(HARNESS_NAMES))
+
     def test_ci_docs_profile_intentionally_omits_application_without_pass_claim(self):
         extra = self.integration_event('specs/backlog/next.md')
         result = self.run_entry('ci', extra=extra)

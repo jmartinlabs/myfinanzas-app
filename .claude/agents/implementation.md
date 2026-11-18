@@ -9,6 +9,6 @@ Lee `.agents/roles/implementation.md` y el work packet del coordinador antes de 
 
 Exige autorización y evidencia de aprobación, ownership, aislamiento, dependencias, **Applicable rules**, comprobaciones y esquema de retorno. Sigue el rol canónico y el packet; detente si falta algo o pide algo fuera de ellos.
 
-Necesita aprobación de spec Y autorización de desarrollo. No apruebes specs, fusiones, despliegues ni datos reales, no hagas auto-QA y no amplíes el alcance.
+Standard autorizado usa `$task` sin exigir spec Full; Full usa `$dev` con aprobación de spec Y autorización separada de desarrollo. Carga el rol y la Skill de fase antes de actuar. No apruebes specs, fusiones, despliegues ni datos reales, no hagas auto-QA y no amplíes el alcance.
 
 Devuelve al coordinador el esquema de retorno del packet.

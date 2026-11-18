@@ -15,10 +15,10 @@ documentación y un paso de confianza, no un port.
 | Elemento | Uso en Hermes |
 | --- | --- |
 | `AGENTS.md` | Se inyecta como instrucciones del proyecto al arrancar en la raíz. |
-| `.agents/skills/` (11 Skills) | Nivel de Skills de proyecto; se invocan como `/orchestrate`, `/spec`, `/dev`, `/handoff`, `/relay`, `/tweak`, `/task`, `/roadmap`, `/bootstrap`, `/init-project` y `/adopt-project`. |
+| `.agents/skills/` (inventario del checkout) | Nivel de Skills de proyecto; se invocan como `/orchestrate`, `/spec`, `/dev`, `/handoff`, `/relay`, `/tweak`, `/task`, `/roadmap`, `/bootstrap`, `/init-project` `/adopt-project` y `/work-issue`. |
 | `.agents/roles/` | Contratos reutilizables dentro de un paquete de trabajo; no son trabajadores permanentes. |
 | `specs/methodology/` | Mismas reglas de flujo, aprobaciones, delegación y comunicación. |
-| `specs/epic-board.md` | Lo escribe el coordinador activo (hoy Hermes); los demás clientes lo leen salvo designación expresa. |
+| `specs/epic-board.md` | Histórico; no es seguimiento ni permiso vigente. El Project #4 es el estado operativo. |
 
 No se copian Skills, roles, workflows, prompts, pruebas ni scripts del template. Los
 adaptadores de Codex (`.codex/`), Claude Code (`.claude/`) y OpenCode (`.opencode/`) quedan
@@ -35,15 +35,15 @@ hermes                                       # arrancar SIEMPRE en la raíz del 
 - La confianza es **por checkout y por perfil** (`HERMES_HOME`). Sin ella no se carga ninguna
   Skill de proyecto, aunque `hermes skills list` no enumera ese nivel: no lo uses como prueba
   de descubrimiento.
-- `AGENTS.md` se inyecta desde el directorio de trabajo. Una sesión abierta en un
+- En la versión registrada, `AGENTS.md` se inyecta desde el directorio de trabajo. Una sesión abierta en un
   subdirectorio pierde todas las reglas: arranca en la raíz.
-- Los cambios en `AGENTS.md` no se reinyectan a mitad de sesión; aplica cambios de política en
+- En la versión registrada, los cambios en `AGENTS.md` no se reinyectan a mitad de sesión; aplica cambios de política en
   una sesión nueva.
 - Una sesión nueva en el mismo checkout y perfil ya conserva la confianza concedida.
 
 ## Autoridad y límites en MyFinanzas
 
-- **Hermes ejerce hoy como coordinador designado** y escribe `specs/epic-board.md`. Cualquier
+- **Hermes ejerce hoy como coordinador designado** y gestiona el estado operativo en el Project #4; `specs/epic-board.md` es histórico. Cualquier
   cliente compatible puede sustituirlo por decisión del usuario con el handoff de
   [Cambio de coordinador](../specs/methodology/myfinanzas-coordination.md#cambio-de-coordinador);
   ningún coordinador abre una cola paralela ni un segundo scheduler.
@@ -98,7 +98,102 @@ proveedores sigue sin validar.
 
 ## Cuándo volver a verificar
 
-Tras actualizar Hermes, cambiar de perfil (`HERMES_HOME`) o mover el checkout: repite
-`hermes skills trust` y confirma que `/orchestrate` carga. Si cambian las Skills canónicas, la
+Tras actualizar Hermes, cambiar de perfil (`HERMES_HOME`) o mover el checkout: verifica
+el descubrimiento y que `/orchestrate` carga; no repitas trust automáticamente ni cambies
+la confianza como parte de esta evaluación. Si cambian las Skills canónicas, la
 confianza no se revoca, pero revisa el índice para detectar nombres nuevos, eliminados o en
 conflicto.
+
+## Alcance histórico y estado actual
+Las cifras 11/11 de la muestra anterior son históricas (2026-11-10), no el inventario actual:
+el checkout incluye también `/work-issue`. Contrasta los nombres presentes en `.agents/skills/`.
+Las afirmaciones de descubrimiento y runtime corresponden exclusivamente a la versión registrada;
+reverifica capacidades en otra versión. El Project MyFinanzas #4 es el estado operativo;
+`specs/epic-board.md` es histórico y no se escribe como seguimiento. No cambia trust, autenticación
+ni configuración de proveedores. Standard autorizado usa `/task`; Full `/dev` conserva spec
+aprobada y autorización separada de desarrollo.
+
+## Selección de modelos por sesión
+En el cliente instalado verificado, `hermes chat --provider <proveedor-conectado>
+--model <modelo-disponible> --reasoning low` aplica overrides de esa sesión;
+`hermes model` fuera de sesión configura el valor por defecto, no solo la sesión actual.
+En gateway, `/model <modelo> --provider <proveedor>` cambia el modelo en runtime cuando
+la versión lo soporta. Comprueba la ayuda del cliente instalado: CLI, TUI y gateway
+no garantizan los mismos comandos slash, y `/delegation` no es universal.
+Referencia: [guía oficial CLI](https://hermes-agent.nousresearch.com/docs/user-guide/cli/).
+
+El modelo del chat y las rutas `worker`/`advisor` de `model_map` son selecciones distintas:
+cambiar el primero no prueba ni cambia las opciones fijadas para delegados. Usa únicamente
+proveedores ya conectados y modelos cuyo catálogo esté verificado. Declara las opciones
+solicitadas antes del despacho y contrasta la ruta efectiva con el
+[verificador existente](../specs/methodology/model-selection.md); no infieras éxito de un nombre
+de slot ni inventes una ruta por tarea. No se cambia configuración ni autenticación automáticamente.
+
+Instrucción inicial opcional: «Coordina con el modelo de esta sesión; para implementación usa
+la opción worker verificada y para revisión crítica la opción advisor verificada, con contexto
+independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
+declara la limitación y aplica los gates/fallback canónicos». Las restricciones explícitas del selector privado (si existen) y la cuota siguen
+vigentes cualquiera que sea el cliente coordinador.
+
+## Delegación por rol en el perfil real
+
+El perfil en uso ya declara `delegation.backend: model_map` con opciones nombradas (`worker`,
+`advisor`). Para alinear la delegación de Hermes con los cinco roles del selector privado se
+añaden opciones **con nombre de rol** en `delegation.backends.model_map.options`:
+
+```yaml
+delegation:
+  backend: model_map
+  backends:
+    model_map:
+      options:                          # LISTA, no mapping: el cliente ignora un mapping
+        - name: worker
+          description: "Tareas habituales de desarrollo."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: implementation
+          description: "DEV: implementación aprobada, pruebas y refactorización."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: functional
+          description: "Análisis funcional y financiero."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: low
+        - name: review
+          description: "Revisión técnica crítica."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: qa
+          description: "QA independiente del candidato."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: infrastructure
+          description: "Entornos, puertos y diagnóstico de plataforma."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: medium
+      default: worker
+```
+
+- **`options` es una lista de entradas `- name: …`**, y el campo **`name` ES el selector**: el
+  delegado se elige por `implementation`, `review`, `qa`, etc. Un mapping (`options: {worker: …}`)
+  es **ignorado por el cliente**: `model_map` avisa `options must be a list …` y no expone enum
+  `option`, con lo que el binding queda inerte. No inventes alias para el mismo rol.
+- `default: worker` declara la opción que se usa cuando la petición no nombra otra; es hermano
+  de `options`, no una opción más. Si tu versión del plugin anida de otra forma, prevalece el
+  esquema del cliente instalado: verifícalo antes de editar.
+- Hay que **reiniciar la sesión** después de editar el perfil para que el esquema de
+  `delegate_task` exponga las opciones nuevas; una sesión abierta no las ve aunque el fichero
+  ya esté guardado.
+- `provider`/`model` deben ser proveedores ya conectados y modelos verificados; declara en el
+  packet lo solicitado y contrasta la ruta efectiva con
+  [model-selection](../specs/methodology/model-selection.md). El selector privado
+  ([MODEL_SELECTION.md](MODEL_SELECTION.md)) y sus límites de catálogo siguen aplicando.
+- Este adaptador **no** escribe configuración de perfil ni ejecuta `hermes config`: documenta
+  la forma del bloque para una edición revisada y manual del perfil. Sin plugins, flags ni
+  rutas nuevas.

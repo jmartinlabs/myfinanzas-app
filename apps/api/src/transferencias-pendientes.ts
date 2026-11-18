@@ -1,5 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./problem";
+import { createAnticipoInTransaction } from "./anticipos";
+import { efectoAportacion } from "./presupuestos";
 import { civil, cycleMaster, type Cycle } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
 import { decimal, money } from "./saldos";
@@ -27,9 +29,48 @@ import {
  *
  * Schema v28 freezes a Reparto line once a pending references it. Therefore a
  * Reparto-origin pending cannot change importe/origen/destino: the schema would
- * reject it. Those fields stay editable only for the future
- * `RegistroCoordinado` origin (SPEC37), and are rejected here with a domain
- * error instead of leaking a SQLite constraint.
+ * reject it. Those fields stay editable only for the `RegistroCoordinado`
+ * origin (SPEC37), and are rejected here with a domain error instead of leaking
+ * a SQLite constraint.
+ *
+ * SPEC37 (increment 2) adds the `RegistroCoordinado` origin: a pending that
+ * points at a real Gasto, never at a line. It stores the Gasto, the current
+ * `gasto_revision` as baseline, the immutable `modalidad` (A or B) and, only in
+ * modalidad B, the planned Anticipo reference. All of that is operational: the
+ * insert writes no Movimiento, no ficha de Anticipo and no liquidity (AC-26,
+ * AC-32). `ciclo_origen` is the historical traceability of the Gasto's own date
+ * (D2), not the open cycle.
+ *
+ * SPEC37 (increment 4) resolves the pending without a second mechanism:
+ *
+ *  - `confirmar` writes one real Transferencia with the bank date of the day
+ *    (§8.2), which belongs to the Cycle of that date; `ciclo_origen` is not
+ *    imputed retroactively (§8.5). `HISTORY_LOCKED` is decided by the real date
+ *    of the new Movimiento —the E4.9 window guard already reads only that—,
+ *    never by the closure of the Gasto's original Cycle (§8.6, AC-42). In
+ *    modalidad B the planned Referencia is revalidated inside the transaction
+ *    and the Transferencia carries it with its E3.1 attribution; nothing new is
+ *    created (D2, AC-10).
+ *  - `vincular` resolves the pending against a real Transferencia only with an
+ *    exact match of direction and amount and, when the pending is modalidad B,
+ *    of the Referencia (D5, §9.1). The Reparto origin keeps its original
+ *    contract: a Referencia is not admitted there, so its flow does not change.
+ *  - `cancelar` needs a motive and leaves no financial effect (AC-37).
+ *
+ * `confirmar` and `vincular` are both a resolution of the pending, so the
+ * coordinated origin stays blocked while `conditions()` reports «Requiere
+ * revisión» (§9.2). The Reparto origin keeps its I1 contract untouched.
+ *
+ * SPEC37 (increment 4.5, gate `G-v31`, §5.3/D2) adds the **intención** of
+ * Referencia. Modalidad B keeps exactly one form: an existing `anticipo_previsto`
+ * XOR an intent with `anticipo_nombre` (+ optional `anticipo_apertura` and
+ * `anticipo_evidencia`, same coherence rule as `fichas_anticipos`). Saving the
+ * intent writes no `referencias`, no `fichas_anticipos`, no `movimiento_anticipo`
+ * and no counter (AC-26, AC-32). `confirmar` materialises it inside its own
+ * transaction through `createAnticipoInTransaction` and uses the new Referencia
+ * in the real Transferencia, so a later failure reverts both. A Referencia is
+ * identified by its **ID**, never by its name: an intent that repeats an
+ * existing name creates a new Referencia and leaves the homonym untouched.
  */
 
 const states = ["Pendiente de realizar", "Confirmada", "Cancelada"] as const;
@@ -49,6 +90,12 @@ type PendingRow = {
   origen_tipo: "Reparto" | "RegistroCoordinado";
   reparto_linea: number | null;
   gasto: string | null;
+  gasto_revision: number | null;
+  modalidad: "A" | "B" | null;
+  anticipo_previsto: string | null;
+  anticipo_nombre: string | null;
+  anticipo_apertura: string | null;
+  anticipo_evidencia: string | null;
   anticipo: string | null;
   movimiento: string | null;
   motivo_cancelacion: string | null;
@@ -120,6 +167,21 @@ function identifier(value: unknown, field = "id"): number {
   if (!Number.isSafeInteger(id) || id < 1)
     throw new Problem(422, "VALIDATION", "Identificador inválido.", {
       [field]: "Indica un identificador positivo.",
+    });
+  return id;
+}
+
+/** Un Gasto es un Movimiento real: su ID es el identificador estable del hecho. */
+function movementIdentifier(value: unknown, field: string): string {
+  const id =
+    typeof value === "number" && Number.isSafeInteger(value) && value > 0
+      ? String(value)
+      : typeof value === "string" && /^\d+$/.test(value)
+        ? value
+        : "";
+  if (!id)
+    throw new Problem(422, "VALIDATION", "Indica un Gasto registrado.", {
+      [field]: "Identificador numérico de un Movimiento de tipo Gasto.",
     });
   return id;
 }
@@ -216,6 +278,18 @@ function assertEligible(db: Database, id: string, field: string) {
       { [field]: "Selecciona un Saldo interno activo y operativo." },
       { motivo: reason },
     );
+}
+
+/**
+ * D9: modalidad B solo admite Referencias de Anticipo. La lista de §5.1 se
+ * reduce aquí a lo verificable sin ficha: existencia, tipo y estado. El par de
+ * Saldos y la ficha se revalidan al confirmar (I4), no en el alta.
+ */
+function anticipoElegible(db: Database, id: string) {
+  const row = db
+    .query("SELECT tipo,estado FROM referencias WHERE id=?")
+    .get(id) as { tipo: string; estado: string } | null;
+  return row !== null && row.tipo === "Anticipo" && row.estado === "Activa";
 }
 
 function line(db: Database, id: number): LineRow | null {
@@ -356,6 +430,38 @@ function conditions(db: Database, row: PendingRow): Condicion {
     const destinationReason = ineligibleReason(db, row.destino);
     if (destinationReason) motivos.add("SALDO_DESTINO_NO_ELEGIBLE");
     const l = row.reparto_linea ? line(db, row.reparto_linea) : null;
+    if (row.origen_tipo === "RegistroCoordinado") {
+      // D6: la línea base es `gasto_revision`. Un Gasto ausente, anulado o con
+      // otra revisión bloquea la confirmación; no se reinterpreta el pendiente.
+      const g = row.gasto ? movement(db, row.gasto) : null;
+      if (!g) motivos.add("GASTO_NO_DISPONIBLE");
+      else if (g.anulado === 1) motivos.add("GASTO_ANULADO");
+      else {
+        if (g.tipo !== "Gasto") motivos.add("GASTO_NO_DISPONIBLE");
+        // Sin línea base no hay coincidencia demostrable: también se revisa.
+        if (row.gasto_revision === null || g.revision !== row.gasto_revision)
+          motivos.add("GASTO_NO_COINCIDE");
+      }
+      // D2/D9: solo la modalidad B conserva Referencia prevista y solo puede
+      // ser un Anticipo activo. Una Referencia que deja de ser elegible no se
+      // sustituye sola (AC-39). Desde I4.5 la B admite también una intención de
+      // alta: su identidad es el nombre y no se compara con las existentes, de
+      // modo que aquí solo se exige que la intención exista; la Referencia real
+      // se crea al confirmar.
+      if (row.modalidad === "B") {
+        if (
+          row.anticipo_previsto !== null &&
+          !anticipoElegible(db, row.anticipo_previsto)
+        )
+          motivos.add("REFERENCIA_NO_ELEGIBLE");
+        else if (row.anticipo_previsto === null && row.anticipo_nombre === null)
+          motivos.add("REFERENCIA_NO_ELEGIBLE");
+      } else if (
+        row.modalidad === "A" &&
+        (row.anticipo_previsto !== null || row.anticipo_nombre !== null)
+      )
+        motivos.add("REFERENCIA_NO_ELEGIBLE");
+    }
     if (row.origen_tipo === "Reparto") {
       if (!l) motivos.add("LINEA_NO_DISPONIBLE");
       else {
@@ -465,6 +571,19 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
         }
       : null,
     gasto: row.gasto,
+    gastoRevision: row.gasto_revision,
+    modalidad: row.modalidad,
+    anticipoPrevisto: row.anticipo_previsto,
+    // I4.5/D2: intención de alta persistida en el pendiente. No es una
+    // Referencia: no tiene ID ni ficha hasta que se confirme.
+    anticipoIntencion:
+      row.anticipo_nombre === null
+        ? null
+        : {
+            nombre: row.anticipo_nombre,
+            apertura: row.anticipo_apertura,
+            evidencia: row.anticipo_evidencia,
+          },
     anticipo: row.anticipo,
     movimiento: m
       ? {
@@ -489,6 +608,12 @@ function pendingDto(db: Database, row: PendingRow, now = Date.now()) {
   };
 }
 
+/**
+ * Forma pública del pendiente (`pendingDto`). Se exporta como tipo para que
+ * los consumidores de SPEC37 (I3) puedan componerlo sin abrir la tabla.
+ */
+export type TransferenciaPendiente = ReturnType<typeof pendingDto>;
+
 function existingForLine(db: Database, lineId: number): PendingRow | null {
   return (
     (db
@@ -507,6 +632,9 @@ export function crearTransferenciaPendiente(
   body: Record<string, unknown>,
   now = Date.now(),
 ): ReturnType<typeof pendingDto> {
+  // El origen lo elige el payload: `gasto` es registro coordinado (SPEC37) y
+  // `lineaId` es reparto (SPEC36). Ninguno de los dos caminos cambia al otro.
+  if (body.gasto !== undefined) return crearPendienteCoordinado(db, body, now);
   for (const key of Object.keys(body))
     if (!["lineaId", "origenOperativo", "referencia"].includes(key))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
@@ -675,6 +803,303 @@ export function crearTransferenciaPendiente(
   return pendingDto(db, after, now);
 }
 
+/**
+ * Intención de Referencia de Anticipo (§5.3, D2; I4.5).
+ *
+ * Nombre obligatorio —la identidad de la intención— y `apertura`/`evidencia`
+ * opcionales con la misma regla que `fichas_anticipos` (`anticipo-schema.ts`):
+ * o no hay apertura ni evidencia, o hay apertura y evidencia no vacía. No crea
+ * nada: solo describe la Referencia que nacerá al confirmar, de modo que un
+ * pendiente nunca produce una Referencia huérfana ni una ficha vacía
+ * (AC-26/AC-32). Los formatos replican los validadores del alta de Anticipo
+ * (`createAnticipoInTransaction`), no los sustituyen.
+ */
+function intencionAnticipo(body: Record<string, unknown>) {
+  const raw = body.anticipoNombre;
+  if (raw !== undefined && raw !== null && typeof raw !== "string")
+    throw new Problem(422, "VALIDATION", "Nombre de Referencia prevista inválido.", {
+      anticipoNombre: "Nombre de la Referencia de Anticipo nueva.",
+    });
+  const nombre = typeof raw === "string" && raw !== "" ? raw : null;
+  const aperturaRaw = body.anticipoApertura;
+  const evidenciaRaw = body.anticipoEvidencia;
+  const sinApertura =
+    aperturaRaw === undefined || aperturaRaw === null || aperturaRaw === "";
+  const sinEvidencia =
+    evidenciaRaw === undefined || evidenciaRaw === null || evidenciaRaw === "";
+  if (nombre === null) {
+    if (!sinApertura || !sinEvidencia)
+      throw new Problem(422, "VALIDATION", "La intención de Referencia exige un nombre.", {
+        anticipoNombre: "Sin nombre no hay intención que registrar.",
+      });
+    return { nombre: null, apertura: null, evidencia: null };
+  }
+  if (!nombre.trim() || nombre.length > 120 || /[\u0000-\u001f\u007f]/.test(nombre))
+    throw new Problem(422, "VALIDATION", "Nombre de Referencia previsto inválido.", {
+      anticipoNombre: "Nombre obligatorio, máximo 120 caracteres.",
+    });
+  if (sinApertura) {
+    if (!sinEvidencia)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La evidencia de apertura exige una apertura.",
+        { anticipoEvidencia: "Sin apertura no hay evidencia que registrar." },
+      );
+    return { nombre, apertura: null, evidencia: null };
+  }
+  const apertura = civilField(
+    aperturaRaw,
+    "anticipoApertura",
+    "Indica una apertura válida.",
+  );
+  const evidencia = textField(
+    evidenciaRaw,
+    "anticipoEvidencia",
+    1000,
+    false,
+  ).trim();
+  return { nombre, apertura, evidencia };
+}
+
+/**
+ * Alta del pendiente de origen `RegistroCoordinado` (SPEC37, incremento I2).
+ *
+ * Escribe solo la fila operativa y su auditoría: no crea Movimiento, no crea
+ * ficha de Anticipo y no toca ninguna partida de liquidez (AC-26, AC-32). El
+ * Gasto es un hecho real previo y aquí solo se vincula. `ciclo_origen` es el
+ * Ciclo histórico de la fecha real del Gasto (D2) y la modalidad queda fijada
+ * al alta: ni `editar` ni el trigger de esquema permiten cambiarla (AC-43).
+ */
+function crearPendienteCoordinado(
+  db: Database,
+  body: Record<string, unknown>,
+  now: number,
+): ReturnType<typeof pendingDto> {
+  for (const key of Object.keys(body))
+    if (
+      ![
+        "gasto",
+        "modalidad",
+        "anticipoPrevisto",
+        "anticipoNombre",
+        "anticipoApertura",
+        "anticipoEvidencia",
+        "importe",
+        "origen",
+        "destino",
+        "fechaPrevista",
+        "concepto",
+        "nota",
+      ].includes(key)
+    )
+      throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
+
+  const gastoId = movementIdentifier(body.gasto, "gasto");
+  const gasto = movement(db, gastoId);
+  if (!gasto) throw new Problem(404, "NOT_FOUND", "Movimiento no encontrado.");
+  if (gasto.tipo !== "Gasto")
+    throw new Problem(
+      422,
+      "GASTO_NO_DISPONIBLE",
+      "El Movimiento vinculado no es un Gasto.",
+      { gasto: "Selecciona un Movimiento de tipo Gasto." },
+    );
+  if (gasto.anulado === 1)
+    throw new Problem(
+      422,
+      "GASTO_ANULADO",
+      "El Gasto está anulado y no admite un pendiente nuevo.",
+      { gasto: "Selecciona un Gasto vigente." },
+    );
+
+  // D2: `ciclo_origen` es la trazabilidad histórica del Gasto, no el Ciclo
+  // abierto. La columna es NOT NULL, así que un Gasto fuera de Ciclo no entra.
+  const ciclo = cycleForDate(db, gasto.fecha);
+  if (!ciclo)
+    throw new Problem(
+      409,
+      "CICLO_NO_DISPONIBLE",
+      "La fecha del Gasto no pertenece a ningún Ciclo registrado.",
+      { gasto: "El Gasto debe caer dentro de un Ciclo registrado." },
+    );
+
+  if (body.modalidad !== "A" && body.modalidad !== "B")
+    throw new Problem(422, "VALIDATION", "Indica la modalidad del pendiente.", {
+      modalidad: "Modalidad A (pago directo) o B (Anticipo).",
+    });
+  const modalidad = body.modalidad;
+
+  if (
+    body.anticipoPrevisto !== undefined &&
+    body.anticipoPrevisto !== null &&
+    typeof body.anticipoPrevisto !== "string"
+  )
+    throw new Problem(422, "VALIDATION", "Referencia prevista inválida.", {
+      anticipoPrevisto: "Identificador de Referencia o vacío.",
+    });
+  const anticipoPrevisto =
+    typeof body.anticipoPrevisto === "string" && body.anticipoPrevisto !== ""
+      ? body.anticipoPrevisto
+      : null;
+
+  const intencion = intencionAnticipo(body);
+
+  // §7: un pendiente de modalidad A no genera Referencia. La B la exige y solo
+  // admite Anticipo (D9); el formato replica el CHECK de v30, no lo sustituye.
+  // I4.5: en B hay exactamente una forma de Referencia prevista, un ID
+  // existente XOR una intención de alta; nunca las dos ni ninguna.
+  if (
+    modalidad === "A" &&
+    (anticipoPrevisto !== null || intencion.nombre !== null)
+  )
+    throw new Problem(
+      422,
+      "REFERENCIA_NO_ADMITIDA",
+      "La modalidad A no admite Referencia de Anticipo.",
+      { anticipoPrevisto: "La Referencia solo aplica a la modalidad B." },
+    );
+  if (modalidad === "B") {
+    if (anticipoPrevisto !== null && intencion.nombre !== null)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La modalidad B admite una sola forma de Referencia prevista.",
+        {
+          anticipoPrevisto:
+            "Indica una Referencia existente o una intención de alta, no ambas.",
+        },
+      );
+    if (anticipoPrevisto === null && intencion.nombre === null)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "La modalidad B exige una Referencia de Anticipo prevista.",
+        {
+          anticipoPrevisto:
+            "Selecciona una Referencia de tipo Anticipo o indica el nombre de una nueva.",
+        },
+      );
+    if (anticipoPrevisto !== null && !/^REF[0-9]{3,}$/.test(anticipoPrevisto))
+      throw new Problem(422, "VALIDATION", "Formato de Referencia inválido.", {
+        anticipoPrevisto: "Formato REF seguido de dígitos.",
+      });
+    if (anticipoPrevisto !== null && !anticipoElegible(db, anticipoPrevisto))
+      throw new Problem(
+        422,
+        "REFERENCIA_NO_ELEGIBLE",
+        "La Referencia prevista no es un Anticipo activo.",
+        { anticipoPrevisto: "Selecciona una Referencia de tipo Anticipo activa." },
+      );
+  }
+
+  const importe = amount(body.importe);
+  for (const side of ["origen", "destino"] as const)
+    if (typeof body[side] !== "string" || !body[side])
+      throw new Problem(422, "VALIDATION", "Saldo inválido.", {
+        [side]: "Selecciona un Saldo interno activo.",
+      });
+  const origen = body.origen as string;
+  const destino = body.destino as string;
+  if (origen === destino)
+    throw new Problem(422, "VALIDATION", "Origen y destino deben ser distintos.");
+  assertEligible(db, origen, "origen");
+  assertEligible(db, destino, "destino");
+  if (body.fechaPrevista === undefined)
+    throw new Problem(422, "VALIDATION", "Indica la fecha prevista.", {
+      fechaPrevista: "Fecha prevista obligatoria.",
+    });
+  const fechaPrevista = civilField(body.fechaPrevista, "fechaPrevista");
+  const concepto =
+    body.concepto === undefined
+      ? ""
+      : textField(body.concepto, "concepto", 2000);
+  const nota =
+    body.nota === undefined ? "" : textField(body.nota, "nota", 4000);
+
+  // D6: un único pendiente activo por Gasto. Los resueltos no cuentan.
+  const previous = db
+    .query(
+      "SELECT id FROM transferencia_pendiente WHERE gasto=? AND estado='Pendiente de realizar'",
+    )
+    .get(gasto.id) as { id: number } | null;
+  if (previous)
+    throw new Problem(
+      409,
+      "GASTO_YA_GENERADO",
+      "El Gasto ya tiene una Transferencia pendiente activa.",
+      { gasto: "Resuelve o cancela el pendiente existente antes de crear otro." },
+      { pendiente: previous.id },
+    );
+
+  const time = new Date(now).toISOString();
+  let id: number;
+  try {
+    const inserted = db.run(
+      `INSERT INTO transferencia_pendiente(
+        estado,importe,origen,destino,ciclo_origen,fecha_prevista,concepto,nota,
+        origen_tipo,gasto,gasto_revision,modalidad,anticipo_previsto,
+        anticipo_nombre,anticipo_apertura,anticipo_evidencia,revision,
+        creado,actualizado
+      ) VALUES('Pendiente de realizar',?,?,?,?,?,?,?,'RegistroCoordinado',
+        ?,?,?,?,?,?,?,1,?,?)`,
+      [
+        Number(importe.cents),
+        origen,
+        destino,
+        ciclo.id,
+        fechaPrevista,
+        concepto,
+        nota,
+        gasto.id,
+        gasto.revision,
+        modalidad,
+        anticipoPrevisto,
+        intencion.nombre,
+        intencion.apertura,
+        intencion.evidencia,
+        time,
+        time,
+      ],
+    );
+    id = Number(inserted.lastInsertRowid);
+  } catch (error) {
+    // El índice único parcial es la última red; se traduce a dominio para no
+    // filtrar un constraint de SQLite.
+    if (
+      error instanceof Error &&
+      /UNIQUE|transferencia_pendiente_gasto_activo/.test(error.message)
+    )
+      throw new Problem(
+        409,
+        "GASTO_YA_GENERADO",
+        "El Gasto ya tiene una Transferencia pendiente activa.",
+        {
+          gasto:
+            "Resuelve o cancela el pendiente existente antes de crear otro.",
+        },
+      );
+    throw error;
+  }
+  const after = pending(db, id)!;
+  audit(db, id, 1, "alta", null, after, null, [
+    "estado",
+    "importe",
+    "origen",
+    "destino",
+    "cicloOrigen",
+    "fechaPrevista",
+    "concepto",
+    "nota",
+    "gasto",
+    "gastoRevision",
+    "modalidad",
+    "anticipoPrevisto",
+    "anticipoIntencion",
+  ], now);
+  return pendingDto(db, after, now);
+}
+
 /** HTTP/attempt wrapper for the creation route; increment 2 calls the raw creator. */
 export function crearTransferenciaPendienteConIntento(
   db: Database,
@@ -766,7 +1191,19 @@ export function listTransferenciasPendientes(
   };
 }
 
-function movementBody(row: PendingRow, fechaReal: string) {
+function movementBody(
+  row: PendingRow,
+  fechaReal: string,
+  anticipo?: Record<string, unknown>,
+  nuevaReferencia?: string,
+) {
+  // D2/§5.3: en modalidad B la Referencia se revalida al confirmar y la
+  // Transferencia real la incorpora. Con Referencia prevista es la del
+  // pendiente; con intención (I4.5) es la que se acaba de crear dentro de la
+  // transacción de confirmación. Sin ninguna —la proyección previa de una
+  // intención— el Movimiento se plantea sin Referencia ni atribución: todavía
+  // no existen y no se inventan.
+  const referencia = nuevaReferencia ?? row.anticipo_previsto;
   return {
     tipo: "Transferencia",
     fecha: fechaReal,
@@ -775,6 +1212,61 @@ function movementBody(row: PendingRow, fechaReal: string) {
     destino: row.destino,
     concepto: row.concepto,
     nota: row.nota,
+    ...(row.modalidad === "B" && referencia
+      ? { referencia, anticipo }
+      : {}),
+  };
+}
+
+/**
+ * Atribución E3.1 de la Transferencia de Anticipo real que resuelve el
+ * pendiente de modalidad B.
+ *
+ * E3.1 exige que toda Transferencia con Referencia de Anticipo declare su
+ * atribución (rol, par, evidencia y procedencia). El pendiente no la guarda:
+ * `v30` no la persiste y no es una intención, sino parte del hecho que se
+ * confirma. Por eso la confirmación la recibe y el servidor deriva lo que no
+ * puede elegir el cliente:
+ *
+ *  - el rol es siempre `Adelanto`: esta operación registra el adelanto del
+ *    Saldo que financia, nunca una devolución (§5.4);
+ *  - el par sale del pendiente. Una dirección declarada distinta se rechaza con
+ *    `DIRECCION_INCOMPATIBLE` sin invertirla ni reinterpretarla (AC-12).
+ */
+function atribucionAnticipo(row: PendingRow, value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "La modalidad B exige la atribución de la Transferencia de Anticipo.",
+      { anticipo: "Indica la evidencia y la procedencia del hecho real." },
+    );
+  const block = value as Record<string, unknown>;
+  for (const name of Object.keys(block))
+    if (!["evidencia", "procedencia", "origen", "destino"].includes(name))
+      throw new Problem(422, "VALIDATION", `Campo no editable: anticipo.${name}.`);
+  for (const side of ["origen", "destino"] as const) {
+    const declared = block[side];
+    if (declared === undefined) continue;
+    if (typeof declared !== "string" || declared !== row[side])
+      throw new Problem(
+        422,
+        "DIRECCION_INCOMPATIBLE",
+        "La dirección declarada no coincide con la del pendiente; no se invierte ni se reinterpreta.",
+        { [side]: `El pendiente registra ${row[side]}.` },
+      );
+  }
+  return {
+    rol: "Adelanto",
+    origen: row.origen,
+    destino: row.destino,
+    evidencia: textField(block.evidencia, "anticipo.evidencia", 1000, false).trim(),
+    procedencia: textField(
+      block.procedencia,
+      "anticipo.procedencia",
+      1000,
+      false,
+    ).trim(),
   };
 }
 
@@ -844,39 +1336,11 @@ function budgetEffect(db: Database, row: PendingRow) {
         : "La Transferencia ya no ejecuta esa Aportación a saldo; revisa la Partida y el Plan mensual D′.",
     };
   }
-  const active = db
-    .query(
-      "SELECT id,nombre,fuente,destino,estado FROM presupuestos WHERE fuente='Aportación a saldo' AND estado='Activo' AND destino=?",
-    )
-    .all(row.destino) as BudgetRow[];
-  if (active.length === 1)
-    return {
-      aplica: true,
-      presupuesto: active[0].id,
-      partida: null,
-      fuente: active[0].fuente,
-      destino: active[0].destino,
-      motivo:
-        "La Transferencia ordinaria hacia el destino ejecuta esa Aportación a saldo.",
-    };
-  const inactive = db
-    .query(
-      "SELECT id FROM presupuestos WHERE fuente='Aportación a saldo' AND estado='Inactivo' AND destino=?",
-    )
-    .all(row.destino) as { id: string }[];
-  return {
-    aplica: false,
-    presupuesto: null,
-    partida: null,
-    fuente: null,
-    destino: row.destino,
-    motivo:
-      active.length > 1
-        ? "Hay varias Aportaciones a saldo para el destino; no se puede atribuir."
-        : inactive.length
-          ? "Existe un Presupuesto histórico inactivo hacia el destino; la Transferencia no ejecuta su fuente."
-          : "El destino no ejecuta ninguna Aportación a saldo.",
-  };
+  // Sin línea de reparto (origen coordinado o línea Adicional), la atribución
+  // depende de la Referencia: R3 solo ejecuta una Aportación a saldo con
+  // Transferencias **sin** Referencia, así que una modalidad B nunca la ejecuta.
+  // El criterio vive en `efectoAportacion` y no se duplica aquí.
+  return { ...efectoAportacion(db, row.destino, row.modalidad === "B"), partida: null };
 }
 
 function impactPayload(
@@ -922,6 +1386,7 @@ function buildImpact(
   fechaReal: string,
   now: number,
   guard?: MovementProtection,
+  anticipo?: Record<string, unknown>,
 ) {
   return impactPayload(
     db,
@@ -929,7 +1394,7 @@ function buildImpact(
     fechaReal,
     previewMovementInTransaction(
       db,
-      movementBody(row, fechaReal),
+      movementBody(row, fechaReal, anticipo),
       null,
       false,
       now,
@@ -947,7 +1412,7 @@ export function previewImpactoTransferenciaPendiente(
   guard?: MovementProtection,
 ) {
   for (const key of Object.keys(body))
-    if (key !== "fechaReal")
+    if (key !== "fechaReal" && key !== "anticipo")
       throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
   if (body.fechaReal === undefined)
     throw new Problem(422, "VALIDATION", "Indica la fecha real del banco.", {
@@ -963,6 +1428,10 @@ export function previewImpactoTransferenciaPendiente(
       "STATE_CONFLICT",
       "Solo un pendiente Pendiente de realizar admite vista previa de confirmación.",
     );
+  // La atribución E3.1 solo existe en modalidad B; en A y en Reparto el campo
+  // no se admite, igual que antes de I4.
+  if (body.anticipo !== undefined && row.modalidad !== "B")
+    throw new Problem(422, "VALIDATION", "Campo no editable: anticipo.");
   const fechaReal = civilField(body.fechaReal, "fechaReal");
   if (fechaReal > spanishToday(now))
     throw new Problem(
@@ -1003,7 +1472,14 @@ export function previewImpactoTransferenciaPendiente(
       hoy: spanishToday(now),
     };
   }
-  return buildImpact(db, row, fechaReal, now, guard);
+  return buildImpact(
+    db,
+    row,
+    fechaReal,
+    now,
+    guard,
+    row.modalidad === "B" ? atribucionAnticipo(row, body.anticipo) : undefined,
+  );
 }
 
 function requirePendiente(row: PendingRow) {
@@ -1034,6 +1510,16 @@ export function editarTransferenciaPendiente(
 ) {
   const id = identifier(idValue);
   return conIntento(db, "actualizar", { id, ...body }, key, now, () => {
+    // AC-43: la modalidad pertenece al pendiente y es inmutable. Cambiarla no
+    // se hace aquí: exige cancelar con motivo y crear otro pendiente, de modo
+    // que el original conserva su trazabilidad sin reinterpretarse.
+    if ("modalidad" in body)
+      throw new Problem(
+        422,
+        "MODALIDAD_INMUTABLE",
+        "La modalidad del pendiente no se puede cambiar; cancela con motivo y crea otro pendiente.",
+        { modalidad: "La modalidad es inmutable tras el alta." },
+      );
     for (const name of Object.keys(body))
       if (
         ![
@@ -1163,9 +1649,13 @@ export function confirmarTransferenciaPendiente(
   return conIntento(db, "confirmar", { id, ...body }, key, now, () => {
     for (const name of Object.keys(body))
       if (
-        !["revision", "fechaReal", "fingerprint", "aceptarCoincidencia"].includes(
-          name,
-        )
+        ![
+          "revision",
+          "fechaReal",
+          "fingerprint",
+          "aceptarCoincidencia",
+          "anticipo",
+        ].includes(name)
       )
         throw new Problem(422, "VALIDATION", `Campo no editable: ${name}.`);
     const row = pending(db, id);
@@ -1177,10 +1667,15 @@ export function confirmarTransferenciaPendiente(
       );
     requirePendiente(row);
     requireRevision(row, body.revision);
+    // §5/§7: la Referencia y su atribución solo existen en modalidad B; en A y
+    // en Reparto el campo no se admite (contrato de I1 sin cambios).
+    if (body.anticipo !== undefined && row.modalidad !== "B")
+      throw new Problem(422, "VALIDATION", "Campo no editable: anticipo.");
     if (body.fechaReal === undefined)
       throw new Problem(422, "VALIDATION", "Indica la fecha real del banco.", {
         fechaReal: "Fecha efectiva obligatoria.",
       });
+    // §8.2: la fecha efectiva es la del banco, no la prevista; nunca futura.
     const fechaReal = civilField(body.fechaReal, "fechaReal");
     if (fechaReal > spanishToday(now))
       throw new Problem(
@@ -1218,7 +1713,23 @@ export function confirmarTransferenciaPendiente(
         ),
         { motivos: cond.motivos },
       );
-    const impact = buildImpact(db, row, fechaReal, now, guard);
+    // D2/§5.3: la Referencia prevista se revalida dentro de la transacción; la
+    // atribución E3.1 es del hecho real que se escribe ahora.
+    //
+    // I4.5: en modalidad B la forma puede ser una intención de alta. Se
+    // materializa más abajo, ya dentro de la transacción, para no crear nada si
+    // la confirmación no se completa.
+    const intencion =
+      row.modalidad === "B" && row.anticipo_nombre !== null
+        ? {
+            nombre: row.anticipo_nombre,
+            apertura: row.anticipo_apertura,
+            evidencia: row.anticipo_evidencia,
+          }
+        : null;
+    const anticipo =
+      row.modalidad === "B" ? atribucionAnticipo(row, body.anticipo) : undefined;
+    const impact = buildImpact(db, row, fechaReal, now, guard, anticipo);
     if (body.fingerprint !== impact.fingerprint)
       throw new Problem(
         409,
@@ -1238,10 +1749,37 @@ export function confirmarTransferenciaPendiente(
       );
     const written = writeMovementInTransaction(
       db,
-      movementBody(row, fechaReal),
-      { now, planned: impact.movimiento, guard },
+      // I4.5/D2: con intención de alta, la Referencia y su ficha nacen aquí,
+      // dentro de esta misma transacción y con la clave de intento de la
+      // confirmación. El pendiente nunca escribió un hecho (AC-26/AC-32) y, si
+      // algo falla después, Referencia, ficha, intentos y Movimiento se
+      // revierten juntos. La identidad de una Referencia es su ID: una
+      // intención cuyo nombre coincida con otra no reutiliza ni renombra nada.
+      movementBody(
+        row,
+        fechaReal,
+        anticipo,
+        intencion
+          ? createAnticipoInTransaction(
+              db,
+              {
+                nombre: intencion.nombre,
+                apertura: intencion.apertura,
+                evidencia: intencion.evidencia,
+              },
+              key,
+              now,
+            ).referencia.id
+          : undefined,
+      ),
+      // Con intención la huella del cliente cubre la proyección sin Referencia
+      // (no existía al previsualizar); el plan real se recalcula aquí, ya con
+      // la Referencia creada, y no se compara con esa huella.
+      { now, ...(intencion ? {} : { planned: impact.movimiento }), guard },
     );
     const movimientoId = written.movimiento.id;
+    // `anticipo` es identidad inmutable del pendiente desde SPEC36 §6: la
+    // Referencia real no se copia aquí, vive en el Movimiento confirmado (§5.4).
     const result = db.run(
       "UPDATE transferencia_pendiente SET estado='Confirmada',movimiento=?,fecha_efectiva=?,revision=revision+1,actualizado=? WHERE id=? AND revision=? AND estado='Pendiente de realizar'",
       [
@@ -1267,6 +1805,9 @@ export function confirmarTransferenciaPendiente(
       row,
       after,
       null,
+      // Ni `anticipoPrevisto` ni `anticipoIntencion` cambian al confirmar: se
+      // fijaron en el alta y el esquema no permite reescribirlos, así que no son
+      // campos modificados. La Referencia real vive en el Movimiento.
       ["estado", "movimiento", "fechaEfectiva"],
       now,
     );
@@ -1322,18 +1863,47 @@ export function cancelarTransferenciaPendiente(
   });
 }
 
+/**
+ * D5/§9.1: solo son candidatas las Transferencias reales que coinciden
+ * exactamente en dirección e importe y, cuando la modalidad lo exige, en
+ * Referencia. La admisión de Referencia es condicional por `origen_tipo`:
+ * `Reparto` conserva su contrato de I1 (sin Referencia) y `RegistroCoordinado`
+ * de modalidad B exige exactamente la Referencia prevista.
+ */
+function pendingReferencia(row: PendingRow): string | null {
+  return row.origen_tipo === "RegistroCoordinado" ? row.anticipo_previsto : null;
+}
+
+/**
+ * I4.5: con intención de alta la Referencia todavía no existe, así que ninguna
+ * Transferencia real puede llevarla. Vincular queda cerrado —no se inventa un
+ * vínculo por nombre—: la resolución es confirmar (crea Referencia y ficha) o
+ * cancelar con motivo.
+ */
+function intencionSinReferencia(row: PendingRow) {
+  return (
+    row.origen_tipo === "RegistroCoordinado" &&
+    row.modalidad === "B" &&
+    row.anticipo_previsto === null &&
+    row.anticipo_nombre !== null
+  );
+}
+
 function candidates(db: Database, row: PendingRow) {
+  if (intencionSinReferencia(row)) return [];
+  const referencia = pendingReferencia(row);
   return (
     db
       .query(
         `SELECT m.id,m.fecha,m.tipo,CAST(m.importe AS TEXT) importe,m.origen,m.destino,m.referencia,m.concepto,m.nota,m.anulado,m.revision
          FROM movimientos m
          WHERE m.tipo='Transferencia' AND m.anulado=0
-           AND m.origen=? AND m.destino=? AND m.importe=? AND m.referencia IS NULL
+           AND m.origen=? AND m.destino=? AND m.importe=?
+           AND ((? IS NULL AND m.referencia IS NULL) OR m.referencia=?)
            AND NOT EXISTS (SELECT 1 FROM transferencia_pendiente p WHERE p.movimiento=m.id)
          ORDER BY m.fecha DESC,length(m.id) DESC,m.id DESC`,
       )
-      .all(row.origen, row.destino, row.importe) as (Omit<
+      .all(row.origen, row.destino, row.importe, referencia, referencia) as (Omit<
       MovementRow,
       "importe"
     > & { importe: string })[]
@@ -1403,12 +1973,38 @@ export function vincularTransferenciaPendiente(
         "El Movimiento debe ser una Transferencia.",
         { movimientoId: "Selecciona una Transferencia." },
       );
-    if (m.referencia !== null)
+    // D5: la Referencia solo se admite donde el origen la exige. Reparto
+    // conserva el contrato de I1 y sigue rechazando toda Referencia. Con
+    // intención de alta (I4.5) no hay Referencia con la que coincidir: la
+    // Transferencia real nace al confirmar, no se vincula una ordinaria.
+    if (intencionSinReferencia(row))
       throw new Problem(
         422,
-        "REFERENCIA_NO_ADMITIDA",
-        "Incremento 1 no vincula Transferencias con Referencia.",
-        { movimientoId: "Selecciona una Transferencia ordinaria sin Referencia." },
+        "REFERENCIA_NO_COINCIDE",
+        "La Referencia prevista se crea al confirmar; ninguna Transferencia existente puede llevarla.",
+        {
+          movimientoId:
+            "Confirma el pendiente para crear la Referencia, o cancélalo con motivo.",
+        },
+      );
+    if (row.origen_tipo !== "RegistroCoordinado") {
+      if (m.referencia !== null)
+        throw new Problem(
+          422,
+          "REFERENCIA_NO_ADMITIDA",
+          "El origen Reparto no vincula Transferencias con Referencia.",
+          { movimientoId: "Selecciona una Transferencia ordinaria sin Referencia." },
+        );
+    } else if (m.referencia !== pendingReferencia(row))
+      throw new Problem(
+        422,
+        "REFERENCIA_NO_COINCIDE",
+        "La Transferencia no lleva la Referencia prevista del pendiente.",
+        {
+          movimientoId: row.anticipo_previsto
+            ? `Selecciona una Transferencia de la Referencia ${row.anticipo_previsto}.`
+            : "La modalidad A no admite Referencia de Anticipo.",
+        },
       );
     if (
       m.origen !== row.origen ||
@@ -1421,6 +2017,25 @@ export function vincularTransferenciaPendiente(
         "La Transferencia no coincide en origen, destino e importe.",
         { movimientoId: "Selecciona una Transferencia exacta." },
       );
+    // Vincular resuelve el pendiente: en el origen coordinado se bloquea mientras
+    // «Requiere revisión» sigue vigente (§9.2). El camino Reparto conserva su
+    // contrato de I1 sin cambios.
+    if (row.origen_tipo === "RegistroCoordinado") {
+      const cond = conditions(db, row);
+      if (cond.requiereRevision)
+        throw new Problem(
+          409,
+          "REVIEW_REQUIRED",
+          "El pendiente requiere revisión antes de vincular.",
+          Object.fromEntries(
+            cond.motivos.map((motivo) => [
+              motivo,
+              "Revisa o cancela el pendiente.",
+            ]),
+          ),
+          { motivos: cond.motivos },
+        );
+    }
     const linked = db
       .query("SELECT id FROM transferencia_pendiente WHERE movimiento=?")
       .get(m.id) as { id: number } | null;

@@ -8,6 +8,7 @@ import { contract, manifest, verifyContract } from "./schema-contract";
 import { materializeContract } from "../test-support/inversiones-schema";
 
 const t = "2026-01-01T00:00:00.000Z";
+const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e44-"));
 
 /** Fictional rows covering every preserved area, valid for both v21 and v22. */
@@ -109,7 +110,7 @@ function deudaColumns(db: Database) {
   );
 }
 
-test("E4.4 AC-23: v22→v29 is additive, preserves IDs/audit/MFA and exposes the exact C29 contract", () => {
+test("E4.4 AC-23: v22→v31 is additive, preserves IDs/audit/MFA and exposes the exact C31 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v22.sqlite");
@@ -121,13 +122,13 @@ test("E4.4 AC-23: v22→v29 is additive, preserves IDs/audit/MFA and exposes the
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 29)).toBe("C29-REPARTO-ORIGEN-86DED4B");
-      expect(manifest(db)).toEqual(contract("C29-REPARTO-ORIGEN-86DED4B").objects);
+      expect(verifyContract(db, 31)).toBe(c31);
+      expect(manifest(db)).toEqual(contract(c31).objects);
       expect(
         db
           .query(
@@ -189,7 +190,7 @@ test("E4.4 AC-23: v22→v29 is additive, preserves IDs/audit/MFA and exposes the
   }
 });
 
-test("E4.4 AC-23: v21→v29 preserves IDs/audit/MFA and leaves the new fields null", () => {
+test("E4.4 AC-23: v21→v31 preserves IDs/audit/MFA and leaves the new fields null", () => {
   const dir = root();
   try {
     const path = join(dir, "v21.sqlite");
@@ -203,12 +204,12 @@ test("E4.4 AC-23: v21→v29 preserves IDs/audit/MFA and leaves the new fields nu
     let firstData: ReturnType<typeof snapshot>;
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 29)).toBe("C29-REPARTO-ORIGEN-86DED4B");
+      expect(verifyContract(db, 31)).toBe(c31);
       expect(deudaColumns(db)).toHaveLength(23);
       for (const [type, name] of [
         ["table", "conciliaciones_deuda"],
@@ -260,7 +261,7 @@ test("E4.4 AC-23: v21→v29 preserves IDs/audit/MFA and leaves the new fields nu
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(manifest(second)).toEqual(firstManifest!);
       expect(snapshot(second)).toEqual(firstData!);
@@ -317,7 +318,7 @@ test("E4.4 AC-23: inconsistent foreign keys reject without a partial v26 base an
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -446,7 +447,7 @@ test("E4.4 AC-23: unknown versions stay intact and two starts are idempotent", (
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 29,
+        version: 31,
       });
       expect(manifest(second)).toEqual(firstManifest);
       expect(snapshot(second)).toEqual(firstData);
