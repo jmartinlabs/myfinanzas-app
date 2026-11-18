@@ -63,7 +63,7 @@ async function authenticate(page: Page) {
 test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
   mkdirSync("artifacts/ui-casa-deudas", { recursive: true });
   await authenticate(page);
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
 
   await page

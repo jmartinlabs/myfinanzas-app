@@ -196,7 +196,7 @@ function pageErrors(page: Page) {
 
 /** Evidencia visual en 1440×1000 y 390×844 con los tres temas vigentes. */
 async function capture(page: Page, name: string) {
-  const theme = page.getByLabel("Apariencia");
+  const theme = page.getByLabel("Cambiar tema");
   for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await theme.selectOption(id);

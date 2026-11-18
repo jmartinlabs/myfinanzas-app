@@ -168,7 +168,7 @@ flowchart TD
     M --> V
 ```
 
-La selección respeta la [política canónica de modelos](../specs/methodology/model-selection.md) y las capacidades verificadas del cliente. Los subagentes usan la selección explícita privada, con restricciones opcionales y sin techo predeterminado; el coordinador conserva su modelo. Si no puede garantizarse la selección permitida, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
+La selección respeta la [política canónica de modelos](../specs/methodology/model-selection.md) y las capacidades verificadas del cliente. Los subagentes usan la configuración nativa que el usuario fija manualmente en cada cliente, sin techo predeterminado; el coordinador conserva su modelo. Si no puede garantizarse la selección permitida, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
 
 ## 9. ¿Qué instala realmente esta template?
 

@@ -18,7 +18,7 @@ POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
 BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.startswith('test-') else None) for name in (
     'check-repository', 'check-project', 'validate-template', 'test-checks',
     'test-validator', 'test-agent-relay', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification',
-    'test-evidence', 'test-release', 'test-work-issue', 'test-delegation-route', 'test-models-sync')) + (
+    'test-evidence', 'test-release', 'test-work-issue', 'test-delegation-route')) + (
     ('working-whitespace', ['git', 'diff', '--check'], None),
     ('commit-whitespace', ['git', 'show', '--format=', '--check', '--first-parent', 'HEAD'], None))
 # Harness regressions read scripts, fixtures and protected instructions; a verified
@@ -27,7 +27,7 @@ BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.
 HARNESS_SUITES = frozenset((
     'test-checks', 'test-validator', 'test-agent-relay', 'test-verification', 'test-evidence',
     'test-agent-usage', 'test-auto-agent-usage', 'test-release', 'test-work-issue',
-    'test-delegation-route', 'test-models-sync'))
+    'test-delegation-route'))
 # Declaration order, for deterministic reporting of an omitted selection.
 HARNESS_ORDER = tuple(name for name, _, _ in BASELINE if name in HARNESS_SUITES)
 APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),

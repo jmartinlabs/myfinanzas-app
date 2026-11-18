@@ -65,7 +65,7 @@ test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
-  await page.getByLabel("Apariencia").selectOption("graphite-lime");
+  await page.getByLabel("Cambiar tema").selectOption("graphite-lime");
   await expect(page.locator("html")).toHaveAttribute(
     "data-theme",
     "graphite-lime",
@@ -175,7 +175,7 @@ test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
   // Misma fixture en Casa para la evaluación visual Graphite vs Casa.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/saldos");
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expect(page.locator(".saldos-page")).toBeVisible();
   await expect(

@@ -73,7 +73,7 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
-  await page.getByLabel("Apariencia").selectOption("graphite-lime");
+  await page.getByLabel("Cambiar tema").selectOption("graphite-lime");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
 
   const expectNoOverflow = async () =>
@@ -162,7 +162,7 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   /* Misma fixture en Casa ---------------------------------------------- */
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/vehiculos");
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expect(page.locator(".vehicle-table tbody tr")).toHaveCount(4);
   await capture("vehiculos-listado-casa", 1440, 1000);
@@ -173,7 +173,7 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   /* Graphite no se filtra a Claro, Oscuro ni Mixto. */
   for (const theme of ["light-s", "dark-s", "hybrid-s"]) {
     await page.goto("/vehiculos");
-    await page.getByLabel("Apariencia").selectOption(theme);
+    await page.getByLabel("Cambiar tema").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(page.locator(".vehicle-table")).not.toHaveCSS(
       "border-radius",

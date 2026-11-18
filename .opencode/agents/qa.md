@@ -107,9 +107,10 @@ rules and the return schema; if any is missing, stop and ask for it.
 ## Boundary of the shell permission
 
 The permission matrix allows only the verification commands listed in the frontmatter; everything
-else is denied. This was measured, not assumed: `git log -1 --oneline` and
-`python3.12 scripts/test-models-sync` run, while `touch <path>` and `echo … > <path>` fail with
-`Permission denied: shell`, and no file is created.
+else is denied. Historical verification recorded successful read-only Git and harness test
+commands, while `touch <path>` and `echo … > <path>` failed with
+`Permission denied: shell`, and no file was created. This is historical evidence, not a new
+runtime check of the current candidate.
 
 Three consequences you must respect:
 

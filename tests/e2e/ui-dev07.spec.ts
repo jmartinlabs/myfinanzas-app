@@ -15,6 +15,7 @@ import {
   auditReducedMotion,
   auditViewport,
   measureOverflow,
+  measureTargets,
   sampleFocusRing,
   setDetailsOpen,
   setTheme,
@@ -895,4 +896,69 @@ test.describe("UI DEV-07 · activación por teclado", () => {
       ).toBeFocused();
     }
   });
+});
+
+/**
+ * #503 — la excepción del selector de apariencia no es una relajación general.
+ *
+ * `specs/guidelines/ui.md` exceptúa del umbral de 44 px solo al `select` del
+ * selector de apariencia, y solo en escritorio con ratón (≥761 px, puntero fino
+ * sin puntero grueso), con 36–38 px de alto y ≥44 px de ancho. Esta prueba
+ * demuestra que la excepción no cubre un control genérico de 38 px, ni el mismo
+ * selector a 390 px, ni con puntero grueso.
+ */
+test("UI DEV-07 · la excepción de 38 px no cubre otros controles ni otros contextos", async ({
+  page,
+}) => {
+  const probe = `<!doctype html><html lang="es" data-theme="dark-s"><head><style>
+    body { margin: 0; font: 12px/1.4 sans-serif; background: #101010; color: #eee; }
+    header { padding: 8px; }
+    .theme-picker { display: inline-flex; align-items: center; }
+    .theme-picker select, .generic-shell-select, .generic-button {
+      display: block; width: 120px; border: 1px solid #8a8a8a;
+      background: #222; color: #eee; border-radius: 6px;
+    }
+    .theme-picker select, .generic-shell-select, .generic-button {
+      min-height: 38px; height: 38px;
+    }
+    #main select { display: block; width: 120px; min-height: 44px; height: 44px; }
+  </style></head><body>
+    <header>
+      <label class="theme-picker"><select class="picker-probe" aria-label="Cambiar tema"><option>Oscuro</option></select></label>
+      <select class="generic-shell-select" aria-label="Campo genérico"><option>Activa</option></select>
+      <button class="generic-button" type="button">Genérico 38</button>
+    </header>
+    <main id="main"><select class="main-select" aria-label="Filtro"><option>Todos</option></select></main>
+  </body></html>`;
+
+  const under44 = async () =>
+    (await measureTargets(page)).map((finding) => finding.selector).sort();
+
+  // Escritorio con ratón: el selector de apariencia queda exceptuado...
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setContent(probe);
+  const desktop = await under44();
+  expect(desktop).not.toContain("select.picker-probe");
+  // ...pero un control genérico de 38 px sigue fallando (mismo alto y ancho).
+  expect(desktop).toContain("select.generic-shell-select");
+  expect(desktop).toContain("button.generic-button");
+  // Y un control de 44 px nunca aparece.
+  expect(desktop).not.toContain("select.main-select");
+
+  // 390 px: el mismo selector deja de estar exceptuado.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await under44()).toContain("select.picker-probe");
+
+  // Puntero grueso a ancho de escritorio: tampoco (equipo híbrido/táctil).
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 5,
+  });
+  expect(
+    await page.evaluate(() => matchMedia("(any-pointer: coarse)").matches),
+  ).toBe(true);
+  expect(await under44()).toContain("select.picker-probe");
+  await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
 });
