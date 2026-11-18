@@ -96,6 +96,37 @@ comportamiento con otros modelos. Las pruebas extensas P0/P-ISO ya están docume
 template y no se repiten aquí. En esa sesión no se ejercitó la delegación, y el despacho entre
 proveedores sigue sin validar.
 
+## Verificación registrada · rutas por rol en delegación (2026-11-18)
+
+Cliente: Hermes Agent v0.23.2 (`2026.9.24`), perfil `engineering-lead`, macOS 15.5 arm64.
+Sesión **nueva** (el enum de `option` se construye al abrir la sesión) con cinco delegaciones
+mínimas, una por rol, ejecutadas contra el perfil real. Evidencia: `deleg_4ab52638`.
+
+| Rol (`option`) | Proveedor observado | Modelo observado en metadatos | Resultado |
+| --- | --- | --- | --- |
+| `implementation` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+| `functional` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+| `review` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+| `qa` | `alibaba-token-plan` | `glm-5.3` | PASS |
+| `infrastructure` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+
+Las cinco completaron una llamada API y los metadatos del runtime coincidieron con la ruta
+configurada en ese momento.
+
+**Alcance de esta evidencia:** demuestra que Hermes **selecciona y ejecuta** la ruta configurada
+para cada rol. **No** es una identificación independiente del modelo por parte del proveedor, ni
+prueba entitlement, ni mide varianza entre sesiones.
+
+Los modelos observados corresponden al perfil **tal como estaba** en el momento de la sonda: las
+opciones `functional` y `review` se habían reajustado a `deepseek-v4.1-flash-1017` después de la
+edición inicial que documentó este adaptador (`openai-codex/gpt-6.1-sol` y `deepseek-v4-pro`
+respectivamente). Lo verificado es la ruta vigente, no la del ejemplo.
+
+Estado por cliente tras esta prueba: **Hermes 5/5 verificado a nivel de despacho**; **OpenCode
+verificado por separado** (`opencode debug agents` resuelve `implementation`, `functional`,
+`review` e `infrastructure` al modelo declarado); **Codex y Claude Code sin verificar** en esta
+máquina porque no están instalados.
+
 ## Cuándo volver a verificar
 
 Tras actualizar Hermes, cambiar de perfil (`HERMES_HOME`) o mover el checkout: verifica
