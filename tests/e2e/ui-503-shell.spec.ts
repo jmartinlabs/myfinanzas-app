@@ -18,8 +18,9 @@ import { totp } from "../../apps/api/src/auth";
  *  - el encabezado muestra solo el `select` (sin texto suelto ni etiqueta encima);
  *  - el ancho del selector lo fija el catálogo, no una medida fija de 9rem;
  *  - la altura es compacta en escritorio con puntero fino (36–38 px) y conserva
- *    el objetivo táctil de 44 px en móvil y con emulación táctil a ancho de
- *    escritorio, sin recortar texto, flecha ni anillo de foco;
+ *    el objetivo táctil de 44 px en móvil, con emulación táctil a ancho de
+ *    escritorio y cuando existe cualquier puntero grueso (`any-pointer: coarse`,
+ *    equipos híbridos), sin recortar texto, flecha ni anillo de foco;
  *  - exactamente UN indicador de entorno visible por anchura, contado por
  *    visibilidad real en el DOM (no por presencia);
  *  - sin scroll horizontal;
@@ -281,17 +282,72 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   });
   expect(optionWidth).toBeLessThanOrEqual(0);
 
+  // Chromium no permite emular la combinación híbrida (puntero fino + tacto
+  // disponible), así que esa guarda se comprueba en el CSS real del artefacto
+  // servido: debe existir `any-pointer: coarse` con el objetivo táctil, después
+  // del bloque compacto (gana el empate de cascada).
+  const themePickerRules = await page.evaluate(() => {
+    const found: { media: string; minHeight: string }[] = [];
+    const walk = (rules: CSSRuleList, media = "") => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSMediaRule) {
+          const condition = media
+            ? `${media} :: ${rule.conditionText}`
+            : rule.conditionText;
+          walk(rule.cssRules, condition);
+          continue;
+        }
+        if (
+          rule instanceof CSSStyleRule &&
+          rule.selectorText === ".theme-picker select"
+        ) {
+          found.push({ media, minHeight: rule.style.minHeight });
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        walk(sheet.cssRules);
+      } catch {
+        // Hojas de otro origen: no existen en este artefacto.
+      }
+    }
+    return found;
+  });
+  const hybridIndex = themePickerRules.findIndex(
+    (rule) =>
+      rule.media.includes("any-pointer") &&
+      rule.media.includes("coarse") &&
+      rule.media.includes("761px"),
+  );
+  expect(hybridIndex).toBeGreaterThanOrEqual(0);
+  expect(themePickerRules[hybridIndex].minHeight).toBe("var(--touch-min)");
+  expect(
+    themePickerRules.findIndex(
+      (rule) =>
+        rule.media.includes("pointer:") &&
+        !rule.media.includes("any-pointer") &&
+        rule.media.includes("fine"),
+    ),
+  ).toBeLessThan(hybridIndex);
+
   // Con entrada táctil a ancho de escritorio (tableta) NO se compacta: el
   // objetivo interactivo sigue en 44 px. Emulación real de Chromium (CDP), no
-  // una suposición sobre el media query.
+  // una suposición sobre el media query. La emulación marca puntero principal y
+  // cualquier puntero como gruesos (no híbrido).
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setTouchEmulationEnabled", {
     enabled: true,
     maxTouchPoints: 5,
   });
   await expect
-    .poll(() => page.evaluate(() => matchMedia("(pointer: coarse)").matches))
-    .toBe(true);
+    .poll(() =>
+      page.evaluate(() => ({
+        primary: matchMedia("(pointer: coarse)").matches,
+        any: matchMedia("(any-pointer: coarse)").matches,
+      })),
+    )
+    .toEqual({ primary: true, any: true });
   const touchMetrics = await selectMetrics(page);
   expect(touchMetrics.minHeight).toBe("44px");
   expect(touchMetrics.height).toBeGreaterThanOrEqual(44);
@@ -300,8 +356,13 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   );
   await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
   await expect
-    .poll(() => page.evaluate(() => matchMedia("(pointer: fine)").matches))
-    .toBe(true);
+    .poll(() =>
+      page.evaluate(() => ({
+        primary: matchMedia("(pointer: fine)").matches,
+        anyCoarse: matchMedia("(any-pointer: coarse)").matches,
+      })),
+    )
+    .toEqual({ primary: true, anyCoarse: false });
   expect((await selectMetrics(page)).minHeight).toBe("38px");
 
   // Un solo indicador de entorno: el del final de la navegación.

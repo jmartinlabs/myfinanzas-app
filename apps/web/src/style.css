@@ -476,6 +476,15 @@ small {
     min-height: 38px;
   }
 }
+/* #503 — equipos híbridos (portátil con pantalla táctil): `pointer: fine` solo
+   describe el puntero principal, así que la mera existencia de un puntero
+   grueso (`any-pointer: coarse`) recupera el objetivo táctil completo. Va
+   después del bloque compacto para ganar el empate de cascada. */
+@media (min-width: 761px) and (any-pointer: coarse) {
+  .theme-picker select {
+    min-height: var(--touch-min);
+  }
+}
 .header-actions button {
   font-size: var(--text-xs);
 }

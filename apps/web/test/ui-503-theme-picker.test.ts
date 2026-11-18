@@ -15,6 +15,7 @@ const styleCss = readFileSync(
 );
 
 const COMPACT_MEDIA = "@media (min-width: 761px) and (pointer: fine)";
+const TOUCH_MEDIA = "@media (min-width: 761px) and (any-pointer: coarse)";
 
 function ruleBody(selector: string, from = 0): string {
   const start = styleCss.indexOf(`${selector} {`, from);
@@ -65,4 +66,21 @@ test("#503 el selector no tiene medidas fijas de ancho en ningún tema", () => {
     );
     expect(css).not.toMatch(/\.theme-picker select \{[^}]*width:/);
   }
+});
+
+test("#503 un puntero grueso disponible restaura el objetivo táctil en escritorio", () => {
+  // Un híbrido (portátil con pantalla táctil) declara `pointer: fine` por su
+  // ratón pero `any-pointer: coarse` por el tacto: debe conservar 44 px.
+  const block = mediaBlock(TOUCH_MEDIA);
+  const touch = ruleBody(".theme-picker select", styleCss.indexOf(block));
+  expect(touch).toContain("min-height: var(--touch-min)");
+  // Solo altura: ni ancho, ni padding, ni tipografía.
+  expect(touch).not.toMatch(/(^|[^-])width:/);
+  expect(touch).not.toMatch(/(^|[^-])height:/);
+  expect(touch).not.toContain("padding");
+  expect(touch).not.toContain("font-size");
+  // Debe ir después del bloque compacto para ganar el empate de cascada.
+  expect(styleCss.indexOf(TOUCH_MEDIA)).toBeGreaterThan(
+    styleCss.indexOf(COMPACT_MEDIA),
+  );
 });
