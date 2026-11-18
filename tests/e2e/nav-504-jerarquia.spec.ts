@@ -418,7 +418,7 @@ test("#504: accesos directos, grupos en caja normal y «Funciones anteriores» p
   await expect(legacyToggle).toBeFocused();
 
   // Tema claro (distinto del oscuro): misma jerarquía, sin desbordamiento.
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   await select.selectOption("light-s");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light-s");
   await expectNoTruncation(page);
