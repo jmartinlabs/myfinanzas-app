@@ -65,8 +65,11 @@ Where the expectations come from, and what the runtime can answer:
 - Prefer `--delegation <id>` over `--latest`: with concurrent sessions the newest row may belong to
   another delegation.
 
-A mismatch or unverifiable metadata means the review was not performed on that route: stop the
-child, do not report it as done, and re-dispatch or record the blocker.
+A mismatch means the designated route failed; unavailable metadata means effective identity
+is unverified, not proof that the route was not used. Do not credit the designated route in
+either case; stop further dispatch at a safe boundary and investigate or record the blocker.
+A same-model reviewer with independent context can still be independent QA; route identity
+and independent review are separate checks.
 
 ## Portable advice
 | Work | Suggested tier | Suggested reasoning |
@@ -89,3 +92,31 @@ existing project approvals. Native client settings remain subject to actual avai
 
 ## MyFinanzas precedence
 Financial integrity, security, required independent QA and the separate development/merge gates remain mandatory under [local coordination](myfinanzas-coordination.md). Resource limits never waive them.
+
+## Quota and dispatch gate
+For Codex, query remaining subscription quota when a supported client tool exists:
+execution start and before new assignments after meaningful milestones or quota warnings.
+Reuse a recent reading within the same dispatch batch; no continuous polling, new service
+or automatic paid consumption. Identify source and reading time. Prefer per-limit data;
+compute remaining as `max(0, min(100, 100 - usedPercent))` for valid numeric values.
+Use the minimum remaining across the five-hour (300 minutes) and weekly (10080 minutes)
+windows. Missing/null/invalid values are unavailable, never zero or an invented percentage.
+Partial data is incomplete: apply restrictions from known windows and disclose the gap;
+unknown data never proves normal quota or blocks authorized work solely by assumption.
+Token accounting in the usage reader is not subscription quota. Do not infer Codex quota
+from Claude/OpenCode usage or assume this desktop tool exists in other clients.
+
+- **More than 25% remaining:** normal allocation by complexity and quality: prioritize
+  Codex for complex/critical work; consider enabled OpenCode for bounded verifiable work.
+- **25% or less:** warn; no new Codex task or subagent, **including QA**, without explicit
+  authorization for that identified task. General development approval is insufficient.
+  Propose an Agent Relay v1 conversation only if enabled and suitable. Required QA stays pending until
+  authorized or otherwise independently performed under the existing quality contract.
+- **5% or less:** warn and stop initiating new tasks. Previous authorizations do not
+  suffice: require a new explicit task authorization after this warning. Preserve state
+  and existing advances at safe boundaries; do not destructively interrupt running work.
+  Do not launch another Codex task merely to save a checkpoint; preserve it in the current
+  session where possible. No automatic replacement workers or paid quota reset.
+
+Record task-specific exceptions and their relation to the warning in the existing packet
+or current summary. A warning is not approval; quota exceptions never waive QA or merges.

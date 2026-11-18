@@ -31,7 +31,7 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 - [Flujos](specs/methodology/workflows.md) para clasificar; [agentes](specs/methodology/dynamic-agents.md)
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
-  y [gate de cuota](specs/methodology/dynamic-agents.md#quota-and-dispatch-gate).
+  y [gate de cuota](specs/methodology/model-selection.md#quota-and-dispatch-gate).
 - El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue`
   (usuario: `Backlog → Ready`, revisión, `Done`, desbloqueo; agente autorizado: reserva, `{Phase} In
   Review` y `Blocked` solo desde su fase en curso); sin tablero paralelo ni autoautorizar fases.

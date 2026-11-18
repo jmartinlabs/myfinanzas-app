@@ -161,10 +161,10 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/model-selection.md', '`gpt-6.1-sol` + `low`'),
    ('specs/methodology/model-selection.md', 'do not spawn'),
    ('specs/methodology/model-selection.md', 'requested versus observed'),
-   ('specs/methodology/dynamic-agents.md', '**25% or less:**'),
-   ('specs/methodology/dynamic-agents.md', '**5% or less:**'),
-   ('specs/methodology/dynamic-agents.md', '**including QA**'),
-   ('specs/methodology/dynamic-agents.md', 'after this warning'),
+   ('specs/methodology/model-selection.md', '**25% or less:**'),
+   ('specs/methodology/model-selection.md', '**5% or less:**'),
+   ('specs/methodology/model-selection.md', '**including QA**'),
+   ('specs/methodology/model-selection.md', 'after this warning'),
    ('specs/methodology/dynamic-agents.md', 'OpenCode is not enabled'),
    ('templates/agent-work-packet.md', 'HANDOFF → CODEX'),
    ('.agents/skills/orchestrate/SKILL.md', 'run `$handoff`'),
@@ -179,6 +179,49 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('resource-policy')
     finally:
      p.write_text(original)
+ def test_effective_delegation_mutations(self):
+  cases = (
+   ('.agents/roles/implementation.md','Standard uses `$task`','Standard requires Full spec'),
+   ('.agents/roles/implementation.md','separate development authorization','implicit approval'),
+   ('specs/methodology/dynamic-agents.md','finish/stop acknowledgement','timeout alone'),
+   ('specs/methodology/dynamic-agents.md','executor loads its role','coordinator loads everything'),
+   ('specs/methodology/dynamic-agents.md','Native workers may return compact structured','Native workers require manual'),
+   ('specs/methodology/dynamic-agents.md','Manual Agent Relay still requires','Manual Agent Relay may omit'),
+   ('.agents/roles/qa-review.md','reused raw evidence','author summary'),
+   ('specs/methodology/dynamic-agents.md','immediate stop with no threshold','wait for ten files'),
+   ('specs/methodology/dynamic-agents.md','Stop only owned tasks/processes','kill all processes'),
+   ('specs/methodology/dynamic-agents.md','a different model is not necessary','same model means absent'),
+   ('specs/methodology/dynamic-agents.md','block material/unsafe work','continue unsafe work'),
+   ('AGENTS.md','model-selection.md#quota-and-dispatch-gate','dynamic-agents.md#quota-and-dispatch-gate'),
+  )
+  for name,old,new in cases:
+   with self.subTest(name=name,old=old):
+    p=self.root/name; original=p.read_text()
+    try:
+     self.change(name,old,new); self.assertRule('effective-delegation')
+    finally: p.write_text(original)
+ def test_effective_delegation_core_and_gates(self):
+  cases = (
+   ('templates/agent-work-packet.md','**Packet ID:**'),
+   ('templates/agent-work-packet.md','**Write files and sole ownership:**'),
+   ('templates/agent-work-packet.md','**Verification commands / expected evidence:**'),
+   ('specs/methodology/dynamic-agents.md','direct with a concrete reason'),
+   ('specs/methodology/dynamic-agents.md','Reevaluate when scope grows'),
+   ('.agents/roles/implementation.md','approved spec AND'),
+   ('specs/methodology/model-selection.md','not proof that the route was not used'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    try:
+     self.change(name,token,'REMOVED'); self.assertRule('effective-delegation')
+    finally: p.write_text(original)
+ def test_effective_delegation_paraphrase(self):
+  self.change('specs/methodology/dynamic-agents.md','one short decision','one brief decision')
+  self.assertEqual(validate(self.root),[])
+ def test_duplicate_quota_policy_rejected(self):
+  self.append('specs/methodology/dynamic-agents.md','\n## Quota and dispatch gate\n')
+  self.assertRule('effective-delegation')
  def test_execution_mode_policy(self):
   cases = (
    ('specs/methodology/dynamic-agents.md', '## Execution mode: direct, foreground, background'),

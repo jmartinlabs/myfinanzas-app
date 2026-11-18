@@ -17,3 +17,5 @@ Concise task plan and acceptance checks, incremental implementation, verificatio
 5. If complexity rises to a new architectural boundary, multiple epics or unresolved product decisions, propose Full and await confirmation.
 ## Stop conditions
 Stop at scope changes, security or destructive operations, conflicting requirements or a failed mandatory acceptance check that cannot be corrected inside the authorized scope. Do not deploy or perform destructive operations without authorization; branch/PR publication follows [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr).
+
+The responsible executor loads this Skill and its role before Standard phase work. Explicit Standard scope authorization suffices; do not require a Full specification. Preserve separate Full spec/development gates, independent QA and active file ownership.
