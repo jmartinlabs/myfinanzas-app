@@ -254,6 +254,26 @@ class ReleaseContextTests(unittest.TestCase):
              'contiguous'),
             ('repeated-label', catalog_source(labels=[(18, 'e4.1'), (18, 'e4.2')]),
              'repeats the manifest label for schema 18'),
+            # Una etiqueta histórica ausente rompe la trazabilidad de un backup
+            # antiguo aunque la etiqueta vigente esté declarada.
+            ('missing-historical-label',
+             catalog_source(version=18,
+                            labels=[(value, 'e4.0') for value in range(1, 19) if value != 7]),
+             'omits the manifest label for schema 7'),
+            # Dos versiones con la misma etiqueta harían indistinguibles sus copias.
+            # El fixture añade `-v{versión}` al prefijo, así que la fuente va literal.
+            ('duplicated-label-value',
+             'export const SUPPORTED = [1, 2] as const;\n'
+             'export const appLabels: Record<Supported, string> = {\n'
+             '  1: "e4.0",\n'
+             '  2: "e4.0",\n'
+             '};\n',
+             'repeats the manifest label value e4.0'),
+            # `appLabels` debe cubrir exactamente SUPPORTED, sin claves sobrantes.
+            ('label-for-unsupported-version',
+             catalog_source(version=2,
+                            labels=[(1, 'e4.0-v1'), (2, 'e4.1-v2'), (3, 'e4.2-v3')]),
+             'manifest label for unsupported schema 3'),
         ]
         for name, source, expected in cases:
             with self.subTest(case=name):
@@ -269,7 +289,9 @@ class ReleaseContextTests(unittest.TestCase):
         target.mkdir()
         with self.assertRaises(release.ReleaseError) as caught:
             release.context(commit, target, self.age)
-        self.assertIn('data contract is not declared for schema 19',
+        # El catálogo debe declarar una etiqueta para cada versión admitida, así
+        # que la ausencia de la vigente se detecta como etiqueta omitida.
+        self.assertIn('omits the manifest label for schema 19',
                       str(caught.exception))
         self.assertEqual(list(target.iterdir()), [])
 

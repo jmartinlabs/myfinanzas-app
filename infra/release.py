@@ -86,14 +86,26 @@ def catalog_contracts(commit):
     if not labels:
         raise ReleaseError('schema catalog does not declare manifest labels')
     schema = versions[-1]
-    data, seen = None, set()
+    data, seen, values = None, set(), set()
     for key, label in re.findall(r'(\d+)\s*:\s*"([^"]+)"', labels.group(1)):
         version = int(key)
         if version in seen:
             raise ReleaseError('schema catalog repeats the manifest label for schema ' + str(version))
         seen.add(version)
+        if label in values:
+            # Two versions sharing one manifest label would make a backup
+            # indistinguishable from another version's.
+            raise ReleaseError('schema catalog repeats the manifest label value ' + label)
+        values.add(label)
         if version == schema:
             data = label
+    missing = sorted(set(versions) - seen)
+    if missing:
+        raise ReleaseError('schema catalog omits the manifest label for schema ' + str(missing[0]))
+    extra = sorted(seen - set(versions))
+    if extra:
+        raise ReleaseError('schema catalog declares a manifest label for unsupported schema '
+                           + str(extra[0]))
     if data is None:
         raise ReleaseError('data contract is not declared for schema ' + str(schema))
     return schema, data
