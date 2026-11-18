@@ -5,12 +5,12 @@ Verify client capabilities before selecting subagent settings. Unknown availabil
 permission to inherit an unchecked model. Model choice never replaces verification,
 independent QA or protected approvals. Report savings only from real telemetry.
 
-## Explicit private selection, without a default ceiling
-There is no hardcoded model or effort ceiling. The only optional model/provider/effort
-constraints come from the user's private `.agents/models.local.yaml` selector; absent
-constraints mean no ceiling. Never rank model families or automatically substitute another
-model. See [selector format and native client limits](../../docs/MODEL_SELECTION.md).
-The versioned example contains no personal choices. The coordinator stays client-selected.
+## No default ceiling
+There is no hardcoded model or effort ceiling. The user configures models, providers and
+routes manually in each client; this repository declares no selection file, generates no
+per-role agent and ranks no model family. Absent client configuration means no ceiling, never
+permission to assume an available model. Never rank model families or automatically substitute
+another model. The coordinator stays client-selected.
 
 Before dispatch, record requested model/effort, available controls and the selection
 assurance supplied by the runtime. In this Codex runtime, explicit `model` and
@@ -30,8 +30,8 @@ safe boundary; never compensate by automatically substituting another model.
 A route is a **slot** defined by an entry in `delegation.backends.model_map.options` — name,
 provider, model, optional reasoning effort — not a fixed model. `worker`, `advisor` or any other
 name may change provider, model or effort without touching the verifier, its tests or this
-document. A route's actual choices come from the explicit private selector and the verified
-client configuration; the advisor slot never replaces independent QA.
+document. A route's actual choices come from the user's manual client configuration and its
+verified availability; the advisor slot never replaces independent QA.
 
 Measured failure mode (Hermes `model_map`, 2026-11-15): a per-task route parameter sometimes
 never reaches the tool. The emitted call carries only `goal`/`context`, no error is raised, and
@@ -79,7 +79,7 @@ and independent review are separate checks.
 These are advisory capability labels, not selected model IDs or automatic substitutions.
 Keep the current coordinator model. In Claude Code retain existing `model: inherit` profiles
 unless an explicit client-specific selection is supported; Claude model/effort names are
-not equivalent to GPT settings. Private selector constraints apply when configured. Do not invent cross-client
+not equivalent to GPT settings. Client model settings apply when configured. Do not invent cross-client
 quota or telemetry. When unavailable, use smaller verifiable increments or report a blocker.
 
 Load this document when model advice matters, normally Standard / Full. Report one compact

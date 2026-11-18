@@ -12,8 +12,7 @@ REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.githu
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
  *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
  'scripts/verify','scripts/test-verification','scripts/agent-relay','scripts/test-agent-relay','scripts/report-agent-usage','scripts/auto-agent-usage',
- 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md',
- 'scripts/models-sync','scripts/test-models-sync','.agents/models.example.yaml','docs/MODEL_SELECTION.md')
+ 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md')
 # --- Requirement matching policy -----------------------------------------------------------
 # A contract is the rule, not the sentence that carries it. Three matching modes:
 #   exact     labels, field names, identifiers, commands, approval wording (the default)
@@ -216,14 +215,15 @@ def validate(root):
  }.items():
   for token in tokens:
    if not satisfied(read(name),token): fail('resource-policy',f'{name}: missing {token}')
- # The private selector is the only model ceiling source; historical adoption logs are exempt.
+ # Active policy has no fixed model ceiling; models are configured in each client.
  active_model_policy = ('AGENTS.md', '.agents/skills/orchestrate/SKILL.md',
   'specs/methodology/model-selection.md', 'specs/methodology/workflows.md',
   'specs/methodology/myfinanzas-coordination.md', 'docs/HERMES_ADAPTER.md',
   'docs/GUIA_VISUAL_ORQUESTACION.md')
  for name in active_model_policy:
   if re.search(r'(?i)(maximum permitted combination is|absolute Codex subagent ceiling|techo absoluto de|never automatically escalate.{0,80}above this ceiling)', read(name)):
-   fail('resource-policy', f'{name}: fixed model ceiling contradicts private selector')
+   fail('resource-policy', f'{name}: fixed model ceiling contradicts the no-ceiling policy')
+
  # Effective delegation contracts: reject missing or contradictory safety rules.
  for name,tokens in {
   '.agents/roles/implementation.md':('~:Standard uses `$task`','~:Full uses `$dev` only with approved spec AND separate development authorization','~:before acting'),
