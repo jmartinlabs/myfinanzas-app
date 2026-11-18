@@ -163,13 +163,13 @@ de slot ni inventes una ruta por tarea. No se cambia configuración ni autentica
 Instrucción inicial opcional: «Coordina con el modelo de esta sesión; para implementación usa
 la opción worker verificada y para revisión crítica la opción advisor verificada, con contexto
 independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
-declara la limitación y aplica los gates/fallback canónicos». Las restricciones explícitas del selector privado (si existen) y la cuota siguen
-vigentes cualquiera que sea el cliente coordinador.
+declara la limitación y aplica los gates/fallback canónicos». La cuota sigue
+vigente cualquiera que sea el cliente coordinador.
 
 ## Delegación por rol en el perfil real
 
 El perfil en uso ya declara `delegation.backend: model_map` con opciones nombradas (`worker`,
-`advisor`). Para alinear la delegación de Hermes con los cinco roles del selector privado se
+`advisor`). Para alinear la delegación de Hermes con los cinco roles del harness se
 añaden opciones **con nombre de rol** en `delegation.backends.model_map.options`:
 
 ```yaml
@@ -223,8 +223,8 @@ delegation:
   ya esté guardado.
 - `provider`/`model` deben ser proveedores ya conectados y modelos verificados; declara en el
   packet lo solicitado y contrasta la ruta efectiva con
-  [model-selection](../specs/methodology/model-selection.md). El selector privado
-  ([MODEL_SELECTION.md](MODEL_SELECTION.md)) y sus límites de catálogo siguen aplicando.
+  [model-selection](../specs/methodology/model-selection.md). Los modelos y proveedores los fija
+  manualmente el usuario en el perfil; este adaptador no los genera, sincroniza ni versiona.
 - Este adaptador **no** escribe configuración de perfil ni ejecuta `hermes config`: documenta
   la forma del bloque para una edición revisada y manual del perfil. Sin plugins, flags ni
   rutas nuevas.

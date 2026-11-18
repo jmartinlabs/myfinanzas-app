@@ -32,7 +32,7 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
   para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
   y [gate de cuota](specs/methodology/model-selection.md#quota-and-dispatch-gate).
-- **Modelos por rol**: fuente privada única (`.agents/models.local.yaml`, [selector](docs/MODEL_SELECTION.md)); el rol es el identificador de despacho: `option: <rol>` en Hermes, agente `models-local-<rol>` con agentes nativos.
+- **Modelos por rol**: los configura manualmente el usuario en cada cliente; el harness no guarda selección ni genera agentes. Hermes conserva la delegación nativa `model_map` y despacha con `option: <rol>` cuando la ruta está configurada.
 - El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue` (usuario: `Backlog → Ready`, revisión, `Done`, desbloqueo; agente: reserva, `{Phase} In Review` y `Blocked` solo desde su fase en curso); sin tablero paralelo.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
   Aprobar una spec no autoriza desarrollo.
