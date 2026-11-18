@@ -466,6 +466,16 @@ small {
   padding: var(--space-1) var(--space-2);
   font-size: var(--text-xs);
 }
+/* #503 — altura visual compacta en escritorio: el control de 44 px resultaba
+   voluminoso como único elemento de la cabecera. Con puntero fino y ancho de
+   escritorio baja a 38 px (texto y flecha centrados, anillo de foco completo);
+   en móvil y en cualquier entrada táctil se conserva el objetivo de 44 px
+   (--touch-min). El ancho no se toca: sigue fijándolo el catálogo. */
+@media (min-width: 761px) and (pointer: fine) {
+  .theme-picker select {
+    min-height: 38px;
+  }
+}
 .header-actions button {
   font-size: var(--text-xs);
 }
