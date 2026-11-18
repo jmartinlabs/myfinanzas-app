@@ -82,9 +82,8 @@ Estado vigente tras UI-02 (#504). Solo presentación: no añade, retira ni renom
 - **Accesos directos.** «Inicio» y «Movimientos» viven fuera de los grupos, al principio del
   menú, precedidos por una **divisoria horizontal fina** de 1 px (`--sidebar-border`, sin alto
   propio ni relleno) que los separa de la identidad «MyFinanzas · Control financiero personal»,
-  con el mismo aire a ambos lados (12 px en escritorio, 8 px con el menú móvil abierto). Se
-  mantiene la separación sutil ya existente (regla de 1 px con `--sidebar-border`) entre estos
-  accesos y los grupos.
+  con el mismo aire a ambos lados (12 px en escritorio, 8 px con el menú móvil abierto). Estos
+  accesos se separan de los grupos con una regla de 1 px con `--sidebar-border` y su propio aire.
 - **Cinco grupos principales plegables**, en caja normal (sin mayúsculas sostenidas ni tracking
   excesivo), con etiquetas que envuelven sin truncarse: «Resumen y control», «Patrimonio»,
   «Presupuestos y planificación», «Casos y gastos especiales» y «Ciclos y cierres».
