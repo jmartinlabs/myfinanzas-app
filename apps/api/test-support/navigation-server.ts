@@ -1,7 +1,7 @@
 // Isolated UI · DEV-03 navigation E2E source with real MFA.
 // Test-only; never imported by the app and never pointed at real data.
-// `E2E_PORT`/`E2E_DIR` permiten una instancia propia por spec (p. ej. UI-02
-// #504 en 3024/.local/e2e-nav-504) sin compartir base ni cuenta.
+// `E2E_PORT`/`E2E_STATE_DIR` (contexto de #508) permiten una instancia propia
+// por spec; `E2E_DIR` se conserva como alias de las specs que ya lo usaban.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { HttpServer } from "@effect/platform";
@@ -12,7 +12,8 @@ import { createApp } from "../src/app";
 
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
-const dir = process.env.E2E_DIR ?? ".local/e2e-navigation";
+const dir =
+  process.env.E2E_STATE_DIR ?? process.env.E2E_DIR ?? ".local/e2e-navigation";
 const port = Number(process.env.E2E_PORT ?? 3023);
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
