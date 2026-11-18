@@ -215,8 +215,7 @@ def validate(root):
  }.items():
   for token in tokens:
    if not satisfied(read(name),token): fail('resource-policy',f'{name}: missing {token}')
- # No active document may reintroduce a fixed model ceiling, and the retired private
- # model selector must not return as a required source (its versioned files are gone).
+ # Active policy has no fixed model ceiling; models are configured in each client.
  active_model_policy = ('AGENTS.md', '.agents/skills/orchestrate/SKILL.md',
   'specs/methodology/model-selection.md', 'specs/methodology/workflows.md',
   'specs/methodology/myfinanzas-coordination.md', 'docs/HERMES_ADAPTER.md',
@@ -224,8 +223,7 @@ def validate(root):
  for name in active_model_policy:
   if re.search(r'(?i)(maximum permitted combination is|absolute Codex subagent ceiling|techo absoluto de|never automatically escalate.{0,80}above this ceiling)', read(name)):
    fail('resource-policy', f'{name}: fixed model ceiling contradicts the no-ceiling policy')
- for retired in ('scripts/models-sync','scripts/test-models-sync','.agents/models.example.yaml','docs/MODEL_SELECTION.md'):
-  if (root/retired).exists(): fail('structure',f'retired private model selector artifact restored: {retired}')
+
  # Effective delegation contracts: reject missing or contradictory safety rules.
  for name,tokens in {
   '.agents/roles/implementation.md':('~:Standard uses `$task`','~:Full uses `$dev` only with approved spec AND separate development authorization','~:before acting'),

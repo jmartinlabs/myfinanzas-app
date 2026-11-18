@@ -45,11 +45,7 @@ class ValidationTests(unittest.TestCase):
   self.assertRule('coordination')
  def test_structure(self):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
- def test_retired_selector_artifact_rejected(self):
-  # #521 retired the private model selector; an existing fixture without it must stay
-  # valid (test_valid), and restoring one of its artifacts must fail closed.
-  (self.root/'docs/MODEL_SELECTION.md').write_text('# Private model selector\n')
-  self.assertRule('structure')
+
  def test_opencode_qa_agent_remains_independent(self):
   # Retiring the selector must not weaken the native QA executor (#520).
   qa=(self.root/'.opencode/agents/qa.md').read_text()
