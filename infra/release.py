@@ -18,6 +18,7 @@ BASE = 'docker.io/oven/bun:1.4.3-debian@sha256:923bedb355f7746666659f71e72499815
 AGE_URL = 'https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz'
 AGE_SHA = 'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10'
 SEED_RECIPE = 'infra/Containerfile.seed'
+CATALOG = 'apps/api/src/schema-catalog.ts'
 SEED_INPUTS = 'release-seed-inputs.json'
 APP_CONTEXT_FILES = frozenset({'tools/age', 'tools/age-keygen', 'release-inputs.json',
                                'Containerfile', 'healthcheck.mjs'})
@@ -56,18 +57,79 @@ def source_bytes(commit, path):
     return value.stdout
 
 
-def contracts_for(commit):
-    """Derive schema/data contracts from the source being released; never assume a version."""
-    identity = source_bytes(commit, 'apps/api/src/database-identity.ts').decode('utf-8')
-    match = re.search(r'export const schemaVersion = (\d+);', identity)
-    if not match:
-        raise ReleaseError('schema version is not declared by source')
-    schema = int(match.group(1))
-    backup = source_bytes(commit, 'apps/api/src/backup.ts').decode('utf-8')
-    data = next((name for name, version in re.findall(r'"(e\d+\.\d+-v(\d+))"', backup)
-                 if int(version) == schema), None)
+def optional_source_bytes(commit, path):
+    """Read a path from exactly the selected commit; None when that commit omits it."""
+    value = subprocess.run(['git', '-C', str(SOURCE), 'show', commit + ':' + path],
+                           capture_output=True, timeout=600)
+    if not value.returncode:
+        return value.stdout
+    available = subprocess.run(['git', '-C', str(SOURCE), 'rev-parse', '--verify',
+                                commit + '^{commit}'], capture_output=True, timeout=600)
+    if available.returncode:
+        raise ReleaseError(f'commit {commit} is not available')
+    return None
+
+
+def catalog_contracts(commit):
+    """Read schema and manifest label from the canonical catalog; None before it existed."""
+    source = optional_source_bytes(commit, CATALOG)
+    if source is None:
+        return None
+    text = source.decode('utf-8')
+    supported = re.search(r'export const SUPPORTED\s*(?::[^=]+)?=\s*\[([^\]]*)\]', text, re.S)
+    if not supported:
+        raise ReleaseError('schema catalog does not declare supported versions')
+    versions = [int(value) for value in re.findall(r'\d+', supported.group(1))]
+    if versions != list(range(1, len(versions) + 1)):
+        raise ReleaseError('schema catalog versions are not a contiguous 1..N sequence')
+    labels = re.search(r'export const appLabels\s*:[^=]+=\s*\{(.*?)\n\};', text, re.S)
+    if not labels:
+        raise ReleaseError('schema catalog does not declare manifest labels')
+    schema = versions[-1]
+    data, seen, values = None, set(), set()
+    for key, label in re.findall(r'(\d+)\s*:\s*"([^"]+)"', labels.group(1)):
+        version = int(key)
+        if version in seen:
+            raise ReleaseError('schema catalog repeats the manifest label for schema ' + str(version))
+        seen.add(version)
+        if label in values:
+            # Two versions sharing one manifest label would make a backup
+            # indistinguishable from another version's.
+            raise ReleaseError('schema catalog repeats the manifest label value ' + label)
+        values.add(label)
+        if version == schema:
+            data = label
+    missing = sorted(set(versions) - seen)
+    if missing:
+        raise ReleaseError('schema catalog omits the manifest label for schema ' + str(missing[0]))
+    extra = sorted(seen - set(versions))
+    if extra:
+        raise ReleaseError('schema catalog declares a manifest label for unsupported schema '
+                           + str(extra[0]))
     if data is None:
         raise ReleaseError('data contract is not declared for schema ' + str(schema))
+    return schema, data
+
+
+def contracts_for(commit):
+    """Derive schema/data contracts from the source being released; never assume a version."""
+    catalog = catalog_contracts(commit)
+    if catalog is None:
+        # Releases that predate the canonical catalog declared the version in the
+        # identity module and the manifest label in backup; read both from the
+        # same commit. A commit that has the catalog never falls back to this.
+        identity = source_bytes(commit, 'apps/api/src/database-identity.ts').decode('utf-8')
+        match = re.search(r'export const schemaVersion = (\d+);', identity)
+        if not match:
+            raise ReleaseError('schema version is not declared by source')
+        schema = int(match.group(1))
+        backup = source_bytes(commit, 'apps/api/src/backup.ts').decode('utf-8')
+        data = next((name for name, version in re.findall(r'"(e\d+\.\d+-v(\d+))"', backup)
+                     if int(version) == schema), None)
+        if data is None:
+            raise ReleaseError('data contract is not declared for schema ' + str(schema))
+    else:
+        schema, data = catalog
     return {'schema': schema, 'data': data, 'authentication': 'argon2id-aesgcm-totp-session-v1'}
 
 
