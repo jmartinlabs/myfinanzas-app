@@ -1461,10 +1461,12 @@
 
 /* ============================================================
    Casa de cuentas · 1G
-   Semántica de importes y tipo en Movimientos (#421).
-   Solo color y glifo sobre el marcado y los atributos existentes:
+   Semántica de importes y tipo en Movimientos (#421, #448).
+   Solo color sobre el marcado y los atributos existentes:
    `data-flow` ya deriva la dirección del Tipo y `data-tipo` ya está
-   en el DOM. No se altera el importe, su signo ni la etiqueta «Saldo».
+   en el DOM. La caja y el glifo del chip son geometría compartida
+   (`style.css`); aquí solo se decide color, fondo y borde. No se altera
+   el importe, su signo ni la etiqueta «Saldo».
    ============================================================ */
 
 :root[data-theme="casa"] .movement-amount[data-flow="inflow"] {
@@ -1489,52 +1491,6 @@
 
 :root[data-theme="casa"] .movement-detail[data-flow="neutral"] [data-label="Importe"] dd {
   color: var(--muted);
-}
-
-:root[data-theme="casa"] .movement-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-:root[data-theme="casa"] .movement-type-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--muted);
-  font-family: var(--font-ui);
-  font-size: 12px;
-  line-height: 1;
-}
-
-:root[data-theme="casa"] .movement-type-icon::before {
-  content: "\2022";
-}
-
-:root[data-theme="casa"] .movement-type[data-tipo="Ingreso"] .movement-type-icon::before {
-  content: "\2193";
-}
-
-:root[data-theme="casa"] .movement-type[data-tipo="Gasto"] .movement-type-icon::before {
-  content: "\2197";
-}
-
-:root[data-theme="casa"] .movement-type[data-tipo="Transferencia"] .movement-type-icon::before {
-  content: "\21C4";
-}
-
-:root[data-theme="casa"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon::before {
-  content: "\25A4";
-}
-
-:root[data-theme="casa"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon::before {
-  content: "\21BA";
 }
 
 :root[data-theme="casa"] .movement-type[data-tipo="Ingreso"] .movement-type-icon,
