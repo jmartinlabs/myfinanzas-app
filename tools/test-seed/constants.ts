@@ -1,20 +1,24 @@
+import { contract } from "../../apps/api/src/schema-contract";
 import {
-  admitted,
-  contract,
-} from "../../apps/api/src/schema-contract";
-import { schemaVersion } from "../../apps/api/src/database-identity";
+  appLabelFor,
+  contractIdFor,
+  schemaVersion,
+} from "../../apps/api/src/schema-catalog";
 
 export const TEST_ORIGIN = "https://test.myfinanzas.pp.ua";
 export const SEED_FORMAT = 1;
 export const SEED_DATASET = "FT-1";
 export const SEED_DATASET_VERSION = 1;
 export const SEED_BUN = "1.4.3";
+const SEED_SCHEMA_CONTRACT_ID = contractIdFor(schemaVersion);
+if (!SEED_SCHEMA_CONTRACT_ID)
+  throw new Error("El catálogo no declara el contrato de esquema vigente.");
 /** Etiqueta del contrato de datos del seed; acompaña a `manifest.app` del backup. */
-export const SEED_DATA_CONTRACT = "e37.2-v31";
+export const SEED_DATA_CONTRACT = appLabelFor(schemaVersion);
 export const SEED_SCHEMA_VERSION = schemaVersion;
-export const SEED_SCHEMA_CONTRACT = admitted[schemaVersion];
+export const SEED_SCHEMA_CONTRACT = SEED_SCHEMA_CONTRACT_ID;
 export const SEED_SCHEMA_CONTRACT_SHA256 = contract(
-  admitted[schemaVersion],
+  SEED_SCHEMA_CONTRACT_ID,
 ).sha256;
 
 export const DATABASE_RELATIVE = "state/database.sqlite";

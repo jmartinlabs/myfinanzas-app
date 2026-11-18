@@ -33,9 +33,9 @@ import { referenceSchema } from "./reference-schema";
 import {
   installIdentity,
   inspectIdentity,
-  schemaVersion,
   type Identity,
 } from "./database-identity";
+import { isKnownSchemaVersion, schemaVersion } from "./schema-catalog";
 
 // Internal schema builder: receives a connection, never opens a path or grants runtime access.
 export function prepareSchema(db: Database, identity: Identity) {
@@ -52,9 +52,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, schemaVersion].includes(
-        versions[0].version,
-      )
+      !isKnownSchemaVersion(versions[0].version)
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
@@ -112,9 +110,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, schemaVersion].includes(
-            versions[0].version,
-          )
+          !isKnownSchemaVersion(versions[0].version)
         )
           throw new Error("Esquema no compatible; no se modificará esta base.");
         if (versions[0].version === 1) classificationSchema(db);
