@@ -387,12 +387,34 @@ html[data-theme="aurora"] .movement-filters summary {
   color: var(--muted);
 }
 
+/* Tipo: el chip conserva solo color y fondo; la caja la fija `style.css`. */
+
 html[data-theme="aurora"] .movement-detail[data-flow="negative"] .movement-amount {
   color: var(--negative);
 }
 
 html[data-theme="aurora"] .movement-detail[data-flow="positive"] .movement-amount {
   color: var(--positive);
+}
+
+html[data-theme="aurora"] .movement-type[data-tipo="Ingreso"] .movement-type-icon,
+html[data-theme="aurora"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
+  border-color: var(--positive-border);
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+
+html[data-theme="aurora"] .movement-type[data-tipo="Gasto"] .movement-type-icon,
+html[data-theme="aurora"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon {
+  border-color: var(--negative-border);
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+
+html[data-theme="aurora"] .movement-type[data-tipo="Transferencia"] .movement-type-icon {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 /* Estados y movimiento reducido ----------------------------------------- */

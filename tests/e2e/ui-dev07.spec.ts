@@ -303,6 +303,19 @@ function assertViewportAudit(screen: string, audit: ScreenViewportAudit) {
       `${label}: icono de estado < 3`,
     ).toBeGreaterThanOrEqual(3);
   }
+  // #448: en Movimientos el glifo del chip de Tipo sí se mide (tinta del SVG).
+  if (screen === "movimientos") {
+    expect(
+      audit.components.movementTypeGlyphs,
+      `${label}: sin glifos de Tipo medidos`,
+    ).toBeGreaterThan(0);
+  }
+  if (audit.components.minMovementTypeGlyph !== null) {
+    expect(
+      audit.components.minMovementTypeGlyph,
+      `${label}: glifo del chip de Tipo < 3`,
+    ).toBeGreaterThanOrEqual(3);
+  }
 
   // Details cerrados (estado por defecto) y abiertos (contenido plegado).
   expect(

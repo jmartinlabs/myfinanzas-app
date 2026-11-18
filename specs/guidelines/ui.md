@@ -280,8 +280,9 @@ Excepciones y deuda que la matriz **no** convierte en cumplimiento:
   de las cinco pantallas, los estados no críticos, los datos reales y E4.10/E4.11 quedan fuera.
 - **Límites de medición:** solo Chromium; sin Firefox/WebKit; sin lector de pantalla; sin
   auditoría WCAG completa; zoom emulado por viewport; el contraste cubre nodos de texto visibles,
-  bordes de campo y glifos de estado, pero no placeholders, valores de input, pseudo-elementos ni
-  SVG; el anillo de foco se muestrea en los tres temas.
+  bordes de campo, glifos de estado y la tinta computada del SVG del chip de Tipo en Movimientos
+  (`stroke`/`fill`, ≥ 3:1, #448), pero no placeholders, valores de input, otros SVG ni
+  pseudo-elementos; el anillo de foco se muestrea en los tres temas.
 - **Foco de `hybrid-s`:** el anillo global sobre el sidebar quedó corregido en I2 con
   `--sidebar-focus`; no es deuda residual. El resto de usos de `--focus` se mantiene medido, no
   aprobado por esta sección.
@@ -402,7 +403,8 @@ interfaz no añade `+`/`−` ni colorea importes por cuenta propia: `movementFlo
 y con SPEC04. Añadir un signo contradiría el contrato y duplicaría el Tipo.
 
 Cada apariencia decide **estética**, no semántica: color del importe según `data-flow` y glifo del
-Tipo (`.movement-type-icon`, con `data-tipo` en el DOM). El color nunca es la única señal: el Tipo
+Tipo (`.movement-type-icon`, con `data-tipo` en el DOM; SVG `aria-hidden` con geometría única en
+`style.css` y color por apariencia, #448). El color nunca es la única señal: el Tipo
 —texto y glifo— está siempre presente, de modo que la lectura funciona sin percepción cromática. Casa
 incorpora ambas capas en `casa.css` §1G.
 

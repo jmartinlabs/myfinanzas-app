@@ -42,17 +42,24 @@ test("#421 el color de cada dirección usa tokens de Casa, no hex", () => {
   expect(seccion).not.toMatch(/:\s*#[0-9a-fA-F]{3,8}/);
 });
 
-test("#421 cada Tipo tiene glifo propio y no solo color", () => {
-  const glifos: [string, string][] = [
-    ["Ingreso", "\\2193"],
-    ["Gasto", "\\2197"],
-    ["Transferencia", "\\21C4"],
-    ["Amortización deuda", "\\25A4"],
-    ["Devolución de gasto", "\\21BA"],
-  ];
-  for (const [tipo, glifo] of glifos) {
-    expect(seccion).toContain(`.movement-type[data-tipo="${tipo}"]`);
-    expect(seccion).toContain(`content: "${glifo}";`);
-  }
-  expect(seccion).toContain(".movement-type-icon::before");
+test("#448 el chip de Tipo ya no declara glifo ni geometría en Casa", () => {
+  // La caja y el glifo son geometría única en `style.css`; si Casa volviera a
+  // declararlos, el mismo DOM mediría distinto en cada apariencia.
+  expect(seccion).not.toContain("::before");
+  expect(seccion).not.toMatch(/content:\s*"/);
+  expect(seccion).not.toMatch(/^\s*(width|height|display|gap|font-size|line-height):/m);
+});
+
+test("#448 Casa colorea el chip por significado con sus propios tokens", () => {
+  for (const tipo of [
+    "Ingreso",
+    "Devolución de gasto",
+    "Gasto",
+    "Amortización deuda",
+  ])
+    expect(seccion).toContain(`.movement-type[data-tipo="${tipo}"] .movement-type-icon`);
+  expect(seccion).toContain("background: var(--positive-soft);");
+  expect(seccion).toContain("background: var(--negative-soft);");
+  // Transferencia no se declara: hereda el chip neutro de la base (--muted).
+  expect(seccion).not.toContain('.movement-type[data-tipo="Transferencia"]');
 });

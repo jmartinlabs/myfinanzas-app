@@ -6328,6 +6328,62 @@ textarea {
   font-size: var(--text-xs);
 }
 
+/* Tipo · icono compartido por las seis apariencias ------------------------
+ * Geometría única: caja 24, glifo 16 y separación 8 para Claro, Oscuro,
+ * Mixto, Graphite Lime, Casa y Aurora. Las capas de tema solo deciden color,
+ * fondo y borde; el SVG hereda el color con `currentColor`. */
+.movement-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.movement-type-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.movement-type-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.movement-type-copy {
+  min-width: 0;
+}
+
+/* Oscuro estrena el chip con los roles semánticos del sistema: los mismos
+ * tokens del tema, sin valores nuevos ni reglas por apariencia. */
+:root[data-theme="dark-s"] .movement-type[data-tipo="Ingreso"] .movement-type-icon,
+:root[data-theme="dark-s"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
+  border-color: var(--positive-border);
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+:root[data-theme="dark-s"] .movement-type[data-tipo="Gasto"] .movement-type-icon,
+:root[data-theme="dark-s"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon {
+  border-color: var(--negative-border);
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+:root[data-theme="dark-s"] .movement-type[data-tipo="Transferencia"] .movement-type-icon {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 /* Estados de carga, vacío por filtros y error dentro del panel. */
 .movements-list > .empty {
   display: flex;
