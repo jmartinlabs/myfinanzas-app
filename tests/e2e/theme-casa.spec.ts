@@ -307,19 +307,25 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
       .evaluateAll((nodes) =>
         nodes.map((node) => {
           const icon = node.querySelector(".movement-type-icon");
+          const glyph = icon?.querySelector("svg");
           return {
             tipo: node.getAttribute("data-tipo"),
             width: icon ? getComputedStyle(icon).width : null,
-            glyph: icon ? getComputedStyle(icon, "::before").content : null,
+            height: icon ? getComputedStyle(icon).height : null,
+            glyph: glyph ? glyph.innerHTML : null,
+            hidden: glyph?.getAttribute("aria-hidden"),
           };
         }),
       );
   const icons = await readIcons();
   const ingresoIcon = icons.find((i) => i.tipo === "Ingreso");
   const traspasoIcon = icons.find((i) => i.tipo === "Transferencia");
-  expect(ingresoIcon?.width).toBe("22px");
-  expect(ingresoIcon?.glyph).toContain("↓");
-  expect(traspasoIcon?.glyph).toContain("⇄");
+  // #448: caja única de 24 px y glifo SVG propio, no un carácter de fuente.
+  expect(ingresoIcon?.width).toBe("24px");
+  expect(ingresoIcon?.height).toBe("24px");
+  expect(ingresoIcon?.hidden).toBe("true");
+  expect(ingresoIcon?.glyph).toContain("<path");
+  expect(traspasoIcon?.glyph).not.toBe(ingresoIcon?.glyph);
   await expectNoOverflow();
   await page.screenshot({
     path: "artifacts/theme/casa-movimientos-1440.png",
@@ -340,8 +346,12 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   expect(cardAmounts.some((c) => c.flow === "inflow" && c.color === "rgb(30, 75, 58)")).toBe(true);
   await expect(page.locator(".movements-cards .movement-type-icon").first()).toHaveCSS(
     "width",
-    "22px",
+    "24px",
   );
+  // #448: el glifo sigue visible en tarjeta a 390 px.
+  await expect(
+    page.locator(".movements-cards .movement-type-icon svg").first(),
+  ).toBeVisible();
   await expectNoOverflow();
   await page.screenshot({
     path: "artifacts/theme/casa-movimientos-390.png",
@@ -355,11 +365,11 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(html).toHaveAttribute("data-theme", "graphite-lime");
   await expect(body).toHaveCSS("background-color", "rgb(11, 12, 11)");
 
-  // Aislamiento: el icono de Graphite no hereda la caja de Casa.
+  // Aislamiento: la caja del chip es la misma en Graphite que en Casa (#448).
   await page.goto("/movimientos");
   await expect(page.locator(".movement-type-icon").first()).toHaveCSS(
     "width",
-    "28px",
+    "24px",
   );
   await expect(errors).toEqual([]);
 });
