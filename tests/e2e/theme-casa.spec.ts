@@ -292,6 +292,12 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
           text: node.textContent ?? "",
         })),
       );
+  // La lista se pinta cuando llegan los datos: esperar a que existan las filas
+  // evita leer importes antes de que se hayan renderizado (el chip con SVG
+  // añade coste de render y destapaba la carrera).
+  await expect
+    .poll(() => page.locator(".movement-amount").count(), { timeout: 15000 })
+    .toBeGreaterThanOrEqual(2);
   const amounts = await readAmounts();
   expect(amounts.length).toBeGreaterThanOrEqual(2);
   const inflow = amounts.find((a) => a.flow === "inflow");
