@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
+import { fixtureContext } from "./fixture";
 import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
@@ -13,8 +14,10 @@ import { totp } from "../../apps/api/src/auth";
  * funciona con teclado. El servidor es aislado y ficticio.
  */
 
-const API_PORT = 3023;
-const DIR = ".local/e2e-navigation";
+// Puerto y estado propios de la ejecución (#508).
+const fixture = fixtureContext("navigation");
+const API_PORT = fixture.port;
+const DIR = fixture.dir;
 let child: ReturnType<typeof spawn> | undefined;
 
 const EXPECTED_HREFS = [
@@ -50,7 +53,7 @@ test.beforeAll(async ({ request }) => {
     ["apps/api/test-support/navigation-server.ts"],
     {
       stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test" },
+      env: fixture.env,
     },
   );
   await expect
