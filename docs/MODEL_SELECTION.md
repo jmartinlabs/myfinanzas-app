@@ -128,7 +128,10 @@ el proceso sale con código 2. La configuración previamente generada queda byte
 `--check` sigue siendo diagnóstico: muestra los roles compatibles (con su diff propuesto) y los
 no soportados, sin escribir nada. `--write-catalog` se difiere al **final**: solo escribe cuando el
 run completo termina limpio —sin roles no soportados, sin cliente sin salida nativa y con el apply
-hecho si se pidió—; en cualquier otro caso informa `CATALOG_NOT_WRITTEN`.
+hecho si se pidió—. Si el run termina sin abortar pero no está limpio (rol no soportado o cliente
+sin salida nativa) informa `CATALOG_NOT_WRITTEN`; un aborto —conflicto de preflight o fallo de
+escritura— tampoco escribe el catálogo y termina con su propio error. El destino del catálogo se
+valida **antes** del apply, de modo que un destino inválido no deja la configuración aplicada.
 
 `--apply` requires one explicit `--client`; it writes only private, Git-ignored, untracked
 repository-local destinations. Default preferences/catalog are read only from the **current

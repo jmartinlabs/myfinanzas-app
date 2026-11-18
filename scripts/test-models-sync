@@ -278,6 +278,32 @@ class ModelsSync(unittest.TestCase):
         self.assertIn('ROLLBACK INCOMPLETE', str(caught.exception))
         self.assertEqual(opencode.read_text(), '{"old": true}\n')   # restaurado pese al fallo
 
+    def test_write_catalog_without_roles_bootstraps_cleanly(self):
+        # Elegir modelos exige un catálogo: derivarlo antes de fijar roles debe funcionar.
+        self.config['roles'] = {}
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', '--apply', client='opencode',
+                        env=self.fake_cli())
+        self.assertIn('CATALOG_WRITTEN', out)
+        self.assertNotIn('CATALOG_NOT_WRITTEN', out)
+        catalog = json.loads((self.root / MODULE['CATALOG']).read_text())
+        self.assertEqual(catalog['source'], 'opencode-models-cli')
+
+    def test_invalid_catalog_destination_aborts_before_apply(self):
+        # Un destino de catálogo inválido no puede dejar la configuración aplicada.
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
+        (self.root / MODULE['CATALOG']).mkdir()                  # directorio donde se espera fichero
+        before = self.snapshot()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', '--apply', client='opencode',
+                        status=2, env=self.fake_cli())
+        self.assertIn('CONFLICT', out)
+        self.assertNotIn('CONFIG_ONLY applied', out)
+        self.assertFalse((self.root / '.opencode/opencode.json').exists())
+        self.assertEqual(before, self.snapshot())
+
     def test_overrides_and_explicit_allowlists(self):
         self.config['clients'] = {'codex': {'roles': {'implementation': {'effort': 'low'}}}}
         self.config['constraints'] = {'providers': ['provider-a'], 'models': ['future-large'], 'efforts': ['low']}

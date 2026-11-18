@@ -533,7 +533,7 @@ def main(argv=None):
                 raise Refusal('REFUSED --apply is all-or-nothing; nothing written: ' + '; '.join(blockers))
             outputs = render(root, client, selected, all_sources)
             all_outputs.update(outputs)
-        applied = False
+        catalog_path = destination(root, CATALOG) if args.write_catalog and derived_catalog else None
         if all_outputs or (root / MANIFEST).exists():
             preflight(root, all_outputs, all_sources, clients)
             for relative, data in all_outputs.items():
@@ -545,14 +545,13 @@ def main(argv=None):
                                                  fromfile=relative + ' (current)', tofile=relative + ' (proposed)')), end='')
             if args.apply:
                 print(f'CONFIG_ONLY applied: {activate(root, all_outputs)} changed files; dispatch generated aliases explicitly; restart/reload depends on client')
-                applied = True
-        if args.write_catalog and derived_catalog is not None:
-            if unverifiable or (args.apply and not applied):
-                # Never leave a derived catalog behind when the run did not complete cleanly.
-                print(f'CATALOG_NOT_WRITTEN {CATALOG}: this run is not clean '
-                      '(unsupported roles, client without native output or refused apply)')
+        if catalog_path is not None:
+            if unverifiable:
+                # Never leave a derived catalog behind when the run reports a role it cannot apply.
+                print(f'CATALOG_NOT_WRITTEN {CATALOG}: this run reports roles it cannot apply '
+                      '(unsupported role or client without native output)')
             else:
-                atomic_file(destination(root, CATALOG), json_bytes(derived_catalog), 0o600)
+                atomic_file(catalog_path, json_bytes(derived_catalog), 0o600)
                 print(f'CATALOG_WRITTEN {CATALOG} (Git ignored, untracked)')
         print('Effective runtime selection UNVERIFIED; no model calls or coordinator changes.')
         return 2 if unverifiable else 0
