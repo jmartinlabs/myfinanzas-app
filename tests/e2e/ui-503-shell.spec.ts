@@ -5,14 +5,17 @@ import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
 /**
- * #503 — shell compacto: selector de tema al ancho del catálogo, etiqueta
- * «Tema» en la misma línea y un único indicador de entorno por breakpoint.
+ * #503 — shell compacto: selector de tema al ancho del catálogo y un único
+ * indicador de entorno por breakpoint.
  *
  * Recorrido real sobre el artefacto construido (`bun run build`): un fixture
- * propio levanta la API con SQLite ficticio en 3041 y sirve `apps/web/dist` con
- * proxy `/api` en 5291 (`E2E_WEB_PORT`), de modo que no depende del servidor de
- * desarrollo de 5173 ni de la API de 3001. Cada ejecución provisiona una única
- * cuenta nueva en `.local/e2e-shell` (el fixture borra el directorio).
+ * propio levanta la API con SQLite ficticio y sirve `apps/web/dist` con proxy
+ * `/api` en **los puertos del contexto de la ejecución** (#508), de modo que no
+ * depende del servidor de desarrollo de 5173 ni de la API de 3001. Los puertos
+ * se leen de `E2E_WEB_PORT`/`E2E_API_PORT`, que publica el contexto de la
+ * ejecución; si la spec arranca sin ellos falla de forma explícita en vez de
+ * caer a un puerto fijo. Cada ejecución provisiona una única cuenta nueva en
+ * `.local/e2e-shell` (el fixture borra el directorio).
  *
  * Comprueba, a 1440 y a 390:
  *  - el encabezado muestra solo el `select` (sin texto suelto ni etiqueta encima);
@@ -29,11 +32,27 @@ import { totp } from "../../apps/api/src/auth";
  *  - los seis temas cambian y persisten en `mf-theme`.
  */
 
-const BASE = process.env.E2E_SHELL_BASE ?? "http://127.0.0.1:5291";
+// #508 — puertos propios de la ejecución: `playwright.config.ts` publica
+// `E2E_WEB_PORT` y `E2E_API_PORT` en el entorno de las specs. Sin ellos la spec
+// falla de forma explícita: ni literales 5291/3041 ni caída silenciosa a
+// 5173/3001.
+function requiredPort(name: "E2E_WEB_PORT" | "E2E_API_PORT"): number {
+  const raw = process.env[name];
+  const port = Number(raw);
+  if (!raw || !Number.isInteger(port) || port < 1 || port > 65535)
+    throw new Error(
+      `Falta un puerto E2E válido (${name}): la ejecución debe arrancar con el contexto de #508.`,
+    );
+  return port;
+}
+
+const WEB_PORT = requiredPort("E2E_WEB_PORT");
+const API_PORT = requiredPort("E2E_API_PORT");
+const BASE = `http://127.0.0.1:${WEB_PORT}`;
+const API_HEALTH = `http://127.0.0.1:${API_PORT}/api/health`;
 const DIR = ".local/e2e-shell";
 const SHOTS = "artifacts/ui-503";
 const ENV_TOKEN = "TEST";
-const API_HEALTH = "http://127.0.0.1:3041/api/health";
 let child: ChildProcess | undefined;
 
 test.beforeAll(async ({ request }) => {
@@ -46,7 +65,8 @@ test.beforeAll(async ({ request }) => {
         ...process.env,
         NODE_ENV: "test",
         APP_ENV: ENV_TOKEN,
-        E2E_WEB_PORT: String(new URL(BASE).port),
+        E2E_WEB_PORT: String(WEB_PORT),
+        E2E_API_PORT: String(API_PORT),
       },
     },
   );
