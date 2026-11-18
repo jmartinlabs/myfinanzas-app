@@ -16,12 +16,6 @@ export type NavigationItem = {
   readonly activePrefix?: string;
   /** Acceso heredado: se muestra después de las entradas principales. */
   readonly legacy?: boolean;
-  /**
-   * Acceso subordinado: se muestra justo bajo su entrada principal con sangría
-   * y tono atenuado, sin encabezado propio. No es legado (VIS-25: Revisión
-   * Comida sigue vigente).
-   */
-  readonly secondary?: boolean;
 };
 
 export type NavigationGroup = {
@@ -93,13 +87,11 @@ export const navigationGroups: readonly NavigationGroup[] = [
       { href: "/anticipos", label: "Anticipos", icon: "↺" },
       { href: "/compartidos", label: "Compartidos", icon: "⇌" },
       { href: "/vehiculos", label: "Vehículos", icon: "⌑" },
-      { href: "/comida", label: "Comida", icon: "◍" },
-      {
-        href: "/revision-comida",
-        label: "Revisión Comida",
-        icon: "◎",
-        secondary: true,
-      },
+      // UI-02 · #504 (delta 17/11/2026): «Comida del ciclo» y «Revisión Comida»
+      // son entradas independientes y de igual jerarquía; ninguna es submenú
+      // ni heredada, y ninguna etiqueta menciona el banco de origen.
+      { href: "/comida", label: "Comida del ciclo", icon: "◍" },
+      { href: "/revision-comida", label: "Revisión Comida", icon: "◎" },
     ],
   },
   {

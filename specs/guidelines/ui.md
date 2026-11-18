@@ -80,8 +80,11 @@ historia de E1.1–E1.5 y no reabren decisiones.
 Estado vigente tras UI-02 (#504). Solo presentación: no añade, retira ni renombra rutas.
 
 - **Accesos directos.** «Inicio» y «Movimientos» viven fuera de los grupos, al principio del
-  menú, con una separación sutil (regla de 1 px con `--sidebar-border`) antes de los grupos.
-  La marca deja aire suficiente antes del primer destino.
+  menú, precedidos por una **divisoria horizontal fina** de 1 px (`--sidebar-border`, sin alto
+  propio ni relleno) que los separa de la identidad «MyFinanzas · Control financiero personal»,
+  con el mismo aire a ambos lados (12 px en escritorio, 8 px con el menú móvil abierto). Se
+  mantiene la separación sutil ya existente (regla de 1 px con `--sidebar-border`) entre estos
+  accesos y los grupos.
 - **Cinco grupos principales plegables**, en caja normal (sin mayúsculas sostenidas ni tracking
   excesivo), con etiquetas que envuelven sin truncarse: «Resumen y control», «Patrimonio»,
   «Presupuestos y planificación», «Casos y gastos especiales» y «Ciclos y cierres».
@@ -91,8 +94,13 @@ Estado vigente tras UI-02 (#504). Solo presentación: no añade, retira ni renom
   planificación». La advertencia es **informativa**: no desactiva enlaces, no retira funciones
   y no anuncia fecha de baja. El grupo se pliega salvo que contenga la página activa y se abre
   y resalta automáticamente al cargar, recargar o navegar con atrás/adelante a esas rutas.
-- **Sin encabezados internos** «Heredado» ni «Auxiliar». «Revisión Comida» se muestra justo bajo
-  «Comida», subordinada por sangría y tono, y **no** es una función anterior.
+- **«Comida del ciclo» y «Revisión Comida» al mismo nivel.** En «Casos y gastos especiales»,
+  `/comida` («Comida del ciclo») y `/revision-comida` («Revisión Comida») son dos entradas
+  independientes, consecutivas y de igual jerarquía visual: misma clase de enlace, sin sangría
+  ni tono de submenú. Ninguna es función anterior y ninguna es submenú de la otra. No hay
+  encabezados internos «Heredado» ni «Auxiliar» y ninguna etiqueta menciona el banco de origen
+  («ING»); el cambio es solo de nombre y jerarquía del menú, no de rutas ni de títulos de
+  pantalla.
 - Se conservan todas las rutas, `aria-current`, la navegación por teclado, el plegado manual de
   grupos, el cierre con Escape del menú móvil, el foco, el scroll de los grupos y los seis temas
   sin paletas nuevas.

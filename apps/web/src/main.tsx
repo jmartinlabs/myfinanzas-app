@@ -246,6 +246,9 @@ function App() {
           <span aria-hidden="true">☰</span>
         </button>
         <nav id="main-nav" aria-label="Secciones" ref={mainNavRef}>
+          {/* #504: divisoria fina entre la identidad y los accesos directos.
+              Decorativa: no anuncia nada a lectores de pantalla. */}
+          <hr className="nav-divider" aria-hidden="true" />
           <div className="nav-direct">
             {navigationDirect.map((item) => {
               const active = isNavigationActive(item, path);
@@ -299,7 +302,7 @@ function App() {
                     return (
                       <a
                         key={item.href}
-                        className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}${item.secondary ? " nav-link-secondary" : ""}`}
+                        className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}`}
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         onClick={(e) => {

@@ -113,6 +113,30 @@ async function shot(page: Page, name: string) {
   await page.screenshot({ path: `${ART}/${name}`, fullPage: true });
 }
 
+/** Divísoria bajo la identidad: 1 px, sin alto propio y espaciado simétrico. */
+async function dividerMetrics(page: Page) {
+  return page.locator("#main-nav .nav-divider").evaluate((element) => {
+    const brand = document
+      .querySelector(".sidebar .brand")!
+      .getBoundingClientRect();
+    const direct = document
+      .querySelector(".sidebar .nav-direct")!
+      .getBoundingClientRect();
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      borderTopWidth: style.borderTopWidth,
+      height: box.height,
+      gapAbove: box.top - brand.bottom,
+      gapBelow: direct.top - box.bottom,
+      followedByDirect:
+        (element.nextElementSibling as HTMLElement | null)?.classList.contains(
+          "nav-direct",
+        ) ?? false,
+    };
+  });
+}
+
 /** Sin desbordamiento horizontal, sin etiquetas truncadas ni `nowrap`. */
 async function expectNoTruncation(page: Page) {
   expect(
@@ -159,6 +183,18 @@ test("#504: accesos directos, grupos en caja normal y «Funciones anteriores» p
       links.map((link) => link.getAttribute("href")),
     ),
   ).toEqual(DIRECT);
+
+  // Divísoria fina y decorativa entre la identidad y los accesos directos:
+  // 1 px, sin alto propio y con el mismo aire a ambos lados (1440).
+  const divider = nav.locator(".nav-divider");
+  await expect(divider).toBeVisible();
+  const desktop = await dividerMetrics(page);
+  expect(desktop.followedByDirect).toBe(true);
+  expect(desktop.borderTopWidth).toBe("1px");
+  expect(desktop.height).toBeLessThanOrEqual(1);
+  expect(desktop.gapAbove).toBeGreaterThanOrEqual(8);
+  expect(desktop.gapAbove).toBeCloseTo(desktop.gapBelow, 0);
+
   expect(await sections.count()).toBe(GROUPS.length + 1);
   expect(
     await nav.locator(".nav-group-label").allTextContents(),
@@ -232,26 +268,49 @@ test("#504: accesos directos, grupos en caja normal y «Funciones anteriores» p
   await expect(nav.getByText("Heredado", { exact: true })).toHaveCount(0);
   await expect(nav.getByText("Auxiliar", { exact: true })).toHaveCount(0);
 
-  // (d) «Revisión Comida» sigue bajo «Comida», subordinada y accesible.
+  // (d) «Comida del ciclo» y «Revisión Comida» al mismo nivel y sin «Auxiliar».
   const casos = sections.filter({ hasText: "Casos y gastos especiales" });
   await casos.locator(".nav-group-toggle").click();
-  const comida = casos.getByRole("link", { name: "Comida", exact: true });
-  const revision = casos.getByRole("link", { name: "Revisión Comida", exact: true });
+  const comida = casos.getByRole("link", {
+    name: "Comida del ciclo",
+    exact: true,
+  });
+  const revision = casos.getByRole("link", {
+    name: "Revisión Comida",
+    exact: true,
+  });
   await expect(comida).toBeVisible();
   await expect(revision).toBeVisible();
-  await expect(revision).toHaveClass(/nav-link-secondary/);
+  await expect(comida).toHaveAttribute("href", "/comida");
+  await expect(revision).toHaveAttribute("href", "/revision-comida");
+  // Misma clase de enlace: ninguna de las dos es submenú ni legado.
+  await expect(comida).toHaveClass(/nav-link/);
+  await expect(revision).toHaveClass(/nav-link/);
+  await expect(revision).not.toHaveClass(/nav-link-secondary/);
   await expect(revision).not.toHaveClass(/nav-link-legacy/);
-  expect(
-    await casos.locator(".nav-group-body a").evaluateAll((links) =>
-      links.map((link) => link.getAttribute("href")),
-    ),
-  ).toContain("/revision-comida");
-  const [comidaIndent, revisionIndent] = await Promise.all([
-    comida.evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingLeft)),
-    revision.evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingLeft)),
-  ]);
-  expect(revisionIndent).toBeGreaterThan(comidaIndent);
-  // Alcanzable con teclado desde su entrada principal.
+  await expect(casos.locator(".nav-link-secondary")).toHaveCount(0);
+  const [comidaIndent, revisionIndent, comidaColor, revisionColor] =
+    await Promise.all([
+      comida.evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingLeft),
+      ),
+      revision.evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).paddingLeft),
+      ),
+      comida.evaluate((element) => getComputedStyle(element).color),
+      revision.evaluate((element) => getComputedStyle(element).color),
+    ]);
+  expect(revisionIndent).toBe(comidaIndent);
+  expect(revisionColor).toBe(comidaColor);
+  // Ninguna etiqueta del menú menciona «Auxiliar», «Heredado» ni «ING».
+  const menuLabels = await nav
+    .locator(".nav-label, .nav-group-label, .nav-group-hint")
+    .allTextContents();
+  for (const word of ["auxiliar", "heredado", "ing"])
+    expect(
+      menuLabels.filter((label) => new RegExp(`\\b${word}\\b`, "i").test(label)),
+    ).toEqual([]);
+  // Alcanzable con teclado desde su entrada hermana.
   await comida.focus();
   await page.keyboard.press("Tab");
   await expect(revision).toBeFocused();
@@ -333,6 +392,11 @@ test("#504: accesos directos, grupos en caja normal y «Funciones anteriores» p
   await expect(
     nav.getByRole("link", { name: "Movimientos", exact: true }),
   ).toBeFocused();
+  // La divisoria se mantiene fina y simétrica a 390, sin sumar alto al menú.
+  const mobile = await dividerMetrics(page);
+  expect(mobile.borderTopWidth).toBe("1px");
+  expect(mobile.gapAbove).toBeCloseTo(mobile.gapBelow, 0);
+  expect(mobile.gapAbove + mobile.gapBelow).toBeLessThanOrEqual(24);
   await expectNoTruncation(page);
   for (const [label] of GROUPS) {
     const group = sections.filter({ hasText: label });

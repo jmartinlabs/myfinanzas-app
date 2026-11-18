@@ -148,6 +148,39 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       links.map((link) => link.getAttribute("href")),
     ),
   ).toEqual(["/inicio", "/movimientos"]);
+
+  // #504 (delta 17/11/2026): divisoria horizontal fina y decorativa entre la
+  // identidad y los accesos directos, con espaciado equilibrado a ambos lados.
+  // No sustituye la separación existente entre accesos directos y grupos.
+  const divider = nav.locator(".nav-divider");
+  await expect(divider).toBeVisible();
+  const dividerMetrics = await divider.evaluate((element) => {
+    const brand = document
+      .querySelector(".sidebar .brand")!
+      .getBoundingClientRect();
+    const direct = document
+      .querySelector(".sidebar .nav-direct")!
+      .getBoundingClientRect();
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      borderTopWidth: style.borderTopWidth,
+      height: box.height,
+      gapAbove: box.top - brand.bottom,
+      gapBelow: direct.top - box.bottom,
+      followedByDirect:
+        (element.nextElementSibling as HTMLElement | null)?.classList.contains(
+          "nav-direct",
+        ) ?? false,
+    };
+  });
+  expect(dividerMetrics.followedByDirect).toBe(true);
+  expect(dividerMetrics.borderTopWidth).toBe("1px");
+  expect(dividerMetrics.height).toBeLessThanOrEqual(1);
+  expect(dividerMetrics.gapAbove).toBeGreaterThanOrEqual(8);
+  expect(dividerMetrics.gapBelow).toBeGreaterThanOrEqual(8);
+  expect(dividerMetrics.gapAbove).toBeCloseTo(dividerMetrics.gapBelow, 0);
+
   const sections = nav.locator(".nav-section");
   expect(await nav.locator(".nav-group-toggle").count()).toBe(expectedGroups.length);
   expect(await sections.count()).toBe(expectedGroups.length);
@@ -182,17 +215,54 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
   await funciones.locator(".nav-group-toggle").click();
   const casos = sections.filter({ hasText: "Casos y gastos especiales" });
   await casos.locator(".nav-group-toggle").click();
-  await expect(casos.getByRole("link", { name: "Comida", exact: true })).toBeVisible();
-  // VIS-25 / #504: Revisión Comida queda subordinada a Comida, sin encabezado
-  // y sin carácter de legado.
-  await expect(casos.locator(".nav-legacy-label")).toHaveCount(0);
-  await expect(casos.locator(".nav-secondary-label")).toHaveCount(0);
+  // #504 (delta 17/11/2026): «Comida del ciclo» y «Revisión Comida» son dos
+  // entradas independientes, consecutivas y del mismo nivel: misma clase de
+  // enlace, mismo relleno y tono, sin marca de subordinación ni de legado.
+  const comidaLink = casos.getByRole("link", {
+    name: "Comida del ciclo",
+    exact: true,
+  });
+  const revisionLink = casos.getByRole("link", {
+    name: "Revisión Comida",
+    exact: true,
+  });
+  await expect(comidaLink).toBeVisible();
+  await expect(revisionLink).toBeVisible();
+  await expect(comidaLink).toHaveAttribute("href", "/comida");
+  await expect(revisionLink).toHaveAttribute("href", "/revision-comida");
+  const casoEntries = await casos.locator(".nav-group-body a").evaluateAll(
+    (links) =>
+      links.map((link) => {
+        const style = getComputedStyle(link);
+        return {
+          href: link.getAttribute("href"),
+          className: link.className,
+          paddingLeft: style.paddingLeft,
+          color: style.color,
+        };
+      }),
+  );
+  const comidaEntry = casoEntries.find((entry) => entry.href === "/comida")!;
+  const revisionEntry = casoEntries.find(
+    (entry) => entry.href === "/revision-comida",
+  )!;
+  expect(comidaEntry.className).toBe("nav-link");
+  expect(revisionEntry.className).toBe("nav-link");
+  expect(revisionEntry.paddingLeft).toBe(comidaEntry.paddingLeft);
+  expect(revisionEntry.color).toBe(comidaEntry.color);
+  await expect(casos.locator(".nav-link-secondary")).toHaveCount(0);
+  await expect(casos.locator(".nav-legacy-label, .nav-secondary-label")).toHaveCount(0);
+  // La etiqueta corta anterior ya no existe y no hay jerga de origen.
   await expect(
-    casos.getByRole("link", { name: "Revisión Comida", exact: true }),
-  ).toHaveClass(/nav-link-secondary/);
-  await expect(
-    casos.getByRole("link", { name: "Comida · hechos", exact: true }),
+    casos.getByRole("link", { name: "Comida", exact: true }),
   ).toHaveCount(0);
+  const navLabels = await nav
+    .locator(".nav-label, .nav-group-label, .nav-group-hint")
+    .allTextContents();
+  for (const word of ["auxiliar", "heredado", "ing"])
+    expect(
+      navLabels.filter((label) => new RegExp(`\\b${word}\\b`, "i").test(label)),
+    ).toEqual([]);
   mkdirSync("artifacts/ui-02", { recursive: true });
   await page.screenshot({
     path: "artifacts/ui-02/nav-legacy-1440.png",

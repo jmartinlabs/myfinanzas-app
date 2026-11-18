@@ -293,8 +293,9 @@ small {
   letter-spacing: -1px;
   display: block;
   padding: 0 6px;
-  /* UI-02 · #504: aire entre la marca y la primera opción del menú. */
-  margin-bottom: var(--space-6);
+  /* UI-02 · #504: la divisoria `.nav-divider` separa la marca del menú; este
+   * margen es la mitad superior de un espaciado simétrico (12 + 1 + 12). */
+  margin-bottom: var(--space-3);
 }
 .brand span,
 .auth-brand span {
@@ -309,11 +310,6 @@ small {
   font-weight: 600;
 }
 .nav-link.nav-link-legacy {
-  color: var(--sidebar-muted);
-  font-weight: 500;
-}
-/* VIS-25: acceso subordinado (Revisión Comida), secundario sin ser legado. */
-.sidebar .nav-link.nav-link-secondary {
   color: var(--sidebar-muted);
   font-weight: 500;
 }
@@ -5295,10 +5291,19 @@ textarea {
 }
 
 /* UI-02 · #504 — jerarquía del menú.
- * Accesos directos separados de los grupos, «Funciones anteriores» al final y
- * «Revisión Comida» subordinada a «Comida». Solo presentación: mismas rutas,
- * mismos tokens y sin `!important`.
+ * Divísoria bajo la identidad, accesos directos separados de los grupos y
+ * «Funciones anteriores» al final. «Comida del ciclo» y «Revisión Comida» son
+ * entradas hermanas: no hay sangría ni tono de submenú. Solo presentación:
+ * mismas rutas, mismos tokens y sin `!important`.
  */
+.nav-divider {
+  /* Divísoria decorativa de 1 px: resetea el `hr` del navegador (sin relleno,
+   * sin altura propia) y solo consume el token de borde del panel. */
+  height: 0;
+  margin: 0 0 var(--space-3);
+  border: 0;
+  border-top: 1px solid var(--sidebar-border);
+}
 .nav-direct {
   display: flex;
   flex-direction: column;
@@ -5318,14 +5323,14 @@ textarea {
 .nav-section-legacy .nav-group-toggle:hover {
   color: var(--sidebar-text);
 }
-/* VIS-25 / #504: subordinación por sangría, sin encabezado «Auxiliar». */
-.sidebar :is(.nav-link, .nav-active).nav-link-secondary {
-  padding-left: calc(var(--space-3) + var(--space-3));
-}
 @media (max-width: 760px) {
-  /* En móvil el aire bajo la marca se reduce para no separar el botón. */
+  /* En móvil el aire bajo la marca se reduce para no separar el botón; la
+   * divisoria mantiene la simetría 8 + 1 + 8 sin sumar alto al menú cerrado. */
   .brand {
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+  .nav-divider {
+    margin-bottom: var(--space-2);
   }
 }
 

@@ -61,13 +61,20 @@ test("las rutas históricas salen de «Presupuestos y planificación»", () => {
   expect(planificacion.items.some((item) => item.legacy)).toBe(false);
 });
 
-test("«Revisión Comida» sigue bajo «Comida» y no es legada", () => {
+test("«Comida del ciclo» y «Revisión Comida» son entradas hermanas", () => {
   const casos = navigationGroups.find((group) => group.id === "casos-gastos")!;
   const hrefs = casos.items.map((item) => item.href);
+  // Consecutivas y dentro del mismo grupo, sin ninguna marca de jerarquía.
   expect(hrefs.indexOf("/revision-comida")).toBe(hrefs.indexOf("/comida") + 1);
+  const comida = casos.items.find((item) => item.href === "/comida")!;
   const revision = casos.items.find((item) => item.href === "/revision-comida")!;
-  expect(revision.secondary).toBe(true);
-  expect(revision.legacy).toBeUndefined();
+  expect(comida.label).toBe("Comida del ciclo");
+  expect(revision.label).toBe("Revisión Comida");
+  for (const item of [comida, revision]) {
+    expect(item.legacy).toBeUndefined();
+    expect(item).not.toHaveProperty("secondary");
+    expect(item.label.toLowerCase()).not.toContain("ing");
+  }
 });
 
 test("se conservan las 24 rutas sin duplicados", () => {
