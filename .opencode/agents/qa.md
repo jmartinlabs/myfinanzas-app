@@ -15,8 +15,62 @@ permissions:
   - action: grep
     resource: "*"
     effect: allow
+  # Shell is restricted to the verification surface of this repository: the project gate,
+  # the harness suites, the app checks and read-only Git/GitHub inspection. Anything else is
+  # denied by the catch-all rule above, so this agent cannot edit files through the shell.
   - action: shell
-    resource: "*"
+    resource: "python3.12 scripts/verify*"
+    effect: allow
+  - action: shell
+    resource: "python3.12 scripts/test-*"
+    effect: allow
+  - action: shell
+    resource: "python3.12 scripts/check-*"
+    effect: allow
+  - action: shell
+    resource: "bun test*"
+    effect: allow
+  - action: shell
+    resource: "bun run typecheck"
+    effect: allow
+  - action: shell
+    resource: "bun run build"
+    effect: allow
+  - action: shell
+    resource: "bunx playwright test*"
+    effect: allow
+  - action: shell
+    resource: "git status*"
+    effect: allow
+  - action: shell
+    resource: "git diff*"
+    effect: allow
+  - action: shell
+    resource: "git log*"
+    effect: allow
+  - action: shell
+    resource: "git show*"
+    effect: allow
+  - action: shell
+    resource: "git rev-parse*"
+    effect: allow
+  - action: shell
+    resource: "git branch*"
+    effect: allow
+  - action: shell
+    resource: "gh pr *"
+    effect: allow
+  - action: shell
+    resource: "gh run *"
+    effect: allow
+  - action: shell
+    resource: "opencode debug agents*"
+    effect: allow
+  - action: shell
+    resource: "ls *"
+    effect: allow
+  - action: shell
+    resource: "wc *"
     effect: allow
   - action: read
     resource: "*.env"
@@ -39,12 +93,33 @@ rules and the return schema; if any is missing, stop and ask for it.
 ## What you may do
 
 - Read the repository, the candidate diff and the specs with `read`, `glob` and `grep`.
-- Run the authorized verification commands through the shell boundary: the project gate
+- Run the authorized verification commands through the shell boundary. The permission matrix
+  allows only those commands (project gate, harness suites, typecheck/build, a named Playwright
+  spec, read-only `git`/`gh` inspection, `ls`, `wc`): **one command per call, no chaining, no
+  redirects**, because the matcher works on the raw command text. A denied command is a boundary,
+  not a bug: report it as `UNRUN`.: the project gate
   (`python3.12 scripts/verify …`), `bun run typecheck`, `bun run build`, `bun test …`, the harness
   suites (`python3.12 scripts/test-*`), a named Playwright spec, and read-only Git inspection
   (`git status/diff/log/show`, `gh pr view/checks`).
 - Start the temporary servers a check needs on **ports you reserve yourself**, and stop only the
   processes you started.
+
+## Boundary of the shell permission
+
+The permission matrix allows only the verification commands listed in the frontmatter; everything
+else is denied. This was measured, not assumed: `git log -1 --oneline` and
+`python3.12 scripts/test-models-sync` run, while `touch <path>` and `echo … > <path>` fail with
+`Permission denied: shell`, and no file is created.
+
+Three consequences you must respect:
+
+- **One command per call**, no `&&`, no pipes, no redirects: the matcher reads the raw command text.
+- A different prefix (an absolute interpreter path, an `env` wrapper, a `cd … &&`) is denied even
+  when the underlying command is legitimate. Report it as `UNRUN` and let the coordinator decide;
+  do not look for a way around the matcher.
+- Allowed commands still write their own artifacts (`scripts/verify` writes under `.local/`,
+  Playwright writes `test-results/`). The boundary protects **source files and Git state**, not
+  “zero writes on disk”.
 
 ## What you must not do
 
