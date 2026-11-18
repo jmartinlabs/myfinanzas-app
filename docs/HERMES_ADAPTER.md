@@ -146,23 +146,47 @@ delegation:
   backend: model_map
   backends:
     model_map:
-      options:
-        worker:            {name: worker, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
-        advisor:           {name: advisor, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
-        implementation:    {name: implementation, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
-        functional:        {name: functional, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
-        review:            {name: review, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
-        qa:                {name: qa, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
-        infrastructure:    {name: infrastructure, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+      options:                          # LISTA, no mapping: el cliente ignora un mapping
+        - name: worker
+          description: "Tareas habituales de desarrollo."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: implementation
+          description: "DEV: implementación aprobada, pruebas y refactorización."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: functional
+          description: "Análisis funcional y financiero."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: low
+        - name: review
+          description: "Revisión técnica crítica."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: qa
+          description: "QA independiente del candidato."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: high
+        - name: infrastructure
+          description: "Entornos, puertos y diagnóstico de plataforma."
+          provider: <proveedor-conectado>
+          model: <modelo-verificado>
+          reasoning_effort: medium
       default: worker
 ```
 
-- **El nombre de la clave de cada opción ES el selector**: el delegado se elige por
-  `implementation`, `review`, `qa`, etc.; `name` solo repite ese nombre de forma declarativa.
-  No inventes alias ni nombres alternativos para el mismo rol.
+- **`options` es una lista de entradas `- name: …`**, y el campo **`name` ES el selector**: el
+  delegado se elige por `implementation`, `review`, `qa`, etc. Un mapping (`options: {worker: …}`)
+  es **ignorado por el cliente**: `model_map` avisa `options must be a list …` y no expone enum
+  `option`, con lo que el binding queda inerte. No inventes alias para el mismo rol.
 - `default: worker` declara la opción que se usa cuando la petición no nombra otra; es hermano
-  de `options`, no una opción más. Contrástalo con el esquema del cliente instalado si tu
-  versión lo anida de otro modo: prevalece el esquema del cliente.
+  de `options`, no una opción más. Si tu versión del plugin anida de otra forma, prevalece el
+  esquema del cliente instalado: verifícalo antes de editar.
 - Hay que **reiniciar la sesión** después de editar el perfil para que el esquema de
   `delegate_task` exponga las opciones nuevas; una sesión abierta no las ve aunque el fichero
   ya esté guardado.

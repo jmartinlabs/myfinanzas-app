@@ -313,13 +313,26 @@ class ModelsSync(unittest.TestCase):
         self.assertIn('not allowed with argument',
                       self.call('--catalog', 'x.json', '--catalog-from', 'opencode', status=2))
 
-    def test_derived_catalog_never_writes_outside_the_repository(self):
+    def test_derived_catalog_fake_cli_writes_only_the_private_catalog(self):
         decoy = Path(self.tmp.name).resolve() / 'home'; decoy.mkdir()
         env = self.fake_cli() | {'HOME': str(decoy)}
         self.derived_selector()
         self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode', env=env)
         self.assertEqual(list(decoy.iterdir()), [])
         self.assertTrue((self.root / MODULE['CATALOG']).exists())
+
+    def test_opencode_audit_warning_only_without_qa_role(self):
+        env = self.fake_cli()
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'},
+                                'review': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save(); (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', client='opencode', env=env)
+        self.assertIn('QA execution UNSUPPORTED', out)
+        self.config['roles']['qa'] = {'provider': 'provider-a', 'model': 'alternate'}
+        self.save(); (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', client='opencode', env=env, status=2)
+        self.assertNotIn('QA execution UNSUPPORTED', out)
+        self.assertIn('UNSUPPORTED OpenCode qa agent missing', out)
 
     def test_hermes_check_only_manual(self):
         self.assertIn('MANUAL/UNSUPPORTED', self.call(client='hermes', status=2))

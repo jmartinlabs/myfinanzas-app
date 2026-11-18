@@ -496,7 +496,8 @@ def main(argv=None):
                 require(not args.apply, 'UNVERIFIED catalog required before apply')
                 unverifiable = True
                 continue
-            if client == 'opencode' and 'qa' in selected and not (root / '.opencode/agents/qa.md').is_file():
+            requested_qa = 'qa' in selected
+            if client == 'opencode' and requested_qa and not (root / '.opencode/agents/qa.md').is_file():
                 # Never drop a requested role silently, and never emit an inert `agents.qa`.
                 print('  UNSUPPORTED OpenCode qa agent missing (.opencode/agents/qa.md); agents.qa not generated')
                 selected.pop('qa')
@@ -513,7 +514,8 @@ def main(argv=None):
                 if 'providers' in config.get('constraints', {}):
                     require(provider in config['constraints']['providers'], 'CONFLICT resolved provider allowlist')
             print(f'  CONFIG_ONLY: catalog source={catalog["source"]} observed={catalog["observed_at"]} client-version={available["version"]}; declared input, not entitlement')
-            if client == 'opencode' and ('qa' in selected or 'review' in selected):
+            if client == 'opencode' and 'review' in selected and not requested_qa:
+                # The review agent is a read-only audit; QA is a different agent when it exists.
                 print('  QA execution UNSUPPORTED: review mapping is read-only audit')
             outputs = render(root, client, selected, all_sources)
             all_outputs.update(outputs)
