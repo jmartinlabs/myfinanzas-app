@@ -2,13 +2,19 @@
 // Fixture propio: instancia aislada del servidor de navegación con su propio
 // puerto, su propio directorio de datos y una única cuenta provisionada por
 // ejecución (nunca datos reales). Solo presentación: no cambia rutas.
+//
+// Puertos (#508): se reservan **en esta spec**. `playwright.config.ts` publica
+// en `process.env` los puertos de la ejecución, pero esos ya los ocupan sus dos
+// `webServer`; reutilizarlos mataba el fixture con `EADDRINUSE` y el sondeo de
+// salud respondía desde otro servidor. Aquí no se leen literales ni
+// `E2E_API_PORT`.
 import { test, expect, type Page } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { reservePorts } from "../../apps/api/test-support/e2e-context";
 
-const API_PORT = Number(process.env.E2E_API_PORT ?? 3024);
 const DIR = ".local/e2e-nav-504";
 const ART = "artifacts/ui-02-navegacion";
 
@@ -28,17 +34,40 @@ const GROUPS = [
 ] as const;
 const LEGACY = ["/presupuestos", "/plan-anual"];
 
-let child: ReturnType<typeof spawn> | undefined;
+/** Puerto y salud del fixture propio; se fijan al reservarlos. */
+let API_PORT = 0;
+let API_HEALTH = "";
+let child: ChildProcess | undefined;
+/** Salida del fixture: se acumula para explicar una muerte temprana. */
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture #504 terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un sondeo que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test.beforeAll(async ({ request }) => {
-  // El origen autorizado de la API es el mismo que sirve la web en esta
-  // ejecución (5173 en CI, 5292 en el chequeo local con puerto libre).
+  // Puerto propio: libre en 127.0.0.1 ahora mismo y distinto de los del run,
+  // que los `webServer` del config ya tienen ocupados.
+  [API_PORT] = reservePorts(1, "127.0.0.1");
+  API_HEALTH = `http://127.0.0.1:${API_PORT}/api/health`;
+  // Origen autorizado de la API: el mismo que sirve la web en esta ejecución.
   const baseURL = test.info().project.use.baseURL ?? "http://127.0.0.1:5173";
   child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/navigation-server.ts"],
     {
-      stdio: "pipe",
+      stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...process.env,
         NODE_ENV: "test",
@@ -48,24 +77,43 @@ test.beforeAll(async ({ request }) => {
       },
     },
   );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
+
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
-          return (
-            await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
-          ).status();
+          return (await request.get(API_HEALTH)).status();
         } catch {
           return 0;
         }
       },
-      { timeout: 15000 },
+      { timeout: 30000 },
     )
     .toBe(200);
+  // El sondeo debe hablar con NUESTRO fixture: puerto reservado, proceso vivo
+  // y base ficticia provisionada por él.
+  expect(new URL(API_HEALTH).port).toBe(String(API_PORT));
+  assertFixtureAlive();
+  expect(
+    existsSync(`${DIR}/bootstrap.txt`),
+    `El fixture #504 no provisionó ${DIR}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
 });
 
 test.afterAll(() => {
   child?.kill();
+  child?.stdout?.destroy();
+  child?.stderr?.destroy();
 });
 
 async function routeApi(page: Page) {
