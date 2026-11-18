@@ -12,7 +12,8 @@ REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.githu
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
  *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
  'scripts/verify','scripts/test-verification','scripts/agent-relay','scripts/test-agent-relay','scripts/report-agent-usage','scripts/auto-agent-usage',
- 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md')
+ 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md',
+ 'scripts/models-sync','scripts/test-models-sync','.agents/models.example.yaml','docs/MODEL_SELECTION.md')
 # --- Requirement matching policy -----------------------------------------------------------
 # A contract is the rule, not the sentence that carries it. Three matching modes:
 #   exact     labels, field names, identifiers, commands, approval wording (the default)
@@ -207,14 +208,40 @@ def validate(root):
   if token.lower() in coordinator.lower(): fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
  # Resource policy guards are structural; runtime behavior needs separate trials.
  for name,tokens in {
-  'specs/methodology/model-selection.md':('`gpt-6.1-sol` + `low`','do not spawn','requested versus observed','fork_turns="none"'),
-  'specs/methodology/dynamic-agents.md':('**25% or less:**','**5% or less:**','**including QA**','after this warning','OpenCode is not enabled','Token accounting in the usage reader is not subscription quota'),
+  'specs/methodology/model-selection.md':('There is no hardcoded model or effort ceiling','do not spawn','requested versus observed','fork_turns="none"','**25% or less:**','**5% or less:**','**including QA**','after this warning','Token accounting in the usage reader is not subscription quota'),
+  'specs/methodology/dynamic-agents.md':('OpenCode is not enabled',),
   'templates/agent-work-packet.md':('HANDOFF → CODEX','Recommended model:','Final status','Branch, commit SHA, PR','Quota gate:'),
   '.agents/skills/orchestrate/SKILL.md':('quota dispatch gate','run `$handoff`'),
   '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
  }.items():
   for token in tokens:
    if not satisfied(read(name),token): fail('resource-policy',f'{name}: missing {token}')
+ # The private selector is the only model ceiling source; historical adoption logs are exempt.
+ active_model_policy = ('AGENTS.md', '.agents/skills/orchestrate/SKILL.md',
+  'specs/methodology/model-selection.md', 'specs/methodology/workflows.md',
+  'specs/methodology/myfinanzas-coordination.md', 'docs/HERMES_ADAPTER.md',
+  'docs/GUIA_VISUAL_ORQUESTACION.md')
+ for name in active_model_policy:
+  if re.search(r'(?i)(maximum permitted combination is|absolute Codex subagent ceiling|techo absoluto de|never automatically escalate.{0,80}above this ceiling)', read(name)):
+   fail('resource-policy', f'{name}: fixed model ceiling contradicts private selector')
+ # Effective delegation contracts: reject missing or contradictory safety rules.
+ for name,tokens in {
+  '.agents/roles/implementation.md':('~:Standard uses `$task`','~:Full uses `$dev` only with approved spec AND separate development authorization','~:before acting'),
+  'specs/methodology/dynamic-agents.md':('re:one (?:short|brief) decision','~:direct with a concrete reason','~:Reevaluate when scope grows','~:finish/stop acknowledgement','off limits to parent writes','executor loads its role','Native workers may return compact structured','Manual Agent Relay still requires','immediate stop with no threshold','Stop only owned tasks/processes','no global cleanup/reset','a different model is not necessary','block material/unsafe work'),
+  'specs/methodology/model-selection.md':('~:unavailable metadata means effective identity','~:not proof that the route was not used'),
+  '.agents/roles/qa-review.md':('reused raw evidence','UNRUN','do not automatically rerun'),
+  'templates/agent-work-packet.md':('Native packet — required core','role + phase Skill','**Packet ID:**','**Workflow / authorization:**','**Write files and sole ownership:**','**Verification commands / expected evidence:**'),
+ }.items():
+  for token in tokens:
+   if not satisfied(read(name),token): fail('effective-delegation',f'{name}: missing {token}')
+ if '## Quota and dispatch gate' in read('specs/methodology/dynamic-agents.md'):
+  fail('effective-delegation','quota policy duplicated outside model-selection')
+ for name in ('AGENTS.md','.agents/skills/orchestrate/SKILL.md'):
+  if 'dynamic-agents.md#quota-and-dispatch-gate' in read(name):
+   fail('effective-delegation',f'{name}: stale quota source')
+ for name in ('.agents/roles/implementation.md','.claude/agents/implementation.md','.opencode/agents/implementation.md'):
+  if 'approved-spec-only' in read(name) or 'Necesita aprobación de spec Y' in read(name):
+   fail('effective-delegation',f'{name}: Standard route incorrectly requires Full spec')
  # Execution mode is adaptive; background needs verified support and never claims persistence.
  for name,tokens in {
   'specs/methodology/dynamic-agents.md':('## Execution mode: direct, foreground, background',

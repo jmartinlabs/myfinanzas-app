@@ -5,35 +5,33 @@ Verify client capabilities before selecting subagent settings. Unknown availabil
 permission to inherit an unchecked model. Model choice never replaces verification,
 independent QA or protected approvals. Report savings only from real telemetry.
 
-## Codex subagents: absolute ceiling
-The maximum permitted combination is `gpt-6.1-sol` + `low` (UI: GPT-6.1 Sol Light).
-Never automatically escalate model or reasoning above this ceiling, including for QA.
-Use an explicitly selected economical available model for straightforward bounded work;
-reserve `gpt-6.1-sol` + `low` for complex or critical work. There is no numeric cost or
-capability ordering across model families: use a verified permitted economical option,
-not an inferred ranking. Never substitute Astra or another unverified family/version.
+## Explicit private selection, without a default ceiling
+There is no hardcoded model or effort ceiling. The only optional model/provider/effort
+constraints come from the user's private `.agents/models.local.yaml` selector; absent
+constraints mean no ceiling. Never rank model families or automatically substitute another
+model. See [selector format and native client limits](../../docs/MODEL_SELECTION.md).
+The versioned example contains no personal choices. The coordinator stays client-selected.
 
 Before dispatch, record requested model/effort, available controls and the selection
 assurance supplied by the runtime. In this Codex runtime, explicit `model` and
 `reasoning_effort` overrides require fresh context (`fork_turns="none"`); full-history
-forks inherit settings. Recheck this capability in other clients/versions. If selection
-cannot be guaranteed within the ceiling, do not spawn; record the limitation and work
-sequentially within authorization, or propose a manual permitted alternative. Never
-silently inherit an unchecked coordinator model. Do not raise the coordinator model.
+forks inherit settings. Recheck this capability in other clients/versions. If the requested
+selection cannot be guaranteed, do not spawn; record the limitation and work sequentially
+within authorization, or propose an explicit manual alternative. Never silently inherit
+an unchecked coordinator model or change the coordinator model.
 
 After dispatch, verify observed model/effort from attributable runtime metadata or local
 records when exposed. Record requested versus observed values and evidence; an agent's
 self-report is insufficient. Missing metadata means **effective selection unverified**,
 not a passed check. A mismatch stops further dispatch and requires investigation at a
-safe boundary; never compensate by escalating.
+safe boundary; never compensate by automatically substituting another model.
 
 ### Delegation routes (`delegation.backend: model_map`)
 A route is a **slot** defined by an entry in `delegation.backends.model_map.options` — name,
 provider, model, optional reasoning effort — not a fixed model. `worker`, `advisor` or any other
 name may change provider, model or effort without touching the verifier, its tests or this
-document. Today's configuration is coordinator and `worker` on DeepSeek, and `advisor` on
-`openai-codex` + `gpt-6.1-sol` with effort `low`, reserved for critical reviews; the advisor slot
-never replaces independent QA.
+document. A route's actual choices come from the explicit private selector and the verified
+client configuration; the advisor slot never replaces independent QA.
 
 Measured failure mode (Hermes `model_map`, 2026-11-15): a per-task route parameter sometimes
 never reaches the tool. The emitted call carries only `goal`/`context`, no error is raised, and
@@ -65,8 +63,11 @@ Where the expectations come from, and what the runtime can answer:
 - Prefer `--delegation <id>` over `--latest`: with concurrent sessions the newest row may belong to
   another delegation.
 
-A mismatch or unverifiable metadata means the review was not performed on that route: stop the
-child, do not report it as done, and re-dispatch or record the blocker.
+A mismatch means the designated route failed; unavailable metadata means effective identity
+is unverified, not proof that the route was not used. Do not credit the designated route in
+either case; stop further dispatch at a safe boundary and investigate or record the blocker.
+A same-model reviewer with independent context can still be independent QA; route identity
+and independent review are separate checks.
 
 ## Portable advice
 | Work | Suggested tier | Suggested reasoning |
@@ -75,11 +76,10 @@ child, do not report it as done, and re-dispatch or record the blocker.
 | Bounded Standard implementation | balanced | within client policy |
 | Architecture, ambiguous debugging or critical review | advanced | within client policy |
 
-These are advisory capability labels, not permission to exceed the Codex ceiling.
-Keep the current coordinator model when adequate. In Claude Code retain existing
-`model: inherit` profiles unless an authorized client-specific selection is supported;
-Claude model/effort names are not equivalent to GPT settings. Codex limits apply to
-Codex subagents even when another client coordinates them. Do not invent cross-client
+These are advisory capability labels, not selected model IDs or automatic substitutions.
+Keep the current coordinator model. In Claude Code retain existing `model: inherit` profiles
+unless an explicit client-specific selection is supported; Claude model/effort names are
+not equivalent to GPT settings. Private selector constraints apply when configured. Do not invent cross-client
 quota or telemetry. When unavailable, use smaller verifiable increments or report a blocker.
 
 Load this document when model advice matters, normally Standard / Full. Report one compact
@@ -89,3 +89,31 @@ existing project approvals. Native client settings remain subject to actual avai
 
 ## MyFinanzas precedence
 Financial integrity, security, required independent QA and the separate development/merge gates remain mandatory under [local coordination](myfinanzas-coordination.md). Resource limits never waive them.
+
+## Quota and dispatch gate
+For Codex, query remaining subscription quota when a supported client tool exists:
+execution start and before new assignments after meaningful milestones or quota warnings.
+Reuse a recent reading within the same dispatch batch; no continuous polling, new service
+or automatic paid consumption. Identify source and reading time. Prefer per-limit data;
+compute remaining as `max(0, min(100, 100 - usedPercent))` for valid numeric values.
+Use the minimum remaining across the five-hour (300 minutes) and weekly (10080 minutes)
+windows. Missing/null/invalid values are unavailable, never zero or an invented percentage.
+Partial data is incomplete: apply restrictions from known windows and disclose the gap;
+unknown data never proves normal quota or blocks authorized work solely by assumption.
+Token accounting in the usage reader is not subscription quota. Do not infer Codex quota
+from Claude/OpenCode usage or assume this desktop tool exists in other clients.
+
+- **More than 25% remaining:** normal allocation by complexity and quality: prioritize
+  Codex for complex/critical work; consider enabled OpenCode for bounded verifiable work.
+- **25% or less:** warn; no new Codex task or subagent, **including QA**, without explicit
+  authorization for that identified task. General development approval is insufficient.
+  Propose an Agent Relay v1 conversation only if enabled and suitable. Required QA stays pending until
+  authorized or otherwise independently performed under the existing quality contract.
+- **5% or less:** warn and stop initiating new tasks. Previous authorizations do not
+  suffice: require a new explicit task authorization after this warning. Preserve state
+  and existing advances at safe boundaries; do not destructively interrupt running work.
+  Do not launch another Codex task merely to save a checkpoint; preserve it in the current
+  session where possible. No automatic replacement workers or paid quota reset.
+
+Record task-specific exceptions and their relation to the warning in the existing packet
+or current summary. A warning is not approval; quota exceptions never waive QA or merges.

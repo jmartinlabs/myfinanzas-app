@@ -320,13 +320,13 @@ Plan por archivo, cubierto por la autorización explícita anterior:
 | orchestrate/handoff Skills | Fusionar dispatch/modelos y transferencia verificada; conservar gates y ownership |
 | agent-work-packet | Ampliar plantilla existente con selección/cuota y retorno HANDOFF → CODEX; sin segundo tablero |
 | validate-template/test-validator | Solo nuevas guardas estructurales y negativos, preservando CI local |
-| guía visual/workflows | Actualizar únicamente consejos de modelos que contradicen el techo |
+| guía visual/workflows | Actualizar únicamente consejos de modelos que contradicen el techo histórico de esa adopción |
 | AGENTS/coordinación local/README/tablero/este registro | Versionado, precedencia, autorizaciones y checkpoint vigente |
 | Otras Skills, roles, approvals/epic-orchestration | Revisados; sin cambio upstream aplicable adicional |
 | AGENT_EVALS, escenarios/respuestas de muestra | No importar: scorer no instalado; no acreditar comportamiento por muestras |
 | Aplicación, SQL, Excel, CI, scripts verify/clasificador, hooks, plantilla fuente | Sin cambios |
 
-Capacidad observada: cuota por herramienta de cliente 63% restante/5h y79%/semana al preflight; mínimo63%, sin excepción necesaria. Runtime declara overrides explícitos model/effort solo con `fork_turns="none"`; selección solicitada QA `gpt-6.1-sol` + `low`, contexto nuevo. Antes de QA se releyó cuota:54%/5h y77%/semana, mínimo54%. Selección efectiva observada en turn_context2026-10-25T12:07:20.505Z de sesión `01a172f5-45c8-7a21-b17b-7d63cbe30354`, ruta agente `/root/qa_h290`, padre `01a1720a-f7e1-7312-b6c3-ef4b3e3dcf85`: model `gpt-6.1-sol`, effort `low`, coincidentes con solicitud; metadatos locales atribuibles, no autorreporte. No se publican logs de sesión. Sin cambio del modelo coordinador, reset pagado ni servicio de cuotas.
+Observación histórica no vinculante para la política vigente: cuota por herramienta de cliente 63% restante/5h y79%/semana al preflight; mínimo63%, sin excepción necesaria. Runtime declara overrides explícitos model/effort solo con `fork_turns="none"`; selección solicitada QA `gpt-6.1-sol` + `low`, contexto nuevo. Antes de QA se releyó cuota:54%/5h y77%/semana, mínimo54%. Selección efectiva observada en turn_context2026-10-25T12:07:20.505Z de sesión `01a172f5-45c8-7a21-b17b-7d63cbe30354`, ruta agente `/root/qa_h290`, padre `01a1720a-f7e1-7312-b6c3-ef4b3e3dcf85`: model `gpt-6.1-sol`, effort `low`, coincidentes con solicitud; metadatos locales atribuibles, no autorreporte. No se publican logs de sesión. Sin cambio del modelo coordinador, reset pagado ni servicio de cuotas.
 
 No hay ensayo de umbrales reales25%/5%, suspensión por permisos, control remoto OpenCode o handoff real entre chats. No se induce consumo de cuota para probar límites. Guardas textuales/negativos solo demuestran detección estructural; ensayos reales se registran por separado. Baseline y QA del candidato local completadas abajo. Full Linux exigible por política CI; no sustituido por macOS.
 
@@ -350,7 +350,8 @@ orchestrate conserva sus gates específicos y añade carga bajo demanda,
 identidad/retorno/estado/acción humana. AGENTS, coordinación local, agentes
 dinámicos y plantillas packet/progress enlazan contrato único. Retorno completo
 obligatorio en cada seguimiento, también bloqueos. Modelo/catalogo externo no
-verificado se declara; techo Codex low y gates25%/5% se conservan sin excepción.
+verificado se declara; en aquella adopción se conservaron techo Codex low y gates25%/5%.
+El techo es histórico y fue retirado por la selección explícita privada de Issue515; los gates de cuota permanecen.
 El tablero reconcilia tareas por evidencia y estados manuales; no crea otro
 registro, polling o control de chats.
 

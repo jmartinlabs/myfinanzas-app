@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+"""Private, repository-local model preferences. JSON syntax (YAML 1.2 subset), stdlib only."""
+import argparse
+import difflib
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+
+ROLES = ('implementation', 'functional', 'review', 'qa', 'infrastructure')
+CLIENTS = ('codex', 'claude', 'opencode', 'hermes')
+FORMATS = {'codex': 'codex-agents-toml-v1', 'claude': 'claude-subagents-v1',
+           'opencode': 'opencode-v2', 'hermes': 'manual'}
+MANIFEST = '.agents/models.manifest.local.json'
+LIMIT = 1024 * 1024
+
+class Refusal(Exception):
+    pass
+
+
+def require(ok, message):
+    if not ok:
+        raise Refusal(message)
+
+
+def keys(obj, allowed, required=()):
+    require(isinstance(obj, dict) and not (set(obj) - set(allowed)) and set(required) <= set(obj),
+            'INVALID closed schema: missing or unknown fields (values redacted)')
+
+
+def identifier(value, model=False):
+    pattern = r'[A-Za-z0-9][A-Za-z0-9._:-]{0,119}'
+    if model:
+        pattern = r'[A-Za-z0-9][A-Za-z0-9._:/-]{0,179}'
+    require(isinstance(value, str) and re.fullmatch(pattern, value) and
+            '..' not in value and not value.endswith('/') and '//' not in value and
+            not re.search(r'(?i)(sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9_]+|github_pat_|xox[baprs]-|AKIA[0-9A-Z]{12}|^eyJ[A-Za-z0-9_-]{20})', value),
+            'INVALID identifier or credential-shaped value (redacted)')
+    return value
+
+
+def pairs(items):
+    result = {}
+    for key, value in items:
+        require(key not in result, 'INVALID duplicate key (redacted)')
+        result[key] = value
+    return result
+
+
+def no_links(path):
+    path = Path(os.path.abspath(path))
+    for part in (path, *path.parents):
+        require(not part.is_symlink(), 'CONFLICT symlink path refused')
+    return path
+
+
+def read_bytes(path):
+    no_links(path)
+    require(path.is_file() and path.stat().st_size <= LIMIT and path.stat().st_nlink == 1,
+            'INVALID missing, oversized or linked input')
+    return path.read_bytes()
+
+
+def read_json(path):
+    try:
+        return json.loads(read_bytes(path), object_pairs_hook=pairs,
+                          parse_constant=lambda _: (_ for _ in ()).throw(Refusal('INVALID JSON constant')))
+    except (ValueError, UnicodeError):
+        raise Refusal('INVALID JSON syntax: use strict JSON, the supported YAML 1.2 subset; values redacted')
+
+
+def selection(value, complete=True):
+    keys(value, ('provider', 'model', 'effort'), ('provider', 'model') if complete else ())
+    for field, item in value.items():
+        identifier(item, model=field == 'model')
+
+
+def config_schema(config):
+    keys(config, ('version', 'coordinator', 'roles', 'clients', 'constraints'), ('version', 'roles'))
+    require(type(config['version']) is int and config['version'] == 1, 'UNSUPPORTED selector version')
+    require(config.get('coordinator', 'client-selected') == 'client-selected',
+            'INVALID coordinator must remain client-selected')
+    keys(config['roles'], ROLES)
+    for value in config['roles'].values():
+        selection(value)
+    keys(config.get('clients', {}), CLIENTS)
+    for overrides in config.get('clients', {}).values():
+        keys(overrides, ('roles',), ('roles',))
+        keys(overrides['roles'], ROLES)
+        for role, value in overrides['roles'].items():
+            selection(value, False)
+            selection(config['roles'].get(role, {}) | value)
+    constraints = config.get('constraints', {})
+    keys(constraints, ('providers', 'models', 'efforts'))
+    for field, values in constraints.items():
+        require(isinstance(values, list) and values and len(values) == len(set(map(str, values))),
+                'INVALID allowlist')
+        for value in values:
+            identifier(value, model=field == 'models')
+
+
+def catalog_schema(catalog):
+    keys(catalog, ('version', 'source', 'observed_at', 'clients'),
+         ('version', 'source', 'observed_at', 'clients'))
+    require(type(catalog['version']) is int and catalog['version'] == 1, 'UNSUPPORTED catalog version')
+    identifier(catalog['source'])
+    require(isinstance(catalog['observed_at'], str) and
+            re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', catalog['observed_at']),
+            'INVALID catalog observation timestamp')
+    keys(catalog['clients'], CLIENTS)
+    for client, data in catalog['clients'].items():
+        keys(data, ('version', 'format', 'session_provider', 'models'),
+             ('version', 'format', 'session_provider', 'models'))
+        for field in ('version', 'format', 'session_provider'):
+            identifier(data[field])
+        require(data['format'] == FORMATS[client], 'UNSUPPORTED native format')
+        require(isinstance(data['models'], list), 'INVALID catalog models')
+        seen = set()
+        for model in data['models']:
+            keys(model, ('provider', 'model', 'efforts'), ('provider', 'model', 'efforts'))
+            identifier(model['provider']); identifier(model['model'], model=True)
+            require(isinstance(model['efforts'], list), 'INVALID catalog efforts')
+            for effort in model['efforts']:
+                identifier(effort)
+            identity = (model['provider'], model['model'])
+            require(identity not in seen, 'INVALID duplicate catalog model')
+            seen.add(identity)
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def json_bytes(data):
+    return (json.dumps(data, indent=2, sort_keys=True) + '\n').encode()
+
+
+def git(root, *args):
+    return subprocess.run(['git', '-C', str(root), *args], check=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+
+
+def root_path(value):
+    root = no_links(Path(value or os.getcwd()))
+    actual = Path(os.fsdecode(git(root, 'rev-parse', '--show-toplevel')).strip())
+    require(root == actual if value else True, 'INVALID --root must be the Git repository root')
+    home = Path.home()
+    profiles = (home / '.codex', home / '.claude', home / '.hermes',
+                home / '.opencode', home / '.config/opencode')
+    require(actual != home and actual != Path('/') and not any(
+            actual == profile or actual.is_relative_to(profile) for profile in profiles),
+            'INVALID global profile root')
+    return no_links(actual)
+
+
+def prompt(root, role, client, sources):
+    native = 'qa-review' if role in ('review', 'qa') else role
+    if client == 'codex':
+        relative = f'.agents/roles/{native}.md'
+    elif client == 'claude':
+        relative = f'.claude/agents/{native}.md'
+    else:
+        native = 'review' if native == 'qa-review' else native
+        relative = f'.opencode/agents/{native}.md'
+    data = read_bytes(root / relative)
+    sources[relative] = digest(data)
+    return native, data.decode('utf-8')
+
+
+def frontmatter(text):
+    require(text.startswith('---\n') and '\n---\n' in text[4:], 'UNSUPPORTED agent frontmatter')
+    head, body = text[4:].split('\n---\n', 1)
+    return head.splitlines(), body
+
+
+def native_toml(fields):
+    # TOML requires Unicode scalar values: JSON's ASCII surrogate-pair escapes
+    # are not valid TOML. Encode non-BMP characters literally, escaping DEL too.
+    encoded = {key: json.dumps(value, ensure_ascii=False).replace('\x7f', r'\u007f')
+               for key, value in fields.items()}
+    text = ''.join(f'{key} = {value}\n' for key, value in encoded.items())
+    try:
+        import tomllib
+    except ImportError:  # Python 3.10: this renderer emits only string scalars.
+        require(all(json.loads(value) == fields[key] for key, value in encoded.items()),
+                'INVALID generated native TOML; values redacted')
+    else:
+        try:
+            require(tomllib.loads(text) == fields,
+                    'INVALID generated native TOML; values redacted')
+        except tomllib.TOMLDecodeError:
+            raise Refusal('INVALID generated native TOML; values redacted')
+    return text.encode('utf-8')
+
+
+def check_alias_names(root, client, selected):
+    if client not in ('codex', 'claude') or not selected:
+        return
+    folder = no_links(root / f'.{client}/agents')
+    if not folder.exists():
+        return
+    aliases = {'models-local-' + ('qa-review' if role in ('qa', 'review') else role)
+               for role in selected}
+    extension = 'toml' if client == 'codex' else 'md'
+    for path in folder.glob('*.' + extension):
+        if path.name in {alias + '.' + extension for alias in aliases}:
+            continue  # Exact output paths receive stricter ownership/hash preflight.
+        text = read_bytes(path).decode('utf-8')
+        if client == 'codex':
+            declarations = re.findall(r'^\s*name\s*=\s*(.*?)\s*$', text, re.M)
+        else:
+            lines, _ = frontmatter(text)
+            declarations = [line.split(':', 1)[1].strip() for line in lines
+                            if re.match(r'^name\s*:', line)]
+        require(len(declarations) == 1, 'UNSUPPORTED native agent name declaration; contents redacted')
+        raw = declarations[0]
+        if raw.startswith('"'):
+            try:
+                name = json.loads(raw)
+            except ValueError:
+                raise Refusal('UNSUPPORTED complex native agent name; contents redacted')
+        elif raw.startswith("'") and raw.endswith("'"):
+            name = raw[1:-1]
+        else:
+            require(client == 'claude', 'UNSUPPORTED native TOML name; contents redacted')
+            name = raw
+        require(isinstance(name, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,119}', name),
+                'UNSUPPORTED native agent name; contents redacted')
+        require(name not in aliases or path.name == name + '.' + extension,
+                'CONFLICT native alias declared by another file; contents redacted')
+
+
+def render(root, client, selected, sources):
+    check_alias_names(root, client, selected)
+    outputs, mapped = {}, {}
+    for role, choice in selected.items():
+        native, text = prompt(root, role, client, sources)
+        require(native not in mapped or mapped[native] == choice, 'CONFLICT shared review/qa mapping')
+        mapped[native] = choice
+        alias = f'models-local-{native}'
+        if client == 'codex':
+            fields = {'name': alias, 'description': f'Project {native} specialist; canonical role preserved.',
+                      'developer_instructions': text, 'model': choice['model']}
+            if 'effort' in choice:
+                fields['model_reasoning_effort'] = choice['effort']
+            outputs[f'.codex/agents/{alias}.toml'] = native_toml(fields)
+        elif client == 'claude':
+            lines, body = frontmatter(text)
+            parsed = {}
+            for line in lines:
+                match = re.fullmatch(r'([A-Za-z][A-Za-z_-]*): ([^\n]+)', line)
+                require(match is not None, 'UNSUPPORTED complex Claude frontmatter')
+                key, value = match.groups()
+                require(key not in parsed and key in ('name', 'description', 'tools', 'disallowedTools',
+                        'model', 'effort', 'permissionMode', 'maxTurns', 'skills', 'memory', 'background',
+                        'isolation'), 'UNSUPPORTED Claude frontmatter field')
+                parsed[key] = value
+            require(parsed.get('name') == native and 'description' in parsed,
+                    'CONFLICT unexpected native Claude role')
+            replace = {'name': alias, 'model': choice['model']}
+            if 'effort' in choice:
+                replace['effort'] = choice['effort']
+            new = [f'{line.split(":", 1)[0]}: {replace.get(line.split(":", 1)[0], line.split(": ", 1)[1])}'
+                   for line in lines if not (line.startswith('effort:') and 'effort' not in replace)]
+            present = {line.split(':', 1)[0] for line in new}
+            new += [f'{key}: {value}' for key, value in replace.items() if key not in present]
+            outputs[f'.claude/agents/{alias}.md'] = ('---\n' + '\n'.join(new) + '\n---\n' + body).encode()
+        else:
+            lines, _ = frontmatter(text)
+            require(not any(re.match(r'^\s*model\s*:', line) for line in lines),
+                    'CONFLICT existing OpenCode markdown model; precedence unverified')
+    if client == 'opencode' and mapped:
+        outputs['.opencode/opencode.json'] = json_bytes({'agents': {name: {
+            'model': choice['provider'] + '/' + choice['model'] +
+                     ('#' + choice['effort'] if 'effort' in choice else '')}
+            for name, choice in mapped.items()}})
+    return outputs
+
+
+def permitted_output(relative):
+    return relative == '.opencode/opencode.json' or bool(re.fullmatch(
+        r'(?:\.codex/agents/models-local-(?:implementation|functional|qa-review|infrastructure)\.toml|\.claude/agents/models-local-(?:implementation|functional|qa-review|infrastructure)\.md)', relative))
+
+
+def destination(root, relative):
+    require(permitted_output(relative) or relative == MANIFEST, 'INVALID owned output path')
+    path = no_links(root / relative)
+    require(path.is_relative_to(root), 'INVALID output escape')
+    for parent in path.parents:
+        if parent == root:
+            break
+        require(not parent.exists() or parent.is_dir(), 'CONFLICT output parent is not directory')
+    require(not path.exists() or (path.is_file() and path.stat().st_nlink == 1),
+            'CONFLICT unsafe output file')
+    require(subprocess.run(['git', '-C', str(root), 'check-ignore', '-q', '--no-index', relative],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0,
+            'CONFLICT generated output must be Git ignored')
+    require(subprocess.run(['git', '-C', str(root), 'ls-files', '--error-unmatch', '--', relative],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode != 0,
+            'CONFLICT tracked destination')
+    return path
+
+
+def preflight(root, outputs, sources, clients):
+    manifest_path = destination(root, MANIFEST)
+    old = read_json(manifest_path) if manifest_path.exists() else {'version': 1, 'outputs': {}, 'sources': {}}
+    keys(old, ('version', 'outputs', 'sources'), ('version', 'outputs', 'sources'))
+    require(old['version'] == 1 and isinstance(old['outputs'], dict) and isinstance(old['sources'], dict),
+            'INVALID ownership manifest')
+    prefixes = {'codex': '.codex/', 'claude': '.claude/', 'opencode': '.opencode/'}
+    require(not any(relative not in outputs and any(relative.startswith(prefixes[client])
+                    for client in clients if client in prefixes) for relative in old['outputs']),
+            'CONFLICT STALE_OUTPUT: inspect and retire removed native aliases and manifest entries manually')
+    for relative, expected in old['outputs'].items():
+        path = destination(root, relative)
+        require(path.exists() and digest(read_bytes(path)) == expected,
+                'CONFLICT prior generated file changed or missing')
+    for relative, expected in old['sources'].items():
+        require(re.fullmatch(r'\.(agents/roles|claude/agents|opencode/agents)/(implementation|functional|qa-review|review|infrastructure)\.md', relative),
+                'INVALID source manifest path')
+        require(digest(read_bytes(root / relative)) == expected,
+                'CONFLICT canonical source changed; inspect and retire private outputs before regenerating')
+    for relative in outputs:
+        path = destination(root, relative)
+        require(not path.exists() or relative in old['outputs'], 'CONFLICT unowned native output')
+    next_outputs = old['outputs'] | {key: digest(value) for key, value in outputs.items()}
+    next_sources = old['sources'] | sources
+    outputs[MANIFEST] = json_bytes({'version': 1, 'outputs': next_outputs, 'sources': next_sources})
+    return outputs
+
+
+def atomic_file(path, data, mode):
+    fd, temporary = tempfile.mkstemp(prefix='.models-sync-', dir=path.parent)
+    try:
+        with os.fdopen(fd, 'wb') as stream:
+            os.fchmod(stream.fileno(), mode)
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def activate(root, outputs):
+    backups, changed, directories = {}, [], []
+    try:
+        for relative, data in outputs.items():
+            path = destination(root, relative)
+            previous = read_bytes(path) if path.exists() else None
+            if previous == data:
+                continue
+            backups[path] = (previous, stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o600)
+            missing = []
+            parent = path.parent
+            while not parent.exists():
+                missing.append(parent); parent = parent.parent
+            for parent in reversed(missing):
+                parent.mkdir(mode=0o700); directories.append(parent)
+            changed.append(path)
+            atomic_file(path, data, backups[path][1])
+    except BaseException:
+        for path in reversed(changed):
+            previous, mode = backups[path]
+            if previous is None:
+                path.unlink(missing_ok=True)
+            else:
+                atomic_file(path, previous, mode)
+        for parent in reversed(directories):
+            parent.rmdir()
+        raise
+    return len(changed)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('--check', action='store_true', help='read-only preview (default)')
+    action.add_argument('--apply', action='store_true', help='write private native configuration')
+    parser.add_argument('--client', choices=CLIENTS)
+    parser.add_argument('--root', help='isolated Git repository root; default current Git root')
+    parser.add_argument('--config', help='explicit private selector, including outside this worktree')
+    parser.add_argument('--catalog', help='explicit local observed catalog JSON; no network lookup')
+    args = parser.parse_args(argv)
+    try:
+        require(not args.apply or args.client, 'INVALID --apply requires --client')
+        root = root_path(args.root)
+        config_path = Path(args.config) if args.config else root / '.agents/models.local.yaml'
+        require(config_path.exists(), 'UNCONFIGURED selector missing; copy .agents/models.example.yaml to .agents/models.local.yaml or pass --config')
+        config = read_json(config_path)
+        config_schema(config)
+        catalog_path = Path(args.catalog) if args.catalog else root / '.agents/models.catalog.local.json'
+        catalog = read_json(catalog_path) if catalog_path.exists() else None
+        if catalog is not None:
+            catalog_schema(catalog)
+        clients = (args.client,) if args.client else CLIENTS
+        all_outputs, all_sources, unverifiable = {}, {}, False
+        for client in clients:
+            selected = {role: choice.copy() for role, choice in config['roles'].items()}
+            for role, choice in config.get('clients', {}).get(client, {}).get('roles', {}).items():
+                selected[role] = selected.get(role, {}) | choice
+            for choice in selected.values():
+                for field, allowed in config.get('constraints', {}).items():
+                    singular = {'providers': 'provider', 'models': 'model', 'efforts': 'effort'}[field]
+                    require(singular == 'provider' or singular not in choice or choice[singular] in allowed,
+                            'CONFLICT selector allowlist')
+            available = catalog['clients'].get(client) if catalog else None
+            print(f'{client}: coordinator=client-selected; effective runtime=UNVERIFIED')
+            for role, choice in selected.items():
+                print(f'  requested {role}: {choice["provider"]}/{choice["model"]}' +
+                      (f' effort={choice["effort"]}' if 'effort' in choice else ''))
+            if client == 'hermes':
+                print('  MANUAL/UNSUPPORTED: profile config_path; model_map requires advanced-delegation plugin; no repository override')
+                require(not args.apply, 'UNSUPPORTED Hermes apply; use reviewed profile configuration and check-delegation-route')
+                unverifiable = True
+                continue
+            if available is None:
+                print('  UNVERIFIED: no client catalog; no native output can be validated')
+                require(not args.apply, 'UNVERIFIED catalog required before apply')
+                unverifiable = True
+                continue
+            for choice in selected.values():
+                provider = available['session_provider'] if choice['provider'] == 'inherit' else choice['provider']
+                if client in ('codex', 'claude'):
+                    require(provider == available['session_provider'], 'UNSUPPORTED per-role provider; native client inherits session provider')
+                choice['provider'] = provider
+                matched = next((model for model in available['models'] if
+                                model['provider'] == provider and model['model'] == choice['model']), None)
+                require(matched is not None and ('effort' not in choice or choice['effort'] in matched['efforts']),
+                        'UNSUPPORTED provider/model/effort in declared catalog')
+                if 'providers' in config.get('constraints', {}):
+                    require(provider in config['constraints']['providers'], 'CONFLICT resolved provider allowlist')
+            print(f'  CONFIG_ONLY: catalog source={catalog["source"]} observed={catalog["observed_at"]} client-version={available["version"]}; declared input, not entitlement')
+            if client == 'opencode' and ('qa' in selected or 'review' in selected):
+                print('  QA execution UNSUPPORTED: review mapping is read-only audit')
+            outputs = render(root, client, selected, all_sources)
+            all_outputs.update(outputs)
+        if all_outputs or (root / MANIFEST).exists():
+            preflight(root, all_outputs, all_sources, clients)
+            for relative, data in all_outputs.items():
+                if relative == MANIFEST:
+                    continue
+                path = root / relative
+                before = read_bytes(path).decode() if path.exists() else ''
+                print(''.join(difflib.unified_diff(before.splitlines(True), data.decode().splitlines(True),
+                                                 fromfile=relative + ' (current)', tofile=relative + ' (proposed)')), end='')
+            if args.apply:
+                print(f'CONFIG_ONLY applied: {activate(root, all_outputs)} changed files; dispatch generated aliases explicitly; restart/reload depends on client')
+        print('Effective runtime selection UNVERIFIED; no model calls or coordinator changes.')
+        return 2 if unverifiable else 0
+    except Refusal as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    except (OSError, subprocess.SubprocessError, UnicodeError):
+        print('ERROR local operation failed (details redacted); configuration not verified', file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())

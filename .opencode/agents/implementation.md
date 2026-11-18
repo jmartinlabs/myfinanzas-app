@@ -1,5 +1,5 @@
 ---
-description: Native OpenCode implementation specialist for an approved, bounded specification.
+description: Native OpenCode implementation specialist for authorized Standard/task or approved Full/dev scope.
 mode: subagent
 color: "#22C55E"
 ---
@@ -15,3 +15,5 @@ Authorization and approval evidence, ownership, isolation, dependencies, applica
 ## Return
 
 Return the packet's result schema to the coordinator.
+
+Standard uses `$task` with explicit scope authorization; Full uses `$dev` with approved spec and separate development authorization. Load the canonical role and selected phase Skill before acting.
