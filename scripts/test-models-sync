@@ -53,12 +53,29 @@ class ModelsSync(unittest.TestCase):
         (self.root / '.agents/models.local.yaml').write_text(json.dumps(self.config))
         (self.root / '.agents/models.catalog.local.json').write_text(json.dumps(self.catalog))
 
-    def call(self, *args, status=0, client='codex'):
+    def call(self, *args, status=0, client='codex', env=None):
         result = subprocess.run([sys.executable, str(SCRIPT), '--root', str(self.root),
-                                 '--client', client, *args], capture_output=True, text=True)
+                                 '--client', client, *args], capture_output=True, text=True,
+                                env={**os.environ, **(env or {})})
         self.assertEqual(result.returncode, status, result.stdout + result.stderr)
         self.assertNotRegex(result.stdout, r'(?m)^PASS(?: |:)')
         return result.stdout + result.stderr
+
+    def fake_cli(self, models=('provider-a/future-large', 'provider-a/alternate', 'provider-b/other')):
+        """Disposable `opencode` stand-in; the real CLI is never invoked by tests."""
+        folder = Path(self.tmp.name).resolve() / 'bin'
+        folder.mkdir(exist_ok=True)
+        script = folder / 'opencode'
+        script.write_text('#!/bin/sh\ncase "$1" in\n  --version) echo "opencode v9.9.9" ;;\n  models)\n' +
+                          ''.join(f'    echo "{model}"\n' for model in models) +
+                          '    ;;\n  *) exit 1 ;;\nesac\n')
+        script.chmod(0o755)
+        return {'PATH': f'{folder}{os.pathsep}{os.environ["PATH"]}'}
+
+    def derived_selector(self):
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
 
     def snapshot(self):
         return {str(p.relative_to(self.root)): (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode)
@@ -134,19 +151,157 @@ class ModelsSync(unittest.TestCase):
                                          'functional': {'model': 'provider-b/other#max'}}})
         self.assertEqual(original, (self.root / '.opencode/agents/implementation.md').read_bytes())
 
-    def test_shared_review_qa_alias(self):
-        self.config['roles'] = {'review': CHOICE.copy(), 'qa': CHOICE.copy()}; self.save()
-        for client in ('codex', 'claude'):
-            self.call('--apply', client=client)
-            self.assertTrue(self.generated(client, 'qa-review').exists())
-        self.assertIn('QA execution UNSUPPORTED', self.call('--apply', client='opencode'))
-        self.assertEqual(list(json.loads((self.root / '.opencode/opencode.json').read_text())['agents']), ['review'])
+    def test_review_and_qa_are_separable_aliases(self):
+        # Defect 1: review and qa share the qa-review prompt but must not share a model.
+        self.catalog['clients']['codex']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': ['low']})
+        self.config['roles'] = {'review': CHOICE.copy(),
+                                'qa': {'provider': 'provider-a', 'model': 'alternate', 'effort': 'low'}}
+        self.save()
+        for client, suffix in (('codex', 'toml'), ('claude', 'md')):
+            with self.subTest(client=client):
+                source = (self.root / ('.agents/roles/qa-review.md' if client == 'codex'
+                                       else '.claude/agents/qa-review.md')).read_text()
+                self.call('--apply', client=client)
+                review = self.root / f'.{client}/agents/models-local-review.{suffix}'
+                qa = self.root / f'.{client}/agents/models-local-qa.{suffix}'
+                self.assertTrue(review.exists() and qa.exists())
+                self.assertFalse((self.root / f'.{client}/agents/models-local-qa-review.{suffix}').exists())
+                if client == 'codex':
+                    fields = {name: parse_toml(path.read_text()) for name, path in
+                              (('review', review), ('qa', qa))}
+                    self.assertEqual((fields['review']['model'], fields['review']['model_reasoning_effort']),
+                                     ('future-large', 'high'))
+                    self.assertEqual((fields['qa']['model'], fields['qa']['model_reasoning_effort']),
+                                     ('alternate', 'low'))
+                    self.assertEqual(fields['qa']['name'], 'models-local-qa')
+                    for name in ('review', 'qa'):
+                        self.assertEqual(fields[name]['developer_instructions'], source)
+                else:
+                    body = source.split('\n---\n', 1)[1]
+                    for name, path in (('review', review), ('qa', qa)):
+                        generated = path.read_text()
+                        self.assertIn(f'name: models-local-{name}\n', generated)
+                        self.assertEqual(generated.split('\n---\n', 1)[1], body)
+                    self.assertIn('model: future-large\neffort: high', review.read_text())
+                    self.assertIn('model: alternate\neffort: low', qa.read_text())
+                self.assertIn('0 changed files', self.call('--apply', client=client))
 
-    def test_shared_review_qa_conflict_no_partial_writes(self):
-        self.config['roles'].update(review=CHOICE.copy(), qa=CHOICE | {'effort': 'low'}); self.save()
+    def test_opencode_qa_missing_apply_is_all_or_nothing(self):
+        # Never drop `qa`, never emit an inert `agents.qa`, and never write a partial config.
+        self.catalog['clients']['opencode']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
+        self.config['roles'] = {'review': CHOICE.copy(),
+                                'qa': {'provider': 'provider-a', 'model': 'alternate'}}
+        self.save()
         before = self.snapshot()
-        for client in ('codex', 'claude', 'opencode'):
-            self.assertIn('CONFLICT shared', self.call('--apply', client=client, status=2))
+        out = self.call('--apply', client='opencode', status=2)
+        self.assertIn('UNSUPPORTED OpenCode qa agent missing', out)
+        self.assertIn('REFUSED --apply is all-or-nothing', out)
+        self.assertIn('  requested qa: provider-a/alternate', out)
+        self.assertFalse((self.root / '.opencode/opencode.json').exists())
+        self.assertFalse((self.root / MODULE['MANIFEST']).exists())
+        self.assertEqual(before, self.snapshot())          # bytes, mtime y modo intactos
+        # --check sigue diagnosticando y muestra la parte soportada sin escribir nada
+        check = self.call(client='opencode', status=2)   # catálogo declarado con efforts
+        self.assertIn('UNSUPPORTED OpenCode qa agent missing', check)
+        self.assertIn('+++ .opencode/opencode.json (proposed)', check)
+        self.assertEqual(before, self.snapshot())
+        # con el agente presente, aplica los dos roles
+        (self.root / '.opencode/agents/qa.md').write_text(
+            (self.root / '.opencode/agents/review.md').read_text())
+        self.call('--apply', client='opencode')
+        data = json.loads((self.root / '.opencode/opencode.json').read_text())
+        self.assertEqual(data, {'agents': {'review': {'model': 'provider-a/future-large#high'},
+                                           'qa': {'model': 'provider-a/alternate'}}})
+
+    def test_apply_refusal_preserves_previous_generated_config(self):
+        # Un apply fallido no toca la configuración generada antes ni su manifiesto.
+        (self.root / '.opencode/agents/qa.md').write_text(
+            (self.root / '.opencode/agents/review.md').read_text())
+        self.catalog['clients']['opencode']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
+        self.config['roles'] = {'review': CHOICE.copy(),
+                                'qa': {'provider': 'provider-a', 'model': 'alternate'}}
+        self.save()
+        self.call('--apply', client='opencode')                   # estado previo válido
+        previous = (self.root / '.opencode/opencode.json').read_bytes()
+        manifest = (self.root / MODULE['MANIFEST']).read_bytes()
+        (self.root / '.opencode/agents/qa.md').unlink()          # ya no puede aplicarse
+        before = self.snapshot()
+        out = self.call('--apply', client='opencode', status=2)
+        self.assertIn('REFUSED --apply is all-or-nothing', out)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual((self.root / '.opencode/opencode.json').read_bytes(), previous)
+        self.assertEqual((self.root / MODULE['MANIFEST']).read_bytes(), manifest)
+
+    def test_write_catalog_skipped_when_run_reports_unsupported_roles(self):
+        self.config['roles'] = {'review': {'provider': 'provider-a', 'model': 'future-large'},
+                                'qa': {'provider': 'provider-a', 'model': 'alternate'}}
+        self.catalog['clients']['opencode']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode',
+                        status=2, env=self.fake_cli(models=('provider-a/future-large', 'provider-a/alternate')))
+        self.assertIn('CATALOG_NOT_WRITTEN', out)
+        self.assertFalse((self.root / MODULE['CATALOG']).exists())
+
+    def test_write_catalog_not_written_when_preflight_fails(self):
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save()
+        self.call('--apply', client='opencode')                    # genera config válida
+        generated = self.root / '.opencode/opencode.json'
+        generated.write_text('{"agents": {}}\n')                  # ajeno/manipulado → preflight falla
+        (self.root / MODULE['CATALOG']).unlink()
+        before = self.snapshot()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode',
+                        status=2, env=self.fake_cli())
+        self.assertIn('CONFLICT prior generated file changed or missing', out)
+        self.assertNotIn('CATALOG_WRITTEN', out)
+        self.assertFalse((self.root / MODULE['CATALOG']).exists())
+        self.assertEqual(before, self.snapshot())
+
+    def test_activate_rollback_reports_incomplete_instead_of_aborting(self):
+        # Un fallo de escritura no puede dejar contenido nuevo sin avisar del rollback incompleto.
+        if os.geteuid() == 0:
+            self.skipTest('chmod-based failure simulation is meaningless as root')
+        opencode = self.root / '.opencode/opencode.json'
+        agents = self.root / '.agents'
+        opencode.write_text('{"old": true}\n')
+        (self.root / MODULE['MANIFEST']).write_text('{"old": true}\n')   # existía: restaurarlo exige escribir
+        self.addCleanup(os.chmod, agents, 0o700)
+        os.chmod(agents, 0o500)                                   # el manifiesto no podrá escribirse
+        with self.assertRaises(MODULE['Refusal']) as caught:
+            MODULE['activate'](self.root, {'.opencode/opencode.json': b'{"new": true}\n',
+                                           MODULE['MANIFEST']: b'{"new": true}\n'})
+        self.assertIn('ROLLBACK INCOMPLETE', str(caught.exception))
+        self.assertEqual(opencode.read_text(), '{"old": true}\n')   # restaurado pese al fallo
+
+    def test_write_catalog_without_roles_bootstraps_cleanly(self):
+        # Elegir modelos exige un catálogo: derivarlo antes de fijar roles debe funcionar.
+        self.config['roles'] = {}
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', '--apply', client='opencode',
+                        env=self.fake_cli())
+        self.assertIn('CATALOG_WRITTEN', out)
+        self.assertNotIn('CATALOG_NOT_WRITTEN', out)
+        catalog = json.loads((self.root / MODULE['CATALOG']).read_text())
+        self.assertEqual(catalog['source'], 'opencode-models-cli')
+
+    def test_invalid_catalog_destination_aborts_before_apply(self):
+        # Un destino de catálogo inválido no puede dejar la configuración aplicada.
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save()
+        (self.root / MODULE['CATALOG']).unlink()
+        (self.root / MODULE['CATALOG']).mkdir()                  # directorio donde se espera fichero
+        before = self.snapshot()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', '--apply', client='opencode',
+                        status=2, env=self.fake_cli())
+        self.assertIn('CONFLICT', out)
+        self.assertNotIn('CONFIG_ONLY applied', out)
+        self.assertFalse((self.root / '.opencode/opencode.json').exists())
         self.assertEqual(before, self.snapshot())
 
     def test_overrides_and_explicit_allowlists(self):
@@ -208,6 +363,74 @@ class ModelsSync(unittest.TestCase):
     def test_unsupported_native_format(self):
         self.catalog['clients']['codex']['format'] = 'unknown'; self.save()
         self.assertIn('UNSUPPORTED native format', self.call('--apply', status=2))
+
+    def test_catalog_from_fake_cli_is_in_memory_by_default(self):
+        # Defect 2: one preference file, catalog derived from the installed client.
+        env = self.fake_cli(); self.derived_selector()
+        out = self.call('--catalog-from', 'opencode', '--apply', client='opencode', env=env)
+        self.assertIn('CATALOG_DERIVED source=opencode-models-cli', out)
+        self.assertIn('client-version=v9.9.9 models=3 in-memory', out)
+        self.assertIn('CONFIG_ONLY: catalog source=opencode-models-cli', out)
+        self.assertNotIn('UNVERIFIED: no client catalog', out)
+        self.assertFalse((self.root / MODULE['CATALOG']).exists())
+        self.assertTrue((self.root / '.opencode/opencode.json').exists())
+
+    def test_catalog_from_write_catalog_is_schema_valid_and_ignored(self):
+        env = self.fake_cli(); self.derived_selector()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode', env=env)
+        self.assertIn('CATALOG_WRITTEN', out)
+        catalog = json.loads((self.root / MODULE['CATALOG']).read_text())
+        MODULE['catalog_schema'](catalog)
+        self.assertEqual(catalog['source'], 'opencode-models-cli')
+        self.assertRegex(catalog['observed_at'], r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
+        client = catalog['clients']['opencode']
+        self.assertEqual((client['version'], client['format'], client['session_provider']),
+                         ('v9.9.9', 'opencode-v2', 'provider-a'))
+        self.assertEqual([(m['provider'], m['model'], m['efforts']) for m in client['models']],
+                         [('provider-a', 'future-large', []), ('provider-a', 'alternate', []),
+                          ('provider-b', 'other', [])])
+        self.git('check-ignore', MODULE['CATALOG'])
+        # The written catalog is reused by a later run without invoking any CLI.
+        self.assertIn('CONFIG_ONLY: catalog source=opencode-models-cli',
+                      self.call(client='opencode'))
+
+    def test_catalog_from_missing_cli_is_a_clear_error(self):
+        bin_dir = Path(self.tmp.name).resolve() / 'only-git'
+        bin_dir.mkdir()
+        (bin_dir / 'git').symlink_to(shutil.which('git'))
+        before = (self.root / MODULE['CATALOG']).read_bytes()
+        out = self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode', status=2,
+                        env={'PATH': str(bin_dir)})
+        self.assertIn('UNSUPPORTED opencode CLI not found in PATH', out)
+        self.assertEqual(before, (self.root / MODULE['CATALOG']).read_bytes())
+
+    def test_catalog_from_unsupported_client_and_flag_pairing(self):
+        self.assertIn('no documented local listing command',
+                      self.call('--catalog-from', 'codex', status=2))
+        self.assertIn('requires --catalog-from', self.call('--write-catalog', status=2))
+        self.assertIn('not allowed with argument',
+                      self.call('--catalog', 'x.json', '--catalog-from', 'opencode', status=2))
+
+    def test_derived_catalog_fake_cli_writes_only_the_private_catalog(self):
+        decoy = Path(self.tmp.name).resolve() / 'home'; decoy.mkdir()
+        env = self.fake_cli() | {'HOME': str(decoy)}
+        self.derived_selector()
+        self.call('--catalog-from', 'opencode', '--write-catalog', client='opencode', env=env)
+        self.assertEqual(list(decoy.iterdir()), [])
+        self.assertTrue((self.root / MODULE['CATALOG']).exists())
+
+    def test_opencode_audit_warning_only_without_qa_role(self):
+        env = self.fake_cli()
+        self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'},
+                                'review': {'provider': 'provider-a', 'model': 'future-large'}}
+        self.save(); (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', client='opencode', env=env)
+        self.assertIn('QA execution UNSUPPORTED', out)
+        self.config['roles']['qa'] = {'provider': 'provider-a', 'model': 'alternate'}
+        self.save(); (self.root / MODULE['CATALOG']).unlink()
+        out = self.call('--catalog-from', 'opencode', client='opencode', env=env, status=2)
+        self.assertNotIn('QA execution UNSUPPORTED', out)
+        self.assertIn('UNSUPPORTED OpenCode qa agent missing', out)
 
     def test_hermes_check_only_manual(self):
         self.assertIn('MANUAL/UNSUPPORTED', self.call(client='hermes', status=2))

@@ -2,6 +2,7 @@
 """Private, repository-local model preferences. JSON syntax (YAML 1.2 subset), stdlib only."""
 import argparse
 import difflib
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -17,6 +18,10 @@ CLIENTS = ('codex', 'claude', 'opencode', 'hermes')
 FORMATS = {'codex': 'codex-agents-toml-v1', 'claude': 'claude-subagents-v1',
            'opencode': 'opencode-v2', 'hermes': 'manual'}
 MANIFEST = '.agents/models.manifest.local.json'
+CATALOG = '.agents/models.catalog.local.json'
+CATALOG_TIMEOUT = 30
+# Only a documented, cheap, local listing command per client. No network, no credentials.
+CATALOG_CLI = {'opencode': ('models', 'opencode-models-cli')}
 LIMIT = 1024 * 1024
 
 class Refusal(Exception):
@@ -165,7 +170,8 @@ def prompt(root, role, client, sources):
     elif client == 'claude':
         relative = f'.claude/agents/{native}.md'
     else:
-        native = 'review' if native == 'qa-review' else native
+        # OpenCode keeps one native agent per role: review and qa never share a prompt.
+        native = role
         relative = f'.opencode/agents/{native}.md'
     data = read_bytes(root / relative)
     sources[relative] = digest(data)
@@ -204,8 +210,7 @@ def check_alias_names(root, client, selected):
     folder = no_links(root / f'.{client}/agents')
     if not folder.exists():
         return
-    aliases = {'models-local-' + ('qa-review' if role in ('qa', 'review') else role)
-               for role in selected}
+    aliases = {'models-local-' + role for role in selected}
     extension = 'toml' if client == 'codex' else 'md'
     for path in folder.glob('*.' + extension):
         if path.name in {alias + '.' + extension for alias in aliases}:
@@ -237,14 +242,12 @@ def check_alias_names(root, client, selected):
 
 def render(root, client, selected, sources):
     check_alias_names(root, client, selected)
-    outputs, mapped = {}, {}
+    outputs, agents = {}, {}
     for role, choice in selected.items():
         native, text = prompt(root, role, client, sources)
-        require(native not in mapped or mapped[native] == choice, 'CONFLICT shared review/qa mapping')
-        mapped[native] = choice
-        alias = f'models-local-{native}'
+        alias = f'models-local-{role}'
         if client == 'codex':
-            fields = {'name': alias, 'description': f'Project {native} specialist; canonical role preserved.',
+            fields = {'name': alias, 'description': f'Project {role} specialist; canonical role preserved.',
                       'developer_instructions': text, 'model': choice['model']}
             if 'effort' in choice:
                 fields['model_reasoning_effort'] = choice['effort']
@@ -274,21 +277,22 @@ def render(root, client, selected, sources):
             lines, _ = frontmatter(text)
             require(not any(re.match(r'^\s*model\s*:', line) for line in lines),
                     'CONFLICT existing OpenCode markdown model; precedence unverified')
-    if client == 'opencode' and mapped:
+            agents[native] = choice
+    if client == 'opencode' and agents:
         outputs['.opencode/opencode.json'] = json_bytes({'agents': {name: {
             'model': choice['provider'] + '/' + choice['model'] +
                      ('#' + choice['effort'] if 'effort' in choice else '')}
-            for name, choice in mapped.items()}})
+            for name, choice in agents.items()}})
     return outputs
 
 
 def permitted_output(relative):
     return relative == '.opencode/opencode.json' or bool(re.fullmatch(
-        r'(?:\.codex/agents/models-local-(?:implementation|functional|qa-review|infrastructure)\.toml|\.claude/agents/models-local-(?:implementation|functional|qa-review|infrastructure)\.md)', relative))
+        r'(?:\.codex/agents/models-local-(?:implementation|functional|review|qa|infrastructure)\.toml|\.claude/agents/models-local-(?:implementation|functional|review|qa|infrastructure)\.md)', relative))
 
 
 def destination(root, relative):
-    require(permitted_output(relative) or relative == MANIFEST, 'INVALID owned output path')
+    require(permitted_output(relative) or relative in (MANIFEST, CATALOG), 'INVALID owned output path')
     path = no_links(root / relative)
     require(path.is_relative_to(root), 'INVALID output escape')
     for parent in path.parents:
@@ -321,7 +325,7 @@ def preflight(root, outputs, sources, clients):
         require(path.exists() and digest(read_bytes(path)) == expected,
                 'CONFLICT prior generated file changed or missing')
     for relative, expected in old['sources'].items():
-        require(re.fullmatch(r'\.(agents/roles|claude/agents|opencode/agents)/(implementation|functional|qa-review|review|infrastructure)\.md', relative),
+        require(re.fullmatch(r'\.(agents/roles|claude/agents|opencode/agents)/(implementation|functional|qa-review|review|qa|infrastructure)\.md', relative),
                 'INVALID source manifest path')
         require(digest(read_bytes(root / relative)) == expected,
                 'CONFLICT canonical source changed; inspect and retire private outputs before regenerating')
@@ -365,17 +369,79 @@ def activate(root, outputs):
                 parent.mkdir(mode=0o700); directories.append(parent)
             changed.append(path)
             atomic_file(path, data, backups[path][1])
-    except BaseException:
+    except BaseException as error:
+        failed = []
         for path in reversed(changed):
             previous, mode = backups[path]
-            if previous is None:
-                path.unlink(missing_ok=True)
-            else:
-                atomic_file(path, previous, mode)
+            try:
+                if previous is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    atomic_file(path, previous, mode)
+            except OSError:
+                failed.append(str(path.relative_to(root)))
         for parent in reversed(directories):
-            parent.rmdir()
+            try:
+                parent.rmdir()
+            except OSError:
+                failed.append(str(parent.relative_to(root)))
+        if failed:
+            raise Refusal('ROLLBACK INCOMPLETE for ' + ', '.join(failed) +
+                          '; restore those paths manually before continuing') from error
         raise
     return len(changed)
+
+
+def utc_stamp():
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def parse_catalog(text):
+    """One `provider/model[#variant]` per line, as listed by the client CLI."""
+    models, seen = [], set()
+    for line in text.splitlines():
+        match = re.fullmatch(r'([A-Za-z0-9][A-Za-z0-9._:-]*)/([^\s#]+)(?:#([A-Za-z0-9][A-Za-z0-9._:-]*))?',
+                             line.strip())
+        if match is None:
+            continue
+        provider, model, effort = match.groups()
+        if (provider, model) in seen:
+            continue
+        identifier(provider)
+        identifier(model, model=True)
+        seen.add((provider, model))
+        models.append({'provider': provider, 'model': model, 'efforts': [effort] if effort else []})
+    return models
+
+
+def cli_version(client):
+    try:
+        result = subprocess.run([client, '--version'], timeout=CATALOG_TIMEOUT, text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        tokens = re.findall(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,119}', result.stdout or '')
+    except (OSError, subprocess.SubprocessError):
+        return client + '-cli'
+    return tokens[-1] if result.returncode == 0 and tokens else client + '-cli'
+
+
+def catalog_from_cli(client, root):
+    require(client in CATALOG_CLI, f'UNSUPPORTED --catalog-from {client}: no documented local listing command; pass --catalog')
+    command, source = CATALOG_CLI[client]
+    try:
+        result = subprocess.run([client, command], cwd=str(root), timeout=CATALOG_TIMEOUT,
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        raise Refusal(f'UNSUPPORTED {client} CLI not found in PATH; install it or pass --catalog')
+    except subprocess.TimeoutExpired:
+        raise Refusal(f'UNSUPPORTED {client} CLI exceeded {CATALOG_TIMEOUT}s; no catalog derived')
+    require(result.returncode == 0, f'UNSUPPORTED {client} CLI listing failed; no catalog derived (details redacted)')
+    models = parse_catalog(result.stdout.decode('utf-8', 'replace'))
+    require(models, f'UNSUPPORTED no provider/model line from "{client} {command}"')
+    # `session_provider` is a single value in the catalog schema: use the first provider listed
+    # by the CLI. Declare `provider` explicitly instead of `inherit` when several are listed.
+    return {'version': 1, 'source': source, 'observed_at': utc_stamp(),
+            'clients': {client: {'version': cli_version(client), 'format': FORMATS[client],
+                                 'session_provider': models[0]['provider'], 'models': models}}}
 
 
 def main(argv=None):
@@ -386,17 +452,31 @@ def main(argv=None):
     parser.add_argument('--client', choices=CLIENTS)
     parser.add_argument('--root', help='isolated Git repository root; default current Git root')
     parser.add_argument('--config', help='explicit private selector, including outside this worktree')
-    parser.add_argument('--catalog', help='explicit local observed catalog JSON; no network lookup')
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--catalog', help='explicit local observed catalog JSON; no network lookup')
+    source.add_argument('--catalog-from', metavar='CLIENT',
+                        help=f'derive the catalog from an installed client CLI ({", ".join(CATALOG_CLI)}); in memory only')
+    parser.add_argument('--write-catalog', action='store_true',
+                        help='write the derived catalog to ' + CATALOG + ' (Git ignored)')
     args = parser.parse_args(argv)
     try:
         require(not args.apply or args.client, 'INVALID --apply requires --client')
+        require(not args.write_catalog or args.catalog_from, 'INVALID --write-catalog requires --catalog-from')
         root = root_path(args.root)
         config_path = Path(args.config) if args.config else root / '.agents/models.local.yaml'
         require(config_path.exists(), 'UNCONFIGURED selector missing; copy .agents/models.example.yaml to .agents/models.local.yaml or pass --config')
         config = read_json(config_path)
         config_schema(config)
-        catalog_path = Path(args.catalog) if args.catalog else root / '.agents/models.catalog.local.json'
-        catalog = read_json(catalog_path) if catalog_path.exists() else None
+        derived_catalog = None
+        if args.catalog_from:
+            catalog = catalog_from_cli(args.catalog_from, root)
+            listed = catalog['clients'][args.catalog_from]['models']
+            print(f'CATALOG_DERIVED source={catalog["source"]} observed_at={catalog["observed_at"]} '
+                  f'client-version={catalog["clients"][args.catalog_from]["version"]} models={len(listed)} in-memory')
+            derived_catalog = catalog
+        else:
+            catalog_path = Path(args.catalog) if args.catalog else root / CATALOG
+            catalog = read_json(catalog_path) if catalog_path.exists() else None
         if catalog is not None:
             catalog_schema(catalog)
         clients = (args.client,) if args.client else CLIENTS
@@ -425,6 +505,14 @@ def main(argv=None):
                 require(not args.apply, 'UNVERIFIED catalog required before apply')
                 unverifiable = True
                 continue
+            requested_qa = 'qa' in selected
+            blockers = []
+            if client == 'opencode' and requested_qa and not (root / '.opencode/agents/qa.md').is_file():
+                # Never drop a requested role silently, and never emit an inert `agents.qa`.
+                blockers.append('UNSUPPORTED OpenCode qa agent missing (.opencode/agents/qa.md)')
+                print(f'  {blockers[-1]}; agents.qa not generated')
+                selected.pop('qa')
+                unverifiable = True
             for choice in selected.values():
                 provider = available['session_provider'] if choice['provider'] == 'inherit' else choice['provider']
                 if client in ('codex', 'claude'):
@@ -437,10 +525,15 @@ def main(argv=None):
                 if 'providers' in config.get('constraints', {}):
                     require(provider in config['constraints']['providers'], 'CONFLICT resolved provider allowlist')
             print(f'  CONFIG_ONLY: catalog source={catalog["source"]} observed={catalog["observed_at"]} client-version={available["version"]}; declared input, not entitlement')
-            if client == 'opencode' and ('qa' in selected or 'review' in selected):
+            if client == 'opencode' and 'review' in selected and not requested_qa:
+                # The review agent is a read-only audit; QA is a different agent when it exists.
                 print('  QA execution UNSUPPORTED: review mapping is read-only audit')
+            if args.apply and blockers:
+                # --apply is all-or-nothing per client: a single unsupported role aborts it.
+                raise Refusal('REFUSED --apply is all-or-nothing; nothing written: ' + '; '.join(blockers))
             outputs = render(root, client, selected, all_sources)
             all_outputs.update(outputs)
+        catalog_path = destination(root, CATALOG) if args.write_catalog and derived_catalog else None
         if all_outputs or (root / MANIFEST).exists():
             preflight(root, all_outputs, all_sources, clients)
             for relative, data in all_outputs.items():
@@ -452,6 +545,14 @@ def main(argv=None):
                                                  fromfile=relative + ' (current)', tofile=relative + ' (proposed)')), end='')
             if args.apply:
                 print(f'CONFIG_ONLY applied: {activate(root, all_outputs)} changed files; dispatch generated aliases explicitly; restart/reload depends on client')
+        if catalog_path is not None:
+            if unverifiable:
+                # Never leave a derived catalog behind when the run reports a role it cannot apply.
+                print(f'CATALOG_NOT_WRITTEN {CATALOG}: this run reports roles it cannot apply '
+                      '(unsupported role or client without native output)')
+            else:
+                atomic_file(catalog_path, json_bytes(derived_catalog), 0o600)
+                print(f'CATALOG_WRITTEN {CATALOG} (Git ignored, untracked)')
         print('Effective runtime selection UNVERIFIED; no model calls or coordinator changes.')
         return 2 if unverifiable else 0
     except Refusal as error:

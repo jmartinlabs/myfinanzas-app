@@ -1,6 +1,13 @@
 {
   "version": 1,
   "coordinator": "client-selected",
-  "roles": {},
-  "clients": {}
+  "roles": {
+    "implementation": {"provider": "example-provider", "model": "example-model", "effort": "high"},
+    "functional": {"provider": "example-provider", "model": "example-model", "effort": "high"},
+    "review": {"provider": "example-provider", "model": "example-model", "effort": "high"},
+    "qa": {"provider": "example-provider", "model": "example-model", "effort": "high"},
+    "infrastructure": {"provider": "example-provider", "model": "example-model", "effort": "high"}
+  },
+  "clients": {},
+  "constraints": {}
 }
