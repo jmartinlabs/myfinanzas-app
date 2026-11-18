@@ -134,3 +134,42 @@ la opción worker verificada y para revisión crítica la opción advisor verifi
 independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
 declara la limitación y aplica los gates/fallback canónicos». Las restricciones explícitas del selector privado (si existen) y la cuota siguen
 vigentes cualquiera que sea el cliente coordinador.
+
+## Delegación por rol en el perfil real
+
+El perfil en uso ya declara `delegation.backend: model_map` con opciones nombradas (`worker`,
+`advisor`). Para alinear la delegación de Hermes con los cinco roles del selector privado se
+añaden opciones **con nombre de rol** en `delegation.backends.model_map.options`:
+
+```yaml
+delegation:
+  backend: model_map
+  backends:
+    model_map:
+      options:
+        worker:            {name: worker, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+        advisor:           {name: advisor, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+        implementation:    {name: implementation, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+        functional:        {name: functional, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+        review:            {name: review, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+        qa:                {name: qa, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+        infrastructure:    {name: infrastructure, provider: <proveedor-conectado>, model: <modelo-verificado>, reasoning_effort: high}
+      default: worker
+```
+
+- **El nombre de la clave de cada opción ES el selector**: el delegado se elige por
+  `implementation`, `review`, `qa`, etc.; `name` solo repite ese nombre de forma declarativa.
+  No inventes alias ni nombres alternativos para el mismo rol.
+- `default: worker` declara la opción que se usa cuando la petición no nombra otra; es hermano
+  de `options`, no una opción más. Contrástalo con el esquema del cliente instalado si tu
+  versión lo anida de otro modo: prevalece el esquema del cliente.
+- Hay que **reiniciar la sesión** después de editar el perfil para que el esquema de
+  `delegate_task` exponga las opciones nuevas; una sesión abierta no las ve aunque el fichero
+  ya esté guardado.
+- `provider`/`model` deben ser proveedores ya conectados y modelos verificados; declara en el
+  packet lo solicitado y contrasta la ruta efectiva con
+  [model-selection](../specs/methodology/model-selection.md). El selector privado
+  ([MODEL_SELECTION.md](MODEL_SELECTION.md)) y sus límites de catálogo siguen aplicando.
+- Este adaptador **no** escribe configuración de perfil ni ejecuta `hermes config`: documenta
+  la forma del bloque para una edición revisada y manual del perfil. Sin plugins, flags ni
+  rutas nuevas.
