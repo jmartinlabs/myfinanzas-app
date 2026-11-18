@@ -72,7 +72,7 @@ APPLICATION_ONLY = ('apps/', 'tests/')
 # Harness contract inputs owned by no single suite: instructions, templates,
 # methodology and the harness scripts themselves always select every suite.
 CONTRACT_INPUTS = ('templates/', '.agents/', 'specs/methodology/', 'specs/guidelines/',
-                   'AGENTS.md', 'CLAUDE.md', 'scripts/')
+                   'AGENTS.md', 'CLAUDE.md', 'scripts/', '.claude/', '.opencode/', '.gitignore')
 HARNESS_INPUTS = (
     ('test-validator', ('README.md', 'NEW_PROJECT_PROMPT.md', 'docs/', '.codex/',
                         '.github/workflows/', 'specs/README.md')),
@@ -84,6 +84,7 @@ HARNESS_INPUTS = (
     ('test-release', ('infra/', 'package.json', 'bun.lock', '.github/workflows/')),
     ('test-work-issue', ()),
     ('test-delegation-route', ()),
+    ('test-models-sync', ('.claude/', '.opencode/', '.codex/', '.gitignore', 'docs/MODEL_SELECTION.md')),
     ('test-agent-usage', ('.codex/', 'docs/USAGE_REPORTS.md')),
     ('test-auto-agent-usage', ('.codex/',)),
 )

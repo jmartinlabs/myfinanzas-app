@@ -156,9 +156,18 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('coordination')
     finally:
      p.write_text(original)
+ def test_fixed_ceiling_reintroduction_rejected(self):
+  for name in ('specs/methodology/model-selection.md', '.agents/skills/orchestrate/SKILL.md',
+               'specs/methodology/myfinanzas-coordination.md'):
+   p=self.root/name; original=p.read_text()
+   try:
+    p.write_text(original+'\nThe maximum permitted combination is `fixed-model` + `low`.\n')
+    self.assertRule('resource-policy')
+   finally:
+    p.write_text(original)
  def test_resource_policy_guards(self):
   cases = (
-   ('specs/methodology/model-selection.md', '`gpt-6.1-sol` + `low`'),
+   ('specs/methodology/model-selection.md', 'There is no hardcoded model or effort ceiling'),
    ('specs/methodology/model-selection.md', 'do not spawn'),
    ('specs/methodology/model-selection.md', 'requested versus observed'),
    ('specs/methodology/model-selection.md', '**25% or less:**'),

@@ -132,5 +132,5 @@ de slot ni inventes una ruta por tarea. No se cambia configuración ni autentica
 Instrucción inicial opcional: «Coordina con el modelo de esta sesión; para implementación usa
 la opción worker verificada y para revisión crítica la opción advisor verificada, con contexto
 independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
-declara la limitación y aplica los gates/fallback canónicos». El techo Codex y la cuota siguen
+declara la limitación y aplica los gates/fallback canónicos». Las restricciones explícitas del selector privado (si existen) y la cuota siguen
 vigentes cualquiera que sea el cliente coordinador.
