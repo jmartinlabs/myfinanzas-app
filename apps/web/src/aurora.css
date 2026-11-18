@@ -94,11 +94,6 @@ html[data-theme="aurora"] .brand small {
   letter-spacing: 1.55px;
 }
 
-html[data-theme="aurora"] .nav-legacy-label {
-  color: var(--sidebar-muted);
-  letter-spacing: 1.7px;
-}
-
 html[data-theme="aurora"] .nav-link,
 html[data-theme="aurora"] .nav-active {
   border-radius: 10px;

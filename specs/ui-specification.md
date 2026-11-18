@@ -41,7 +41,7 @@ realizó en una PR separada y se integró en `test` con #356 (`bff714e`).
 
 | Superficie | Estado comprobado |
 | --- | --- |
-| Navegación | **23 enlaces** de navegación en un único grupo «MI ESPACIO» (`main.tsx:179-493`); `/saldos/nuevo` es subvista y `/` es alias de Saldos. No se añaden rutas. |
+| Navegación | **24 enlaces** de navegación: dos accesos directos («Inicio», «Movimientos»), cinco grupos plegables y, al final, «Funciones anteriores · Retirada prevista» con `/presupuestos` y `/plan-anual` (**2026-11-17**, UI-02 #504; antes un único grupo «MI ESPACIO»). `/saldos/nuevo` es subvista y `/` es alias de Saldos. No se añaden rutas. |
 | Temas | **Seis apariencias** vigentes con **66 tokens** semánticos por tema (`themes.css`); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). Graphite Lime se integró en `test` con #356 (`bff714e`); Casa por la enmienda del 2026-11-10 y Aurora por la enmienda 2.6 del 2026-11-17. |
 | Shell | Sidebar 236 px; contenido `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px (`style.css`). |
 | Componentes | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` (`ui.tsx`). |
@@ -349,7 +349,7 @@ declaradas, igual que Graphite Lime. La aceptación visual es humana (D5).
 | --- | --- | --- | --- | --- |
 | **DEV-01 Fundamentos** | Escala tipográfica, espaciado, radios, foco y tamaños mínimos | Tokens no cromáticos; escala en shell y base; consumo real de `--space` | — | 1440/390 × 3 temas sin regresión; texto funcional ≥ 12 px; un radio por familia |
 | **DEV-02 Cifras y estados** | Unificar importe, badge, tarjeta, vacío y esqueleto | `Amount`, `Badge`, `Metric`, `EmptyState`, `Skeleton`; `--negative` aplicado; formateador único | DEV-01 | Badge único; `0,00 €`, `ND`, `No aplica`, `Sin datos` distinguibles; contraste ≥ 4.5 en 3 temas |
-| **DEV-03 Navegación** | Agrupar rutas sin cambiarlas | Datos de navegación en módulo; grupos; activo con barra+peso; título por ruta; menú móvil accesible | DEV-01 | Los **23 enlaces de navegación** actuales se conservan; `/saldos/nuevo` y `/` mantienen su comportamiento; activo sin color; teclado; sin desbordamiento a 390 |
+| **DEV-03 Navegación** | Agrupar rutas sin cambiarlas | Datos de navegación en módulo; grupos; activo con barra+peso; título por ruta; menú móvil accesible | DEV-01 | Los **24 enlaces de navegación** actuales se conservan (dos accesos directos, cinco grupos y «Funciones anteriores» al final, UI-02 #504); `/saldos/nuevo` y `/` mantienen su comportamiento; activo sin color; teclado; sin desbordamiento a 390 |
 | **DEV-04 Tablas y listados** | Una tabla, un comportamiento | Primitiva `Table`; importes a la derecha; cabecera/hover por token; tarjetas móviles | DEV-01, DEV-02 | Misma información tabla/tarjeta; sin scroll horizontal; región desplazable rotulada |
 | **DEV-05 Formularios y fichas** | Formularios y detalle consistentes | `Field`, secciones, ayuda/error, rejilla 2→1; ficha por jerarquía | DEV-01, DEV-02 | Error sin salto; foco al primer error; AA en 3 temas |
 | **DEV-06 Pantallas clave** | Llevar el sistema a Inicio y 4 pantallas más | Inicio, Movimientos, Saldos ficha, Saldos alta/edición y Cierre | DEV-02…05; frontera E4.6/E4.9; **sin E4.10/E4.11** | Inicio conserva secciones/cifras/estados; una lectura principal; capturas antes/después |

@@ -107,14 +107,6 @@
   padding: 28px 20px 22px;
 }
 
-:root[data-theme="casa"] .nav-legacy-label {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  color: var(--sidebar-muted);
-}
-
 :root[data-theme="casa"] .nav-link,
 :root[data-theme="casa"] .nav-active {
   font-family: var(--font-ui);
