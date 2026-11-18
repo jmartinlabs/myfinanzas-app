@@ -77,6 +77,10 @@ class ModelsSync(unittest.TestCase):
         self.save()
         (self.root / MODULE['CATALOG']).unlink()
 
+    def drop_qa_agent(self):
+        """Recreates the precondition of a client without a native qa agent."""
+        (self.root / '.opencode/agents/qa.md').unlink(missing_ok=True)
+
     def snapshot(self):
         return {str(p.relative_to(self.root)): (p.read_bytes(), p.stat().st_mtime_ns, p.stat().st_mode)
                 for p in self.root.rglob('*') if p.is_file()}
@@ -189,6 +193,7 @@ class ModelsSync(unittest.TestCase):
 
     def test_opencode_qa_missing_apply_is_all_or_nothing(self):
         # Never drop `qa`, never emit an inert `agents.qa`, and never write a partial config.
+        self.drop_qa_agent()
         self.catalog['clients']['opencode']['models'].append(
             {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
         self.config['roles'] = {'review': CHOICE.copy(),
@@ -207,7 +212,7 @@ class ModelsSync(unittest.TestCase):
         self.assertIn('UNSUPPORTED OpenCode qa agent missing', check)
         self.assertIn('+++ .opencode/opencode.json (proposed)', check)
         self.assertEqual(before, self.snapshot())
-        # con el agente presente, aplica los dos roles
+        # con el agente presente (árbol real), aplica los dos roles
         (self.root / '.opencode/agents/qa.md').write_text(
             (self.root / '.opencode/agents/review.md').read_text())
         self.call('--apply', client='opencode')
@@ -236,6 +241,7 @@ class ModelsSync(unittest.TestCase):
         self.assertEqual((self.root / MODULE['MANIFEST']).read_bytes(), manifest)
 
     def test_write_catalog_skipped_when_run_reports_unsupported_roles(self):
+        self.drop_qa_agent()
         self.config['roles'] = {'review': {'provider': 'provider-a', 'model': 'future-large'},
                                 'qa': {'provider': 'provider-a', 'model': 'alternate'}}
         self.catalog['clients']['opencode']['models'].append(
@@ -303,6 +309,18 @@ class ModelsSync(unittest.TestCase):
         self.assertNotIn('CONFIG_ONLY applied', out)
         self.assertFalse((self.root / '.opencode/opencode.json').exists())
         self.assertEqual(before, self.snapshot())
+
+    def test_opencode_qa_agent_present_generates_agents_qa(self):
+        self.catalog['clients']['opencode']['models'].append(
+            {'provider': 'provider-a', 'model': 'alternate', 'efforts': []})
+        self.config['roles'] = {'review': {'provider': 'provider-a', 'model': 'future-large'},
+                                'qa': {'provider': 'provider-a', 'model': 'alternate'}}
+        self.save()
+        self.assertTrue((self.root / '.opencode/agents/qa.md').is_file())
+        out = self.call('--apply', client='opencode')
+        self.assertNotIn('UNSUPPORTED OpenCode qa agent missing', out)
+        data = json.loads((self.root / '.opencode/opencode.json').read_text())
+        self.assertEqual(data['agents']['qa'], {'model': 'provider-a/alternate'})
 
     def test_overrides_and_explicit_allowlists(self):
         self.config['clients'] = {'codex': {'roles': {'implementation': {'effort': 'low'}}}}
@@ -420,6 +438,7 @@ class ModelsSync(unittest.TestCase):
         self.assertTrue((self.root / MODULE['CATALOG']).exists())
 
     def test_opencode_audit_warning_only_without_qa_role(self):
+        self.drop_qa_agent()
         env = self.fake_cli()
         self.config['roles'] = {'implementation': {'provider': 'provider-a', 'model': 'future-large'},
                                 'review': {'provider': 'provider-a', 'model': 'future-large'}}
