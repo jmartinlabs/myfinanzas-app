@@ -681,6 +681,24 @@ export async function measureTargets(page: Page): Promise<TargetFinding[]> {
       inlineProse: boolean;
       scope: "main" | "shell";
     }[] = [];
+    /**
+     * Excepción declarada (#503 · `specs/guidelines/ui.md`, objetivos ≥44 px):
+     * el `select` del selector de apariencia puede medir 36–38 px de alto solo
+     * en escritorio con ratón. Se exigen TODAS las condiciones a la vez:
+     * control exacto (`.theme-picker select`), fuera de `#main`, viewport
+     * ≥761 px, puntero principal fino, ningún puntero grueso disponible, alto
+     * entre 36 y 38 px y ancho ≥44 px. Cualquier otro objetivo <44 sigue
+     * fallando; no es una relajación del umbral.
+     */
+    const isCompactAppearanceSelector = (element: Element, rect: DOMRect) => {
+      if (!element.matches(".theme-picker select")) return false;
+      if (element.closest("#main")) return false;
+      if (window.innerWidth < 761) return false;
+      if (!window.matchMedia("(pointer: fine)").matches) return false;
+      if (window.matchMedia("(any-pointer: coarse)").matches) return false;
+      if (rect.height < 36 || rect.height > 38) return false;
+      return rect.width >= 44;
+    };
     const candidates = Array.from(
       document.querySelectorAll(
         'a[href],button,input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="switch"],[role="link"],[role="tab"]',
@@ -705,6 +723,10 @@ export async function measureTargets(page: Page): Promise<TargetFinding[]> {
         if (label) rect = label.getBoundingClientRect();
       }
       if (rect.width >= 44 && rect.height >= 44) continue;
+      // Excepción declarada y estrecha (#503): solo el `select` del selector de
+      // apariencia, en escritorio con ratón y con 36–38 px de alto y ≥44 px de
+      // ancho. Ver `isCompactAppearanceSelector`.
+      if (isCompactAppearanceSelector(element, rect)) continue;
       const style = getComputedStyle(element);
       findings.push({
         selector: selectorOf(element),

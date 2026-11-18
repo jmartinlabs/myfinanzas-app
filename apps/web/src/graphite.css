@@ -110,9 +110,7 @@ html[data-theme="graphite-lime"] .header-label {
   letter-spacing: 1.35px;
 }
 
-/* #503 — el cromo del selector vive en el marco (`.theme-picker`); el `select`
-   solo aporta texto, flecha y superficie interactiva. */
-html[data-theme="graphite-lime"] .theme-picker {
+html[data-theme="graphite-lime"] .theme-picker select {
   border-color: var(--control-border);
   border-radius: 7px;
   background: var(--graphite-input-bg);

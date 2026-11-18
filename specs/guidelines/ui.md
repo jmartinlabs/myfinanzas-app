@@ -120,6 +120,13 @@ plan en el [paquete DEV-07](../investigations/ui-dev07-package-2026-11-07.md).
   `display: inline*` dentro de prosa/celda (`p`, `li`, `dd`, `dt`, `small`, `summary`, `td`,
   `th`) y en `#main` pueden medir menos; cualquier otro objetivo < 44 px falla. Es una excepción
   de tamaño pendiente de revisión manual, no un AA declarado.
+  - **Excepción declarada · selector de apariencia (#503).** El `select` del selector de
+    apariencia (`.theme-picker select`, fuera de `#main`) puede medir 36–38 px de alto **solo**
+    en escritorio con ratón: viewport ≥ 761 px, `pointer: fine` y sin `any-pointer: coarse`
+    (equipos híbridos quedan fuera). Conserva ≥ 44 px de ancho, borde de contraste ≥ 3:1,
+    nombre accesible, foco visible y teclado completo; en móvil y en cualquier entrada táctil
+    mide 44 px. La auditoría DEV-07 la aplica solo a ese control y solo con esas condiciones
+    simultáneas; cualquier otro control < 44 px sigue fallando y el resto de la regla no cambia.
 - **Overflow:** sin scroll horizontal de página a 390×844, 1440×1000 y 720×500, con `<details>`
   cerrados y abiertos.
 - **Movimiento reducido:** con `prefers-reduced-motion: reduce`, `transition-duration: 0s` y
