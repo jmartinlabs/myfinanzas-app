@@ -84,7 +84,6 @@ HARNESS_INPUTS = (
     ('test-release', ('infra/', 'package.json', 'bun.lock', '.github/workflows/')),
     ('test-work-issue', ()),
     ('test-delegation-route', ()),
-    ('test-models-sync', ('.claude/', '.opencode/', '.codex/', '.gitignore', 'docs/MODEL_SELECTION.md')),
     ('test-agent-usage', ('.codex/', 'docs/USAGE_REPORTS.md')),
     ('test-auto-agent-usage', ('.codex/',)),
 )

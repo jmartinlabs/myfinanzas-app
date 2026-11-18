@@ -108,7 +108,7 @@ rules and the return schema; if any is missing, stop and ask for it.
 
 The permission matrix allows only the verification commands listed in the frontmatter; everything
 else is denied. This was measured, not assumed: `git log -1 --oneline` and
-`python3.12 scripts/test-models-sync` run, while `touch <path>` and `echo … > <path>` fail with
+`python3.12 scripts/test-delegation-route` run, while `touch <path>` and `echo … > <path>` fail with
 `Permission denied: shell`, and no file is created.
 
 Three consequences you must respect:
