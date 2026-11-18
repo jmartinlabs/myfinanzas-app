@@ -853,7 +853,7 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
     await page.unroute("**/api/deudas/" + id + "/conciliaciones");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/deudas/" + id);
-    await page.getByLabel("Apariencia").selectOption("casa");
+    await page.getByLabel("Cambiar tema").selectOption("casa");
     await expect(page.locator(".debt-detail")).toBeVisible();
     await page.screenshot({
       path: "artifacts/e4-4/casa-detalle-1440.png",

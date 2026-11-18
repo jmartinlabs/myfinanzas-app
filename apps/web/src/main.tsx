@@ -19,19 +19,20 @@ import { Referencias } from "./Referencias";
 import { Vehiculos } from "./Vehiculos";
 import { Inversiones } from "./Inversiones";
 import { Movimientos } from "./Movimientos";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Saldo } from "./api";
 import {
   activeNavigationGroup,
   isNavigationActive,
+  navigationAllGroups,
   navigationDirect,
-  navigationGroups,
   navigationTitle,
 } from "./navigation";
 import { AuthScreen } from "./AuthScreen";
 import { AppVersionFooter } from "./AppVersionFooter";
-import { environmentLabel } from "./environment";
+import { loadVersionInfo } from "./version-source";
+import { environmentBadge, type AppVersionInfo } from "./version";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
@@ -46,8 +47,6 @@ import {
 import "./style.css";
 import "./casa.css";
 function App() {
-  const environment = environmentLabel();
-  const localEnvironment = environment === "Entorno local";
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
@@ -64,6 +63,18 @@ function App() {
       const id = activeNavigationGroup(location.pathname + location.search);
       return id ? [id] : [];
     });
+  // Entorno e identidad servidos por /api/version: una sola carga compartida
+  // con el pie, sin inferir el entorno por hostname (#503).
+  const [versionInfo, setVersionInfo] = useState<AppVersionInfo | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadVersionInfo().then((data) => {
+      if (alive) setVersionInfo(data);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const mainNavRef = useRef<HTMLElement>(null);
   const check = () => {
@@ -235,31 +246,41 @@ function App() {
           <span aria-hidden="true">☰</span>
         </button>
         <nav id="main-nav" aria-label="Secciones" ref={mainNavRef}>
-          {navigationDirect.map((item) => {
-            const active = isNavigationActive(item, path);
-            return (
-              <a
-                key={item.href}
-                className={active ? "nav-active" : "nav-link"}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go(item.href);
-                }}
-              >
-                <span className="nav-icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span className="nav-label">{item.label}</span>
-              </a>
-            );
-          })}
-          {navigationGroups.map((group) => {
+          {/* #504: divisoria fina entre la identidad y los accesos directos.
+              Decorativa: no anuncia nada a lectores de pantalla. */}
+          <hr className="nav-divider" aria-hidden="true" />
+          <div className="nav-direct">
+            {navigationDirect.map((item) => {
+              const active = isNavigationActive(item, path);
+              return (
+                <a
+                  key={item.href}
+                  className={active ? "nav-active" : "nav-link"}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go(item.href);
+                  }}
+                >
+                  <span className="nav-icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span className="nav-label">{item.label}</span>
+                </a>
+              );
+            })}
+          </div>
+          {navigationAllGroups.map((group) => {
             const groupBodyId = `nav-group-${group.id}`;
             const open = openGroups.includes(group.id);
             return (
-              <div className="nav-section" key={group.id}>
+              <div
+                className={
+                  "nav-section" + (group.legacy ? " nav-section-legacy" : "")
+                }
+                key={group.id}
+              >
                 <button
                   type="button"
                   className="nav-group-toggle"
@@ -267,43 +288,33 @@ function App() {
                   aria-controls={groupBodyId}
                   onClick={() => toggleGroup(group.id)}
                 >
-                  <span>{group.label}</span>
+                  <span className="nav-group-label">{group.label}</span>
+                  {group.hint && (
+                    <span className="nav-group-hint">{group.hint}</span>
+                  )}
                   <span className="nav-group-chevron" aria-hidden="true">
                     {open ? "⌃" : "⌄"}
                   </span>
                 </button>
                 <div id={groupBodyId} className="nav-group-body" hidden={!open}>
-                  {group.items.map((item, index) => {
+                  {group.items.map((item) => {
                     const active = isNavigationActive(item, path);
-                    const startsLegacy =
-                      item.legacy && !group.items[index - 1]?.legacy;
-                    const startsSecondary =
-                      item.secondary && !group.items[index - 1]?.secondary;
                     return (
-                      <Fragment key={item.href}>
-                        {startsLegacy && (
-                          <p className="nav-legacy-label">Heredado</p>
-                        )}
-                        {startsSecondary && (
-                          <p className="nav-legacy-label nav-secondary-label">
-                            Auxiliar
-                          </p>
-                        )}
-                        <a
-                          className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}${item.secondary ? " nav-link-secondary" : ""}`}
-                          href={item.href}
-                          aria-current={active ? "page" : undefined}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            go(item.href);
-                          }}
-                        >
-                          <span className="nav-icon" aria-hidden="true">
-                            {item.icon}
-                          </span>
-                          <span className="nav-label">{item.label}</span>
-                        </a>
-                      </Fragment>
+                      <a
+                        key={item.href}
+                        className={`${active ? "nav-active" : "nav-link"}${item.legacy ? " nav-link-legacy" : ""}`}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          go(item.href);
+                        }}
+                      >
+                        <span className="nav-icon" aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        <span className="nav-label">{item.label}</span>
+                      </a>
                     );
                   })}
                 </div>
@@ -313,11 +324,7 @@ function App() {
         </nav>
         <div className="sidebar-bottom">
           <span className="local-dot" />{" "}
-          {demo
-            ? "DEMO · Datos ficticios"
-            : localEnvironment
-              ? "Local · Datos ficticios"
-              : "Datos ficticios"}
+          {environmentBadge(versionInfo)}
           <small>Excel v5.11 sigue como maestro</small>
         </div>
       </aside>
@@ -325,10 +332,11 @@ function App() {
         <header className="global-header">
           <CycleHeader path={path} />
           <div className="header-actions">
+            {/* #503 — etiqueta breve en la misma línea que el selector; el
+                nombre accesible contiene el texto visible (label-in-name). */}
             <label className="theme-picker">
-              Apariencia
               <select
-                aria-label="Apariencia"
+                aria-label="Cambiar tema"
                 value={theme}
                 onChange={(event) => setTheme(event.target.value as ThemeId)}
               >
@@ -339,11 +347,6 @@ function App() {
                 ))}
               </select>
             </label>
-            {(demo || environment) && (
-              <span className={"local-badge" + (demo ? " demo-badge" : "")}>
-                {demo ? "DEMO · Datos ficticios" : environment}
-              </span>
-            )}
             {!demo && (
               <button className="text-button" onClick={logout}>
                 Cerrar sesión

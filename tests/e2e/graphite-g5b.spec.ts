@@ -66,7 +66,7 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
-  await page.getByLabel("Apariencia").selectOption("graphite-lime");
+  await page.getByLabel("Cambiar tema").selectOption("graphite-lime");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
 
   const expectNoOverflow = async () =>
@@ -297,7 +297,7 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   /* Misma fixture en Casa ---------------------------------------------- */
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/inversiones");
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expect(page.locator(".inversiones-page .ui-table tbody tr")).toHaveCount(2);
   await expect(page.locator(".inversiones-page .classification-tabs")).toHaveCSS(
@@ -333,7 +333,7 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
   /* Graphite no se filtra a Claro, Oscuro ni Mixto. */
   for (const theme of ["light-s", "dark-s", "hybrid-s"]) {
     await page.goto("/inversiones");
-    await page.getByLabel("Apariencia").selectOption(theme);
+    await page.getByLabel("Cambiar tema").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(
       page.locator(".inversiones-page .classification-tabs"),

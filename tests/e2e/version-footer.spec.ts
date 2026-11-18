@@ -156,9 +156,13 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   });
 
   const versionToggle = page.getByRole("button", {
-    name: /MyFinanzas · v0\.2\.0 · TEST/,
+    name: /MyFinanzas · v0\.2\.0/,
   });
   await expect(versionToggle).toBeVisible();
+  // #503 — en escritorio el entorno del pie no se pinta: el único indicador es
+  // `.sidebar-bottom`, al final de la navegación.
+  await expect(page.locator(".app-version-env")).toBeHidden();
+  await expect(page.locator(".sidebar-bottom")).toBeVisible();
   await expect(versionToggle).toHaveAttribute("aria-expanded", "false");
   await expectPinnedFooter(page);
   await expect(page.locator(".app-version-panel")).toBeHidden();
@@ -312,7 +316,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
 
   // Panel abierto también en Casa a 390×500 (identidad, no solo estructura).
   await page.setViewportSize({ width: 390, height: 500 });
-  await page.getByLabel("Apariencia").selectOption({ value: "casa" });
+  await page.getByLabel("Cambiar tema").selectOption({ value: "casa" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await versionToggle.click();
   await expect(panel).toBeVisible();
@@ -323,7 +327,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     fullPage: false,
   });
   await page.keyboard.press("Escape");
-  await page.getByLabel("Apariencia").selectOption({ value: "dark-s" });
+  await page.getByLabel("Cambiar tema").selectOption({ value: "dark-s" });
 
   // ── 1440 y ventana ancha: el panel se abre junto al disparador ──────────
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -358,7 +362,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   });
 
   // ── Todas las apariencias comparten estructura y contenido ──────────────
-  const themeSelect = page.getByLabel("Apariencia");
+  const themeSelect = page.getByLabel("Cambiar tema");
   for (const id of [
     "light-s",
     "hybrid-s",
@@ -371,10 +375,12 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     await expect(page.locator("html")).toHaveAttribute("data-theme", id);
     await expectPinnedFooter(page);
     await expect(versionToggle).toBeVisible();
-    // Misma estructura y contenido en todas: mismo texto de una línea.
+    // Misma estructura y contenido en todas: misma identidad de una línea.
+    // #503 — el entorno va en su propio nodo y solo se ve en móvil.
     expect(
       (await page.locator(".app-version-label").innerText()).trim(),
-    ).toBe("MyFinanzas · v0.2.0 · TEST");
+    ).toBe("MyFinanzas · v0.2.0");
+    await expect(page.locator(".app-version-env")).toBeHidden();
     await versionToggle.click();
     await expect(panel).toBeVisible();
     await expect(panel).toContainText(`SQLite v${SCHEMA}`);
@@ -406,6 +412,10 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await page.setViewportSize({ width: 390, height: 844 });
   await expectPinnedFooter(page);
   await expect(versionToggle).toBeVisible();
+  // #503 — con el menú móvil cerrado, el pie es el único indicador de entorno.
+  await expect(page.locator(".app-version-env")).toBeVisible();
+  await expect(page.locator(".app-version-env")).toHaveText("· TEST");
+  await expect(page.locator(".sidebar-bottom")).toBeHidden();
   await page.screenshot({
     path: `${SHOTS}/pie-390.png`,
     fullPage: false,

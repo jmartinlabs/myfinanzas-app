@@ -94,11 +94,6 @@ html[data-theme="aurora"] .brand small {
   letter-spacing: 1.55px;
 }
 
-html[data-theme="aurora"] .nav-legacy-label {
-  color: var(--sidebar-muted);
-  letter-spacing: 1.7px;
-}
-
 html[data-theme="aurora"] .nav-link,
 html[data-theme="aurora"] .nav-active {
   border-radius: 10px;
@@ -154,12 +149,6 @@ html[data-theme="aurora"] .global-header {
 html[data-theme="aurora"] .global-footer {
   border-top-color: var(--border);
   background: var(--footer-bg);
-}
-
-html[data-theme="aurora"] .local-badge {
-  border-color: var(--border);
-  background: rgb(11 20 24 / 0.8);
-  color: var(--text);
 }
 
 html[data-theme="aurora"] .skip-link {

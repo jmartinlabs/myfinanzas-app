@@ -48,11 +48,6 @@ html[data-theme="graphite-lime"] .brand small {
   letter-spacing: 1.55px;
 }
 
-html[data-theme="graphite-lime"] .nav-legacy-label {
-  color: var(--sidebar-muted);
-  letter-spacing: 1.7px;
-}
-
 html[data-theme="graphite-lime"] .nav-link,
 html[data-theme="graphite-lime"] .nav-active {
   border: 1px solid transparent;
@@ -114,12 +109,6 @@ html[data-theme="graphite-lime"] .theme-picker select {
   border-color: var(--control-border);
   border-radius: 7px;
   background: var(--graphite-input-bg);
-}
-
-html[data-theme="graphite-lime"] .local-badge {
-  border-color: var(--border);
-  background: var(--graphite-input-bg);
-  color: var(--muted);
 }
 
 html[data-theme="graphite-lime"] .global-footer {

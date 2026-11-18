@@ -62,7 +62,7 @@ test("L3: identidad de Movimientos en Claro y Mixto, 1440/820/390", async ({ pag
   await login(page);
 
   const selectTheme = async (theme: string) => {
-    await page.getByLabel("Apariencia").selectOption(theme);
+    await page.getByLabel("Cambiar tema").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   };
   const noOverflow = async () =>

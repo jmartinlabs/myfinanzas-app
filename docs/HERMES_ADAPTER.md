@@ -96,6 +96,37 @@ comportamiento con otros modelos. Las pruebas extensas P0/P-ISO ya están docume
 template y no se repiten aquí. En esa sesión no se ejercitó la delegación, y el despacho entre
 proveedores sigue sin validar.
 
+## Verificación registrada · rutas por rol en delegación (2026-11-18)
+
+Cliente: Hermes Agent v0.23.2 (`2026.9.24`), perfil `engineering-lead`, macOS 15.5 arm64.
+Sesión **nueva** (el enum de `option` se construye al abrir la sesión) con cinco delegaciones
+mínimas, una por rol, ejecutadas contra el perfil real. Evidencia: `deleg_4ab52638`.
+
+| Rol (`option`) | Proveedor observado | Modelo observado en metadatos | Resultado |
+| --- | --- | --- | --- |
+| `implementation` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+| `functional` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+| `review` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+| `qa` | `alibaba-token-plan` | `glm-5.3` | PASS |
+| `infrastructure` | `alibaba-token-plan` | `deepseek-v4.1-flash-1017` | PASS |
+
+Las cinco completaron una llamada API y los metadatos del runtime coincidieron con la ruta
+configurada en ese momento.
+
+**Alcance de esta evidencia:** demuestra que Hermes **selecciona y ejecuta** la ruta configurada
+para cada rol. **No** es una identificación independiente del modelo por parte del proveedor, ni
+prueba entitlement, ni mide varianza entre sesiones.
+
+Los modelos observados corresponden al perfil **tal como estaba** en el momento de la sonda: las
+opciones `functional` y `review` se habían reajustado a `deepseek-v4.1-flash-1017` después de la
+edición inicial que documentó este adaptador (`openai-codex/gpt-6.1-sol` y `deepseek-v4-pro`
+respectivamente). Lo verificado es la ruta vigente, no la del ejemplo.
+
+Estado por cliente tras esta prueba: **Hermes 5/5 verificado a nivel de despacho**; **OpenCode
+verificado por separado** (`opencode debug agents` resuelve `implementation`, `functional`,
+`review` e `infrastructure` al modelo declarado); **Codex y Claude Code sin verificar** en esta
+máquina porque no están instalados.
+
 ## Cuándo volver a verificar
 
 Tras actualizar Hermes, cambiar de perfil (`HERMES_HOME`) o mover el checkout: verifica
@@ -132,13 +163,13 @@ de slot ni inventes una ruta por tarea. No se cambia configuración ni autentica
 Instrucción inicial opcional: «Coordina con el modelo de esta sesión; para implementación usa
 la opción worker verificada y para revisión crítica la opción advisor verificada, con contexto
 independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
-declara la limitación y aplica los gates/fallback canónicos». Las restricciones explícitas del selector privado (si existen) y la cuota siguen
-vigentes cualquiera que sea el cliente coordinador.
+declara la limitación y aplica los gates/fallback canónicos». La cuota sigue
+vigente cualquiera que sea el cliente coordinador.
 
 ## Delegación por rol en el perfil real
 
 El perfil en uso ya declara `delegation.backend: model_map` con opciones nombradas (`worker`,
-`advisor`). Para alinear la delegación de Hermes con los cinco roles del selector privado se
+`advisor`). Para alinear la delegación de Hermes con los cinco roles del harness se
 añaden opciones **con nombre de rol** en `delegation.backends.model_map.options`:
 
 ```yaml
@@ -192,8 +223,8 @@ delegation:
   ya esté guardado.
 - `provider`/`model` deben ser proveedores ya conectados y modelos verificados; declara en el
   packet lo solicitado y contrasta la ruta efectiva con
-  [model-selection](../specs/methodology/model-selection.md). El selector privado
-  ([MODEL_SELECTION.md](MODEL_SELECTION.md)) y sus límites de catálogo siguen aplicando.
+  [model-selection](../specs/methodology/model-selection.md). Los modelos y proveedores los fija
+  manualmente el usuario en el perfil; este adaptador no los genera, sincroniza ni versiona.
 - Este adaptador **no** escribe configuración de perfil ni ejecuta `hermes config`: documenta
   la forma del bloque para una edición revisada y manual del perfil. Sin plugins, flags ni
   rutas nuevas.

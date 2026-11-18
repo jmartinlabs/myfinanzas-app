@@ -27,7 +27,7 @@ dist/
 *.qif
 playwright-report/
 test-results/
-# Private model preferences, observed catalog and generated native agents
+# Legacy private model-selector files: inert after #521, ignored so a leftover local copy is never committed
 .agents/models.local.yaml
 .agents/models.catalog.local.json
 .agents/models.manifest.local.json

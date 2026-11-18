@@ -70,7 +70,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     if (message.type() === "error") errors.push(message.text());
   });
 
-  await page.getByLabel("Apariencia").selectOption("casa");
+  await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await page
     .locator(".sidebar")

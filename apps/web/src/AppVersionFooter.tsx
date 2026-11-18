@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { api } from "./api";
+import { loadVersionInfo } from "./version-source";
 import {
   PANEL_TITLE,
   SCHEMA_NOTE,
   environmentText,
-  footerLabel,
-  parseVersionPayload,
+  footerEnvironmentLabel,
+  footerIdentityLabel,
   schemaLabel,
   shaLabel,
   versionText,
@@ -37,13 +37,9 @@ export function AppVersionFooter() {
   };
   useEffect(() => {
     let alive = true;
-    api<unknown>("/version")
-      .then((data) => {
-        if (alive) setInfo(parseVersionPayload(data));
-      })
-      .catch(() => {
-        if (alive) setInfo(null);
-      });
+    loadVersionInfo().then((data) => {
+      if (alive) setInfo(data);
+    });
     return () => {
       alive = false;
     };
@@ -120,7 +116,10 @@ export function AppVersionFooter() {
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="app-version-label">{footerLabel(info)}</span>
+        <span className="app-version-label">{footerIdentityLabel(info)}</span>
+        {footerEnvironmentLabel(info) && (
+          <span className="app-version-env">{footerEnvironmentLabel(info)}</span>
+        )}
         <span className="app-version-caret" aria-hidden="true">
           {open ? "▾" : "▴"}
         </span>

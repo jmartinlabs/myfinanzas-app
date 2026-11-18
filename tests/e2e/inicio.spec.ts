@@ -789,7 +789,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   });
   expect(outlined).toBe(true);
 
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   const expectNoOverflow = async () =>
     expect(
       await page.evaluate(
@@ -965,7 +965,7 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   await expect(deudaTotal).toContainText("Subtotal conocido");
 
   // Evidencia: tres temas a 1440 y 390, también en el escenario cero.
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await select.selectOption(theme);
@@ -1086,7 +1086,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
   });
 
   // Graphite: un fallo de fuente no se presenta como bloque vacío.
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await select.selectOption("graphite-lime");
   const railDegradado = page.locator('[data-inicio-section="rail"]');
@@ -1247,7 +1247,7 @@ test("Casa: misma composición de Inicio que el resto de apariencias", async ({
     if (message.type() === "error") errors.push(message.text());
   });
 
-  const select = page.getByLabel("Apariencia");
+  const select = page.getByLabel("Cambiar tema");
   await select.selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expect(page.locator(".inicio-page")).toHaveClass(/inicio-casa/);
