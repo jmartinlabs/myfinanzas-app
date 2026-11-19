@@ -1,36 +1,75 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { RESUMEN_ANUAL_NOW } from "../../apps/api/test-support/resumen-anual-clock";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, type Fixture } from "./fixture";
 
 const artifacts = artifactDir("g5f");
 
 const CIERRE_PORT = 3055;
 const FOTOS_PORT = 3056;
-const RESUMEN_PORT = 3057;
+// Puerto y estado del resumen anual salen del contexto de la ejecución (#514):
+// el servidor ya no ocupa 3057 ni `.local/e2e-e47-g5f`.
+const RESUMEN = fixtureContext("g5f-resumen-anual");
 const FOTOS_NOW = Date.parse("2027-06-15T12:00:00Z");
-const children: ReturnType<typeof spawn>[] = [];
+
+type OwnedServer = {
+  child: ChildProcess;
+  output: () => string;
+  assertAlive: () => void;
+  stop: () => void;
+};
+
+const children: OwnedServer[] = [];
 
 async function start(
   request: import("@playwright/test").APIRequestContext,
   file: string,
   port: number,
   env: Record<string, string>,
-) {
-  children.push(
-    spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/" + file], {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", ...env },
-    }),
-  );
+): Promise<OwnedServer> {
+  const child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/" + file], {
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, NODE_ENV: "test", ...env },
+  });
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${file} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
+  const owned: OwnedServer = {
+    child,
+    output: () => output,
+    assertAlive,
+    stop: () => {
+      child.kill();
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+    },
+  };
+  children.push(owned);
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
           return (await request.get(`http://127.0.0.1:${port}/api/health`)).status();
         } catch {
@@ -40,6 +79,7 @@ async function start(
       { timeout: 20000 },
     )
     .toBe(200);
+  return owned;
 }
 
 test.beforeAll(async ({ request }) => {
@@ -51,14 +91,16 @@ test.beforeAll(async ({ request }) => {
     E411_SCENARIO: "principal",
     E411_PORT: String(FOTOS_PORT),
   });
-  await start(request, "resumen-anual-server.ts", RESUMEN_PORT, {
-    E47_PORT: String(RESUMEN_PORT),
-    E47_DIR: ".local/e2e-e47-g5f",
+  const resumen = await start(request, "resumen-anual-server.ts", RESUMEN.port, {
+    E2E_PORT: String(RESUMEN.port),
+    E2E_STATE_DIR: RESUMEN.dir,
   });
+  // El resumen provisionó su estado antes de servir: se navega solo entonces.
+  requireFixtureState({ ...resumen, fixture: RESUMEN });
 });
 
 test.afterAll(() => {
-  for (const child of children) child.kill();
+  for (const server of children) server.stop();
 });
 
 async function login(
@@ -196,8 +238,8 @@ test("G5f: Resumen anual en Graphite, 1440/820/390", async ({ page }) => {
   page.on("pageerror", (error) => errors.push(error.message));
   await login(
     page,
-    RESUMEN_PORT,
-    ".local/e2e-e47-g5f",
+    RESUMEN.port,
+    RESUMEN.dir,
     "/resumen-anual",
     RESUMEN_ANUAL_NOW,
   );
