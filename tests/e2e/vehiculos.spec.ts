@@ -1,20 +1,20 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer } from "./fixture";
+
+const fixture = fixtureContext("vehiculos");
 
 test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e integridad 390/1440", async ({
   page,
   request,
 }) => {
-  const child = spawn(
-      process.env.BUN_BIN ?? "bun",
-      ["apps/api/test-support/vehiculos-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+  const server = startFixtureServer(
+      "apps/api/test-support/vehiculos-server.ts",
+      fixture,
     ),
     errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -22,9 +22,10 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect
       .poll(
         async () => {
+          server.assertAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3009/api/health")
+              await request.get(`${fixture.baseURL}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -33,15 +34,16 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
         { timeout: 15000 },
       )
       .toBe(200);
+    requireFixtureState(server);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3009";
+      url.port = String(fixture.port);
       await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
     });
     await page.goto("/vehiculos");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-vehiculos/bootstrap.txt", "utf8"));
+      .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Contraseña ficticia vehículos " + randomUUID());
@@ -214,6 +216,6 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await page.screenshot({ path: join(artifacts, "vehiculos-integridad-1440.png"), fullPage: true });
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.stop();
   }
 });
