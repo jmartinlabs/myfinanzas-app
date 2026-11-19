@@ -10,12 +10,12 @@
 // `E2E_API_PORT`.
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#514): antes reservaba un puerto
 // aquí y escribía en `.local/e2e-nav-504`.
@@ -106,11 +106,10 @@ test.beforeAll(async ({ request }) => {
   // y base ficticia provisionada por él.
   expect(new URL(API_HEALTH).port).toBe(String(API_PORT));
   assertFixtureAlive();
-  requireFixtureState({
-    fixture: FIXTURE,
-    output: () => fixtureOutput,
-    assertAlive: assertFixtureAlive,
-  });
+  expect(
+    existsSync(`${DIR}/bootstrap.txt`),
+    `El fixture #504 no provisionó ${DIR}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
 });
 
 test.afterAll(() => {
