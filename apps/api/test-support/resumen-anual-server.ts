@@ -14,9 +14,16 @@ import { RESUMEN_ANUAL_NOW } from "./resumen-anual-clock";
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
 const empty = process.env.E47_SCENARIO === "empty";
+// Puerto y estado del contexto de la ejecución (#514), con prioridad sobre los
+// nombres históricos `E47_*`; sin contexto se conservan los valores de siempre
+// para poder arrancarlo a mano.
 const dir =
-  process.env.E47_DIR ?? (empty ? ".local/e2e-e47-empty" : ".local/e2e-e47");
-const port = Number(process.env.E47_PORT ?? (empty ? 3019 : 3018));
+  process.env.E2E_STATE_DIR ??
+  process.env.E47_DIR ??
+  (empty ? ".local/e2e-e47-empty" : ".local/e2e-e47");
+const port = Number(
+  process.env.E2E_PORT ?? process.env.E47_PORT ?? (empty ? 3019 : 3018),
+);
 
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -30,7 +37,15 @@ writeFileSync(dir + "/bootstrap.txt", provision(db, RESUMEN_ANUAL_NOW), {
 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key, now: () => RESUMEN_ANUAL_NOW })).pipe(
+    HttpServer.serve(
+      createApp(db, {
+        key,
+        now: () => RESUMEN_ANUAL_NOW,
+        // Origen de la ejecución (#514): sin él, el alta y la sesión del run se
+        // rechazarían con 403 ORIGIN.
+        origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+      }),
+    ).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),
