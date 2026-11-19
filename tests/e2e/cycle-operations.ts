@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { artifactDir } from "./fixture";
 
-export async function cycleOperationsJourney(page: Page) {
+export async function cycleOperationsJourney(page: Page, apiPort: string) {
   const artifacts = artifactDir("e2-1");
   const get = (path: string) =>
     page.evaluate(
@@ -131,7 +131,7 @@ export async function cycleOperationsJourney(page: Page) {
   await page.route(endpoint, async (route) => {
     await gate;
     const url = new URL(route.request().url());
-    url.port = "3003";
+    url.port = apiPort;
     await route.fulfill({
       response: await route.fetch({ url: url.toString() }),
     });
@@ -252,7 +252,7 @@ export async function cycleOperationsJourney(page: Page) {
   const priorTotal = (await get("/ciclos")).total;
   await page.route("**/api/ciclos/omitido", async (route) => {
     const url = new URL(route.request().url());
-    url.port = "3003";
+    url.port = apiPort;
     const response = await route.fetch({ url: url.toString() });
     expect(response.status()).toBe(201);
     await route.abort("failed");

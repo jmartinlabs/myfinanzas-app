@@ -1,13 +1,16 @@
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { HttpServer } from "@effect/platform";
 import { Effect, Layer } from "effect";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { openDatabase } from "../src/database";
 import { backup, restore } from "../src/backup";
 import { createApp } from "../src/app";
 const dir = process.env.E2E_RESTORE_DIR ?? ".local/e2e";
 const db = openDatabase(dir + "/demo.sqlite");
 const key = readFileSync(dir + "/auth.key");
+// age-keygen rechaza sobrescribir `-o`; una ejecución previa deja la identidad
+// en el directorio del run, así que se retira antes de generar la nueva.
+rmSync(dir + "/identity.txt", { force: true });
 const gen = Bun.spawnSync(
   [process.env.AGE_KEYGEN_BIN ?? "age-keygen", "-o", dir + "/identity.txt"],
   { stdout: "pipe", stderr: "pipe" },

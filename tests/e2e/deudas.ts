@@ -110,12 +110,15 @@ export async function deudas(page: Page) {
   ).data.saldo;
   await page.goto("/movimientos/nuevo");
   await page.getByLabel("Tipo *", { exact: true }).selectOption("Gasto");
+  // #534: el alta de Gasto usa etiquetas propias desde #484 (spec 37 I5).
   await page
-    .getByLabel("Fecha económica *", { exact: true })
+    .getByLabel("Fecha del Gasto *", { exact: true })
     .fill("2026-10-01");
-  await page.getByLabel("Importe (€) *", { exact: true }).fill("100");
   await page
-    .getByLabel("Saldo origen *", { exact: true })
+    .getByLabel("Importe del Gasto (€) *", { exact: true })
+    .fill("100");
+  await page
+    .getByLabel("Saldo pagador *", { exact: true })
     .selectOption(bank.id);
   await page.getByLabel("Partida *", { exact: true }).selectOption(p);
   await page
