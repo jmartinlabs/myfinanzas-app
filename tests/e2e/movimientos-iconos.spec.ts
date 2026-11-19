@@ -1,12 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { reservePorts } from "../../apps/api/test-support/e2e-context";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 import { expectMovementsParity } from "./movements-parity";
-import { artifactDir } from "./fixture";
 import { measureComponentContrast } from "./ui-dev07-audit";
 
 /**
@@ -28,7 +26,7 @@ import { measureComponentContrast } from "./ui-dev07-audit";
  * 5173/3001, y nunca toca el `.local` de desarrollo.
  */
 
-const STATE = ".local/e2e-iconos";
+const fixture = fixtureContext("iconos-448");
 const artifacts = artifactDir("iconos-448");
 const TIPOS = [
   "Ingreso",
@@ -46,35 +44,20 @@ const TEMAS = [
   "aurora",
 ] as const;
 
-let child: ChildProcess | undefined;
+let owned: OwnedFixture | undefined;
 let apiOrigin = "";
-let fixtureOutput = "";
 
 test.beforeAll(async ({ request }) => {
-  const [port] = reservePorts(1, "127.0.0.1");
-  apiOrigin = `http://127.0.0.1:${port}`;
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/iconos-server.ts"],
-    {
-      stdio: ["ignore", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        E2E_API_PORT: String(port),
-        E2E_ICONOS_DIR: STATE,
-      },
-    },
+  apiOrigin = fixture.baseURL;
+  const server = startFixtureServer(
+    "apps/api/test-support/iconos-server.ts",
+    fixture,
   );
-  child.stdout?.on("data", (chunk: Buffer) => {
-    fixtureOutput += chunk.toString();
-  });
-  child.stderr?.on("data", (chunk: Buffer) => {
-    fixtureOutput += chunk.toString();
-  });
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
           return (await request.get(`${apiOrigin}/api/health`)).status();
         } catch {
@@ -84,10 +67,11 @@ test.beforeAll(async ({ request }) => {
       { timeout: 30000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function login(page: Page) {
@@ -99,7 +83,7 @@ async function login(page: Page) {
   await page.goto("/movimientos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia 448 " + randomUUID());
