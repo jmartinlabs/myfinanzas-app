@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { fixtureContext, type Fixture } from "./fixture";
 
 /**
  * E3.6 — UI de pendientes y flujo ajustado.
@@ -22,14 +24,51 @@ function start(script: string): ChildProcess {
   });
 }
 
+type OwnedFixture = {
+  child: ChildProcess;
+  output: () => string;
+  /** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+  assertAlive: () => void;
+};
+
+/** Fixture con puerto y estado propios de la ejecución (#508). */
+function startFixture(script: string, fixture: Fixture): OwnedFixture {
+  const child = spawn(process.env.BUN_BIN ?? "bun", [script], {
+    stdio: ["ignore", "pipe", "pipe"],
+    env: fixture.env,
+  });
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture.name} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
+  return { child, output: () => output, assertAlive };
+}
+
 async function ready(
   request: any,
   origin: string,
   path = "/api/pendientes",
+  assertAlive: () => void = () => {},
 ) {
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
           return (await request.get(origin + "/api/health")).status();
         } catch {
@@ -48,8 +87,9 @@ async function login(
   origin: string,
   bootstrap: string,
   target: string,
+  assertAlive: () => void = () => {},
 ) {
-  await ready(request, origin);
+  await ready(request, origin, "/api/pendientes", assertAlive);
   await page.route("**/api/**", async (route: any) => {
     const url = new URL(route.request().url());
     url.port = new URL(origin).port;
@@ -487,14 +527,29 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
   mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/anticipo-server.ts");
+  // Puerto y estado propios de la ejecución (#508). El nombre distingue este
+  // arranque del de anticipos.spec.ts para no compartir estado en la misma run.
+  const fixture = fixtureContext("anticipo-pendientes");
+  const server = startFixture(
+    "apps/api/test-support/anticipo-server.ts",
+    fixture,
+  );
   try {
+    await ready(request, fixture.baseURL, "/api/pendientes", server.assertAlive);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    server.assertAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture anticipo no provisionó ${fixture.dir}/bootstrap.txt: ${server.output().trim()}`,
+    ).toBe(true);
     await login(
       page,
       request,
-      "http://127.0.0.1:3008",
-      ".local/e2e-anticipos/bootstrap.txt",
+      fixture.baseURL,
+      join(fixture.dir, "bootstrap.txt"),
       "/pendientes",
+      server.assertAlive,
     );
 
     await expect(
@@ -590,7 +645,9 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
     await expect(page.getByText("0,00 €")).toHaveCount(0);
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.child.kill();
+    server.child.stdout?.destroy();
+    server.child.stderr?.destroy();
   }
 });
 
