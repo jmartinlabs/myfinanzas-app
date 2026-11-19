@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { reservePorts } from "../../apps/api/test-support/e2e-context";
 import { artifactDir, fixtureContext } from "./fixture";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
@@ -18,6 +19,9 @@ const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
 // misma spec no comparten listener ni SQLite.
 const fixture = fixtureContext("movimientos");
 const API_PORT = fixture.port;
+// #534: el servidor de restauración tomaba el 3004 fijo; con el contexto se
+// reserva por ejecución, como el resto de fixtures.
+const RESTORE_PORT = reservePorts(1)[0];
 
 /** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
 let child: ChildProcess | undefined;
@@ -338,12 +342,27 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       amount: string,
       balance: string,
     ) => {
+      const gasto = kind === "Gasto";
       await type.selectOption(kind);
-      await date.fill(when);
-      await money.fill(amount);
+      // #534: el alta de Gasto unificada (#484, spec 37 I5) usa etiquetas
+      // propias, así que los locators se resuelven DESPUÉS de elegir el Tipo.
+      await page
+        .getByLabel(gasto ? "Fecha del Gasto *" : "Fecha económica *", {
+          exact: true,
+        })
+        .fill(when);
+      await page
+        .getByLabel(gasto ? "Importe del Gasto (€) *" : "Importe (€) *", {
+          exact: true,
+        })
+        .fill(amount);
       await page
         .getByLabel(
-          kind === "Ingreso" ? "Saldo receptor *" : "Saldo origen *",
+          gasto
+            ? "Saldo pagador *"
+            : kind === "Ingreso"
+              ? "Saldo receptor *"
+              : "Saldo origen *",
           { exact: true },
         )
         .selectOption(balance);
@@ -995,7 +1014,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     expect((await get("/movimientos")).movimientos).toHaveLength(4);
     const e15 = await transferencias(page);
     const e16 = await deudas(page);
-    const e21 = await cycleOperationsJourney(page);
+    const e21 = await cycleOperationsJourney(page, String(API_PORT));
     const e22 = await presupuestos(page, e16);
     const e23 = await cyclePlanJourney(page, e22.id);
     const expectedDebt = (await get("/deudas/" + e16.id)).item.capitalPendiente;
@@ -1015,7 +1034,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
           ...process.env,
           NODE_ENV: "test",
           E2E_RESTORE_DIR: fixture.dir,
-          E2E_RESTORE_PORT: "3004",
+          E2E_RESTORE_PORT: String(RESTORE_PORT),
         },
       },
     );
@@ -1025,7 +1044,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
           async () => {
             try {
               return (
-                await request.get("http://127.0.0.1:3004/api/health")
+                await request.get(`http://127.0.0.1:${RESTORE_PORT}/api/health`)
               ).status();
             } catch {
               return 0;
@@ -1036,7 +1055,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         .toBe(200);
       await page.route("**/api/**", async (route) => {
         const url = new URL(route.request().url());
-        url.port = "3004";
+        url.port = String(RESTORE_PORT);
         await route.fulfill({
           response: await route.fetch({ url: url.toString() }),
         });

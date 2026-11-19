@@ -362,12 +362,15 @@ export async function transferencias(page: Page) {
   ).toBeVisible();
   async function fillExpense(concept: string, p: string, reference = travel) {
     await page.getByLabel("Tipo *", { exact: true }).selectOption("Gasto");
+    // #534: el alta de Gasto usa etiquetas propias desde #484 (spec 37 I5).
     await page
-      .getByLabel("Fecha económica *", { exact: true })
+      .getByLabel("Fecha del Gasto *", { exact: true })
       .fill("2026-10-13");
-    await page.getByLabel("Importe (€) *", { exact: true }).fill("12");
     await page
-      .getByLabel("Saldo origen *", { exact: true })
+      .getByLabel("Importe del Gasto (€) *", { exact: true })
+      .fill("12");
+    await page
+      .getByLabel("Saldo pagador *", { exact: true })
       .selectOption(terminal.id);
     await page.getByLabel("Partida *", { exact: true }).selectOption(p);
     await page.getByLabel("Concepto", { exact: true }).fill(concept);
@@ -615,8 +618,9 @@ export async function transferencias(page: Page) {
   expect(await get("/anticipos/fichas/" + anticipo)).toEqual(before);
   await nav("/movimientos/nuevo");
   await fillExpense(expense.concepto, anticipoPart.id, "");
+  // #534: el alta de Gasto usa «Saldo pagador» desde #484, también aquí.
   await page
-    .getByLabel("Saldo origen *", { exact: true })
+    .getByLabel("Saldo pagador *", { exact: true })
     .selectOption(source.id);
   await page.getByLabel("Referencia *", { exact: true }).selectOption(anticipo);
   await expect(
