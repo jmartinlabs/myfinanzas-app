@@ -5,13 +5,12 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
-import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 
 const artifactsE46 = artifactDir("e4-6");
 const artifactsDev06 = artifactDir("dev-06");
@@ -23,30 +22,41 @@ const artifactsUiCasa1b = artifactDir("ui-casa-1b");
  * El servidor de test siembra la fixture ficticia C007 (ID numérico 7) y nunca
  * toca una base real. El escenario `zero` reutiliza el mismo fixture con
  * liquidez cero verificada para AC-07/29.
+ *
+ * Cada escenario tiene puerto y estado **propios de la ejecución** (#514): los
+ * cinco listeners ya no ocupan los puertos históricos 3014-3018 ni los
+ * directorios `.local/e2e-inicio*`, así que dos runs simultáneos no comparten
+ * nada.
  */
 
-const BASE_PORT = 3014;
-const ZERO_PORT = 3015;
-const DEGRADED_PORT = 3016;
-const AUTH_PORT = 3017;
-const CASA_PORT = 3018;
-const BASE_DIR = ".local/e2e-inicio";
-const ZERO_DIR = ".local/e2e-inicio-zero";
-const DEGRADED_DIR = ".local/e2e-inicio-degradado";
-const AUTH_DIR = ".local/e2e-inicio-auth";
-const CASA_DIR = ".local/e2e-inicio-casa";
-let base: ChildProcess | undefined;
-let zero: ChildProcess | undefined;
-let degraded: ChildProcess | undefined;
-let auth: ChildProcess | undefined;
-let casa: ChildProcess | undefined;
+const BASE = fixtureContext("inicio-base");
+const ZERO = fixtureContext("inicio-zero");
+const DEGRADED = fixtureContext("inicio-degradado");
+const AUTH = fixtureContext("inicio-auth");
+const CASA = fixtureContext("inicio-casa");
+const BASE_PORT = BASE.port;
+const ZERO_PORT = ZERO.port;
+const DEGRADED_PORT = DEGRADED.port;
+const AUTH_PORT = AUTH.port;
+const CASA_PORT = CASA.port;
+const BASE_DIR = BASE.dir;
+const ZERO_DIR = ZERO.dir;
+const DEGRADED_DIR = DEGRADED.dir;
+const AUTH_DIR = AUTH.dir;
+const CASA_DIR = CASA.dir;
+let base: OwnedFixture | undefined;
+let zero: OwnedFixture | undefined;
+let degraded: OwnedFixture | undefined;
+let auth: OwnedFixture | undefined;
+let casa: OwnedFixture | undefined;
 
-async function waitForApi(request: APIRequestContext, port: number) {
+async function waitForApi(request: APIRequestContext, owned: OwnedFixture) {
   await expect
     .poll(
       async () => {
+        owned.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${port}/api/health`))
+          return (await request.get(`${owned.fixture.baseURL}/api/health`))
             .status();
         } catch {
           return 0;
@@ -55,62 +65,40 @@ async function waitForApi(request: APIRequestContext, port: number) {
       { timeout: 20000 },
     )
     .toBe(200);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  requireFixtureState(owned);
 }
 
 test.beforeAll(async ({ request }) => {
-  base = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test" },
-    },
+  base = startFixtureServer("apps/api/test-support/inicio-server.ts", BASE);
+  zero = startFixtureServer("apps/api/test-support/inicio-server.ts", ZERO, {
+    E46_SCENARIO: "zero",
+  });
+  degraded = startFixtureServer(
+    "apps/api/test-support/inicio-server.ts",
+    DEGRADED,
+    { E46_SCENARIO: "degradado" },
   );
-  zero = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "zero" },
-    },
-  );
-  degraded = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "degradado" },
-    },
-  );
-  auth = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "auth" },
-    },
-  );
-  casa = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "casa" },
-    },
-  );
-  await waitForApi(request, BASE_PORT);
-  await waitForApi(request, ZERO_PORT);
-  await waitForApi(request, DEGRADED_PORT);
-  await waitForApi(request, AUTH_PORT);
-  await waitForApi(request, CASA_PORT);
+  auth = startFixtureServer("apps/api/test-support/inicio-server.ts", AUTH, {
+    E46_SCENARIO: "auth",
+  });
+  casa = startFixtureServer("apps/api/test-support/inicio-server.ts", CASA, {
+    E46_SCENARIO: "casa",
+  });
+  await waitForApi(request, base);
+  await waitForApi(request, zero);
+  await waitForApi(request, degraded);
+  await waitForApi(request, auth);
+  await waitForApi(request, casa);
 });
 
 test.afterAll(() => {
-  base?.kill();
-  zero?.kill();
-  degraded?.kill();
-  auth?.kill();
-  casa?.kill();
+  base?.stop();
+  zero?.stop();
+  degraded?.stop();
+  auth?.stop();
+  casa?.stop();
 });
 
 async function routeApi(page: Page, port: number) {
