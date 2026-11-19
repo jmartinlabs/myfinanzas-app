@@ -5,12 +5,38 @@ import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
 import { expectMovementsParity } from "./movements-parity";
 import { test, expect } from "@playwright/test";
-import { mkdirSync, readFileSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { mkdirSync, readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { fixtureContext } from "./fixture";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
+
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("movimientos");
+const API_PORT = fixture.port;
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture movimientos terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y restauración con MFA", async ({
   page,
@@ -19,11 +45,20 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  const child = spawn(
+  child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/movimientos-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+    { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
   );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   mkdirSync("artifacts/e1-4", { recursive: true });
   mkdirSync("artifacts/dev-06-i2", { recursive: true });
   const shot = async (name: string) => {
@@ -113,9 +148,10 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3003/api/health")
+              await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -124,9 +160,16 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         { timeout: 15000 },
       )
       .toBe(200);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture movimientos no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3003";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       await route.fulfill({ response });
     });
@@ -134,7 +177,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await navigate("/movimientos");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-movimientos/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect(page.locator(".secret")).toBeVisible();
@@ -492,7 +535,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await page.route("**/api/movimientos", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3003";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       expect(response.status()).toBe(201);
       await route.abort("failed");
@@ -852,7 +895,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await page.route("**/api/movimientos?*", async (route) => {
       await gate;
       const url = new URL(route.request().url());
-      url.port = "3003";
+      url.port = String(API_PORT);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -881,7 +924,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await page.route("**/api/movimientos?*", async (route) => {
       const url = new URL(route.request().url());
       listQueries.push(url.search);
-      url.port = "3003";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       const json = await response.json();
       if (json.movimientos.length) pagedRows = json.movimientos;
@@ -971,7 +1014,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         env: {
           ...process.env,
           NODE_ENV: "test",
-          E2E_RESTORE_DIR: ".local/e2e-movimientos",
+          E2E_RESTORE_DIR: fixture.dir,
           E2E_RESTORE_PORT: "3004",
         },
       },
@@ -1100,7 +1143,9 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     }
     expect(errors).toEqual([]);
   } finally {
-    child.kill("SIGTERM");
+    child?.kill("SIGTERM");
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
     await page.unroute("**/api/**");
   }
 });
