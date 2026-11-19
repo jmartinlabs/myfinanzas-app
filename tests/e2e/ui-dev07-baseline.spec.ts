@@ -110,7 +110,7 @@ const report: {
     "Screens: Inicio base, Movimientos E4.6 C007, Saldos ficha S001, Saldos alta /saldos/nuevo and Cierre E4.9 preflight listo with cycle 1. Critical states are covered by the I4 matrix, not this baseline.",
     "Zoom measured as a 720x500 viewport equivalence (200% over 1440x1000), not native browser zoom.",
     "Chromium only; no Firefox/WebKit and no screen reader.",
-    "Contrast covers visible text, form-control borders and status glyphs; it does not cover placeholders, input values, pseudo-elements or SVG.",
+    "Contrast covers visible text, form-control borders, status glyphs and the effective stroke/fill of the Movimientos type-chip SVG (#448); it does not cover placeholders, input values, other SVGs or pseudo-elements.",
   ],
   exceptions: [
     "Inline prose links in Inicio (S001-S005, Comida) and table-cell links in Movimientos are treated as inline target-size exceptions; manual QA must confirm.",

@@ -162,6 +162,28 @@ const movementFlow = (m: Movement) =>
     : m.tipo === "Gasto" || m.tipo === "Amortización deuda"
       ? "outflow"
       : "neutral";
+/** Trazo propio de cada Tipo. La caja, el tamaño y el color los decide el CSS
+ *  (una sola geometría y `currentColor`), no el componente. */
+const movementTypeGlyphs: Record<string, string[]> = {
+  "Ingreso": ["M12 5v9", "M8 10l4 4 4-4", "M5 19h14"],
+  "Gasto": ["M12 19V10", "M8 14l4-4 4 4", "M5 5h14"],
+  "Transferencia": ["M4 9h13", "M14 6l3 3-3 3", "M20 15H7", "M10 12l-3 3 3 3"],
+  "Amortización deuda": ["M6 19V5", "M12 19V10", "M18 19V14"],
+  "Devolución de gasto": ["M5 8h8a5.5 5.5 0 0 1 0 11H9", "M9 4 5 8l4 4"],
+};
+/** Glifo decorativo del Tipo: el Tipo ya está en texto, así que el SVG queda
+ *  `aria-hidden` y no aporta nombre accesible ni texto a la fila/tarjeta. */
+function MovementTypeGlyph({ tipo }: { tipo: string }) {
+  const glyph = movementTypeGlyphs[tipo];
+  if (!glyph) return null;
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      {glyph.map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
+}
 const amount = (v: string | null) => (v === null ? "No disponible" : eur(v));
 function Link({
   to,
@@ -396,7 +418,9 @@ function MovementList({
       label: "Tipo / Subtipo",
       cell: (m) => (
         <span className="movement-type" data-tipo={m.tipo}>
-          <span className="movement-type-icon" aria-hidden="true" />
+          <span className="movement-type-icon" aria-hidden="true">
+            <MovementTypeGlyph tipo={m.tipo} />
+          </span>
           <span className="movement-type-copy">
             {m.tipo}
             <small className="table-id">{m.subtipo ?? ""}</small>

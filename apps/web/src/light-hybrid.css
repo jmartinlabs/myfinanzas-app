@@ -377,52 +377,6 @@ html[data-theme="hybrid-s"] .movements-list .filters {
 
 /* Tipo y jerarquía -------------------------------------------------------- */
 
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid #d8cdbf;
-  border-radius: 7px;
-  background: #f2ebe1;
-  color: #5f5b55;
-  font-size: 14px;
-  line-height: 1;
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type-icon::before {
-  content: "•";
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Ingreso"] .movement-type-icon::before {
-  content: "↓";
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Gasto"] .movement-type-icon::before {
-  content: "↗";
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Transferencia"] .movement-type-icon::before {
-  content: "⇄";
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Amortización deuda"] .movement-type-icon::before {
-  content: "▤";
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon::before {
-  content: "↺";
-}
-
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Ingreso"] .movement-type-icon,
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
   border-color: #b7d4d1;
@@ -441,10 +395,6 @@ html[data-theme="hybrid-s"] .movements-list .filters {
   border-color: #b7d4d1;
   background: #dceae7;
   color: #17616a;
-}
-
-:is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-type-copy {
-  min-width: 0;
 }
 
 :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movement-amount {
@@ -479,10 +429,6 @@ html[data-theme="hybrid-s"] .movements-list .filters {
 
 
 @media (max-width: 1000px) {
-  :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-type-icon {
-    display: none;
-  }
-
   :is(html[data-theme="light-s"], html[data-theme="hybrid-s"]) .movements-list .movement-amount {
     font-size: 13px;
     letter-spacing: 0;

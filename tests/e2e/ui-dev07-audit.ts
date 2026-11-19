@@ -73,9 +73,13 @@ export type ComponentContrastReport = {
   checked: number;
   controlBorders: number;
   statusIcons: number;
+  /** Glifos del chip de Tipo (`.movement-type-icon svg`, #448). */
+  movementTypeGlyphs: number;
   min: number | null;
   minControlBorder: number | null;
   minStatusIcon: number | null;
+  /** Peor ratio del glifo del chip de Tipo; `null` si no hay chip visible. */
+  minMovementTypeGlyph: number | null;
   minEntry: ComponentContrastFinding | null;
   failures: ComponentContrastFinding[];
 };
@@ -541,10 +545,59 @@ export async function measureComponentContrast(
       });
     }
 
+    // #448 · glifo del chip de Tipo. Aquí el `aria-hidden` es la semántica
+    // correcta (el Tipo ya va en texto), así que no exime de medir: se toma la
+    // tinta efectiva del SVG (`stroke`, luego `fill`) y, si no expone ninguna,
+    // el `color` computado del chip. El fondo es la cadena real del chip.
+    const chips = Array.from(
+      root.querySelectorAll<HTMLElement>(".movement-type-icon"),
+    );
+    for (const chip of chips) {
+      const glyph = chip.querySelector("svg");
+      if (!glyph || !visible(chip)) continue;
+      const chipStyle = getComputedStyle(chip);
+      const glyphStyle = getComputedStyle(glyph);
+      const tinta = (
+        [
+          ["stroke", glyphStyle.stroke],
+          ["fill", glyphStyle.fill],
+          ["color", chipStyle.color],
+        ] as const
+      )
+        .map(([canal, valor]) => ({ canal, valor, parsed: parse(valor) }))
+        .find((candidato) => candidato.parsed && candidato.parsed.a > 0);
+      const backdrop = background(chip, true);
+      if (!tinta?.parsed) {
+        findings.push({
+          selector: selectorOf(chip) + " svg",
+          kind: "status-icon",
+          detail: "glifo sin tinta efectiva",
+          ratio: null,
+          required: 3,
+          reason: "transparent-icon",
+        });
+        continue;
+      }
+      findings.push({
+        selector: selectorOf(chip) + " svg",
+        kind: "status-icon",
+        detail: `${tinta.canal}: ${tinta.valor}`,
+        ratio: contrast(
+          tinta.parsed.a < 1 ? over(tinta.parsed, backdrop) : tinta.parsed,
+          backdrop,
+        ),
+        required: 3,
+      });
+    }
+
     const measured = findings.filter((entry) => entry.ratio !== null);
     const sorted = [...measured].sort((a, b) => a.ratio! - b.ratio!);
     const byKind = (kind: "control-border" | "status-icon") =>
       sorted.find((entry) => entry.kind === kind)?.ratio ?? null;
+    const chipRatios = findings
+      .filter((entry) => entry.selector.endsWith(".movement-type-icon svg"))
+      .map((entry) => entry.ratio)
+      .filter((ratio): ratio is number => ratio !== null);
     return {
       checked: findings.length,
       controlBorders: findings.filter(
@@ -552,9 +605,14 @@ export async function measureComponentContrast(
       ).length,
       statusIcons: findings.filter((entry) => entry.kind === "status-icon")
         .length,
+      movementTypeGlyphs: findings.filter((entry) =>
+        entry.selector.endsWith(".movement-type-icon svg"),
+      ).length,
       min: sorted.length > 0 ? sorted[0].ratio : null,
       minControlBorder: byKind("control-border"),
       minStatusIcon: byKind("status-icon"),
+      minMovementTypeGlyph:
+        chipRatios.length > 0 ? Math.min(...chipRatios) : null,
       minEntry: sorted[0] ?? null,
       failures: findings.filter(
         (entry) => entry.ratio === null || entry.ratio < entry.required,
@@ -1234,6 +1292,7 @@ export function summarise(audit: ScreenViewportAudit) {
     componentMin: audit.components.min,
     componentMinBorder: audit.components.minControlBorder,
     componentMinIcon: audit.components.minStatusIcon,
+    componentMinMovementGlyph: audit.components.minMovementTypeGlyph,
     componentFailures: audit.components.failures.length,
     smallMainFunctional: count("main", "functional"),
     smallMainDecorative: count("main", "decorative"),

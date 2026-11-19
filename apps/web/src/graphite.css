@@ -1242,52 +1242,6 @@ html[data-theme="graphite-lime"] .movements-list .ui-table td .table-id {
   font-size: 12px;
 }
 
-html[data-theme="graphite-lime"] .movement-type {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-html[data-theme="graphite-lime"] .movement-type-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1;
-}
-
-html[data-theme="graphite-lime"] .movement-type-icon::before {
-  content: "•";
-}
-
-html[data-theme="graphite-lime"] .movement-type[data-tipo="Ingreso"] .movement-type-icon::before {
-  content: "↓";
-}
-
-html[data-theme="graphite-lime"] .movement-type[data-tipo="Gasto"] .movement-type-icon::before {
-  content: "↗";
-}
-
-html[data-theme="graphite-lime"] .movement-type[data-tipo="Transferencia"] .movement-type-icon::before {
-  content: "⇄";
-}
-
-html[data-theme="graphite-lime"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon::before {
-  content: "▤";
-}
-
-html[data-theme="graphite-lime"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon::before {
-  content: "↺";
-}
-
 html[data-theme="graphite-lime"] .movement-type[data-tipo="Ingreso"] .movement-type-icon,
 html[data-theme="graphite-lime"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
   border-color: var(--positive-border);
@@ -1306,10 +1260,6 @@ html[data-theme="graphite-lime"] .movement-type[data-tipo="Transferencia"] .move
   border-color: var(--accent-border);
   background: var(--accent-soft);
   color: var(--accent);
-}
-
-html[data-theme="graphite-lime"] .movement-type-copy {
-  min-width: 0;
 }
 
 html[data-theme="graphite-lime"] .movement-amount {

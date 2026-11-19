@@ -3,75 +3,14 @@ import { cycleOperationsJourney } from "./cycle-operations";
 import { presupuestos } from "./presupuestos";
 import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
-import { test, expect, type Page } from "@playwright/test";
+import { expectMovementsParity } from "./movements-parity";
+import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
-
-/**
- * Paridad explícita tabla/carta: cada campo de la tarjeta conserva la misma
- * etiqueta, texto y enlace que la columna de la fila. No sustituye las
- * aserciones de contenido existentes; demuestra que la adaptación móvil no
- * pierde ni duplica información.
- */
-async function expectMovementsParity(page: Page) {
-  const table = await page.locator(".desktop-list").evaluate((root) => {
-    const clean = (value: string | null) =>
-      (value ?? "").replace(/\s+/g, " ").trim();
-    const headers = Array.from(root.querySelectorAll("thead th")).map((th) =>
-      clean(th.textContent),
-    );
-    return {
-      hrefs: Array.from(root.querySelectorAll("tbody a")).map((anchor) =>
-        anchor.getAttribute("href"),
-      ),
-      rows: Array.from(root.querySelectorAll("tbody tr")).map((row) => {
-        const cells = Array.from(row.querySelectorAll("td"));
-        return Object.fromEntries(
-          headers.map((header, index) => [
-            header,
-            clean(cells[index]?.textContent ?? ""),
-          ]),
-        );
-      }),
-    };
-  });
-  const cards = await page.locator(".movements-cards").evaluate((root) => {
-    const clean = (value: string | null) =>
-      (value ?? "").replace(/\s+/g, " ").trim();
-    return {
-      hrefs: Array.from(root.querySelectorAll(":scope > li a")).map((anchor) =>
-        anchor.getAttribute("href"),
-      ),
-      rows: Array.from(root.querySelectorAll(":scope > li")).map((card) =>
-        Object.fromEntries(
-          Array.from(card.querySelectorAll(".ui-data-list-field")).map(
-            (field) => [
-              field.getAttribute("data-label") ?? "",
-              clean(
-                field.querySelector(".ui-data-list-value")?.textContent ?? "",
-              ),
-            ],
-          ),
-        ),
-      ),
-    };
-  });
-  expect(table.rows.length).toBeGreaterThan(0);
-  expect(cards.rows).toEqual(table.rows);
-  expect(cards.hrefs).toEqual(table.hrefs);
-  await expect(
-    page.locator(".desktop-list tbody tr td[data-kind='amount']"),
-  ).toHaveCount(table.rows.length);
-  await expect(
-    page.locator(
-      ".movements-cards > li .ui-data-list-field[data-kind='amount']",
-    ),
-  ).toHaveCount(table.rows.length);
-}
 
 test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y restauración con MFA", async ({
   page,
