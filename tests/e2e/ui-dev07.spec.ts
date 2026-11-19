@@ -61,9 +61,12 @@ const INICIO_PORT = INICIO.port;
 const ZERO_PORT = ZERO.port;
 const THEME_PORT = THEME.port;
 const INICIO_AUTH_PORT = INICIO_AUTH.port;
-const CIERRE_LISTO_PORT = 3031;
-const CIERRE_TECLADO_PORT = 3032;
-const CIERRE_BLOQUEADO_PORT = 3034;
+const CIERRE_LISTO = fixtureContext("ui-dev07-cierre-listo");
+const CIERRE_TECLADO = fixtureContext("ui-dev07-cierre-replay");
+const CIERRE_BLOQUEADO = fixtureContext("ui-dev07-cierre-bloqueado");
+const CIERRE_LISTO_PORT = CIERRE_LISTO.port;
+const CIERRE_TECLADO_PORT = CIERRE_TECLADO.port;
+const CIERRE_BLOQUEADO_PORT = CIERRE_BLOQUEADO.port;
 
 type ServerSpec = {
   id: string;
@@ -107,20 +110,23 @@ const SERVERS: readonly ServerSpec[] = [
     id: "cierre-listo",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_LISTO_PORT,
+    fixture: CIERRE_LISTO,
     env: { E49_SCENARIO: "listo", E49_PORT: String(CIERRE_LISTO_PORT) },
   },
   {
-    // Fixture independiente para la activación por teclado del cierre; la
-    // matriz ya enrola `.local/e2e-cierre-listo` en este mismo worker.
+    // Fixture independiente para la activación por teclado del cierre: la
+    // matriz corre en este mismo worker y cada una necesita su propio estado.
     id: "cierre-teclado",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_TECLADO_PORT,
+    fixture: CIERRE_TECLADO,
     env: { E49_SCENARIO: "replay", E49_PORT: String(CIERRE_TECLADO_PORT) },
   },
   {
     id: "cierre-bloqueado",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_BLOQUEADO_PORT,
+    fixture: CIERRE_BLOQUEADO,
     env: {
       E49_SCENARIO: "bloqueado",
       E49_PORT: String(CIERRE_BLOQUEADO_PORT),
@@ -760,7 +766,7 @@ test.describe("UI DEV-07 I4 · matriz base y AA", () => {
   test("Cierre E4.9 preflight listo", async ({ page }) => {
     test.setTimeout(600000);
     await routeApi(page, CIERRE_LISTO_PORT);
-    await login(page, ".local/e2e-cierre-listo", "/cierre");
+    await login(page, CIERRE_LISTO.dir, "/cierre");
     await expect(
       page.getByRole("heading", {
         name: "Cierre financiero",
@@ -835,7 +841,7 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
   test("Cierre bloqueado, sin foto parcial", async ({ page }) => {
     test.setTimeout(300000);
     await routeApi(page, CIERRE_BLOQUEADO_PORT);
-    await login(page, ".local/e2e-cierre-bloqueado", "/cierre");
+    await login(page, CIERRE_BLOQUEADO.dir, "/cierre");
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(
       page.getByText("Bloqueado", { exact: true }).first(),
@@ -951,7 +957,7 @@ test.describe("UI DEV-07 · activación por teclado", () => {
   test("botón de actualización del cierre", async ({ page }) => {
     test.setTimeout(180000);
     await routeApi(page, CIERRE_TECLADO_PORT);
-    await login(page, ".local/e2e-cierre-replay", "/cierre");
+    await login(page, CIERRE_TECLADO.dir, "/cierre");
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(
       page.getByText("Listo", { exact: true }).first(),

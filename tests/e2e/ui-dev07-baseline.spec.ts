@@ -46,10 +46,14 @@ const ENABLED = process.env.UI_DEV07_AUDIT === "1";
 
 const artifacts = artifactDir("ui-dev07-baseline");
 // Puerto y estado del contexto de la ejecución (#514): el fixture de Inicio ya
-// no ocupa 3014 ni `.local/e2e-inicio`. El cierre sigue fuera de este lote.
+// no ocupa 3014 ni `.local/e2e-inicio`.
 const INICIO = fixtureContext("ui-dev07-baseline-inicio");
 const INICIO_PORT = INICIO.port;
-const CIERRE_PORT = 3031;
+// Puerto y estado del cierre salen del contexto de la ejecución (#514): antes
+// ocupaba 3031 y escribía en `.local/e2e-cierre-listo`, compartido con la
+// matriz y con `cierre.spec.ts`.
+const CIERRE = fixtureContext("ui-dev07-baseline-cierre-listo");
+const CIERRE_PORT = CIERRE.port;
 
 type ScreenRecord = {
   screen: string;
@@ -507,10 +511,11 @@ if (ENABLED) {
       "apps/api/test-support/cierre-server.ts",
       CIERRE_PORT,
       { E49_SCENARIO: "listo", E49_PORT: String(CIERRE_PORT) },
+      CIERRE,
     );
     try {
       await routeApi(page, CIERRE_PORT);
-      await login(page, ".local/e2e-cierre-listo", "/cierre");
+      await login(page, CIERRE.dir, "/cierre");
       await expect(
         page.getByRole("heading", { name: "Cierre financiero", exact: true }),
       ).toBeVisible();
