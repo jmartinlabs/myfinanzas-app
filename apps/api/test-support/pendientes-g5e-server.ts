@@ -16,8 +16,17 @@ import { createAnticipo } from "../src/anticipos";
 
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
-const port = Number(process.env.PENDIENTES_G5E_PORT ?? 3060);
-const dir = resolve(process.env.PENDIENTES_G5E_STATE ?? ".local/e2e-pendientes-g5e");
+// Puerto y estado del contexto de la ejecución (#514): `E2E_PORT` y
+// `E2E_STATE_DIR` tienen prioridad sobre los nombres históricos, que se
+// conservan para arrancar el fixture a mano.
+const port = Number(
+  process.env.E2E_PORT ?? process.env.PENDIENTES_G5E_PORT ?? 3060,
+);
+const dir = resolve(
+  process.env.E2E_STATE_DIR ??
+    process.env.PENDIENTES_G5E_STATE ??
+    ".local/e2e-pendientes-g5e",
+);
 if (!dir.startsWith(resolve(".local") + sep))
   throw new Error("State must live under .local/");
 rmSync(dir, { recursive: true, force: true });
@@ -94,7 +103,10 @@ BunRuntime.runMain(
     HttpServer.serve(
       createApp(db, {
         key,
-        origin: process.env.APP_ORIGIN ?? "http://127.0.0.1:5173",
+        origin:
+          process.env.APP_ORIGIN ??
+          process.env.E2E_APP_ORIGIN ??
+          "http://127.0.0.1:5173",
       }),
     ).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
