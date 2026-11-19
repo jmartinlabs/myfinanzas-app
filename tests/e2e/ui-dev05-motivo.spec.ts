@@ -1,25 +1,26 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 
 /**
  * UI · DEV-05 — reservas de motivo.
  *
- * Servidor aislado en 3036 con MFA real y datos ficticios. Los tres estados
+ * Servidor aislado con puerto y estado del contexto (#514), MFA real y
+ * datos ficticios. Los tres estados
  * de error usan la respuesta real del servidor. En las anulaciones se envía un
  * motivo por encima del máximo del servidor para alcanzar el 422 sin desactivar
  * la confirmación que la UI exige con motivo (AC-32).
  */
 
-const PORT = 3036;
-const DIR = ".local/e2e-ui-dev05-motivo";
+const fixture = fixtureContext("ui-dev05-motivo");
+const PORT = fixture.port;
+const DIR = fixture.dir;
 const artifacts = artifactDir("ui-dev05-motivo");
-let child: ChildProcess | undefined;
+let owned: OwnedFixture | undefined;
 
 async function login(page: Page) {
   await page.goto("/inversiones");
@@ -63,16 +64,17 @@ async function expectMotivoError(
 }
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/ui-dev05-motivo-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+  const server = startFixtureServer(
+    "apps/api/test-support/ui-dev05-motivo-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`))
+          return (await request.get(`${fixture.baseURL}/api/health`))
             .status();
         } catch {
           return 0;
@@ -81,10 +83,11 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async ({

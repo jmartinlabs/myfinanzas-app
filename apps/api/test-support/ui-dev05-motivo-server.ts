@@ -14,8 +14,11 @@ import { createSale } from "../src/ventas";
 
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
-const PORT = 3036;
-const dir = ".local/e2e-ui-dev05-motivo";
+// Puerto y estado del contexto de la ejecución (#514): `E2E_PORT` y
+// `E2E_STATE_DIR` tienen prioridad sobre los valores históricos, que se
+// conservan para arrancar el fixture a mano.
+const PORT = Number(process.env.E2E_PORT ?? 3036);
+const dir = process.env.E2E_STATE_DIR ?? ".local/e2e-ui-dev05-motivo";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),
@@ -121,7 +124,13 @@ writeFileSync(
 writeFileSync(dir + "/bootstrap.txt", provision(db, now), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key, now: () => now })).pipe(
+    HttpServer.serve(createApp(db, {
+      key,
+      now: () => now,
+      // Origen de la ejecución (#514): sin él, el alta y la sesión del run se
+      // rechazarían con 403 ORIGIN.
+      origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+    })).pipe(
       Layer.provide(
         BunHttpServer.layer({ hostname: "127.0.0.1", port: PORT }),
       ),
