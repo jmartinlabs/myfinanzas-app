@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { contextFromEnv } from "../../apps/api/test-support/e2e-context";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
 
 /**
  * E4.9 — UI/E2E del cierre y la fotografía.
@@ -22,54 +22,75 @@ import { artifactDir } from "./fixture";
  * inyectada NO acredita DT6 ni autoriza un cierre real.
  */
 
-const PORTS = {
-  listo: 3031,
-  replay: 3032,
-  conflicto: 3033,
-  bloqueado: 3034,
-  "sin-siguiente": 3035,
-  fuente: 3036,
-  "fuera-orden": 3037,
-  incoherente: 3038,
-  "sin-ciclo": 3039,
-  nav: 3040,
-  "backup-sin-referencia": 3041,
-  "e410-reabierto": 3042,
-  "e410-no-ultimo": 3043,
-  "e410-sin-cambios": 3044,
+/**
+ * Escenarios del cierre. Cada uno pide su puerto y su directorio al contexto de
+ * la ejecución (#514): antes los catorce compartían los puertos 3031-3044 y
+ * escribían en `.local/e2e-cierre-*`, que además reutilizaban otras tres specs.
+ */
+const FIXTURES = {
+  listo: fixtureContext("cierre-listo"),
+  replay: fixtureContext("cierre-replay"),
+  conflicto: fixtureContext("cierre-conflicto"),
+  bloqueado: fixtureContext("cierre-bloqueado"),
+  "sin-siguiente": fixtureContext("cierre-sin-siguiente"),
+  fuente: fixtureContext("cierre-fuente"),
+  "fuera-orden": fixtureContext("cierre-fuera-orden"),
+  incoherente: fixtureContext("cierre-incoherente"),
+  "sin-ciclo": fixtureContext("cierre-sin-ciclo"),
+  nav: fixtureContext("cierre-nav"),
+  "backup-sin-referencia": fixtureContext("cierre-backup-sin-referencia"),
+  "e410-reabierto": fixtureContext("cierre-e410-reabierto"),
+  "e410-no-ultimo": fixtureContext("cierre-e410-no-ultimo"),
+  "e410-sin-cambios": fixtureContext("cierre-e410-sin-cambios"),
 } as const;
 
-const artifactsDev06I4 = artifactDir("dev-06-i4");
-const dirFor = (scenario: string) => `.local/e2e-cierre-${scenario}`;
+type Scenario = keyof typeof FIXTURES;
 
-async function startServer(
-  request: APIRequestContext,
-  scenario: keyof typeof PORTS,
-) {
-  const port = PORTS[scenario];
+const artifactsDev06I4 = artifactDir("dev-06-i4");
+
+async function startServer(request: APIRequestContext, scenario: Scenario) {
+  const fixture = FIXTURES[scenario];
   const child: ChildProcess = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/cierre-server.ts"],
     {
-      stdio: "pipe",
+      stdio: ["ignore", "pipe", "pipe"],
       env: {
-        ...process.env,
-        NODE_ENV: "test",
+        ...fixture.env,
         E49_SCENARIO: scenario,
-        E49_PORT: String(port),
+        E49_PORT: String(fixture.port),
         // Origen de la ejecución (#514): el literal 5173 hacía que el fixture
         // rechazara con 403 ORIGIN el alta y la sesión del run.
         E410_ORIGIN: process.env.E410_ORIGIN ?? contextFromEnv().webOrigin,
       },
     },
   );
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null =
+    null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture.name} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
-          return (
-            await request.get(`http://127.0.0.1:${port}/api/health`)
-          ).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -82,7 +103,10 @@ async function startServer(
       child.kill();
       throw error;
     });
-  return { child, port, dir: dirFor(scenario) };
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  requireFixtureState({ fixture, output: () => output, assertAlive });
+  return { child, port: fixture.port, dir: fixture.dir };
 }
 
 async function routeApi(page: Page, port: number) {

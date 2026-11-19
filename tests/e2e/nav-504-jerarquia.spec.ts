@@ -14,11 +14,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { reservePorts } from "../../apps/api/test-support/e2e-context";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
-const DIR = ".local/e2e-nav-504";
+// Puerto y estado propios de la ejecución (#514): antes reservaba un puerto
+// aquí y escribía en `.local/e2e-nav-504`.
+const FIXTURE = fixtureContext("nav-504");
+const DIR = FIXTURE.dir;
 const artifacts = artifactDir("ui-02-navegacion");
 
 const DIRECT = ["/inicio", "/movimientos"];
@@ -60,10 +62,10 @@ function assertFixtureAlive() {
 }
 
 test.beforeAll(async ({ request }) => {
-  // Puerto propio: libre en 127.0.0.1 ahora mismo y distinto de los del run,
-  // que los `webServer` del config ya tienen ocupados.
-  [API_PORT] = reservePorts(1, "127.0.0.1");
-  API_HEALTH = `http://127.0.0.1:${API_PORT}/api/health`;
+  // Puerto propio del contexto: libre en 127.0.0.1 ahora mismo y distinto de
+  // los del run, que los `webServer` del config ya tienen ocupados.
+  API_PORT = FIXTURE.port;
+  API_HEALTH = `${FIXTURE.baseURL}/api/health`;
   // Origen autorizado de la API: el mismo que sirve la web en esta ejecución.
   const baseURL = test.info().project.use.baseURL ?? "http://127.0.0.1:5173";
   child = spawn(
@@ -72,10 +74,7 @@ test.beforeAll(async ({ request }) => {
     {
       stdio: ["ignore", "pipe", "pipe"],
       env: {
-        ...process.env,
-        NODE_ENV: "test",
-        E2E_PORT: String(API_PORT),
-        E2E_DIR: DIR,
+        ...FIXTURE.env,
         E2E_APP_ORIGIN: process.env.E2E_APP_ORIGIN ?? baseURL,
       },
     },

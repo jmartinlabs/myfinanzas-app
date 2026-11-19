@@ -33,7 +33,10 @@ import { crearFotoPeriodo } from "../src/e411-periodo";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
 const scenario = process.env.E411_SCENARIO ?? "principal";
-const port = Number(process.env.E411_PORT ?? 3050);
+// Puerto y estado del contexto de la ejecución (#514), con prioridad sobre los
+// nombres históricos `E411_*`; sin contexto se conservan los valores de siempre
+// para poder arrancarlo a mano.
+const port = Number(process.env.E2E_PORT ?? process.env.E411_PORT ?? 3050);
 // Origen del alta y la sesión: sin `E411_ORIGIN` explícito, el fixture toma el
 // `APP_ORIGIN` del contexto de la ejecución (issue #514). Antes caía a 5173 y
 // rechazaba con 403 ORIGIN cualquier petición del run.
@@ -45,7 +48,8 @@ const origin =
 // 2028 is a declared future period. The E2E login generates TOTP for this
 // timestamp (same pattern as the E4.6 valoración server).
 const NOW = Date.parse("2027-06-15T12:00:00Z");
-const dir = `.local/e2e-e411-${scenario}`;
+const dir =
+  process.env.E2E_STATE_DIR ?? `.local/e2e-e411-${scenario}`;
 
 function assertScenario(value: string): asserts value is
   | "principal"

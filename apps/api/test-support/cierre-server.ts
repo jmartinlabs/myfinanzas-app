@@ -23,8 +23,12 @@ import {
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
 const scenario = process.env.E49_SCENARIO ?? "listo";
-const port = Number(process.env.E49_PORT ?? 3031);
-const dir = `.local/e2e-cierre-${scenario}`;
+// Puerto y estado del contexto de la ejecución (#514), con prioridad sobre los
+// nombres históricos `E49_*`; sin contexto se conservan los valores de siempre
+// para poder arrancarlo a mano.
+const port = Number(process.env.E2E_PORT ?? process.env.E49_PORT ?? 3031);
+const dir =
+  process.env.E2E_STATE_DIR ?? `.local/e2e-cierre-${scenario}`;
 const NOW = Date.parse("2026-11-03T10:00:00Z");
 
 rmSync(dir, { recursive: true, force: true });

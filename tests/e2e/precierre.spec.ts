@@ -5,10 +5,13 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
 
-const origin = "http://127.0.0.1:3030";
-const state = ".local/e2e-precierre";
+// Puerto y estado propios de la ejecución (#514): antes el precierre ocupaba
+// el 3030 fijo y escribía en `.local/e2e-precierre`.
+const FIXTURE = fixtureContext("precierre");
+const origin = FIXTURE.baseURL;
+const state = FIXTURE.dir;
 
 async function login(page: any, request: any) {
   await expect
@@ -59,12 +62,33 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/precierre-server.ts"],
     {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E2E_PORT: "3030", E2E_STATE: state },
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...FIXTURE.env,
+        E2E_PORT: String(FIXTURE.port),
+        E2E_STATE: state,
+      },
     },
   );
+  let output = "";
+  let exited = false;
+  child.stdout?.on("data", (chunk) => (output += String(chunk)));
+  child.stderr?.on("data", (chunk) => (output += String(chunk)));
+  child.on("exit", () => (exited = true));
   try {
     await login(page, request);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    requireFixtureState({
+      fixture: FIXTURE,
+      output: () => output,
+      assertAlive: () => {
+        if (exited)
+          throw new Error(
+            `El fixture ${FIXTURE.name} terminó antes de servir: ${output.trim() || "(sin salida)"}`,
+          );
+      },
+    });
     await page.goto("/precierre");
     await expect(
       page.getByRole("heading", { name: "Revisión de precierre", exact: true }),

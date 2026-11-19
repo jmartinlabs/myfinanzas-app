@@ -10,11 +10,14 @@ import { artifactDir, fixtureContext, requireFixtureState, type Fixture } from "
 
 const artifacts = artifactDir("g5f");
 
-const CIERRE_PORT = 3055;
-const FOTOS_PORT = 3056;
-// Puerto y estado del resumen anual salen del contexto de la ejecución (#514):
-// el servidor ya no ocupa 3057 ni `.local/e2e-e47-g5f`.
+// Puerto y estado de los tres fixtures salen del contexto de la ejecución
+// (#514): el servidor ya no ocupa 3055/3056/3057 ni escribe en
+// `.local/e2e-cierre-listo`, `.local/e2e-e411-principal` ni `.local/e2e-e47-g5f`.
+const CIERRE = fixtureContext("g5f-cierre-listo");
+const FOTOS = fixtureContext("g5f-fotos-principal");
 const RESUMEN = fixtureContext("g5f-resumen-anual");
+const CIERRE_PORT = CIERRE.port;
+const FOTOS_PORT = FOTOS.port;
 const FOTOS_NOW = Date.parse("2027-06-15T12:00:00Z");
 
 type OwnedServer = {
@@ -83,15 +86,21 @@ async function start(
 }
 
 test.beforeAll(async ({ request }) => {
-  await start(request, "cierre-server.ts", CIERRE_PORT, {
+  const cierre = await start(request, "cierre-server.ts", CIERRE_PORT, {
+    ...CIERRE.env,
     E49_SCENARIO: "listo",
     E49_PORT: String(CIERRE_PORT),
   });
-  await start(request, "e411-server.ts", FOTOS_PORT, {
+  // El cierre provisionó su estado antes de servir: se navega solo entonces.
+  requireFixtureState({ ...cierre, fixture: CIERRE });
+  const fotos = await start(request, "e411-server.ts", FOTOS_PORT, {
+    ...FOTOS.env,
     E411_SCENARIO: "principal",
     E411_PORT: String(FOTOS_PORT),
   });
+  requireFixtureState({ ...fotos, fixture: FOTOS });
   const resumen = await start(request, "resumen-anual-server.ts", RESUMEN.port, {
+    ...RESUMEN.env,
     E2E_PORT: String(RESUMEN.port),
     E2E_STATE_DIR: RESUMEN.dir,
   });
@@ -148,7 +157,7 @@ test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, CIERRE_PORT, ".local/e2e-cierre-listo", "/cierre");
+  await login(page, CIERRE_PORT, CIERRE.dir, "/cierre");
   await page.goto("/cierre");
   await expect(
     page.getByRole("heading", { name: "Cierre financiero", exact: true }),
@@ -194,7 +203,7 @@ test("G5f: Fotos en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, FOTOS_PORT, ".local/e2e-e411-principal", "/fotos", FOTOS_NOW);
+  await login(page, FOTOS_PORT, FOTOS.dir, "/fotos", FOTOS_NOW);
   await page.goto("/fotos");
   await expect(
     page.getByRole("heading", { name: "Fotografías", exact: true }),
