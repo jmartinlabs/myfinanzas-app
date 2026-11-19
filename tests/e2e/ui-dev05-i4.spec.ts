@@ -6,6 +6,8 @@ import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { fixtureContext } from "./fixture";
 
+import { artifactDir } from "./fixture";
+
 /**
  * UI · DEV-05 I4 — Clasificación, Referencias y Presupuestos.
  *
@@ -92,7 +94,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
   page,
 }) => {
   test.setTimeout(240000);
-  mkdirSync("artifacts/ui-dev05-i4", { recursive: true });
+  const artifacts = artifactDir("ui-dev05-i4");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
@@ -171,7 +173,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };
@@ -281,7 +283,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/clasificacion-error-${width}.png`,
+      path: join(artifacts, `clasificacion-error-${width}.png`),
       fullPage: true,
     });
 
@@ -300,7 +302,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/referencias-error-${width}.png`,
+      path: join(artifacts, `referencias-error-${width}.png`),
       fullPage: true,
     });
 
@@ -317,7 +319,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/presupuestos-error-${width}.png`,
+      path: join(artifacts, `presupuestos-error-${width}.png`),
       fullPage: true,
     });
   }
@@ -340,7 +342,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/clasificacion-ficha-dark-${width}.png`,
+      path: join(artifacts, `clasificacion-ficha-dark-${width}.png`),
       fullPage: true,
     });
 
@@ -357,7 +359,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/referencias-ficha-dark-${width}.png`,
+      path: join(artifacts, `referencias-ficha-dark-${width}.png`),
       fullPage: true,
     });
 
@@ -374,7 +376,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/presupuestos-ficha-dark-${width}.png`,
+      path: join(artifacts, `presupuestos-ficha-dark-${width}.png`),
       fullPage: true,
     });
   }

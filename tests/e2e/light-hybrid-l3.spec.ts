@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3014;
 const STATE = ".local/e2e-inicio";
@@ -56,7 +59,7 @@ async function login(page: Page) {
 
 test("L3: identidad de Movimientos en Claro y Mixto, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/l3", { recursive: true });
+  const artifacts = artifactDir("l3");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page);
@@ -114,11 +117,11 @@ test("L3: identidad de Movimientos en Claro y Mixto, 1440/820/390", async ({ pag
       await page.setViewportSize({ width, height });
       await noOverflow();
       await page.screenshot({
-        path: `artifacts/l3/movimientos-${theme}-${width}.png`,
+        path: join(artifacts, `movimientos-${theme}-${width}.png`),
         fullPage: true,
       });
       if (width === 1440) {
-        await page.screenshot({ path: `artifacts/l3/movimientos-${theme}-fold.png` });
+        await page.screenshot({ path: join(artifacts, `movimientos-${theme}-fold.png`) });
       }
     }
   }

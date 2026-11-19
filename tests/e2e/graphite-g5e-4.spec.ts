@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3062;
 const STATE = ".local/e2e-payroll-g5e";
@@ -93,7 +96,7 @@ async function createPayroll(page: Page) {
 
 test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(240000);
-  mkdirSync("artifacts/g5e-4", { recursive: true });
+  const artifacts = artifactDir("g5e-4");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -173,7 +176,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   expect(Math.round(box!.height)).toBe(20);
   await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-formulario-1440.png",
+    path: join(artifacts, "nomina-formulario-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 720, height: 500 });
@@ -190,7 +193,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-revision-1440.png",
+    path: join(artifacts, "nomina-revision-1440.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Confirmar revisión de Nómina" }).click();
@@ -246,7 +249,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
       ).toHaveCSS("min-height", "44px");
     }
     await page.screenshot({
-      path: `artifacts/g5e-4/nomina-historico-${width}.png`,
+      path: join(artifacts, `nomina-historico-${width}.png`),
       fullPage: true,
     });
   }
@@ -273,7 +276,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   );
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-cobros-1440.png",
+    path: join(artifacts, "nomina-cobros-1440.png"),
     fullPage: true,
   });
 
@@ -295,13 +298,13 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   );
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-pronostico-1440.png",
+    path: join(artifacts, "nomina-pronostico-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-pronostico-390.png",
+    path: join(artifacts, "nomina-pronostico-390.png"),
     fullPage: true,
   });
 

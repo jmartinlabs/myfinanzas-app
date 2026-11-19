@@ -5,7 +5,8 @@ import {
   type Page,
 } from "@playwright/test";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { release as osRelease } from "node:os";
 import { totp } from "../../apps/api/src/auth";
@@ -27,6 +28,8 @@ import {
   type ScreenViewportAudit,
 } from "./ui-dev07-audit";
 
+import { artifactDir } from "./fixture";
+
 /**
  * UI DEV-07 · I1 — línea base diagnóstica (solo test).
  *
@@ -41,7 +44,7 @@ import {
 // skipped en el parser de cobertura de `scripts/verify` y rompería CI.
 const ENABLED = process.env.UI_DEV07_AUDIT === "1";
 
-const OUT = "artifacts/ui-dev07-baseline";
+const artifacts = artifactDir("ui-dev07-baseline");
 const INICIO_PORT = 3014;
 const CIERRE_PORT = 3031;
 
@@ -102,7 +105,7 @@ const report: {
   },
   command:
     "UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts",
-  jsonPath: "artifacts/ui-dev07-baseline/report.json",
+  jsonPath: join(artifacts, "report.json"),
   pageErrors: [],
   limitations: [
     "Linux full verification not executed on this host.",
@@ -134,8 +137,7 @@ const report: {
 
 function writeReport() {
   report.updatedAt = new Date().toISOString();
-  mkdirSync(OUT, { recursive: true });
-  writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 2));
+  writeFileSync(join(artifacts, "report.json"), JSON.stringify(report, null, 2));
 }
 
 async function waitForApi(request: APIRequestContext, port: number) {

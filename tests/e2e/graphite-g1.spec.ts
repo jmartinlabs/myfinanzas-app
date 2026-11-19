@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const API_PORT = 3013;
 let child: ReturnType<typeof spawn> | undefined;
@@ -59,7 +62,7 @@ async function authenticate(page: import("@playwright/test").Page) {
 test("G1: shell, componentes, responsive y regresión de temas", async ({
   page,
 }) => {
-  mkdirSync("artifacts/graphite-g1", { recursive: true });
+  const artifacts = artifactDir("graphite-g1");
   await authenticate(page);
   const themeSelect = page.getByLabel(/Cambiar tema|Tema/);
   await themeSelect.selectOption("graphite-lime");
@@ -98,7 +101,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.locator(".desktop-list tbody tr").first()).toBeVisible();
   await page.locator("h1").blur();
   await page.screenshot({
-    path: "artifacts/graphite-g1/saldos-1440.png",
+    path: join(artifacts, "saldos-1440.png"),
     fullPage: true,
   });
 
@@ -110,7 +113,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     "12px",
   );
   await page.screenshot({
-    path: "artifacts/graphite-g1/inicio-1440.png",
+    path: join(artifacts, "inicio-1440.png"),
     fullPage: true,
   });
 
@@ -122,7 +125,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     "linear-gradient(160deg, rgb(23, 26, 22) 0%, rgb(17, 19, 17) 100%)",
   );
   await page.screenshot({
-    path: "artifacts/graphite-g1/movimientos-1440.png",
+    path: join(artifacts, "movimientos-1440.png"),
     fullPage: true,
   });
 
@@ -187,7 +190,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   ).toBeVisible();
   await page.locator("h1").blur();
   await page.screenshot({
-    path: "artifacts/graphite-g1/saldos-820.png",
+    path: join(artifacts, "saldos-820.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -196,7 +199,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
   await expect(page.locator(".inicio-context")).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/inicio-820.png",
+    path: join(artifacts, "inicio-820.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -204,7 +207,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await page.goto("/movimientos");
   await expect(page.getByRole("heading", { name: "Movimientos", exact: true })).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/movimientos-820.png",
+    path: join(artifacts, "movimientos-820.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -221,7 +224,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     "linear-gradient(160deg, rgb(23, 26, 22) 0%, rgb(17, 19, 17) 100%)",
   );
   await page.screenshot({
-    path: "artifacts/graphite-g1/saldos-390.png",
+    path: join(artifacts, "saldos-390.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -230,7 +233,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
   await expect(page.locator(".inicio-context")).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/inicio-390.png",
+    path: join(artifacts, "inicio-390.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -238,7 +241,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await page.goto("/movimientos");
   await expect(page.getByRole("heading", { name: "Movimientos", exact: true })).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/movimientos-390.png",
+    path: join(artifacts, "movimientos-390.png"),
     fullPage: true,
   });
   await noOverflow();

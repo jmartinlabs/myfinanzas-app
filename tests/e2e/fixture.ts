@@ -11,6 +11,7 @@
  * conserva su valor por defecto histórico cuando se arranca a mano, de modo que
  * el cambio es aditivo para quien no usa el arnés.
  */
+import { mkdirSync } from "node:fs";
 import { contextFromEnv, reservePorts } from "../../apps/api/test-support/e2e-context";
 
 export type Fixture = {
@@ -20,6 +21,19 @@ export type Fixture = {
   baseURL: string;
   env: Record<string, string>;
 };
+
+/**
+ * Directorio de capturas `name` de esta ejecución. Lo crea si falta y devuelve
+ * la ruta absoluta bajo `<runRoot>/artifacts/`: dos runs simultáneas nunca
+ * escriben en el mismo sitio.
+ */
+export function artifactDir(name: string): string {
+  if (!/^[a-z0-9-]{1,40}$/.test(name))
+    throw new Error(`Nombre de artefacto E2E inválido: ${name}`);
+  const dir = contextFromEnv().artifactDir(name);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
 /** Contexto de un fixture: puerto libre reservado y directorio de esta run. */
 export function fixtureContext(name: string): Fixture {

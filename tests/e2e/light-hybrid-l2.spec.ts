@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3014;
 const STATE = ".local/e2e-inicio";
@@ -53,7 +56,7 @@ async function login(page: Page) {
 
 test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/l2", { recursive: true });
+  const artifacts = artifactDir("l2");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page);
@@ -123,11 +126,11 @@ test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) 
       await page.setViewportSize({ width, height });
       await noOverflow();
       await page.screenshot({
-        path: `artifacts/l2/inicio-${theme}-${width}.png`,
+        path: join(artifacts, `inicio-${theme}-${width}.png`),
         fullPage: true,
       });
       if (width === 1440) {
-        await page.screenshot({ path: `artifacts/l2/inicio-${theme}-fold.png` });
+        await page.screenshot({ path: join(artifacts, `inicio-${theme}-fold.png`) });
       }
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -144,7 +147,7 @@ test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) 
     );
 
     await page.locator(".inicio-page .graphite-control").screenshot({
-      path: `artifacts/l2/hero-${theme}.png`,
+      path: join(artifacts, `hero-${theme}.png`),
     });
   }
 

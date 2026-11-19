@@ -1,7 +1,10 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+
+import { artifactDir } from "./fixture";
+
 export async function cycleOperationsJourney(page: Page) {
-  mkdirSync("artifacts/e2-1", { recursive: true });
+  const artifacts = artifactDir("e2-1");
   const get = (path: string) =>
     page.evaluate(
       async (path) => await (await fetch("/api" + path)).json(),
@@ -31,7 +34,7 @@ export async function cycleOperationsJourney(page: Page) {
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e2-1/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };

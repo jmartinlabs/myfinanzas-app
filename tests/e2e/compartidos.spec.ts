@@ -1,8 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
+
 test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/1440", async ({
   page,
   request,
@@ -66,7 +70,7 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect(page.getByRole("heading", { name: "Gastos compartidos" })).toBeVisible();
     await expect(page.getByText("Piso 2026", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Solo mío", { exact: true }).first()).toBeVisible();
-    mkdirSync("artifacts/e3-2", { recursive: true });
+    const artifacts = artifactDir("e3-2");
     const shots = async (name: string) => {
       for (const [width, height] of [
         [1440, 1000],
@@ -89,7 +93,7 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
         );
         await page.screenshot({
           animations: "disabled",
-          path: `artifacts/e3-2/${name}-${width}.png`,
+          path: join(artifacts, `${name}-${width}.png`),
           fullPage: true,
         });
       }

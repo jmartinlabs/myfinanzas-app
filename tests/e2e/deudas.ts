@@ -1,7 +1,10 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+
+import { artifactDir } from "./fixture";
+
 export async function deudas(page: Page) {
-  mkdirSync("artifacts/e1-6", { recursive: true });
+  const artifacts = artifactDir("e1-6");
   const shot = async (name: string) => {
     await page.evaluate(() => scrollTo(0, 0));
     expect(
@@ -10,7 +13,7 @@ export async function deudas(page: Page) {
       ),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e1-6/" + name + ".png",
+      path: join(artifacts, name + ".png"),
       fullPage: true,
     });
   };

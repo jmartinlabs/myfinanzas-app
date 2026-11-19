@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const comidaOrigin = "http://127.0.0.1:3020";
 const comidaState = ".local/e2e-comida-dprima";
@@ -70,11 +73,11 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e2e-comida", { recursive: true });
+  const artifactsE2eComida = artifactDir("e2e-comida");
   const child = startServer(3020, comidaState);
     await login(page, request, comidaOrigin, comidaState);
     const shot = (name: string) =>
-      page.screenshot({ path: `artifacts/e2e-comida/${name}.png`, fullPage: true });
+      page.screenshot({ path: join(artifactsE2eComida, `${name}.png`), fullPage: true });
     await page.goto("/comida");
     await expect(
       page.getByRole("heading", { name: "Comida", exact: true }),
@@ -226,11 +229,11 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e2e-dprima", { recursive: true });
+  const artifactsE2eDprima = artifactDir("e2e-dprima");
   const child = startServer(3021, dprimaState);
     await login(page, request, dprimaOrigin, dprimaState);
     const shot = (name: string) =>
-      page.screenshot({ path: `artifacts/e2e-dprima/${name}.png`, fullPage: true });
+      page.screenshot({ path: join(artifactsE2eDprima, `${name}.png`), fullPage: true });
     await page.goto("/dprima");
     await expect(
       page.getByRole("heading", { name: "Partidas", exact: true }),

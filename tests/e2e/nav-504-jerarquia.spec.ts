@@ -10,13 +10,16 @@
 // `E2E_API_PORT`.
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { reservePorts } from "../../apps/api/test-support/e2e-context";
 
+import { artifactDir } from "./fixture";
+
 const DIR = ".local/e2e-nav-504";
-const ART = "artifacts/ui-02-navegacion";
+const artifacts = artifactDir("ui-02-navegacion");
 
 const DIRECT = ["/inicio", "/movimientos"];
 const GROUPS = [
@@ -158,7 +161,7 @@ async function shot(page: Page, name: string) {
   await page.evaluate(() =>
     (document.activeElement as HTMLElement | null)?.blur(),
   );
-  await page.screenshot({ path: `${ART}/${name}`, fullPage: true });
+  await page.screenshot({ path: join(artifacts, name), fullPage: true });
 }
 
 /** Divísoria bajo la identidad: 1 px, sin alto propio y espaciado simétrico. */
@@ -213,7 +216,6 @@ test("#504: accesos directos, grupos en caja normal y «Funciones anteriores» p
   page,
 }) => {
   test.setTimeout(180_000);
-  mkdirSync(ART, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page);

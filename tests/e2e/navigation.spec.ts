@@ -1,7 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { fixtureContext } from "./fixture";
-import { mkdirSync, readFileSync } from "node:fs";
+import { artifactDir, fixtureContext } from "./fixture";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
@@ -111,7 +112,7 @@ async function login(page: Page) {
 test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos y menú móvil accesible", async ({
   page,
 }) => {
-  mkdirSync("artifacts/ui-dev-03", { recursive: true });
+  const artifactsUiDev03 = artifactDir("ui-dev-03");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page);
@@ -266,9 +267,9 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     expect(
       navLabels.filter((label) => new RegExp(`\\b${word}\\b`, "i").test(label)),
     ).toEqual([]);
-  mkdirSync("artifacts/ui-02", { recursive: true });
+  const artifactsUi02 = artifactDir("ui-02");
   await page.screenshot({
-    path: "artifacts/ui-02/nav-legacy-1440.png",
+    path: join(artifactsUi02, "nav-legacy-1440.png"),
     fullPage: true,
   });
   await presupuestos.locator(".nav-group-toggle").click();
@@ -434,7 +435,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       ).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev-03/${file}`,
+      path: join(artifactsUiDev03, file),
       fullPage: true,
     });
     await page.keyboard.press("Escape");
@@ -459,7 +460,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     await expect(nav).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev-03/${file}`,
+      path: join(artifactsUiDev03, file),
       fullPage: true,
     });
   }

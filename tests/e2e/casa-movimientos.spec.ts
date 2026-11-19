@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3019;
 let child: ReturnType<typeof spawn> | undefined;
@@ -61,8 +64,8 @@ async function authenticate(page: Page) {
 }
 
 test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }) => {
-  mkdirSync("artifacts/ui-casa-1c", { recursive: true });
-  mkdirSync("artifacts/ui-casa-1d", { recursive: true });
+  const artifactsUiCasa1c = artifactDir("ui-casa-1c");
+  const artifactsUiCasa1d = artifactDir("ui-casa-1d");
   await authenticate(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -91,7 +94,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-1c/movimientos-casa-1440.png",
+    path: join(artifactsUiCasa1c, "movimientos-casa-1440.png"),
     fullPage: true,
   });
 
@@ -101,7 +104,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-1c/movimientos-casa-390.png",
+    path: join(artifactsUiCasa1c, "movimientos-casa-390.png"),
     fullPage: true,
   });
 
@@ -121,7 +124,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-1d/detalle-casa-1440.png",
+    path: join(artifactsUiCasa1d, "detalle-casa-1440.png"),
     fullPage: true,
   });
 
@@ -131,7 +134,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     page.getByRole("heading", { name: "Rectificar movimiento", exact: true }),
   ).toBeVisible();
   await page.screenshot({
-    path: "artifacts/ui-casa-1d/formulario-casa-1440.png",
+    path: join(artifactsUiCasa1d, "formulario-casa-1440.png"),
     fullPage: true,
   });
   await page
@@ -139,7 +142,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     .scrollIntoViewIfNeeded();
   await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeVisible();
   await page.screenshot({
-    path: "artifacts/ui-casa-1d/formulario-casa-1440-acciones.png",
+    path: join(artifactsUiCasa1d, "formulario-casa-1440-acciones.png"),
   });
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -147,7 +150,7 @@ test("Casa 1C/1D: Movimientos, detalle y formulario a 1440/390", async ({ page }
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-1d/formulario-casa-390.png",
+    path: join(artifactsUiCasa1d, "formulario-casa-390.png"),
     fullPage: true,
   });
   expect(errors).toEqual([]);

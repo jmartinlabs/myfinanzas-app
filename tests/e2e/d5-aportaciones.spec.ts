@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { readFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
 // misma spec no comparten listener ni SQLite.
@@ -111,7 +111,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
     await expect(
       page.getByRole("heading", { name: "Gastos compartidos" }),
     ).toBeVisible();
-    mkdirSync("artifacts/e3-2-d5", { recursive: true });
+    const artifacts = artifactDir("e3-2-d5");
     const shots = async (name: string) => {
       for (const [width, height] of [
         [1440, 1000],
@@ -134,7 +134,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
         );
         await page.screenshot({
           animations: "disabled",
-          path: `artifacts/e3-2-d5/${name}-${width}.png`,
+          path: join(artifacts, `${name}-${width}.png`),
           fullPage: true,
         });
       }

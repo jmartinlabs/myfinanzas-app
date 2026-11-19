@@ -1,10 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { fixtureContext, artifactDir } from "./fixture";
 
 /**
  * #502 — pie persistente de versión.
@@ -32,7 +32,7 @@ import { fixtureContext } from "./fixture";
 // misma spec no comparten listener ni SQLite.
 const fixture = fixtureContext("version");
 const API_PORT = fixture.port;
-const SHOTS = "artifacts/version-footer";
+const artifacts = artifactDir("version-footer");
 const APP_VERSION = "0.2.0";
 const APP_SHA = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678";
 const SHORT_SHA = APP_SHA.slice(0, 7);
@@ -163,7 +163,6 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   request,
 }) => {
   test.setTimeout(300000);
-  mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
 
@@ -356,12 +355,12 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
       });
     }
     await page.screenshot({
-      path: `${SHOTS}/panel-390x${height}-abierto.png`,
+      path: join(artifacts, `panel-390x${height}-abierto.png`),
       fullPage: false,
     });
     // Recorte del panel completo: evidencia de su cabecera, cierre y scroll.
     await panel.screenshot({
-      path: `${SHOTS}/panel-elemento-390x${height}.png`,
+      path: join(artifacts, `panel-elemento-390x${height}.png`),
     });
     // El disparador del pie sigue accesible con el panel abierto.
     await expect(versionToggle).toBeVisible();
@@ -378,7 +377,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   const casaBox = await geometry();
   expect(casaBox.panelBottom).toBeLessThanOrEqual(casaBox.footerTop - 1);
   await page.screenshot({
-    path: `${SHOTS}/panel-390x500-casa.png`,
+    path: join(artifacts, "panel-390x500-casa.png"),
     fullPage: false,
   });
   await page.keyboard.press("Escape");
@@ -408,11 +407,11 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await versionToggle.click();
   await expect(panel).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/panel-1440-anclado.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "panel-1440-anclado.png"), fullPage: false });
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await page.screenshot({
-    path: `${SHOTS}/pie-1440.png`,
+    path: join(artifacts, "pie-1440.png"),
     fullPage: false,
   });
 
@@ -442,7 +441,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     // Segunda apariencia con el panel abierto: mismo anclaje, otra identidad.
     if (id === "casa")
       await page.screenshot({
-        path: `${SHOTS}/panel-1440-casa.png`,
+        path: join(artifacts, "panel-1440-casa.png"),
         fullPage: false,
       });
     await page.keyboard.press("Escape");
@@ -461,7 +460,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await themeSelect.selectOption({ value: "casa" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expectPinnedFooter(page);
-  await page.screenshot({ path: `${SHOTS}/pie-1440-casa.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "pie-1440-casa.png"), fullPage: false });
 
   // ── 390 ─────────────────────────────────────────────────────────────────
   await page.setViewportSize({ width: 390, height: 844 });
@@ -472,7 +471,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await expect(page.locator(".app-version-env")).toHaveText("· TEST");
   await expect(page.locator(".sidebar-bottom")).toBeHidden();
   await page.screenshot({
-    path: `${SHOTS}/pie-390.png`,
+    path: join(artifacts, "pie-390.png"),
     fullPage: false,
   });
   await versionToggle.click();
@@ -481,7 +480,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   expect(panelBox.x).toBeGreaterThanOrEqual(0);
   expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(391);
   await page.screenshot({
-    path: `${SHOTS}/panel-390.png`,
+    path: join(artifacts, "panel-390.png"),
     fullPage: false,
   });
   await page.keyboard.press("Escape");
@@ -526,7 +525,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     innerWidth: window.innerWidth,
   }));
   expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
-  await page.screenshot({ path: `${SHOTS}/pie-390x500.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "pie-390x500.png"), fullPage: false });
 
   expect(errors).toEqual([]);
 });

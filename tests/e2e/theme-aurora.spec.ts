@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const API_PORT = 3013;
 let child: ReturnType<typeof spawn> | undefined;
@@ -59,7 +62,7 @@ async function authenticate(page: import("@playwright/test").Page) {
 test("Aurora: sexta apariencia, degradados, persistencia y 1440/820/390", async ({
   page,
 }) => {
-  mkdirSync("artifacts/theme", { recursive: true });
+  const artifacts = artifactDir("theme");
   await authenticate(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -129,7 +132,7 @@ test("Aurora: sexta apariencia, degradados, persistencia y 1440/820/390", async 
   );
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/aurora-inicio-1440.png",
+    path: join(artifacts, "aurora-inicio-1440.png"),
     fullPage: true,
   });
 
@@ -142,21 +145,21 @@ test("Aurora: sexta apariencia, degradados, persistencia y 1440/820/390", async 
   );
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/aurora-movimientos-1440.png",
+    path: join(artifacts, "aurora-movimientos-1440.png"),
     fullPage: true,
   });
 
   await page.setViewportSize({ width: 820, height: 1000 });
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/aurora-movimientos-820.png",
+    path: join(artifacts, "aurora-movimientos-820.png"),
     fullPage: true,
   });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/aurora-movimientos-390.png",
+    path: join(artifacts, "aurora-movimientos-390.png"),
     fullPage: true,
   });
 

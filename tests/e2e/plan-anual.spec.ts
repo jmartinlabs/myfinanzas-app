@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { readFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
 // misma spec no comparten listener ni SQLite.
@@ -133,7 +133,7 @@ test("E2.4 annual plan: real MFA, exact nullable manual lines, review/conflict/e
     await expect(
       page.getByText("Hechos conocidos sin objetivo ni línea inventados."),
     ).toBeVisible();
-    mkdirSync("artifacts/e2-4", { recursive: true });
+    const artifacts = artifactDir("e2-4");
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       if (width === 1440) {
@@ -193,7 +193,7 @@ test("E2.4 annual plan: real MFA, exact nullable manual lines, review/conflict/e
         );
       }
       await page.screenshot({
-        path: `artifacts/e2-4/plan-anual-${width}.png`,
+        path: join(artifacts, `plan-anual-${width}.png`),
         fullPage: true,
       });
       expect(

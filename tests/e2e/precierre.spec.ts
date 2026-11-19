@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const origin = "http://127.0.0.1:3030";
 const state = ".local/e2e-precierre";
@@ -51,7 +54,7 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  mkdirSync("artifacts/e2e-precierre", { recursive: true });
+  const artifacts = artifactDir("e2e-precierre");
   const child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/precierre-server.ts"],
@@ -87,7 +90,7 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
       page.getByRole("region", { name: "Fuentes y cobertura del precierre" }),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e2e-precierre/precierre-1440.png",
+      path: join(artifacts, "precierre-1440.png"),
       fullPage: true,
     });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
@@ -103,7 +106,7 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
     ).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     await page.screenshot({
-      path: "artifacts/e2e-precierre/precierre-390.png",
+      path: join(artifacts, "precierre-390.png"),
       fullPage: true,
     });
 

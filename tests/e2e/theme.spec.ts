@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
@@ -37,7 +37,7 @@ test.afterAll(() => {
 test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", async ({
   page,
 }) => {
-  mkdirSync("artifacts/theme", { recursive: true });
+  const artifacts = artifactDir("theme");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
@@ -91,7 +91,7 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
   await expect(primary).toHaveCSS("background-color", "rgb(240, 106, 69)");
   await page.mouse.move(0, 0);
   await expect(primary).toHaveCSS("background-color", "rgb(228, 87, 46)");
-  await page.screenshot({ path: "artifacts/theme/dark-s-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "dark-s-1440.png"), fullPage: true });
 
   await select.selectOption("light-s");
   await expect(html).toHaveAttribute("data-theme", "light-s");
@@ -101,7 +101,7 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
   await expect(select).toHaveValue("light-s");
   await expect(body).toHaveCSS("background-color", "rgb(246, 242, 234)");
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
-  await page.screenshot({ path: "artifacts/theme/light-s-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "light-s-1440.png"), fullPage: true });
 
   await select.selectOption("hybrid-s");
   await expect(html).toHaveAttribute("data-theme", "hybrid-s");
@@ -113,7 +113,7 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
   );
   await page.reload();
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
-  await page.screenshot({ path: "artifacts/theme/hybrid-s-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "hybrid-s-1440.png"), fullPage: true });
   await expect(select).toHaveValue("hybrid-s");
   await expect(sidebar).toHaveCSS("background-color", "rgb(16, 24, 28)");
 
@@ -128,7 +128,7 @@ test("temas light-s/dark-s/hybrid-s: selector, persistencia, shell y arranque", 
     await select.selectOption(id);
     await expect(html).toHaveAttribute("data-theme", id);
     await expectNoOverflow();
-    await page.screenshot({ path: `artifacts/theme/${file}`, fullPage: true });
+    await page.screenshot({ path: join(artifacts, file), fullPage: true });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await select.selectOption("dark-s");

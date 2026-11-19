@@ -1,9 +1,11 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
+import { artifactDir } from "./fixture";
+
 export async function classificationJourney(page: Page) {
-  mkdirSync("artifacts/e1-2", { recursive: true });
+  const artifacts = artifactDir("e1-2");
   const shot = async (name: string) => {
     await page.evaluate(() => scrollTo(0, 0));
     expect(
@@ -12,7 +14,7 @@ export async function classificationJourney(page: Page) {
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e1-2/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };

@@ -1,9 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { RESUMEN_ANUAL_NOW } from "../../apps/api/test-support/resumen-anual-clock";
+
+import { artifactDir } from "./fixture";
+
+const artifacts = artifactDir("g5f");
 
 const CIERRE_PORT = 3055;
 const FOTOS_PORT = 3056;
@@ -99,7 +104,6 @@ async function graphite(page: Page) {
 
 test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(120000);
-  mkdirSync("artifacts/g5f", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page, CIERRE_PORT, ".local/e2e-cierre-listo", "/cierre");
@@ -129,7 +133,7 @@ test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
     await page.setViewportSize({ width, height });
     await noOverflow(page);
     await page.screenshot({
-      path: `artifacts/g5f/cierre-${width}.png`,
+      path: join(artifacts, `cierre-${width}.png`),
       fullPage: true,
     });
   }
@@ -137,7 +141,7 @@ test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
   await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator(".cierre-page")).toBeVisible();
   await noOverflow(page);
-  await page.screenshot({ path: "artifacts/g5f/casa-cierre-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "casa-cierre-1440.png"), fullPage: true });
   await page.getByLabel("Cambiar tema").selectOption("light-s");
   await expect(page.locator(".cierre-page")).toBeVisible();
   await noOverflow(page);
@@ -171,7 +175,7 @@ test("G5f: Fotos en Graphite, 1440/820/390", async ({ page }) => {
     await page.setViewportSize({ width, height });
     await noOverflow(page);
     await page.screenshot({
-      path: `artifacts/g5f/fotos-${width}.png`,
+      path: join(artifacts, `fotos-${width}.png`),
       fullPage: true,
     });
   }
@@ -179,7 +183,7 @@ test("G5f: Fotos en Graphite, 1440/820/390", async ({ page }) => {
   await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator(".fotos-page")).toBeVisible();
   await noOverflow(page);
-  await page.screenshot({ path: "artifacts/g5f/casa-fotos-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "casa-fotos-1440.png"), fullPage: true });
   await page.getByLabel("Cambiar tema").selectOption("light-s");
   await expect(page.locator(".fotos-page")).toBeVisible();
   await noOverflow(page);
@@ -239,7 +243,7 @@ test("G5f: Resumen anual en Graphite, 1440/820/390", async ({ page }) => {
     await page.setViewportSize({ width, height });
     await noOverflow(page);
     await page.screenshot({
-      path: `artifacts/g5f/resumen-${width}.png`,
+      path: join(artifacts, `resumen-${width}.png`),
       fullPage: true,
     });
   }
@@ -247,7 +251,7 @@ test("G5f: Resumen anual en Graphite, 1440/820/390", async ({ page }) => {
   await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator(".e47-page")).toBeVisible();
   await noOverflow(page);
-  await page.screenshot({ path: "artifacts/g5f/casa-resumen-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "casa-resumen-1440.png"), fullPage: true });
   await page.getByLabel("Cambiar tema").selectOption("light-s");
   await expect(page.locator(".e47-page")).toBeVisible();
   await noOverflow(page);

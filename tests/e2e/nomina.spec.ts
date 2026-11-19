@@ -1,8 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
+
 test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive review", async ({
   page,
   request,
@@ -252,11 +256,11 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
       "Payroll computed header/action contrast minimum:",
       Math.min(...ratios).toFixed(2),
     );
-    mkdirSync("artifacts/e2-5", { recursive: true });
+    const artifacts = artifactDir("e2-5");
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.screenshot({
-        path: `artifacts/e2-5/nomina-${width}.png`,
+        path: join(artifacts, `nomina-${width}.png`),
         fullPage: true,
       });
       expect(

@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3050;
 const STATE = ".local/e2e-vehiculos-g5c";
@@ -69,7 +72,7 @@ async function authenticate(page: Page) {
 
 test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/g5c", { recursive: true });
+  const artifacts = artifactDir("g5c");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -90,7 +93,7 @@ test("G5c: Vehículos premium en Graphite, 1440/820/390", async ({ page }) => {
       window.scrollTo(0, 0);
     });
     await page.screenshot({
-      path: `artifacts/g5c/${name}-${width}.png`,
+      path: join(artifacts, `${name}-${width}.png`),
       fullPage: true,
     });
   };
