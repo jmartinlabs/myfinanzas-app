@@ -1237,7 +1237,9 @@ test("Casa: misma composición de Inicio que el resto de apariencias", async ({
   const select = page.getByLabel("Cambiar tema");
   await select.selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
-  await expect(page.locator(".inicio-page")).toHaveClass(/inicio-casa/);
+  // #536: Casa no tiene contenedor propio; la composición es única para los
+  // cinco temas (ui-specification §2.5 D1=A) y `.inicio-casa` no existe.
+  await expect(page.locator(".inicio-casa")).toHaveCount(0);
 
   const shared = page.locator(".inicio-page .graphite-control");
   const kpis = page.locator(".inicio-page .graphite-kpis");
