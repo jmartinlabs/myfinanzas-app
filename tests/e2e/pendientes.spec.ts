@@ -726,14 +726,30 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
   mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/monthly-server.ts");
+  // Puerto y estado propios de la ejecución (#508). El nombre distingue este
+  // arranque del de flujo-mensual.spec.ts, que usa el mismo servidor.
+  const fixture = fixtureContext("monthly-pendientes");
+  const API_PORT = fixture.port;
+  const server = startFixture(
+    "apps/api/test-support/monthly-server.ts",
+    fixture,
+  );
   try {
+    await ready(request, fixture.baseURL, "/api/pendientes", server.assertAlive);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    server.assertAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture monthly no provisionó ${fixture.dir}/bootstrap.txt: ${server.output().trim()}`,
+    ).toBe(true);
     await login(
       page,
       request,
-      "http://127.0.0.1:3008",
-      ".local/e2e-monthly/bootstrap.txt",
+      fixture.baseURL,
+      join(fixture.dir, "bootstrap.txt"),
       "/pendientes",
+      server.assertAlive,
     );
 
     await expect(page.getByText(/^5 filas/).first()).toBeVisible();
@@ -749,7 +765,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       "**/api/pendientes?*",
       async (route: any) => {
         const target = new URL(route.request().url());
-        target.port = "3008";
+        target.port = String(API_PORT);
         const response = await route.fetch({ url: target.toString() });
         held();
         await gate;
@@ -926,6 +942,8 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
     expect(page.url()).not.toMatch(/importe|\d+\.\d{2}/);
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.child.kill();
+    server.child.stdout?.destroy();
+    server.child.stderr?.destroy();
   }
 });
