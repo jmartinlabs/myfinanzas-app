@@ -34,7 +34,13 @@ if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
 const scenario = process.env.E411_SCENARIO ?? "principal";
 const port = Number(process.env.E411_PORT ?? 3050);
-const origin = process.env.E411_ORIGIN ?? "http://127.0.0.1:5173";
+// Origen del alta y la sesión: sin `E411_ORIGIN` explícito, el fixture toma el
+// `APP_ORIGIN` del contexto de la ejecución (issue #514). Antes caía a 5173 y
+// rechazaba con 403 ORIGIN cualquier petición del run.
+const origin =
+  process.env.E411_ORIGIN ??
+  process.env.APP_ORIGIN ??
+  process.env.E2E_APP_ORIGIN;
 // Fixed clock after every fixture and before 2028: 2027 periods are valid and
 // 2028 is a declared future period. The E2E login generates TOTP for this
 // timestamp (same pattern as the E4.6 valoración server).
