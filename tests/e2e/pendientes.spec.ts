@@ -659,14 +659,28 @@ test("E3.6 R1: conciliación de ciclo sin movimientos aparece como Alerta", asyn
   mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/pendientes-server.ts");
+  // Puerto y estado propios de la ejecución (#508).
+  const fixture = fixtureContext("pendientes");
+  const server = startFixture(
+    "apps/api/test-support/pendientes-server.ts",
+    fixture,
+  );
   try {
+    await ready(request, fixture.baseURL, "/api/pendientes", server.assertAlive);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    server.assertAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture pendientes no provisionó ${fixture.dir}/bootstrap.txt: ${server.output().trim()}`,
+    ).toBe(true);
     await login(
       page,
       request,
-      "http://127.0.0.1:3010",
-      ".local/e2e-pendientes/bootstrap.txt",
+      fixture.baseURL,
+      join(fixture.dir, "bootstrap.txt"),
       "/pendientes",
+      server.assertAlive,
     );
 
     const apertura = page
@@ -714,7 +728,9 @@ test("E3.6 R1: conciliación de ciclo sin movimientos aparece como Alerta", asyn
     await expect(page.getByText(/Alerta de conciliación/).first()).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.child.kill();
+    server.child.stdout?.destroy();
+    server.child.stderr?.destroy();
   }
 });
 
