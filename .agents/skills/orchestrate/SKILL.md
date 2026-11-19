@@ -30,6 +30,37 @@ spec07 is authorized during methodology adoption. Native agents remain optional 
 9. Apply specs/methodology/approvals.md to every protected gate, including PR merges. Enforce approvals for protected architecture/product/security/financial decisions, roadmap changes, new development scope and Full specifications. Authorized code or documentation work includes branch/PR publication under [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); merge still needs explicit approval for that PR and candidate. Never enable auto-merge. Reuse unchanged valid authorization but never infer one protected gate from another. Reclassify and ask confirmation if discoveries raise risk. Never perform destructive actions, deploy production or publish outside the authorized scope.
 10. Verify actual acceptance checks, financial/security regressions and diff; report PASS/FAIL/UNRUN distinctly. Record concise checkpoints at changed approval/candidate/QA/blocker/PR milestones; keep actual Git SHA and next safe action. External chats cannot be controlled by this coordinator. No agents continue after the active session ends. Update one current summary with candidate, check/QA evidence, PR/merge state and next action; replace stale labels and link historical entries. After a confirmed, authorized merge, clean only that task's clean local worktree/branch under [post-merge cleanup](../../../specs/methodology/approvals.md#limpieza-local-posterior-al-merge); after restoring a handoff, retire its temporary checkpoint only under [checkpoint retirement](../handoff/SKILL.md#next-session-and-checkpoint-retirement). Preserve dirty, unknown or other-task resources.
 
+## Independent advisor review before delivery
+
+A Specification, or an analysis that fixes a financial contract, a data-integrity
+guarantee, a migration plan or an architectural boundary, is not delivered for approval
+until a **critical review by a role that did not author the proposal** has been applied.
+Use the `advisor` role when the client exposes one; otherwise any competent independent
+reviewer with the same mandate. It advises: it never approves, authorizes or substitutes
+the user's decision.
+
+Reviewer mandate — it must actively try to break the proposal, not confirm it:
+
+- contrast it with the functional decisions the user already approved;
+- find contradictions between Issues, owner specs and consumers, including a consumer
+  classified with the wrong semantics or a criterion that lives in two Issues;
+- check financial calculations, edge cases and historical integrity: closures, exercised
+  borders, shared expenses, idempotency, concurrency, reversals;
+- challenge unnecessary complexity and propose the simplest design that keeps every
+  guarantee — extra tables, states, stages and criteria are presumptive defects;
+- assess migration, rollback, recovery and compatibility risk, including what breaks
+  backups or restores that must keep working.
+
+The delivery carries a short review summary: what was reviewed, which problems it raised
+and how each was resolved. Any **material disagreement** remaining between coordinator
+and reviewer is presented explicitly with its evidence, never smoothed over; the user
+decides. Claims about what the reviewer found keep the usual labelling (DEMOSTRADO,
+DOCUMENTADO, UNRUN).
+
+Do not apply the gate to trivial work, do not repeat the review when nothing material
+changed, and never let it absorb the independent QA required after implementation — that
+one runs on the candidate, with its own evidence.
+
 ## Execution continuity
 
 Continue the authorized scope until it is complete or a real blocker remains. An
