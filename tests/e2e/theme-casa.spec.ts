@@ -5,21 +5,38 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
 
-const API_PORT = 3013;
+// Puerto y estado propios de la ejecución (#514): las cuatro specs de tema
+// ocupaban 3013 y compartían `.local/e2e-theme`, así que cada una provisiona su
+// propia base y su propia cuenta.
+const THEME = fixtureContext("theme-casa");
+const API_PORT = THEME.port;
 let child: ReturnType<typeof spawn> | undefined;
+let fixtureOutput = "";
+let fixtureEnded = false;
+
+const assertAlive = () => {
+  if (fixtureEnded)
+    throw new Error(
+      `El fixture ${THEME.name} terminó antes de servir: ${fixtureOutput.trim() || "(sin salida)"}`,
+    );
+};
 
 test.beforeAll(async ({ request }) => {
   child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/theme-server.ts"], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
+    stdio: ["ignore", "pipe", "pipe"],
+    env: THEME.env,
   });
+  child.stdout?.on("data", (chunk) => (fixtureOutput += String(chunk)));
+  child.stderr?.on("data", (chunk) => (fixtureOutput += String(chunk)));
+  child.on("exit", () => (fixtureEnded = true));
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${API_PORT}/api/health`)).status();
+          return (await request.get(`${THEME.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -27,6 +44,7 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState({ fixture: THEME, output: () => fixtureOutput, assertAlive });
 });
 
 test.afterAll(() => {
@@ -42,7 +60,7 @@ async function authenticate(page: import("@playwright/test").Page) {
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-theme/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${THEME.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Casa " + randomUUID(),
   );
