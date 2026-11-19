@@ -2,14 +2,19 @@ import { test, expect, type Page } from "@playwright/test";
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
+
+const artifacts = artifactDir("e4-4");
 
 /*
  * E4.4 — Deuda completa y conciliación desde apertura.
  *
  * Isolated real Effect/Auth/SQLite process (no fixture endpoint, no MFA bypass),
- * fictional data only, 1440/390 screenshots in artifacts/e4-4. The E1.6 journey
+ * fictional data only, 1440/390 screenshots in the run's artifacts directory.
+ * The E1.6 journey
  * in tests/e2e/deudas.ts is preserved and remains the regression entry point.
  *
  * AC-29: this spec covers empty, loading, network error/retry, 401/404/409/422,
@@ -49,7 +54,7 @@ async function shot(page: Page, name: string) {
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: "artifacts/e4-4/" + name + ".png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, name + ".png"), fullPage: true });
 }
 
 test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 1440/390 sin datos reales", async ({
@@ -65,7 +70,6 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
   child.stderr.on("data", (chunk) => (serverLog += String(chunk)));
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e4-4", { recursive: true });
   try {
     try {
       await expect
@@ -856,13 +860,13 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
     await page.getByLabel("Cambiar tema").selectOption("casa");
     await expect(page.locator(".debt-detail")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-4/casa-detalle-1440.png",
+      path: join(artifacts, "casa-detalle-1440.png"),
       fullPage: true,
     });
     await page.goto("/deudas");
     await expect(page.locator(".deudas-page")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-4/casa-listado-1440.png",
+      path: join(artifacts, "casa-listado-1440.png"),
       fullPage: true,
     });
 

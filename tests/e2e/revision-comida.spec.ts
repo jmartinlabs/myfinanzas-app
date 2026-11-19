@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
 // misma spec no comparten listener ni SQLite.
@@ -50,9 +50,9 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     fixtureExit = { code, signal };
   });
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e3-4", { recursive: true });
+  const artifacts = artifactDir("e3-4");
   const shot = (name: string) =>
-    page.screenshot({ path: `artifacts/e3-4/${name}.png`, fullPage: true });
+    page.screenshot({ path: join(artifacts, `${name}.png`), fullPage: true });
   try {
     await expect
       .poll(

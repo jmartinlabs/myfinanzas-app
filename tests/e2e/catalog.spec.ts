@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { totp } from "../../apps/api/src/auth";
 import { cycleJourney } from "./ciclos";
+import { artifactDir } from "./fixture";
 import { classificationJourney } from "./classification";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
@@ -16,8 +18,8 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const password = "Contraseña ficticia de navegador " + randomUUID();
-  mkdirSync("artifacts/e1-1", { recursive: true });
-  mkdirSync("artifacts/dev-06-i3", { recursive: true });
+  const artifactsE11 = artifactDir("e1-1");
+  const artifactsDev06I3 = artifactDir("dev-06-i3");
   const shot = async (name: string) => {
     expect(
       await page.evaluate(
@@ -25,7 +27,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e1-1/${name}.png`,
+      path: join(artifactsE11, `${name}.png`),
       fullPage: true,
     });
   };
@@ -44,7 +46,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/dev-06-i3/${name}.png`,
+      path: join(artifactsDev06I3, `${name}.png`),
       fullPage: true,
     });
   };
@@ -473,7 +475,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       }),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e1-2/restored-mobile.png",
+      path: join(artifactDir("e1-2"), "restored-mobile.png"),
       fullPage: true,
     });
     await page.goto("/ciclos/" + cycles.first);
@@ -481,7 +483,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
     await expect(page.getByText("29/02/2028", { exact: true })).toBeVisible();
     await expect(page.locator(".global-header")).toContainText("No disponible");
     await page.screenshot({
-      path: "artifacts/e1-3/restored-mobile.png",
+      path: join(artifactDir("e1-3"), "restored-mobile.png"),
       fullPage: true,
     });
     console.log(

@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { readFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
 // misma spec no comparten listener ni SQLite. El nombre distingue este arranque
@@ -224,7 +224,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
     ).toBeVisible();
     await select.selectOption("1");
     await expect(margin).toContainText("150,00 €");
-    mkdirSync("artifacts/e2-6", { recursive: true });
+    const artifacts = artifactDir("e2-6");
     const contrast = await page.evaluate(() => {
       function rgb(v: string) {
         return v
@@ -283,7 +283,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         );
       });
-      await page.screenshot({ path: `artifacts/e2-6/flujo-${width}.png` });
+      await page.screenshot({ path: join(artifacts, `flujo-${width}.png`) });
       for (const section of ["flow-plan", "flow-current", "flow-coverage"]) {
         await page
           .locator(
@@ -293,7 +293,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
           )
           .scrollIntoViewIfNeeded();
         await page.screenshot({
-          path: `artifacts/e2-6/${section}-${width}.png`,
+          path: join(artifacts, `${section}-${width}.png`),
         });
       }
     }

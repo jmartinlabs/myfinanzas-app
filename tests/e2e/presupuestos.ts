@@ -1,10 +1,13 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+
+import { artifactDir } from "./fixture";
+
 export async function presupuestos(
   page: Page,
   debt: { id: string; bank: string },
 ) {
-  mkdirSync("artifacts/e2-2", { recursive: true });
+  const artifacts = artifactDir("e2-2");
   const shot = async (name: string) => {
     await page.evaluate(() => scrollTo(0, 0));
     await page.evaluate(
@@ -16,7 +19,7 @@ export async function presupuestos(
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e2-2/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };

@@ -1,8 +1,11 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+
+import { artifactDir } from "./fixture";
+
 /** Real authenticated continuation, no parallel fixture app or synthetic closure provider. */
 export async function cyclePlanJourney(page: Page, budgetId: string) {
-  mkdirSync("artifacts/e2-3", { recursive: true });
+  const artifacts = artifactDir("e2-3");
   const get = (path: string) =>
     page.evaluate(async (path) => (await fetch("/api" + path)).json(), path);
   const catalog = await get("/ciclos");
@@ -123,7 +126,7 @@ export async function cyclePlanJourney(page: Page, budgetId: string) {
       expect(contrast).toBeGreaterThanOrEqual(4.5);
     }
     await page.screenshot({
-      path: `artifacts/e2-3/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };

@@ -5,12 +5,12 @@ import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
 import { expectMovementsParity } from "./movements-parity";
 import { test, expect } from "@playwright/test";
-import { mkdirSync, readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
 
@@ -59,8 +59,8 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
   child.on("exit", (code, signal) => {
     fixtureExit = { code, signal };
   });
-  mkdirSync("artifacts/e1-4", { recursive: true });
-  mkdirSync("artifacts/dev-06-i2", { recursive: true });
+  const artifactsE14 = artifactDir("e1-4");
+  const artifactsDev06I2 = artifactDir("dev-06-i2");
   const shot = async (name: string) => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.evaluate(
@@ -73,7 +73,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e1-4/${name}.png`,
+      path: join(artifactsE14, `${name}.png`),
       fullPage: true,
     });
   };
@@ -93,7 +93,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await expectNoOverflow();
     await page.screenshot({
-      path: `artifacts/dev-06-i2/${name}.png`,
+      path: join(artifactsDev06I2, `${name}.png`),
       fullPage: true,
     });
   };
@@ -1079,7 +1079,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
           .filter({ hasText: e23.budget }),
       ).toContainText("Excedido");
       await page.screenshot({
-        path: "artifacts/e2-3/restored-mobile.png",
+        path: join(artifactDir("e2-3"), "restored-mobile.png"),
         fullPage: true,
       });
       expect(
@@ -1135,7 +1135,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         }),
       ).toBeVisible();
       await page.screenshot({
-        path: "artifacts/e1-5/restored-mobile.png",
+        path: join(artifactDir("e1-5"), "restored-mobile.png"),
         fullPage: true,
       });
     } finally {
