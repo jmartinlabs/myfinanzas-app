@@ -5,9 +5,12 @@ import {
   type Page,
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 /**
  * E4.9 — UI/E2E del cierre y la fotografía.
@@ -35,7 +38,7 @@ const PORTS = {
   "e410-sin-cambios": 3044,
 } as const;
 
-const ARTIFACTS = "artifacts/dev-06-i4";
+const artifactsDev06I4 = artifactDir("dev-06-i4");
 const dirFor = (scenario: string) => `.local/e2e-cierre-${scenario}`;
 
 async function startServer(
@@ -43,7 +46,6 @@ async function startServer(
   scenario: keyof typeof PORTS,
 ) {
   const port = PORTS[scenario];
-  mkdirSync(ARTIFACTS, { recursive: true });
   const child: ChildProcess = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/cierre-server.ts"],
@@ -142,7 +144,6 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors = pageErrors(page);
   const { child, port, dir } = await startServer(request, "listo");
   try {
@@ -221,7 +222,7 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
       await expect(page.locator("html")).toHaveAttribute("data-theme", id);
       await expectNoOverflow(page);
       await page.screenshot({
-        path: `${ARTIFACTS}/preflight-${id}-1440.png`,
+        path: join(artifactsDev06I4, `preflight-${id}-1440.png`),
         fullPage: true,
       });
       await page.setViewportSize({ width: 390, height: 844 });
@@ -232,7 +233,7 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
       await expect(page.locator(".cierre-e49-gates-table")).toBeVisible();
       await expect(page.locator(".cierre-e49-gates-table thead")).toBeHidden();
       await page.screenshot({
-        path: `${ARTIFACTS}/preflight-${id}-390.png`,
+        path: join(artifactsDev06I4, `preflight-${id}-390.png`),
         fullPage: true,
       });
     }
@@ -339,7 +340,7 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
       await expect(photoTotals).toBeVisible();
       await expect(photoCoverage).toBeVisible();
       await photoRegion.screenshot({
-        path: `${ARTIFACTS}/foto-${id}-1440.png`,
+        path: join(artifactsDev06I4, `foto-${id}-1440.png`),
       });
       await page.setViewportSize({ width: 390, height: 844 });
       await expectNoOverflow(page);
@@ -355,7 +356,7 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
         }),
       ).toBeVisible();
       await photoRegion.screenshot({
-        path: `${ARTIFACTS}/foto-${id}-390.png`,
+        path: join(artifactsDev06I4, `foto-${id}-390.png`),
       });
     }
     expect(errors).toEqual([]);
@@ -404,7 +405,7 @@ test("E4.9 UI: reintento idempotente tras un fallo devuelve la misma foto v1", a
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
     await page.screenshot({
-      path: `${ARTIFACTS}/replay-error-1440.png`,
+      path: join(artifactsDev06I4, "replay-error-1440.png"),
       fullPage: true,
     });
 
@@ -474,7 +475,7 @@ test("E4.9 UI: conflicto 409 por revisión obsoleta y recuperación", async ({
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
     await page.screenshot({
-      path: `${ARTIFACTS}/conflicto-409-1440.png`,
+      path: join(artifactsDev06I4, "conflicto-409-1440.png"),
       fullPage: true,
     });
 
@@ -552,7 +553,7 @@ test("E4.9 UI: preflight bloqueado por E3.5 y backup, sin foto parcial", async (
       await expect(page.locator("html")).toHaveAttribute("data-theme", id);
       await expectNoOverflow(page);
       await page.screenshot({
-        path: `${ARTIFACTS}/bloqueado-${id}-390.png`,
+        path: join(artifactsDev06I4, `bloqueado-${id}-390.png`),
         fullPage: true,
       });
     }
@@ -597,7 +598,7 @@ test("E4.9 UI: DT6 sin referencia no se marca Acreditado y bloquea", async ({
     ).toBe(404);
 
     await page.screenshot({
-      path: `${ARTIFACTS}/backup-sin-referencia-1440.png`,
+      path: join(artifactsDev06I4, "backup-sin-referencia-1440.png"),
       fullPage: true,
     });
     expect(errors).toEqual([]);
@@ -626,7 +627,7 @@ test("E4.9 UI: SIN_SIGUIENTE_INICIO no inventa Fin ni permite cerrar", async ({
       page.getByText(/Sin siguiente Inicio no se inventa un Fin/),
     ).toBeVisible();
     await page.screenshot({
-      path: `${ARTIFACTS}/sin-siguiente-1440.png`,
+      path: join(artifactsDev06I4, "sin-siguiente-1440.png"),
       fullPage: true,
     });
     await expect(
@@ -686,7 +687,7 @@ test("E4.9 UI: cierre fuera de orden exige motivo y audita", async ({
     ).toBeVisible();
     await expect(page.getByText("obligatorio", { exact: true })).toBeVisible();
     await page.screenshot({
-      path: `${ARTIFACTS}/fuera-de-orden-1440.png`,
+      path: join(artifactsDev06I4, "fuera-de-orden-1440.png"),
       fullPage: true,
     });
 
@@ -736,7 +737,7 @@ test("E4.9 UI: INCOHERENCIA_CON_CIERRE_POSTERIOR bloquea sin foto", async ({
     ).toBeVisible();
     await expect(page.getByText("Incoherencia", { exact: true }).first()).toBeVisible();
     await page.screenshot({
-      path: `${ARTIFACTS}/incoherencia-1440.png`,
+      path: join(artifactsDev06I4, "incoherencia-1440.png"),
       fullPage: true,
     });
     await expect(
@@ -764,7 +765,7 @@ test("E4.9 UI: sin ciclos no ofrece cierre", async ({ page, request }) => {
       page.getByRole("heading", { name: "Sin ciclos para cerrar", exact: true }),
     ).toBeVisible();
     await page.screenshot({
-      path: `${ARTIFACTS}/sin-ciclos-1440.png`,
+      path: join(artifactsDev06I4, "sin-ciclos-1440.png"),
       fullPage: true,
     });
     await expect(
@@ -819,14 +820,13 @@ test("E4.9 navegación: shell y /inicio enlazan al cierre sin romper rutas", asy
  * ni se acredita DT6: la evidencia de backup es inyectada por el servidor de
  * test y sigue sin autorizar un cierre real.
  */
-const ARTIFACTS_E410 = "artifacts/e4-10";
+const artifactsE410 = artifactDir("e4-10");
 
 test("E4.10 UI: reabrir v1, ver el impacto y re-cerrar v2 con comparación", async ({
   page,
   request,
 }) => {
   test.setTimeout(180000);
-  mkdirSync(ARTIFACTS_E410, { recursive: true });
   const errors = pageErrors(page);
   const { child, port, dir } = await startServer(request, "e410-reabierto");
   try {
@@ -976,13 +976,13 @@ test("E4.10 UI: reabrir v1, ver el impacto y re-cerrar v2 con comparación", asy
       await expect(page.locator("html")).toHaveAttribute("data-theme", id);
       await expectNoOverflow(page);
       await page.screenshot({
-        path: `${ARTIFACTS_E410}/resultado-${id}-1440.png`,
+        path: join(artifactsE410, `resultado-${id}-1440.png`),
         fullPage: true,
       });
       await page.setViewportSize({ width: 390, height: 844 });
       await expectNoOverflow(page);
       await page.screenshot({
-        path: `${ARTIFACTS_E410}/resultado-${id}-390.png`,
+        path: join(artifactsE410, `resultado-${id}-390.png`),
         fullPage: true,
       });
     }
@@ -997,7 +997,6 @@ test("E4.10 UI: un cierre no último no ofrece reabrir y muestra el motivo", asy
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS_E410, { recursive: true });
   const errors = pageErrors(page);
   const { child, port, dir } = await startServer(request, "e410-no-ultimo");
   try {
@@ -1015,13 +1014,13 @@ test("E4.10 UI: un cierre no último no ofrece reabrir y muestra el motivo", asy
     await expect(page.getByText(/Cierre posterior: ciclo 2 · v1/)).toBeVisible();
 
     await page.screenshot({
-      path: `${ARTIFACTS_E410}/no-ultimo-1440.png`,
+      path: join(artifactsE410, "no-ultimo-1440.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await expectNoOverflow(page);
     await page.screenshot({
-      path: `${ARTIFACTS_E410}/no-ultimo-390.png`,
+      path: join(artifactsE410, "no-ultimo-390.png"),
       fullPage: true,
     });
 
@@ -1041,7 +1040,6 @@ test("E4.10 UI: SIN_CAMBIOS no crea foto y permite cancelar la reapertura (D8)",
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS_E410, { recursive: true });
   const errors = pageErrors(page);
   const { child, port, dir } = await startServer(request, "e410-sin-cambios");
   try {
@@ -1112,13 +1110,13 @@ test("E4.10 UI: SIN_CAMBIOS no crea foto y permite cancelar la reapertura (D8)",
     ).toBe(404);
 
     await page.screenshot({
-      path: `${ARTIFACTS_E410}/cancelacion-sin-cambios-1440.png`,
+      path: join(artifactsE410, "cancelacion-sin-cambios-1440.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await expectNoOverflow(page);
     await page.screenshot({
-      path: `${ARTIFACTS_E410}/cancelacion-sin-cambios-390.png`,
+      path: join(artifactsE410, "cancelacion-sin-cambios-390.png"),
       fullPage: true,
     });
     expect(errors).toEqual([]);

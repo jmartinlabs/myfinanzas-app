@@ -30,6 +30,8 @@ function assertFixtureAlive() {
   if (fixtureExit) throw new Error(fixtureFailure());
 }
 
+import { artifactDir } from "./fixture";
+
 test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios", async ({
   page,
   request,
@@ -108,7 +110,7 @@ test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios
       await gate;
       await route.fallback();
     });
-    mkdirSync("artifacts/e3-3", { recursive: true });
+    const artifacts = artifactDir("e3-3");
     await page.goto("/vehiculos");
     await expect(
       page.getByRole("status").filter({ hasText: "Cargando vehículos…" }),
@@ -117,7 +119,7 @@ test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios
     await expect(page.locator(".vehicle-cards li")).toHaveCount(0);
     await expect(page.locator("main").getByText(/€/)).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e3-3/vehiculos-empty-loading-1440.png",
+      path: join(artifacts, "vehiculos-empty-loading-1440.png"),
       fullPage: true,
     });
     release();
@@ -131,7 +133,7 @@ test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios
       page.getByRole("button", { name: "Nuevo vehículo", exact: true }).first(),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e3-3/vehiculos-empty-1440.png",
+      path: join(artifacts, "vehiculos-empty-1440.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
@@ -139,7 +141,7 @@ test("E3.3 AC-29: carga y listado vacío reales, sin filas ni importes ficticios
     await expect(page.locator(".vehicle-cards li")).toHaveCount(0);
     await expect(page.locator("main").getByText(/€/)).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e3-3/vehiculos-empty-390.png",
+      path: join(artifacts, "vehiculos-empty-390.png"),
       fullPage: true,
     });
     await page.unroute("**/api/vehiculos?*");

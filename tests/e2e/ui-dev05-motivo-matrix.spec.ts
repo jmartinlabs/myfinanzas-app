@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 /**
  * UI · DEV-05 — matriz visual reproducible de reservas de motivo.
@@ -10,15 +13,15 @@ import { totp } from "../../apps/api/src/auth";
  * Reutiliza el servidor aislado en 3036 y los tres errores reales del servidor
  * (`fields.motivo`) del spec `ui-dev05-motivo.spec.ts`. Repite cada error en los
  * tres temas reales (`localStorage["mf-theme"]` + `theme-boot.js`) y en los dos
- * anchos de referencia, y deja 18 capturas en
- * `artifacts/ui-dev05-motivo-matrix/` (ignorado por Git).
+ * anchos de referencia, y deja 18 capturas en el directorio de artefactos de la
+ * run, fuera del repositorio.
  *
  * No modifica producto, `style.css` ni el spec existente.
  */
 
 const PORT = 3036;
 const DIR = ".local/e2e-ui-dev05-motivo";
-const ARTIFACTS = "artifacts/ui-dev05-motivo-matrix";
+const artifacts = artifactDir("ui-dev05-motivo-matrix");
 
 const THEMES = [
   { name: "light", storage: "light-s" },
@@ -223,7 +226,6 @@ test("UI DEV-05 matriz motivo: 3 errores × 3 temas × 2 anchos", async ({
   page,
 }) => {
   test.setTimeout(900000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const ids = JSON.parse(readFileSync(`${DIR}/ids.json`, "utf8")) as Ids;
   const errors: string[] = [];
   const screenshots: string[] = [];
@@ -252,7 +254,7 @@ test("UI DEV-05 matriz motivo: 3 errores × 3 temas × 2 anchos", async ({
           scenario.alert,
         );
         await expectNoHorizontalOverflow(page, viewport.width);
-        const file = `${ARTIFACTS}/${scenario.key}-${theme.name}-${viewport.width}.png`;
+        const file = join(artifacts, `${scenario.key}-${theme.name}-${viewport.width}.png`);
         await page.screenshot({ path: file, fullPage: true });
         screenshots.push(file);
       }

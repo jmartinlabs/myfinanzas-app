@@ -5,10 +5,13 @@ import {
   type Page,
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { schemaVersion } from "../../apps/api/src/database-identity";
+
+import { artifactDir } from "./fixture";
 
 /**
  * E4.11 I6 — E2E, accesibilidad y evidencia de `/fotos`.
@@ -36,7 +39,7 @@ const PORTS = {
 type Scenario = keyof typeof PORTS;
 
 const SERVER_NOW = Date.parse("2027-06-15T12:00:00Z");
-const ARTIFACTS = "artifacts/e411-i6";
+const artifacts = artifactDir("e411-i6");
 const ORIGIN = process.env.E411_ORIGIN ?? "http://127.0.0.1:5173";
 
 type ApiResult = {
@@ -61,7 +64,6 @@ function apiUrl(port: number, path: string) {
 
 async function startServer(request: APIRequestContext, scenario: Scenario) {
   const port = PORTS[scenario];
-  mkdirSync(ARTIFACTS, { recursive: true });
   const child: ChildProcess = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/e411-server.ts"],
@@ -203,13 +205,13 @@ async function capture(page: Page, name: string) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", id);
     await expectNoOverflow(page);
     await page.screenshot({
-      path: `${ARTIFACTS}/${name}-${id}-1440.png`,
+      path: join(artifacts, `${name}-${id}-1440.png`),
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await expectNoOverflow(page);
     await page.screenshot({
-      path: `${ARTIFACTS}/${name}-${id}-390.png`,
+      path: join(artifacts, `${name}-${id}-390.png`),
       fullPage: true,
     });
   }

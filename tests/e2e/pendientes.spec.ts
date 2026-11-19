@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext, type Fixture } from "./fixture";
+import { artifactDir, fixtureContext, type Fixture } from "./fixture";
 
 /**
  * E3.6 — UI de pendientes y flujo ajustado.
@@ -15,7 +15,7 @@ import { fixtureContext, type Fixture } from "./fixture";
  * emite GET y no ofrece acciones de escritura.
  */
 
-const ARTIFACTS = "artifacts/e3-6";
+const artifacts = artifactDir("e3-6");
 
 function start(script: string): ChildProcess {
   return spawn(process.env.BUN_BIN ?? "bun", [script], {
@@ -254,7 +254,6 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const child = start("apps/api/test-support/compartido-server.ts");
@@ -288,7 +287,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByRole("columnheader", { name: "Caso / fuente", exact: true }),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w1-pendientes-1440.png",
+      path: join(artifacts, "w1-pendientes-1440.png"),
       fullPage: true,
     });
     expect(
@@ -353,7 +352,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       ),
     ).toBe(true);
     await page.screenshot({
-      path: ARTIFACTS + "/w2-pendientes-390.png",
+      path: join(artifacts, "w2-pendientes-390.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -399,7 +398,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByRole("link", { name: /Volver a pendientes/ }),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w3-detalle-compartido-1440.png",
+      path: join(artifacts, "w3-detalle-compartido-1440.png"),
       fullPage: true,
     });
 
@@ -489,7 +488,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByText(/No se suman al gasto\s+bruto del plan/),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w4-casos-ajuste-1440.png",
+      path: join(artifacts, "w4-casos-ajuste-1440.png"),
       fullPage: true,
     });
 
@@ -524,7 +523,6 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   // Puerto y estado propios de la ejecución (#508). El nombre distingue este
@@ -616,7 +614,7 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
       ),
     ).toBe(true);
     await page.screenshot({
-      path: ARTIFACTS + "/w5-estados-390.png",
+      path: join(artifacts, "w5-estados-390.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -656,7 +654,6 @@ test("E3.6 R1: conciliación de ciclo sin movimientos aparece como Alerta", asyn
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   // Puerto y estado propios de la ejecución (#508).
@@ -739,7 +736,6 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   // Puerto y estado propios de la ejecución (#508). El nombre distingue este
@@ -877,7 +873,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       page.getByText(/no es un cierre financiero ni modifica el saldo inicial/),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w3-conciliacion-1440.png",
+      path: join(artifacts, "w3-conciliacion-1440.png"),
       fullPage: true,
     });
 
@@ -934,7 +930,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       }),
     ).toContainText("1.800,00 €");
     await page.screenshot({
-      path: ARTIFACTS + "/w4-flujo-ajustado-1440.png",
+      path: join(artifacts, "w4-flujo-ajustado-1440.png"),
       fullPage: true,
     });
     expect(

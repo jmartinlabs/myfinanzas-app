@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
 // misma spec no comparten listener ni SQLite.
@@ -123,7 +123,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(
       page.getByRole("heading", { name: "Valoración y resultados" }),
     ).toBeVisible();
-    mkdirSync("artifacts/e4-3", { recursive: true });
+    const artifacts = artifactDir("e4-3");
 
     const consultar = async (fecha: string, rows: number) => {
       await page.getByLabel(/Fecha de corte/).fill(fecha);
@@ -214,7 +214,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-1440.png",
+      path: join(artifacts, "valoracion-list-1440.png"),
       fullPage: true,
     });
 
@@ -230,7 +230,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     ).toContainText("Serie vacía");
     await expect(page.getByText("0,00 €")).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-serie-vacia-1440.png",
+      path: join(artifacts, "valoracion-serie-vacia-1440.png"),
       fullPage: true,
     });
 
@@ -249,7 +249,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-390.png",
+      path: join(artifacts, "valoracion-list-390.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -299,7 +299,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-detail-1440.png",
+      path: join(artifacts, "valoracion-detail-1440.png"),
       fullPage: true,
     });
     await page
@@ -318,7 +318,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-ficha-1440.png",
+      path: join(artifacts, "valoracion-ficha-1440.png"),
       fullPage: true,
     });
     await page.getByRole("link", { name: "Ver posición al corte" }).click();
@@ -401,7 +401,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-alta-automatica-1440.png",
+      path: join(artifacts, "valoracion-alta-automatica-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Guardar valoración" }).click();
@@ -434,7 +434,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-390-verificada.png",
+      path: join(artifacts, "valoracion-list-390-verificada.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -489,7 +489,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/a01-detail-1440.png",
+      path: join(artifacts, "a01-detail-1440.png"),
       fullPage: true,
     });
 
@@ -567,7 +567,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-alta-manual-1440.png",
+      path: join(artifacts, "valoracion-alta-manual-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Guardar valoración" }).click();
@@ -594,7 +594,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-409-duplicado-1440.png",
+      path: join(artifacts, "valoracion-409-duplicado-1440.png"),
       fullPage: true,
     });
     await page.getByLabel(/Importe EUR/).fill("-5.00");
@@ -605,7 +605,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-422-1440.png",
+      path: join(artifacts, "valoracion-422-1440.png"),
       fullPage: true,
     });
 
@@ -670,7 +670,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-409-revision-1440.png",
+      path: join(artifacts, "valoracion-409-revision-1440.png"),
       fullPage: true,
     });
     await expect(
@@ -736,7 +736,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-ficha-auditoria-1440.png",
+      path: join(artifacts, "valoracion-ficha-auditoria-1440.png"),
       fullPage: true,
     });
 
@@ -799,7 +799,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-detail-390.png",
+      path: join(artifacts, "valoracion-detail-390.png"),
       fullPage: true,
     });
     await page.getByRole("link", { name: "Nueva valoración" }).first().click();
@@ -817,7 +817,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-alta-390.png",
+      path: join(artifacts, "valoracion-alta-390.png"),
       fullPage: true,
     });
 

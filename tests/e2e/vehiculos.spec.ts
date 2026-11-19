@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e integridad 390/1440", async ({
   page,
@@ -61,11 +64,11 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(page.getByText("1.240,00 €", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Parcial", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("No informada", { exact: true }).first()).toBeVisible();
-    mkdirSync("artifacts/e3-3", { recursive: true });
+    const artifacts = artifactDir("e3-3");
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
-    await page.screenshot({ path: "artifacts/e3-3/vehiculos-list-1440.png", fullPage: true });
+    await page.screenshot({ path: join(artifacts, "vehiculos-list-1440.png"), fullPage: true });
     const primary = page.getByRole("button", { name: "Nuevo vehículo" });
     await expect(primary).toHaveCSS("color", "rgb(20, 20, 20)");
     await expect(primary).toHaveCSS("background-color", "rgb(228, 87, 46)");
@@ -109,14 +112,14 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(page.getByLabel("Gasto año y cobertura")).toContainText("1.240,00 €");
     await page.unroute("**/api/vehiculos/REF001?ejercicio=2027");
     await expect(page.locator('input[type="number"]')).toHaveCount(0);
-    await page.screenshot({ path: "artifacts/e3-3/vehiculos-detail-1440.png", fullPage: true });
+    await page.screenshot({ path: join(artifacts, "vehiculos-detail-1440.png"), fullPage: true });
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/vehiculos");
     await expect(page.locator(".vehicle-table")).toBeHidden();
     await expect(page.locator(".vehicle-cards li")).toHaveCount(4);
     await expect(page.locator(".vehicle-cards").getByText("Coche principal", { exact: true })).toBeVisible();
-    await page.screenshot({ path: "artifacts/e3-3/vehiculos-list-390.png", fullPage: true });
+    await page.screenshot({ path: join(artifacts, "vehiculos-list-390.png"), fullPage: true });
 
     // Error transitorio y reintento sin perder la identidad.
     let failedOnce = false;
@@ -144,7 +147,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(firstFact).toContainText("PAR001 · Mantenimiento");
     await expect(firstFact).toContainText("120,00 €");
     await page.screenshot({
-      path: "artifacts/e3-3/vehiculos-detail-390.png",
+      path: join(artifacts, "vehiculos-detail-390.png"),
       fullPage: true,
     });
     await page.unroute("**/api/vehiculos/REF001?ejercicio=2026");
@@ -158,7 +161,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(page.getByRole("heading", { name: "Duplicados confirmables" })).toBeVisible();
     await expect(page.getByText("Nombre coincide")).toBeVisible();
     await expect(page.getByText("Matrícula coincide")).toBeVisible();
-    await page.screenshot({ path: "artifacts/e3-3/vehiculos-duplicado-390.png", fullPage: true });
+    await page.screenshot({ path: join(artifacts, "vehiculos-duplicado-390.png"), fullPage: true });
     await page.getByRole("button", { name: "Confirmar nombre", exact: true }).click();
     await page.getByRole("button", { name: "Confirmar matrícula", exact: true }).click();
     await page.getByRole("button", { name: "Crear vehículo", exact: true }).click();
@@ -175,7 +178,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await page.getByRole("button", { name: "Confirmar matrícula", exact: true }).click();
     await page.getByRole("button", { name: "Confirmar y guardar", exact: true }).click();
     await expect(page.getByText("5678 DEF", { exact: true })).toBeVisible();
-    await page.screenshot({ path: "artifacts/e3-3/vehiculos-edicion-1440.png", fullPage: true });
+    await page.screenshot({ path: join(artifacts, "vehiculos-edicion-1440.png"), fullPage: true });
 
     // Conversión explícita desde Referencias y bloqueo de una REF usada.
     await page.goto("/referencias/REF004");
@@ -188,7 +191,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(page.getByRole("heading", { name: "Coche secundario", exact: true })).toBeVisible();
     await expect(page.getByText("9012 JKL", { exact: true })).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e3-3/vehiculos-conversion-1440.png",
+      path: join(artifacts, "vehiculos-conversion-1440.png"),
       fullPage: true,
     });
     await page.goto("/referencias/REF005");
@@ -208,7 +211,7 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(page.getByText("Furgoneta sin ficha", { exact: false })).toBeVisible();
     await expect(page.getByText("Ficha de Viaje", { exact: false })).toBeVisible();
     await expect(page.getByText("REF_TIPO_INCORRECTO", { exact: false })).toBeVisible();
-    await page.screenshot({ path: "artifacts/e3-3/vehiculos-integridad-1440.png", fullPage: true });
+    await page.screenshot({ path: join(artifacts, "vehiculos-integridad-1440.png"), fullPage: true });
     expect(errors).toEqual([]);
   } finally {
     child.kill();

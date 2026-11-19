@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3021;
 let child: ReturnType<typeof spawn> | undefined;
@@ -61,7 +64,7 @@ async function authenticate(page: Page) {
 }
 
 test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
-  mkdirSync("artifacts/ui-casa-deudas", { recursive: true });
+  const artifacts = artifactDir("ui-casa-deudas");
   await authenticate(page);
   await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
@@ -82,7 +85,7 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-deudas/deudas-1440.png",
+    path: join(artifacts, "deudas-1440.png"),
     fullPage: true,
   });
 
@@ -92,7 +95,7 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-deudas/deuda-detalle-1440.png",
+    path: join(artifacts, "deuda-detalle-1440.png"),
     fullPage: true,
   });
 
@@ -101,7 +104,7 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-deudas/deuda-detalle-390.png",
+    path: join(artifacts, "deuda-detalle-390.png"),
     fullPage: true,
   });
 });

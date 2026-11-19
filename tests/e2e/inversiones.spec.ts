@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 // Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
 // misma spec no comparten listener ni SQLite.
@@ -133,12 +133,12 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       page.getByText("Fondo antiguo", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Inactiva", { exact: true }).first()).toBeVisible();
-    mkdirSync("artifacts/e4-1", { recursive: true });
+    const artifacts = artifactDir("e4-1");
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/instrumentos-list-1440.png",
+      path: join(artifacts, "instrumentos-list-1440.png"),
       fullPage: true,
     });
     await page.getByLabel("Estado").selectOption("Activa");
@@ -169,7 +169,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       page.getByRole("heading", { name: /Compras del Instrumento \(3\)/ }),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-1/instrumento-ficha-1440.png",
+      path: join(artifacts, "instrumento-ficha-1440.png"),
       fullPage: true,
     });
 
@@ -206,7 +206,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/compras-list-1440.png",
+      path: join(artifacts, "compras-list-1440.png"),
       fullPage: true,
     });
 
@@ -234,7 +234,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     const impact = page.getByLabel("Impacto de la operación");
     await expect(impact).toContainText("antes 1.810,40 € → después 1.800,40 €");
     await page.screenshot({
-      path: "artifacts/e4-1/compra-impacto-1440.png",
+      path: join(artifacts, "compra-impacto-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Confirmar compra" }).click();
@@ -255,7 +255,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.getByRole("button", { name: "Revisar compra" }).click();
     await expect(impact).toContainText("antes 1.800,40 € → después 2.025,40 €");
     await page.screenshot({
-      path: "artifacts/e4-1/rectificar-impacto-1440.png",
+      path: join(artifacts, "rectificar-impacto-1440.png"),
     });
     await page.route(
       /\/api\/compras\/\d+\/rectificar$/,
@@ -351,7 +351,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/instrumentos-list-390.png",
+      path: join(artifacts, "instrumentos-list-390.png"),
       fullPage: true,
     });
     await page.goto("/inversiones/compras");
@@ -360,7 +360,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/compras-list-390.png",
+      path: join(artifacts, "compras-list-390.png"),
       fullPage: true,
     });
     await page.locator(".inversiones-mobile li").first().getByRole("button", { name: "Rectificar" }).click();
@@ -371,7 +371,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/rectificar-390.png",
+      path: join(artifacts, "rectificar-390.png"),
     });
     await page.goto("/inversiones");
     await page.locator(".inversiones-mobile a", { hasText: "Fondo índice demo" }).click();
@@ -385,7 +385,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/instrumento-ficha-390.png",
+      path: join(artifacts, "instrumento-ficha-390.png"),
       fullPage: true,
     });
 
@@ -393,13 +393,13 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.getByLabel("Cambiar tema").selectOption("casa");
     await expect(page.locator(".inversion-detail-page")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-1/casa-instrumento-1440.png",
+      path: join(artifacts, "casa-instrumento-1440.png"),
       fullPage: true,
     });
     await page.goto("/inversiones");
     await expect(page.locator(".inversiones-page")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-1/casa-listado-1440.png",
+      path: join(artifacts, "casa-listado-1440.png"),
       fullPage: true,
     });
     expect(errors).toEqual([]);

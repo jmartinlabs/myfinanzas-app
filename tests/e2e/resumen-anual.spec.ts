@@ -5,16 +5,22 @@ import {
   type Page,
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { RESUMEN_ANUAL_NOW } from "../../apps/api/test-support/resumen-anual-clock";
+
+import { artifactDir } from "./fixture";
+
+const artifacts = artifactDir("e4-7");
 
 /**
  * E4.7 — UI /resumen-anual con MFA real y un servidor aislado.
  *
  * El servidor de test siembra las fixtures ficticias C007/C008. Nunca toca una
- * base real. Las capturas van a `artifacts/e4-7/` (ignorado por Git).
+ * base real. Las capturas van al directorio de artefactos de la run, fuera del
+ * repositorio.
  */
 
 const BASE_PORT = 3018;
@@ -305,7 +311,6 @@ async function expectContrast(page: Page) {
 test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-7", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page, BASE_PORT);
@@ -450,7 +455,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
     await expectNoOverflow(page);
     await resetScroll(page);
     await page.screenshot({
-      path: `artifacts/e4-7/resumen-anual-${theme}-1440.png`,
+      path: join(artifacts, `resumen-anual-${theme}-1440.png`),
       fullPage: true,
     });
 
@@ -463,7 +468,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
     await expectContrast(page);
     await resetScroll(page);
     await page.screenshot({
-      path: `artifacts/e4-7/resumen-anual-${theme}-390.png`,
+      path: join(artifacts, `resumen-anual-${theme}-390.png`),
       fullPage: true,
     });
   }
@@ -557,7 +562,6 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
 test("AC23: sin datos no se convierte en 0,00 ni en filas inventadas", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-7", { recursive: true });
   await routeApi(page, EMPTY_PORT);
   await login(page, EMPTY_DIR);
   await page.goto("/resumen-anual?ejercicio=2026");
@@ -585,7 +589,7 @@ test("AC23: sin datos no se convierte en 0,00 ni en filas inventadas", async ({
 
   await resetScroll(page);
   await page.screenshot({
-    path: "artifacts/e4-7/resumen-anual-vacio-1440.png",
+    path: join(artifacts, "resumen-anual-vacio-1440.png"),
     fullPage: true,
   });
 });

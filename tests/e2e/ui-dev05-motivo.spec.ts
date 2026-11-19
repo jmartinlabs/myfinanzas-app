@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 /**
  * UI · DEV-05 — reservas de motivo.
@@ -15,7 +18,7 @@ import { totp } from "../../apps/api/src/auth";
 
 const PORT = 3036;
 const DIR = ".local/e2e-ui-dev05-motivo";
-const ARTIFACTS = "artifacts/ui-dev05-motivo";
+const artifacts = artifactDir("ui-dev05-motivo");
 let child: ChildProcess | undefined;
 
 async function login(page: Page) {
@@ -88,7 +91,6 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
   page,
 }) => {
   test.setTimeout(180000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const ids = JSON.parse(readFileSync(`${DIR}/ids.json`, "utf8")) as {
     compra: string;
     venta: string;
@@ -173,13 +175,13 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
     "Revisa los campos indicados.",
   );
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-compra-error-1440.png`,
+    path: join(artifacts, "anular-compra-error-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(compraMotivo).toBeFocused();
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-compra-error-390.png`,
+    path: join(artifacts, "anular-compra-error-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -213,13 +215,13 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
     "Revisa los campos indicados.",
   );
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-venta-error-1440.png`,
+    path: join(artifacts, "anular-venta-error-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(ventaMotivo).toBeFocused();
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-venta-error-390.png`,
+    path: join(artifacts, "anular-venta-error-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -247,13 +249,13 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
     "Indica el motivo de la operación.",
   );
   await page.screenshot({
-    path: `${ARTIFACTS}/ciclo-omitido-error-1440.png`,
+    path: join(artifacts, "ciclo-omitido-error-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(cicloMotivo).toBeFocused();
   await page.screenshot({
-    path: `${ARTIFACTS}/ciclo-omitido-error-390.png`,
+    path: join(artifacts, "ciclo-omitido-error-390.png"),
     fullPage: true,
   });
 

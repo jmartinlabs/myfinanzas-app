@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { fixtureContext } from "./fixture";
+
+import { artifactDir } from "./fixture";
 
 /**
  * UI · DEV-05 I5b — Inversiones.
@@ -51,6 +53,7 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
     ["apps/api/test-support/ui-dev05-i5b-server.ts"],
     { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
   );
+  const artifacts = artifactDir("ui-dev05-i5b");
   const errors: string[] = [];
   child.stdout?.on("data", (chunk: Buffer) => {
     fixtureOutput += chunk.toString();
@@ -62,7 +65,6 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
     fixtureExit = { code, signal };
   });
   page.on("pageerror", (error) => errors.push(error.message));
-  mkdirSync("artifacts/ui-dev05-i5b", { recursive: true });
   try {
     await expect
       .poll(
@@ -186,7 +188,7 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
           await settle();
           await assertNoOverflow();
           await page.screenshot({
-            path: `artifacts/ui-dev05-i5b/${screen.name}-${theme}-${width}.png`,
+            path: join(artifacts, `${screen.name}-${theme}-${width}.png`),
             fullPage: true,
           });
         }
@@ -216,7 +218,7 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
       await settle();
       await assertNoOverflow();
       await page.screenshot({
-        path: `artifacts/ui-dev05-i5b/instrumento-error-${width}.png`,
+        path: join(artifacts, `instrumento-error-${width}.png`),
         fullPage: true,
       });
 
@@ -238,7 +240,7 @@ test("UI DEV-05 I5b: formularios, error asociado, foco y temas", async ({
       await settle();
       await assertNoOverflow();
       await page.screenshot({
-        path: `artifacts/ui-dev05-i5b/compra-error-${width}.png`,
+        path: join(artifacts, `compra-error-${width}.png`),
         fullPage: true,
       });
     }

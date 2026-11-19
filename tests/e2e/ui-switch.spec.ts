@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 /**
  * UI · contraste del switch.
@@ -18,7 +18,7 @@ import { fixtureContext } from "./fixture";
 // esta misma spec no comparten listener ni SQLite.
 const fixture = fixtureContext("ui-switch");
 const PORT = fixture.port;
-const ARTIFACTS = "artifacts/ui-switch";
+const artifacts = artifactDir("ui-switch");
 const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
 let child: ChildProcess | undefined;
 
@@ -51,7 +51,6 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
   page,
 }) => {
   test.setTimeout(180000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
@@ -167,13 +166,13 @@ test("UI switch: contraste ON/OFF ≥ 4,5:1 en light-s/dark-s/hybrid-s", async (
     await page.setViewportSize({ width: 1440, height: 1000 });
     await expectNoOverflow();
     await page.screenshot({
-      path: `${ARTIFACTS}/switch-on-${theme}-1440.png`,
+      path: join(artifacts, `switch-on-${theme}-1440.png`),
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await expectNoOverflow();
     await page.screenshot({
-      path: `${ARTIFACTS}/switch-on-${theme}-390.png`,
+      path: join(artifacts, `switch-on-${theme}-390.png`),
       fullPage: true,
     });
 
