@@ -13,7 +13,11 @@ import { createPurchase } from "../src/compras";
 
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
-const dir = ".local/e2e-ui-dev05-i5c";
+// Puerto y estado del contexto de la ejecución (#514); los valores históricos
+// se conservan para arrancarlo a mano. El puerto lo reserva el contexto, así
+// que i5c e i5d —que compartían el 3027— pueden correr a la vez.
+const PORT = Number(process.env.E2E_PORT ?? 3027);
+const dir = process.env.E2E_STATE_DIR ?? ".local/e2e-ui-dev05-i5c";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),
@@ -62,8 +66,14 @@ createPurchase(
 writeFileSync(dir + "/bootstrap.txt", provision(db, now), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key, now: () => now })).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3027 })),
+    HttpServer.serve(
+      createApp(db, {
+        key,
+        now: () => now,
+        origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+      }),
+    ).pipe(
+      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: PORT })),
     ),
   ),
 );
