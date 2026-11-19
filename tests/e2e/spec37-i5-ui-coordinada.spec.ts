@@ -1,8 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { fixtureContext } from "./fixture";
 
 /**
  * SPEC37 · I5 — alta unificada de Gasto, Transferencia realizada o pendiente,
@@ -13,11 +14,12 @@ import { totp } from "../../apps/api/src/auth";
  * ordinario (`POST /api/movimientos`); A y B entran en la operación coordinada,
  * con su Transferencia ya realizada o pendiente.
  *
- * Recorrido real con servidor aislado (3029), MFA real y SQLite: alta normal,
- * alta A con pendiente, bandeja, ficha, cancelación motivada, alta B con
- * intención de Referencia, confirmación B con evidencia y procedencia, alta A
- * con Transferencia ya realizada y 409 que conserva el borrador. Capturas a
- * 1440 y 390 con comprobación de que no hay scroll horizontal.
+ * Recorrido real con servidor aislado (puerto y estado propios de la ejecución),
+ * MFA real y SQLite: alta normal, alta A con pendiente, bandeja, ficha,
+ * cancelación motivada, alta B con intención de Referencia, confirmación B con
+ * evidencia y procedencia, alta A con Transferencia ya realizada y 409 que
+ * conserva el borrador. Capturas a 1440 y 390 con comprobación de que no hay
+ * scroll horizontal.
  *
  * AC cubiertos por este archivo: AC-01, AC-03, AC-04, AC-05, AC-07, AC-08,
  * AC-17, AC-18, AC-22, AC-24, AC-25, AC-27 y AC-38. AC-28 sigue `UNRUN`: aquí
@@ -27,23 +29,54 @@ import { totp } from "../../apps/api/src/auth";
  * Plan del ciclo no se mide en este spec.
  */
 
-const PORT = 3029;
-const DIR = ".local/e2e-spec37-i5";
+// Puerto y estado propios de la ejecución (#508): dos runs de esta spec no
+// comparten listener ni base. El fixture conserva 3029/`.local/e2e-spec37-i5`
+// como defaults para arranque manual.
+const fixture = fixtureContext("spec37-i5");
+const PORT = fixture.port;
+const DIR = fixture.dir;
 const SHOTS = "artifacts/spec37-i5";
 let child: ChildProcess | undefined;
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin stderr)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture SPEC37 I5 terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/spec37-i5-server.ts"], {
-    stdio: "pipe",
-    env: {
-      ...process.env,
-      NODE_ENV: "test",
-      APP_ORIGIN: process.env.APP_ORIGIN ?? "http://127.0.0.1:5173",
+  child = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/spec37-i5-server.ts"],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: fixture.env,
     },
+  );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
   });
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
           return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
         } catch {
@@ -53,10 +86,19 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  // El sondeo debe hablar con NUESTRO fixture: proceso vivo y base ficticia
+  // provisionada por él en el directorio de esta run (no otro 200 ajeno).
+  assertFixtureAlive();
+  expect(
+    existsSync(`${DIR}/bootstrap.txt`),
+    `El fixture no provisionó ${DIR}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
 });
 
 test.afterAll(() => {
   child?.kill();
+  child?.stdout?.destroy();
+  child?.stderr?.destroy();
 });
 
 test("SPEC37 I5: alta unificada, realizada o pendiente, bandeja, alertas y 409 con borrador", async ({
