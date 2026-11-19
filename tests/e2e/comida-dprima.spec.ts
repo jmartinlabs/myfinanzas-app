@@ -342,7 +342,8 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     // Mensual por raíz: gasto y aportación separados.
     await page.getByLabel("Ciclo del plan mensual").selectOption({ index: 1 });
     const monthlySection = page.getByRole("region", {
-      name: "Plan Mensual D′",
+      name: "Plan mensual por Partida raíz",
+      exact: true,
     });
     const monthly = monthlySection
       .locator("tbody tr", { hasText: "Raíz aportación E2E" })
