@@ -12,7 +12,7 @@ import { totp } from "../../apps/api/src/auth";
 import { schemaVersion } from "../../apps/api/src/database-identity";
 import { contextFromEnv } from "../../apps/api/test-support/e2e-context";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
 
 /**
  * E4.11 I6 — E2E, accesibilidad y evidencia de `/fotos`.
@@ -30,14 +30,19 @@ import { artifactDir } from "./fixture";
  * accesibilidad en los tests 7 y 8.
  */
 
-const PORTS = {
-  principal: 3050,
-  reabierto: 3051,
-  recierre: 3052,
-  "sin-ciclo": 3053,
+/**
+ * Escenarios de la fotografía. Cada uno pide su puerto y su directorio al
+ * contexto de la ejecución (#514): antes compartían 3050-3053 y escribían en
+ * `.local/e2e-e411-*`, que `graphite-g5f.spec.ts` también reutilizaba.
+ */
+const FIXTURES = {
+  principal: fixtureContext("fotos-principal"),
+  reabierto: fixtureContext("fotos-reabierto"),
+  recierre: fixtureContext("fotos-recierre"),
+  "sin-ciclo": fixtureContext("fotos-sin-ciclo"),
 } as const;
 
-type Scenario = keyof typeof PORTS;
+type Scenario = keyof typeof FIXTURES;
 
 const SERVER_NOW = Date.parse("2027-06-15T12:00:00Z");
 const artifacts = artifactDir("e411-i6");
@@ -66,28 +71,47 @@ function apiUrl(port: number, path: string) {
 }
 
 async function startServer(request: APIRequestContext, scenario: Scenario) {
-  const port = PORTS[scenario];
+  const fixture = FIXTURES[scenario];
+  const port = fixture.port;
   const child: ChildProcess = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/e411-server.ts"],
     {
-      stdio: "pipe",
+      stdio: ["ignore", "pipe", "pipe"],
       env: {
-        ...process.env,
-        NODE_ENV: "test",
+        ...fixture.env,
         E411_SCENARIO: scenario,
         E411_PORT: String(port),
         E411_ORIGIN: ORIGIN,
       },
     },
   );
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null =
+    null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture.name} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
-          return (
-            await request.get(`http://127.0.0.1:${port}/api/health`)
-          ).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -99,7 +123,10 @@ async function startServer(request: APIRequestContext, scenario: Scenario) {
       child.kill();
       throw error;
     });
-  return { child, port, dir: `.local/e2e-e411-${scenario}` };
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  requireFixtureState({ fixture, output: () => output, assertAlive });
+  return { child, port, dir: fixture.dir };
 }
 
 async function routeApi(page: Page, port: number) {
