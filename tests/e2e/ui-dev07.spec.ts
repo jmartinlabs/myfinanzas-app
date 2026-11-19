@@ -6,6 +6,7 @@ import {
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import {
@@ -25,6 +26,8 @@ import {
   type MotionReport,
   type ScreenViewportAudit,
 } from "./ui-dev07-audit";
+
+import { artifactDir } from "./fixture";
 
 /**
  * UI DEV-07 · I4 — matriz de evidencia y aserciones AA (solo test).
@@ -46,8 +49,9 @@ import {
  * 1440×1000 declarada en el paquete DEV-07.
  */
 
-const BASE_OUT = "artifacts/ui-dev07/base";
-const CRITICAL_OUT = "artifacts/ui-dev07/critical";
+const artifacts = artifactDir("ui-dev07");
+const BASE_OUT = join(artifacts, "base");
+const CRITICAL_OUT = join(artifacts, "critical");
 
 const INICIO_PORT = 3014;
 const ZERO_PORT = 3015;

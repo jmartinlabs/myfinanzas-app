@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3060;
 const STATE = ".local/e2e-pendientes-g5e";
@@ -71,7 +74,7 @@ async function authenticate(page: Page) {
 
 test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/g5e-2", { recursive: true });
+  const artifacts = artifactDir("g5e-2");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -231,7 +234,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
       await expect(list).toHaveCSS("padding-top", "0px");
     }
     await page.screenshot({
-      path: `artifacts/g5e-2/pendientes-lista-${width}.png`,
+      path: join(artifacts, `pendientes-lista-${width}.png`),
       fullPage: true,
     });
   }
@@ -248,7 +251,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-2/pendientes-vacio-1440.png",
+    path: join(artifacts, "pendientes-vacio-1440.png"),
     fullPage: true,
   });
 
@@ -285,7 +288,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   );
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-2/pendientes-error-1440.png",
+    path: join(artifacts, "pendientes-error-1440.png"),
     fullPage: true,
   });
   await page.unroute("**/api/pendientes?**");
@@ -339,7 +342,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
     }
     await noOverflow();
     await page.screenshot({
-      path: `artifacts/g5e-2/pendientes-detalle-conciliacion-${width}.png`,
+      path: join(artifacts, `pendientes-detalle-conciliacion-${width}.png`),
       fullPage: true,
     });
   }
@@ -360,7 +363,7 @@ test("G5e-2: Pendientes premium en Graphite, 1440/820/390", async ({ page }) => 
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-2/pendientes-detalle-anticipo-1440.png",
+    path: join(artifacts, "pendientes-detalle-anticipo-1440.png"),
     fullPage: true,
   });
 

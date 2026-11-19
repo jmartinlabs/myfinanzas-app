@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const API_PORT = 3013;
 let child: ReturnType<typeof spawn> | undefined;
@@ -57,7 +60,7 @@ async function authenticate(page: import("@playwright/test").Page) {
 }
 
 test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ page }) => {
-  mkdirSync("artifacts/theme", { recursive: true });
+  const artifacts = artifactDir("theme");
   await authenticate(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -103,7 +106,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   ).toHaveCSS("font-family", /Newsreader/);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-saldos-1440.png",
+    path: join(artifacts, "casa-saldos-1440.png"),
     fullPage: true,
   });
 
@@ -113,7 +116,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
     page.locator(".saldo-detail-page .position-panel"),
   ).toContainText("Saldo actual");
   await page.screenshot({
-    path: "artifacts/theme/casa-saldo-detalle-1440.png",
+    path: join(artifacts, "casa-saldo-detalle-1440.png"),
     fullPage: true,
   });
   await page.locator(".saldo-detail-page > .back").click();
@@ -193,7 +196,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   }
 
   await page.screenshot({
-    path: "artifacts/theme/casa-1440.png",
+    path: join(artifacts, "casa-1440.png"),
     fullPage: true,
   });
 
@@ -206,7 +209,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(page.locator(".mobile-list li")).toHaveCount(5);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-390.png",
+    path: join(artifacts, "casa-390.png"),
     fullPage: true,
   });
 
@@ -218,13 +221,13 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(page.locator(".inicio-casa")).toHaveCount(0);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-inicio-390.png",
+    path: join(artifacts, "casa-inicio-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-inicio-1440.png",
+    path: join(artifacts, "casa-inicio-1440.png"),
     fullPage: true,
   });
 
@@ -334,7 +337,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   expect(traspasoIcon?.glyph).not.toBe(ingresoIcon?.glyph);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-movimientos-1440.png",
+    path: join(artifacts, "casa-movimientos-1440.png"),
     fullPage: true,
   });
 
@@ -360,7 +363,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   ).toBeVisible();
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-movimientos-390.png",
+    path: join(artifacts, "casa-movimientos-390.png"),
     fullPage: true,
   });
 

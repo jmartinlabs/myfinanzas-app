@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const API_PORT = 3013;
 let child: ReturnType<typeof spawn> | undefined;
@@ -65,7 +68,7 @@ async function authenticate(page: import("@playwright/test").Page) {
 test("Graphite Lime: catálogo, persistencia, colores, contraste y 1440/390", async ({
   page,
 }) => {
-  mkdirSync("artifacts/theme", { recursive: true });
+  const artifacts = artifactDir("theme");
   await authenticate(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -177,7 +180,7 @@ test("Graphite Lime: catálogo, persistencia, colores, contraste y 1440/390", as
   expect(contrast.accent).toBe(contrast.action);
 
   await page.screenshot({
-    path: "artifacts/theme/graphite-lime-1440.png",
+    path: join(artifacts, "graphite-lime-1440.png"),
     fullPage: true,
   });
 
@@ -197,7 +200,7 @@ test("Graphite Lime: catálogo, persistencia, colores, contraste y 1440/390", as
   await expect(page.locator(".mobile-list li")).toHaveCount(5);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/graphite-lime-390.png",
+    path: join(artifacts, "graphite-lime-390.png"),
     fullPage: true,
   });
 

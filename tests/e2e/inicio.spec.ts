@@ -6,9 +6,16 @@ import {
   type Page,
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
+
+const artifactsE46 = artifactDir("e4-6");
+const artifactsDev06 = artifactDir("dev-06");
+const artifactsUiCasa1b = artifactDir("ui-casa-1b");
 
 /**
  * E4.6 — UI /inicio con MFA real y un servidor aislado.
@@ -521,8 +528,6 @@ async function expectInicioContrast(page: Page) {
 test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-6", { recursive: true });
-  mkdirSync("artifacts/dev-06", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page, BASE_PORT);
@@ -854,14 +859,14 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await resetScroll(page);
     if (theme === "graphite-lime")
       await page.screenshot({
-        path: "artifacts/e4-6/inicio-graphite-lime-1440-fold.png",
+        path: join(artifactsE46, "inicio-graphite-lime-1440-fold.png"),
       });
     await page.screenshot({
-      path: `artifacts/e4-6/inicio-${theme}-1440.png`,
+      path: join(artifactsE46, `inicio-${theme}-1440.png`),
       fullPage: true,
     });
     await page.screenshot({
-      path: `artifacts/dev-06/inicio-${theme}-1440.png`,
+      path: join(artifactsDev06, `inicio-${theme}-1440.png`),
       fullPage: true,
     });
   }
@@ -893,11 +898,11 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     });
     await resetScroll(page);
     await page.screenshot({
-      path: `artifacts/e4-6/inicio-${theme}-390.png`,
+      path: join(artifactsE46, `inicio-${theme}-390.png`),
       fullPage: true,
     });
     await page.screenshot({
-      path: `artifacts/dev-06/inicio-${theme}-390.png`,
+      path: join(artifactsDev06, `inicio-${theme}-390.png`),
       fullPage: true,
     });
   }
@@ -914,11 +919,11 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   await expectInicioContrast(page);
   await expectInicioFunctionalText(page);
   await page.screenshot({
-    path: "artifacts/e4-6/inicio-graphite-lime-820.png",
+    path: join(artifactsE46, "inicio-graphite-lime-820.png"),
     fullPage: true,
   });
   await page.screenshot({
-    path: "artifacts/dev-06/inicio-graphite-lime-820.png",
+    path: join(artifactsDev06, "inicio-graphite-lime-820.png"),
     fullPage: true,
   });
 
@@ -929,8 +934,6 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
 test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-6", { recursive: true });
-  mkdirSync("artifacts/dev-06", { recursive: true });
   await routeApi(page, ZERO_PORT);
   await login(page, ZERO_DIR);
   await expectInicioFunctionalText(page);
@@ -984,12 +987,12 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
         await expectInicioFunctionalText(page);
       await resetScroll(page);
       await page.screenshot({
-        path: `artifacts/e4-6/inicio-cero-${theme}-${width}.png`,
+        path: join(artifactsE46, `inicio-cero-${theme}-${width}.png`),
         fullPage: true,
       });
       if (width === 390)
         await page.screenshot({
-          path: `artifacts/dev-06/inicio-cero-${theme}-390.png`,
+          path: join(artifactsDev06, `inicio-cero-${theme}-390.png`),
           fullPage: true,
         });
     }
@@ -1000,8 +1003,6 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
 test("M-4: estados degradados no se presentan como vacío real", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-6", { recursive: true });
-  mkdirSync("artifacts/dev-06", { recursive: true });
   await routeApi(page, DEGRADED_PORT);
   await page.route("**/api/resumen-inicio", async (route) => {
     const url = new URL(route.request().url());
@@ -1104,7 +1105,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
   ).toBe(true);
   await resetScroll(page);
   await page.screenshot({
-    path: "artifacts/e4-6/inicio-degradado-graphite-lime-1440.png",
+    path: join(artifactsE46, "inicio-degradado-graphite-lime-1440.png"),
     fullPage: true,
   });
 
@@ -1127,12 +1128,12 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
         await expectInicioFunctionalText(page);
       await resetScroll(page);
       await page.screenshot({
-        path: `artifacts/e4-6/inicio-degradado-${theme}-${width}.png`,
+        path: join(artifactsE46, `inicio-degradado-${theme}-${width}.png`),
         fullPage: true,
       });
       if (width === 390)
         await page.screenshot({
-          path: `artifacts/dev-06/inicio-degradado-${theme}-390.png`,
+          path: join(artifactsDev06, `inicio-degradado-${theme}-390.png`),
           fullPage: true,
         });
     }
@@ -1144,7 +1145,6 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   page,
 }) => {
   await routeApi(page, AUTH_PORT);
-  mkdirSync("artifacts/dev-06", { recursive: true });
   const credentials = await login(page, AUTH_DIR);
   await expectInicio(page);
 
@@ -1218,7 +1218,7 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   expect(alertFontSize).toBeGreaterThanOrEqual(12);
   await resetScroll(page);
   await page.screenshot({
-    path: "artifacts/dev-06/inicio-401-390.png",
+    path: join(artifactsDev06, "inicio-401-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -1238,7 +1238,6 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
 test("Casa: misma composición de Inicio que el resto de apariencias", async ({
   page,
 }) => {
-  mkdirSync("artifacts/ui-casa-1b", { recursive: true });
   await routeApi(page, CASA_PORT);
   await login(page, CASA_DIR);
   const errors: string[] = [];
@@ -1265,7 +1264,7 @@ test("Casa: misma composición de Inicio que el resto de apariencias", async ({
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-1b/inicio-casa-1440.png",
+    path: join(artifactsUiCasa1b, "inicio-casa-1440.png"),
     fullPage: true,
   });
 
@@ -1281,7 +1280,7 @@ test("Casa: misma composición de Inicio que el resto de apariencias", async ({
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-1b/inicio-casa-390.png",
+    path: join(artifactsUiCasa1b, "inicio-casa-390.png"),
     fullPage: true,
   });
   expect(errors).toEqual([]);

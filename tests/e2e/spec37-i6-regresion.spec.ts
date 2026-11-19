@@ -1,9 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 /**
  * SPEC37 · I6 — regresión E2E de los casos base.
@@ -28,7 +29,7 @@ import { fixtureContext } from "./fixture";
 const fixture = fixtureContext("spec37-i6");
 const PORT = fixture.port;
 const DIR = fixture.dir;
-const SHOTS = "artifacts/spec37-i6";
+const artifacts = artifactDir("spec37-i6");
 let child: ChildProcess | undefined;
 /** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
 let fixtureOutput = "";
@@ -100,7 +101,6 @@ test("SPEC37 I6: Gasto normal, modalidad A sin Transferencia y cancelación sin 
   page,
 }) => {
   test.setTimeout(300000);
-  mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
@@ -163,11 +163,11 @@ test("SPEC37 I6: Gasto normal, modalidad A sin Transferencia y cancelación sin 
     await page.setViewportSize({ width: 1440, height: 1000 });
     await settle();
     await noOverflow();
-    await page.screenshot({ path: `${SHOTS}/${name}-1440.png`, fullPage: true });
+    await page.screenshot({ path: join(artifacts, `${name}-1440.png`), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await settle();
     await noOverflow();
-    await page.screenshot({ path: `${SHOTS}/${name}-390.png`, fullPage: true });
+    await page.screenshot({ path: join(artifacts, `${name}-390.png`), fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });
   };
 

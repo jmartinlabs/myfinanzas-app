@@ -1,8 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir } from "./fixture";
 
 const PORT = 3028;
 let child: ReturnType<typeof spawn> | undefined;
@@ -61,7 +64,7 @@ async function authenticate(page: Page) {
 }
 
 test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
-  mkdirSync("artifacts/g5a", { recursive: true });
+  const artifacts = artifactDir("g5a");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -82,7 +85,7 @@ test("G5a: Saldos premium en Graphite, 1440/820/390", async ({ page }) => {
     await expectNoOverflow();
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
-      path: `artifacts/g5a/${name}-${width}.png`,
+      path: join(artifacts, `${name}-${width}.png`),
       fullPage: true,
     });
   };

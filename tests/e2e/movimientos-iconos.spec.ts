@@ -1,10 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { reservePorts } from "../../apps/api/test-support/e2e-context";
 import { expectMovementsParity } from "./movements-parity";
+import { artifactDir } from "./fixture";
 import { measureComponentContrast } from "./ui-dev07-audit";
 
 /**
@@ -27,7 +29,7 @@ import { measureComponentContrast } from "./ui-dev07-audit";
  */
 
 const STATE = ".local/e2e-iconos";
-const SHOTS = "artifacts/iconos-448";
+const artifacts = artifactDir("iconos-448");
 const TIPOS = [
   "Ingreso",
   "Gasto",
@@ -193,7 +195,6 @@ test("#448 · cinco glifos propios en tabla y tarjeta, seis apariencias, sin des
   page,
 }) => {
   test.setTimeout(300000);
-  mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page);
@@ -242,7 +243,7 @@ test("#448 · cinco glifos propios en tabla y tarjeta, seis apariencias, sin des
       `${tema}: glifo del chip por debajo de 3:1`,
     ).toBeGreaterThanOrEqual(3);
     await page.screenshot({
-      path: `${SHOTS}/movimientos-${tema}-1440.png`,
+      path: join(artifacts, `movimientos-${tema}-1440.png`),
       fullPage: true,
     });
 
@@ -268,7 +269,7 @@ test("#448 · cinco glifos propios en tabla y tarjeta, seis apariencias, sin des
       );
     expect(chips820.filter((ancho) => ancho > 1)).toEqual([]);
     await page.screenshot({
-      path: `${SHOTS}/movimientos-${tema}-820.png`,
+      path: join(artifacts, `movimientos-${tema}-820.png`),
       fullPage: true,
     });
 
@@ -295,7 +296,7 @@ test("#448 · cinco glifos propios en tabla y tarjeta, seis apariencias, sin des
     ).toBeVisible();
     await expectMovementsParity(page);
     await page.screenshot({
-      path: `${SHOTS}/movimientos-${tema}-390.png`,
+      path: join(artifacts, `movimientos-${tema}-390.png`),
       fullPage: true,
     });
   }

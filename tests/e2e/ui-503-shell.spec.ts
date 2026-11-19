@@ -1,9 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { reservePorts } from "../../apps/api/test-support/e2e-context";
+
+import { artifactDir } from "./fixture";
 
 /**
  * #503 — shell compacto: selector de tema al ancho del catálogo y un único
@@ -34,7 +37,7 @@ import { reservePorts } from "../../apps/api/test-support/e2e-context";
  */
 
 const DIR = ".local/e2e-shell";
-const SHOTS = "artifacts/ui-503";
+const artifacts = artifactDir("ui-503");
 const ENV_TOKEN = "TEST";
 
 /** Origen y salud del fixture propio; se fijan al reservar sus puertos. */
@@ -309,7 +312,6 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
       if (style.textContent?.includes("9rem")) style.remove();
     });
   });
-  mkdirSync(SHOTS, { recursive: true });
   expect(beforeWidth).toBeCloseTo(9 * rootFontSize, 0);
   expect(afterWidth).toBeLessThan(beforeWidth);
   console.log(
@@ -423,7 +425,7 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   expect(deskIndicator).toContain("TEST · Entorno de pruebas");
   await expect(page.locator(".app-version-env")).toBeHidden();
   await expectNoHorizontalScroll(page);
-  await page.screenshot({ path: `${SHOTS}/shell-1440.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "shell-1440.png"), fullPage: false });
 
   // Foco visible con teclado.
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
@@ -450,7 +452,7 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   expect(focusStyle.matches).toBe(true);
   expect(focusStyle.width).toBeGreaterThanOrEqual(2);
   expect(focusStyle.style).not.toBe("none");
-  await page.screenshot({ path: `${SHOTS}/focus-1440.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "focus-1440.png"), fullPage: false });
 
   // Los seis temas cambian de inmediato y persisten en `mf-theme`.
   for (const id of [
@@ -474,7 +476,7 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
     // Evidencia de la opción más larga («Graphite Lime») con la altura compacta.
     if (id === "graphite-lime") {
       await page.screenshot({
-        path: `${SHOTS}/theme-graphite-lime-1440.png`,
+        path: join(artifacts, "theme-graphite-lime-1440.png"),
         fullPage: false,
       });
     }
@@ -483,7 +485,7 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
     await expect(select).toHaveValue(id);
     await expectSelectOnly(page);
   }
-  await page.screenshot({ path: `${SHOTS}/theme-casa-1440.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "theme-casa-1440.png"), fullPage: false });
 
   // ── 390 (menú móvil cerrado) ────────────────────────────────────────────
   await page.setViewportSize({ width: 390, height: 844 });
@@ -501,7 +503,7 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
   expect(mobileIndicator).toContain(ENV_TOKEN);
   await expect(page.locator(".sidebar-bottom")).toBeHidden();
   await expectNoHorizontalScroll(page);
-  await page.screenshot({ path: `${SHOTS}/shell-390.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "shell-390.png"), fullPage: false });
 
   // Persistencia también en móvil: el valor sobrevive a la recarga.
   await select.selectOption("dark-s");

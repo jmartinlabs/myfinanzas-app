@@ -1,9 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-import { fixtureContext } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 /**
  * SPEC37 · I5 — alta unificada de Gasto, Transferencia realizada o pendiente,
@@ -35,7 +36,7 @@ import { fixtureContext } from "./fixture";
 const fixture = fixtureContext("spec37-i5");
 const PORT = fixture.port;
 const DIR = fixture.dir;
-const SHOTS = "artifacts/spec37-i5";
+const artifacts = artifactDir("spec37-i5");
 let child: ChildProcess | undefined;
 /** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
 let fixtureOutput = "";
@@ -105,7 +106,6 @@ test("SPEC37 I5: alta unificada, realizada o pendiente, bandeja, alertas y 409 c
   page,
 }) => {
   test.setTimeout(420000);
-  mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
@@ -167,7 +167,7 @@ test("SPEC37 I5: alta unificada, realizada o pendiente, bandeja, alertas y 409 c
   const shot = async (name: string) => {
     await settle();
     await noOverflow();
-    await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+    await page.screenshot({ path: join(artifacts, `${name}.png`), fullPage: true });
   };
   /** Captura la misma pantalla a 1440 y 390 (AC-24). */
   const shotBoth = async (name: string) => {
