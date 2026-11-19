@@ -17,13 +17,6 @@ import { artifactDir, fixtureContext, type Fixture } from "./fixture";
 
 const artifacts = artifactDir("e3-6");
 
-function start(script: string): ChildProcess {
-  return spawn(process.env.BUN_BIN ?? "bun", [script], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
-  });
-}
-
 type OwnedFixture = {
   child: ChildProcess;
   output: () => string;
@@ -90,6 +83,10 @@ async function login(
   assertAlive: () => void = () => {},
 ) {
   await ready(request, origin, "/api/pendientes", assertAlive);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  if (!existsSync(bootstrap))
+    throw new Error(`El fixture no provisionó ${bootstrap}.`);
   await page.route("**/api/**", async (route: any) => {
     const url = new URL(route.request().url());
     url.port = new URL(origin).port;
@@ -256,14 +253,22 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/compartido-server.ts");
+  // Puerto y estado propios de la ejecución (#514), como el resto de fixtures
+  // de esta spec: el servidor de Compartidos ya no ocupa 3009 ni
+  // `.local/e2e-compartidos`.
+  const fixtureCompartidos = fixtureContext("pendientes-compartidos");
+  const owned = startFixture(
+    "apps/api/test-support/compartido-server.ts",
+    fixtureCompartidos,
+  );
   try {
     await login(
       page,
       request,
-      "http://127.0.0.1:3009",
-      ".local/e2e-compartidos/bootstrap.txt",
+      fixtureCompartidos.baseURL,
+      `${fixtureCompartidos.dir}/bootstrap.txt`,
       "/pendientes",
+      owned.assertAlive,
     );
 
     // Lista por defecto: una fila por caso/tipo, sin total económico global.
@@ -514,7 +519,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
     expect(writes).toEqual([]);
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    owned.child.kill();
   }
 });
 

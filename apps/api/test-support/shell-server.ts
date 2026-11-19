@@ -24,11 +24,14 @@ import { createApp } from "../src/app";
 
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
+// Puerto y estado del contexto de la ejecución (#514): los puertos ya venían
+// de `E2E_API_PORT`/`E2E_WEB_PORT`; el estado acepta ahora `E2E_STATE_DIR`
+// antes del directorio histórico, que se conserva para arrancarlo a mano.
 const API_PORT = Number(process.env.E2E_API_PORT ?? 3041);
 const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 5291);
 const ORIGIN = `http://127.0.0.1:${WEB_PORT}`;
 const DIST = "apps/web/dist";
-const dir = ".local/e2e-shell";
+const dir = process.env.E2E_STATE_DIR ?? ".local/e2e-shell";
 const SERVE_ONLY = process.env.E2E_SERVE_ONLY === "1";
 
 function provisionFixture() {

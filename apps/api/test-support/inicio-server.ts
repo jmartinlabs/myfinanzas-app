@@ -42,7 +42,10 @@ const casaMov = scenario === "casa-mov";
 const g5a = scenario === "g5a";
 const g5b = scenario === "g5b";
 const casaDeudas = scenario === "casa-deudas";
-const dir = g5a
+// Puerto y estado del contexto de la ejecución (#514): `E2E_PORT` y
+// `E2E_STATE_DIR` tienen prioridad sobre los valores históricos de cada
+// escenario, que se conservan para poder arrancar el fixture a mano.
+const defaultDir = g5a
   ? ".local/e2e-inicio-g5a"
   : g5b
     ? ".local/e2e-inicio-g5b"
@@ -59,7 +62,7 @@ const dir = g5a
       : zero
         ? ".local/e2e-inicio-zero"
         : ".local/e2e-inicio";
-const port = g5a
+const defaultPort = g5a
   ? 3028
   : g5b
     ? 3029
@@ -76,6 +79,8 @@ const port = g5a
             : zero
               ? 3015
               : 3014;
+const dir = process.env.E2E_STATE_DIR ?? defaultDir;
+const port = Number(process.env.E2E_PORT ?? defaultPort);
 
 function saveMovement(db: Database, body: Record<string, unknown>) {
   const plan = previewMovement(db, body, null, false, NOW);
@@ -561,7 +566,12 @@ const key = loadKey(db, dir + "/auth.key");
 writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key })).pipe(
+    HttpServer.serve(createApp(db, {
+      key,
+      // Origen de la ejecución (#514): el contexto publica `APP_ORIGIN`; sin
+      // él, `Auth` conserva su valor por defecto.
+      origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+    })).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),

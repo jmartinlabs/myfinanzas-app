@@ -1,16 +1,16 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 
 /**
  * UI · DEV-05 — matriz visual reproducible de reservas de motivo.
  *
- * Reutiliza el servidor aislado en 3036 y los tres errores reales del servidor
+ * Reutiliza el servidor aislado (puerto y estado del contexto, #514) y los
+ * tres errores reales del servidor
  * (`fields.motivo`) del spec `ui-dev05-motivo.spec.ts`. Repite cada error en los
  * tres temas reales (`localStorage["mf-theme"]` + `theme-boot.js`) y en los dos
  * anchos de referencia, y deja 18 capturas en el directorio de artefactos de la
@@ -19,8 +19,9 @@ import { artifactDir } from "./fixture";
  * No modifica producto, `style.css` ni el spec existente.
  */
 
-const PORT = 3036;
-const DIR = ".local/e2e-ui-dev05-motivo";
+const fixture = fixtureContext("ui-dev05-motivo-matrix");
+const PORT = fixture.port;
+const DIR = fixture.dir;
 const artifacts = artifactDir("ui-dev05-motivo-matrix");
 
 const THEMES = [
@@ -35,7 +36,7 @@ const VIEWPORTS = [
 ] as const;
 
 const tooLong = "x".repeat(2001);
-let child: ChildProcess | undefined;
+let owned: OwnedFixture | undefined;
 
 type Ids = { compra: string; venta: string };
 type MotivoInput = ReturnType<Page["getByLabel"]>;
@@ -198,16 +199,17 @@ const scenarios: Scenario[] = [
 ];
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/ui-dev05-motivo-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+  const server = startFixtureServer(
+    "apps/api/test-support/ui-dev05-motivo-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`))
+          return (await request.get(`${fixture.baseURL}/api/health`))
             .status();
         } catch {
           return 0;
@@ -216,10 +218,11 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 test("UI DEV-05 matriz motivo: 3 errores × 3 temas × 2 anchos", async ({

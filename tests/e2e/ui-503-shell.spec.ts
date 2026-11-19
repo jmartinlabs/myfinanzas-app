@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { reservePorts } from "../../apps/api/test-support/e2e-context";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext } from "./fixture";
 
 /**
  * #503 — shell compacto: selector de tema al ancho del catálogo y un único
@@ -36,7 +36,8 @@ import { artifactDir } from "./fixture";
  *  - los seis temas cambian y persisten en `mf-theme`.
  */
 
-const DIR = ".local/e2e-shell";
+const fixture = fixtureContext("ui-503-shell");
+const DIR = fixture.dir;
 const artifacts = artifactDir("ui-503");
 const ENV_TOKEN = "TEST";
 
@@ -63,11 +64,13 @@ function assertFixtureAlive() {
 }
 
 test.beforeAll(async ({ request }) => {
-  // Puertos propios del fixture: libres en 127.0.0.1 en este momento, distintos
-  // de los del run (ya ocupados por los `webServer` del config).
-  const [apiPort, webPort] = reservePorts(2, "127.0.0.1");
+  // Puertos propios del fixture: el de la API sale del contexto (#514) y el de
+  // la web se reserva aquí, libre en 127.0.0.1 y distinto de los del run (ya
+  // ocupados por los `webServer` del config).
+  const apiPort = fixture.port;
+  const [webPort] = reservePorts(1, "127.0.0.1");
   BASE = `http://127.0.0.1:${webPort}`;
-  API_HEALTH = `http://127.0.0.1:${apiPort}/api/health`;
+  API_HEALTH = `${fixture.baseURL}/api/health`;
 
   child = spawn(
     process.env.BUN_BIN ?? "bun",
@@ -75,8 +78,7 @@ test.beforeAll(async ({ request }) => {
     {
       stdio: ["ignore", "pipe", "pipe"],
       env: {
-        ...process.env,
-        NODE_ENV: "test",
+        ...fixture.env,
         APP_ENV: ENV_TOKEN,
         // Explícitos: el fixture deriva de ellos su ORIGIN y el proxy `/api`.
         E2E_API_PORT: String(apiPort),

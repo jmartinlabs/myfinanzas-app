@@ -21,10 +21,16 @@ import { getSaldo, updateSaldo } from "../src/saldos";
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
 const NOW = Date.parse("2026-11-03T10:00:00Z");
-const dir = process.env.E2E_ICONOS_DIR ?? ".local/e2e-iconos";
-const port = Number(process.env.E2E_API_PORT);
+// Estado y puerto del contexto de la ejecución (#514): `E2E_STATE_DIR` y
+// `E2E_PORT` tienen prioridad sobre los nombres históricos. El puerto sigue
+// fallando cerrado: este fixture no adivina un valor libre.
+const dir =
+  process.env.E2E_STATE_DIR ??
+  process.env.E2E_ICONOS_DIR ??
+  ".local/e2e-iconos";
+const port = Number(process.env.E2E_PORT ?? process.env.E2E_API_PORT);
 if (!Number.isInteger(port) || port < 1 || port > 65535)
-  throw new Error("El fixture #448 exige E2E_API_PORT reservado por la spec.");
+  throw new Error("El fixture #448 exige E2E_PORT/E2E_API_PORT reservado por la spec.");
 
 function saveMovement(db: Database, body: Record<string, unknown>) {
   const plan = previewMovement(db, body, null, false, NOW);
@@ -148,7 +154,12 @@ const key = loadKey(db, dir + "/auth.key");
 writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key })).pipe(
+    HttpServer.serve(createApp(db, {
+      key,
+      // Origen de la ejecución (#514): sin él, el alta y la sesión del run se
+      // rechazarían con 403 ORIGIN.
+      origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+    })).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),

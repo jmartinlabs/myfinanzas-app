@@ -1,20 +1,20 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer } from "./fixture";
+
+const fixture = fixtureContext("nomina");
 
 test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive review", async ({
   page,
   request,
 }) => {
-  const child = spawn(
-      process.env.BUN_BIN ?? "bun",
-      ["apps/api/test-support/payroll-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+  const server = startFixtureServer(
+      "apps/api/test-support/payroll-server.ts",
+      fixture,
     ),
     errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -22,9 +22,10 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
     await expect
       .poll(
         async () => {
+          server.assertAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3007/api/health")
+              await request.get(`${fixture.baseURL}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -34,11 +35,12 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
       )
       .toBe(200);
     expect(
-      (await request.get("http://127.0.0.1:3007/api/nomina")).status(),
+      (await request.get(`${fixture.baseURL}/api/nomina`)).status(),
     ).toBe(401);
+    requireFixtureState(server);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3007";
+      url.port = String(fixture.port);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -46,7 +48,7 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
     await page.goto("/nomina");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-payroll/bootstrap.txt", "utf8"));
+      .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Contraseña ficticia anual " + randomUUID());
@@ -130,7 +132,7 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
       });
     await page.route("**/api/nomina/impacto", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3007";
+      url.port = String(fixture.port);
       const response = await route.fetch({ url: url.toString() });
       heldReview();
       await release;
@@ -288,7 +290,7 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
       });
     await page.route("**/api/nomina/pronostico", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3007";
+      url.port = String(fixture.port);
       const response = await route.fetch({ url: url.toString() });
       heldForecast();
       await forecastRelease;
@@ -341,6 +343,6 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
     expect(corrected.movimientos[0].importe).toBe("500.00");
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.stop();
   }
 });

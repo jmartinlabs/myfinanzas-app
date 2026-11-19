@@ -11,8 +11,16 @@ import { createClassification } from "../src/clasificacion";
 import { createSaldo } from "../src/saldos";
 import type { AnnualProvider } from "../src/plan-anual";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
-const port = Number(process.env.VEHICULOS_PORT ?? "3009");
-const dir = process.env.VEHICULOS_STATE ?? ".local/e2e-vehiculos";
+// Puerto y estado del contexto de la ejecución (#514): `E2E_PORT` y
+// `E2E_STATE_DIR` tienen prioridad sobre los nombres históricos, que se
+// conservan para arrancar el fixture a mano.
+const port = Number(
+  process.env.E2E_PORT ?? process.env.VEHICULOS_PORT ?? "3009",
+);
+const dir =
+  process.env.E2E_STATE_DIR ??
+  process.env.VEHICULOS_STATE ??
+  ".local/e2e-vehiculos";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),
@@ -166,7 +174,13 @@ const annualProvider: AnnualProvider = (_db, year) => {
 writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key, annualProvider })).pipe(
+    HttpServer.serve(createApp(db, {
+      key,
+      annualProvider,
+      // Origen de la ejecución (#514): sin él, el alta y la sesión del run se
+      // rechazarían con 403 ORIGIN.
+      origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+    })).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),

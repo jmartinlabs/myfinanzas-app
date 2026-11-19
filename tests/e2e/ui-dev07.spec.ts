@@ -27,7 +27,7 @@ import {
   type ScreenViewportAudit,
 } from "./ui-dev07-audit";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, type Fixture } from "./fixture";
 
 /**
  * UI DEV-07 · I4 — matriz de evidencia y aserciones AA (solo test).
@@ -53,10 +53,14 @@ const artifacts = artifactDir("ui-dev07");
 const BASE_OUT = join(artifacts, "base");
 const CRITICAL_OUT = join(artifacts, "critical");
 
-const INICIO_PORT = 3014;
-const ZERO_PORT = 3015;
-const THEME_PORT = 3013;
-const INICIO_AUTH_PORT = 3017;
+const INICIO = fixtureContext("ui-dev07-inicio");
+const ZERO = fixtureContext("ui-dev07-inicio-zero");
+const INICIO_AUTH = fixtureContext("ui-dev07-inicio-auth");
+const THEME = fixtureContext("ui-dev07-theme");
+const INICIO_PORT = INICIO.port;
+const ZERO_PORT = ZERO.port;
+const THEME_PORT = THEME.port;
+const INICIO_AUTH_PORT = INICIO_AUTH.port;
 const CIERRE_LISTO_PORT = 3031;
 const CIERRE_TECLADO_PORT = 3032;
 const CIERRE_BLOQUEADO_PORT = 3034;
@@ -65,6 +69,8 @@ type ServerSpec = {
   id: string;
   script: string;
   port: number;
+  /** Entorno completo del fixture del contexto (#514). */
+  fixture?: Fixture;
   env?: Record<string, string>;
 };
 
@@ -73,24 +79,28 @@ const SERVERS: readonly ServerSpec[] = [
     id: "theme",
     script: "apps/api/test-support/theme-server.ts",
     port: THEME_PORT,
+    fixture: THEME,
   },
   {
     id: "inicio",
     script: "apps/api/test-support/inicio-server.ts",
     port: INICIO_PORT,
+    fixture: INICIO,
   },
   {
     id: "inicio-zero",
     script: "apps/api/test-support/inicio-server.ts",
     port: ZERO_PORT,
+    fixture: ZERO,
     env: { E46_SCENARIO: "zero" },
   },
   {
     // Fixture independiente para las pruebas de activación por teclado: la
-    // matriz ya enrola `.local/e2e-inicio` en este mismo worker.
+    // matriz ya enrola el suyo en este mismo worker.
     id: "inicio-auth",
     script: "apps/api/test-support/inicio-server.ts",
     port: INICIO_AUTH_PORT,
+    fixture: INICIO_AUTH,
     env: { E46_SCENARIO: "auth" },
   },
   {
@@ -118,12 +128,59 @@ const SERVERS: readonly ServerSpec[] = [
   },
 ];
 
-const active: ChildProcess[] = [];
+const active: TrackedServer[] = [];
 
-async function waitForApi(request: APIRequestContext, port: number) {
+/**
+ * Servidor en marcha con su salida y su proceso bajo control: un fixture
+ * muerto no puede quedar enmascarado por un poll que responde.
+ */
+type TrackedServer = {
+  child: ChildProcess;
+  output: () => string;
+  assertAlive: () => void;
+  stop: () => void;
+};
+
+function track(child: ChildProcess): TrackedServer {
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  return {
+    child,
+    output: () => output,
+    assertAlive: () => {
+      const ended = exit;
+      if (!ended) return;
+      const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+      throw new Error(
+        `El fixture de UI DEV-07 terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+      );
+    },
+    stop: () => {
+      child.kill();
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+    },
+  };
+}
+
+async function waitForApi(
+  request: APIRequestContext,
+  port: number,
+  owned: TrackedServer,
+) {
   await expect
     .poll(
       async () => {
+        owned.assertAlive();
         try {
           return (await request.get(`http://127.0.0.1:${port}/api/health`))
             .status();
@@ -138,15 +195,21 @@ async function waitForApi(request: APIRequestContext, port: number) {
 
 async function startServer(request: APIRequestContext, spec: ServerSpec) {
   const child = spawn(process.env.BUN_BIN ?? "bun", [spec.script], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test", ...spec.env },
+    stdio: ["ignore", "pipe", "pipe"],
+    env: spec.fixture
+      ? { ...spec.fixture.env, ...spec.env }
+      : { ...process.env, NODE_ENV: "test", ...spec.env },
   });
-  active.push(child);
-  await waitForApi(request, spec.port).catch((error) => {
-    child.kill();
+  const owned = track(child);
+  active.push(owned);
+  await waitForApi(request, spec.port, owned).catch((error) => {
+    owned.stop();
     throw error;
   });
-  return child;
+  // El fixture provisionó su estado antes de servir: se navega solo entonces.
+  if (spec.fixture)
+    requireFixtureState({ ...owned, fixture: spec.fixture });
+  return owned;
 }
 
 async function routeApi(page: Page, port: number) {
@@ -650,7 +713,7 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.afterAll(() => {
-  for (const child of active) child.kill();
+  for (const server of active) server.stop();
 });
 
 test.describe("UI DEV-07 I4 · matriz base y AA", () => {
@@ -659,7 +722,7 @@ test.describe("UI DEV-07 I4 · matriz base y AA", () => {
   }) => {
     test.setTimeout(600000);
     await routeApi(page, INICIO_PORT);
-    await login(page, ".local/e2e-inicio", "/inicio");
+    await login(page, INICIO.dir, "/inicio");
     await expect(
       page.getByRole("heading", { name: "Inicio", exact: true }),
     ).toBeVisible();
@@ -722,7 +785,7 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
   test("Inicio cero verificado", async ({ page }) => {
     test.setTimeout(300000);
     await routeApi(page, ZERO_PORT);
-    await login(page, ".local/e2e-inicio-zero", "/inicio");
+    await login(page, ZERO.dir, "/inicio");
     const liquidez = page.getByRole("article", {
       name: "Liquidez",
       exact: true,
@@ -737,7 +800,7 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
   }) => {
     test.setTimeout(300000);
     await routeApi(page, THEME_PORT);
-    await login(page, ".local/e2e-theme", "/saldos");
+    await login(page, THEME.dir, "/saldos");
     await page.goto("/saldos/S000");
     await expect(page.locator(".position-panel")).toBeVisible();
     await expect(
@@ -796,7 +859,7 @@ test.describe("UI DEV-07 · activación por teclado", () => {
   }) => {
     test.setTimeout(180000);
     await routeApi(page, INICIO_AUTH_PORT);
-    await login(page, ".local/e2e-inicio-auth", "/inicio");
+    await login(page, INICIO_AUTH.dir, "/inicio");
     await expect(
       page.getByRole("heading", { name: "Inicio", exact: true }),
     ).toBeVisible();
