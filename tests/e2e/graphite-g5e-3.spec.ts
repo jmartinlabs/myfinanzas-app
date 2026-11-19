@@ -5,31 +5,23 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 
-const PORT = 3061;
-const STATE = ".local/e2e-compartidos-g5e";
-let child: ReturnType<typeof spawn> | undefined;
+const fixture = fixtureContext("compartidos-g5e");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/compartido-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        COMPARTIDO_PORT: String(PORT),
-        COMPARTIDO_STATE: STATE,
-      },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/compartido-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -37,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.continue({ url: url.toString() });
   });
   await page.goto("/compartidos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia Graphite compartidos " + randomUUID());
