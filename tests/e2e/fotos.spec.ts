@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { schemaVersion } from "../../apps/api/src/database-identity";
+import { contextFromEnv } from "../../apps/api/test-support/e2e-context";
 
 import { artifactDir } from "./fixture";
 
@@ -40,7 +41,9 @@ type Scenario = keyof typeof PORTS;
 
 const SERVER_NOW = Date.parse("2027-06-15T12:00:00Z");
 const artifacts = artifactDir("e411-i6");
-const ORIGIN = process.env.E411_ORIGIN ?? "http://127.0.0.1:5173";
+// Origen de la ejecución (#514): el literal 5173 provocaba 403 ORIGIN en el
+// alta y la sesión del run.
+const ORIGIN = process.env.E411_ORIGIN ?? contextFromEnv().webOrigin;
 
 type ApiResult = {
   status: number;

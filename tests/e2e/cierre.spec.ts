@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { contextFromEnv } from "../../apps/api/test-support/e2e-context";
 
 import { artifactDir } from "./fixture";
 
@@ -56,8 +57,9 @@ async function startServer(
         NODE_ENV: "test",
         E49_SCENARIO: scenario,
         E49_PORT: String(port),
-        E410_ORIGIN:
-          process.env.E410_ORIGIN ?? "http://127.0.0.1:5173",
+        // Origen de la ejecución (#514): el literal 5173 hacía que el fixture
+        // rechazara con 403 ORIGIN el alta y la sesión del run.
+        E410_ORIGIN: process.env.E410_ORIGIN ?? contextFromEnv().webOrigin,
       },
     },
   );
