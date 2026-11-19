@@ -11,8 +11,17 @@ import { createApp } from "../src/app";
 
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
-const port = Number(process.env.REFERENCIAS_PORT ?? 3054);
-const dir = resolve(process.env.REFERENCIAS_STATE ?? ".local/e2e-referencias-g5d");
+// Puerto y estado del contexto de la ejecución (#514): `E2E_PORT` y
+// `E2E_STATE_DIR` tienen prioridad sobre los nombres históricos, que se
+// conservan para arrancar el fixture a mano.
+const port = Number(
+  process.env.E2E_PORT ?? process.env.REFERENCIAS_PORT ?? 3054,
+);
+const dir = resolve(
+  process.env.E2E_STATE_DIR ??
+    process.env.REFERENCIAS_STATE ??
+    ".local/e2e-referencias-g5d",
+);
 if (!dir.startsWith(resolve(".local") + sep))
   throw new Error("State must live under .local/");
 rmSync(dir, { recursive: true, force: true });
@@ -25,7 +34,12 @@ BunRuntime.runMain(
     HttpServer.serve(
       createApp(db, {
         key,
-        origin: process.env.APP_ORIGIN ?? "http://127.0.0.1:5173",
+        // Origen de la ejecución (#514): `E2E_APP_ORIGIN` cubre a quien publique
+        // el contexto sin `APP_ORIGIN`; sin ninguno se conserva el histórico.
+        origin:
+          process.env.APP_ORIGIN ??
+          process.env.E2E_APP_ORIGIN ??
+          "http://127.0.0.1:5173",
       }),
     ).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),

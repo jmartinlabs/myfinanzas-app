@@ -5,31 +5,23 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-import { artifactDir } from "./fixture";
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 
-const PORT = 3054;
-const STATE = ".local/e2e-referencias-g5d";
-let child: ReturnType<typeof spawn> | undefined;
+const fixture = fixtureContext("referencias-g5d");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/referencias-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        REFERENCIAS_PORT: String(PORT),
-        REFERENCIAS_STATE: STATE,
-      },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/referencias-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -37,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/referencias");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Graphite referencias " + randomUUID(),
   );
