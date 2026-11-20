@@ -532,7 +532,7 @@ test("#503 selector de tema sin etiqueta visible y un solo indicador de entorno"
         body: JSON.stringify({
           app: { version: "0.2.0", sha: "a1b2c3d4e5f6", label: "release" },
           environment,
-          schema: 31,
+          schema: 32,
         }),
       }),
     );
