@@ -310,6 +310,24 @@ function closeWindow(db: Database, ciclo: string, inicio: string, fin: string) {
   }).immediate();
 }
 
+/**
+ * Estado §2 equivalente al antiguo «ciclo cerrado»: una revisión humana
+ * pendiente. `dirty` NO bloquea (G2); sólo produce el aviso del seguimiento.
+ */
+function marcarPendiente(db: Database, ciclo: string) {
+  db.run(
+    `INSERT INTO cierre_validacion(ciclo,revision,dirty,dirty_desde,dirty_ultimo,
+       dirty_origen,dirty_motivos,cobertura)
+     VALUES(?,1,1,?,?,'Operacion','["REPARTO"]',?)`,
+    [
+      ciclo,
+      stamp,
+      stamp,
+      JSON.stringify([{ fuente: "movimientos", estado: "Disponible", causas: [] }]),
+    ],
+  );
+}
+
 async function confirmPending(
   request: ReturnType<typeof http>["request"],
   pending: { id: number; revision: number },
@@ -896,7 +914,7 @@ test("R-05 seguimiento y completado estricto", async () => {
   expect(incomplete.data.code).toBe("REPARTO_NO_COMPLETABLE");
 });
 
-test("R-06 ciclo cerrado bloquea escrituras y el precierre solo avisa", async () => {
+test("R-06 SPEC38: un ciclo con revisión pendiente no bloquea la edición del reparto y el seguimiento avisa", async () => {
   const { db, c3, preA } = setup();
   const api = http(db);
   await api.auth();
@@ -905,36 +923,35 @@ test("R-06 ciclo cerrado bloquea escrituras y el precierre solo avisa", async ()
   const other = (await presetLine(api.request, reparto, preA, "5.00")).data.item;
   const generated = await generate(api.request, reparto, 1);
   expect(generated.status).toBe(200);
-  const pending = generated.data.creados[0];
-  closeWindow(db, c3, "2026-03-01", "2026-03-31");
+  marcarPendiente(db, c3);
 
   const read = await api.request(`/api/ciclos/${c3}/reparto`);
   expect(read.status).toBe(200);
   expect(read.data.reparto.estado).toBe("Generado");
-  const addBlocked = await presetLine(api.request, reparto, preA, "1.00");
-  expect(addBlocked.status).toBe(409);
-  expect(addBlocked.data.code).toBe("CICLO_CERRADO");
+  const revision = read.data.reparto.revision as number;
+
+  // Sustituye los 409 CICLO_CERRADO de línea y regeneración: SPEC38 §7.6/G2
+  // retiran el bloqueo por cierre y por `dirty`; el aviso queda en el
+  // seguimiento. La cabecera conserva su regla de dominio (sólo en Borrador).
   const patchReparto = await api.request(
     `/api/repartos/${reparto}`,
     "PATCH",
-    { revision: 2, origenComun: "S003" },
+    { revision, origenComun: "S003" },
     { "idempotency-key": randomUUID() },
   );
   expect(patchReparto.status).toBe(409);
-  expect(patchReparto.data.code).toBe("CICLO_CERRADO");
-  const generateAgain = await generate(api.request, reparto, 2, [other.id]);
-  expect(generateAgain.status).toBe(409);
-  expect(generateAgain.data.code).toBe("CICLO_CERRADO");
-  // Pending cancellation is still allowed after the close and writes no facts.
-  const cancelled = await cancelPending(api.request, pending);
-  expect(cancelled.status).toBe(200);
-  expect(cancelled.data.item.estado).toBe("Cancelada");
-  const secondPending = generated.data.creados[1];
-  const cancelledSecond = await cancelPending(api.request, secondPending);
-  expect(cancelledSecond.status).toBe(200);
-  expect(
-    (db.query("SELECT count(*) n FROM movimientos").get() as { n: number }).n,
-  ).toBe(0);
+  expect(patchReparto.data.code).toBe("STATE_CONFLICT");
+  const addLineAfterClose = await presetLine(api.request, reparto, preA, "1.00");
+  expect(addLineAfterClose.status).toBe(201);
+  const trasLinea = await api.request(`/api/ciclos/${c3}/reparto`);
+  const regenerated = await generate(
+    api.request,
+    reparto,
+    trasLinea.data.reparto.revision as number,
+    [other.id],
+  );
+  expect(regenerated.status).toBe(200);
+
   const seguimiento = await api.request(`/api/repartos/${reparto}/seguimiento`);
   expect(seguimiento.status).toBe(200);
   expect(seguimiento.data.avisos.cicloCerrado).toBe(true);
@@ -942,17 +959,41 @@ test("R-06 ciclo cerrado bloquea escrituras y el precierre solo avisa", async ()
     incluidosEnFoto: false,
     bloquea: false,
   });
-  // Completion remains available on a closed Cycle when every pending is terminal.
+  expect(line.id).toBeNumber();
+});
+
+test("R-06 SPEC38: un ciclo con revisión pendiente no bloquea cancelar ni completar", async () => {
+  const { db, c3, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c3)).data.reparto.id;
+  await presetLine(api.request, reparto, preA, "10.00");
+  await presetLine(api.request, reparto, preA, "5.00");
+  const generated = await generate(api.request, reparto, 1);
+  expect(generated.status).toBe(200);
+  marcarPendiente(db, c3);
+
+  // Cancelar pendientes sigue permitido y no escribe hechos.
+  for (const pending of generated.data.creados as { id: number; revision: number }[]) {
+    const cancelled = await cancelPending(api.request, pending);
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.data.item.estado).toBe("Cancelada");
+  }
+  expect(
+    (db.query("SELECT count(*) n FROM movimientos").get() as { n: number }).n,
+  ).toBe(0);
+  const seguimiento = await api.request(`/api/repartos/${reparto}/seguimiento`);
+  expect(seguimiento.status).toBe(200);
+  expect(seguimiento.data.avisos.cicloCerrado).toBe(true);
   expect(seguimiento.data.puedeCompletar).toBe(true);
-  const completed = await api.request(
+  const completado = await api.request(
     `/api/repartos/${reparto}/completar`,
     "POST",
-    { revision: 2 },
+    { revision: seguimiento.data.reparto.revision as number },
     { "idempotency-key": randomUUID() },
   );
-  expect(completed.status).toBe(200);
-  expect(completed.data.reparto.estado).toBe("Completado");
-  expect(line.id).toBeNumber();
+  expect(completado.status).toBe(200);
+  expect(completado.data.reparto.estado).toBe("Completado");
 });
 
 test("R-07 D8: línea histórica de Presupuesto inactivo visible y editable, sin pendiente", async () => {

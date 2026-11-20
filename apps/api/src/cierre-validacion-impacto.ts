@@ -4,6 +4,7 @@ import { cycleForDate, cycleMaster } from "./ciclos";
 import {
   IMPACTOS_MATERIALES,
   type CoberturaValidada,
+  type FuenteCobertura,
   type ImpactoMaterial,
 } from "./cierre-validacion-dto";
 import { cashAt, investmentInstalled, positionsAtDate } from "./investment-engine";
@@ -157,9 +158,86 @@ export function jsonCanonico(valor: unknown): string {
   return JSON.stringify(normal(valor));
 }
 
-/** `H_v(C,S)`: huella del universo congelado de una lectura. */
+/**
+ * Universo **material**: sólo el contenido económico efectivo y medible de §3.1.
+ * Deja fuera, a propósito, lo que no es una magnitud financiera:
+ *
+ * - `atribucion[].revision`: revisión técnica de la fila, no un efecto;
+ * - `cobertura` y `noMedido`: diagnóstico de fuentes, no cifras;
+ * - `versionConjunto`: se compara aparte, porque dos conjuntos distintos no son
+ *   comparables (AC-07) y una versión nueva no es «un cambio material».
+ *
+ * Esta proyección es la **única** fuente de la huella material y del comparador,
+ * de modo que `material` y `motivos` no pueden divergir (hallazgo de revisión
+ * sobre `revision` incluida en el hash y excluida de la comparación).
+ */
+function gruposMateriales(universo: UniversoFinanciero): Record<GrupoMaterial, unknown> {
+  return {
+    ventana: [universo.ventana.inicio, universo.ventana.fin],
+    s0: universo.ventana.s0,
+    // `gre` y `neto` son `null` por contrato mientras #538 no fije el predicado
+    // de neteo: se excluyen como magnitudes, no se comparan como igualdad.
+    flujo: [universo.flujo.bruto, universo.flujo.devolucion, universo.flujo.ingreso],
+    comida: universo.flujo.comidaNeta,
+    balance: universo.stock.efectivo,
+    posicion: universo.stock.posiciones,
+    atribucion: universo.atribucion.map((hecho) => ({
+      id: hecho.id,
+      partida: hecho.partida,
+      subcategoria: hecho.subcategoria,
+      categoria: hecho.categoria,
+      deuda: hecho.deuda,
+      presupuesto: hecho.presupuesto,
+      signo: hecho.signo,
+      neto: hecho.neto,
+      ciclo: hecho.cicloAtribuido,
+    })),
+    reparto: universo.reparto,
+  };
+}
+
+/** Fuente de cobertura que debe estar disponible para medir cada grupo. */
+const FUENTE_POR_GRUPO: Partial<Record<GrupoMaterial, FuenteCobertura>> = {
+  flujo: "movimientos",
+  comida: "movimientos",
+  atribucion: "movimientos",
+  balance: "efectivo",
+  posicion: "posiciones",
+  reparto: "plan",
+};
+
+/** Grupos cuya fuente está `NoDisponible` en esa lectura. */
+function gruposNoDisponibles(universo: UniversoFinanciero): Set<GrupoMaterial> {
+  const estados = new Map(universo.cobertura.map((entrada) => [entrada.fuente, entrada.estado]));
+  const salida = new Set<GrupoMaterial>();
+  for (const [grupo, fuente] of Object.entries(FUENTE_POR_GRUPO) as [
+    GrupoMaterial,
+    FuenteCobertura,
+  ][])
+    if (estados.get(fuente) === "NoDisponible") salida.add(grupo);
+  return salida;
+}
+
+/**
+ * `M_v(C,S)`: proyección económica canónica sobre la que se mide materialidad.
+ * Expuesta para pruebas y diagnósticos; no incluye revisión, cobertura ni
+ * versión de conjunto.
+ */
+export function universoMaterial(universo: UniversoFinanciero): Record<GrupoMaterial, unknown> {
+  return gruposMateriales(universo);
+}
+
+/**
+ * `H_v(C,S) = sha256(JSONcanónico(M_v(C,S)))` (§3.1): la huella del **estado
+ * económico**. Es la que se guarda como `huella_validacion` y la que se compara
+ * con ella. No incluye revisiones técnicas, cobertura, `noMedido` ni la versión
+ * de conjunto: esos tokens viven en `contextRevision`/`impactRevision`, y por
+ * eso una errata que sólo sube `movimientos.revision` no la mueve.
+ */
 export function huellaUniverso(universo: UniversoFinanciero): string {
-  return createHash("sha256").update(jsonCanonico(universo), "utf8").digest("hex");
+  return createHash("sha256")
+    .update(jsonCanonico(universoMaterial(universo)), "utf8")
+    .digest("hex");
 }
 
 /** Huella de un valor estructural arbitrario (contexto, impacto, payload). */
@@ -454,65 +532,29 @@ export type ImpactoMedido = {
 
 /**
  * Compara dos lecturas del universo del **mismo** ciclo y devuelve los motivos
- * cerrados que cambiaron. Un grupo no disponible no se declara igual: se
- * devuelve como `noDisponible` y no aporta motivo, porque una ausencia no es
- * evidencia de cambio ni de estabilidad.
+ * cerrados que cambiaron. Compara exactamente la proyección que hashea
+ * `huellaUniverso`, así que `material` y `motivos` son siempre coherentes. Un
+ * grupo cuya fuente está `NoDisponible` no se declara igual: se devuelve como
+ * `noDisponible` y no aporta motivo, porque una ausencia no es evidencia de
+ * cambio ni de estabilidad (§3.1, AC-17).
  */
 export function compararUniverso(
   antes: UniversoFinanciero,
   despues: UniversoFinanciero,
 ): { motivos: ImpactoMaterial[]; noDisponible: GrupoMaterial[] } {
   const motivos = new Set<ImpactoMaterial>();
+  const gruposAntes = gruposMateriales(antes);
+  const gruposDespues = gruposMateriales(despues);
+  const ausentes = new Set([...gruposNoDisponibles(antes), ...gruposNoDisponibles(despues)]);
   const noDisponible: GrupoMaterial[] = [];
-  const grupo = (
-    nombre: GrupoMaterial,
-    valorAntes: unknown,
-    valorDespues: unknown,
-    disponible = true,
-  ) => {
-    if (!disponible) {
+  for (const nombre of Object.keys(MOTIVO_POR_GRUPO) as GrupoMaterial[]) {
+    if (ausentes.has(nombre)) {
       noDisponible.push(nombre);
-      return;
+      continue;
     }
-    if (jsonCanonico(valorAntes) !== jsonCanonico(valorDespues))
+    if (jsonCanonico(gruposAntes[nombre]) !== jsonCanonico(gruposDespues[nombre]))
       motivos.add(MOTIVO_POR_GRUPO[nombre]);
-  };
-  grupo("ventana", [antes.ventana.inicio, antes.ventana.fin], [despues.ventana.inicio, despues.ventana.fin]);
-  grupo("s0", antes.ventana.s0, despues.ventana.s0);
-  grupo("flujo", [antes.flujo.bruto, antes.flujo.devolucion, antes.flujo.ingreso], [
-    despues.flujo.bruto,
-    despues.flujo.devolucion,
-    despues.flujo.ingreso,
-  ]);
-  grupo("comida", antes.flujo.comidaNeta, despues.flujo.comidaNeta);
-  grupo("balance", antes.stock.efectivo, despues.stock.efectivo);
-  grupo("posicion", antes.stock.posiciones, despues.stock.posiciones);
-  grupo(
-    "atribucion",
-    antes.atribucion.map((hecho) => ({
-      id: hecho.id,
-      partida: hecho.partida,
-      subcategoria: hecho.subcategoria,
-      categoria: hecho.categoria,
-      deuda: hecho.deuda,
-      presupuesto: hecho.presupuesto,
-      signo: hecho.signo,
-      neto: hecho.neto,
-      ciclo: hecho.cicloAtribuido,
-    })),
-    despues.atribucion.map((hecho) => ({
-      id: hecho.id,
-      partida: hecho.partida,
-      subcategoria: hecho.subcategoria,
-      categoria: hecho.categoria,
-      deuda: hecho.deuda,
-      presupuesto: hecho.presupuesto,
-      signo: hecho.signo,
-      neto: hecho.neto,
-      ciclo: hecho.cicloAtribuido,
-    })),
-  );
-  grupo("reparto", antes.reparto, despues.reparto);
+  }
   return {
     motivos: IMPACTOS_MATERIALES.filter((motivo) => motivos.has(motivo)),
     noDisponible,
@@ -606,7 +648,10 @@ export function impactoDeCandidatos(
       ciclo,
       huellaAntes,
       huellaDespues,
-      material: huellaAntes !== huellaDespues,
+      // `material` lo deciden los motivos medidos, no la huella: una subida de
+      // `revision` o un cambio de cobertura no marca, y una fuente ausente deja
+      // el grupo en `noDisponible` en vez de fingir igualdad.
+      material: motivos.length > 0,
       motivos,
       noDisponible,
     });

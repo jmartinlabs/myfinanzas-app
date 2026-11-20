@@ -132,6 +132,22 @@ function problemOf(fn: () => unknown): Problem {
   throw new Error("Se esperaba un Problem y no se lanzó.");
 }
 
+/** SPEC38 §7.6: ruta retirada = 410 con código, no-store y sustituto declarado. */
+function expectRetirada(
+  response: { status: number; data: Record<string, any>; headers: Headers },
+  code: string,
+  sustituto: string | null,
+) {
+  expect(response.status).toBe(410);
+  expect(response.data.code).toBe(code);
+  expect(response.data.message).toBeTypeOf("string");
+  expect(response.data.sustituto).toBe(sustituto);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("link")).toBe(
+    sustituto === null ? null : `<${sustituto}>; rel="alternate"`,
+  );
+}
+
 function seedMovement(
   db: Database,
   input: {
@@ -1765,21 +1781,29 @@ test("E4.10 I4: dos procesos con la misma clave hacen replay de una sola versió
   }
 });
 
-test("E4.10 I4 API: repreview/re-cerrar, 401/403/405, 201 y /cerrar intacto", async () => {
+test("E4.10 I4 API: repreview/re-cerrar retirados (410), 401/403 y sin escrituras", async () => {
+  // Contrato sustituido: /repreflight devolvía 200 con comparación y fingerprint,
+  // /recerrar creaba v2 (201 + location a /foto?version=2), el método erróneo daba
+  // 405, sin clave 422 IDEMPOTENCY_REQUIRED y /cerrar repetido 409 ALREADY_CLOSED.
   const f = await apiFixture();
   try {
     expect((await f.request("/api/cierres/1/repreflight")).status).toBe(401);
     await f.enroll();
+    const before = counts(f.db);
+    const sustituto = "/api/cierres/1/estado";
+
     const close = await f.close("1");
-    expect(close.result.status).toBe(201);
+    expect(close.result.status).toBe(410);
+
     const abrir = await f.request(
       "/api/cierres/1/reabrir",
       "POST",
       { versionEsperada: 1, motivo: "Motivo de reapertura API" },
       { "idempotency-key": randomUUID() },
     );
-    expect(abrir.status).toBe(201);
+    expectRetirada(abrir, "REAPERTURA_RETIRADA", sustituto);
 
+    // RBAC y CSRF siguen vigentes: cortan antes del 410.
     const noCsrf = await f.request(
       "/api/cierres/1/recerrar",
       "POST",
@@ -1788,67 +1812,71 @@ test("E4.10 I4 API: repreview/re-cerrar, 401/403/405, 201 y /cerrar intacto", as
     );
     expect(noCsrf.status).toBe(403);
     expect(noCsrf.data.code).toBe("CSRF");
+
+    // El 405 por método desaparece: el 410 no depende del método.
     const wrongPreviewMethod = await f.request(
       "/api/cierres/1/repreflight",
       "POST",
       {},
     );
-    expect(wrongPreviewMethod.status).toBe(405);
-    expect(wrongPreviewMethod.headers.get("allow")).toBe("GET");
+    expectRetirada(wrongPreviewMethod, "REAPERTURA_RETIRADA", sustituto);
+    expect(wrongPreviewMethod.headers.get("allow")).toBeNull();
     const wrongCloseMethod = await f.request("/api/cierres/1/recerrar");
-    expect(wrongCloseMethod.status).toBe(405);
-    expect(wrongCloseMethod.headers.get("allow")).toBe("POST");
+    expectRetirada(wrongCloseMethod, "REAPERTURA_RETIRADA", sustituto);
+    expect(wrongCloseMethod.headers.get("allow")).toBeNull();
 
     // Change the live state inside the window, then confirm through the API.
     seedMovement(f.db, { id: "8409", importe: 77 });
     const pre = await f.request("/api/cierres/1/repreflight");
-    expect(pre.status).toBe(200);
-    expect(pre.headers.get("cache-control")).toBe("no-store");
-    expect(pre.data.comparacion.estado).toBe("ConCambios");
-    expect(pre.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-    const missingKey = await f.request(
-      "/api/cierres/1/recerrar",
-      "POST",
-      {
-        versionEsperada: 1,
-        motivo: "Motivo de re-cierre API",
-        fingerprint: pre.data.fingerprint,
-      },
-    );
-    expect(missingKey.status).toBe(422);
-    expect(missingKey.data.code).toBe("IDEMPOTENCY_REQUIRED");
+    expectRetirada(pre, "REAPERTURA_RETIRADA", sustituto);
+    expect(pre.data).not.toHaveProperty("comparacion");
+    expect(pre.data).not.toHaveProperty("fingerprint");
+
+    // Sin clave ya no hay 422 de idempotencia: no hay intento que registrar.
+    const missingKey = await f.request("/api/cierres/1/recerrar", "POST", {
+      versionEsperada: 1,
+      motivo: "Motivo de re-cierre API",
+      fingerprint: "a".repeat(64),
+    });
+    expectRetirada(missingKey, "REAPERTURA_RETIRADA", sustituto);
+
     const result = await f.request(
       "/api/cierres/1/recerrar",
       "POST",
       {
         versionEsperada: 1,
         motivo: "Motivo de re-cierre API",
-        fingerprint: pre.data.fingerprint,
+        fingerprint: "a".repeat(64),
       },
       { "idempotency-key": randomUUID() },
     );
-    expect(result.status).toBe(201);
-    expect(result.headers.get("location")).toBe(
-      "/api/cierres/1/foto?version=2",
+    expectRetirada(result, "REAPERTURA_RETIRADA", sustituto);
+    expect(result.headers.get("location")).toBeNull();
+    expect(result.data).not.toHaveProperty("foto");
+
+    // La ventana y la foto v2 no existen: sus lecturas están retiradas.
+    expectRetirada(
+      await f.request("/api/cierres/1/reapertura"),
+      "REAPERTURA_RETIRADA",
+      sustituto,
     );
-    expect(result.data.foto.version).toBe(2);
-    expect(result.data.foto.schemaVersion).toBe(32);
-    expect((await f.request("/api/cierres/1/reapertura")).data.estado).toBe(
-      "Cerrado",
-    );
-    expect((await f.request("/api/cierres/1/foto?version=2")).data.foto.version).toBe(
-      2,
+    expectRetirada(
+      await f.request("/api/cierres/1/foto?version=2"),
+      "FOTO_RETIRADA",
+      sustituto,
     );
 
-    // E4.9's own route still rejects a second ordinary closure.
+    // E4.9 tampoco conserva /cerrar: ya no hay ALREADY_CLOSED que comprobar.
     const ordinary = await f.request(
       "/api/cierres/1/cerrar",
       "POST",
-      { fingerprint: pre.data.fingerprint },
+      { fingerprint: "a".repeat(64) },
       { "idempotency-key": randomUUID() },
     );
-    expect(ordinary.status).toBe(409);
-    expect(ordinary.data.code).toBe("ALREADY_CLOSED");
+    expectRetirada(ordinary, "CIERRE_FOTOGRAFICO_RETIRADO", sustituto);
+
+    // Ninguna escritura: ni cierre, ni foto, ni vínculo, ni ventana, ni intento.
+    expect(counts(f.db)).toEqual(before);
   } finally {
     f.db.close();
   }
@@ -1909,14 +1937,17 @@ async function apiFixture() {
     return verified;
   }
   async function close(ciclo: string) {
+    // Contrato sustituido: preflight devolvía 200 y /cerrar creaba v1 (201).
+    const sustituto = `/api/cierres/${ciclo}/estado`;
     const pre = await request(`/api/cierres/${ciclo}/preflight`);
-    expect(pre.status).toBe(200);
+    expectRetirada(pre, "CIERRE_FOTOGRAFICO_RETIRADO", sustituto);
     const result = await request(
       `/api/cierres/${ciclo}/cerrar`,
       "POST",
-      { fingerprint: pre.data.fingerprint },
+      { fingerprint: "a".repeat(64) },
       { "idempotency-key": randomUUID() },
     );
+    expectRetirada(result, "CIERRE_FOTOGRAFICO_RETIRADO", sustituto);
     return { pre, result };
   }
   return { db, key, request, enroll, close };
@@ -2071,20 +2102,22 @@ test("E4.10 AC17/AC03: un aviso acreditado se re-cierra y queda auditado con los
   }
 });
 
-test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta y v2 con vista viva", async () => {
+test("E4.10 AC08/AC19 API: rectificación T2 del plan con la vía fotográfica retirada", async () => {
+  // Contrato sustituido: cerrar creaba v1 (201) con plan SinPlan, reabrir abría la
+  // ventana (201), /foto devolvía v1/v2 y el re-cierre creaba v2 con foto completa.
   const f = await apiFixture();
   try {
     await f.enroll();
-    const closed = await f.close("1");
-    expect(closed.result.status).toBe(201);
-    const v1 = await f.request("/api/cierres/1/foto?version=1");
-    expect(v1.status).toBe(200);
-    expect(v1.data.foto.plan.estado).toBe("SinPlan");
-    expect(v1.data.foto.auxiliares.deuda).toEqual([]);
-    expect(v1.data.foto.noDisponible).toMatchObject({
-      deudaCompleta: { estado: "No disponible" },
-      conciliaciones: { estado: "No disponible" },
-    });
+    const before = counts(f.db);
+    const sustituto = "/api/cierres/1/estado";
+
+    const close = await f.close("1");
+    expect(close.result.status).toBe(410);
+    expectRetirada(
+      await f.request("/api/cierres/1/foto?version=1"),
+      "FOTO_RETIRADA",
+      sustituto,
+    );
 
     const opened = await f.request(
       "/api/cierres/1/reabrir",
@@ -2092,7 +2125,7 @@ test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta 
       { versionEsperada: 1, motivo: "Rectificar el plan T2" },
       { "idempotency-key": randomUUID() },
     );
-    expect(opened.status).toBe(201);
+    expectRetirada(opened, "REAPERTURA_RETIRADA", sustituto);
 
     // El plan y el auxiliar se crean por sus rutas reales, no con INSERT
     // directo sobre las tablas del plan ni de la foto.
@@ -2145,14 +2178,19 @@ test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta 
     );
     expect(impact.status).toBe(200);
     expect(impact.data.requiereMotivo).toBe(true);
+    // Contrato sustituido: la revisión del plan sobre ciclos cerrados exigía motivo
+    // y respondía 422 desde la guarda de cierres; esa guarda se retiró. El motivo
+    // obligatorio se conserva en la confirmación viva, con su 400 VALIDATION.
     const noMotive = await f.request(
       "/api/planes-ciclo/1/confirmar",
       "POST",
       { propuesta, fingerprint: impact.data.fingerprint },
       { "idempotency-key": randomUUID() },
     );
-    expect(noMotive.status).toBe(422);
+    expect(noMotive.status).toBe(400);
     expect(noMotive.data.code).toBe("VALIDATION");
+    expect(noMotive.data.error).toContain("Motivo obligatorio");
+    expect((await f.request("/api/planes-ciclo/1")).data.revision).toBe(0);
 
     const motivo = "Rectificación T2 del plan dentro de la ventana E4.10";
     const confirmed = await f.request(
@@ -2175,21 +2213,14 @@ test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta 
       delta: string;
     };
     expect(planAudit).toMatchObject({ actor: "usuario-unico", motivo, revision: 1 });
-    expect(JSON.parse(planAudit.delta)).toMatchObject({
+    // La auditoría del plan conserva el delta de sus campos; el impacto sobre
+    // cierres fotográficos ya no existe porque esa vía se retiró.
+    const delta = JSON.parse(planAudit.delta);
+    expect(delta).toMatchObject({
       base: { anterior: null, posterior: "100.00" },
       esencial: { anterior: null, posterior: "50.00" },
-      impacto: {
-        fingerprint: impact.data.fingerprint,
-        cierres: [
-          {
-            ciclo: "1",
-            version: 1,
-            inicio: "2026-01-01",
-            fin: "2026-01-31",
-          },
-        ],
-      },
     });
+    expect(delta).not.toHaveProperty("impacto");
 
     const live = await f.request("/api/planes-ciclo/1");
     expect(live.status).toBe(200);
@@ -2206,26 +2237,17 @@ test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta 
       ]),
     );
 
-    // v1 no se reescribe por la rectificación viva.
-    expect((await f.request("/api/cierres/1/foto?version=1")).data).toEqual(
-      v1.data,
+    // v1 no se reescribe por la rectificación viva: la foto está retirada.
+    expectRetirada(
+      await f.request("/api/cierres/1/foto?version=1"),
+      "FOTO_RETIRADA",
+      sustituto,
     );
 
+    // El preflight y el re-cierre están retirados: no hay v2 ni foto nueva.
     const pre = await f.request("/api/cierres/1/repreflight");
-    expect(pre.status).toBe(200);
-    expect(pre.data.plan).toMatchObject({
-      estado: "Capturado",
-      revision: 1,
-      lineas: 1,
-    });
-    expect(pre.data.comparacion.estado).toBe("ConCambios");
-    expect(pre.data.comparacion.bloques).toEqual(
-      expect.arrayContaining(["plan", "auxiliares"]),
-    );
-    expect(pre.data.revalidacion.avisos).toContain("auxiliares");
-    expect(pre.data.avisos.map((issue: { code: string }) => issue.code)).toContain(
-      "AUXILIARES_RECTIFICADOS",
-    );
+    expectRetirada(pre, "REAPERTURA_RETIRADA", sustituto);
+    expect(pre.data).not.toHaveProperty("comparacion");
 
     const result = await f.request(
       "/api/cierres/1/recerrar",
@@ -2233,46 +2255,16 @@ test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta 
       {
         versionEsperada: 1,
         motivo: "Re-cierre tras rectificar el plan",
-        fingerprint: pre.data.fingerprint,
+        fingerprint: "a".repeat(64),
       },
       { "idempotency-key": randomUUID() },
     );
-    expect(result.status).toBe(201);
-    expect(result.data.foto.version).toBe(2);
-    expect(result.data.foto.plan.estado).toBe("Capturado");
-    expect(result.data.foto.plan.items).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          presupuesto: budgetId,
-          base: "100.00",
-          esencial: "50.00",
-        }),
-      ]),
-    );
-    // v2 lee el auxiliar vigente; no copia la foto v1 (que no tenía deuda).
-    expect(result.data.foto.auxiliares.deuda).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: debtId, estado: "Activa" }),
-      ]),
-    );
-    expect(result.data.foto.auxiliares.deuda).not.toEqual(
-      v1.data.foto.auxiliares.deuda,
-    );
-    // Los bloques que siguen sin estar disponibles se declaran con motivo,
-    // no como cero ni con un valor heredado de v1.
-    expect(result.data.foto.noDisponible).toMatchObject({
-      deudaCompleta: {
-        estado: "No disponible",
-        motivo: expect.stringContaining("E4.4"),
-      },
-      conciliaciones: {
-        estado: "No disponible",
-        motivo: expect.stringContaining("E4.4"),
-      },
-    });
-    expect((await f.request("/api/cierres/1/foto?version=1")).data).toEqual(
-      v1.data,
-    );
+    expectRetirada(result, "REAPERTURA_RETIRADA", sustituto);
+    expect(result.headers.get("location")).toBeNull();
+    expect(result.data).not.toHaveProperty("foto");
+
+    // La rectificación viva no creó cierre, foto, vínculo, ventana ni intento.
+    expect(counts(f.db)).toEqual(before);
   } finally {
     f.db.close();
   }
