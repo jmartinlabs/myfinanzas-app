@@ -12,7 +12,7 @@ requiere dos actos separados del usuario que **no** se han producido:
 
 Sin el primero, el contrato queda ambiguo y el documento no se declara aprobado. La
 aprobación de la SPEC tampoco autoriza DEV: ese es un gate distinto en
-[approvals](../specs/methodology/approvals.md).
+[approvals](methodology/approvals.md).
 
 Approval source/date: **ninguna.** Propuesta redactada a partir de la Issue
 [#547](https://github.com/jmartinlabs/myfinanzas-app/issues/547) y sus decisiones funcionales
@@ -36,7 +36,7 @@ UNRUN**.
 
 ---
 
-**Contrato compartido normativo:** [ANEXO-INTERFACES.md](ANEXO-INTERFACES.md), §§1–6; fuente única de códigos, shapes, estado proyectado, gate, Partida y reatribución. Esta reconciliación no autoriza DEV ni declara AC ejecutados.
+**Contrato compartido normativo:** [anexo de interfaces](38-e49b-cierre-validacion-interfaces.md), §§1–6; fuente única de códigos, shapes, estado proyectado, gate, Partida y reatribución. Esta reconciliación no autoriza DEV ni declara AC ejecutados.
 
 **Estado:** borrador corregido para revisión independiente; no aprobado y sin autorización de DEV.
 **Entrega:** exclusivamente local; no publicar, no modificar el repositorio ni datos reales.
@@ -615,7 +615,7 @@ Se mantienen expresamente Anticipos como negocio, backup como gate, dirty no blo
 
 Código IMPACT_CHANGED y precedencia §1; estados/proyección §3. AC de conflicto antiguo 74→55; numeración compactada sin pérdida (57 AC). Referencias de limpieza: AC-04/21/22 (antes 04/26/27).
 
-Fuente compartida: [ANEXO-INTERFACES.md](ANEXO-INTERFACES.md). Cambios limitados a los trece hallazgos y referencias afectadas; no modifica decisiones ajenas, no publica ni autoriza ejecución. Todos los AC permanecen UNRUN.
+Fuente compartida: [anexo de interfaces](38-e49b-cierre-validacion-interfaces.md). Cambios limitados a los trece hallazgos y referencias afectadas; no modifica decisiones ajenas, no publica ni autoriza ejecución. Todos los AC permanecen UNRUN.
 
 Mapeo de criterios activos v2 → v3 (solo renumeración salvo conflicto):
 
