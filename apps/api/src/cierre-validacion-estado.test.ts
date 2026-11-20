@@ -345,7 +345,7 @@ test("I2 estado · §2.2/AC-07: un conjunto distinto nunca se presenta como vali
   }
 });
 
-test("I2 estado · §2.2/§3.2: huella distinta con la misma versión sugiere revalidar y no limpia", () => {
+test("I2 estado · §2.2/§3.2: huella distinta con la misma versión diverge sin sugerir revalidar", () => {
   const db = base();
   try {
     // Referencia humana de la misma versión pero de otro contenido.
@@ -353,9 +353,10 @@ test("I2 estado · §2.2/§3.2: huella distinta con la misma versión sugiere re
 
     const dto = proyectarValidacion(db, "1");
     expect(dto.divergenciaValidacion).toBe("Distinta");
-    expect(dto.revalidacionSugerida).toBe(true);
+    // §2.2: la sugerencia es sólo por conjunto distinto; aquí el conjunto
+    // coincide y la divergencia es diagnóstica. No limpia ni marca por sí sola.
+    expect(dto.revalidacionSugerida).toBe(false);
     expect(dto.pendienteSinDelta).toBe(false);
-    // La comparación es diagnóstica: no marca dirty por sí sola.
     expect(dto.dirty).toBe(false);
     expect(dto.estado).not.toBe("SinValidar");
   } finally {
