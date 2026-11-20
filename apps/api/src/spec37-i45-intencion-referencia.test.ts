@@ -43,7 +43,7 @@ import {
 const now = Date.parse("2026-10-25T12:00:00Z");
 const stamp = "2026-01-01T00:00:00.000Z";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
-const c31 = "C31-SPEC37-INTENCION-91C32F5";
+const c32 = "C32-SPEC38-VALIDACION-CIERRE";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-i45-"));
 
 type Fixture = {
@@ -340,6 +340,9 @@ function pendienteV30(db: Database) {
  */
 function revertToV30(db: Database) {
   db.exec(`
+    DROP TABLE validacion_attempts;
+    DROP TABLE cierre_validacion_audit;
+    DROP TABLE cierre_validacion;
     DROP TRIGGER transferencia_pendiente_intencion_forma_insert;
     DROP TRIGGER transferencia_pendiente_intencion_forma_update;
     DROP TRIGGER transferencia_pendiente_intencion_datos_insert;
@@ -351,7 +354,7 @@ function revertToV30(db: Database) {
   expect(verifyContract(db, 30)).toBe(c30);
 }
 
-test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", () => {
+test("SPEC37-I4.5 G-v32: v30 → v32 es aditiva y conserva filas e identidad", () => {
   const dir = root();
   try {
     const path = join(dir, "v30.sqlite");
@@ -384,9 +387,9 @@ test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", (
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 31,
+        version: 32,
       });
-      expect(verifyContract(db, 31)).toBe(c31);
+      expect(verifyContract(db, 32)).toBe(c32);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Aditividad: ningún objeto de C30 desaparece y el único que cambia de
@@ -450,7 +453,7 @@ test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", (
   }
 });
 
-test("SPEC37-I4.5 G-v31: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
+test("SPEC37-I4.5 G-v32: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
   const dir = root();
   try {
     const path = join(dir, "v30-incoherente.sqlite");
@@ -499,7 +502,7 @@ test("SPEC37-I4.5 G-v31: el preflight rechaza pendientes v30 incoherentes sin es
   }
 });
 
-test("SPEC37-I4.5 G-v31: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
+test("SPEC37-I4.5 G-v32: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
   const dir = root();
   try {
     const path = join(dir, "v30.sqlite");
@@ -516,7 +519,7 @@ test("SPEC37-I4.5 G-v31: una base v30 genuina migra y sigue confirmando su Refer
     }
     const migrated = openDatabase(path);
     try {
-      expect(verifyContract(migrated, 31)).toBe(c31);
+      expect(verifyContract(migrated, 32)).toBe(c32);
       // El trigger de v30 sigue vigente y la columna nueva no lo altera.
       expect(() =>
         migrated.run(
