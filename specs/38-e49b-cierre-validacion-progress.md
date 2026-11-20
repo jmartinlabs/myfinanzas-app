@@ -229,8 +229,8 @@ el estado de validación y adaptar sus E2E.
 
 ### Pendiente
 
-1. **UI de la retirada**: retirar cierre/reapertura/fotos de la web y exponer estado de
-   validación, preview y confirmación; adaptar `tests/e2e/{cierre,fotos,ui-dev07,graphite-g5f}.spec.ts`.
+1. **UI de la retirada** (#555, `Backlog`): retirar cierre/reapertura/fotos de la web y exponer
+   estado de validación, preview y confirmación; adaptar `tests/e2e/{cierre,fotos,ui-dev07,graphite-g5f}.spec.ts`.
    Es el trabajo que falta para que el gate canónico quede verde.
 2. Verificar `anticipos.spec` contra la base para separar regresión de ambiente.
 3. PR de I2 **contra `feat/547-i1-esquema-v32`** (no contra `test`), con I1 mergeado antes.
