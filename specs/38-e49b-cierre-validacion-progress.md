@@ -159,8 +159,10 @@ WIP anterior `a8062b73`; paso A (suites) y correcciones de revisión cerrados en
   y no un `VALIDATION` de estructura (ANEXO §1); una clave completada se resuelve antes de
   revalidar contexto (§3.4/AC-10).
 - Recibo: `cierresDirty[].dirtyPrevio` refleja el estado anterior real, no un `true` fijo.
-- Reparto: retirado `assertOpenCycle` (`CICLO_PENDIENTE_REVISION`). `dirty` no bloquea
-  escrituras (G2) ni completar; el aviso `cicloCerrado` sigue informando.
+- Reparto: retirado `assertOpenCycle` (`CICLO_PENDIENTE_REVISION`) y los flags
+  `puedeEditar`/`puedeAnadirLineas`/`puedeGenerar` dejan de depender del cierre o de `dirty`
+  (G2); el aviso `cicloCerrado` se conserva como información y la UI deja de presentarlo como
+  bloqueo. Hallado por el QA independiente (la UI deshabilitaba la edición en `Pendiente`).
 
 ### Paso A · adaptación de las suites
 
@@ -173,7 +175,7 @@ retirada (`410` + código + sustituto + `no-store` + cero escrituras) son más e
 | --- | --- | --- | --- |
 | `e410-cross-regression` | no carga | 3 pass | T1 sustituido por escritura real y persistida |
 | `e49-api` | 3 pass / 24 fail | 27 pass | Rutas de cierre/foto/reapertura → `410` |
-| `e49-guards` | no carga (30) | 9 pass | Cierre no bloquea + materialidad medida |
+| `e49-guards` | no carga (31) | 9 pass | Cierre no bloquea + materialidad medida |
 | `e410-guards` | no carga (7) | retirado | Sujeto eliminado; cubierto por `e49-guards` y retirada |
 | `e410-cancelacion` | no carga (21) | retirado | Rutas retiradas; cubierto por `cierre-validacion-retirada` |
 | `e410-i8-regresion`, `e410-recierre`, `e410-reopen`, `e410-revalidacion`, `e411-periodo`, `e411` | 14 fail | 133 pass | Rutas retiradas → `410`; resto intacto |
@@ -185,12 +187,12 @@ retiran **con su contenido íntegro en `80efbcfc`** porque su sujeto —las guar
 cerrada y la cancelación de reapertura— está retirado por §7.6: `e410-guards` y
 `e410-cancelacion` sólo se borran, y `e49-guards` se reescribe con 9 pruebas del contrato
 nuevo (escritura aceptada, huella material, `dirty`, `410`). La cobertura de esas rutas vive
-en `cierre-validacion-retirada.test.ts` (19 pruebas) y en `e49-api`.
+en `cierre-validacion-retirada.test.ts` (8 pruebas con 18 rutas) y en `e49-api`.
 
 ### Pruebas nuevas de I2
 
 `cierre-validacion-impacto.test.ts` (9), `cierre-validacion-estado.test.ts` (12),
-`cierre-validacion-retirada.test.ts` (19), `cierre-validacion-operaciones.test.ts` (24) y
+`cierre-validacion-retirada.test.ts` (8), `cierre-validacion-operaciones.test.ts` (24) y
 `cierre-validacion-rectificaciones.test.ts` (11): materialidad negativa/positiva, `NoDisponible`,
 preview sin efectos, atomicidad, idempotencia, `IMPACT_CHANGED`, AC-11/12/17/19/20/21/22/24,
 rectificación de Inicio/S0 y `410`/`503`.
@@ -199,10 +201,10 @@ rectificación de Inicio/S0 y `410`/`503`.
 
 | | I2 (esta rama) | Base I1 `80efbcfc` |
 | --- | --- | --- |
-| pass | **1295** | 1281 |
+| pass | **1296** | 1281 |
 | fail | **58** | 58 |
 | skip | 11 | 11 |
-| tests | **1364** | 1350 |
+| tests | **1365** | 1350 |
 | ficheros | 98 | 95 |
 
 Los 58 fallos son **los mismos** que en la base (spec31/32, backups, restore, loopback): el

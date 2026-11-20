@@ -996,6 +996,27 @@ test("R-06 SPEC38: un ciclo con revisión pendiente no bloquea cancelar ni compl
   expect(completado.data.reparto.estado).toBe("Completado");
 });
 
+test("R-06 SPEC38/G2: un ciclo con revisión pendiente mantiene el reparto editable", async () => {
+  const { db, c3, preA } = setup();
+  const api = http(db);
+  await api.auth();
+  const reparto = (await openReparto(api.request, c3)).data.reparto.id;
+  marcarPendiente(db, c3);
+
+  const borrador = await api.request(`/api/ciclos/${c3}/reparto`);
+  expect(borrador.status).toBe(200);
+  expect(borrador.data.reparto.estado).toBe("Borrador");
+  // Sustituye el bloqueo de edición de la UI/API por cierre o por `dirty`:
+  // SPEC38 G2. El aviso sigue visible, pero no deshabilita la operación.
+  expect(borrador.data.reparto.cicloCerrado).toBe(true);
+  expect(borrador.data.reparto.puedeEditar).toBe(true);
+  expect(borrador.data.reparto.puedeAnadirLineas).toBe(true);
+  const line = await presetLine(api.request, reparto, preA, "10.00");
+  expect(line.status).toBe(201);
+  const generated = await generate(api.request, reparto, borrador.data.reparto.revision);
+  expect(generated.status).toBe(200);
+});
+
 test("R-07 D8: línea histórica de Presupuesto inactivo visible y editable, sin pendiente", async () => {
   const { db, c1, preA } = setup();
   const preB = makeBudget(db, {

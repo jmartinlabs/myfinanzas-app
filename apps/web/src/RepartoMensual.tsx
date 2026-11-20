@@ -1272,9 +1272,9 @@ export function RepartoSeguimientoPanel({
       </p>
       {avisos.cicloCerrado && (
         <Alert>
-          El Ciclo tiene un cierre financiero: no admite cambios de reparto. La
-          lectura, la cancelación de pendientes y el completado permitido siguen
-          disponibles.
+          El Ciclo tiene una revisión de validación pendiente. Puedes seguir
+          corrigiendo el reparto: los cambios materiales quedan auditados y
+          mantienen el ciclo pendiente hasta que confirmes la revisión.
         </Alert>
       )}
       {avisos.d8.length > 0 && (
