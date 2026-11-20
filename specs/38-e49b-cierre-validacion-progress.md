@@ -211,10 +211,30 @@ Los 58 fallos son **los mismos** que en la base (spec31/32, backups, restore, lo
 conjunto de nombres no cambia y ninguno pertenece a validación, cierre ni reparto. `bun run
 typecheck` PASS, `bun run build` PASS, `bun test apps/web` 198 pass.
 
+### Gate canónico · E2E (DEMOSTRADO: FAIL, retirada UI pendiente)
+
+`python3.12 scripts/verify all --base feat/547-i1-esquema-v32 --head de286db0`: unitarias,
+typecheck y build PASS; **`test:e2e` 80 pass · 26 fail**. Clasificación medida:
+
+| Causa | Casos | Estado |
+| --- | --- | --- |
+| UI de cierre/reapertura/fotos todavía implementada (espera «Listo», «Gates del cierre», reabrir, foto v1/v2) | 23 (`cierre.spec` 12, `fotos.spec` 7, `ui-dev07` 3, `graphite-g5f` 1) | **Pendiente real de I2**: el API ya responde `410`, la UI no se ha retirado |
+| `restore-server` (libc/entorno macOS) | 2 (`catalog`, `movimientos`) | Ambiental, igual que en la base |
+| Botón «Confirmar Neto de apertura» habilitado donde la prueba espera deshabilitado | 1 (`anticipos.spec`) | A verificar contra la base |
+
+Conclusión: el incremento está completo en esquema, servicios y pruebas de API, pero **no**
+en la superficie web: la retirada funcional `410` deja pantallas y E2E que ejercitan la vía
+fotográfica retirada. Antes de declarar I2 revisable hay que retirar esas pantallas, exponer
+el estado de validación y adaptar sus E2E.
+
 ### Pendiente
 
-1. PR de I2 **contra `feat/547-i1-esquema-v32`** (no contra `test`), con I1 mergeado antes.
-2. Los 57 AC siguen **UNRUN** como aceptación: esta entrega acredita comportamiento medido y
+1. **UI de la retirada**: retirar cierre/reapertura/fotos de la web y exponer estado de
+   validación, preview y confirmación; adaptar `tests/e2e/{cierre,fotos,ui-dev07,graphite-g5f}.spec.ts`.
+   Es el trabajo que falta para que el gate canónico quede verde.
+2. Verificar `anticipos.spec` contra la base para separar regresión de ambiente.
+3. PR de I2 **contra `feat/547-i1-esquema-v32`** (no contra `test`), con I1 mergeado antes.
+4. Los 57 AC siguen **UNRUN** como aceptación: esta entrega acredita comportamiento medido y
    sus propias pruebas, no la aceptación funcional de la SPEC.
 
 ### Fuera de alcance, por decisión
