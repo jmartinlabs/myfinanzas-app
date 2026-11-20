@@ -3,6 +3,7 @@ import { Database } from "bun:sqlite";
 import { cycleMaster } from "./ciclos";
 import { prepareSchema } from "./database-schema";
 import { proyectarValidacion } from "./cierre-validacion-estado";
+import { cicloDeFecha } from "./cierre-validacion-impacto";
 import { previewValidacion, validarCiclo } from "./cierre-validacion-servicio";
 import {
   confirmarRectificacion,
@@ -33,6 +34,7 @@ const T_REINTENTO = "2026-04-06T00:00:00.000Z";
 
 const TABLAS = [
   "movimientos",
+  "revision_comida",
   "ciclos",
   "audit",
   "cycle_audit",
@@ -69,6 +71,26 @@ function gasto(db: Database, id: string, fecha: string, importe = 1000) {
        nota,anulado,revision,creado,actualizado)
      VALUES(?,?,'Gasto',?,'S001','S000',NULL,'PAR0001','Ficticio','',0,1,?,?)`,
     [id, fecha, importe, T, T],
+  );
+}
+
+/** Abono bancario (§6.3 `d`): entrada de cuenta, sin subtipo ni Partida. */
+function abono(db: Database, id: string, fecha: string, importe = 3000) {
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,
+       nota,anulado,revision,creado,actualizado)
+     VALUES(?,?,'Devolución de gasto',?,'S000','S001',NULL,NULL,'Abono ficticio','',0,1,?,?)`,
+    [id, fecha, importe, T, T],
+  );
+}
+
+/** Fila de Revisión Comida: sin ciclo propio, su ventana se deriva de `fecha`. */
+function comida(db: Database, id: string, fecha: string, importe: number, concepto: string) {
+  db.run(
+    `INSERT INTO revision_comida(id,tipo,fecha,concepto,importe,direccion,es_devolucion,
+       clasificacion,estado_vinculo,estado_registro,estado_trazabilidad,revision,creado,actualizado)
+     VALUES(?,'Detalle',?,?,?,'Salida',0,'Comida','Sin vínculo','Vigente','Sin asignación',1,?,?)`,
+    [id, fecha, concepto, importe, T, T],
   );
 }
 
@@ -184,6 +206,38 @@ function baseValidada(): Database {
   return db;
 }
 
+/**
+ * §6.3: P 25/11 (financiado diciembre), C 25/12 (financiado enero) y D 25/01.
+ * Compra p 10/12, compra q 27/12 y abono bancario d 28/12 dentro del tramo que
+ * C cede a P al mover su Inicio; dos filas de Revisión Comida, una a cada lado
+ * de la frontera vieja. P y C quedan validadas para observar la marca.
+ */
+function baseAnual(): Database {
+  const db = store();
+  clasificacion(db);
+  for (const [id, inicio] of [
+    ["1", "2026-11-25"],
+    ["2", "2026-12-25"],
+    ["3", "2027-01-25"],
+  ] as const)
+    db.run("INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES(?,?,0,?)", [id, inicio, T]);
+  gasto(db, "102", "2026-12-10", 10_000);
+  gasto(db, "103", "2026-12-27", 6_000);
+  abono(db, "104", "2026-12-28", 3_000);
+  gasto(db, "105", "2027-02-10", 2_000);
+  comida(db, "RC1", "2026-12-20", 1_500, "Comida previa");
+  comida(db, "RC2", "2026-12-28", 800, "Comida del tramo");
+  for (const cicloId of ["1", "2"]) validar(db, cicloId);
+  return db;
+}
+
+/** Día civil siguiente, para comprobar que las ventanas no dejan huecos. */
+function diaSiguiente(fecha: string): string {
+  const valor = new Date(`${fecha}T00:00:00Z`);
+  valor.setUTCDate(valor.getUTCDate() + 1);
+  return valor.toISOString().slice(0, 10);
+}
+
 function cuerpo(extra: Partial<EntradaRectificacion> = {}): EntradaRectificacion {
   return {
     inicio: "2026-02-01",
@@ -249,11 +303,12 @@ test("AC-36/AC-54 · el preview del Inicio no persiste y muestra ventana, vecino
       fin: "2026-02-28",
       saldoInicialComida: "0.00",
     });
-    // Vecinos: predecesor y sucesor como límites fijos, no desplazables.
+    // Vecinos: el predecesor conserva su Inicio y desplaza su Fin (termina la
+    // víspera del Inicio corregido); el sucesor queda como frontera fija.
     expect(preview.ventana.predecesor).toEqual({
       id: "1",
-      inicio: "2026-01-01",
-      fin: "2026-01-31",
+      antes: { inicio: "2026-01-01", fin: "2026-01-31" },
+      despues: { inicio: "2026-01-01", fin: "2026-02-14" },
     });
     expect(preview.ventana.sucesor).toEqual({
       id: "3",
@@ -309,6 +364,8 @@ test("AC-39 · el preview de S0 no reasigna hechos, no mueve ventanas y nombra S
     expect(preview.ventana.antes.fin).toBe("2026-01-31");
     expect(preview.ventana.despues.fin).toBe("2026-01-31");
     expect(preview.ventana.despues.saldoInicialComida).toBe("500.00");
+    // Sin predecesor no hay ventana que desplazar: el vecino se publica null.
+    expect(preview.ventana.predecesor).toBeNull();
     expect(preview.afectados.map((afectado) => afectado.ciclo)).toEqual(["1"]);
     expect(preview.afectados[0]?.motivos).toEqual(["S0_CICLO"]);
     expect(preview.afectados[0]?.estadoValidacion).toBe("Validada");
@@ -691,6 +748,146 @@ test("AC-56 · dos claves distintas con el mismo preview: la segunda detecta la 
     expect(fallo.code).toBe("REVISION_CONFLICT");
     expect(estadoCompleto(db)).toEqual(antesDelIntento);
     expect(ciclos(db).find((ciclo) => ciclo.id === "2")?.revision).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+/* ================================================================== *
+ * §6.3 · fixture anual: Fin posterior del predecesor y tramo C→P
+ * ================================================================== */
+
+/**
+ * Pendiente por #538 (no se simula aquí, no se inventa): el GRE por compra
+ * (P=130 y C=0 tras la corrección), el neteo de la devolución y la atribución
+ * económica de una devolución **enlazada a la compra p**. `universoFinanciero`
+ * publica `flujo.gre`/`flujo.neto` como `null` mientras #538 no fije el
+ * predicado, así que esta prueba sólo verifica la **pertenencia bancaria por
+ * fecha** y la frontera de ventanas que §4.1 manda publicar. El abono d entra
+ * como 'Devolución de gasto' sin enlace persistido: el enlace compra↔devolución
+ * es de #538. También queda fuera la variante "crear D cuando no existía".
+ */
+test("AC-36/§6.3 · el preview publica el Fin posterior del predecesor y el tramo C→P sin reescribir hechos", () => {
+  const db = baseAnual();
+  try {
+    const antes = estadoCompleto(db);
+    const hechosAntes = db
+      .query("SELECT id,fecha,tipo,importe,revision FROM movimientos ORDER BY id")
+      .all();
+    const comidaAntes = db.query("SELECT * FROM revision_comida ORDER BY id").all() as {
+      id: string;
+      fecha: string;
+      importe: number;
+      revision: number;
+    }[];
+    // Pertenencia bancaria vigente: el tramo 25–28 de diciembre es de C.
+    expect(cicloDeFecha(db, "2026-12-27")).toBe("2");
+    expect(cicloDeFecha(db, "2026-12-28")).toBe("2");
+
+    const entrada = cuerpo({
+      inicio: "2026-12-29",
+      motivo: "Mover el Inicio del ciclo tras el cierre de mes",
+    });
+    const preview = previewRectificacion(db, "2", entrada);
+
+    expect(preview.operacion).toBe("rectificar_inicio");
+    // Corregido: C pasa a 29/12–24/01 sin cruzar a D ni cambiar de mes financiado.
+    expect(preview.ventana.antes).toEqual({
+      inicio: "2026-12-25",
+      fin: "2027-01-24",
+      saldoInicialComida: "0.00",
+    });
+    expect(preview.ventana.despues).toEqual({
+      inicio: "2026-12-29",
+      fin: "2027-01-24",
+      saldoInicialComida: "0.00",
+    });
+    // Predecesor: mismo Inicio y Fin posterior = víspera del nuevo Inicio de C.
+    expect(preview.ventana.predecesor).toEqual({
+      id: "1",
+      antes: { inicio: "2026-11-25", fin: "2026-12-24" },
+      despues: { inicio: "2026-11-25", fin: "2026-12-28" },
+    });
+    // D sigue como frontera fija: su ventana no se desplaza.
+    expect(preview.ventana.sucesor).toEqual({ id: "3", inicio: "2027-01-25", fin: null });
+    // Partición posterior sin huecos ni solapes.
+    expect(diaSiguiente(preview.ventana.predecesor!.despues.fin!)).toBe(
+      preview.ventana.despues.inicio,
+    );
+    expect(diaSiguiente(preview.ventana.despues.fin!)).toBe(preview.ventana.sucesor!.inicio);
+
+    // q y d cambian de ciclo con identidad y fecha intactas; p sigue en P (sólo
+    // se desplaza el Fin de su ventana, no su pertenencia).
+    const reasignados = preview.movimientosReasignados as {
+      id: string;
+      fecha: string;
+      antes: { id: string } | null;
+      despues: { id: string } | null;
+    }[];
+    expect(
+      reasignados.map((movimiento) => [
+        movimiento.id,
+        movimiento.fecha,
+        movimiento.antes?.id,
+        movimiento.despues?.id,
+      ]),
+    ).toEqual([
+      ["102", "2026-12-10", "1", "1"],
+      ["103", "2026-12-27", "2", "1"],
+      ["104", "2026-12-28", "2", "1"],
+    ]);
+
+    // Revisión Comida: sin ciclo propio, la fila del tramo se atribuye por fecha.
+    // Cae ya en la ventana posterior del predecesor y fuera de la del corregido.
+    const tramo = comidaAntes.find((fila) => fila.id === "RC2")!;
+    expect(tramo.fecha).toBe("2026-12-28");
+    expect(tramo.importe).toBe(800);
+    expect(tramo.fecha <= preview.ventana.predecesor!.despues.fin!).toBe(true);
+    expect(tramo.fecha >= preview.ventana.predecesor!.despues.inicio).toBe(true);
+    expect(tramo.fecha >= preview.ventana.despues.inicio).toBe(false);
+
+    // Material sólo donde se midió cambio: P y C; D no aparece.
+    expect(preview.material).toBe(true);
+    expect(preview.requiereMotivo).toBe(true);
+    expect(preview.afectados.map((afectado) => afectado.ciclo)).toEqual(["1", "2"]);
+    expect(preview.afectados.map((afectado) => afectado.motivos)).toEqual([
+      ["FLUJO_CICLO", "ATRIBUCION", "VENTANA_CICLO"],
+      ["FLUJO_CICLO", "ATRIBUCION", "COMIDA", "VENTANA_CICLO"],
+    ]);
+
+    // Cancelar no escribe: preview reproducible y estado completo idéntico.
+    const repetido = previewRectificacion(db, "2", entrada);
+    expect(repetido.fingerprint).toBe(preview.fingerprint);
+    expect(repetido.contextRevision).toBe(preview.contextRevision);
+    expect(repetido.impactRevision).toBe(preview.impactRevision);
+    expect(estadoCompleto(db)).toEqual(antes);
+
+    // Confirmación: el maestro adopta exactamente las ventanas publicadas.
+    const recibo = confirmar(db, "2", preview, entrada, "clave-rectificar-63-01");
+    expect(cycleMaster(db).map((ciclo) => [ciclo.id, ciclo.inicio, ciclo.fin])).toEqual([
+      ["1", "2026-11-25", "2026-12-28"],
+      ["2", "2026-12-29", "2027-01-24"],
+      ["3", "2027-01-25", null],
+    ]);
+    // Hechos y filas de Revisión Comida intactos: cambia la ventana, no la fila.
+    expect(
+      db.query("SELECT id,fecha,tipo,importe,revision FROM movimientos ORDER BY id").all(),
+    ).toEqual(hechosAntes);
+    expect(db.query("SELECT * FROM revision_comida ORDER BY id").all()).toEqual(comidaAntes);
+    expect(cicloDeFecha(db, "2026-12-27")).toBe("1");
+    expect(cicloDeFecha(db, "2026-12-28")).toBe("1");
+    // Sólo se marca lo medido: P y C. D no tiene referencia que marcar.
+    expect(recibo.ciclos).toEqual([{ id: "2", revision: "1", estado: "Pendiente" }]);
+    expect(recibo.cierresDirty.map((dirty) => dirty.ciclo)).toEqual(["1", "2"]);
+    expect(recibo.auditIds).toHaveLength(2);
+    expect(fila(db, "1")!.dirty).toBe(1);
+    expect(fila(db, "2")!.dirty).toBe(1);
+    expect(fila(db, "3")).toBeNull();
+    expect(
+      eventos(db)
+        .filter((evento) => evento.accion === "dirty_marcado")
+        .map((evento) => evento.ciclo),
+    ).toEqual(["1", "2"]);
   } finally {
     db.close();
   }
