@@ -14,11 +14,12 @@ const artifacts = artifactDir("g5f");
 // (#514): el servidor ya no ocupa 3055/3056/3057 ni escribe en
 // `.local/e2e-cierre-listo`, `.local/e2e-e411-principal` ni `.local/e2e-e47-g5f`.
 const CIERRE = fixtureContext("g5f-cierre-listo");
-const FOTOS = fixtureContext("g5f-fotos-principal");
+// Fixture propio para la evidencia de la ruta retirada: la cuenta se enrola una
+// sola vez por instancia, así que cada prueba necesita su propio estado.
+const RETIRADA = fixtureContext("g5f-cierre-retirada");
 const RESUMEN = fixtureContext("g5f-resumen-anual");
 const CIERRE_PORT = CIERRE.port;
-const FOTOS_PORT = FOTOS.port;
-const FOTOS_NOW = Date.parse("2027-06-15T12:00:00Z");
+const RETIRADA_PORT = RETIRADA.port;
 
 type OwnedServer = {
   child: ChildProcess;
@@ -93,12 +94,12 @@ test.beforeAll(async ({ request }) => {
   });
   // El cierre provisionó su estado antes de servir: se navega solo entonces.
   requireFixtureState({ ...cierre, fixture: CIERRE });
-  const fotos = await start(request, "e411-server.ts", FOTOS_PORT, {
-    ...FOTOS.env,
-    E411_SCENARIO: "principal",
-    E411_PORT: String(FOTOS_PORT),
+  const retirada = await start(request, "cierre-server.ts", RETIRADA_PORT, {
+    ...RETIRADA.env,
+    E49_SCENARIO: "listo",
+    E49_PORT: String(RETIRADA_PORT),
   });
-  requireFixtureState({ ...fotos, fixture: FOTOS });
+  requireFixtureState({ ...retirada, fixture: RETIRADA });
   const resumen = await start(request, "resumen-anual-server.ts", RESUMEN.port, {
     ...RESUMEN.env,
     E2E_PORT: String(RESUMEN.port),
@@ -153,28 +154,34 @@ async function graphite(page: Page) {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite-lime");
 }
 
-test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
+test("G5f: Validación del cierre en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page, CIERRE_PORT, CIERRE.dir, "/cierre");
   await page.goto("/cierre");
   await expect(
-    page.getByRole("heading", { name: "Cierre financiero", exact: true }),
+    page.getByRole("heading", { name: "Validación del cierre", exact: true }),
   ).toBeVisible();
   await graphite(page);
+  await page.getByLabel("Ciclo").selectOption("1");
+  // #555: la lectura principal es el estado de validación y su preview; el
+  // preflight fotográfico ya no existe.
+  await page.getByRole("button", { name: "Validar", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Vista previa de la validación" }),
+  ).toBeVisible();
   await expect(page.locator(".cierre-page")).toBeVisible();
-  await expect(page.getByText("Gates del cierre", { exact: false })).toBeVisible();
   await expect(page.locator(".cierre-page .panel").first()).toHaveCSS(
     "border-top-color",
     "rgb(42, 47, 40)",
   );
-  await expect(page.locator(".cierre-page table.table th").first()).toHaveCSS(
+  await expect(page.locator(".cierre-page .ui-table th").first()).toHaveCSS(
     "font-size",
     "12px",
   );
   await expect(
-    page.getByRole("button", { name: "Actualizar revisión", exact: true }),
+    page.getByRole("button", { name: "Actualizar estado", exact: true }),
   ).toHaveCSS("min-height", "44px");
   for (const [width, height] of [
     [1440, 1000],
@@ -199,22 +206,27 @@ test("G5f: Cierre en Graphite, 1440/820/390", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("G5f: Fotos en Graphite, 1440/820/390", async ({ page }) => {
+test("G5f: /fotos retirada en Graphite y lectura viva equivalente, 1440/820/390", async ({
+  page,
+}) => {
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await login(page, FOTOS_PORT, FOTOS.dir, "/fotos", FOTOS_NOW);
+  await login(page, RETIRADA_PORT, RETIRADA.dir, "/cierre");
+  // #555 · §7.6: la consulta de fotografías se retira. La ruta no existe y su
+  // lectura viva equivalente es el estado de validación del ciclo.
   await page.goto("/fotos");
+  await expect(page.getByText("Página no encontrada.", { exact: true })).toBeVisible();
+  await expect(page.locator(".fotos-page")).toHaveCount(0);
+
+  await page.goto("/cierre");
   await expect(
-    page.getByRole("heading", { name: "Fotografías", exact: true }),
+    page.getByRole("heading", { name: "Validación del cierre", exact: true }),
   ).toBeVisible();
   await graphite(page);
-  await expect(page.locator(".fotos-page")).toBeVisible();
-  await expect(page.locator(".fotos-page .panel").first()).toHaveCSS(
-    "border-top-color",
-    "rgb(42, 47, 40)",
-  );
-  await expect(page.locator(".fotos-boundary")).toHaveCSS(
+  await page.getByLabel("Ciclo").selectOption("1");
+  await expect(page.locator(".cierre-page")).toBeVisible();
+  await expect(page.locator(".cierre-page .panel").first()).toHaveCSS(
     "border-top-color",
     "rgb(42, 47, 40)",
   );
@@ -226,17 +238,20 @@ test("G5f: Fotos en Graphite, 1440/820/390", async ({ page }) => {
     await page.setViewportSize({ width, height });
     await noOverflow(page);
     await page.screenshot({
-      path: join(artifacts, `fotos-${width}.png`),
+      path: join(artifacts, `fotos-retirada-${width}.png`),
       fullPage: true,
     });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByLabel("Cambiar tema").selectOption("casa");
-  await expect(page.locator(".fotos-page")).toBeVisible();
+  await expect(page.locator(".cierre-page")).toBeVisible();
   await noOverflow(page);
-  await page.screenshot({ path: join(artifacts, "casa-fotos-1440.png"), fullPage: true });
+  await page.screenshot({
+    path: join(artifacts, "casa-fotos-retirada-1440.png"),
+    fullPage: true,
+  });
   await page.getByLabel("Cambiar tema").selectOption("light-s");
-  await expect(page.locator(".fotos-page")).toBeVisible();
+  await expect(page.locator(".cierre-page")).toBeVisible();
   await noOverflow(page);
   expect(errors).toEqual([]);
 });

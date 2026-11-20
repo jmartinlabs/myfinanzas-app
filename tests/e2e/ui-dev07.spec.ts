@@ -128,7 +128,9 @@ const SERVERS: readonly ServerSpec[] = [
     port: CIERRE_BLOQUEADO_PORT,
     fixture: CIERRE_BLOQUEADO,
     env: {
-      E49_SCENARIO: "bloqueado",
+      // #555: el antiguo «bloqueado» por E3.5/backup ya no bloquea. El estado
+      // crítico que ocupa su lugar es `Pendiente` de validación.
+      E49_SCENARIO: "pendiente",
       E49_PORT: String(CIERRE_BLOQUEADO_PORT),
     },
   },
@@ -307,10 +309,12 @@ async function waitForScreenReady(page: Page, screen: string) {
     await expect(page.locator("form.saldo-form")).toBeVisible();
     await expect(page.locator("#nombre")).toBeVisible();
   } else if (screen === "cierre") {
-    await expect(page.locator(".cierre-e49-status")).toBeVisible();
-    await expect(page.getByLabel("Ciclo")).toHaveValue("1");
+    // #555: la pantalla de cierre es la validación operativa; su lectura
+    // principal es el estado del conjunto, no un preflight fotográfico.
+    await expect(page.locator(".validacion-status")).toBeVisible();
+    await expect(page.getByLabel("Ciclo", { exact: true })).toHaveValue("1");
     await expect(
-      page.getByText("Listo", { exact: true }).first(),
+      page.locator(".ui-badge[data-estado]").first(),
     ).toBeVisible();
   }
 }
@@ -763,25 +767,27 @@ test.describe("UI DEV-07 I4 · matriz base y AA", () => {
     }
   });
 
-  test("Cierre E4.9 preflight listo", async ({ page }) => {
+  test("Validación del cierre, estado Sin validar", async ({ page }) => {
     test.setTimeout(600000);
     await routeApi(page, CIERRE_LISTO_PORT);
     await login(page, CIERRE_LISTO.dir, "/cierre");
+    // #555 · §5: la pantalla ya no es «Cierre E4.9 preflight»; la lectura
+    // principal es el estado de validación y su cobertura.
     await expect(
       page.getByRole("heading", {
-        name: "Cierre financiero",
+        name: "Validación del cierre",
         exact: true,
       }),
     ).toBeVisible();
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(
-      page.getByText("Listo", { exact: true }).first(),
-    ).toBeVisible();
+      page.locator('.ui-badge[data-estado="SinValidar"]'),
+    ).toContainText("Sin validar");
     await auditAndCapture(
       page,
       "cierre",
       "/cierre",
-      "Cierre financiero",
+      "Validación del cierre",
       { navigate: false },
     );
   });
@@ -838,24 +844,26 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
     });
   });
 
-  test("Cierre bloqueado, sin foto parcial", async ({ page }) => {
+  test("Validación pendiente, sin foto ni bloqueo de cierre", async ({ page }) => {
     test.setTimeout(300000);
     await routeApi(page, CIERRE_BLOQUEADO_PORT);
     await login(page, CIERRE_BLOQUEADO.dir, "/cierre");
     await page.getByLabel("Ciclo").selectOption("1");
+    // #555: el estado crítico deja de ser «Bloqueado» por E3.5/backup —que ya
+    // no bloquea— y pasa a ser `Pendiente`, con su acción humana explícita.
     await expect(
-      page.getByText("Bloqueado", { exact: true }).first(),
-    ).toBeVisible();
+      page.locator('.ui-badge[data-estado="Pendiente"]'),
+    ).toContainText("Pendiente");
+    await expect(
+      page.getByRole("button", { name: "Confirmar revisión", exact: true }),
+    ).toBeEnabled();
     await expect(
       page.getByText("El cierre está bloqueado", { exact: false }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Confirmar cierre", exact: true }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
     await expect(
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
-    await captureCritical(page, "cierre", "bloqueado", 1440, 1000);
+    await captureCritical(page, "cierre", "pendiente", 1440, 1000);
   });
 });
 
@@ -954,17 +962,19 @@ test.describe("UI DEV-07 · activación por teclado", () => {
     }
   });
 
-  test("botón de actualización del cierre", async ({ page }) => {
+  test("botón de actualización del estado de validación", async ({ page }) => {
     test.setTimeout(180000);
     await routeApi(page, CIERRE_TECLADO_PORT);
     await login(page, CIERRE_TECLADO.dir, "/cierre");
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(
-      page.getByText("Listo", { exact: true }).first(),
+      page.locator('.ui-badge[data-estado="SinValidar"]'),
     ).toBeVisible();
 
+    // #555: la actualización lee el estado de validación; el preflight
+    // fotográfico está retirado y responde 410.
     const refresh = page.getByRole("button", {
-      name: "Actualizar revisión",
+      name: "Actualizar estado",
       exact: true,
     });
     for (const key of ["Enter", " "]) {
@@ -972,7 +982,7 @@ test.describe("UI DEV-07 · activación por teclado", () => {
       const response = page.waitForResponse(
         (item) =>
           item.request().method() === "GET" &&
-          /\/cierres\/[^/]+\/preflight/.test(item.url()),
+          /\/cierres\/[^/]+\/estado/.test(item.url()),
       );
       await page.keyboard.press(key);
       await response;
