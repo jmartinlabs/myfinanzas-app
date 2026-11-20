@@ -100,8 +100,10 @@ export const navigationGroups: readonly NavigationGroup[] = [
     items: [
       { href: "/ciclos", label: "Ciclos", icon: "▦" },
       { href: "/precierre", label: "Precierre", icon: "◐" },
+      // #555 · §7.6: la vía fotográfica se retiró. `/cierre` sigue siendo la
+      // ruta del ciclo y ahora expone estado de validación, preview y
+      // confirmación; `/fotos` deja de existir y no se declara aquí.
       { href: "/cierre", label: "Cierre", icon: "▣" },
-      { href: "/fotos", label: "Instantáneas financieras", icon: "▩" },
     ],
   },
 ];
