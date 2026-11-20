@@ -25,6 +25,8 @@ import {
 } from "./spec36-schema";
 import { spec37SchemaV30 } from "./spec37-schema";
 import { spec37SchemaV31 } from "./spec37-schema-v31";
+import { cierreValidacionSchemaV32 } from "./cierre-validacion-schema";
+import { importarCierresLegados } from "./cierre-validacion-migracion";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -151,6 +153,12 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 29) repartoMensualSchemaV29(db);
         if (versions[0].version < 30) spec37SchemaV30(db);
         if (versions[0].version < 31) spec37SchemaV31(db);
+        if (versions[0].version < 32) {
+          cierreValidacionSchemaV32(db);
+          // E1b forma parte de I1: la importación conservadora corre en la misma
+          // transacción que crea v32. Sin cierres legados es un no-op.
+          importarCierresLegados(db);
+        }
         return; // Existing data is never re-seeded.
       }
       if (
@@ -280,6 +288,10 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (schemaVersion >= 29) repartoMensualSchemaV29(db);
       if (schemaVersion >= 30) spec37SchemaV30(db);
       if (schemaVersion >= 31) spec37SchemaV31(db);
+      if (schemaVersion >= 32) {
+        cierreValidacionSchemaV32(db);
+        importarCierresLegados(db);
+      }
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {
