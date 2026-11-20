@@ -296,25 +296,14 @@ function requireCycle(db: Database, value: unknown) {
 }
 
 /**
- * §7.6: el reparto deja de estar bloqueado por un cierre fotográfico. Un cambio
- * real del reparto se mide como materialidad REPARTO y marca la validación del
- * ciclo; no se impide por la existencia histórica de una foto. Lo que sí sigue
- * cerrando la edición es la **revisión pendiente** del ciclo, leída del estado
- * de validación: si el contrato de validación falta, la lectura falla 503 y no
- * se asume «sin validar» (G4).
+ * §7.6/G2: el reparto deja de estar bloqueado por un cierre fotográfico y
+ * tampoco lo bloquea una revisión pendiente. El cambio real se mide como
+ * materialidad REPARTO y marca la validación del ciclo; `cicloCerrado` es sólo
+ * el aviso informativo que lee el estado de validación (si el contrato falta,
+ * `estadoPersistido` falla 503 y no se asume «sin validar», G4).
  */
 function cicloPendiente(db: Database, ciclo: string) {
   return estadoPersistido(db, ciclo).estado === "Pendiente";
-}
-
-function assertOpenCycle(db: Database, ciclo: string) {
-  if (cicloPendiente(db, ciclo))
-    throw new Problem(
-      409,
-      "CICLO_PENDIENTE_REVISION",
-      "El Ciclo tiene una revisión de validación pendiente; confírmala antes de cambiar el reparto.",
-      { ciclo },
-    );
 }
 
 function repartoRow(db: Database, id: number): RepartoRow | null {
@@ -691,7 +680,7 @@ export function crearReparto(
           );
         return { creado: false, reparto: repartoDto(db, existing) };
       }
-      assertOpenCycle(db, ciclo.id);
+
       let origenComun: string | null = null;
       if (body.origenComun !== undefined && body.origenComun !== null)
         origenComun = assertEligible(db, body.origenComun, "origenComun");
@@ -922,7 +911,7 @@ export function actualizarReparto(
         { fuentePlan: row.fuente_plan },
       );
     requireRevision(row.revision, body.revision, "reparto");
-    assertOpenCycle(db, row.ciclo);
+
     if (row.estado !== "Borrador")
       throw new Problem(
         409,
@@ -1184,7 +1173,7 @@ export function crearLineaReparto(
     () => {
       const reparto = repartoRow(db, id);
       if (!reparto) throw new Problem(404, "NOT_FOUND", "Reparto no encontrado.");
-      assertOpenCycle(db, reparto.ciclo);
+
       if (reparto.estado === "Completado")
         throw new Problem(
           409,
@@ -1282,7 +1271,7 @@ export function actualizarLineaReparto(
       const line = lineRow(db, id, lineaId);
       if (!line)
         throw new Problem(404, "NOT_FOUND", "Línea de reparto no encontrada.");
-      assertOpenCycle(db, reparto.ciclo);
+
       const frozen = db
         .query("SELECT id FROM transferencia_pendiente WHERE reparto_linea=?")
         .get(line.id) as { id: number } | null;
@@ -1465,7 +1454,6 @@ export function generarReparto(
       }
       const row = repartoRow(db, id);
       if (!row) throw new Problem(404, "NOT_FOUND", "Reparto no encontrado.");
-      assertOpenCycle(db, row.ciclo);
       if (row.estado === "Completado")
         throw new Problem(
           409,

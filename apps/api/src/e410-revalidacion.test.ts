@@ -691,7 +691,25 @@ function apiHarness(db: Database) {
   return { request, enroll };
 }
 
-test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", async () => {
+/** SPEC38 §7.6: ruta retirada = 410 con código, no-store y sustituto declarado. */
+function expectRetirada(
+  response: { status: number; data: Record<string, any>; headers: Headers },
+  code: string,
+  sustituto: string | null,
+) {
+  expect(response.status).toBe(410);
+  expect(response.data.code).toBe(code);
+  expect(response.data.message).toBeTypeOf("string");
+  expect(response.data.sustituto).toBe(sustituto);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("link")).toBe(
+    sustituto === null ? null : `<${sustituto}>; rel="alternate"`,
+  );
+}
+
+test("E4.10 I3 API: GET /revalidacion retirado (410) y POST tampoco se admite", async () => {
+  // Contrato sustituido: GET /api/cierres/:id/revalidacion devolvía 200 con el
+  // DTO de revalidación y POST respondía 405 con `allow: GET`.
   const db = fixture();
   const { request, enroll } = apiHarness(db);
   try {
@@ -699,27 +717,31 @@ test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", a
     await enroll();
 
     const before = snapshot(db);
+    const sustituto = "/api/cierres/2/estado";
     const state = await request("/api/cierres/2/revalidacion");
-    expect(state.status).toBe(200);
-    expect(state.data).toMatchObject({
-      ciclo: "2",
-      estado: "Parcial",
-      bloquea: false,
-      version: 1,
-      reapertura: { versionOrigen: 1 },
-    });
-    expect(state.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+    expectRetirada(state, "REAPERTURA_RETIRADA", sustituto);
+    expect(state.data).not.toHaveProperty("comprobaciones");
+    expect(snapshot(db)).toEqual(before);
+
+    // El sustituto declarado es la lectura viva, y también es de solo lectura.
+    const estado = await request(sustituto);
+    expect(estado.status).toBe(200);
+    expect(estado.data).toHaveProperty("validacion");
+    expect(estado.headers.get("cache-control")).toBe("no-store");
     expect(snapshot(db)).toEqual(before);
 
     const post = await request("/api/cierres/2/revalidacion", "POST", {});
-    expect(post.status).toBe(405);
-    expect(post.headers.get("allow")).toBe("GET");
+    expectRetirada(post, "REAPERTURA_RETIRADA", sustituto);
+    expect(post.headers.get("allow")).toBeNull();
+    expect(snapshot(db)).toEqual(before);
   } finally {
     db.close();
   }
 });
 
 test("E4.10 AC03: una revalidación bloqueante queda en el DTO y no persiste eventos", async () => {
+  // Contrato sustituido: con una versión posterior, GET /revalidacion devolvía
+  // 200 con estado Bloqueante y las comprobaciones `version`/`fotosPosteriores`.
   const db = fixture();
   const { request, enroll } = apiHarness(db);
   try {
@@ -728,28 +750,10 @@ test("E4.10 AC03: una revalidación bloqueante queda en el DTO y no persiste eve
     const before = snapshot(db);
 
     const blocked = await request("/api/cierres/2/revalidacion");
-    expect(blocked.status).toBe(200);
-    expect(blocked.data).toMatchObject({
-      estado: "Bloqueante",
-      bloquea: true,
-      version: 2,
-    });
-    expect(
-      blocked.data.comprobaciones.find(
-        (item: { clave: string }) => item.clave === "version",
-      ),
-    ).toMatchObject({
-      estado: "Bloqueante",
-      comparado: { versionOrigen: 1, ultimaVersion: 2 },
-    });
-    expect(
-      blocked.data.comprobaciones.find(
-        (item: { clave: string }) => item.clave === "fotosPosteriores",
-      ),
-    ).toMatchObject({
-      estado: "Bloqueante",
-      comparado: { versionOrigen: 1, ultimaVersion: 2 },
-    });
+    expectRetirada(blocked, "REAPERTURA_RETIRADA", "/api/cierres/2/estado");
+    // Los bloqueos comparados eran del DTO retirado: no viajan en el 410.
+    expect(blocked.data).not.toHaveProperty("comprobaciones");
+    expect(blocked.data).not.toHaveProperty("bloqueos");
 
     // El GET es de solo lectura: no añade eventos, auditoría, ventana ni
     // intentos. La evidencia de la revalidación bloqueada es el DTO; no se
@@ -765,7 +769,9 @@ test("E4.10 AC03: una revalidación bloqueante queda en el DTO y no persiste eve
   }
 });
 
-test("E4.10 I3 API: cierre y versión posteriores devuelven 200 Bloqueante", async () => {
+test("E4.10 I3 API: cierre y versión posteriores quedan retirados (410)", async () => {
+  // Contrato sustituido: GET /revalidacion devolvía 200 Bloqueante al detectar
+  // un cierre posterior (`cierrePosterior`) o una versión posterior del ciclo.
   const db = fixture();
   const { request, enroll } = apiHarness(db);
   try {
@@ -773,22 +779,17 @@ test("E4.10 I3 API: cierre y versión posteriores devuelven 200 Bloqueante", asy
 
     seedClosure(db, "3", 1, "2026-03-01", "2026-03-31");
     const laterClosure = await request("/api/cierres/2/revalidacion");
-    expect(laterClosure.status).toBe(200);
-    expect(laterClosure.data).toMatchObject({
-      estado: "Bloqueante",
-      bloquea: true,
-      bloqueos: expect.arrayContaining(["cierrePosterior"]),
-    });
+    expectRetirada(laterClosure, "REAPERTURA_RETIRADA", "/api/cierres/2/estado");
+    expect(laterClosure.data).not.toHaveProperty("bloqueos");
 
     seedClosure(db, "2", 2, "2026-02-01", "2026-02-28");
+    const afterSeed = snapshot(db);
     const laterVersion = await request("/api/cierres/2/revalidacion");
-    expect(laterVersion.status).toBe(200);
-    expect(laterVersion.data).toMatchObject({
-      estado: "Bloqueante",
-      bloquea: true,
-      bloqueos: expect.arrayContaining(["version", "fotosPosteriores"]),
-      version: 2,
-    });
+    expectRetirada(laterVersion, "REAPERTURA_RETIRADA", "/api/cierres/2/estado");
+    expect(laterVersion.data).not.toHaveProperty("comprobaciones");
+
+    // Ninguna de las dos lecturas retiradas escribe eventos ni versiones.
+    expect(snapshot(db)).toEqual(afterSeed);
   } finally {
     db.close();
   }

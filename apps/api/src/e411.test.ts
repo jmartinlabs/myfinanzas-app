@@ -85,6 +85,22 @@ function fixtureDb() {
   return db;
 }
 
+/** SPEC38 §7.6: ruta retirada = 410 con código, no-store y sustituto declarado. */
+function expectRetirada(
+  response: { status: number; data: Record<string, any>; headers: Headers },
+  code: string,
+  sustituto: string | null,
+) {
+  expect(response.status).toBe(410);
+  expect(response.data.code).toBe(code);
+  expect(response.data.message).toBeTypeOf("string");
+  expect(response.data.sustituto).toBe(sustituto);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("link")).toBe(
+    sustituto === null ? null : `<${sustituto}>; rel="alternate"`,
+  );
+}
+
 function t2t3Changes(db: Database) {
   // T2: a new live fact/classification. T3: a renamed Partida. Neither is
   // visible to the persisted photo and both must leave it byte-identical.
@@ -388,7 +404,10 @@ test("E4.11 I1: SinFoto, ciclo inexistente y versión inexistente", () => {
   expect(problemOf(() => getFotoCiclo(db, "2", 1)).status).toBe(404);
 });
 
-test("E4.11 I1: rutas GET, 405 sin escrituras y snapshot estable", async () => {
+test("E4.11 I1: rutas GET retiradas (410), sin escrituras y snapshot estable", async () => {
+  // Contrato sustituido: GET /api/fotos/ciclos/:id y /versiones respondían 200
+  // con la foto persistida (404/422 por versión inválida) y 405 el resto de
+  // métodos con `allow: GET`.
   const f = fixture();
   seedCycle(f.db, "1", "2026-01-01");
   seedCycle(f.db, "2", "2026-02-01");
@@ -400,52 +419,32 @@ test("E4.11 I1: rutas GET, 405 sin escrituras y snapshot estable", async () => {
   await f.enroll();
   const before = snapshot(f.db);
 
-  const photo = await f.request("/api/fotos/ciclos/1");
-  expect(photo.status).toBe(200);
-  expect(photo.headers.get("cache-control")).toBe("no-store");
-  expect(photo.data).toMatchObject({
-    origen: "Foto",
-    estadoFoto: "Disponible",
-    seleccionAplicada: { version: 1, porDefecto: true, regla: "P7-D" },
-    vigente: true,
-    foto: { version: 1 },
-  });
-
-  const versions = await f.request("/api/fotos/ciclos/1/versiones");
-  expect(versions.status).toBe(200);
-  expect(versions.data).toEqual([
-    expect.objectContaining({ version: 1, esUltima: true, vigente: true }),
-  ]);
-
-  const sinCiclo = await f.request("/api/fotos/ciclos/2");
-  expect(sinCiclo.status).toBe(200);
-  expect(sinCiclo.data).toMatchObject({
-    estadoFoto: "SinFoto",
-    motivo: "SIN_CIERRE",
-  });
-
-  expect((await f.request("/api/fotos/ciclos/999")).status).toBe(404);
-  expect((await f.request("/api/fotos/ciclos/1?version=9")).status).toBe(404);
-  expect((await f.request("/api/fotos/ciclos/1?version=0")).status).toBe(422);
+  // Toda lectura de la vía fotográfica por ciclo está retirada: misma foto,
+  // misma respuesta 410 en lugar de 200/404/422.
+  for (const path of [
+    "/api/fotos/ciclos/1",
+    "/api/fotos/ciclos/1/versiones",
+    "/api/fotos/ciclos/2",
+    "/api/fotos/ciclos/999",
+    "/api/fotos/ciclos/1?version=9",
+    "/api/fotos/ciclos/1?version=0",
+  ])
+    expectRetirada(await f.request(path), "FOTOS_RETIRADAS", null);
 
   // P8a-A/DT9: no "corrected photo" or old-cycle rectification route exists.
   expect((await f.request("/api/fotos/ciclos/1/corregir")).status).toBe(404);
   expect((await f.request("/api/fotos/ciclos/1/rectificar")).status).toBe(404);
 
-  for (const method of ["POST", "PATCH", "DELETE"]) {
-    const wrongPhoto = await f.request("/api/fotos/ciclos/1", method, {});
-    expect(wrongPhoto.status).toBe(405);
-    expect(wrongPhoto.headers.get("allow")).toBe("GET");
-    expect(wrongPhoto.data.code).toBe("METHOD_NOT_ALLOWED");
-
-    const wrongVersions = await f.request(
-      "/api/fotos/ciclos/1/versiones",
-      method,
-      {},
-    );
-    expect(wrongVersions.status).toBe(405);
-    expect(wrongVersions.headers.get("allow")).toBe("GET");
-    expect(wrongVersions.data.code).toBe("METHOD_NOT_ALLOWED");
+  // El 410 no depende del método: no hay `allow` ni alias de solo lectura.
+  for (const path of ["/api/fotos/ciclos/1", "/api/fotos/ciclos/1/versiones"]) {
+    for (const method of ["GET", "POST", "PATCH", "DELETE"]) {
+      const response = await f.request(
+        path,
+        method,
+        method === "GET" ? undefined : {},
+      );
+      expectRetirada(response, "FOTOS_RETIRADAS", null);
+    }
   }
 
   expect(snapshot(f.db)).toEqual(before);

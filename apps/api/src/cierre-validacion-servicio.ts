@@ -158,7 +158,12 @@ function procedimientoValidar(
     familia: "validacion_revision",
     ciclos: [ciclo],
     candidatos: [ciclo],
-    payload: { ciclo, huella, versionConjunto: VERSION_CONJUNTO },
+    // Payload = lo que confirma el humano (el ciclo). La huella vigente, la
+    // revisión y la cobertura son **estado medido**: si cambian entre preview y
+    // confirmación, el contrato exige `IMPACT_CHANGED` (ANEXO §1), no un
+    // `VALIDATION` de estructura, y una clave completada se resuelve antes de
+    // revalidar contexto (§3.4/AC-10).
+    payload: { ciclo },
     contexto: () => ({
       ciclo,
       revision: filaActual(db, ciclo).revision,
@@ -297,7 +302,12 @@ function procedimientoConfirmarRevision(
     familia: "validacion_revision",
     ciclos: [ciclo],
     candidatos: [ciclo],
-    payload: { ciclo, huella, versionConjunto: VERSION_CONJUNTO },
+    // Payload = lo que confirma el humano (el ciclo). La huella vigente, la
+    // revisión y la cobertura son **estado medido**: si cambian entre preview y
+    // confirmación, el contrato exige `IMPACT_CHANGED` (ANEXO §1), no un
+    // `VALIDATION` de estructura, y una clave completada se resuelve antes de
+    // revalidar contexto (§3.4/AC-10).
+    payload: { ciclo },
     contexto: () => ({
       ciclo,
       revision: filaActual(db, ciclo).revision,

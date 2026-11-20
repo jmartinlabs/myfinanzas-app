@@ -477,6 +477,11 @@ export function confirmarOperacion(
           { revisar: "El borrador se conserva; hace falta un preview nuevo." },
         );
       // 6 · Aplicación real, medición real, marcas y recibo.
+      // `dirtyPrevio` describe el estado **anterior** de cada ciclo: un ciclo
+      // que esta misma operación deja pendiente no estaba pendiente antes.
+      const pendientePrevio = new Map<string, boolean>();
+      for (const ciclo of antes.keys())
+        pendientePrevio.set(ciclo, proyectarValidacion(db, ciclo).estado === "Pendiente");
       procedimiento.guardas?.();
       procedimiento.aplicar();
       const despuesReal = medirCandidatos(db, [...antes.keys()]);
@@ -520,7 +525,7 @@ export function confirmarOperacion(
           rango: rangoDe(db, ciclo),
           estadoValidacion: validacion.estado,
           validado: validacion.validado,
-          dirtyPrevio: true,
+          dirtyPrevio: pendientePrevio.get(ciclo) === true,
         }));
       const recibo: ReciboConfirmacion = {
         operacionId: intento,

@@ -1,6 +1,6 @@
 # 38 — Cierre de validación operativa con recálculo vivo: Progress
 
-Status: **I1 corregido tras revisión, pendiente de re-revisión.** SPEC38 v7
+Status: **I1 en revisión (PR #553) e I2 implementado con pruebas, pendiente de PR y QA.** SPEC38 v7
 ([aprobada](38-e49b-cierre-validacion-specification.md) el 2026-11-20, 57 AC) y su
 [anexo de interfaces](38-e49b-cierre-validacion-interfaces.md) aprobados el mismo día, con la
 sustitución de SPEC26/27/28/29 registrada. PR:
@@ -12,7 +12,7 @@ Base medida: `test` `aa50a6eb`, esquema **v31** → **v32** tras I1. Rama
 | Incremento | Estado | Evidencia |
 | --- | --- | --- |
 | **I1 · Esquema v32 + DTO + importación conservadora + metadatos §7.3** | **corregido / en revisión** | `cierre-validacion-{dto,schema,migracion,metadatos,revision}.ts`, contrato `C32-SPEC38-VALIDACION-CIERRE`, `cierre-validacion-{dto,schema,adversarial}.test.ts` |
-| **I2 · Lectores, escritores, UI y guardas** | **no iniciado** | requiere preview/confirmación expuesta, informes vivos y retirada funcional legacy |
+| **I2 · Lectores, escritores, UI y guardas** | **implementado con pruebas / sin PR** | estado, impacto, operaciones, rectificaciones y retirada `410`; 5 suites nuevas y paso A cerrado |
 | **I3 · Retirada física (#548)** | **no iniciado** | bloqueado por G1 (esta Issue implantada y aceptada) y por la enmienda de SPEC30 |
 | **I4 · Documentación** | **no iniciado** | — |
 
@@ -109,12 +109,12 @@ no las rutas, informes vivos, preview/confirmación expuesta ni la retirada func
 `confirmarRevisionValidacion` es la guarda y el escritor mínimo que I2 expone; no hay endpoint.
 Ningún AC se declara cumplido por este incremento.
 
-## I2 · estado a 2026-11-20 (incompleto, sin PR)
+## I2 · lectores, escritores, UI y guardas
 
-Rama `feat/547-i2-lectores-escritores`, commit **`a8062b73`** (WIP), apilada sobre
-`feat/547-i1-esquema-v32` @ `80efbcfc`. Typecheck **PASS**. **No hay PR ni SHA de entrega.**
+Rama `feat/547-i2-lectores-escritores`, apilada sobre `feat/547-i1-esquema-v32` @ `80efbcfc`.
+WIP anterior `a8062b73`; paso A (suites) y correcciones de revisión cerrados en esta rama.
 
-### Implementado (sin pruebas de I2)
+### Implementado
 
 - `cierre-validacion-estado.ts`: proyección `SinValidar|Validada|Pendiente`,
   `divergenciaValidacion`, `pendienteSinDelta`, `revalidacionSugerida`, y sustituto que
@@ -130,26 +130,90 @@ Rama `feat/547-i2-lectores-escritores`, commit **`a8062b73`** (WIP), apilada sob
   `cierre-validacion-retirada.ts` (410 por ruta).
 - **Retirada funcional**: `e49-guards.ts` eliminado; `closedWindows`, `hasClosures`,
   `assert*Closure*`, `informativeFields`, `closedFieldDecision` y `HISTORY_LOCKED` de cierre
-  fuera de sus 14 consumidores; precierre sin backup bloqueante ni contraste de fotos.
+  fuera de sus consumidores; precierre sin backup bloqueante ni contraste de fotos.
 
-### Medición real (coordinador, `bun test apps/api`)
+### Corrección de materialidad (hallazgo de revisión, bloqueante)
 
-| | I2 `a8062b73` | Base I1 `80efbcfc` |
+`huellaUniverso` hasheaba el universo completo (`atribucion[].revision`, `cobertura`,
+`noMedido` y `versionConjunto`) mientras `compararUniverso` los excluía: una errata podía dar
+`material=true` con `motivos=[]`. Ahora:
+
+- `universoMaterial(u)` = `M_v` de §3.1 (ventana, S0, flujo bruto/devolución/ingreso, Comida
+  neta, efectivo, posiciones, atribución por IDs/signo/neto/ciclo, reparto). Sin revisión,
+  cobertura, `noMedido` ni versión.
+- `huellaUniverso(u) = sha256(JSONcanónico(M_v))` es `H_v` y la huella que se guarda como
+  `huella_validacion`; una errata que sólo sube `movimientos.revision` ya no la mueve.
+- `material = motivos.length > 0`, coherencia garantizada por construcción (misma proyección
+  para hash y comparador).
+- `noDisponible` se calcula desde la cobertura por grupo (efectivo, posiciones, plan,
+  movimientos): una fuente caída no se declara igualdad y no aporta motivo (AC-17).
+- `impactRevision` sigue hasheando el universo completo a propósito: es el token de estado y
+  debe invalidarse con cualquier cambio de revisión o cobertura.
+
+### Otras correcciones de la revisión
+
+- `revalidacionSugerida` (AC-07): un conjunto distinto sugiere revalidar aunque la divergencia
+  sea `NoComparable`; sin referencia humana (huella nula) no se sugiere nada.
+- `fingerprint` de validar/revalidar/confirmar revisión identifica el payload confirmado (el
+  ciclo), no el estado: un hecho nuevo entre preview y confirmación responde `IMPACT_CHANGED`
+  y no un `VALIDATION` de estructura (ANEXO §1); una clave completada se resuelve antes de
+  revalidar contexto (§3.4/AC-10).
+- Recibo: `cierresDirty[].dirtyPrevio` refleja el estado anterior real, no un `true` fijo.
+- Reparto: retirado `assertOpenCycle` (`CICLO_PENDIENTE_REVISION`). `dirty` no bloquea
+  escrituras (G2) ni completar; el aviso `cicloCerrado` sigue informando.
+
+### Paso A · adaptación de las suites
+
+Todas cargan y pasan. **Ningún fichero con contrato vivo perdió tests**: los recuentos de
+`e49-api`, `e410-*`, `e411*` y `spec37-i4` son idénticos a `80efbcfc`, y sus aserciones de
+retirada (`410` + código + sustituto + `no-store` + cero escrituras) son más estrictas que el
+`409` retirado.
+
+| Suite | Antes | Ahora | Contrato |
+| --- | --- | --- | --- |
+| `e410-cross-regression` | no carga | 3 pass | T1 sustituido por escritura real y persistida |
+| `e49-api` | 3 pass / 24 fail | 27 pass | Rutas de cierre/foto/reapertura → `410` |
+| `e49-guards` | no carga (30) | 9 pass | Cierre no bloquea + materialidad medida |
+| `e410-guards` | no carga (7) | retirado | Sujeto eliminado; cubierto por `e49-guards` y retirada |
+| `e410-cancelacion` | no carga (21) | retirado | Rutas retiradas; cubierto por `cierre-validacion-retirada` |
+| `e410-i8-regresion`, `e410-recierre`, `e410-reopen`, `e410-revalidacion`, `e411-periodo`, `e411` | 14 fail | 133 pass | Rutas retiradas → `410`; resto intacto |
+| `spec37-i4` AC-33/AC-42 | 2 fail | 22 pass | Fecha futura rechaza; ventana cerrada ya no |
+| `repartos` R-06 | 1 fail | 26 pass | `dirty` no bloquea; aviso conservado |
+
+`e49-guards.test.ts`, `e410-guards.test.ts` y `e410-cancelacion.test.ts` se sustituyen/
+retiran **con su contenido íntegro en `80efbcfc`** porque su sujeto —las guardas de ventana
+cerrada y la cancelación de reapertura— está retirado por §7.6: `e410-guards` y
+`e410-cancelacion` sólo se borran, y `e49-guards` se reescribe con 9 pruebas del contrato
+nuevo (escritura aceptada, huella material, `dirty`, `410`). La cobertura de esas rutas vive
+en `cierre-validacion-retirada.test.ts` (19 pruebas) y en `e49-api`.
+
+### Pruebas nuevas de I2
+
+`cierre-validacion-impacto.test.ts` (9), `cierre-validacion-estado.test.ts` (12),
+`cierre-validacion-retirada.test.ts` (19), `cierre-validacion-operaciones.test.ts` (24) y
+`cierre-validacion-rectificaciones.test.ts` (11): materialidad negativa/positiva, `NoDisponible`,
+preview sin efectos, atomicidad, idempotencia, `IMPACT_CHANGED`, AC-11/12/17/19/20/21/22/24,
+rectificación de Inicio/S0 y `410`/`503`.
+
+### Medición real (`bun test apps/api`, macOS)
+
+| | I2 (esta rama) | Base I1 `80efbcfc` |
 | --- | --- | --- |
-| pass | 1042 | 1281 |
-| fail | **61** | 58 |
-| tests | **1113** | 1350 |
-| ficheros | **81** | 95 |
+| pass | **1295** | 1281 |
+| fail | **58** | 58 |
+| skip | 11 | 11 |
+| tests | **1364** | 1350 |
+| ficheros | 98 | 95 |
 
-**Faltan 237 tests**: 14 ficheros de suite dejan de cargar tras retirar `e49-guards.ts`, con
-**3 fallos netos nuevos** sobre los 58 ambientales.
+Los 58 fallos son **los mismos** que en la base (spec31/32, backups, restore, loopback): el
+conjunto de nombres no cambia y ninguno pertenece a validación, cierre ni reparto. `bun run
+typecheck` PASS, `bun run build` PASS, `bun test apps/web` 198 pass.
 
-### Pendiente para dejarlo revisable
+### Pendiente
 
-1. Recuperar la carga de las 14 suites adaptando imports y aserciones, sin relajar lo que prueban.
-2. Cerrar `spec37-i4` AC-33/AC-42 (esperan `HISTORY_LOCKED` por ventana cerrada).
-3. Escribir las pruebas de I2: estado, impacto, operaciones con concurrencia/idempotencia/atomicidad, rectificaciones y retirada `410`/`503`.
-4. Medición final contra `80efbcfc` y PR **contra `feat/547-i1-esquema-v32`**, no contra `test`.
+1. PR de I2 **contra `feat/547-i1-esquema-v32`** (no contra `test`), con I1 mergeado antes.
+2. Los 57 AC siguen **UNRUN** como aceptación: esta entrega acredita comportamiento medido y
+   sus propias pruebas, no la aceptación funcional de la SPEC.
 
 ### Fuera de alcance, por decisión
 
