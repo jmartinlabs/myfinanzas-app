@@ -37,13 +37,21 @@ export type CuerpoConfirmacionRectificacion = EntradaRectificacion & {
   impactRevision: string;
 };
 
+/** Ventana de un ciclo: Inicio y Fin derivado del siguiente Inicio. */
+type VentanaCiclo = { inicio: string; fin: string | null };
+
 export type PreviewRectificacionDto = PreviewOperacionDto & {
   ciclo: string;
   operacion: "rectificar_inicio" | "rectificar_s0";
   ventana: {
-    antes: { inicio: string; fin: string | null; saldoInicialComida: string };
-    despues: { inicio: string; fin: string | null; saldoInicialComida: string };
-    predecesor: { id: string; inicio: string; fin: string | null } | null;
+    antes: VentanaCiclo & { saldoInicialComida: string };
+    despues: VentanaCiclo & { saldoInicialComida: string };
+    /**
+     * §4.1: el predecesor también se publica **antes/después**, porque mover el
+     * Inicio del corregido desplaza su Fin (termina el día anterior al nuevo
+     * Inicio). Un solo juego de valores ocultaría esa frontera.
+     */
+    predecesor: { id: string; antes: VentanaCiclo; despues: VentanaCiclo } | null;
     sucesor: { id: string; inicio: string; fin: string | null } | null;
   };
   movimientosReasignados: unknown[];
@@ -214,8 +222,13 @@ export function previewRectificacion(
       predecesor: datos.predecesor
         ? {
             id: datos.predecesor.id,
-            inicio: datos.predecesor.inicio,
-            fin: datos.predecesor.fin,
+            antes: { inicio: datos.predecesor.inicio, fin: datos.predecesor.fin },
+            // §4.1: su Fin no es fijo — termina el día anterior al Inicio
+            // corregido, y el preview debe publicar ambos lados.
+            despues: {
+              inicio: datos.predecesor.inicio,
+              fin: diaAnterior(calculado.values.inicio),
+            },
           }
         : null,
       sucesor: datos.sucesor
