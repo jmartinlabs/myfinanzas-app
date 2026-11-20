@@ -1,6 +1,9 @@
 # 38 — Anexo de interfaces compartidas del rediseño de cierre y devoluciones
 
-Status: **PROPUESTA. NO APROBADA Y NO AUTORIZA DESARROLLO, API, SQLITE, MIGRACIÓN NI BORRADO.**
+Status: **APROBADA — 2026-11-20**, junto con la SPEC38 v7, como contrato normativo de
+interfaces. **NO AUTORIZA DESARROLLO, API, SQLITE, MIGRACIÓN NI BORRADO.**
+Approval source/date: **2026-11-20 — usuario**,
+[aprobación formal de SPEC38 v7 y su anexo](https://github.com/jmartinlabs/myfinanzas-app/issues/547#issuecomment-7037286690).
 
 Fuente única de los contratos que comparten la
 [SPEC38](38-e49b-cierre-validacion-specification.md) y las specs de devoluciones que se
@@ -15,7 +18,7 @@ interdependientes en paralelo había derivado sus interfaces: el mismo hecho con
 distintos, un campo con dos nombres y un gate descrito de dos maneras. **Ninguna spec
 consumidora redefine lo que aquí se fija**; si diverge, se corrige la consumidora.
 
-Base documental: `test` `e7a9f7fd`. Documento normativo sin código: no declara ninguna prueba
+Base documental: `test` `7a996b29`. Documento normativo sin código: no declara ninguna prueba
 ejecutada y todos sus criterios quedan **UNRUN** hasta que exista implementación.
 
 ---

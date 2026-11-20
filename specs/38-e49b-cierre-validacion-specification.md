@@ -1,44 +1,53 @@
 # 38 — E4.9b: cierre de validación operativa con recálculo vivo — Specification
 
-Status: **PROPUESTA. NO AUTORIZADA, NO APROBADA Y NO AUTORIZA DESARROLLO, API, SQLITE, MIGRACIÓN NI BORRADO.**
-Esta SPEC sustituye el modelo de cierre basado en fotografías inmutables por un cierre de
-validación operativa con resultados recalculados desde los hechos vigentes. La aprobación
-requiere dos actos separados del usuario que **no** se han producido:
+Status: **APROBADA — 2026-11-20.** SPEC38 v7 con sus 57 AC y su anexo de interfaces
+aprobados como contrato funcional y técnico. **NO AUTORIZA DESARROLLO, API, SQLITE, MIGRACIÓN
+NI BORRADO**, y los 57 AC siguen **UNRUN**: aprobar la especificación no acredita ninguna
+prueba ejecutada, ninguna implantación ni la aceptación funcional de la aplicación.
+
+Approval source/date: **2026-11-20 — usuario**, decisión expresa registrada en
+[aprobación formal de SPEC38 v7 y su anexo](https://github.com/jmartinlabs/myfinanzas-app/issues/547#issuecomment-7037286690).
+Los dos actos que la SPEC exigía están cumplidos y son independientes entre sí:
 
 1. **Registro formal de la sustitución** de SPEC26 AC-08/AC-14/AC-16, SPEC27
    AC-01/AC-03/AC-04/AC-08/AC-09/AC-13/AC-14, SPEC28 completa y SPEC29 E4.11-AC01…AC05
-   (§8 de este documento).
-2. **Aprobación explícita de esta SPEC** con fecha e identificador.
+   (§8 de este documento): [registro de sustitución](https://github.com/jmartinlabs/myfinanzas-app/issues/547#issuecomment-7037207679), 2026-11-20.
+2. **Aprobación explícita de esta SPEC** con fecha e identificador:
+   [aprobación formal de SPEC38 v7 y su anexo](https://github.com/jmartinlabs/myfinanzas-app/issues/547#issuecomment-7037286690),
+   2026-11-20.
 
-Sin el primero, el contrato queda ambiguo y el documento no se declara aprobado. La
-aprobación de la SPEC tampoco autoriza DEV: ese es un gate distinto en
-[approvals](methodology/approvals.md).
+Ninguno de los dos autoriza DEV, migración, cambio de esquema ni borrado: cada uno conserva su
+gate propio en [approvals](methodology/approvals.md). El registro de sustitución no elimina
+datos históricos ni retira reglas fuera de la matriz de §8.
 
-Approval source/date: **ninguna.** Propuesta redactada a partir de la Issue
-[#547](https://github.com/jmartinlabs/myfinanzas-app/issues/547) y sus decisiones funcionales
-del 19/11/2026, con revisión crítica independiente registrada en la propia Issue (v7).
+Materialización documental: `specs/38-e49b-cierre-validacion-specification.md` y
+`specs/38-e49b-cierre-validacion-interfaces.md`, fusionados en `test` por el merge `7a996b29`
+de la [PR #551](https://github.com/jmartinlabs/myfinanzas-app/pull/551) (candidato aprobado
+`69030195`).
 
 Issue: [#547](https://github.com/jmartinlabs/myfinanzas-app/issues/547).
-Contrato compartido de interfaces: `ANEXO-INTERFACES` publicado en #547, que esta SPEC cita y
-no redefine.
+Contrato compartido de interfaces:
+[SPEC38 · anexo de interfaces](38-e49b-cierre-validacion-interfaces.md), aprobado el 2026-11-20
+junto con esta SPEC y normativo para sus consumidoras.
 Consumidores directos: [#548](https://github.com/jmartinlabs/myfinanzas-app/issues/548)
 (retirada de fotografías, después de que esta SPEC esté implantada y aceptada),
 [#538](https://github.com/jmartinlabs/myfinanzas-app/issues/538) (gasto neto al ciclo de la
 compra) y [#539](https://github.com/jmartinlabs/myfinanzas-app/issues/539) /
 [#549](https://github.com/jmartinlabs/myfinanzas-app/issues/549) (devoluciones).
-Base documental: `test` `e7a9f7fd`; redacción exclusivamente documental, sin código.
+Base documental: `test` `7a996b29`; redacción exclusivamente documental, sin código.
 Specs base afectadas: SPEC04, SPEC13, SPEC21, SPEC26, SPEC27, SPEC28, SPEC29 y SPEC30.
 
 Las marcas `[CONFIRMADO]`, `[PROPUESTA]` y `[PENDIENTE]` distinguen contratos decididos,
-diseño propuesto y cuestiones sin decisión. Ninguna marca convierte una propuesta en
-autorización. Este documento no declara ninguna prueba ejecutada: **todos sus AC están en
-UNRUN**.
+diseño propuesto y cuestiones sin decisión. **Esta SPEC aprobada no conserva ninguna marca
+`[PROPUESTA]` en su contrato**: si alguna apareciera en una cita o referencia externa, no
+estaría aprobada. Ninguna marca convierte una propuesta en autorización. Este documento no
+declara ninguna prueba ejecutada: **todos sus AC están en UNRUN**.
 
 ---
 
 **Contrato compartido normativo:** [anexo de interfaces](38-e49b-cierre-validacion-interfaces.md), §§1–6; fuente única de códigos, shapes, estado proyectado, gate, Partida y reatribución. Esta reconciliación no autoriza DEV ni declara AC ejecutados.
 
-**Estado:** borrador corregido para revisión independiente; no aprobado y sin autorización de DEV.
+**Estado:** aprobado el 2026-11-20 (ver cabecera); sin autorización de DEV.
 **Entrega:** exclusivamente local; no publicar, no modificar el repositorio ni datos reales.
 **Base inspeccionada:** `test` @ `e7a9f7fd50edeefe8f2ff27654ffdb758395416b`; esquema existente v31.
 **Sustituye:** SPEC del comentario `7023426072`, no su histórico ni las decisiones del usuario.
@@ -475,12 +484,15 @@ Anticipos) y `E4.5-AC-01` (archivo histórico) se **conservan** y **no** son fot
 cierre. `SPEC04 AC-12` se conserva y no se reabre: #547 solo retira la lista blanca de campos
 inertes y mide el efecto.
 
-**Aprobación necesaria.** La sustitución de **SPEC26 AC-08, AC-14 y AC-16**; **SPEC27
-AC-01, AC-03, AC-04, AC-08, AC-09, AC-13 y AC-14**; **SPEC28 completa**; y **SPEC29
-E4.11-AC01…AC05** se apoya en la decisión del usuario de 19/11/2026 recogida en el cuerpo de
-esta Issue. Sin un **registro formal** de esa aprobación el contrato queda ambiguo y esta
-SPEC no se declara aprobada: el registro lo emite el usuario y el coordinador lo transcribe
-con fecha e identificadores, sin reinterpretarlo.
+**Sustitución aprobada y vigente — 2026-11-20.** La sustitución de **SPEC26 AC-08, AC-14 y
+AC-16**; **SPEC27 AC-01, AC-03, AC-04, AC-08, AC-09, AC-13 y AC-14**; **SPEC28 completa**; y
+**SPEC29 E4.11-AC01…AC05** quedó registrada por decisión expresa del usuario en el
+[registro formal de sustitución](https://github.com/jmartinlabs/myfinanzas-app/issues/547#issuecomment-7037207679). La matriz de esta sección **no se reabre**: el
+registro aprueba exactamente lo que aquí figura, y no retira por extensión reglas fuera de
+ella —se conservan las fotografías de Neto de apertura de Anticipos (SPEC13 AC-10/AC-11 y
+SPEC21 §E3.6-AC-09), el archivo histórico E4.5 y el criterio Concepto/Nota de SPEC04 AC-12—.
+Las SPEC26/27/28/29 permanecen como documentación histórica; en lo incompatible prevalece
+este contrato.
 
 ---
 
