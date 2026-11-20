@@ -152,8 +152,10 @@ WIP anterior `a8062b73`; paso A (suites) y correcciones de revisión cerrados en
 
 ### Otras correcciones de la revisión
 
-- `revalidacionSugerida` (AC-07): un conjunto distinto sugiere revalidar aunque la divergencia
-  sea `NoComparable`; sin referencia humana (huella nula) no se sugiere nada.
+- `revalidacionSugerida` (§2.2/AC-07) se calcula literalmente: `true` sólo si existe
+  referencia humana y su `version_conjunto` no es la vigente. Una huella distinta con el mismo
+  conjunto es divergencia diagnóstica y no sugiere revalidar; sin referencia no hay nada que
+  revalidar.
 - `fingerprint` de validar/revalidar/confirmar revisión identifica el payload confirmado (el
   ciclo), no el estado: un hecho nuevo entre preview y confirmación responde `IMPACT_CHANGED`
   y no un `VALIDATION` de estructura (ANEXO §1); una clave completada se resuelve antes de

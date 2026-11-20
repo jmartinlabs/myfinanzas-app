@@ -222,12 +222,12 @@ export function proyectarValidacion(db: Database, ciclo: string): ValidacionDto 
     cobertura: coberturaDe(fila.cobertura),
     divergenciaValidacion: divergencia,
     pendienteSinDelta: estado === "Pendiente" && divergencia === "Igual",
-    // AC-07: una referencia humana de otro conjunto sugiere revalidar aunque no
-    // sea comparable. Sin referencia (huella nula) no hay nada que revalidar:
-    // el ciclo está sin validar y la acción es validar.
+    // §2.2: `revalidacionSugerida=true` **si el conjunto vigente no coincide con
+    // la referencia**. Una huella distinta con el mismo conjunto es divergencia
+    // diagnóstica, no una revalidación sugerida. Sin referencia no hay nada que
+    // revalidar: el ciclo está sin validar y la acción es validar.
     revalidacionSugerida:
-      divergencia === "Distinta" ||
-      (divergencia === "NoComparable" && fila.huella_validacion !== null),
+      fila.huella_validacion !== null && fila.version_conjunto !== VERSION_CONJUNTO,
     validado,
     versionConjunto: fila.version_conjunto,
     huellaValidacion: fila.huella_validacion,
