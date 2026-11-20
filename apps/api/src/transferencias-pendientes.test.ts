@@ -794,17 +794,39 @@ test("I1-04 fecha futura y ventana cerrada se rechazan sin escritura", async () 
   expect(futureConfirm.status).toBe(422);
   expect(futureConfirm.data.code).toBe("VALIDATION");
   closeWindow(db, ciclo, "2026-01-01", "2026-01-31");
-  const closed = await api.request(
+  // §7.6: un cierre legado deja de bloquear la escritura. Lo que sigue
+  // exigiendo es la previsualización vigente: sin huella válida no hay efecto.
+  const sinPreview = await api.request(
     `/api/transferencias-pendientes/${id}/confirmar`,
     "POST",
     { revision: 1, fechaReal: "2026-01-15", fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(closed.status).toBe(409);
-  expect(closed.data.code).toBe("HISTORY_LOCKED");
+  expect(sinPreview.status).toBe(409);
+  expect(sinPreview.data.code).toBe("IMPACT_CHANGED");
   expect(
     (db.query("SELECT count(*) n FROM movimientos").get() as { n: number }).n,
   ).toBe(0);
+  const vigente = await api.request(
+    `/api/transferencias-pendientes/${id}/impacto`,
+    "POST",
+    { fechaReal: "2026-01-15" },
+  );
+  expect(vigente.status).toBe(200);
+  const confirmada = await api.request(
+    `/api/transferencias-pendientes/${id}/confirmar`,
+    "POST",
+    {
+      revision: 1,
+      fechaReal: "2026-01-15",
+      fingerprint: vigente.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(confirmada.status).toBeLessThan(300);
+  expect(
+    (db.query("SELECT count(*) n FROM movimientos").get() as { n: number }).n,
+  ).toBe(1);
 });
 
 test("I1-05 duplicado E1.5 exige revisión explícita y no duplica por accidente", async () => {

@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { civil, getCycle } from "./ciclos";
-import { closedWindows } from "./e49-guards";
+import { estadoPersistido } from "./cierre-validacion-estado";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 import {
@@ -295,16 +295,24 @@ function requireCycle(db: Database, value: unknown) {
   return getCycle(db, value).ciclo;
 }
 
-function cycleClosed(db: Database, ciclo: string) {
-  return closedWindows(db).some((window) => window.ciclo === ciclo);
+/**
+ * §7.6: el reparto deja de estar bloqueado por un cierre fotográfico. Un cambio
+ * real del reparto se mide como materialidad REPARTO y marca la validación del
+ * ciclo; no se impide por la existencia histórica de una foto. Lo que sí sigue
+ * cerrando la edición es la **revisión pendiente** del ciclo, leída del estado
+ * de validación: si el contrato de validación falta, la lectura falla 503 y no
+ * se asume «sin validar» (G4).
+ */
+function cicloPendiente(db: Database, ciclo: string) {
+  return estadoPersistido(db, ciclo).estado === "Pendiente";
 }
 
 function assertOpenCycle(db: Database, ciclo: string) {
-  if (cycleClosed(db, ciclo))
+  if (cicloPendiente(db, ciclo))
     throw new Problem(
       409,
-      "CICLO_CERRADO",
-      "El Ciclo tiene un cierre financiero; no admite cambios de reparto.",
+      "CICLO_PENDIENTE_REVISION",
+      "El Ciclo tiene una revisión de validación pendiente; confírmala antes de cambiar el reparto.",
       { ciclo },
     );
 }
@@ -571,13 +579,13 @@ function repartoDto(db: Database, row: RepartoRow) {
       canceladas: pendings.filter((pending) => pending.estado === "Cancelada")
         .length,
     },
-    cicloCerrado: cycleClosed(db, row.ciclo),
-    puedeEditar: row.estado === "Borrador" && !cycleClosed(db, row.ciclo),
+    cicloCerrado: cicloPendiente(db, row.ciclo),
+    puedeEditar: row.estado === "Borrador" && !cicloPendiente(db, row.ciclo),
     puedeAnadirLineas:
-      row.estado !== "Completado" && !cycleClosed(db, row.ciclo),
+      row.estado !== "Completado" && !cicloPendiente(db, row.ciclo),
     puedeGenerar:
       row.estado !== "Completado" &&
-      !cycleClosed(db, row.ciclo) &&
+      !cicloPendiente(db, row.ciclo) &&
       items.some((line) => line.puedeGenerarse),
     ...completion,
   };
@@ -1681,7 +1689,7 @@ function seguimientoData(db: Database, row: RepartoRow) {
           "El precierre solo avisa: las Transferencias pendientes no entran en la foto.",
       },
       contexto,
-      cicloCerrado: cycleClosed(db, row.ciclo),
+      cicloCerrado: cicloPendiente(db, row.ciclo),
     },
   };
 }
