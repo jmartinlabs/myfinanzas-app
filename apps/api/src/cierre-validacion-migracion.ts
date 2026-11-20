@@ -1,7 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import {
-  CAUSAS_COBERTURA,
   construirDetalleValidacion,
   decimalCanonico,
   serializarDetalleValidacion,
@@ -9,7 +8,6 @@ import {
   type CoberturaValidada,
   type DetalleValidacion,
   type EstadoCobertura,
-  type FuenteCobertura,
   type ProcedenciaValidada,
 } from "./cierre-validacion-dto";
 import { FUENTES_COBERTURA } from "./cierre-validacion-dto";
@@ -87,9 +85,7 @@ const ESTADO_LEGADO: Record<string, EstadoCobertura> = {
  * mecánica de nombres y estados ya persistidos: no recalcula ninguna magnitud,
  * no compara foto con vivo y no convierte una ausencia en cero.
  */
-export function coberturaLegada(
-  crudo: string | null,
-): { cobertura: CoberturaValidada[]; causaFoto: CausaCobertura | null } {
+export function coberturaLegada(crudo: string | null): CoberturaValidada[] {
   let totales: Record<string, { estado?: unknown }> | null = null;
   let causaFoto: CausaCobertura | null = null;
   if (crudo === null) causaFoto = "FOTO_AUSENTE";
@@ -133,7 +129,7 @@ export function coberturaLegada(
       ? { fuente, estado, causas: [] as CausaCobertura[] }
       : { fuente, estado, causas: ["MIGRACION_FUENTE_NO_ACREDITADA" as CausaCobertura] };
   });
-  return { cobertura, causaFoto };
+  return cobertura;
 }
 
 function procedenciaLegada(cierre: CierreLegado): ProcedenciaValidada {
@@ -237,7 +233,7 @@ export function importarCierresLegados(
     if (!ISO.test(cierre.creado_utc))
       throw new Error(`Instante legado ilegible para el ciclo ${ciclo}.`);
 
-    const { cobertura } = coberturaLegada(
+    const cobertura = coberturaLegada(
       (foto.get(ciclo, cierre.version) as FotoLegada | null)?.cobertura ?? null,
     );
     const detalle: DetalleValidacion = construirDetalleValidacion({
@@ -290,11 +286,3 @@ export function importarCierresLegados(
 
   return resultado;
 }
-
-/** Causas declaradas por la importación; expuesto para el informe sin cifras. */
-export const CAUSAS_IMPORTACION: readonly CausaCobertura[] = CAUSAS_COBERTURA.filter(
-  (causa) => causa.startsWith("FOTO_") || causa === "MIGRACION_FUENTE_NO_ACREDITADA",
-);
-
-/** Fuentes de cobertura que la importación siempre declara. */
-export const FUENTES_IMPORTACION: readonly FuenteCobertura[] = FUENTES_COBERTURA;
