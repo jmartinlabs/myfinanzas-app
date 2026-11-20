@@ -150,10 +150,12 @@ function reciboMigracion(
   operacionId: string,
   auditId: number,
 ): string {
+  // El recibo no lleva un solo `number`: IDs, revisiones y versiones viajan como
+  // texto decimal canónico, igual que en el DTO de auditoría.
   return JSON.stringify({
     operacionId,
-    ciclos: [{ id: cierre.ciclo, revision: 1, estado: "Pendiente" }],
-    auditIds: [auditId],
+    ciclos: [{ id: cierre.ciclo, revision: decimalCanonico(1), estado: "Pendiente" }],
+    auditIds: [decimalCanonico(auditId)],
     cierresDirty: [
       {
         ciclo: cierre.ciclo,

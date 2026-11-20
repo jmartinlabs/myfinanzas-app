@@ -20,6 +20,10 @@ process.env.NODE_ENV = "test";
  * evidencia de esquema del incremento, no su aceptación funcional.
  */
 const t = "2026-01-01T00:00:00.000Z";
+/** Instante de revisión humana: siempre posterior a las marcas de pendiente. */
+const t2 = "2026-01-02T00:00:00.000Z";
+/** Posterior también a una migración real, que marca con el instante de hoy. */
+const t3 = "2030-01-01T00:00:00.000Z";
 const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
 const ORIGEN = "MIGRACION:cierres:1";
@@ -33,6 +37,7 @@ function store(): Database {
 /** Base v31 genuina: la vigente sin los objetos de v32, verificada contra C31. */
 function revertToV31(db: Database) {
   db.exec(`
+    DROP TABLE cierre_validacion_manifiesto;
     DROP TABLE validacion_attempts;
     DROP TABLE cierre_validacion_audit;
     DROP TABLE cierre_validacion;
@@ -336,7 +341,7 @@ test("migración conservadora: una fila humana previa no se sobrescribe", () => 
          dirty_origen=NULL,dirty_motivos=NULL,huella_validacion=?,version_conjunto='1',
          revision_actor='humano',revision_instante=?,revision_motivo='Revisado'
        WHERE ciclo='1'`,
-      ["b".repeat(64), t],
+      ["b".repeat(64), t3],
     );
     const resultado = importarCierresLegados(db, { ahora: AHORA });
     expect(resultado.preservados).toEqual(["1", "2"]);
@@ -487,7 +492,7 @@ test("revisión: marcar conserva la revisión y la revisión humana exige exacta
          revision_actor='humano',revision_instante=?,dirty=0,
          dirty_desde=NULL,dirty_ultimo=NULL,dirty_origen=NULL,dirty_motivos=NULL
        WHERE ciclo='1'`,
-      ["b".repeat(64), t],
+      ["b".repeat(64), t2],
     ),
   ).not.toThrow();
   expect(() =>
@@ -778,18 +783,18 @@ test("recibo durable: sin cifras, con la forma exacta de la confirmación", () =
   expect(() =>
     response({
       operacionId: "OP1",
-      ciclos: [{ id: "1", revision: 2, estado: "Validada" }],
-      auditIds: [1],
+      ciclos: [{ id: "1", revision: "2", estado: "Validada" }],
+      auditIds: ["1"],
       cierresDirty: [],
     }),
   ).not.toThrow();
   expect(() =>
     response({
       operacionId: "OP1",
-      ciclos: [{ id: "1", revision: 2, estado: "Validada" }],
-      auditIds: [1],
+      ciclos: [{ id: "1", revision: "2", estado: "Validada" }],
+      auditIds: ["1"],
       cierresDirty: [],
-      totales: { importe: 100 },
+      totales: { importe: "100" },
     }),
   ).toThrow("recibo de validacion invalido");
   expect(() =>
@@ -821,11 +826,13 @@ test("auditoría: huellas SHA-256 e instantes del dominio, sin excepción de for
   db.close();
 });
 
-test("inventario de escritores: sólo el módulo de importación escribe la auditoría", () => {
+test("inventario de escritores: sólo importación y guarda de revisión escriben la auditoría", () => {
   const rutas = [
     "cierre-validacion-dto.ts",
     "cierre-validacion-schema.ts",
     "cierre-validacion-migracion.ts",
+    "cierre-validacion-metadatos.ts",
+    "cierre-validacion-revision.ts",
     "database-schema.ts",
     "e49.ts",
     "e410.ts",
@@ -836,5 +843,9 @@ test("inventario de escritores: sólo el módulo de importación escribe la audi
       readFileSync(join(import.meta.dir, ruta), "utf8"),
     ),
   );
-  expect(escritores).toEqual(["cierre-validacion-migracion.ts"]);
+  expect(escritores.sort()).toEqual([
+    "cierre-validacion-metadatos.ts",
+    "cierre-validacion-migracion.ts",
+    "cierre-validacion-revision.ts",
+  ]);
 });

@@ -33,7 +33,7 @@ const VACIO: DetalleValidacion = {
 const COMPLETO: DetalleValidacion = {
   hechos: [
     { entidad: "movimiento", id: "12", revision: "3" },
-    { entidad: "referencia", id: "4", revision: "1" },
+    { entidad: "referencia", id: "REF004", revision: "1" },
   ],
   ciclos: [
     { id: "2", impactos: ["FLUJO_CICLO", "BALANCE_FIN"] },

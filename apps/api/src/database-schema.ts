@@ -27,6 +27,7 @@ import { spec37SchemaV30 } from "./spec37-schema";
 import { spec37SchemaV31 } from "./spec37-schema-v31";
 import { cierreValidacionSchemaV32 } from "./cierre-validacion-schema";
 import { importarCierresLegados } from "./cierre-validacion-migracion";
+import { migrarMetadatosLegados } from "./cierre-validacion-metadatos";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -158,6 +159,9 @@ export function prepareSchema(db: Database, identity: Identity) {
           // E1b forma parte de I1: la importación conservadora corre en la misma
           // transacción que crea v32. Sin cierres legados es un no-op.
           importarCierresLegados(db);
+          // §7.3: los metadatos que deben sobrevivir al borrado se migran en la
+          // misma transacción, después de que exista la fila de cada ciclo.
+          migrarMetadatosLegados(db);
         }
         return; // Existing data is never re-seeded.
       }
@@ -291,6 +295,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (schemaVersion >= 32) {
         cierreValidacionSchemaV32(db);
         importarCierresLegados(db);
+        migrarMetadatosLegados(db);
       }
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();

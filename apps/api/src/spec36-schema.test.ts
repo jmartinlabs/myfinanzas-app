@@ -509,7 +509,7 @@ test("SPEC36 v32: C29 sigue congelado y C32 es exacto y determinista", () => {
   expect(contracts().at(-1)?.id).toBe(c32);
   const current = contract(c32);
   expect(current.schemaVersion).toBe(32);
-  expect(current.objects).toHaveLength(409);
+  expect(current.objects).toHaveLength(418);
   expect(contract(c28).sha256).toBe(
     "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
   );

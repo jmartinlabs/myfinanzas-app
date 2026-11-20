@@ -4,6 +4,8 @@ import {
   ENTIDADES_PERMITIDAS,
   ESTADOS_COBERTURA,
   FUENTES_COBERTURA,
+  ID_MOVIMIENTO,
+  ID_REFERENCIA,
   IMPACTOS_MATERIALES,
   LIMITES_DETALLE,
   TABLAS_LEGADAS,
@@ -14,10 +16,11 @@ import {
  * SPEC38 · I1 — esquema **v32**: estado de validación, auditoría de validación e
  * idempotencia de la operación.
  *
- * Alcance de este incremento: sólo esquema, guardas de datos e importación
- * conservadora. No crea rutas, lectores, preview, UI ni borra ninguna tabla. Las
- * tablas de fotos, `cierres`, `cierre_audit`, reaperturas y vínculos quedan
- * intactas: #548 las retira después y sólo con autorización propia.
+ * Alcance de este incremento: sólo esquema, guardas de datos, importación
+ * conservadora y metadatos §7.3. No crea rutas, lectores, preview, UI ni borra
+ * ninguna tabla. Las tablas de fotos, `cierres`, `cierre_audit`, reaperturas,
+ * vínculos y periodos quedan intactas: #548 las retira después y sólo con
+ * autorización propia.
  *
  * ## Por qué una migración aditiva de tablas nuevas
  * `cierres` no se reutiliza: es inmutable, exige foto por FK y sólo admite
@@ -44,6 +47,12 @@ import {
  * cliente: marcar/reiterar exige `revision` igual y confirmar/validar exige
  * exactamente `revision+1`. Una disminución y un salto tienen mensaje propio.
  *
+ * La revisión humana **no reutiliza evidencia**: `cierre_validacion_referencia_nueva`
+ * exige un `revision_instante` estrictamente posterior al de la revisión previa
+ * y rechaza repetir actor+instante+huella; `cierre_validacion_confirmacion`
+ * añade, para la limpieza de una fila pendiente, instante posterior a
+ * `dirty_ultimo`/`dirty_desde` y versión de conjunto sin reapuntar.
+ *
  * ## DTO de auditoría (§2.3)
  * `detalle` se comprueba con `json_each`/`json_tree` y no con `json_valid` ni
  * una lista negra de nombres. El orden de las guardas es deliberado para que el
@@ -52,6 +61,15 @@ import {
  * excepciones—, después la forma exacta del sobre y luego cada rama. Las demás
  * guardas sólo se evalúan cuando el árbol no tiene números y el sobre es
  * exacto, así que dos violaciones distintas nunca compiten por el mensaje.
+ * `IdExistente` no comparte formato: `movimiento` es decimal canónico y
+ * `referencia` es `REF`+dígitos, el dominio real de `referencias.id`.
+ *
+ * ## Metadatos que sobreviven (§7.3)
+ * `cierre_validacion_manifiesto` es el recibo tipado por tabla+PK de los
+ * metadatos de periodo y de las identidades compuestas: identidad con claves
+ * exactas por tabla, procedencia, `observado_utc` y huella, sin cifras. Es
+ * append-only y su PK impide duplicar; la migración de `cierre-validacion-metadatos.ts`
+ * lo llena junto a los eventos `legado_*` que sí caben en el DTO.
  *
  * `EntidadPermitida`, fuentes, tablas y códigos salen del módulo del DTO: la
  * base y el constructor de servicio no pueden enumerar cosas distintas.
@@ -131,8 +149,9 @@ const idTecnico = (columna: string) =>
      AND ${columna} NOT GLOB '*[^A-Za-z0-9:._-]*'))`;
 
 /** Instante obligatorio, mismo formato UTC con milisegundos que el dominio. */
-const INSTANTE_OBLIGATORIO = `length(instante)=24 AND instante GLOB
+const instanteObligatorio = (columna: string) => `length(${columna})=24 AND ${columna} GLOB
   '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'`;
+const INSTANTE_OBLIGATORIO = instanteObligatorio("instante");
 
 /* ------------------------------------------------------------------ *
  * Predicados del DTO sobre `NEW.detalle`
@@ -162,9 +181,26 @@ const canonicoPath = (ruta: string) => {
  */
 const canonicoValor = (valor: string) =>
   `(typeof(${valor})='text'
-    AND length(${valor}) BETWEEN 1 AND 18
+    AND length(${valor}) BETWEEN ${ID_MOVIMIENTO.minimo} AND ${ID_MOVIMIENTO.maximo}
     AND ${valor} NOT GLOB '*[^0-9]*'
     AND ${valor} = CAST(CAST(${valor} AS INTEGER) AS TEXT))`;
+
+/**
+ * Identidad de Referencia de negocio dentro de un elemento ya extraído: mismo
+ * dominio que `referencias.id` (`REF` mayúsculas + dígitos, mínimo 6) con el
+ * tope técnico de longitud. `GLOB` es sensible a mayúsculas, así que `ref001`
+ * y `REF001x` caen aquí y no llegan a la comprobación de existencia.
+ */
+const referenciaValor = (valor: string) =>
+  `(typeof(${valor})='text'
+    AND length(${valor}) BETWEEN ${ID_REFERENCIA.minimo} AND ${ID_REFERENCIA.maximo}
+    AND ${valor} GLOB '${ID_REFERENCIA.prefijo}[0-9]*'
+    AND substr(${valor},4) NOT GLOB '*[^0-9]*')`;
+
+/** Predicado de identidad por entidad: cada una valida su formato, sin atajos. */
+const idPorEntidad = (alias: string) =>
+  `((${alias}='movimiento' AND ${canonicoValor("json_extract(h.value,'$.id')")})
+    OR (${alias}='referencia' AND ${referenciaValor("json_extract(h.value,'$.id')")}))`;
 
 const clavesExactas = (alias: string, claves: readonly string[], cuantas: number) =>
   `((SELECT COUNT(*) FROM json_each(${alias}))=${cuantas}
@@ -210,6 +246,305 @@ const coberturaValida = (alias: string) => `
     ))`;
 
 const SIN_ID = lista(TABLAS_LEGADAS_SIN_ID);
+
+/* ------------------------------------------------------------------ *
+ * Predicados del recibo durable (`validacion_attempts.response`)
+ * ------------------------------------------------------------------ */
+
+/** Los tres estados visibles de §2.2; el recibo no inventa un cuarto. */
+export const ESTADOS_VALIDACION = [
+  "SinValidar",
+  "Validada",
+  "Pendiente",
+] as const;
+
+const CLAVES_RECIBO = [
+  "operacionId",
+  "ciclos",
+  "auditIds",
+  "cierresDirty",
+] as const;
+const CLAVES_RECIBO_CICLO = ["id", "revision", "estado"] as const;
+const CLAVES_RECIBO_DIRTY = [
+  "ciclo",
+  "rango",
+  "estadoValidacion",
+  "validado",
+  "dirtyPrevio",
+] as const;
+const CLAVES_RECIBO_RANGO = ["desde", "hasta"] as const;
+
+/** Topes del recibo: un array desmesurado no es un recibo, es un payload. */
+export const LIMITES_RECIBO = {
+  ciclos: LIMITES_DETALLE.ciclos,
+  auditIds: LIMITES_DETALLE.hechos,
+  cierresDirty: LIMITES_DETALLE.ciclos,
+} as const;
+
+/**
+ * Nombres que pueden transportar un importe, con sus variantes. La lista
+ * blanca de claves ya los excluye; esta comprobación es la defensa en
+ * profundidad que sobrevive a una clave añadida por error en el futuro.
+ */
+export const CLAVES_IMPORTE = [
+  "importe",
+  "total",
+  "saldo",
+  "cantidad",
+  "centimo",
+  "monto",
+  "cifra",
+  "precio",
+  "suma",
+  "coste",
+  "bruto",
+  "neto",
+] as const;
+
+/** Ningún `integer`/`real` en todo el árbol JSON: la regla no tiene excepciones. */
+const arbolSinNumeros = (alias: string) =>
+  `NOT EXISTS (SELECT 1 FROM json_tree(${alias}) WHERE type IN ('integer','real'))`;
+
+/** Ninguna clave —en ningún nivel— puede nombrar un importe ni su variante. */
+const arbolSinClavesImporte = (alias: string) =>
+  `NOT EXISTS (SELECT 1 FROM json_tree(${alias})
+     WHERE type='object' AND key IS NOT NULL AND (
+       ${CLAVES_IMPORTE.map((clave) => `lower(key) LIKE '%${clave}%'`).join(" OR ")}))`;
+
+/**
+ * Ningún texto puede esconder una cifra monetaria: separador decimal o de
+ * millar entre dígitos, o símbolo de moneda. Un identificador técnico, una
+ * fecha ISO y un enum de estado no contienen ninguno de los dos.
+ */
+const arbolSinImporteEnTexto = (alias: string) =>
+  `NOT EXISTS (SELECT 1 FROM json_tree(${alias})
+     WHERE type='text' AND (value GLOB '*[0-9][.,][0-9]*'
+        OR value LIKE '%€%' OR value LIKE '%$%'))`;
+
+/** Fecha ISO de calendario en una ruta del recibo. */
+const fechaPath = (alias: string, ruta: string) =>
+  `(json_type(${alias},'${ruta}')='text'
+     AND length(json_extract(${alias},'${ruta}'))=10
+     AND json_extract(${alias},'${ruta}')
+         GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+     AND date(json_extract(${alias},'${ruta}'))=json_extract(${alias},'${ruta}'))`;
+
+/** Identificador técnico (`operacionId`) en texto y con longitud acotada. */
+const idTecnicoPath = (alias: string, ruta: string) =>
+  `(json_type(${alias},'${ruta}')='text'
+     AND length(json_extract(${alias},'${ruta}')) BETWEEN 1 AND 200
+     AND json_extract(${alias},'${ruta}') NOT GLOB '*[^A-Za-z0-9:._-]*')`;
+
+/**
+ * Forma exacta del recibo de §2.4/ANEXO §2, comprobada **en la base**: claves
+ * de lista blanca en cada nivel, tipos, arrays acotados y sin repetidos, cero
+ * `number` JSON, cero claves o textos que puedan transportar un importe.
+ */
+const reciboValido = (alias: string) => `
+  json_type(${alias})='object'
+  AND ${clavesExactas(alias, CLAVES_RECIBO, 4)}
+  AND ${idTecnicoPath(alias, "$.operacionId")}
+  AND json_type(${alias},'$.ciclos')='array'
+  AND json_array_length(${alias},'$.ciclos')<=${LIMITES_RECIBO.ciclos}
+  AND json_type(${alias},'$.auditIds')='array'
+  AND json_array_length(${alias},'$.auditIds')<=${LIMITES_RECIBO.auditIds}
+  AND json_type(${alias},'$.cierresDirty')='array'
+  AND json_array_length(${alias},'$.cierresDirty')<=${LIMITES_RECIBO.cierresDirty}
+  AND NOT EXISTS (
+    SELECT 1 FROM json_each(${alias},'$.ciclos') c WHERE NOT (
+      json_type(c.value)='object'
+      AND ${clavesExactas("c.value", CLAVES_RECIBO_CICLO, 3)}
+      AND ${canonicoValor("json_extract(c.value,'$.id')")}
+      AND ${canonicoValor("json_extract(c.value,'$.revision')")}
+      AND json_type(c.value,'$.estado')='text'
+      AND json_extract(c.value,'$.estado') IN (${lista(ESTADOS_VALIDACION)})))
+  AND NOT EXISTS (
+    SELECT 1 FROM json_each(${alias},'$.auditIds') a
+     WHERE NOT ${canonicoValor("a.value")})
+  AND NOT EXISTS (
+    SELECT 1 FROM json_each(${alias},'$.cierresDirty') d WHERE NOT (
+      json_type(d.value)='object'
+      AND ${clavesExactas("d.value", CLAVES_RECIBO_DIRTY, 5)}
+      AND ${canonicoValor("json_extract(d.value,'$.ciclo')")}
+      AND json_type(d.value,'$.rango')='object'
+      AND ${clavesExactas("json_extract(d.value,'$.rango')", CLAVES_RECIBO_RANGO, 2)}
+      AND ${fechaPath("d.value", "$.rango.desde")}
+      AND ${fechaPath("d.value", "$.rango.hasta")}
+      AND json_extract(d.value,'$.rango.hasta')>=json_extract(d.value,'$.rango.desde')
+      AND json_type(d.value,'$.estadoValidacion')='text'
+      AND json_extract(d.value,'$.estadoValidacion') IN (${lista(ESTADOS_VALIDACION)})
+      AND json_type(d.value,'$.validado') IN ('true','false')
+      AND json_type(d.value,'$.dirtyPrevio') IN ('true','false')))
+  AND (SELECT COUNT(*) FROM json_each(${alias},'$.ciclos'))
+      = (SELECT COUNT(DISTINCT json_extract(value,'$.id'))
+           FROM json_each(${alias},'$.ciclos'))
+  AND (SELECT COUNT(*) FROM json_each(${alias},'$.auditIds'))
+      = (SELECT COUNT(DISTINCT value) FROM json_each(${alias},'$.auditIds'))
+  AND (SELECT COUNT(*) FROM json_each(${alias},'$.cierresDirty'))
+      = (SELECT COUNT(DISTINCT json_extract(value,'$.ciclo'))
+           FROM json_each(${alias},'$.cierresDirty'))`;
+
+/** Guarda completa del recibo: mecánica de cifras + forma exacta. */
+const RECIBO_VALIDO = (alias: string) =>
+  `${arbolSinNumeros(alias)} AND ${arbolSinClavesImporte(alias)}
+   AND ${arbolSinImporteEnTexto(alias)} AND (${reciboValido(alias)})`;
+
+/* ------------------------------------------------------------------ *
+ * Predicados del manifiesto de migración (§7.3)
+ *
+ * El manifiesto es la identidad tipada por tabla+PK de lo que no cabe —o no
+ * debe forzarse— dentro de un evento de auditoría: los metadatos de periodo y
+ * las identidades compuestas. Tipos aquí significa claves exactas por tabla y
+ * formato de dominio en cada valor, sin cifras.
+ * ------------------------------------------------------------------ */
+
+export const TABLAS_MANIFIESTO = [
+  "reaperturas",
+  "reapertura_activa",
+  "cierre_vinculos",
+  "cierre_audit",
+  "fotos_periodo",
+  "foto_periodo_componentes",
+] as const;
+export type TablaManifiesto = (typeof TABLAS_MANIFIESTO)[number];
+
+const decPath = (alias: string, ruta: string) => {
+  const valor = `json_extract(${alias},'${ruta}')`;
+  return `(json_type(${alias},'${ruta}')='text'
+    AND length(${valor}) BETWEEN 1 AND 18
+    AND ${valor} NOT GLOB '*[^0-9]*'
+    AND ${valor} = CAST(CAST(${valor} AS INTEGER) AS TEXT))`;
+};
+const decONulo = (alias: string, ruta: string) =>
+  `(json_type(${alias},'${ruta}')='null' OR ${decPath(alias, ruta)})`;
+/** Correlación legada: identidad técnica en texto, nunca una magnitud. */
+const tecnicoPath = (alias: string, ruta: string) => {
+  const valor = `json_extract(${alias},'${ruta}')`;
+  return `(json_type(${alias},'${ruta}')='text'
+    AND length(${valor}) BETWEEN 1 AND 200
+    AND ${valor} NOT GLOB '*[^A-Za-z0-9:._-]*')`;
+};
+const tecnicoONulo = (alias: string, ruta: string) =>
+  `(json_type(${alias},'${ruta}')='null' OR ${tecnicoPath(alias, ruta)})`;
+const shaPath = (alias: string, ruta: string) => {
+  const valor = `json_extract(${alias},'${ruta}')`;
+  return `(json_type(${alias},'${ruta}')='text' AND length(${valor})=64
+    AND ${valor} NOT GLOB '*[^a-f0-9]*')`;
+};
+const shaONulo = (alias: string, ruta: string) =>
+  `(json_type(${alias},'${ruta}')='null' OR ${shaPath(alias, ruta)})`;
+const instantePath = (alias: string, ruta: string) => {
+  const valor = `json_extract(${alias},'${ruta}')`;
+  return `(json_type(${alias},'${ruta}')='text' AND length(${valor})=24
+    AND ${valor} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z')`;
+};
+const textoPath = (alias: string, ruta: string) => {
+  const valor = `json_extract(${alias},'${ruta}')`;
+  return `(json_type(${alias},'${ruta}')='text'
+    AND length(trim(${valor}))>0 AND length(${valor})<=200)`;
+};
+const enumPath = (alias: string, ruta: string, admitidos: readonly string[]) =>
+  `(json_type(${alias},'${ruta}')='text'
+    AND json_extract(${alias},'${ruta}') IN (${lista(admitidos)}))`;
+
+/** Claves exactas de la identidad tipada por tabla de origen. */
+export const CLAVES_MANIFIESTO: Readonly<Record<TablaManifiesto, readonly string[]>> =
+  {
+    reaperturas: ["ciclo", "versionOrigen", "tipo", "correlacion", "reaperturaOrigen"],
+    reapertura_activa: ["ciclo", "reaperturaId"],
+    cierre_vinculos: [
+      "ciclo",
+      "versionOrigen",
+      "versionDestino",
+      "reaperturaId",
+      "correlacion",
+    ],
+    cierre_audit: ["ciclo", "version", "accion"],
+    fotos_periodo: [
+      "tipo",
+      "ejercicio",
+      "trimestre",
+      "version",
+      "appVersion",
+      "schemaVersion",
+      "creadoUtc",
+      "fingerprint",
+    ],
+    foto_periodo_componentes: [
+      "periodoId",
+      "ciclo",
+      "versionFoto",
+      "fingerprintFoto",
+      "estado",
+    ],
+  };
+
+const VERSION_PERIODO = `(json_type(NEW.identidad,'$.version')='text'
+  AND length(json_extract(NEW.identidad,'$.version')) BETWEEN 2 AND 20
+  AND json_extract(NEW.identidad,'$.version') GLOB 'A[0-9]*'
+  AND substr(json_extract(NEW.identidad,'$.version'),2) NOT GLOB '*[^0-9]*'
+  AND substr(json_extract(NEW.identidad,'$.version'),2)
+      = CAST(CAST(substr(json_extract(NEW.identidad,'$.version'),2) AS INTEGER) AS TEXT))`;
+
+/** Forma exacta de la identidad según la tabla de origen declarada. */
+const IDENTIDAD_MANIFIESTO = `(
+  (NEW.tabla='reaperturas'
+   AND ${clavesExactas("NEW.identidad", CLAVES_MANIFIESTO.reaperturas, 5)}
+   AND ${decPath("NEW.identidad", "$.ciclo")}
+   AND ${decPath("NEW.identidad", "$.versionOrigen")}
+   AND ${enumPath("NEW.identidad", "$.tipo", ["reapertura", "cancelacion"])}
+   AND ${tecnicoONulo("NEW.identidad", "$.correlacion")}
+   AND ${decONulo("NEW.identidad", "$.reaperturaOrigen")})
+  OR (NEW.tabla='reapertura_activa'
+   AND ${clavesExactas("NEW.identidad", CLAVES_MANIFIESTO.reapertura_activa, 2)}
+   AND ${decPath("NEW.identidad", "$.ciclo")}
+   AND ${decPath("NEW.identidad", "$.reaperturaId")})
+  OR (NEW.tabla='cierre_vinculos'
+   AND ${clavesExactas("NEW.identidad", CLAVES_MANIFIESTO.cierre_vinculos, 5)}
+   AND ${decPath("NEW.identidad", "$.ciclo")}
+   AND ${decPath("NEW.identidad", "$.versionOrigen")}
+   AND ${decPath("NEW.identidad", "$.versionDestino")}
+   AND ${decPath("NEW.identidad", "$.reaperturaId")}
+   AND ${tecnicoONulo("NEW.identidad", "$.correlacion")})
+  OR (NEW.tabla='cierre_audit'
+   AND ${clavesExactas("NEW.identidad", CLAVES_MANIFIESTO.cierre_audit, 3)}
+   AND ${decPath("NEW.identidad", "$.ciclo")}
+   AND ${decPath("NEW.identidad", "$.version")}
+   AND ${enumPath("NEW.identidad", "$.accion", [
+     "cierre",
+     "cierre_fuera_de_orden",
+   ])})
+  OR (NEW.tabla='fotos_periodo'
+   AND ${clavesExactas("NEW.identidad", CLAVES_MANIFIESTO.fotos_periodo, 8)}
+   AND ${enumPath("NEW.identidad", "$.tipo", ["Trimestre", "Anio"])}
+   AND (json_type(NEW.identidad,'$.ejercicio')='text'
+        AND length(json_extract(NEW.identidad,'$.ejercicio'))=4
+        AND json_extract(NEW.identidad,'$.ejercicio') GLOB '[1-9][0-9][0-9][0-9]')
+   AND ((json_type(NEW.identidad,'$.trimestre')='null')
+        = (json_extract(NEW.identidad,'$.tipo')='Anio'))
+   AND (json_type(NEW.identidad,'$.trimestre')='null'
+        OR ${enumPath("NEW.identidad", "$.trimestre", ["1", "2", "3", "4"])})
+   AND ${VERSION_PERIODO}
+   AND ${textoPath("NEW.identidad", "$.appVersion")}
+   AND ${decPath("NEW.identidad", "$.schemaVersion")}
+   AND ${instantePath("NEW.identidad", "$.creadoUtc")}
+   AND ${shaPath("NEW.identidad", "$.fingerprint")})
+  OR (NEW.tabla='foto_periodo_componentes'
+   AND ${clavesExactas("NEW.identidad", CLAVES_MANIFIESTO.foto_periodo_componentes, 5)}
+   AND ${decPath("NEW.identidad", "$.periodoId")}
+   AND ${decPath("NEW.identidad", "$.ciclo")}
+   AND ${decONulo("NEW.identidad", "$.versionFoto")}
+   AND ${shaONulo("NEW.identidad", "$.fingerprintFoto")}
+   AND ${enumPath("NEW.identidad", "$.estado", [
+     "Incluido",
+     "ExcluidoSinCierre",
+     "PendienteReCierre",
+   ])}
+   AND ((json_extract(NEW.identidad,'$.estado')='Incluido')
+        = (json_type(NEW.identidad,'$.versionFoto')='text'))
+   AND ((json_type(NEW.identidad,'$.versionFoto')='text')
+        = (json_type(NEW.identidad,'$.fingerprintFoto')='text')))
+)`;
 
 /** Existencia semántica del ID/versión legados frente al `ciclo` del evento. */
 const EXISTENCIA_PROCEDENCIA = `
@@ -356,6 +691,32 @@ export function cierreValidacionDdl(): string {
       PRIMARY KEY(operacion,key)
     ) STRICT;
 
+    /* ------------------------------------------------------------------ *
+     * §7.3 · manifiesto de migración tipado por tabla+PK
+     *
+     * Es el recibo único por fila de origen de los metadatos que deben
+     * sobrevivir: identidad tipada, procedencia, instante observado y huella.
+     * Append-only: la repetición es un no-op y una identidad distinta bajo la
+     * misma PK se rechaza, nunca se sobrescribe.
+     * ------------------------------------------------------------------ */
+
+    CREATE TABLE cierre_validacion_manifiesto(
+      tabla TEXT NOT NULL CHECK(tabla IN (${lista(TABLAS_MANIFIESTO)})),
+      pk TEXT NOT NULL CHECK(length(pk) BETWEEN 1 AND 200
+        AND pk GLOB '[0-9]*' AND pk NOT GLOB '*[^0-9:]*'),
+      identidad TEXT NOT NULL CHECK(json_valid(identidad)),
+      procedencia TEXT NOT NULL CHECK(${idTecnico("procedencia")}
+        AND procedencia GLOB 'MIGRACION:'||tabla||':?*'),
+      observado_utc TEXT NOT NULL CHECK(${instanteObligatorio("observado_utc")}),
+      huella TEXT NOT NULL CHECK(length(huella)=64
+        AND huella NOT GLOB '*[^a-f0-9]*'),
+      evento_id INTEGER REFERENCES cierre_validacion_audit(id) ON DELETE RESTRICT,
+      PRIMARY KEY(tabla,pk)
+    ) STRICT;
+
+    CREATE INDEX cierre_validacion_manifiesto_evento
+      ON cierre_validacion_manifiesto(evento_id);
+
     /* ---------------------------------------------------------------- *
      * Estado de la fila de validación
      * ---------------------------------------------------------------- */
@@ -471,6 +832,49 @@ export function cierreValidacionDdl(): string {
        AND NEW.dirty=OLD.dirty
       BEGIN SELECT RAISE(ABORT,'avanzar la revision exige una revision humana'); END;
 
+    /* ------------------------------------------------------------------ *
+     * §2.4 · la revisión humana no reutiliza evidencia anterior
+     *
+     * Confirmar o revalidar exige una referencia **nueva**: instante
+     * estrictamente posterior al de la última revisión humana y, al
+     * confirmar, también posterior a las marcas de pendiente. La huella y la
+     * versión de conjunto son las del estado medido actual; reenviar
+     * actor+instante+huella de la validación anterior falla aunque la huella
+     * coincida (caso «pendienteSinDelta»): lo que no puede repetirse es la
+     * evidencia, no el valor.
+     * ------------------------------------------------------------------ */
+
+    CREATE TRIGGER cierre_validacion_referencia_nueva
+      BEFORE UPDATE ON cierre_validacion
+      WHEN (NEW.huella_validacion IS NOT OLD.huella_validacion
+         OR NEW.version_conjunto IS NOT OLD.version_conjunto
+         OR NEW.revision_actor IS NOT OLD.revision_actor
+         OR NEW.revision_instante IS NOT OLD.revision_instante
+         OR NEW.revision_motivo IS NOT OLD.revision_motivo)
+       AND (
+         NEW.revision_instante IS NULL
+         OR (OLD.revision_instante IS NOT NULL
+             AND NEW.revision_instante<=OLD.revision_instante)
+         OR (OLD.revision_actor IS NOT NULL
+             AND OLD.revision_instante IS NOT NULL
+             AND OLD.huella_validacion IS NOT NULL
+             AND NEW.revision_actor IS OLD.revision_actor
+             AND NEW.revision_instante IS OLD.revision_instante
+             AND NEW.huella_validacion IS OLD.huella_validacion))
+      BEGIN SELECT RAISE(ABORT,'la revision humana exige evidencia nueva'); END;
+
+    CREATE TRIGGER cierre_validacion_confirmacion
+      BEFORE UPDATE ON cierre_validacion
+      WHEN OLD.dirty=1 AND NEW.dirty=0
+       AND (
+         NEW.revision<>OLD.revision+1
+         OR NEW.revision_instante IS NULL
+         OR (OLD.dirty_ultimo IS NOT NULL AND NEW.revision_instante<=OLD.dirty_ultimo)
+         OR (OLD.dirty_desde IS NOT NULL AND NEW.revision_instante<=OLD.dirty_desde)
+         OR (OLD.version_conjunto IS NOT NULL
+             AND NEW.version_conjunto IS NOT OLD.version_conjunto))
+      BEGIN SELECT RAISE(ABORT,'confirmar la revision exige referencia nueva del conjunto actual'); END;
+
     /* ---------------------------------------------------------------- *
      * Auditoría: append-only y DTO estricto
      * ---------------------------------------------------------------- */
@@ -505,7 +909,7 @@ export function cierreValidacionDdl(): string {
             json_type(h.value)='object'
             AND ${clavesExactas("h.value", CLAVES_HECHO, 3)}
             AND json_extract(h.value,'$.entidad') IN (${lista(ENTIDADES_PERMITIDAS)})
-            AND ${canonicoValor("json_extract(h.value,'$.id')")}
+            AND ${idPorEntidad("json_extract(h.value,'$.entidad')")}
             AND ${canonicoValor("json_extract(h.value,'$.revision')")}
             AND (EXISTS (
                   SELECT 1 FROM movimientos m
@@ -557,33 +961,44 @@ export function cierreValidacionDdl(): string {
        AND NOT (${PROCEDENCIA_VALIDA})
       BEGIN SELECT RAISE(ABORT,'detalle de validacion: procedencia invalida'); END;
 
+    /* ------------------------------------------------------------------ *
+     * Manifiesto de migración: append-only, tipado y sin cifras
+     * ------------------------------------------------------------------ */
+
+    CREATE TRIGGER cierre_validacion_manifiesto_no_update
+      BEFORE UPDATE ON cierre_validacion_manifiesto
+      BEGIN SELECT RAISE(ABORT,'immutable migration manifest'); END;
+
+    CREATE TRIGGER cierre_validacion_manifiesto_no_delete
+      BEFORE DELETE ON cierre_validacion_manifiesto
+      BEGIN SELECT RAISE(ABORT,'immutable migration manifest'); END;
+
+    CREATE TRIGGER cierre_validacion_manifiesto_forma
+      BEFORE INSERT ON cierre_validacion_manifiesto
+      WHEN NOT (
+        ${arbolSinNumeros("NEW.identidad")}
+        AND ${IDENTIDAD_MANIFIESTO})
+      BEGIN SELECT RAISE(ABORT,'manifiesto de migracion invalido'); END;
+
+    CREATE TRIGGER cierre_validacion_manifiesto_pk
+      BEFORE INSERT ON cierre_validacion_manifiesto
+      WHEN NEW.tabla='foto_periodo_componentes'
+       AND NEW.pk<>json_extract(NEW.identidad,'$.periodoId')||':'
+                 ||json_extract(NEW.identidad,'$.ciclo')
+      BEGIN SELECT RAISE(ABORT,'manifiesto de migracion invalido'); END;
+
     /* ---------------------------------------------------------------- *
      * Recibo durable sin cifras (§2.4)
      * ---------------------------------------------------------------- */
 
     CREATE TRIGGER validacion_attempts_recibo
       BEFORE INSERT ON validacion_attempts
-      WHEN NOT (
-        json_type(NEW.response)='object'
-        AND (SELECT COUNT(*) FROM json_each(NEW.response))=4
-        AND (SELECT COUNT(*) FROM json_each(NEW.response)
-              WHERE key IN ('operacionId','ciclos','auditIds','cierresDirty'))=4
-        AND json_type(NEW.response,'$.ciclos')='array'
-        AND json_type(NEW.response,'$.auditIds')='array'
-        AND json_type(NEW.response,'$.cierresDirty')='array'
-        AND NOT EXISTS (
-          SELECT 1 FROM json_each(NEW.response,'$.ciclos') c WHERE NOT (
-            json_type(c.value)='object'
-            AND ${clavesExactas("c.value", ["id", "revision", "estado"] as const, 3)}))
-        AND NOT EXISTS (
-          SELECT 1 FROM json_each(NEW.response,'$.cierresDirty') d WHERE NOT (
-            json_type(d.value)='object'
-            AND ${clavesExactas(
-              "d.value",
-              ["ciclo", "rango", "estadoValidacion", "validado", "dirtyPrevio"] as const,
-              5,
-            )}))
-      )
+      WHEN NOT (${RECIBO_VALIDO("NEW.response")})
+      BEGIN SELECT RAISE(ABORT,'recibo de validacion invalido'); END;
+
+    CREATE TRIGGER validacion_attempts_recibo_update
+      BEFORE UPDATE ON validacion_attempts
+      WHEN NOT (${RECIBO_VALIDO("NEW.response")})
       BEGIN SELECT RAISE(ABORT,'recibo de validacion invalido'); END;
 
     UPDATE schema_version SET version=32;`;

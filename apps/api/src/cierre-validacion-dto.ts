@@ -4,12 +4,14 @@ import { Problem } from "./problem";
  * SPEC38 · I1 — constructor/validador central del DTO de auditoría de validación.
  *
  * §2.3 de la SPEC fija una **lista blanca exacta**: `detalle` sólo admite
- * `hechos`, `ciclos`, `cobertura` y `procedencia`, con `additionalProperties:
- * false` en cada nivel. La prohibición es de cifras o de datos que permitan
+ * `hechos`, `ciclos`, `cobertura` y `procedencia`, con `additionalProperties:false`
+ * en cada nivel. La prohibición es de cifras o de datos que permitan
  * reconstruir resultados, no de dígitos dentro de identificadores, fechas o
- * huellas: por eso `RevisionDecimal`, `IdExistente` e `IdLegado` viajan como
- * **texto decimal canónico** y la regla «ningún `number` JSON» es una
- * comprobación de tipo mecánica, sin excepciones ni lista negra de nombres.
+ * huellas: por eso `RevisionDecimal` e `IdLegado` viajan como **texto decimal
+ * canónico** y `IdExistente` valida el **formato propio de su entidad**
+ * (`movimiento` decimal, `referencia` `REF`+dígitos), y la regla «ningún
+ * `number` JSON» es una comprobación de tipo mecánica, sin excepciones ni lista
+ * negra de nombres.
  *
  * Este módulo es la única puerta de construcción: copia sólo los campos
  * permitidos, rechaza claves extra, tipos incorrectos, enums/IDs/revisiones no
@@ -103,6 +105,31 @@ export const TABLAS_LEGADAS_SIN_ID: readonly TablaLegada[] = [
   "cierre_vinculos",
 ];
 
+/**
+ * Formato real de identidad por entidad, derivado del esquema instalado y no de
+ * una suposición. `movimiento` usa la PK decimal canónica de `movimientos`
+ * (`CHECK(id NOT GLOB '*[^0-9]*' …)`); `referencia` usa el id de negocio de
+ * `referencias`
+ * (`CHECK(id GLOB 'REF[0-9]*' AND substr(id,4) NOT GLOB '*[^0-9]*' AND length(id)>=6)`),
+ * es decir prefijo `REF` en mayúsculas y sólo dígitos detrás. La longitud se
+ * acota al límite técnico de identificadores de §2.3 (200), que la propia
+ * SPEC exige: un id más largo no es una identidad, es un payload.
+ */
+export const ID_MOVIMIENTO = {
+  tipo: "decimal" as const,
+  minimo: 1,
+  maximo: 18,
+};
+export const ID_REFERENCIA = {
+  tipo: "referencia" as const,
+  prefijo: "REF",
+  digitosMinimos: 3,
+  minimo: 6,
+  maximo: 200,
+};
+
+const PATRON_REFERENCIA = /^REF[0-9]{3,197}$/;
+
 export type HechoValidado = {
   entidad: EntidadPermitida;
   id: string;
@@ -177,6 +204,32 @@ function rechazo(campo: string, motivo: string): never {
 /** Predicado único de decimal canónico: sin signo, ceros a la izquierda, exponente ni separador. */
 export function esDecimalCanonico(valor: unknown): valor is string {
   return typeof valor === "string" && DECIMAL_CANONICO.test(valor);
+}
+
+/**
+ * Identidad de la Referencia de negocio: `REF` + dígitos, mayúsculas, sin
+ * prefijo alternativo, sin sufijo y con longitud acotada. Es el mismo dominio
+ * que impone `referencias.id` en el esquema, más el tope técnico de §2.3.
+ */
+export function esIdReferencia(valor: unknown): valor is string {
+  return typeof valor === "string" && PATRON_REFERENCIA.test(valor);
+}
+
+/** Cada `EntidadPermitida` valida **su** formato; no hay formato compartido. */
+export function esIdDeEntidad(
+  entidad: EntidadPermitida,
+  valor: unknown,
+): valor is string {
+  return entidad === "referencia"
+    ? esIdReferencia(valor)
+    : esDecimalCanonico(valor);
+}
+
+/** Mensaje de formato por entidad, para que el rechazo nombre el dominio real. */
+export function motivoIdDeEntidad(entidad: EntidadPermitida): string {
+  return entidad === "referencia"
+    ? "se esperaba un id de Referencia «REF» seguido de dígitos"
+    : "se esperaba texto decimal canónico";
 }
 
 /**
@@ -289,7 +342,9 @@ function hechos(valor: unknown): HechoValidado[] {
       ENTIDADES_PERMITIDAS,
       `${campo}.entidad`,
     );
-    const id = decimalObligatorio(hecho.id, `${campo}.id`);
+    const id = esIdDeEntidad(entidad, hecho.id)
+      ? (hecho.id as string)
+      : rechazo(`${campo}.id`, motivoIdDeEntidad(entidad));
     const revision = decimalObligatorio(hecho.revision, `${campo}.revision`);
     const clave = `${entidad}:${id}`;
     if (vistos.has(clave)) rechazo(campo, `hecho repetido «${clave}»`);

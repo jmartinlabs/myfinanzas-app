@@ -38,6 +38,7 @@ function store() {
  */
 function revertToV29(db: Database) {
   db.exec(`
+    DROP TABLE cierre_validacion_manifiesto;
     DROP TABLE validacion_attempts;
     DROP TABLE cierre_validacion_audit;
     DROP TABLE cierre_validacion;
