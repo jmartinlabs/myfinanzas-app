@@ -76,6 +76,7 @@ Medida sobre `feat/547-i1-esquema-v32` y sobre la base `aa50a6eb`, en worktrees 
 | `bun test apps/api` (rama) | 1281 pass · 11 skip · **58 fail** · 1350 tests |
 | `bun test apps/api` (base `aa50a6eb`) | 1239 pass · 11 skip · **60 fail** · 1310 tests |
 | Diferencia | **+42 pass, +40 tests** (28 de I1 + 12 adversariales); **ningún nombre de fallo nuevo**; dos fallos instrumentales de la base no se reprodujeron en la rama |
+| `bun run build` · `bun test apps/web` (perfil `fast` del PR) | **PASS** · **198 pass · 0 fail** |
 | Migración v31→v32 sobre copia | contrato `C32` verificado, `foreign_key_check` vacío, `integrity_check=ok`, 2 filas de manifiesto, 3 eventos (`migracion`, `legado_reapertura`, `legado_reapertura_activa`) |
 | Repetición de la migración | `importarCierresLegados` creados `[]`/preservados `["1"]`; `migrarMetadatosLegados` creados `[]`, eventos `0`; estado byte a byte idéntico; FK e integridad limpios |
 
