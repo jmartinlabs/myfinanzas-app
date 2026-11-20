@@ -568,14 +568,13 @@ function repartoDto(db: Database, row: RepartoRow) {
       canceladas: pendings.filter((pending) => pending.estado === "Cancelada")
         .length,
     },
+    // Aviso informativo: `dirty` no bloquea la edición (G2). Los flags describen
+    // sólo el estado del reparto; el cierre financiero ya no restringe nada.
     cicloCerrado: cicloPendiente(db, row.ciclo),
-    puedeEditar: row.estado === "Borrador" && !cicloPendiente(db, row.ciclo),
-    puedeAnadirLineas:
-      row.estado !== "Completado" && !cicloPendiente(db, row.ciclo),
+    puedeEditar: row.estado === "Borrador",
+    puedeAnadirLineas: row.estado !== "Completado",
     puedeGenerar:
-      row.estado !== "Completado" &&
-      !cicloPendiente(db, row.ciclo) &&
-      items.some((line) => line.puedeGenerarse),
+      row.estado !== "Completado" && items.some((line) => line.puedeGenerarse),
     ...completion,
   };
 }
