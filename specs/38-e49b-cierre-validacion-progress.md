@@ -108,3 +108,51 @@ Los 57 AC de SPEC38 siguen **UNRUN**: I1 entrega esquema, DTO, guarda de revisi�
 no las rutas, informes vivos, preview/confirmación expuesta ni la retirada funcional legacy.
 `confirmarRevisionValidacion` es la guarda y el escritor mínimo que I2 expone; no hay endpoint.
 Ningún AC se declara cumplido por este incremento.
+
+## I2 · estado a 2026-11-20 (incompleto, sin PR)
+
+Rama `feat/547-i2-lectores-escritores`, commit **`a8062b73`** (WIP), apilada sobre
+`feat/547-i1-esquema-v32` @ `80efbcfc`. Typecheck **PASS**. **No hay PR ni SHA de entrega.**
+
+### Implementado (sin pruebas de I2)
+
+- `cierre-validacion-estado.ts`: proyección `SinValidar|Validada|Pendiente`,
+  `divergenciaValidacion`, `pendienteSinDelta`, `revalidacionSugerida`, y sustituto que
+  **falla cerrado** (503 si falta tabla o contrato).
+- `cierre-validacion-impacto.ts`: universo canónico de §3.1, `H_v` por sha256 de JSON
+  canónico, comparación antes/después separada de la divergencia con la referencia, motivos
+  cerrados y candidatos por fecha real.
+- `cierre-validacion-operaciones.ts`: preview con `SAVEPOINT`, confirmación con
+  `BEGIN IMMEDIATE` y `busy_timeout`, idempotencia por clave completada, precedencia de
+  errores del anexo, `409 IMPACT_CHANGED`, recibo sin cifras validado por el trigger de I1.
+- `cierre-validacion-servicio.ts`, `cierre-validacion-rectificaciones.ts` (Inicio y S0),
+  `cierre-anticipo-apertura.ts` (clases A/B y orden de §4.3),
+  `cierre-validacion-retirada.ts` (410 por ruta).
+- **Retirada funcional**: `e49-guards.ts` eliminado; `closedWindows`, `hasClosures`,
+  `assert*Closure*`, `informativeFields`, `closedFieldDecision` y `HISTORY_LOCKED` de cierre
+  fuera de sus 14 consumidores; precierre sin backup bloqueante ni contraste de fotos.
+
+### Medición real (coordinador, `bun test apps/api`)
+
+| | I2 `a8062b73` | Base I1 `80efbcfc` |
+| --- | --- | --- |
+| pass | 1042 | 1281 |
+| fail | **61** | 58 |
+| tests | **1113** | 1350 |
+| ficheros | **81** | 95 |
+
+**Faltan 237 tests**: 14 ficheros de suite dejan de cargar tras retirar `e49-guards.ts`, con
+**3 fallos netos nuevos** sobre los 58 ambientales.
+
+### Pendiente para dejarlo revisable
+
+1. Recuperar la carga de las 14 suites adaptando imports y aserciones, sin relajar lo que prueban.
+2. Cerrar `spec37-i4` AC-33/AC-42 (esperan `HISTORY_LOCKED` por ventana cerrada).
+3. Escribir las pruebas de I2: estado, impacto, operaciones con concurrencia/idempotencia/atomicidad, rectificaciones y retirada `410`/`503`.
+4. Medición final contra `80efbcfc` y PR **contra `feat/547-i1-esquema-v32`**, no contra `test`.
+
+### Fuera de alcance, por decisión
+
+Informes vivos por ciclo/trimestre/año con **gasto neto al ciclo de la compra**: dependen de
+#538, cuya SPEC no está aprobada. **AC-15, AC-31, AC-32 y AC-34** quedan fuera de I2; el
+sustituto de `/api/fotos/contraste` apunta al estado de validación, no a un informe vivo.
