@@ -2,7 +2,6 @@ import { planConfigurationImpact } from "./planes-ciclo";
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
-import { hasClosures, closedWindows } from "./e49-guards";
 
 export const budgetSources = [
   "Gasto real",
@@ -389,9 +388,12 @@ export function updateBudget(
       // impact fingerprint + motive, even when no Partida or plan line uses it
       // yet. The photo is immutable, but the live configuration must be
       // consciously reviewed and audited.
+      // §7.6: el cierre fotográfico deja de condición. Un cambio económico que
+      // afecta a Partidas o a ciclos en ejecución sigue exigiendo revisión y
+      // confirmación explícitas, y eso es una guarda real, no una foto.
       if (
         p.economic &&
-        (hasClosures(db) || p.partidas.length || p.execution?.ciclos.length) &&
+        (p.partidas.length || p.execution?.ciclos.length) &&
         !confirmation
       )
         throw new Problem(
@@ -431,23 +433,9 @@ export function updateBudget(
         ],
       );
       const item = getBudget(db, id);
-      const closureImpact =
-        p.economic && hasClosures(db)
-          ? {
-              fingerprint:
-                typeof confirmation?.fingerprint === "string"
-                  ? confirmation.fingerprint
-                  : null,
-              cierres: closedWindows(db).map(
-                ({ ciclo, version, inicio, fin }) => ({
-                  ciclo,
-                  version,
-                  inicio,
-                  fin,
-                }),
-              ),
-            }
-          : null;
+      // Sin cierres no hay bloque de impacto fotográfico que publicar; la
+      // confirmación ya queda registrada en la auditoría del dominio.
+      const closureImpact = null;
       audit(
         db,
         item,

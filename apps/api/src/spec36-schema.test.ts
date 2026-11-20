@@ -510,9 +510,9 @@ test("SPEC36 v32: C29 sigue congelado y C32 es exacto y determinista", () => {
   const current = contract(c32);
   expect(current.schemaVersion).toBe(32);
   // Las dos guardas de §2.4 sobre la marca (`marca_sin_revision` y
-  // `marca_cronologia`) se suman al contrato C32: mismo esquema v32, dos
-  // triggers más.
-  expect(current.objects).toHaveLength(420);
+  // `marca_cronologia`) se suman al contrato C32 junto con las tablas de
+  // autorización de apertura de I2: mismo esquema v32, objetos nuevos.
+  expect(current.objects).toHaveLength(429);
   expect(contract(c28).sha256).toBe(
     "323458fcb9e9a0f5e0f6bba27d09e227fe14fa299a1555c2e0008dca38b8e35c",
   );

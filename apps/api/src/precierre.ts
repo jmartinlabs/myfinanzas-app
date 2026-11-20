@@ -12,7 +12,6 @@ import { fingerprint, financeRevision, ledgerRows, type LedgerRow } from "./move
 import { e35Metrics } from "./e35";
 import { listDeudasCompletas } from "./deuda-completa";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
-import { coherenciaCierresPosteriores } from "./e49";
 
 export type PrecierreEstado =
   | "Listo"
@@ -489,36 +488,12 @@ export function getPrecierre(
       code: "SIN_PLANIFICAR",
       message: "Existen hechos reales sin línea de plan.",
     });
-  const backup =
-    options.backup === undefined
-      ? null
-      : options.backup;
-  if (!backup?.verified)
-    bloqueos.push({
-      code: "BACKUP_NO_VERIFICABLE",
-      message:
-        backup?.reason ??
-        "Falta evidencia DT6/T-BKP: manifiesto, checksum, clave y restauración.",
-    });
-  const closures =
-    options.closures ??
-    (fin === null
-      ? []
-      : coherenciaCierresPosteriores(db, fin).map((entry) => ({
-          id: entry.ciclo,
-          fin: entry.fin,
-          coherent: entry.coherente,
-        })));
-  if (closures.length)
-    avisos.push({
-      code: "CIERRE_FUERA_DE_ORDEN",
-      message: `Existen cierres posteriores: ${closures.map((c) => c.id).join(", ")}.`,
-    });
-  if (closures.some((c) => !c.coherent))
-    bloqueos.push({
-      code: "INCOHERENCIA_CON_CIERRE_POSTERIOR",
-      message: "Diferencia no explicable frente a un cierre posterior al mismo corte.",
-    });
+  // §5 y §8: el backup deja de ser criterio financiero de validación —sigue
+  // siendo gate operativo G5 de migración y despliegue—, y el contraste con
+  // fotos posteriores pierde objeto porque no hay fotos. El precierre conserva
+  // ventana, S0, movimientos, plan, inversión, E3.5/E3.6, duplicados,
+  // integridad y cobertura, y es de solo lectura.
+  const backup = options.backup === undefined ? null : options.backup;
   const investment = investmentSource(db, end);
   if (
     investment.source.estado === "No disponible" ||
@@ -653,9 +628,6 @@ export function getPrecierre(
       auxiliaryPartial
         ? "Parcial"
         : "Completa",
-    // SPEC26 AC-14: E3.5 no verificable bloquea E4.9 aunque el precierre siga
-    // siendo parcial con avisos.
-    e4_9Bloqueado: bloqueos.length > 0 || corePartial || !e35.verificable,
     bloqueos,
     avisos,
     fuentes,
@@ -678,7 +650,6 @@ export function getPrecierre(
         : backup?.reason ??
           "Sin evidencia DT6/T-BKP recuperable.",
     },
-    cierres: closures,
     sourceRevision: financeRevision(db),
     planContextRevision: plan.contextRevision,
   };
@@ -695,7 +666,6 @@ export function getPrecierreEstado(
     ciclo: precierre.ciclo.id,
     estado: precierre.estado,
     cobertura: precierre.cobertura,
-    e4_9Bloqueado: precierre.e4_9Bloqueado,
     revision: precierre.revision,
     bloqueos: precierre.bloqueos,
     avisos: precierre.avisos,

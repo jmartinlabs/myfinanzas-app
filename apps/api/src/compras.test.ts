@@ -836,7 +836,10 @@ test("E4.1-AC-41/42/49: previsualización de los cuatro Movimientos, guard de Sa
         saldoApertura: "1.00",
       }),
     );
-    expect(guarded.code).toBe("HISTORY_LOCKED");
+    // §7.6: el atributo capturado por una foto deja de bloquear en absoluto.
+    // El cambio exige revisión explícita con motivo y huella, y no se escribe
+    // sin ella; la apertura sigue intacta.
+    expect(guarded.code).toBe("RECTIFICATION_REQUIRED");
     expect(getSaldo(db, "S003").saldoApertura).toBe("5000.00");
     const deactivated = updateSaldo(db, "S003", {
       revision: getSaldo(db, "S003").revision,

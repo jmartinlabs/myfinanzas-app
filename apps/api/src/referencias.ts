@@ -1,13 +1,7 @@
 import type { Database } from "bun:sqlite";
+import { consumerImpactFingerprint } from "./consumer-impact";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
-import {
-  assertClosedEconomicImpact,
-  closedFieldDecision,
-  consumerImpactFingerprint,
-  hasClosures,
-  type ClosedWindow,
-} from "./e49-guards";
 import {
   getReference,
   operationalReferenceTypes,
@@ -107,7 +101,6 @@ export function previewReferenceImpact(
         "La Referencia ha cambiado. Actualiza su ficha; tu borrador se conserva.",
       );
     const changed = editableReferenceFields.filter((field) => field in body);
-    const decision = closedFieldDecision(db, "referencia", changed);
     let usos: ReturnType<typeof referenceUsage>;
     try {
       usos = referenceUsage(db, id);
@@ -122,15 +115,13 @@ export function previewReferenceImpact(
       referencia: id,
       revision: old.revision,
       cambios: changed,
-      informativo: decision.informative,
-      economico: decision.economic,
+      // §7.6: no hay campos «informativos» por nombre ni cierres que consultar.
+      // Lo que decide es el uso real de la Referencia y, si lo hay, la revisión
+      // de impacto con motivo y huella.
+      informativo: [],
+      economico: changed,
       usos,
-      cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
-        ciclo,
-        version,
-        inicio,
-        fin,
-      })),
+      cierres: [],
       fingerprint: referenceImpactHash(db, id, changed, old.revision),
     };
   })();
@@ -427,38 +418,19 @@ export function updateReference(
           ? body.motivo.trim()
           : null;
       const changed = editableReferenceFields.filter((field) => field in body);
-      let closureImpact:
-        | {
-            fingerprint: string | null;
-            cierres: ClosedWindow[];
-          }
-        | null = null;
-      if (hasClosures(db)) {
-        let expected: string;
-        try {
-          expected = referenceImpactHash(db, id, changed, old.revision);
-        } catch {
-          throw new Problem(
-            409,
-            "IMPACTO_NO_VERIFICABLE",
-            "No se pueden leer los consumidores de la Referencia; no se puede acreditar el impacto del cambio.",
-          );
-        }
-        const windows = assertClosedEconomicImpact(
-          db,
-          "referencia",
-          changed,
-          motive,
-          body.fingerprint,
-          expected,
-          "actualizar la Referencia",
+      // §7.6: sin el gate por cierre, la revisión de una Referencia usada la
+      // gobiernan sus guardas propias —tipo protegido, ficha 1:1, integridad—,
+      // no una huella genérica. El preview de impacto sigue disponible para la
+      // UI, pero no sustituye a esas guardas ni las adelanta.
+      const closureImpact: { fingerprint: string | null } | null = null;
+      try {
+        referenceUsage(db, id);
+      } catch {
+        throw new Problem(
+          409,
+          "IMPACTO_NO_VERIFICABLE",
+          "No se pueden leer los consumidores de la Referencia; no se puede acreditar el impacto del cambio.",
         );
-        if (windows.length)
-          closureImpact = {
-            fingerprint:
-              typeof body.fingerprint === "string" ? body.fingerprint : null,
-            cierres: windows,
-          };
       }
       if ("vehiculo" in body && nextTipo !== "Vehículo")
         throw new Problem(
@@ -656,21 +628,7 @@ export function updateReference(
           JSON.stringify({
             anterior: old,
             posterior: getReference(db, id),
-            ...(closureImpact
-              ? {
-                  impacto: {
-                    fingerprint: closureImpact.fingerprint,
-                    cierres: closureImpact.cierres.map(
-                      ({ ciclo, version, inicio, fin }) => ({
-                        ciclo,
-                        version,
-                        inicio,
-                        fin,
-                      }),
-                    ),
-                  },
-                }
-              : {}),
+            ...(closureImpact ? { impacto: closureImpact } : {}),
           }),
           time,
           old.revision,
