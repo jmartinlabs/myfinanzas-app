@@ -35,7 +35,7 @@ const GROUPS = [
     "Casos y gastos especiales",
     ["/referencias", "/anticipos", "/compartidos", "/vehiculos", "/comida", "/revision-comida"],
   ],
-  ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre", "/fotos"]],
+  ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre"]],
 ] as const;
 const LEGACY = ["/presupuestos", "/plan-anual"];
 

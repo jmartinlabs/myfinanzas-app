@@ -77,10 +77,13 @@ test("«Comida del ciclo» y «Revisión Comida» son entradas hermanas", () => 
   }
 });
 
-test("se conservan las 24 rutas sin duplicados", () => {
+test("se conservan las 23 rutas sin duplicados", () => {
+  // #555 · §7.6: `/fotos` se retira con su pantalla. El resto de `href` no
+  // cambia: sigue habiendo una ruta por superficie declarada.
   const hrefs = navigationItems.map((item) => item.href);
-  expect(hrefs).toHaveLength(24);
-  expect(new Set(hrefs).size).toBe(24);
+  expect(hrefs).toHaveLength(23);
+  expect(new Set(hrefs).size).toBe(23);
+  expect(hrefs).not.toContain("/fotos");
 });
 
 test("las rutas históricas abren y resaltan su grupo", () => {
