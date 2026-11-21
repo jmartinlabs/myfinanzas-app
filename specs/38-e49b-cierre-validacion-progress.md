@@ -244,3 +244,16 @@ el estado de validación y adaptar sus E2E.
 Informes vivos por ciclo/trimestre/año con **gasto neto al ciclo de la compra**: dependen de
 #538, cuya SPEC no está aprobada. **AC-15, AC-31, AC-32 y AC-34** quedan fuera de I2; el
 sustituto de `/api/fotos/contraste` apunta al estado de validación, no a un informe vivo.
+
+### Reconciliación acotada · SPEC13 AC-36 frente a SPEC38
+
+Decisión de Álex (2026-11-21, #547 `7052975797`): la cláusula de SPEC13 AC-36 que exigía un
+proveedor verificable de cierres/fotos **financieros** queda **sustituida** por SPEC38 §7.6 y el
+bloqueo genérico «protección de cierres/fotos no verificable» **no se restaura**. No se declara
+superada la AC-36 completa: siguen vigentes las garantías de negocio de Anticipos —declaración
+`fotos_neto_apertura` con evidencia, procedencia y cobertura, motivo de corrección excepcional,
+revisión vigente y conflicto, auditoría con valor anterior, un único registro por REF+ciclo,
+idempotencia y `protectAnticipoChange` (`409 ANTICIPO_PHOTO_PROTECTED`) para movimientos que
+alteren una apertura confirmada—. La aceptación de la AC-36 no se acredita por adaptar su
+prueba: exige la evidencia de esas garantías. Esta nota anota la reconciliación; no modifica la
+SPEC aprobada.
