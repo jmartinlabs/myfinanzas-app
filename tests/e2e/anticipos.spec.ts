@@ -430,6 +430,11 @@ test("E3.1 real MFA, explicit roles, multi-pair return, historical accreditation
         .getByRole("checkbox", { name: /La evidencia acredita/ })
         .check();
     };
+    // Corrección excepcional del Neto de apertura (SPEC38 §7.6): la foto del
+    // ciclo 1 ya está confirmada con 1.500,00 € y revisión vigente 1.
+    const beforeCorrection = current.fotos.find((p: any) => p.ciclo === "1")!;
+    expect(beforeCorrection.importe).toBe("1500.00");
+    expect(beforeCorrection.revision).toBe(1);
     await open("1", "1499");
     await page
       .getByLabel("Motivo de corrección excepcional", { exact: true })
@@ -438,19 +443,116 @@ test("E3.1 real MFA, explicit roles, multi-pair return, historical accreditation
       .getByRole("button", { name: "Revisar impacto", exact: true })
       .click();
     await expect(
-      page.getByRole("button", {
-        name: "Confirmar Neto de apertura",
-        exact: true,
-      }),
-    ).toBeDisabled();
+      page.getByRole("heading", { name: "Revisar y confirmar", exact: true }),
+    ).toBeFocused();
+    const review = page.locator(".anticipo-review");
+    await expect(review).toContainText(
+      "Inicio financiero 20/06/2026 · Neto 1.499,00 € · Verificada por declaración y evidencia explícitas",
+    );
+    await expect(review).toContainText("Sugerencia: 1.500,00 €.");
+    await expect(review).toContainText(
+      "Corrección excepcional revisable con motivo; el original queda trazable en la auditoría",
+    );
+    const confirmOpeningButton = page.getByRole("button", {
+      name: "Confirmar Neto de apertura",
+      exact: true,
+    });
+    await expect(confirmOpeningButton).toBeEnabled();
+    // El bloqueo genérico obsoleto no reaparece (SPEC38 §7.6, #547).
+    await expect(review).not.toContainText("Corrección bloqueada");
+    await shots("correction-review");
+    await confirmOpeningButton.click();
     await expect(
-      page.getByText(
-        "Corrección bloqueada: protección de cierres/fotos no verificable en esta entrega",
-        { exact: true },
-      ),
+      page.getByText("1.499,00 € · Confirmada", { exact: false }),
     ).toBeVisible();
-    await shots("correction-protected");
-    await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await shots("correction-confirmed");
+    // Una sola foto vigente por REF+ciclo, importe corregido, revisión
+    // incrementada y original conservado en la auditoría.
+    const corrected = await get("/anticipos/fichas/REF002");
+    expect(corrected.fotos).toHaveLength(1);
+    const correctedPhoto = corrected.fotos[0];
+    expect(correctedPhoto.ciclo).toBe("1");
+    expect(correctedPhoto.importe).toBe("1499.00");
+    expect(correctedPhoto.evidencia).toBe(
+      "Revisión ficticia del instante histórico",
+    );
+    expect(correctedPhoto.revision).toBe(beforeCorrection.revision + 1);
+    const correctionAudit = corrected.auditoria.find(
+      (a: any) => a.accion === "corregir apertura",
+    );
+    expect(correctionAudit).toBeTruthy();
+    expect(JSON.parse(correctionAudit.anterior).importe).toBe("1500.00");
+    expect(correctionAudit.motivo).toBe("Corrección documental ficticia");
+    // Negativo de contrato: la corrección exige motivo, evidencia y la
+    // revisión vigente de la foto.
+    const noMotivo = await write(
+      "/anticipos/fichas/REF002/netos-apertura/preview",
+      {
+        ciclo: "1",
+        importe: "1499",
+        evidencia: "Revisión ficticia del instante histórico",
+        procedencia: "Documento ficticio acreditado",
+        coberturaVerificada: true,
+        revision: correctedPhoto.revision,
+      },
+    );
+    expect(noMotivo.status).toBe(422);
+    expect(noMotivo.data.code).toBe("ANTICIPO_INVALID");
+    expect(noMotivo.data.error).toContain("Motivo de corrección excepcional");
+    const noEvidence = await write(
+      "/anticipos/fichas/REF002/netos-apertura/preview",
+      {
+        ciclo: "1",
+        importe: "1499",
+        procedencia: "Documento ficticio acreditado",
+        coberturaVerificada: true,
+        revision: correctedPhoto.revision,
+        motivo: "Corrección documental ficticia",
+      },
+    );
+    expect(noEvidence.status).toBe(422);
+    expect(noEvidence.data.code).toBe("ANTICIPO_INVALID");
+    expect(noEvidence.data.error).toContain(
+      "Evidencia del importe e instante de apertura",
+    );
+    const staleRevision = await write(
+      "/anticipos/fichas/REF002/netos-apertura/preview",
+      {
+        ciclo: "1",
+        importe: "1499",
+        evidencia: "Revisión ficticia del instante histórico",
+        procedencia: "Documento ficticio acreditado",
+        coberturaVerificada: true,
+        revision: correctedPhoto.revision - 1,
+        motivo: "Corrección documental ficticia",
+      },
+    );
+    expect(staleRevision.status).toBe(409);
+    expect(staleRevision.data.code).toBe("REVISION_CONFLICT");
+    const afterRejections = await get("/anticipos/fichas/REF002");
+    expect(afterRejections.fotos).toHaveLength(1);
+    expect(afterRejections.fotos[0].importe).toBe("1499.00");
+    expect(afterRejections.fotos[0].revision).toBe(correctedPhoto.revision);
+    // Negativo de negocio: la apertura confirmada sigue protegiendo los
+    // movimientos que la alterarían (protectAnticipoChange).
+    const supporting = corrected.operaciones.find(
+      (o: any) => o.fecha === "2026-02-03",
+    );
+    expect(supporting?.atribucion?.rol).toBe("Adelanto");
+    const protectedAnnulment = await write(
+      "/movimientos/" + supporting.id + "/anular",
+      {
+        revision: supporting.revision,
+        motivo: "Anulación ficticia para probar la protección de la apertura",
+      },
+    );
+    expect(protectedAnnulment.status).toBe(409);
+    expect(protectedAnnulment.data.code).toBe("ANTICIPO_PHOTO_PROTECTED");
+    expect(
+      (await get("/anticipos/fichas/REF002")).operaciones.filter(
+        (o: any) => !o.anulado,
+      ),
+    ).toHaveLength(3);
     await open("2", "900");
     await page
       .getByRole("button", { name: "Revisar impacto", exact: true })
