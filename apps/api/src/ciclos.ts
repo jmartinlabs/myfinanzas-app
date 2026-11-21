@@ -125,6 +125,23 @@ export type ComidaImpact = {
   despues: Cycle | null;
   efecto: "temporal" | "historico";
 };
+
+/** Ciclo al que pertenece una fila por su fecha, con la ventana derivada. */
+export type PertenenciaCiclo = { id: string; inicio: string; fin: string | null };
+
+/**
+ * §4.1/AC-40: fila de Revisión Comida cuya **pertenencia** cambia al desplazar
+ * el Inicio. Identidad y fecha de la fila se publican intactas; sólo la
+ * pertenencia medida lleva antes/después.
+ */
+export type ComidaReasignada = {
+  id: string;
+  fecha: string;
+  tipo: RevisionComidaRow["tipo"];
+  estadoRegistro: RevisionComidaRow["estadoRegistro"];
+  antes: PertenenciaCiclo | null;
+  despues: PertenenciaCiclo | null;
+};
 const select =
   "SELECT id,inicio,mes_financiado,CAST(saldo_comida AS TEXT) saldo_comida,creado,revision,actualizado FROM ciclos ORDER BY inicio";
 const fingerprint = (value: unknown) =>
@@ -622,6 +639,25 @@ const atDate = (all: Cycle[], date: string) =>
       antes: period(r.antes),
       despues: period(r.despues),
     }));
+  /**
+   * §4.1/AC-40: pertenencia antes/después de **todas** las filas de Revisión
+   * Comida cuya ventana derivada cambia, sin el recorte de página de
+   * `comidaImpacto` (que sirve a la UI paginada). La fila no se reescribe: su
+   * identidad y su fecha salen del mismo `revision_comida` que el maestro no
+   * toca. Una fila idéntica antes/después no aparece.
+   */
+  const comidaReasignada: ComidaReasignada[] = comidaAffected.map((r) => ({
+    id: r.id,
+    fecha: r.fecha,
+    tipo: r.tipo,
+    estadoRegistro: r.estadoRegistro,
+    antes: r.antes
+      ? { id: r.antes.id, inicio: r.antes.inicio, fin: r.antes.fin }
+      : null,
+    despues: r.despues
+      ? { id: r.despues.id, inicio: r.despues.inicio, fin: r.despues.fin }
+      : null,
+  }));
   const contextRevision = fingerprint([
     beforeRows,
     facts,
@@ -679,6 +715,7 @@ const atDate = (all: Cycle[], date: string) =>
     page,
     contextoAntes,
     contextoDespues,
+    comidaReasignada,
     conciliacion: { estado: "pendiente", motivo: "Revisión Comida pendiente" },
   };
 }

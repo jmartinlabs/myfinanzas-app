@@ -1,5 +1,10 @@
 import type { Database } from "bun:sqlite";
-import { aplicarOperacionCiclo, cycleMaster, operationPlan } from "./ciclos";
+import {
+  aplicarOperacionCiclo,
+  cycleMaster,
+  operationPlan,
+  type ComidaReasignada,
+} from "./ciclos";
 import { planReanclaje } from "./cierre-anticipo-apertura";
 import { huellaUniverso, universoFinanciero } from "./cierre-validacion-impacto";
 import {
@@ -55,6 +60,14 @@ export type PreviewRectificacionDto = PreviewOperacionDto & {
     sucesor: { id: string; inicio: string; fin: string | null } | null;
   };
   movimientosReasignados: unknown[];
+  /**
+   * §4.1/AC-40: las filas de Revisión Comida cuya **pertenencia** cambia, con su
+   * identidad intacta y el ciclo/ventana antes y después. Sin ciclo propio, la
+   * pertenencia se deriva de la fecha con el mismo maestro que confirma. Sólo
+   * se enumeran las filas que dejan de pertenecer a la misma ventana; ninguna
+   * se reescribe, y la mera candidatura no las vuelve `dirty`.
+   */
+  revisionesComidaReasignadas: ComidaReasignada[];
   claseAnticipos: "A" | "B" | null;
   causasAnticipos: string[];
 };
@@ -236,6 +249,7 @@ export function previewRectificacion(
         : null,
     },
     movimientosReasignados: calculado.movimientos,
+    revisionesComidaReasignadas: calculado.comidaReasignada,
     claseAnticipos: reanclaje?.clase ?? null,
     causasAnticipos: reanclaje?.causas ?? [],
   };

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { cycleMaster } from "./ciclos";
+import { IMPACTOS_MATERIALES } from "./cierre-validacion-dto";
 import { prepareSchema } from "./database-schema";
 import { proyectarValidacion } from "./cierre-validacion-estado";
 import { cicloDeFecha } from "./cierre-validacion-impacto";
@@ -120,6 +121,11 @@ function estadoCompleto(db: Database): Record<string, unknown[]> {
   return Object.fromEntries(
     TABLAS.map((tabla) => [tabla, db.query(`SELECT * FROM ${tabla}`).all()]),
   );
+}
+
+/** La tabla de Revisión Comida, tal cual: identidad, fecha e importe incluidos. */
+function comidaFilas(db: Database) {
+  return db.query("SELECT * FROM revision_comida ORDER BY id").all();
 }
 
 function fila(db: Database, cicloId: string) {
@@ -888,6 +894,154 @@ test("AC-36/§6.3 · el preview publica el Fin posterior del predecesor y el tra
         .filter((evento) => evento.accion === "dirty_marcado")
         .map((evento) => evento.ciclo),
     ).toEqual(["1", "2"]);
+  } finally {
+    db.close();
+  }
+});
+
+/* ================================================================== *
+ * §4.1/AC-40 · filas de Revisión Comida reasignadas
+ * ================================================================== */
+
+test("AC-40/§6.3 · el preview enumera la pertenencia antes/después de las filas de Revisión Comida reasignadas", () => {
+  const db = baseAnual();
+  try {
+    const antes = estadoCompleto(db);
+    const comidaAntes = comidaFilas(db);
+    const entrada = cuerpo({
+      inicio: "2026-12-29",
+      motivo: "Mover el Inicio del ciclo tras el cierre de mes",
+    });
+    const preview = previewRectificacion(db, "2", entrada);
+
+    // Identidad y fecha de la fila intactas; la pertenencia va antes/después.
+    // RC1 conserva el ciclo 1 pero su ventana termina donde antes empezaba C
+    // —misma vara que `movimientosReasignados`—; RC2 deja de pertenecer a C.
+    expect(preview.revisionesComidaReasignadas).toEqual([
+      {
+        id: "RC1",
+        fecha: "2026-12-20",
+        tipo: "Detalle",
+        estadoRegistro: "Vigente",
+        antes: { id: "1", inicio: "2026-11-25", fin: "2026-12-24" },
+        despues: { id: "1", inicio: "2026-11-25", fin: "2026-12-28" },
+      },
+      {
+        id: "RC2",
+        fecha: "2026-12-28",
+        tipo: "Detalle",
+        estadoRegistro: "Vigente",
+        antes: { id: "2", inicio: "2026-12-25", fin: "2027-01-24" },
+        despues: { id: "1", inicio: "2026-11-25", fin: "2026-12-28" },
+      },
+    ]);
+    // La lista publica identidad y pertenencia, no importes: el preview no es
+    // un canal de cifras de Revisión Comida.
+    for (const reasignada of preview.revisionesComidaReasignadas)
+      expect(Object.keys(reasignada).sort()).toEqual([
+        "antes",
+        "despues",
+        "estadoRegistro",
+        "fecha",
+        "id",
+        "tipo",
+      ]);
+
+    // La candidatura de una fila no marca por sí sola: los afectados y sus
+    // motivos son los medidos por el universo, sin códigos nuevos.
+    expect(preview.afectados.map((afectado) => afectado.ciclo)).toEqual(["1", "2"]);
+    for (const afectado of preview.afectados)
+      for (const motivo of afectado.motivos) expect(IMPACTOS_MATERIALES).toContain(motivo);
+
+    // Enumerar es leer: ni la tabla de Revisión Comida ni el estado cambian.
+    expect(comidaFilas(db)).toEqual(comidaAntes);
+    expect(estadoCompleto(db)).toEqual(antes);
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-40 · sin Revisión Comida reasignada la lista viene vacía", () => {
+  // Maestro sin filas de Revisión Comida: nada que enumerar, sin inventar
+  // entradas vacías ni motivos nuevos.
+  const db = baseValidada();
+  try {
+    const antes = estadoCompleto(db);
+    const preview = previewRectificacion(
+      db,
+      "2",
+      cuerpo({ inicio: "2026-02-15", motivo: "Desplazar el Inicio" }),
+    );
+    expect(preview.revisionesComidaReasignadas).toEqual([]);
+    // La operación sigue siendo material por la ventana: la lista no es la
+    // medida del impacto.
+    expect(preview.material).toBe(true);
+    expect(estadoCompleto(db)).toEqual(antes);
+  } finally {
+    db.close();
+  }
+
+  // Con filas existentes: sólo se enumeran las que cambian de pertenencia.
+  const intacto = baseValidada();
+  try {
+    comida(intacto, "RC9", "2026-03-10", 900, "Comida de un ciclo intacto");
+    const antes = estadoCompleto(intacto);
+    const preview = previewRectificacion(
+      intacto,
+      "2",
+      cuerpo({ inicio: "2026-02-15", motivo: "Desplazar el Inicio" }),
+    );
+    // El ciclo 3 no cambia de ventana: su Revisión Comida no se enumera.
+    expect(preview.revisionesComidaReasignadas).toEqual([]);
+    expect(preview.afectados.map((afectado) => afectado.ciclo)).toEqual(["1", "2"]);
+    expect(estadoCompleto(intacto)).toEqual(antes);
+  } finally {
+    intacto.close();
+  }
+});
+
+test("AC-40 · preview y cancelación no escriben: tabla y estado completos idénticos", () => {
+  const db = baseAnual();
+  try {
+    const estadoAntes = estadoCompleto(db);
+    const comidaAntes = comidaFilas(db);
+    const eventosAntes = eventos(db);
+    const entrada = cuerpo({
+      inicio: "2026-12-29",
+      motivo: "Mover el Inicio del ciclo tras el cierre de mes",
+    });
+    const primera = previewRectificacion(db, "2", entrada);
+    // Cancelar es no confirmar: un segundo preview reproduce la respuesta
+    // exacta —tokens incluidos— y no deja intento ni escritura.
+    const segunda = previewRectificacion(db, "2", entrada);
+    expect(segunda).toEqual(primera);
+    expect(comidaFilas(db)).toEqual(comidaAntes);
+    expect(estadoCompleto(db)).toEqual(estadoAntes);
+    expect(eventos(db)).toEqual(eventosAntes);
+    expect(fila(db, "1")!.dirty).toBe(0);
+    expect(fila(db, "2")!.dirty).toBe(0);
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-40 · la enumeración no hereda el recorte de página de la UI", () => {
+  const db = baseValidada();
+  try {
+    // 120 filas en el ciclo 1: al mover el Inicio de C su ventana pasa a
+    // terminar el 14/02 y todas cambian de pertenencia a la vez.
+    for (let indice = 1; indice <= 120; indice += 1)
+      comida(db, `RC${String(indice).padStart(4, "0")}`, "2026-01-20", 100, `Comida ${indice}`);
+    const preview = previewRectificacion(
+      db,
+      "2",
+      cuerpo({ inicio: "2026-02-15", motivo: "Desplazar el Inicio" }),
+    );
+    expect(preview.revisionesComidaReasignadas).toHaveLength(120);
+    for (const reasignada of preview.revisionesComidaReasignadas) {
+      expect(reasignada.antes).toEqual({ id: "1", inicio: "2026-01-01", fin: "2026-01-31" });
+      expect(reasignada.despues).toEqual({ id: "1", inicio: "2026-01-01", fin: "2026-02-14" });
+    }
   } finally {
     db.close();
   }
