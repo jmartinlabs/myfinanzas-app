@@ -1513,7 +1513,7 @@ test("E4.2-AC-39/40: guard de Saldo y huella de Movimiento con Ventas", () => {
             ...change,
           }),
         ).code,
-      ).toBe("HISTORY_LOCKED");
+      ).toBe("RECTIFICATION_REQUIRED");
     }
     expect(
       updateSaldo(db, "S003", {
@@ -1554,7 +1554,7 @@ test("E4.2-AC-39: Saldo solo con Venta y Saldo con Compra y Venta anulada", () =
             ...change,
           }),
         ).code,
-      ).toBe("HISTORY_LOCKED");
+      ).toBe("RECTIFICATION_REQUIRED");
     // A cash Saldo that intervenes only in one Venta.
     const onlySale = createSaldo(
       db,
@@ -1595,7 +1595,7 @@ test("E4.2-AC-39: Saldo solo con Venta y Saldo con Compra y Venta anulada", () =
             ...change,
           }),
         ).code,
-      ).toBe("HISTORY_LOCKED");
+      ).toBe("RECTIFICATION_REQUIRED");
     // Deactivate/reactivate keep both operations; only the name is free.
     updateSaldo(db, onlySale.id, {
       revision: getSaldo(db, onlySale.id).revision,

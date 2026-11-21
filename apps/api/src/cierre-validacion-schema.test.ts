@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
-import { contract, manifest, verifyContract } from "./schema-contract";
+import { contract, manifest, verifyContract } from "./schema-contract";import { restaurarTriggerAperturaV31 } from "./cierre-validacion-test-support";
+
 import { importarCierresLegados } from "./cierre-validacion-migracion";
 
 process.env.NODE_ENV = "test";
@@ -41,7 +42,14 @@ function revertToV31(db: Database) {
     DROP TABLE validacion_attempts;
     DROP TABLE cierre_validacion_audit;
     DROP TABLE cierre_validacion;
+    /* Retirada de los objetos de I2 antes de bajar a la versión previa. */
+    DROP TRIGGER anticipo_apertura_aplicada;
+    DROP TRIGGER anticipo_cycle_photo;
+    DROP TABLE anticipo_apertura_autorizacion;
+    DROP TABLE anticipo_apertura_guard;
+    DROP TABLE anticipo_apertura_evento;
     UPDATE schema_version SET version=31;`);
+  restaurarTriggerAperturaV31(db);
   expect(verifyContract(db, 31)).toBe(c31);
 }
 

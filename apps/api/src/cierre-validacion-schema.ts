@@ -102,6 +102,10 @@ export const ACCIONES_AUDITORIA = [
   "restauracion",
   /** Reacreditación de Anticipos (clase B). */
   "reacreditacion",
+  /** Corrección estructural del Inicio de un ciclo. */
+  "rectificar_inicio",
+  /** Corrección del Saldo inicial (S0) de un ciclo. */
+  "rectificar_s0",
   /** Metadatos legados migrados antes de #548. */
   "legado_reapertura_activa",
   "legado_cierre_vinculo",
@@ -132,6 +136,10 @@ export const OPERACIONES_VALIDACION = [
   "revalidar",
   "confirmar_revision",
   "migracion",
+  /** §4.1: la corrección estructural del Inicio tiene recibo idempotente. */
+  "rectificar_inicio",
+  /** §4.1: la corrección de S0 tiene recibo idempotente. */
+  "rectificar_s0",
 ] as const;
 
 const lista = (valores: readonly string[]) =>
@@ -616,6 +624,106 @@ const ORIGEN_VALIDO = `(${PREFIJOS_ORIGEN.map(
     ).join(" OR "),
 ).join(" OR ")})`;
 
+/**
+ * Capacidad transaccional de §4.3: ligada a un intento, un ciclo/revisión
+ * esperada, una REF/revisión esperada y los dos cortes. Existe sólo mientras
+ * la operación está en curso; el servicio la elimina antes del COMMIT.
+ */
+const TABLA_CAPACIDAD_APERTURA = `
+    CREATE TABLE anticipo_apertura_autorizacion(
+      intento TEXT NOT NULL,
+      referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia) ON DELETE RESTRICT,
+      evento INTEGER NOT NULL REFERENCES anticipo_apertura_evento(id) ON DELETE RESTRICT,
+      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,
+      revision_ciclo INTEGER NOT NULL CHECK(revision_ciclo>0),
+      revision_apertura INTEGER CHECK(revision_apertura IS NULL OR revision_apertura>0),
+      corte_anterior TEXT NOT NULL,
+      corte_nuevo TEXT NOT NULL,
+      fase TEXT NOT NULL CHECK(fase IN ('PREPARADA','CICLO_APLICADO','APERTURA_APLICADA')),
+      PRIMARY KEY(intento,referencia)
+    ) STRICT;`;
+
+/**
+ * Guardas del orden de escritura de §4.3. El esquema —no la cortesía del
+ * servicio— impone la secuencia: la capacidad nace PREPARADA bajo un guard
+ * activo y ligada a su evento exacto; el ciclo X→Y/r+1 sólo pasa si **cada**
+ * REF con apertura en X tiene su capacidad vigente, y eso las promueve a
+ * CICLO_APLICADO; cada apertura X→Y/a+1 sólo pasa con su capacidad en
+ * CICLO_APLICADO, el ciclo ya en Y y la revisión esperada, y la consume.
+ */
+const TRIGGERS_CAPACIDAD_APERTURA = `
+    CREATE TRIGGER anticipo_apertura_capacidad_vigente
+      BEFORE INSERT ON anticipo_apertura_autorizacion
+      WHEN NEW.fase<>'PREPARADA'
+        OR NOT EXISTS(SELECT 1 FROM anticipo_apertura_guard WHERE intento=NEW.intento)
+        OR NOT EXISTS(SELECT 1 FROM anticipo_apertura_evento e
+                       WHERE e.id=NEW.evento AND e.intento=NEW.intento
+                         AND e.referencia=NEW.referencia AND e.ciclo=NEW.ciclo
+                         AND e.corte_anterior=NEW.corte_anterior
+                         AND e.corte_nuevo=NEW.corte_nuevo
+                         AND e.revision_ciclo_esperada=NEW.revision_ciclo
+                         AND e.revision_apertura_esperada IS NEW.revision_apertura)
+      BEGIN SELECT RAISE(ABORT,'capability outside an active attempt'); END;
+
+    CREATE TRIGGER anticipo_apertura_capacidad_fase
+      BEFORE UPDATE ON anticipo_apertura_autorizacion
+      WHEN NEW.intento IS NOT OLD.intento OR NEW.referencia IS NOT OLD.referencia
+        OR NEW.evento IS NOT OLD.evento OR NEW.ciclo IS NOT OLD.ciclo
+        OR NEW.revision_ciclo IS NOT OLD.revision_ciclo
+        OR NEW.revision_apertura IS NOT OLD.revision_apertura
+        OR NEW.corte_anterior IS NOT OLD.corte_anterior
+        OR NEW.corte_nuevo IS NOT OLD.corte_nuevo
+        OR NOT ((OLD.fase='PREPARADA' AND NEW.fase='CICLO_APLICADO')
+             OR (OLD.fase='CICLO_APLICADO' AND NEW.fase='APERTURA_APLICADA'))
+      BEGIN SELECT RAISE(ABORT,'invalid capability transition'); END;
+
+    DROP TRIGGER IF EXISTS anticipo_cycle_photo;
+
+    CREATE TRIGGER anticipo_cycle_photo
+      BEFORE UPDATE OF inicio ON ciclos
+      WHEN NEW.inicio IS NOT OLD.inicio
+       AND EXISTS(SELECT 1 FROM fotos_neto_apertura WHERE ciclo=OLD.id)
+    BEGIN
+      SELECT RAISE(ABORT,'protected anticipo opening')
+      WHERE NOT EXISTS(SELECT 1 FROM anticipo_apertura_guard)
+         OR NEW.revision<>OLD.revision+1
+         OR (SELECT COUNT(*) FROM fotos_neto_apertura WHERE ciclo=OLD.id)
+            <>(SELECT COUNT(*) FROM anticipo_apertura_autorizacion a
+                 JOIN fotos_neto_apertura f
+                   ON f.referencia=a.referencia AND f.ciclo=OLD.id
+                WHERE a.intento=(SELECT intento FROM anticipo_apertura_guard)
+                  AND a.ciclo=OLD.id AND a.fase='PREPARADA'
+                  AND a.revision_ciclo=OLD.revision
+                  AND a.revision_apertura=f.revision
+                  AND a.corte_anterior=OLD.inicio
+                  AND a.corte_nuevo=NEW.inicio);
+      UPDATE anticipo_apertura_autorizacion SET fase='CICLO_APLICADO'
+       WHERE intento=(SELECT intento FROM anticipo_apertura_guard)
+         AND ciclo=OLD.id AND fase='PREPARADA';
+    END;
+
+    CREATE TRIGGER anticipo_apertura_aplicada
+      BEFORE UPDATE OF inicio ON fotos_neto_apertura
+      WHEN NEW.inicio IS NOT OLD.inicio
+      BEGIN
+        SELECT RAISE(ABORT,'protected anticipo opening')
+        WHERE NOT EXISTS(
+          SELECT 1 FROM anticipo_apertura_autorizacion a
+            JOIN ciclos c ON c.id=a.ciclo
+           WHERE a.intento=(SELECT intento FROM anticipo_apertura_guard)
+             AND a.referencia=OLD.referencia AND a.ciclo=OLD.ciclo
+             AND a.fase='CICLO_APLICADO'
+             AND a.revision_apertura=OLD.revision
+             AND a.corte_anterior=OLD.inicio AND a.corte_nuevo=NEW.inicio
+             AND NEW.revision=OLD.revision+1
+             AND c.inicio=NEW.inicio
+             AND c.revision IN (a.revision_ciclo,a.revision_ciclo+1));
+        UPDATE anticipo_apertura_autorizacion SET fase='APERTURA_APLICADA'
+         WHERE intento=(SELECT intento FROM anticipo_apertura_guard)
+           AND referencia=OLD.referencia AND ciclo=OLD.ciclo
+           AND fase='CICLO_APLICADO';
+      END;`;
+
 /** DDL completa de v32; determinista para que el manifiesto sea reproducible. */
 export function cierreValidacionDdl(): string {
   return `
@@ -1033,6 +1141,68 @@ export function cierreValidacionDdl(): string {
       BEFORE UPDATE ON validacion_attempts
       WHEN NOT (${RECIBO_VALIDO("NEW.response")})
       BEGIN SELECT RAISE(ABORT,'recibo de validacion invalido'); END;
+
+    /* ------------------------------------------------------------------ *
+     * §4.2/§4.3 · Reanclaje y reacreditación de Anticipos
+     *
+     * El veto absoluto del trigger legado de apertura («Inicio protegido por
+     * Neto de apertura») retiraba la corrección estructural en lugar de
+     * regularla. Se sustituye por el procedimiento autorizado de la SPEC: un
+     * **evento** append-only por REF, una **capacidad** transaccional por
+     * intento+REF y un **orden** de escritura que el esquema impone —evento y
+     * capacidad PREPARADA antes del ciclo, ciclo X→Y/r+1 antes de cada
+     * apertura, y consumo de cada capacidad al aplicarse su apertura—.
+     *
+     * Ni el evento ni la capacidad guardan importes: la evidencia y el dato
+     * declarado siguen en la tabla de aperturas, que es negocio de Anticipos
+     * (E3.1) y no una foto de cierre. La capacidad no sobrevive a un COMMIT
+     * correcto: el servicio las elimina dentro de la misma transacción y la
+     * verificación final comprueba que no queda ninguna.
+     * ------------------------------------------------------------------ */
+
+    CREATE TABLE anticipo_apertura_evento(
+      id INTEGER PRIMARY KEY,
+      referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia) ON DELETE RESTRICT,
+      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,
+      intento TEXT NOT NULL CHECK(${idTecnico("intento")} AND intento IS NOT NULL),
+      revision_ciclo_esperada INTEGER NOT NULL CHECK(revision_ciclo_esperada>0),
+      revision_ciclo_resultante INTEGER NOT NULL CHECK(revision_ciclo_resultante=revision_ciclo_esperada+1),
+      revision_apertura_esperada INTEGER CHECK(
+        revision_apertura_esperada IS NULL OR revision_apertura_esperada>0),
+      revision_apertura_resultante INTEGER CHECK(
+        revision_apertura_resultante IS NULL
+        OR revision_apertura_resultante=revision_apertura_esperada+1),
+      corte_anterior TEXT NOT NULL,
+      corte_nuevo TEXT NOT NULL,
+      clase TEXT NOT NULL CHECK(clase IN ('A','B')),
+      actor TEXT NOT NULL CHECK(length(trim(actor))>0 AND length(actor)<=200),
+      instante TEXT NOT NULL CHECK(${INSTANTE_OBLIGATORIO}),
+      motivo TEXT CHECK(motivo IS NULL OR (length(trim(motivo))>0 AND length(motivo)<=2000)),
+      huella_anterior TEXT CHECK(${huella("huella_anterior")}),
+      huella_posterior TEXT CHECK(${huella("huella_posterior")}),
+      UNIQUE(intento,referencia),
+      CHECK(clase='B' OR corte_anterior<>corte_nuevo),
+      CHECK((revision_apertura_esperada IS NULL)=(revision_apertura_resultante IS NULL))
+    ) STRICT;
+
+    CREATE INDEX anticipo_apertura_evento_ciclo
+      ON anticipo_apertura_evento(ciclo,id);
+
+    CREATE TRIGGER anticipo_apertura_evento_no_update
+      BEFORE UPDATE ON anticipo_apertura_evento
+      BEGIN SELECT RAISE(ABORT,'immutable opening event'); END;
+
+    CREATE TRIGGER anticipo_apertura_evento_no_delete
+      BEFORE DELETE ON anticipo_apertura_evento
+      BEGIN SELECT RAISE(ABORT,'immutable opening event'); END;
+
+    CREATE TABLE anticipo_apertura_guard(
+      id INTEGER PRIMARY KEY CHECK(id=1),
+      intento TEXT NOT NULL CHECK(${idTecnico("intento")} AND intento IS NOT NULL)
+    ) STRICT;
+
+    ${TABLA_CAPACIDAD_APERTURA}
+    ${TRIGGERS_CAPACIDAD_APERTURA}
 
     UPDATE schema_version SET version=32;`;
 }

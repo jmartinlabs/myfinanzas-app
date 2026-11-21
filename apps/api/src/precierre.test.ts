@@ -89,7 +89,8 @@ test("AC-01: ventana finita, S0 visible y sin escritura", () => {
     expect(result.ciclo.saldoInicialComida).toBe("1000.00");
     expect(["Listo", "Listo con avisos"]).toContain(result.estado);
     expect(result.bloqueos).toEqual([]);
-    expect(result.e4_9Bloqueado).toBe(false);
+    // §8: `e4_9Bloqueado` deja de ser autoridad y desaparece del DTO.
+    expect("e4_9Bloqueado" in result).toBe(false);
     expect(result.fuentes.find((f) => f.key === "e35")?.estado).toBe(
       "Verificado",
     );
@@ -437,13 +438,20 @@ test("AC-07: fuentes no disponibles son aviso, no cero ni bloqueo", () => {
   }
 });
 
-test("AC-08: backup sin evidencia bloquea", () => {
+test("AC-08: el backup deja de ser criterio financiero (G5 sigue gate operativo)", () => {
   const db = fixture({ plan: true });
   try {
-    const result = getPrecierre(db, "1", now);
-    expect(result.estado).toBe("Bloqueado");
-    expect(result.bloqueos.map((b) => b.code)).toContain("BACKUP_NO_VERIFICABLE");
-    expect(result.e4_9Bloqueado).toBe(true);
+    const sinEvidencia = getPrecierre(db, "1", now);
+    // SPEC26 AC-08 sustituido: la ausencia de evidencia DT6/T-BKP no bloquea la
+    // validación operativa; es gate de migración y despliegue, no requisito
+    // financiero. Se sigue declarando como estado del bloque.
+    expect(sinEvidencia.bloqueos.map((b) => b.code)).not.toContain(
+      "BACKUP_NO_VERIFICABLE",
+    );
+    expect(sinEvidencia.backup.estado).toBe("No verificable");
+    expect(sinEvidencia.estado).not.toBe("Bloqueado");
+    const conEvidencia = getPrecierre(db, "1", now, { backup });
+    expect(conEvidencia.backup.estado).toBe("Verificado");
   } finally {
     close(db);
   }
@@ -583,7 +591,6 @@ test("AC-14: E3.5 no disponible deja precierre parcial y E4.9 bloqueado", () => 
       "E35_NO_VERIFICABLE",
     );
     expect(result.avisos.map((a) => a.code)).toContain("E35_NO_VERIFICABLE");
-    expect(result.e4_9Bloqueado).toBe(true);
   } finally {
     close(db);
   }
@@ -596,13 +603,12 @@ test("AC-15: estado comparte versión y estado con precierre", () => {
     const state = getPrecierreEstado(db, "1", now, { backup });
     expect(state.revision).toBe(full.revision);
     expect(state.estado).toBe(full.estado);
-    expect(state.e4_9Bloqueado).toBe(full.e4_9Bloqueado);
   } finally {
     close(db);
   }
 });
 
-test("B2: error de fuente núcleo marca e4_9Bloqueado aunque el estado sea Parcial", () => {
+test("B2: error de fuente núcleo deja el precierre Parcial, sin autoridad de cierre", () => {
   const db = fixture({ plan: true });
   verifiableRegimen(db);
   classifyFood(db);
@@ -610,16 +616,14 @@ test("B2: error de fuente núcleo marca e4_9Bloqueado aunque el estado sea Parci
     db.run("ALTER TABLE movimiento_anticipo RENAME TO movimiento_anticipo_off");
     const result = getPrecierre(db, "1", now, { backup });
     expect(result.estado).toBe("Parcial");
-    expect(result.e4_9Bloqueado).toBe(true);
-    expect(
-      result.estado === "Listo con avisos" && result.e4_9Bloqueado,
-    ).toBe(false);
+    expect(result.cobertura).toBe("Parcial");
+    expect("e4_9Bloqueado" in result).toBe(false);
   } finally {
     close(db);
   }
 });
 
-test("AC-16: cierre posterior real detectado desde cierres/fotos sin inyección", () => {
+test("AC-16: el precierre no lee cierres ni fotos posteriores", () => {
   const db = fixture({ plan: true });
   verifiableRegimen(db);
   classifyFood(db);
@@ -652,41 +656,15 @@ test("AC-16: cierre posterior real detectado desde cierres/fotos sin inyección"
       now,
     );
     const result = getPrecierre(db, "1", now, { backup });
-    expect(result.cierres).toHaveLength(1);
-    expect(result.cierres[0]).toMatchObject({
-      id: "2",
-      fin: "2026-02-28",
-      coherent: true,
-    });
-    expect(result.avisos.map((a) => a.code)).toContain(
-      "CIERRE_FUERA_DE_ORDEN",
-    );
+    // §8: el contraste con fotos posteriores pierde objeto. El precierre de un
+    // ciclo no cambia porque otro ciclo tenga un cierre legado, y no publica ni
+    // `cierres` ni avisos de coherencia con fotos.
+    expect("cierres" in result).toBe(false);
+    expect(result.avisos.map((a) => a.code)).not.toContain("CIERRE_FUERA_DE_ORDEN");
     expect(result.bloqueos.map((b) => b.code)).not.toContain(
       "INCOHERENCIA_CON_CIERRE_POSTERIOR",
     );
-  } finally {
-    close(db);
-  }
-});
-
-test("AC-16: cierre posterior coherente avisa; incoherente bloquea", () => {
-  const db = fixture({ plan: true });
-  try {
-    const warning = getPrecierre(db, "1", now, {
-      backup,
-      closures: [{ id: "3", fin: "2026-02-28", coherent: true }],
-    });
-    expect(warning.avisos.map((a) => a.code)).toContain("CIERRE_FUERA_DE_ORDEN");
-    expect(warning.bloqueos.map((b) => b.code)).not.toContain(
-      "INCOHERENCIA_CON_CIERRE_POSTERIOR",
-    );
-    const blocked = getPrecierre(db, "1", now, {
-      backup,
-      closures: [{ id: "3", fin: "2026-02-28", coherent: false }],
-    });
-    expect(blocked.bloqueos.map((b) => b.code)).toContain(
-      "INCOHERENCIA_CON_CIERRE_POSTERIOR",
-    );
+    expect(["Listo", "Listo con avisos", "Parcial"]).toContain(result.estado);
   } finally {
     close(db);
   }

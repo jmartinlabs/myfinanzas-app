@@ -409,7 +409,11 @@ test("el completado depende de puedeCompletar y muestra los motivos del servidor
   const html = renderToStaticMarkup(
     <RepartoSeguimientoPanel seguimiento={seguimiento} />,
   );
-  expect(html).toContain("cierre financiero");
+  // SPEC38 §7.6/G2: el aviso informa de la revisión pendiente; ya no anuncia un
+  // bloqueo por cierre financiero.
+  expect(html).toContain("revisión de validación pendiente");
+  expect(html).toContain("Puedes seguir");
+  expect(html).not.toContain("no admite cambios de reparto");
   expect(html).toContain("Faltan pendientes para las líneas 4.");
   expect(html).toMatch(/<button[^>]*disabled[^>]*>Completar reparto/);
 });

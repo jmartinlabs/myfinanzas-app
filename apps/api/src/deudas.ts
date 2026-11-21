@@ -1,14 +1,8 @@
 import type { Database } from "bun:sqlite";
+import { consumerImpactFingerprint } from "./consumer-impact";
 import { Problem, money, decimal } from "./saldos";
 import { civil } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
-import {
-  assertClosedEconomicImpact,
-  closedFieldDecision,
-  consumerImpactFingerprint,
-  hasClosures,
-  type ClosedWindow,
-} from "./e49-guards";
 import { getDeudaCompleta } from "./deuda-completa";
 export type Debt = {
   id: string;
@@ -100,7 +94,6 @@ export function previewDebtImpact(
       );
     fields(body, old, conditionRow(db, id));
     const changed = editableDebtFields.filter((field) => field in body);
-    const decision = closedFieldDecision(db, "deuda", changed);
     let usos: ReturnType<typeof debtUsage>;
     try {
       usos = debtUsage(db, id);
@@ -115,15 +108,11 @@ export function previewDebtImpact(
       deuda: id,
       revision: old.revision,
       cambios: changed,
-      informativo: decision.informative,
-      economico: decision.economic,
+      // §7.6: sin campos «informativos» por nombre ni cierres que consultar.
+      informativo: [],
+      economico: changed,
       usos,
-      cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
-        ciclo,
-        version,
-        inicio,
-        fin,
-      })),
+      cierres: [],
       fingerprint: debtImpactHash(db, id, changed, old.revision),
     };
   })();
@@ -486,38 +475,18 @@ export function updateDebt(
         );
       const v = fields(body, old, conditionRow(db, id));
       const changed = editableDebtFields.filter((field) => field in body);
-      let closureImpact:
-        | {
-            fingerprint: string | null;
-            cierres: ClosedWindow[];
-          }
-        | null = null;
-      if (hasClosures(db)) {
-        let expected: string;
-        try {
-          expected = debtImpactHash(db, id, changed, old.revision);
-        } catch {
-          throw new Problem(
-            409,
-            "IMPACTO_NO_VERIFICABLE",
-            "No se pueden leer los consumidores de la Deuda; no se puede acreditar el impacto del cambio.",
-          );
-        }
-        const windows = assertClosedEconomicImpact(
-          db,
-          "deuda",
-          changed,
-          v.motivo,
-          body.fingerprint,
-          expected,
-          "actualizar la Deuda",
+      // §7.6: el cambio de una Deuda usada lo gobiernan sus guardas propias
+      // —apertura e Inicio control protegidos, estado y relaciones—, no una
+      // huella genérica atada a la existencia de un cierre.
+      const closureImpact: { fingerprint: string | null } | null = null;
+      try {
+        debtUsage(db, id);
+      } catch {
+        throw new Problem(
+          409,
+          "IMPACTO_NO_VERIFICABLE",
+          "No se pueden leer los consumidores de la Deuda; no se puede acreditar el impacto del cambio.",
         );
-        if (windows.length)
-          closureImpact = {
-            fingerprint:
-              typeof body.fingerprint === "string" ? body.fingerprint : null,
-            cierres: windows,
-          };
       }
       if (
         (v.inicioControl !== old.inicioControl ||
@@ -556,21 +525,7 @@ export function updateDebt(
           JSON.stringify({
             anterior: before,
             posterior: next,
-            ...(closureImpact
-              ? {
-                  impacto: {
-                    fingerprint: closureImpact.fingerprint,
-                    cierres: closureImpact.cierres.map(
-                      ({ ciclo, version, inicio, fin }) => ({
-                        ciclo,
-                        version,
-                        inicio,
-                        fin,
-                      }),
-                    ),
-                  },
-                }
-              : {}),
+            ...(closureImpact ? { impacto: closureImpact } : {}),
           }),
           time,
           old.revision,

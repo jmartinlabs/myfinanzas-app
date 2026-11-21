@@ -28,9 +28,9 @@ import {
  * Cubre AC-10, AC-11, AC-12, AC-13, AC-31, AC-33, AC-35, AC-36, AC-37 y AC-42
  * sobre el mecanismo único de SPEC36 §6, sin un segundo motor:
  *
- *  - la confirmación escribe una única Transferencia real con la fecha bancaria
- *    y el `HISTORY_LOCKED` se decide por esa fecha, no por el cierre del Ciclo
- *    original del Gasto (D2, AC-42);
+ *  - la confirmación escribe una única Transferencia real con la fecha bancaria;
+ *    SPEC38 §7.6 retira el `HISTORY_LOCKED` por ventana cerrada, así que el
+ *    cierre del Ciclo original nunca bloquea (D2, AC-42);
  *  - en modalidad B la Referencia prevista se revalida y la Transferencia lleva
  *    la atribución E3.1 del hecho real (D2/D9);
  *  - el vínculo exige coincidencia exacta y admite Referencia solo donde el
@@ -491,7 +491,7 @@ test("SPEC37-I4 AC-35/AC-10: confirmar modalidad A escribe una única Transferen
   ).toEqual(["alta", "confirmacion"]);
 });
 
-test("SPEC37-I4 AC-33: fecha futura y ventana cerrada rechazan sin escritura y conservan el pendiente", () => {
+test("SPEC37-I4 AC-33: la fecha futura rechaza sin escritura y el ciclo cerrado ya escribe", () => {
   const f = fixture();
   const gastoId = gasto(f);
   const item = pendiente(f, gastoId);
@@ -515,50 +515,32 @@ test("SPEC37-I4 AC-33: fecha futura y ventana cerrada rechazan sin escritura y c
     "VALIDATION",
   );
 
-  closeWindow(f.db, f.ciclo, "2026-01-01", "2026-01-31");
-  const despuesDelCierre = financialSnapshot(f.db);
-  // La ventana cerrada bloquea también la vista previa.
-  expectProblem(
-    () =>
-      previewImpactoTransferenciaPendiente(
-        f.db,
-        item.id,
-        { fechaReal: "2026-01-15" },
-        now,
-      ),
-    409,
-    "HISTORY_LOCKED",
-  );
-  expectProblem(
-    () =>
-      confirmarTransferenciaPendiente(
-        f.db,
-        item.id,
-        {
-          revision: item.revision,
-          fechaReal: "2026-01-15",
-          fingerprint: "0".repeat(64),
-        },
-        randomUUID(),
-        now,
-      ),
-    409,
-    "HISTORY_LOCKED",
-  );
+  // Las dos tentativas inválidas no escribieron nada.
+  expect(financialSnapshot(f.db)).toEqual(antes);
 
-  // Sin escritura y con el pendiente conservado en su estado y revisión.
-  expect(financialSnapshot(f.db)).toEqual(despuesDelCierre);
-  expect(despuesDelCierre.movimientos).toEqual(antes.movimientos);
-  const conservado = getTransferenciaPendiente(f.db, item.id, now).item;
-  expect(conservado).toMatchObject({
-    estado: "Pendiente de realizar",
-    revision: item.revision,
-    fechaEfectiva: null,
-    movimiento: null,
+  closeWindow(f.db, f.ciclo, "2026-01-01", "2026-01-31");
+  // Sustituye el 409 HISTORY_LOCKED por ventana cerrada de preview y
+  // confirmación: SPEC38 §7.6 retira el bloqueo y la corrección es ordinaria.
+  const preview = previewImpactoTransferenciaPendiente(
+    f.db,
+    item.id,
+    { fechaReal: "2026-01-15" },
+    now,
+  );
+  expect(preview.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+  const confirmado = confirmar(f, item.id, { fechaReal: "2026-01-15" });
+  expect(confirmado).toMatchObject({
+    estado: "Confirmada",
+    fechaEfectiva: "2026-01-15",
   });
+
+  // El pendiente queda confirmado con su fecha real, no bloqueado.
+  const conservado = getTransferenciaPendiente(f.db, item.id, now).item;
+  expect(conservado.estado).toBe("Confirmada");
+  expect(conservado.fechaEfectiva).toBe("2026-01-15");
 });
 
-test("SPEC37-I4 AC-42: el Ciclo original cerrado no bloquea; la fecha real cerrada sí", () => {
+test("SPEC37-I4 AC-42: el Ciclo original cerrado y la fecha real cerrada ya no bloquean", () => {
   const f = fixture();
   // Dos Gastos y dos pendientes antes del cierre: nada se escribe en una
   // ventana cerrada.
@@ -600,22 +582,24 @@ test("SPEC37-I4 AC-42: el Ciclo original cerrado no bloquea; la fecha real cerra
     cierresAntes,
   );
 
-  // (b) La misma clase de pendiente con fecha bancaria real en la ventana
-  // cerrada: HISTORY_LOCKED, sin escritura y con el pendiente conservado.
-  const movimientosAntes = count(f.db, "SELECT COUNT(*) n FROM movimientos");
-  expectProblem(
-    () => confirmar(f, p2.id, { fechaReal: "2026-01-20" }),
-    409,
-    "HISTORY_LOCKED",
-  );
-  expect(count(f.db, "SELECT COUNT(*) n FROM movimientos")).toBe(
-    movimientosAntes,
-  );
-  expect(getTransferenciaPendiente(f.db, p2.id, now).item).toMatchObject({
-    estado: "Pendiente de realizar",
-    cicloOrigen: f.ciclo,
-    fechaEfectiva: null,
+  // (b) SPEC38 §7.6 sustituye el 409 HISTORY_LOCKED por fecha en ventana
+  // cerrada: la misma clase de pendiente se confirma con su fecha real y el
+  // hecho queda en el Ciclo de esa fecha, sin reescribir cierres.
+  const confirmado2 = confirmar(f, p2.id, { fechaReal: "2026-01-20" });
+  expect(confirmado2).toMatchObject({
+    estado: "Confirmada",
+    fechaEfectiva: "2026-01-20",
   });
+  expect(confirmado2.movimiento).toMatchObject({
+    fecha: "2026-01-20",
+    importe: "40.00",
+  });
+  expect(
+    getMovement(f.db, confirmado2.movimiento!.id).movimiento.ciclo?.id,
+  ).toBe(f.ciclo);
+  expect(f.db.query("SELECT * FROM cierres ORDER BY ciclo,version").all()).toEqual(
+    cierresAntes,
+  );
 });
 
 test("SPEC37-I4 AC-10: la Referencia de Anticipo existente se revalida y alimenta E3.1", () => {

@@ -28773,9 +28773,15 @@
   },
   {
     "id": "C32-SPEC38-VALIDACION-CIERRE",
-    "sourceCommit": "8f4fb8b6",
+    "sourceCommit": "465a5276",
     "schemaVersion": 32,
     "objects": [
+      {
+        "type": "index",
+        "name": "anticipo_apertura_evento_ciclo",
+        "tbl_name": "anticipo_apertura_evento",
+        "sql": "CREATE INDEX anticipo_apertura_evento_ciclo\n      ON anticipo_apertura_evento(ciclo,id)"
+      },
       {
         "type": "index",
         "name": "budget_contribution_destination",
@@ -29078,6 +29084,24 @@
       },
       {
         "type": "table",
+        "name": "anticipo_apertura_autorizacion",
+        "tbl_name": "anticipo_apertura_autorizacion",
+        "sql": "CREATE TABLE anticipo_apertura_autorizacion(\n      intento TEXT NOT NULL,\n      referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia) ON DELETE RESTRICT,\n      evento INTEGER NOT NULL REFERENCES anticipo_apertura_evento(id) ON DELETE RESTRICT,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      revision_ciclo INTEGER NOT NULL CHECK(revision_ciclo>0),\n      revision_apertura INTEGER CHECK(revision_apertura IS NULL OR revision_apertura>0),\n      corte_anterior TEXT NOT NULL,\n      corte_nuevo TEXT NOT NULL,\n      fase TEXT NOT NULL CHECK(fase IN ('PREPARADA','CICLO_APLICADO','APERTURA_APLICADA')),\n      PRIMARY KEY(intento,referencia)\n    ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "anticipo_apertura_evento",
+        "tbl_name": "anticipo_apertura_evento",
+        "sql": "CREATE TABLE anticipo_apertura_evento(\n      id INTEGER PRIMARY KEY,\n      referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia) ON DELETE RESTRICT,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      intento TEXT NOT NULL CHECK((intento IS NULL OR (length(intento) BETWEEN 1 AND 200\n     AND intento NOT GLOB '*[^A-Za-z0-9:._-]*')) AND intento IS NOT NULL),\n      revision_ciclo_esperada INTEGER NOT NULL CHECK(revision_ciclo_esperada>0),\n      revision_ciclo_resultante INTEGER NOT NULL CHECK(revision_ciclo_resultante=revision_ciclo_esperada+1),\n      revision_apertura_esperada INTEGER CHECK(\n        revision_apertura_esperada IS NULL OR revision_apertura_esperada>0),\n      revision_apertura_resultante INTEGER CHECK(\n        revision_apertura_resultante IS NULL\n        OR revision_apertura_resultante=revision_apertura_esperada+1),\n      corte_anterior TEXT NOT NULL,\n      corte_nuevo TEXT NOT NULL,\n      clase TEXT NOT NULL CHECK(clase IN ('A','B')),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0 AND length(actor)<=200),\n      instante TEXT NOT NULL CHECK(length(instante)=24 AND instante GLOB\n  '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'),\n      motivo TEXT CHECK(motivo IS NULL OR (length(trim(motivo))>0 AND length(motivo)<=2000)),\n      huella_anterior TEXT CHECK((huella_anterior IS NULL OR (length(huella_anterior)=64 AND huella_anterior NOT GLOB '*[^a-f0-9]*'))),\n      huella_posterior TEXT CHECK((huella_posterior IS NULL OR (length(huella_posterior)=64 AND huella_posterior NOT GLOB '*[^a-f0-9]*'))),\n      UNIQUE(intento,referencia),\n      CHECK(clase='B' OR corte_anterior<>corte_nuevo),\n      CHECK((revision_apertura_esperada IS NULL)=(revision_apertura_resultante IS NULL))\n    ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "anticipo_apertura_guard",
+        "tbl_name": "anticipo_apertura_guard",
+        "sql": "CREATE TABLE anticipo_apertura_guard(\n      id INTEGER PRIMARY KEY CHECK(id=1),\n      intento TEXT NOT NULL CHECK((intento IS NULL OR (length(intento) BETWEEN 1 AND 200\n     AND intento NOT GLOB '*[^A-Za-z0-9:._-]*')) AND intento IS NOT NULL)\n    ) STRICT"
+      },
+      {
+        "type": "table",
         "name": "anticipo_attempts",
         "tbl_name": "anticipo_attempts",
         "sql": "CREATE TABLE anticipo_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
@@ -29164,7 +29188,7 @@
         "type": "table",
         "name": "cierre_validacion_audit",
         "tbl_name": "cierre_validacion_audit",
-        "sql": "CREATE TABLE cierre_validacion_audit(\n      id INTEGER PRIMARY KEY,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      revision INTEGER NOT NULL CHECK(revision>0),\n      accion TEXT NOT NULL CHECK(accion IN ('validar','revalidar','confirmar_revision','dirty_marcado','dirty_reiterado','reversion','migracion','restauracion','reacreditacion','legado_reapertura_activa','legado_cierre_vinculo','legado_cierre_audit','legado_reapertura')),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0 AND length(actor)<=200),\n      instante TEXT NOT NULL CHECK(length(instante)=24 AND instante GLOB\n  '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'),\n      motivo TEXT CHECK(\n        motivo IS NULL OR (length(trim(motivo))>0 AND length(motivo)<=2000)),\n      intento TEXT CHECK((intento IS NULL OR (length(intento) BETWEEN 1 AND 200\n     AND intento NOT GLOB '*[^A-Za-z0-9:._-]*'))),\n      correlacion TEXT CHECK((correlacion IS NULL OR (length(correlacion) BETWEEN 1 AND 200\n     AND correlacion NOT GLOB '*[^A-Za-z0-9:._-]*'))),\n      origen TEXT CHECK(origen IS NULL OR ((origen IS NULL OR (length(origen) BETWEEN 1 AND 200\n     AND origen NOT GLOB '*[^A-Za-z0-9:._-]*')) AND ((origen GLOB 'MIGRACION:cierres:?*' OR origen GLOB 'MIGRACION:fotos_cierre:?*' OR origen GLOB 'MIGRACION:cierre_audit:?*' OR origen GLOB 'MIGRACION:reaperturas:?*' OR origen GLOB 'MIGRACION:reapertura_activa:?*' OR origen GLOB 'MIGRACION:cierre_vinculos:?*' OR origen GLOB 'RESTAURACION:cierres:?*' OR origen GLOB 'RESTAURACION:fotos_cierre:?*' OR origen GLOB 'RESTAURACION:cierre_audit:?*' OR origen GLOB 'RESTAURACION:reaperturas:?*' OR origen GLOB 'RESTAURACION:reapertura_activa:?*' OR origen GLOB 'RESTAURACION:cierre_vinculos:?*')))),\n      huella_anterior TEXT CHECK((huella_anterior IS NULL OR (length(huella_anterior)=64 AND huella_anterior NOT GLOB '*[^a-f0-9]*'))),\n      huella_posterior TEXT CHECK((huella_posterior IS NULL OR (length(huella_posterior)=64 AND huella_posterior NOT GLOB '*[^a-f0-9]*'))),\n      detalle TEXT NOT NULL CHECK(json_valid(detalle))\n    ) STRICT"
+        "sql": "CREATE TABLE cierre_validacion_audit(\n      id INTEGER PRIMARY KEY,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      revision INTEGER NOT NULL CHECK(revision>0),\n      accion TEXT NOT NULL CHECK(accion IN ('validar','revalidar','confirmar_revision','dirty_marcado','dirty_reiterado','reversion','migracion','restauracion','reacreditacion','rectificar_inicio','rectificar_s0','legado_reapertura_activa','legado_cierre_vinculo','legado_cierre_audit','legado_reapertura')),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0 AND length(actor)<=200),\n      instante TEXT NOT NULL CHECK(length(instante)=24 AND instante GLOB\n  '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'),\n      motivo TEXT CHECK(\n        motivo IS NULL OR (length(trim(motivo))>0 AND length(motivo)<=2000)),\n      intento TEXT CHECK((intento IS NULL OR (length(intento) BETWEEN 1 AND 200\n     AND intento NOT GLOB '*[^A-Za-z0-9:._-]*'))),\n      correlacion TEXT CHECK((correlacion IS NULL OR (length(correlacion) BETWEEN 1 AND 200\n     AND correlacion NOT GLOB '*[^A-Za-z0-9:._-]*'))),\n      origen TEXT CHECK(origen IS NULL OR ((origen IS NULL OR (length(origen) BETWEEN 1 AND 200\n     AND origen NOT GLOB '*[^A-Za-z0-9:._-]*')) AND ((origen GLOB 'MIGRACION:cierres:?*' OR origen GLOB 'MIGRACION:fotos_cierre:?*' OR origen GLOB 'MIGRACION:cierre_audit:?*' OR origen GLOB 'MIGRACION:reaperturas:?*' OR origen GLOB 'MIGRACION:reapertura_activa:?*' OR origen GLOB 'MIGRACION:cierre_vinculos:?*' OR origen GLOB 'RESTAURACION:cierres:?*' OR origen GLOB 'RESTAURACION:fotos_cierre:?*' OR origen GLOB 'RESTAURACION:cierre_audit:?*' OR origen GLOB 'RESTAURACION:reaperturas:?*' OR origen GLOB 'RESTAURACION:reapertura_activa:?*' OR origen GLOB 'RESTAURACION:cierre_vinculos:?*')))),\n      huella_anterior TEXT CHECK((huella_anterior IS NULL OR (length(huella_anterior)=64 AND huella_anterior NOT GLOB '*[^a-f0-9]*'))),\n      huella_posterior TEXT CHECK((huella_posterior IS NULL OR (length(huella_posterior)=64 AND huella_posterior NOT GLOB '*[^a-f0-9]*'))),\n      detalle TEXT NOT NULL CHECK(json_valid(detalle))\n    ) STRICT"
       },
       {
         "type": "table",
@@ -29752,7 +29776,7 @@
         "type": "table",
         "name": "validacion_attempts",
         "tbl_name": "validacion_attempts",
-        "sql": "CREATE TABLE validacion_attempts(\n      operacion TEXT NOT NULL CHECK(operacion IN ('validar','revalidar','confirmar_revision','migracion')),\n      key TEXT NOT NULL CHECK(length(trim(key))>0 AND length(key)<=200),\n      hash TEXT NOT NULL CHECK(length(hash)=64 AND hash NOT GLOB '*[^a-f0-9]*'),\n      response TEXT NOT NULL CHECK(json_valid(response)),\n      completado INTEGER NOT NULL CHECK(completado IN (0,1)),\n      expira INTEGER NOT NULL CHECK(expira>0),\n      PRIMARY KEY(operacion,key)\n    ) STRICT"
+        "sql": "CREATE TABLE validacion_attempts(\n      operacion TEXT NOT NULL CHECK(operacion IN ('validar','revalidar','confirmar_revision','migracion','rectificar_inicio','rectificar_s0')),\n      key TEXT NOT NULL CHECK(length(trim(key))>0 AND length(key)<=200),\n      hash TEXT NOT NULL CHECK(length(hash)=64 AND hash NOT GLOB '*[^a-f0-9]*'),\n      response TEXT NOT NULL CHECK(json_valid(response)),\n      completado INTEGER NOT NULL CHECK(completado IN (0,1)),\n      expira INTEGER NOT NULL CHECK(expira>0),\n      PRIMARY KEY(operacion,key)\n    ) STRICT"
       },
       {
         "type": "table",
@@ -29798,6 +29822,36 @@
       },
       {
         "type": "trigger",
+        "name": "anticipo_apertura_aplicada",
+        "tbl_name": "fotos_neto_apertura",
+        "sql": "CREATE TRIGGER anticipo_apertura_aplicada\n      BEFORE UPDATE OF inicio ON fotos_neto_apertura\n      WHEN NEW.inicio IS NOT OLD.inicio\n      BEGIN\n        SELECT RAISE(ABORT,'protected anticipo opening')\n        WHERE NOT EXISTS(\n          SELECT 1 FROM anticipo_apertura_autorizacion a\n            JOIN ciclos c ON c.id=a.ciclo\n           WHERE a.intento=(SELECT intento FROM anticipo_apertura_guard)\n             AND a.referencia=OLD.referencia AND a.ciclo=OLD.ciclo\n             AND a.fase='CICLO_APLICADO'\n             AND a.revision_apertura=OLD.revision\n             AND a.corte_anterior=OLD.inicio AND a.corte_nuevo=NEW.inicio\n             AND NEW.revision=OLD.revision+1\n             AND c.inicio=NEW.inicio\n             AND c.revision IN (a.revision_ciclo,a.revision_ciclo+1));\n        UPDATE anticipo_apertura_autorizacion SET fase='APERTURA_APLICADA'\n         WHERE intento=(SELECT intento FROM anticipo_apertura_guard)\n           AND referencia=OLD.referencia AND ciclo=OLD.ciclo\n           AND fase='CICLO_APLICADO';\n      END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_apertura_capacidad_fase",
+        "tbl_name": "anticipo_apertura_autorizacion",
+        "sql": "CREATE TRIGGER anticipo_apertura_capacidad_fase\n      BEFORE UPDATE ON anticipo_apertura_autorizacion\n      WHEN NEW.intento IS NOT OLD.intento OR NEW.referencia IS NOT OLD.referencia\n        OR NEW.evento IS NOT OLD.evento OR NEW.ciclo IS NOT OLD.ciclo\n        OR NEW.revision_ciclo IS NOT OLD.revision_ciclo\n        OR NEW.revision_apertura IS NOT OLD.revision_apertura\n        OR NEW.corte_anterior IS NOT OLD.corte_anterior\n        OR NEW.corte_nuevo IS NOT OLD.corte_nuevo\n        OR NOT ((OLD.fase='PREPARADA' AND NEW.fase='CICLO_APLICADO')\n             OR (OLD.fase='CICLO_APLICADO' AND NEW.fase='APERTURA_APLICADA'))\n      BEGIN SELECT RAISE(ABORT,'invalid capability transition'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_apertura_capacidad_vigente",
+        "tbl_name": "anticipo_apertura_autorizacion",
+        "sql": "CREATE TRIGGER anticipo_apertura_capacidad_vigente\n      BEFORE INSERT ON anticipo_apertura_autorizacion\n      WHEN NEW.fase<>'PREPARADA'\n        OR NOT EXISTS(SELECT 1 FROM anticipo_apertura_guard WHERE intento=NEW.intento)\n        OR NOT EXISTS(SELECT 1 FROM anticipo_apertura_evento e\n                       WHERE e.id=NEW.evento AND e.intento=NEW.intento\n                         AND e.referencia=NEW.referencia AND e.ciclo=NEW.ciclo\n                         AND e.corte_anterior=NEW.corte_anterior\n                         AND e.corte_nuevo=NEW.corte_nuevo\n                         AND e.revision_ciclo_esperada=NEW.revision_ciclo\n                         AND e.revision_apertura_esperada IS NEW.revision_apertura)\n      BEGIN SELECT RAISE(ABORT,'capability outside an active attempt'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_apertura_evento_no_delete",
+        "tbl_name": "anticipo_apertura_evento",
+        "sql": "CREATE TRIGGER anticipo_apertura_evento_no_delete\n      BEFORE DELETE ON anticipo_apertura_evento\n      BEGIN SELECT RAISE(ABORT,'immutable opening event'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_apertura_evento_no_update",
+        "tbl_name": "anticipo_apertura_evento",
+        "sql": "CREATE TRIGGER anticipo_apertura_evento_no_update\n      BEFORE UPDATE ON anticipo_apertura_evento\n      BEGIN SELECT RAISE(ABORT,'immutable opening event'); END"
+      },
+      {
+        "type": "trigger",
         "name": "anticipo_audit_no_delete",
         "tbl_name": "anticipo_audit",
         "sql": "CREATE TRIGGER anticipo_audit_no_delete BEFORE DELETE ON anticipo_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
@@ -29812,7 +29866,7 @@
         "type": "trigger",
         "name": "anticipo_cycle_photo",
         "tbl_name": "ciclos",
-        "sql": "CREATE TRIGGER anticipo_cycle_photo BEFORE UPDATE OF inicio ON ciclos WHEN NEW.inicio!=OLD.inicio AND EXISTS(SELECT 1 FROM fotos_neto_apertura WHERE ciclo=OLD.id) BEGIN SELECT RAISE(ABORT,'protected anticipo opening'); END"
+        "sql": "CREATE TRIGGER anticipo_cycle_photo\n      BEFORE UPDATE OF inicio ON ciclos\n      WHEN NEW.inicio IS NOT OLD.inicio\n       AND EXISTS(SELECT 1 FROM fotos_neto_apertura WHERE ciclo=OLD.id)\n    BEGIN\n      SELECT RAISE(ABORT,'protected anticipo opening')\n      WHERE NOT EXISTS(SELECT 1 FROM anticipo_apertura_guard)\n         OR NEW.revision<>OLD.revision+1\n         OR (SELECT COUNT(*) FROM fotos_neto_apertura WHERE ciclo=OLD.id)\n            <>(SELECT COUNT(*) FROM anticipo_apertura_autorizacion a\n                 JOIN fotos_neto_apertura f\n                   ON f.referencia=a.referencia AND f.ciclo=OLD.id\n                WHERE a.intento=(SELECT intento FROM anticipo_apertura_guard)\n                  AND a.ciclo=OLD.id AND a.fase='PREPARADA'\n                  AND a.revision_ciclo=OLD.revision\n                  AND a.revision_apertura=f.revision\n                  AND a.corte_anterior=OLD.inicio\n                  AND a.corte_nuevo=NEW.inicio);\n      UPDATE anticipo_apertura_autorizacion SET fase='CICLO_APLICADO'\n       WHERE intento=(SELECT intento FROM anticipo_apertura_guard)\n         AND ciclo=OLD.id AND fase='PREPARADA';\n    END"
       },
       {
         "type": "trigger",
@@ -31297,6 +31351,6 @@
         "sql": "CREATE TRIGGER valoracion_update_correction\n      BEFORE UPDATE ON valoracion_inversion\n      WHEN NEW.revision!=OLD.revision+1\n        OR NEW.motivo_correccion IS NULL\n        OR length(trim(NEW.motivo_correccion))=0\n      BEGIN SELECT RAISE(ABORT,'correction requires next revision and motive'); END"
       }
     ],
-    "sha256": "17c12df3c2ef4f6c161b8e1c65d8ec788d8d724a437a26d7b8ffc2aba1b67f01"
+    "sha256": "f73613f7de4b34846f6d58c7a4b8014e63b4449f4da40dfb34495a206795423e"
   }
 ]
