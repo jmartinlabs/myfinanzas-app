@@ -8,7 +8,6 @@ import { Schema } from "effect";
 import { createHash } from "node:crypto";
 import { entities, type Entity } from "./classification-schema";
 import { Problem } from "./saldos";
-import { classificationClosureImpact, closedFieldDecision } from "./e49-guards";
 
 export const annualMethods = ["Ingreso", "Gasto", "No aplica"];
 export const monthlyMethods = [
@@ -478,25 +477,13 @@ function impact(
   const changed = Object.keys(value).filter(
     (k) => value[k] !== old[k as keyof Classification],
   );
-  const closureEntity =
-    kind === "categorias"
-      ? "categoria"
-      : kind === "subcategorias"
-        ? "subcategoria"
-        : "partida";
-  const closureDecision = closedFieldDecision(db, closureEntity, changed);
-  const economic = closureDecision.windows.length
-    ? changed.filter((k) => !closureDecision.informative.includes(k))
-    : changed.filter((k) =>
-        [
-          "padre",
-          "anual",
-          "mensual",
-          "referencia",
-          "deuda",
-          "presupuesto",
-        ].includes(k),
-      );
+  // §7.6: la clasificación deja de decidirse por una lista blanca de campos
+  // «informativos» dependiente de un cierre. Un cambio de nombre no mueve
+  // efectos; lo que decide es el impacto real sobre atribución y flujo, que se
+  // mide con el dominio instalado (`classificationMovementImpact`).
+  const economic = changed.filter((k) =>
+    ["padre", "anual", "mensual", "referencia", "deuda", "presupuesto"].includes(k),
+  );
   const dependencies = descendants(db, kind, id);
   const financial = classificationMovementImpact(db, kind, id, value, economic);
   const annualPlans = annualClassificationRelations(
@@ -540,7 +527,7 @@ function impact(
       annualPlans.length > 0 ||
       financial?.used === true ||
       protection?.used === true ||
-      classificationClosureImpact(db, economic),
+      false,
     financial,
     fingerprint: hash([
       kind,

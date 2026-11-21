@@ -3,7 +3,7 @@ import type { Database } from "bun:sqlite";
 /**
  * E4.10 — single read-only reader of the `reapertura_activa` projection.
  *
- * Both the I2 API (`e410.ts`) and the T1 guards (`e49-guards.ts`) must see the
+ * Both the I2 API (`e410.ts`) and the retired T1 closure guards must see the
  * same window. This module is the only place that reads the projection and
  * decides whether it is open, inconsistent or invalidated by a later closure.
  * Missing projection/event and stale-version/later-closure states are returned

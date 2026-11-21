@@ -611,91 +611,53 @@ test("E4.11 I4: cobertura y No disponible con motivo; lectura sin escrituras", (
   expect(snapshotAll(db)).toEqual(before);
 });
 
-test("E4.11 I4: ruta GET, 405, matriz negativa y snapshot de producto sin altas", async () => {
+test("E4.11 I4: la ruta de contraste se retira con 410 y sustituto explícito", async () => {
   const f = fixture();
   seedClosure(f.db, "1", 1, "2026-06-20", "2026-07-19", 0);
 
+  // La autenticación sigue siendo lo primero: sin sesión no se revela nada.
   expect((await f.request("/api/fotos/contraste?ciclo=1")).status).toBe(401);
 
   await f.enroll();
   const before = snapshotE411(f.db);
+  const retirada = await f.request("/api/fotos/contraste?ciclo=1");
+  expect(retirada.status).toBe(410);
+  expect(retirada.data.code).toBe("FOTO_RETIRADA");
+  expect(retirada.data.sustituto).toBe("/api/cierres/1/estado");
+  expect(retirada.headers.get("link")).toContain("/api/cierres/1/estado");
+  // Retirada, no redirección ni lectura equivalente disfrazada.
+  expect(retirada.status).not.toBe(301);
+  expect(retirada.status).not.toBe(302);
+  expect(retirada.data).not.toHaveProperty("origen");
+  expect(retirada.data).not.toHaveProperty("metricas");
 
-  const ok = await f.request("/api/fotos/contraste?ciclo=1");
-  expect(ok.status).toBe(200);
-  expect(ok.headers.get("cache-control")).toBe("no-store");
-  expect(ok.data).toMatchObject({
-    origen: "CalculoVivo",
-    motor: "E2.6 flujo-mensual",
-    ciclo: "1",
-    corte: "2026-07-19",
-    noEsHistorico: true,
-    noSustituyeFoto: true,
-    soloLectura: true,
-  });
-  expect(ok.data.revision).toMatch(/^[a-f0-9]{64}$/);
-  expect(ok.data.metricas.nomina.subtotal).toBe("2000.00");
-  expect(ok.data.metricas.nomina.origen).toBe("CalculoVivo");
-  expect(ok.data.cobertura).toMatchObject({
-    estado: "Parcial",
-    total: null,
-    certificada: false,
-  });
-  expect(Object.keys(ok.data)).not.toContain("foto");
-  expect(Object.keys(ok.data)).not.toContain("valores");
-  expect(Object.keys(ok.data)).not.toContain("totalPeriodo");
-  expect(JSON.stringify(ok.data)).not.toContain("tipoRegistro");
-  expect(JSON.stringify(ok.data)).not.toContain("Archivo");
-
-  // P8b-A: cualquier selector de otra fuente se rechaza; no se mezcla E4.5.
-  for (const query of ["Archivo", "", "Foto"]) {
-    const wrongSource = await f.request(
-      `/api/fotos/contraste?ciclo=1&tipoRegistro=${query}`,
-    );
-    expect(wrongSource.status).toBe(422);
-    expect(wrongSource.data.code).toBe("VALIDATION");
-    expect(wrongSource.data.fields.tipoRegistro).toContain("no admitido");
-    expect(wrongSource.data).not.toHaveProperty("origen");
-  }
-
-  const missing = await f.request("/api/fotos/contraste");
-  expect(missing.status).toBe(422);
-  expect(missing.data.fields.ciclo).toBe("Indica un ciclo válido.");
-  expect((await f.request("/api/fotos/contraste?ciclo=")).status).toBe(422);
-  expect((await f.request("/api/fotos/contraste?ciclo=abc")).status).toBe(422);
-  expect((await f.request("/api/fotos/contraste?ciclo=999")).status).toBe(404);
-
-  for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-    const wrong = await f.request(
-      "/api/fotos/contraste?ciclo=1",
-      method,
-      {},
-    );
-    expect(wrong.status).toBe(405);
-    expect(wrong.headers.get("allow")).toBe("GET");
-    expect(wrong.data.code).toBe("METHOD_NOT_ALLOWED");
-  }
-
-  // P8a-A/P8b-A: no archive, no DT9 route and no "corrected photo" surface.
+  // El código se fija por ruta: ninguna variante hereda otro código.
   for (const path of [
-    "/api/fotos/archivo",
-    "/api/fotos/archivo?ejercicio=2026",
-    "/api/fotos?tipoRegistro=Archivo",
-    "/api/fotos/ciclos/1/corregir",
-    "/api/fotos/ciclos/1/rectificar",
-    "/api/fotos/ciclos/1/foto-corregida",
-    "/api/fotos/corregida/1",
-    "/api/fotos/rectificaciones/1",
+    "/api/fotos/contraste",
+    "/api/fotos/contraste?ciclo=",
+    "/api/fotos/contraste?ciclo=abc",
+    "/api/fotos/contraste?ciclo=999",
+    "/api/fotos/contraste?ciclo=1&tipoRegistro=Archivo",
   ]) {
-    const absent = await f.request(path);
-    expect(absent.status).toBe(404);
+    const respuesta = await f.request(path);
+    expect(respuesta.status).toBe(410);
+    expect(respuesta.data.code).toBe("FOTO_RETIRADA");
   }
 
-  // The snapshot excludes `sessions.seen`, updated by authenticated requests.
+  // Ninguna de las rutas retiradas escribe ni devuelve 500.
+  for (const path of [
+    "/api/fotos/periodos",
+    "/api/fotos/periodos/1",
+    "/api/fotos/ciclos/1",
+    "/api/fotos/ciclos/1/versiones",
+    "/api/cierres/1/foto",
+  ]) {
+    const respuesta = await f.request(path);
+    expect(respuesta.status).toBe(410);
+  }
+
   expect(snapshotE411(f.db)).toEqual(before);
   expect(f.db.query("SELECT COUNT(*) AS n FROM fotos_cierre").get()).toEqual({
     n: 1,
-  });
-  expect(f.db.query("SELECT COUNT(*) AS n FROM fotos_periodo").get()).toEqual({
-    n: 0,
   });
 });

@@ -14,7 +14,6 @@ import {
   type RevalidacionOptions,
   type RevalidacionResult,
 } from "./e410-revalidacion";
-import { informativeFields } from "./e49-guards";
 import { readActiveWindow, type CierrePosterior, type ReopeningEvent } from "./e410-window";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
@@ -706,10 +705,38 @@ const auditVolatileFields = new Set([
 ]);
 
 /**
- * T3 fields for audit payloads. The catalog entities reuse the canonical
- * `informativeFields` whitelist. `movimiento_revision_comida` has its own
- * metadata payload: evidence is informative; `etiqueta`/`estadoRevision`
- * remain material because they drive the food classification calculations.
+ * Campos inertes por entidad, locales a este módulo retirado (§7.6): la lista
+ * blanca canónica vivía en las guardas de cierre, que ya no existen. Se
+ * conserva aquí porque describe el payload de auditoría de la vía de re-cierre,
+ * que no se expone por HTTP; ningún flujo activo decide materialidad por
+ * nombre de campo.
+ */
+const informativeFields: Record<string, readonly string[]> = {
+  movimiento: ["concepto", "nota"],
+  compra: ["concepto", "nota"],
+  venta: ["concepto", "nota"],
+  saldo: ["nombre"],
+  referencia: ["nombre"],
+  instrumento: ["nombre"],
+  deuda: ["nombre"],
+  presupuesto: ["nombre"],
+  participante: ["nombre"],
+  revisionComida: [
+    "concepto",
+    "evidenciaBancaria",
+    "evidenciaRelacionCompra",
+    "cuentaOrigen",
+  ],
+  categoria: ["nombre", "grupo"],
+  subcategoria: ["nombre"],
+  partida: ["nombre"],
+};
+
+/**
+ * Campos inertes por entidad para comparar payloads de auditoría.
+ * `movimiento_revision_comida` tiene el suyo: la evidencia es informativa;
+ * `etiqueta`/`estadoRevision` siguen siendo materiales porque gobiernan la
+ * clasificación de comida.
  */
 const auditInformativeFields: Record<string, readonly string[]> = {
   ...informativeFields,

@@ -7,7 +7,8 @@ import { randomBytes } from "node:crypto";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import { backup, restore } from "./backup";
-import { contract, manifest, verifyContract } from "./schema-contract";
+import { contract, manifest, verifyContract } from "./schema-contract";import { restaurarTriggerAperturaV31 } from "./cierre-validacion-test-support";
+
 import { spec37SchemaV30 } from "./spec37-schema";
 
 process.env.NODE_ENV = "test";
@@ -57,7 +58,14 @@ function revertToV29(db: Database) {
     ALTER TABLE transferencia_pendiente DROP COLUMN modalidad;
     ALTER TABLE transferencia_pendiente DROP COLUMN gasto_revision;
     ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_previsto;
+    /* Retirada de los objetos de I2 antes de bajar a la versión previa. */
+    DROP TRIGGER anticipo_apertura_aplicada;
+    DROP TRIGGER anticipo_cycle_photo;
+    DROP TABLE anticipo_apertura_autorizacion;
+    DROP TABLE anticipo_apertura_guard;
+    DROP TABLE anticipo_apertura_evento;
     UPDATE schema_version SET version=29;`);
+  restaurarTriggerAperturaV31(db);
   expect(verifyContract(db, 29)).toBe(c29);
 }
 
@@ -293,7 +301,13 @@ test("SPEC37 I1: v29 → v32 is additive and leaves the new columns null", () =>
           return JSON.stringify(now) !== JSON.stringify(object);
         })
         .map((object) => `${object.type}:${object.name}`);
-      expect(changed).toEqual(["table:transferencia_pendiente"]);
+      // SPEC38 I2 sustituye el veto absoluto de `anticipo_cycle_photo` por el
+      // procedimiento autorizado de §4.3: es el único objeto previo que cambia
+      // de forma además de la tabla extendida por `ALTER TABLE`.
+      expect(changed).toEqual([
+        "table:transferencia_pendiente",
+        "trigger:anticipo_cycle_photo",
+      ]);
       for (const object of contract(c29).objects)
         expect(current.has(`${object.type}:${object.name}`)).toBe(true);
 
