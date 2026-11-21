@@ -30020,6 +30020,18 @@
       },
       {
         "type": "trigger",
+        "name": "cierre_validacion_marca_cronologia",
+        "tbl_name": "cierre_validacion",
+        "sql": "CREATE TRIGGER cierre_validacion_marca_cronologia\n      BEFORE UPDATE ON cierre_validacion\n      WHEN NEW.dirty=1\n       AND NEW.revision_instante IS NOT NULL\n       AND (NEW.dirty_desde IS NOT OLD.dirty_desde\n         OR NEW.dirty_ultimo IS NOT OLD.dirty_ultimo)\n       AND (NEW.dirty_desde<NEW.revision_instante\n         OR NEW.dirty_ultimo<NEW.revision_instante)\n      BEGIN SELECT RAISE(ABORT,'la marca no puede preceder a la revision humana'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "cierre_validacion_marca_sin_revision",
+        "tbl_name": "cierre_validacion",
+        "sql": "CREATE TRIGGER cierre_validacion_marca_sin_revision\n      BEFORE UPDATE ON cierre_validacion\n      WHEN NEW.dirty=1\n       AND NEW.revision<>OLD.revision\n       AND (NEW.dirty IS NOT OLD.dirty\n         OR NEW.dirty_desde IS NOT OLD.dirty_desde\n         OR NEW.dirty_ultimo IS NOT OLD.dirty_ultimo\n         OR NEW.dirty_origen IS NOT OLD.dirty_origen\n         OR NEW.dirty_motivos IS NOT OLD.dirty_motivos)\n      BEGIN SELECT RAISE(ABORT,'marcar o reiterar no cambia la revision'); END"
+      },
+      {
+        "type": "trigger",
         "name": "cierre_validacion_motivos_insert",
         "tbl_name": "cierre_validacion",
         "sql": "CREATE TRIGGER cierre_validacion_motivos_insert\n      BEFORE INSERT ON cierre_validacion\n      WHEN NEW.dirty_motivos IS NOT NULL AND NOT (\n        json_type(NEW.dirty_motivos)='array'\n        AND json_array_length(NEW.dirty_motivos)<=8\n        AND NOT EXISTS (\n          SELECT 1 FROM json_each(NEW.dirty_motivos) m\n           WHERE typeof(m.value)<>'text'\n              OR m.value NOT IN ('FLUJO_CICLO','BALANCE_FIN','POSICION','ATRIBUCION','REPARTO','COMIDA','VENTANA_CICLO','S0_CICLO'))\n        AND (SELECT COUNT(*) FROM json_each(NEW.dirty_motivos))\n            = (SELECT COUNT(DISTINCT value) FROM json_each(NEW.dirty_motivos))\n      )\n      BEGIN SELECT RAISE(ABORT,'motivos de impacto invalidos'); END"
@@ -30052,7 +30064,7 @@
         "type": "trigger",
         "name": "cierre_validacion_revision_humana",
         "tbl_name": "cierre_validacion",
-        "sql": "CREATE TRIGGER cierre_validacion_revision_humana\n      BEFORE UPDATE ON cierre_validacion\n      WHEN NEW.revision=OLD.revision+1\n       AND NOT (NEW.huella_validacion IS NOT OLD.huella_validacion\n         OR NEW.version_conjunto IS NOT OLD.version_conjunto\n         OR NEW.revision_actor IS NOT OLD.revision_actor\n         OR NEW.revision_instante IS NOT OLD.revision_instante\n         OR NEW.revision_motivo IS NOT OLD.revision_motivo)\n       AND NEW.dirty=OLD.dirty\n      BEGIN SELECT RAISE(ABORT,'avanzar la revision exige una revision humana'); END"
+        "sql": "CREATE TRIGGER cierre_validacion_revision_humana\n      BEFORE UPDATE ON cierre_validacion\n      WHEN NEW.revision=OLD.revision+1\n       AND NOT (NEW.huella_validacion IS NOT OLD.huella_validacion\n         OR NEW.version_conjunto IS NOT OLD.version_conjunto\n         OR NEW.revision_actor IS NOT OLD.revision_actor\n         OR NEW.revision_instante IS NOT OLD.revision_instante\n         OR NEW.revision_motivo IS NOT OLD.revision_motivo)\n      BEGIN SELECT RAISE(ABORT,'avanzar la revision exige una revision humana'); END"
       },
       {
         "type": "trigger",
@@ -31285,6 +31297,6 @@
         "sql": "CREATE TRIGGER valoracion_update_correction\n      BEFORE UPDATE ON valoracion_inversion\n      WHEN NEW.revision!=OLD.revision+1\n        OR NEW.motivo_correccion IS NULL\n        OR length(trim(NEW.motivo_correccion))=0\n      BEGIN SELECT RAISE(ABORT,'correction requires next revision and motive'); END"
       }
     ],
-    "sha256": "fad65e19700dd5fe3a19192a0e750fc47274ccfb850db2e983327c90c5f04478"
+    "sha256": "17c12df3c2ef4f6c161b8e1c65d8ec788d8d724a437a26d7b8ffc2aba1b67f01"
   }
 ]

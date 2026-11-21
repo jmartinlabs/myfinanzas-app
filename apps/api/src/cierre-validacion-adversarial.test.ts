@@ -28,6 +28,8 @@ const t = "2026-01-01T00:00:00.000Z";
 const t2 = "2026-02-01T00:00:00.000Z";
 const t3 = "2026-03-01T00:00:00.000Z";
 const t4 = "2026-04-01T00:00:00.000Z";
+/** Posterior a la referencia humana de `t4`: una marca no puede precederla. */
+const t5 = "2026-05-01T00:00:00.000Z";
 const HUELLA_A = "a".repeat(64);
 const HUELLA_B = "b".repeat(64);
 const COBERTURA = JSON.stringify([
@@ -583,6 +585,9 @@ test("adversarial · metadatos migrados dos veces: sin duplicar, sin sobrescribi
   importarCierresLegados(db, { ahora: new Date(t3) });
   // Caso límite real: la fila ya estaba validada por un humano cuando la
   // reapertura activa se migra, así que la transición debe volver a marcarla.
+  // La marca usa el instante observado por la migración, que no puede preceder
+  // a la referencia humana ya registrada (`cierre_validacion_marca_cronologia`):
+  // el reloj del test avanza, no retrocede.
   db.run(
     `UPDATE cierre_validacion SET revision=2,dirty=0,dirty_desde=NULL,
        dirty_ultimo=NULL,dirty_origen=NULL,dirty_motivos=NULL,
@@ -590,7 +595,7 @@ test("adversarial · metadatos migrados dos veces: sin duplicar, sin sobrescribi
        revision_instante=? WHERE ciclo='1'`,
     [HUELLA_B, t4],
   );
-  const primera = migrarMetadatosLegados(db, { ahora: new Date(t3) });
+  const primera = migrarMetadatosLegados(db, { ahora: new Date(t5) });
   expect(primera.creados.sort()).toEqual(
     [
       "cierre_audit:1",

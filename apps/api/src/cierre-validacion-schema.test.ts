@@ -529,6 +529,238 @@ test("revisión: la marca de un pendiente conserva la revisión y no la adelanta
 });
 
 /* ------------------------------------------------------------------ *
+ * Adversarial · revisión y cronología de la marca (§2.4)
+ *
+ * Una fila limpia sólo vuelve a pendiente conservando `revision`, y ninguna
+ * marca puede fecharse antes de la referencia humana vigente. La limpieza
+ * (`Pendiente → Validada`) exige siempre evidencia humana nueva, también por
+ * SQL directo, sin que la antigüedad de `dirty_desde`/`dirty_ultimo` sirva
+ * para reutilizar la referencia anterior.
+ * ------------------------------------------------------------------ */
+
+const HUELLA = "c".repeat(64);
+
+/** Fila completa, para exigir que un rechazo no persistió ni una columna. */
+function fila(db: Database, cicloId = "1") {
+  return db.query("SELECT * FROM cierre_validacion WHERE ciclo=?").get(cicloId);
+}
+
+/** Validada en r=2 con referencia humana de `t2`. */
+function validada(db: Database) {
+  validacion(db, "1", {
+    revision: 2,
+    dirty: 0,
+    dirty_desde: null,
+    dirty_ultimo: null,
+    dirty_origen: null,
+    dirty_motivos: null,
+    huella: HUELLA,
+    version: "1",
+    actor: "humano",
+    instante: t2,
+    motivo: "Revisado",
+  });
+}
+
+test("adversarial · secuencia de dos pasos: marcar aborta y limpiar no reutiliza la referencia", () => {
+  const db = store();
+  ciclo(db, "1", "2026-01-01");
+  validada(db);
+  const intacta = fila(db);
+
+  // Paso 1 tal cual: `revision+1`, `dirty` 0→1 y cronología anterior a la
+  // referencia humana registrada.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=3,dirty=1,dirty_desde=?,dirty_ultimo=?,
+         dirty_origen='Operacion',dirty_motivos='[]' WHERE ciclo='1'`,
+      [t, t],
+    ),
+  ).toThrow("la marca no puede preceder a la revision humana");
+  expect(fila(db)).toEqual(intacta);
+
+  // Paso 1 con una referencia «nueva» en la misma sentencia y fechas
+  // coherentes: aun así, marcar no mueve la revisión.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=3,dirty=1,dirty_desde=?,dirty_ultimo=?,
+         dirty_origen='Operacion',dirty_motivos='[]',huella_validacion=?,
+         version_conjunto='1',revision_actor='humano',revision_instante=?
+       WHERE ciclo='1'`,
+      [t3, t3, "e".repeat(64), t3],
+    ),
+  ).toThrow("marcar o reiterar no cambia la revision");
+  expect(fila(db)).toEqual(intacta);
+
+  // La fila sigue Validada en r=2: el estado intermedio del ataque no existe.
+  expect(intacta).toMatchObject({ revision: 2, dirty: 0, huella_validacion: HUELLA });
+  db.close();
+});
+
+test("adversarial · limpiar reutilizando la referencia aborta aunque la marca sea antigua", () => {
+  const db = store();
+  ciclo(db, "1", "2026-01-01");
+  // Estado intermedio del ataque, inalcanzable ya por UPDATE: pendiente en r=3
+  // con marcas anteriores a la referencia humana de `t2`.
+  validacion(db, "1", {
+    revision: 3,
+    dirty: 1,
+    dirty_desde: t,
+    dirty_ultimo: t,
+    dirty_origen: "Operacion",
+    dirty_motivos: '["FLUJO_CICLO"]',
+    huella: HUELLA,
+    version: "1",
+    actor: "humano",
+    instante: t2,
+  });
+  const pendiente = fila(db);
+
+  // Paso 2 sin tocar la referencia: `revision+1` sin evidencia nueva.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=4,dirty=0,dirty_desde=NULL,dirty_ultimo=NULL,
+         dirty_origen=NULL,dirty_motivos=NULL WHERE ciclo='1'`,
+    ),
+  ).toThrow("avanzar la revision exige una revision humana");
+  expect(fila(db)).toEqual(pendiente);
+
+  // Paso 2 con un instante posterior a la marca pero anterior a la revisión
+  // humana: la huella/actor/instante/versión anteriores no valen.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=4,dirty=0,dirty_desde=NULL,dirty_ultimo=NULL,
+         dirty_origen=NULL,dirty_motivos=NULL,revision_instante=?
+       WHERE ciclo='1'`,
+      ["2026-01-01T12:00:00.000Z"],
+    ),
+  ).toThrow("la revision humana exige evidencia nueva");
+  expect(fila(db)).toEqual(pendiente);
+
+  // Y con evidencia realmente nueva la limpieza legítima sigue disponible.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=4,dirty=0,dirty_desde=NULL,dirty_ultimo=NULL,
+         dirty_origen=NULL,dirty_motivos=NULL,revision_actor='humano2',revision_instante=?
+       WHERE ciclo='1'`,
+      [t3],
+    ),
+  ).not.toThrow();
+  expect(fila(db)).toMatchObject({
+    revision: 4,
+    dirty: 0,
+    revision_actor: "humano2",
+    revision_instante: t3,
+  });
+  db.close();
+});
+
+test("adversarial · marcar y reiterar conservan la revisión y su cronología", () => {
+  const db = store();
+  ciclo(db, "1", "2026-01-01");
+  validada(db);
+  const limpia = fila(db);
+
+  // Marca con revisión adelantada y fechas coherentes: sigue siendo una marca.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=3,dirty=1,dirty_desde=?,dirty_ultimo=?,
+         dirty_origen='Operacion',dirty_motivos='[]' WHERE ciclo='1'`,
+      [t3, t3],
+    ),
+  ).toThrow("marcar o reiterar no cambia la revision");
+  expect(fila(db)).toEqual(limpia);
+
+  // Marca legítima: misma revisión y cronología posterior a la referencia.
+  expect(() =>
+    db.run(
+      `UPDATE cierre_validacion SET dirty=1,dirty_desde=?,dirty_ultimo=?,
+         dirty_origen='Operacion',dirty_motivos='["FLUJO_CICLO"]' WHERE ciclo='1'`,
+      [t3, t3],
+    ),
+  ).not.toThrow();
+  expect(fila(db)).toMatchObject({
+    revision: 2,
+    dirty: 1,
+    dirty_desde: t3,
+    dirty_ultimo: t3,
+    revision_instante: t2,
+  });
+
+  // Reiteración legítima: avanza `dirty_ultimo` y conserva `dirty_desde`.
+  expect(() =>
+    db.run("UPDATE cierre_validacion SET dirty_ultimo=? WHERE ciclo='1'", [t3]),
+  ).not.toThrow();
+  const reiterada = fila(db);
+  expect(reiterada).toMatchObject({ revision: 2, dirty: 1, dirty_desde: t3 });
+
+  // Reiteración con `dirty_ultimo` anterior a la revisión humana: aborta.
+  expect(() =>
+    db.run("UPDATE cierre_validacion SET dirty_ultimo=? WHERE ciclo='1'", [t]),
+  ).toThrow("la marca no puede preceder a la revision humana");
+
+  // Reiteración que adelanta la revisión, aunque limpie metadatos de marca.
+  expect(() =>
+    db.run(
+      "UPDATE cierre_validacion SET revision=3,dirty_motivos='[]' WHERE ciclo='1'",
+    ),
+  ).toThrow("marcar o reiterar no cambia la revision");
+  expect(fila(db)).toEqual(reiterada);
+  db.close();
+});
+
+test("adversarial · Pendiente → Validada exige referencia humana nueva por SQL directo", () => {
+  const db = store();
+  ciclo(db, "1", "2026-01-01");
+  validacion(db, "1", {
+    revision: 2,
+    dirty: 1,
+    dirty_desde: t,
+    dirty_ultimo: t,
+    dirty_origen: "Operacion",
+    dirty_motivos: '["FLUJO_CICLO"]',
+    huella: HUELLA,
+    version: "1",
+    actor: "humano",
+    instante: t2,
+  });
+  const pendiente = fila(db);
+  const limpiar = (actor: string, instante: string, huella = HUELLA) =>
+    db.run(
+      `UPDATE cierre_validacion SET revision=3,dirty=0,dirty_desde=NULL,dirty_ultimo=NULL,
+         dirty_origen=NULL,dirty_motivos=NULL,huella_validacion=?,revision_actor=?,
+         revision_instante=? WHERE ciclo='1'`,
+      [huella, actor, instante],
+    );
+
+  // Sin una sola columna de referencia nueva: `revision+1` no es humano.
+  expect(() => limpiar("humano", t2)).toThrow(
+    "avanzar la revision exige una revision humana",
+  );
+  // Instante anterior a la revisión humana registrada, aunque posterior a la
+  // marca: la referencia anterior no se recicla.
+  expect(() => limpiar("humano", "2026-01-01T12:00:00.000Z")).toThrow(
+    "la revision humana exige evidencia nueva",
+  );
+  expect(fila(db)).toEqual(pendiente);
+
+  // Misma huella (conjunto sin delta) con evidencia nueva: ésta sí es la
+  // confirmación legítima de `pendienteSinDelta`.
+  expect(() => limpiar("humano2", t3)).not.toThrow();
+  expect(fila(db)).toMatchObject({
+    revision: 3,
+    dirty: 0,
+    dirty_desde: null,
+    dirty_ultimo: null,
+    huella_validacion: HUELLA,
+    version_conjunto: "1",
+    revision_actor: "humano2",
+    revision_instante: t3,
+  });
+  db.close();
+});
+
+/* ------------------------------------------------------------------ *
  * Auditoría y DTO
  * ------------------------------------------------------------------ */
 

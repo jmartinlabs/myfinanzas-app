@@ -53,6 +53,13 @@ import {
  * añade, para la limpieza de una fila pendiente, instante posterior a
  * `dirty_ultimo`/`dirty_desde` y versión de conjunto sin reapuntar.
  *
+ * Las tres ramas son independientes del estado `dirty`: avanzar `revision`
+ * siempre exige referencia humana nueva, y una marca o reiteración —cambio de
+ * `dirty` o de sus metadatos— no puede mover la revisión. La cronología de
+ * `dirty_desde`/`dirty_ultimo` tampoco puede preceder a la referencia humana
+ * vigente: si lo hiciera, la limpieza posterior podría compararse contra una
+ * marca artificialmente vieja en lugar de contra la última revisión humana.
+ *
  * ## DTO de auditoría (§2.3)
  * `detalle` se comprueba con `json_each`/`json_tree` y no con `json_valid` ni
  * una lista negra de nombres. El orden de las guardas es deliberado para que el
@@ -829,8 +836,34 @@ export function cierreValidacionDdl(): string {
          OR NEW.revision_actor IS NOT OLD.revision_actor
          OR NEW.revision_instante IS NOT OLD.revision_instante
          OR NEW.revision_motivo IS NOT OLD.revision_motivo)
-       AND NEW.dirty=OLD.dirty
       BEGIN SELECT RAISE(ABORT,'avanzar la revision exige una revision humana'); END;
+
+    /* §2.4: marcar o reiterar —cambia 'dirty' o sus metadatos— no mueve la
+     * revisión. La confirmación (1→0) no entra aquí: limpia y avanza a r+1. */
+    CREATE TRIGGER cierre_validacion_marca_sin_revision
+      BEFORE UPDATE ON cierre_validacion
+      WHEN NEW.dirty=1
+       AND NEW.revision<>OLD.revision
+       AND (NEW.dirty IS NOT OLD.dirty
+         OR NEW.dirty_desde IS NOT OLD.dirty_desde
+         OR NEW.dirty_ultimo IS NOT OLD.dirty_ultimo
+         OR NEW.dirty_origen IS NOT OLD.dirty_origen
+         OR NEW.dirty_motivos IS NOT OLD.dirty_motivos)
+      BEGIN SELECT RAISE(ABORT,'marcar o reiterar no cambia la revision'); END;
+
+    /* §2.4: la marca no puede fecharse antes de la referencia humana vigente.
+     * Si 'dirty_desde'/'dirty_ultimo' quedan por detrás de 'revision_instante',
+     * la limpieza se compara contra una referencia antigua y no contra la
+     * última revisión humana. */
+    CREATE TRIGGER cierre_validacion_marca_cronologia
+      BEFORE UPDATE ON cierre_validacion
+      WHEN NEW.dirty=1
+       AND NEW.revision_instante IS NOT NULL
+       AND (NEW.dirty_desde IS NOT OLD.dirty_desde
+         OR NEW.dirty_ultimo IS NOT OLD.dirty_ultimo)
+       AND (NEW.dirty_desde<NEW.revision_instante
+         OR NEW.dirty_ultimo<NEW.revision_instante)
+      BEGIN SELECT RAISE(ABORT,'la marca no puede preceder a la revision humana'); END;
 
     /* ------------------------------------------------------------------ *
      * §2.4 · la revisión humana no reutiliza evidencia anterior
