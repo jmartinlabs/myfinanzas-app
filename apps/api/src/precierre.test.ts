@@ -669,4 +669,3 @@ test("AC-16: el precierre no lee cierres ni fotos posteriores", () => {
     close(db);
   }
 });
-
