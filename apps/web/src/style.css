@@ -6971,3 +6971,40 @@ textarea {
 .pending-transfers .ui-data-list {
   display: grid;
 }
+
+/* SPEC38 · I2 — validación operativa (issue 555).
+ * Bloque aditivo y aislado: consume solo tokens existentes, no redefine las
+ * reglas de cierre/fotos retiradas ni ninguna apariencia. La marca de estado se
+ * compone de badge + texto, nunca solo color; la tabla de cobertura se
+ * transforma en tarjetas por debajo de 760 px, como el resto de tablas. */
+.validacion-status .validacion-metrics .metric:first-child {
+  grid-column: span 2;
+  border-color: var(--accent-border);
+  background: var(--section);
+}
+.validacion-status .validacion-metrics .metric:first-child dd {
+  font-size: clamp(20px, 2.2vw, 28px);
+}
+/* Texto funcional a 12 px, como el badge del cierre E4.9 y el de Inicio: la
+ * marca de estado y la cobertura se leen como texto, no como ornamento. */
+.validacion-page .ui-badge {
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+.validacion-desktop {
+  min-width: 0;
+}
+.validacion-cards {
+  margin: var(--space-2) 0 0;
+}
+@media (max-width: 760px) {
+  .validacion-status .validacion-metrics .metric:first-child {
+    grid-column: auto;
+  }
+  .validacion-desktop {
+    display: none;
+  }
+  .validacion-cards {
+    margin-top: 0;
+  }
+}

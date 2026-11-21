@@ -9,8 +9,8 @@ import { totp } from "../../apps/api/src/auth";
 /**
  * UI · DEV-03 — navegación.
  *
- * Comprueba que los 24 enlaces se conservan sin cambiar sus `href`,
- * que el enlace autorizado `/fotos` se declara una sola vez, que los grupos y
+ * Comprueba que los 23 enlaces se conservan sin cambiar sus `href`,
+ * que `/fotos` ya no se declara (retirado con su pantalla en #555) y que los grupos y
  * el activo son perceptibles, que el título sigue a la ruta y que el menú móvil
  * funciona con teclado. El servidor es aislado y ficticio.
  */
@@ -37,7 +37,6 @@ const EXPECTED_HREFS = [
   "/ciclos",
   "/precierre",
   "/cierre",
-  "/fotos",
   "/dprima",
   "/comida",
   "/revision-comida",
@@ -109,7 +108,7 @@ async function login(page: Page) {
   ).toBeVisible();
 }
 
-test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos y menú móvil accesible", async ({
+test("UI-01: 23 enlaces, accesos directos, grupos desplegables, activo, títulos y menú móvil accesible", async ({
   page,
 }) => {
   const artifactsUiDev03 = artifactDir("ui-dev-03");
@@ -127,12 +126,13 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       ),
     ).toBe(true);
 
-  // Los 24 enlaces se conservan y /fotos se declara una sola vez.
+  // #555 · §7.6: `/fotos` se retira con su pantalla; el resto sigue intacto.
   const hrefs = await nav
     .locator("a")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
-  expect(hrefs).toHaveLength(24);
-  expect(new Set(hrefs).size).toBe(24);
+  expect(hrefs).toHaveLength(23);
+  expect(new Set(hrefs).size).toBe(23);
+  expect(hrefs).not.toContain("/fotos");
   expect([...hrefs].sort()).toEqual([...EXPECTED_HREFS].sort());
   expect(hrefs).not.toContain("/");
   expect(hrefs).not.toContain("/saldos/nuevo");
@@ -143,7 +143,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     ["Patrimonio", ["/saldos", "/inversiones", "/deudas"]],
     ["Presupuestos y planificación", ["/dprima", "/planes-ciclo", "/nomina", "/clasificacion/partidas"]],
     ["Casos y gastos especiales", ["/referencias", "/anticipos", "/compartidos", "/vehiculos", "/comida", "/revision-comida"]],
-    ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre", "/fotos"]],
+    ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre"]],
     ["Funciones anteriores", ["/presupuestos", "/plan-anual"]],
   ];
   // Los dos accesos directos viven fuera de los grupos, en su propio bloque.
