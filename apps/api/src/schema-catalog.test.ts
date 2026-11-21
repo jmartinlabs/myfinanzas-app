@@ -14,7 +14,7 @@ import {
 } from "./schema-catalog";
 
 const VERSIONS: Supported[] = Array.from(
-  { length: 31 },
+  { length: 32 },
   (_, index) => (index + 1) as Supported,
 );
 
@@ -51,6 +51,7 @@ const MANIFEST_LABELS: Record<number, string> = {
   29: "e36.3-v29",
   30: "e37.1-v30",
   31: "e37.2-v31",
+  32: "e38.1-v32",
 };
 
 const CONTRACT_IDS: Record<number, string> = {
@@ -72,21 +73,22 @@ const CONTRACT_IDS: Record<number, string> = {
   29: "C29-REPARTO-ORIGEN-86DED4B",
   30: "C30-SPEC37-COORDINADO-0E1F34D",
   31: "C31-SPEC37-INTENCION-91C32F5",
+  32: "C32-SPEC38-VALIDACION-CIERRE",
 };
 
 test("catálogo: versiones soportadas contiguas y vigente derivada de la última", () => {
   expect([...SUPPORTED]).toEqual(VERSIONS);
   expect(new Set(SUPPORTED).size).toBe(VERSIONS.length);
-  expect(schemaVersion).toBe(31);
+  expect(schemaVersion).toBe(32);
   expect(SUPPORTED[SUPPORTED.length - 1]).toBe(schemaVersion);
 });
 
-test("catálogo: 31 pares versión → etiqueta de manifiesto, exactos y únicos", () => {
+test("catálogo: 32 pares versión → etiqueta de manifiesto, exactos y únicos", () => {
   expect(appLabels).toEqual(MANIFEST_LABELS);
   expect(Object.keys(appLabels).map(Number).sort((a, b) => a - b)).toEqual(
     VERSIONS,
   );
-  expect(new Set(Object.values(appLabels)).size).toBe(31);
+  expect(new Set(Object.values(appLabels)).size).toBe(32);
   for (const version of VERSIONS) {
     expect(appLabels[version]).toBe(MANIFEST_LABELS[version]);
     expect(appLabels[version].endsWith(`-v${version}`)).toBe(true);
@@ -94,30 +96,30 @@ test("catálogo: 31 pares versión → etiqueta de manifiesto, exactos y únicos
   }
 });
 
-test("catálogo: contratos admitidos C14…C31 exactos e histórico v14 preservado", () => {
+test("catálogo: contratos admitidos C14…C32 exactos e histórico v14 preservado", () => {
   expect({ ...admitted } as Record<number, string>).toEqual(CONTRACT_IDS);
   expect(Object.keys(admitted).map(Number).sort((a, b) => a - b)).toEqual(
     VERSIONS.slice(13),
   );
-  expect(new Set(Object.values(admitted)).size).toBe(18);
+  expect(new Set(Object.values(admitted)).size).toBe(19);
   expect(historical14).toBe("C14-COMPARTIDOS-FCE1107");
   expect(Object.values(admitted)).not.toContain(historical14);
 });
 
-test("contratos: solo v14…v31 declaran contrato; el resto devuelve null", () => {
+test("contratos: solo v14…v32 declaran contrato; el resto devuelve null", () => {
   for (const version of VERSIONS) {
     expect(contractIdFor(version)).toBe(CONTRACT_IDS[version] ?? null);
   }
   expect(contractIdFor(1)).toBeNull();
   expect(contractIdFor(13)).toBeNull();
-  expect(contractIdFor(32)).toBeNull();
+  expect(contractIdFor(33)).toBeNull();
   expect(contractIdFor(0)).toBeNull();
   expect(contractIdFor(1.5)).toBeNull();
 });
 
 test("etiquetas: una versión sin entrada falla explícitamente, sin fallback", () => {
-  expect(() => appLabelFor(32)).toThrow(
-    "Etiqueta de manifiesto ausente para el esquema v32.",
+  expect(() => appLabelFor(33)).toThrow(
+    "Etiqueta de manifiesto ausente para el esquema v33.",
   );
   expect(() => appLabelFor(0)).toThrow(
     "Etiqueta de manifiesto ausente para el esquema v0.",
@@ -131,7 +133,7 @@ test("admisión: solo enteros dentro del rango soportado", () => {
   expect(isKnownSchemaVersion(0)).toBe(false);
   expect(isKnownSchemaVersion(1)).toBe(true);
   expect(isKnownSchemaVersion(31)).toBe(true);
-  expect(isKnownSchemaVersion(32)).toBe(false);
+  expect(isKnownSchemaVersion(33)).toBe(false);
   expect(isKnownSchemaVersion(1.5)).toBe(false);
   expect(isKnownSchemaVersion(-1)).toBe(false);
   expect(isKnownSchemaVersion(Number.NaN)).toBe(false);
