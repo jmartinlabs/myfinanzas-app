@@ -89,8 +89,13 @@ vigentes, el sistema **señala sobrecompromiso** y **exige revisión humana**.
 - El ciclo queda marcado con el déficit visible y la diferencia cuantificada, y el pendiente de
   decidir se publica como `sobrecomprometido` —nunca como cero silencioso—.
 
-La resolución es una decisión del usuario: anular o reducir compromisos, o ejecutar la
-transferencia que restablezca la cobertura.
+La resolución es una decisión del usuario: revisar, reducir o anular compromisos, o corregir
+justificadamente hechos erróneos de los que se derivó el cálculo.
+
+**Ejecutar la transferencia no es una vía de resolución.** Una transferencia real aumenta
+`S(t)`, lo que **reduce** `P(t)` y por tanto puede **agravar** el sobrecompromiso: el saldo
+disponible baja sin que la cobertura decidida cambie. Solo la revisión de los compromisos, o la
+corrección justificada de un hecho erróneo, restablece la coherencia.
 
 ## 6 · Invariantes verificables
 
@@ -105,8 +110,13 @@ transferencia que restablezca la cobertura.
 
 ## 7 · Fuera de alcance
 
-No fija la interfaz, ni los códigos de error, ni la forma de las lecturas: eso pertenece al §7
-de [SPEC38 v7](38-e49b-cierre-validacion-specification.md) —que las consume— y a la SPEC de
-devoluciones [#538](https://github.com/jmartinlabs/myfinanzas-app/issues/538). No modifica
+No fija la interfaz, ni los códigos de error, ni la forma de las lecturas. Las interfaces
+pertenecen al [anexo de interfaces de SPEC38](38-e49b-cierre-validacion-interfaces.md) y a la
+SPEC propietaria de devoluciones [#538](https://github.com/jmartinlabs/myfinanzas-app/issues/538).
+
+**No es el §7 de [SPEC38](38-e49b-cierre-validacion-specification.md)**: ese apartado trata la
+migración y los gates, no las interfaces, y no es el lugar donde este contrato se consume.
+
+No modifica
 SPEC14, cuya acreditación a terceros en Gastos compartidos sigue siendo dependencia obligatoria
 antes de DEV. No autoriza implementación.
