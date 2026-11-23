@@ -6,7 +6,7 @@ import { createSaldo } from "./saldos";
 import { createClassification } from "./clasificacion";
 import { createCycle, cycleContext } from "./ciclos";
 import { getMovement, previewMovement, writeMovement } from "./movimientos";
-import { getComidaMovement, listComida, listComprasR5 } from "./comida";
+import { activateRegimen, getComidaMovement, listComida, listComprasR5, prepareRegimen } from "./comida";
 import { financeRevision } from "./movement-ledger";
 
 /**
@@ -398,4 +398,108 @@ test("AC-D33 R5 HTTP: 401 sin sesión, 200 no-store, 422 VALIDATION y /api/comid
   expect(legacy.status).toBe(200);
   expect(Object.keys(legacy.data).sort()).toEqual(["contexto", "historico", "historicoTotal", "items", "page", "regimen", "total"]);
   db.close();
+});
+
+const codeOf = (fn: () => unknown) => {
+  try {
+    fn();
+  } catch (e) {
+    return { status: (e as { status: number }).status, code: (e as { code: string }).code };
+  }
+  return null;
+};
+
+test("AC-D33 R5 (QA): límites exactos inclusivos de fecha e importe e importeMin = importeMax", () => {
+  const c = setup();
+  const lo = buy(c, "10.00", { fecha: "2026-07-01" });
+  const hi = buy(c, "20.00", { fecha: "2026-07-31" });
+  buy(c, "9.99", { fecha: "2026-07-15" });
+  buy(c, "20.01", { fecha: "2026-07-16" });
+  const ids = (q: string) => R5(c, q).items.map((i) => i.id).sort();
+  expect(ids(`${base}&${rng}&importeMin=10&importeMax=20`)).toEqual([lo, hi].sort());
+  expect(ids(`${base}&${rng}&importeMin=10.00&importeMax=10.00`)).toEqual([lo]);
+  expect(ids(`${base}&${rng}&importeMin=20&importeMax=20`)).toEqual([hi]);
+  expect(ids(`${base}&${rng}&importeMin=9.99&importeMax=9.99`).length).toBe(1);
+  expect(ids(`${base}&${rng}&importeMin=0&importeMax=0`)).toEqual([]);
+  expect(ids(`${base}&desde=2026-07-01&hasta=2026-07-31&importeMin=10&importeMax=20`)).toEqual([lo, hi].sort());
+  expect(ids(`${base}&desde=2026-07-02&hasta=2026-07-30&importeMin=10&importeMax=20`)).toEqual([]);
+  c.db.close();
+});
+
+test("AC-D33 R5 (QA): un solo extremo de fecha se acepta y ninguno da 422", () => {
+  const c = setup();
+  buy(c, "10", { fecha: "2026-07-10" });
+  buy(c, "11", { fecha: "2026-07-20" });
+  expect(R5(c, `${base}&desde=2026-07-20`).total).toBe(1);
+  expect(R5(c, `${base}&desde=2026-07-10`).total).toBe(2);
+  expect(R5(c, `${base}&hasta=2026-07-10`).total).toBe(1);
+  expect(R5(c, `${base}&hasta=2026-07-19`).total).toBe(1);
+  expect(codeOf(() => R5(c, base))).toEqual({ status: 422, code: "VALIDATION" });
+  expect(codeOf(() => R5(c, `${base}&importeMin=1`))).toEqual({ status: 422, code: "VALIDATION" });
+  c.db.close();
+});
+
+test("AC-D33 R5 (QA): importes hostiles dan 422 y un importe enorme se compara sin pérdida de precisión", () => {
+  const c = setup();
+  const small = buy(c, "10");
+  const q = (v: string) => `${base}&${rng}&importeMin=${encodeURIComponent(v)}`;
+  for (const v of ["1e3", " 5", "5 ", "\uFF15", "+5", "-0", "0x10", "1.234", ".5", "5.", "", ].filter(Boolean))
+    expect([v, codeOf(() => R5(c, q(v)))]).toEqual([v, { status: 422, code: "VALIDATION" }]);
+  // En importeMax también
+  expect(codeOf(() => R5(c, `${base}&${rng}&importeMax=%EF%BC%95`))).toEqual({ status: 422, code: "VALIDATION" });
+  // Más allá del rango técnico de céntimos (bigint con signo de 64 bits): 422, nunca redondeo
+  expect(codeOf(() => R5(c, q("99999999999999999.99")))).toEqual({ status: 422, code: "VALIDATION" });
+  // Máximo representable: válido y exacto
+  const max = "92233720368547758.07";
+  expect(R5(c, `${base}&${rng}&importeMax=${max}`).items.map((i) => i.id)).toEqual([small]);
+  expect(R5(c, q(max)).total).toBe(0);
+  expect(R5(c, `${base}&${rng}&importeMin=0&importeMax=${max}`).total).toBe(1);
+  // Precisión: 2^53+1 céntimos (90071992547409.93 EUR) no se confunde con 2^53 en float
+  expect(R5(c, `${base}&${rng}&importeMin=90071992547409.93&importeMax=${max}`).total).toBe(0);
+  // Compra por encima de 2^53 céntimos comparada exactamente
+  c.db.run("UPDATE movimientos SET importe=9007199254740993 WHERE id=?", [small]);
+  expect(R5(c, `${base}&${rng}&importeMin=90071992547409.93&importeMax=90071992547409.93`).items.map((i) => i.id)).toEqual([small]);
+  expect(R5(c, `${base}&${rng}&importeMax=90071992547409.92`).total).toBe(0);
+  expect(R5(c, `${base}&${rng}&importeMin=90071992547409.94`).total).toBe(0);
+  expect(R5(c, `${base}&${rng}`).items[0].importe).toBe("90071992547409.93");
+  c.db.close();
+});
+
+test("AC-D33 R5 (QA): compra anulada excluida y la ficha de una devolución con compra anulada expone devolucionRevision", () => {
+  const c = setup();
+  const compra = buy(c, "50");
+  const other = buy(c, "7");
+  const dev = refund(c, compra, "20");
+  const rev = (c.db.query("SELECT revision FROM movimiento_devolucion WHERE movimiento=?").get(dev) as { revision: number }).revision;
+  c.db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [compra]);
+  expect(R5(c, `${base}&${rng}`).items.map((i) => i.id)).toEqual([other]);
+  expect(R5(c, `${base}&${rng}`).total).toBe(1);
+  const before = snapshot(c.db);
+  const f = getMovement(c.db, dev);
+  expect(f.devolucionRevision).toBe(rev);
+  expect(f.movimiento.devolucion!.revision).toBe(rev);
+  const fc = getComidaMovement(c.db, dev);
+  expect(fc.devolucionRevision).toBe(rev);
+  expect(fc.devolucion!.revision).toBe(rev);
+  expect(snapshot(c.db)).toBe(before);
+  c.db.close();
+});
+
+test("AC-D33 R5 (QA): Terminal con régimen Comida activo no aparece, y la compra individual del saldo Comida sí", () => {
+  const c = setup();
+  const ready = prepareRegimen(
+    c.db,
+    { saldo: c.account.id, cicloCorte: c.cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(c.db, { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true }, randomUUID(), now);
+  const term = terminalSaldo(c);
+  const normal = buy(c, "10");
+  const agregado = buy(c, "12", { saldo: term.id });
+  const out = R5(c, `${base}&desde=2026-07-01&hasta=2026-07-31`);
+  expect(out.items.map((i) => i.id)).toEqual([normal]);
+  expect(out.items.map((i) => i.id)).not.toContain(agregado);
+  expect(out.total).toBe(1);
+  c.db.close();
 });
