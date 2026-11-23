@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import {
+  DEVOLUCION_G1,
+  DEVOLUCION_G1_ID,
+  useCapacidadDevolucion,
+} from "./devolucion-capacidad";
+import {
   Alert,
   DataList,
   Field,
@@ -1372,6 +1377,8 @@ function OperationForm({
   go: (p: string) => void;
 }) {
   const endpoint = (tipo === "Reposicion" ? reposBase : base) + (id ? "/" + id : "");
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   const [form, setForm] = useState<Form>(emptyForm),
     [old, setOld] = useState<Operacion | null>(null),
     [reason, setReason] = useState(""),
@@ -1447,7 +1454,15 @@ function OperationForm({
           cuentaOrigen: form.cuentaOrigen || null,
           ...(id ? { revision: old?.revision, motivo: reason } : {}),
         };
+  const bloqueaDevolucion =
+    !devolucionDisponible &&
+    tipo === "Detalle" &&
+    (form.esDevolucion === "true" || old?.esDevolucion === true);
   async function submit() {
+    if (bloqueaDevolucion) {
+      setError(DEVOLUCION_G1);
+      return;
+    }
     setBusy(true);
     setError("");
     setFields({});
@@ -1582,6 +1597,11 @@ function OperationForm({
                 </select>
               </Field>
             )}
+            {tipo === "Detalle" && !devolucionDisponible && (
+              <p id={DEVOLUCION_G1_ID} className="help ui-form-span" role="note">
+                {DEVOLUCION_G1}
+              </p>
+            )}
             {tipo === "Detalle" && (
               <Field
                 id="esDevolucion"
@@ -1590,10 +1610,15 @@ function OperationForm({
               >
                 <select
                   value={form.esDevolucion}
+                  aria-describedby={
+                    !devolucionDisponible ? DEVOLUCION_G1_ID : undefined
+                  }
                   onChange={(e) => change("esDevolucion", e.target.value)}
                 >
                   <option value="false">No</option>
-                  <option value="true">Sí</option>
+                  <option value="true" disabled={!devolucionDisponible}>
+                    Sí
+                  </option>
                 </select>
               </Field>
             )}
@@ -1689,7 +1714,12 @@ function OperationForm({
             presupuestaria. No se aceptan campos calculados por el cliente.
           </p>
           <div className="actions">
-            <button className="primary" disabled={busy} onClick={submit}>
+            <button
+              className="primary"
+              disabled={busy || bloqueaDevolucion}
+              aria-describedby={bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined}
+              onClick={submit}
+            >
               {id ? "Guardar rectificación" : "Guardar"}
             </button>
             <button

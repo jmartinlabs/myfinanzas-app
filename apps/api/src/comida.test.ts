@@ -23,6 +23,7 @@ import {
   writeComidaRol,
 } from "./comida";
 import { getCyclePlan, planConfigurationImpact } from "./planes-ciclo";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 const now = Date.parse("2026-10-21T12:00:00Z");
 process.env.NODE_ENV = "test";
@@ -136,6 +137,8 @@ function add(
     null,
     false,
     nowMs,
+    undefined,
+    gateAbiertoParaPruebas,
   );
 }
 function purchase(
@@ -328,6 +331,8 @@ test("P4: al anular la compra, la devolución verificada pasa a Revisar y conser
     buy.movimiento.id,
     true,
     now,
+    undefined,
+    gateAbiertoParaPruebas,
   );
   const view = getComidaMovement(db, r.movimiento.id);
   expect(view.devolucion?.estado).toBe("Revisar");
@@ -1676,7 +1681,11 @@ test("AC-19: las rutas de Comida heredan MFA, Origin/CSRF y errores seguros", as
   const key = randomBytes(32);
   let clock = now;
   const handler = HttpApp.toWebHandler(
-    createApp(db, { key, now: () => clock }),
+    createApp(db, {
+      key,
+      now: () => clock,
+      devolucionGate: gateAbiertoParaPruebas,
+    }),
   );
   let cookie = "",
     csrf = "";
@@ -1811,6 +1820,8 @@ test("H1: rectificar la devolución por encima de la compra la degrada a Revisar
     r.movimiento.id,
     false,
     now,
+    undefined,
+    gateAbiertoParaPruebas,
   );
   expect(getComidaMovement(db, r.movimiento.id).devolucion?.estado).toBe(
     "Revisar",
@@ -1895,6 +1906,8 @@ test("H3: al anular la compra, el plan deja de netear una devolución no verific
     buy.movimiento.id,
     true,
     now,
+    undefined,
+    gateAbiertoParaPruebas,
   );
   const executed = getCyclePlan(db, cycle1.id, now).items.find(
     (i) => i.presupuesto.id === budget.id,

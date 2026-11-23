@@ -12,6 +12,7 @@ import {
   getRevisionComida,
   vincularRevisionComida,
 } from "./revision-comida";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
 test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones, vínculos, evidencias y auditoría", () => {
@@ -37,6 +38,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
         randomUUID(),
         now,
         "Detalle",
+        gateAbiertoParaPruebas,
       ).operacion,
       devolution = createRevisionComida(
         db,
@@ -53,6 +55,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
         randomUUID(),
         now,
         "Detalle",
+        gateAbiertoParaPruebas,
       ).operacion,
       reposicion = createRevisionComida(
         db,
@@ -67,6 +70,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
         randomUUID(),
         now,
         "Reposicion",
+        gateAbiertoParaPruebas,
       ).operacion;
     vincularRevisionComida(
       db,
@@ -81,6 +85,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     );
     vincularRevisionComida(
       db,
@@ -95,6 +100,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     );
     const before = getRevisionComida(db, detail.id);
     const identity = join(dir, "identity.txt"),

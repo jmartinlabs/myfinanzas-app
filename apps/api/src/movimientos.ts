@@ -43,6 +43,10 @@ import {
 } from "./movement-ledger";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
 import {
+  exigirEscrituraDevolucion,
+  type DevolucionGate,
+} from "./devolucion-gate";
+import {
   applyComidaDevolucion,
   applyComidaMetadata,
   comidaDevolucion,
@@ -1160,6 +1164,8 @@ export function writeMovementInTransaction(
   db: Database,
   body: Record<string, unknown>,
   options: {
+    /** #572: ausente = CERRADO para las escrituras de devolución. */
+    gate?: DevolucionGate;
     now: number;
     id?: string | null;
     annul?: boolean;
@@ -1169,8 +1175,14 @@ export function writeMovementInTransaction(
   },
 ) {
   const id = options.id ?? null,
-    annul = options.annul ?? false,
-    p =
+    annul = options.annul ?? false;
+  exigirEscrituraDevolucion(db, options.gate, {
+    origen: "movimiento",
+    body,
+    id,
+    anular: annul,
+  });
+  const p =
       options.planned ??
       plan(db, body, id, annul, options.now, options.guard);
   return writeMovementCore(
@@ -1192,6 +1204,7 @@ export function writeMovement(
   annul = false,
   now = Date.now(),
   guard?: MovementProtection,
+  gate?: DevolucionGate,
 ) {
   if (!/^[a-zA-Z0-9-]{16,100}$/.test(key))
     throw new Problem(
@@ -1219,6 +1232,13 @@ export function writeMovement(
           );
         return JSON.parse(retry.response) as ReturnType<typeof getMovement>;
       }
+      // #572: gate tras la reproducción idempotente y antes de tocar estado.
+      exigirEscrituraDevolucion(db, gate, {
+        origen: "movimiento",
+        body,
+        id,
+        anular: annul,
+      });
       if (
         body.contextRevision !== undefined &&
         body.contextRevision !== financeRevision(db)

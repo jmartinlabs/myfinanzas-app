@@ -20,6 +20,7 @@ import {
 } from "./revision-comida";
 import { ledgerRows, movementSource } from "./movement-ledger";
 import { getSaldo, Problem } from "./saldos";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
 function setup() {
@@ -51,12 +52,12 @@ const create = (
   db: Database,
   body: Record<string, unknown> = detail(),
   key = randomUUID(),
-) => createRevisionComida(db, body, key, now, "Detalle");
+) => createRevisionComida(db, body, key, now, "Detalle", gateAbiertoParaPruebas);
 const createRepos = (
   db: Database,
   body: Record<string, unknown> = reposicion(),
   key = randomUUID(),
-) => createRevisionComida(db, body, key, now, "Reposicion");
+) => createRevisionComida(db, body, key, now, "Reposicion", gateAbiertoParaPruebas);
 function snapshot(db: Database, tables: string[]) {
   return tables.map((table) => [
     table,
@@ -186,6 +187,7 @@ test("AC09/10/11/37: importes exactos, matriz tipo/dirección/devolución, clasi
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "evidenciaVinculo")).toBeTruthy();
   db.close();
 });
@@ -207,6 +209,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(link.operacion.estadoVinculo).toBe("Verificado");
   expect(link.operacion.tipoVinculo).toBe("Agregado terminal");
@@ -230,6 +233,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(link.operacion.estadoVinculo).toBe("Verificado");
   expect(fieldError(() =>
@@ -246,6 +250,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "tipoVinculo")).toBeTruthy();
   for (const [movimiento, tipo] of [
     ["204", "Individual"],
@@ -265,6 +270,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
         randomUUID(),
         now,
         "Detalle",
+        gateAbiertoParaPruebas,
       ), "movimiento")).toBeTruthy();
   expect(fieldError(() =>
     vincularRevisionComida(
@@ -280,6 +286,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "tipoVinculo")).toBeTruthy();
   expect(fieldError(() =>
     vincularRevisionComida(
@@ -295,6 +302,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "movimiento")).toBeTruthy();
   const outside = create(
     db,
@@ -320,6 +328,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(outsideLink.operacion.clasificacion).toBe("Fuera presupuesto");
   expect(central(db)).toEqual(centralBefore);
@@ -340,6 +349,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "evidenciaVinculo")).toBeTruthy();
   const repo = createRepos(db, reposicion({ fecha: "2026-10-13" }));
   expect(fieldError(() =>
@@ -356,6 +366,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     ), "movimiento")).toBeTruthy();
   expect(fieldError(() =>
     vincularRevisionComida(
@@ -371,6 +382,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     ), "movimiento")).toBeTruthy();
   expect(fieldError(() =>
     vincularRevisionComida(
@@ -386,6 +398,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     ), "tipoVinculo")).toBeTruthy();
   const repoIncome = vincularRevisionComida(
     db,
@@ -400,6 +413,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
     randomUUID(),
     now,
     "Reposicion",
+    gateAbiertoParaPruebas,
   );
   expect(repoIncome.operacion.estadoVinculo).toBe("Verificado");
   expect(fieldError(() =>
@@ -416,6 +430,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     ), "movimiento")).toBeTruthy();
   const repoTransfer = vincularRevisionComida(
     db,
@@ -430,6 +445,7 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
     randomUUID(),
     now,
     "Reposicion",
+    gateAbiertoParaPruebas,
   );
   expect(repoTransfer.operacion.estadoVinculo).toBe("Verificado");
   db.close();
@@ -491,6 +507,7 @@ test("AC07/08: referencia central con fuente Revisión Comida, máxima vigente, 
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(cycleContext(db).referencia.fecha).toBe("2026-10-11");
   expect(cycleContext(db).referencia.coverage).toContainEqual({
@@ -505,6 +522,7 @@ test("AC07/08: referencia central con fuente Revisión Comida, máxima vigente, 
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(cycleContext(db).referencia.fecha).toBe("2026-10-11");
   anularRevisionComida(
@@ -514,6 +532,7 @@ test("AC07/08: referencia central con fuente Revisión Comida, máxima vigente, 
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   const afterAnnul = cycleContext(db).referencia.fecha;
   expect(afterAnnul).toBe("2026-10-11");
@@ -603,6 +622,7 @@ test("AC14/28: reposición real, evidencia obligatoria, estados propios y anulac
     randomUUID(),
     now,
     "Reposicion",
+    gateAbiertoParaPruebas,
   );
   expect(rectified.operacion.id).toBe(r.operacion.id);
   expect(rectified.operacion.importe).toBe("25.00");
@@ -618,6 +638,7 @@ test("AC14/28: reposición real, evidencia obligatoria, estados propios y anulac
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     ),
   ).toThrow("cambiado");
   const annulled = anularRevisionComida(
@@ -627,6 +648,7 @@ test("AC14/28: reposición real, evidencia obligatoria, estados propios y anulac
     randomUUID(),
     now,
     "Reposicion",
+    gateAbiertoParaPruebas,
   );
   expect(annulled.operacion.estadoRegistro).toBe("Anulado");
   expect(listReposiciones(db).total).toBe(0);
@@ -639,6 +661,7 @@ test("AC14/28: reposición real, evidencia obligatoria, estados propios y anulac
       randomUUID(),
       now,
       "Reposicion",
+      gateAbiertoParaPruebas,
     ),
   ).toThrow("anulada");
   db.close();
@@ -658,6 +681,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(rectified.operacion.id).toBe(r.operacion.id);
   expect(rectified.operacion.clasificacion).toBe("Ocio");
@@ -675,6 +699,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ),
   ).toThrow("cambiado");
   const linked = vincularRevisionComida(
@@ -690,6 +715,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(linked.operacion.estadoVinculo).toBe("Verificado");
   db.run("UPDATE movimientos SET revision=revision+1 WHERE id='207'");
@@ -711,6 +737,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "movimiento")).toBeTruthy();
   expect(() =>
     vincularRevisionComida(
@@ -726,6 +753,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ),
   ).toThrow("cambiado");
   expect(fieldError(() =>
@@ -742,6 +770,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     ), "movimiento")).toBeTruthy();
   const annulled = anularRevisionComida(
     db,
@@ -750,6 +779,7 @@ test("AC16/17/18/24: rectificación auditada, vínculo en revisión y anulación
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(annulled.operacion.estadoRegistro).toBe("Anulado");
   expect(annulled.operacion.estadoVinculo).toBe("Revisar");
@@ -790,6 +820,7 @@ test("AC21: continuidad al cerrar y reabrir una base de archivo con vínculos y 
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     );
     const before = getRevisionComida(db, r.operacion.id);
     db.close();
@@ -865,6 +896,7 @@ test("AC16/24/30: dos conexiones, revisión obsoleta y ausencia de escritura par
       randomUUID(),
       now,
       "Detalle",
+      gateAbiertoParaPruebas,
     );
     expect(firstWrite.operacion.revision).toBe(2);
     let conflict: unknown;
@@ -876,6 +908,7 @@ test("AC16/24/30: dos conexiones, revisión obsoleta y ausencia de escritura par
         randomUUID(),
         now,
         "Detalle",
+        gateAbiertoParaPruebas,
       );
     } catch (e) {
       conflict = e;
@@ -915,7 +948,11 @@ test("AC19: MFA/Origin/CSRF, JSON limitado, campos derivados y errores seguros",
   const db = setup(),
     key = randomBytes(32),
     origin = "http://127.0.0.1:5173",
-    handler = HttpApp.toWebHandler(createApp(db, { key, now: () => now }));
+    handler = HttpApp.toWebHandler(createApp(db, {
+      key,
+      now: () => now,
+      devolucionGate: gateAbiertoParaPruebas,
+    }));
   const request = (
     path: string,
     method = "GET",
@@ -1067,6 +1104,7 @@ test("AC20/29: flujo completo de consulta, ficha, vínculo, rectificación y rep
     randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   );
   expect(linked.operacion.sinConciliacion).toBe(true);
   const list = listOperaciones(db);

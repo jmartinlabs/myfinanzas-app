@@ -28,6 +28,11 @@ import {
 } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
 import {
+  DEVOLUCION_G1,
+  DEVOLUCION_G1_ID,
+  useCapacidadDevolucion,
+} from "./devolucion-capacidad";
+import {
   ResumenAltaCoordinada,
   SeccionAltaCoordinada,
   coordinadoVacio,
@@ -84,6 +89,8 @@ type Movement = {
   estado: string;
   revision: number;
   ciclo: Cycle | null;
+  /** Resumen R3 de la compra: `count > 0` si tiene devoluciones vinculadas. */
+  devolucionesResumen?: { count: number } | null;
 };
 type Options = {
   deudas: Debt[];
@@ -728,6 +735,8 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
     // vinculado. Se lee el mecanismo único: no hay una segunda fuente.
     [pendiente, setPendiente] = useState<TransferenciaPendienteDTO | null>(null),
     [pendienteRetry, setPendienteRetry] = useState(0);
+  // #572: gate de escrituras de devolución; ausente o error = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   useEffect(() => {
     let live = true;
     api<TransferenciaPendienteListaDTO>(
@@ -782,6 +791,12 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
     );
   if (!data) return <p role="status">Cargando Movimiento…</p>;
   const m = data.movimiento,
+    // Rectificar/anular una devolución, o una compra con vínculo, es una
+    // escritura de devolución (`specs/38` §4): cerrada mientras el gate lo esté.
+    escrituraDevolucionCerrada =
+      !devolucionDisponible &&
+      (m.tipo === "Devolución de gasto" ||
+        (m.devolucionesResumen?.count ?? 0) > 0),
     field = (label: string, v: ReactNode) => (
       <div data-label={label}>
         <dt>{label}</dt>
@@ -805,12 +820,20 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
           <>
             <button
               className="secondary"
+              disabled={escrituraDevolucionCerrada}
+              aria-describedby={
+                escrituraDevolucionCerrada ? DEVOLUCION_G1_ID : undefined
+              }
               onClick={() => go(base + "/" + id + "/rectificar")}
             >
               Rectificar
             </button>
             <button
               className="secondary"
+              disabled={escrituraDevolucionCerrada}
+              aria-describedby={
+                escrituraDevolucionCerrada ? DEVOLUCION_G1_ID : undefined
+              }
               onClick={() => go(base + "/" + id + "/anular")}
             >
               Anular
@@ -818,6 +841,11 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
           </>
         )}
       </PageHead>
+      {escrituraDevolucionCerrada && !m.anulado && (
+        <p id={DEVOLUCION_G1_ID} className="help" role="note">
+          {DEVOLUCION_G1}
+        </p>
+      )}
       {m.anulado && (
         <div className="context-note">
           <p>
@@ -1129,6 +1157,8 @@ function MovementForm({
   initialType?: string;
 }) {
   const { options, error: optionsError, reload } = useOptions();
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   const returnDraft =
     referenceReturn?.path ===
     (id ? base + "/" + id + "/rectificar" : base + "/nuevo")
@@ -1467,6 +1497,13 @@ function MovementForm({
     go(base + "/" + result.movimiento.id);
   }
   async function submit() {
+    // #572: ninguna ruta de escritura de devolución se llama con el gate cerrado
+    // (también con un borrador restaurado o un enlace directo a rectificar/anular).
+    if (bloqueaDevolucion) {
+      setError(DEVOLUCION_G1);
+      requestAnimationFrame(() => alert.current?.focus());
+      return;
+    }
     if (coordinado) {
       await submitCoordinado();
       return;
@@ -1661,6 +1698,11 @@ function MovementForm({
     (form.tipo === "Gasto" || form.tipo === "Amortización deuda") &&
     selected?.referenciaObligatoria === true &&
     selected?.referenciaDisponible === false;
+  const bloqueaDevolucion =
+    !devolucionDisponible &&
+    (form.tipo === "Devolución de gasto" ||
+      old?.tipo === "Devolución de gasto" ||
+      (old?.devolucionesResumen?.count ?? 0) > 0);
   const button = coordinado
     ? plan
       ? "Registrar operación"
@@ -1707,6 +1749,11 @@ function MovementForm({
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
+      {!devolucionDisponible && (
+        <p id={DEVOLUCION_G1_ID} className="help" role="note">
+          {DEVOLUCION_G1}
+        </p>
+      )}
       {error && (
         <div tabIndex={-1} ref={alert}>
           <Alert>
@@ -1756,6 +1803,9 @@ function MovementForm({
                     "Tipo *",
                     <select
                       aria-label="Tipo *"
+                      aria-describedby={
+                        !devolucionDisponible ? DEVOLUCION_G1_ID : undefined
+                      }
                       value={form.tipo}
                       onChange={(e) => change("tipo", e.target.value)}
                     >
@@ -1764,7 +1814,9 @@ function MovementForm({
                       <option>Gasto</option>
                       <option>Transferencia</option>
                       <option>Amortización deuda</option>
-                      <option>Devolución de gasto</option>
+                      <option disabled={!devolucionDisponible}>
+                        Devolución de gasto
+                      </option>
                     </select>,
                   )}
                   {field(
@@ -2387,8 +2439,12 @@ function MovementForm({
               <button
                 className="primary"
                 type="submit"
+                aria-describedby={
+                  bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined
+                }
                 disabled={
                   busy ||
+                  bloqueaDevolucion ||
                   !options ||
                   !!optionsError ||
                   conflict ||

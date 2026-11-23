@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { Alert, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  DEVOLUCION_G1,
+  DEVOLUCION_G1_ID,
+  useCapacidadDevolucion,
+} from "./devolucion-capacidad";
 
 type Cycle = {
   id: string;
@@ -135,6 +140,8 @@ export function Comida({ go }: { go: (p: string) => void }) {
     [selected, setSelected] = useState<Item | null>(null),
     [action, setAction] = useState<"metadata" | "devolucion" | "rol" | "regimen" | null>(null);
   const alert = useRef<HTMLDivElement>(null);
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
 
   useEffect(() => {
     let live = true;
@@ -245,7 +252,17 @@ export function Comida({ go }: { go: (p: string) => void }) {
           <button
             type="button"
             className="secondary"
+            disabled={
+              item.tipo === "Devolución de gasto" && !devolucionDisponible
+            }
+            aria-describedby={
+              item.tipo === "Devolución de gasto" && !devolucionDisponible
+                ? DEVOLUCION_G1_ID
+                : undefined
+            }
             onClick={() => {
+              if (item.tipo === "Devolución de gasto" && !devolucionDisponible)
+                return;
               setSelected(item);
               setAction(
                 item.tipo === "Devolución de gasto" ? "devolucion" : "metadata",
@@ -262,6 +279,12 @@ export function Comida({ go }: { go: (p: string) => void }) {
     path: string,
     body: Record<string, unknown>,
   ): Promise<boolean> {
+    // #572: ninguna ruta de escritura de devolución se llama con el gate cerrado.
+    if (/\/devolucion$/.test(path) && !devolucionDisponible) {
+      setError(DEVOLUCION_G1);
+      requestAnimationFrame(() => alert.current?.focus());
+      return false;
+    }
     try {
       await api(path, "POST", body, { "idempotency-key": crypto.randomUUID() });
       setNotice("Operación registrada y auditada.");
@@ -305,6 +328,11 @@ export function Comida({ go }: { go: (p: string) => void }) {
       {notice && (
         <p role="status" className="notice">
           {notice}
+        </p>
+      )}
+      {!devolucionDisponible && (
+        <p id={DEVOLUCION_G1_ID} className="help" role="note">
+          {DEVOLUCION_G1}
         </p>
       )}
       {!options ? (
@@ -513,7 +541,7 @@ export function Comida({ go }: { go: (p: string) => void }) {
               }
             />
           )}
-          {selected && action === "devolucion" && (
+          {selected && action === "devolucion" && devolucionDisponible && (
             <AtribucionForm
               item={selected}
               options={options}
