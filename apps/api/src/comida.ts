@@ -234,16 +234,16 @@ function r5Money(raw: string | null, name: string): bigint | null {
 
 /**
  * R5 (specs/38 §2 y §6; SPEC39 AC-D33): selector de compras para atribuir o
- * reatribuir una devolución. Solo lectura. Se activa con `importeMin`/`importeMax`
- * o con la consulta canónica `tipo=Gasto&estado=Vigente` explícita; el resto de
- * usos de `GET /api/comida` (p. ej. `?estado=`) conserva su forma.
+ * reatribuir una devolución. Solo lectura.
+ *
+ * Discriminación EXPLÍCITA: R5 se activa únicamente por la **presencia** de
+ * `importeMin` o `importeMax` en la URL (incluso vacíos, como en la URL canónica
+ * de specs/38 §2: `...&importeMin=&importeMax=&page=`). Una petición legacy
+ * (p. ej. `?estado=` o `?tipo=Gasto&estado=Vigente` sin esos parámetros) conserva
+ * la respuesta de `listComida`: el DTO nunca cambia de forma en silencio.
  */
 export function esConsultaR5(params: URLSearchParams) {
-  return (
-    params.has("importeMin") ||
-    params.has("importeMax") ||
-    (params.get("tipo") === "Gasto" && params.get("estado") === "Vigente")
-  );
+  return params.has("importeMin") || params.has("importeMax");
 }
 export function listComprasR5(db: Database, params: URLSearchParams) {
   const tipo = params.get("tipo") || "Gasto",
@@ -307,6 +307,9 @@ export function listComprasR5(db: Database, params: URLSearchParams) {
           importe: decimal(r.importe)!,
           concepto: r.concepto,
           partida: r.partida,
+          // Decisión funcional (Álex, PR #580): `saldo` es el identificador del Saldo
+          // origen/pagador de la compra, no el saldo receptor de una devolución ni un
+          // importe de saldo bancario.
           saldo: r.origen,
         })),
       page,

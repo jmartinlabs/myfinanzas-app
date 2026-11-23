@@ -316,11 +316,27 @@ function esR5Compat(_c: Ctx) {
     "",
     "tipo=Gasto",
     "estado=Vigente",
+    "tipo=Gasto&estado=Vigente",
+    "tipo=Gasto&estado=Vigente&desde=2026-07-01&hasta=2026-07-31&page=1",
     "tipo=Devoluci%C3%B3n+de+gasto&estado=Vigente",
     "ciclo=C1&estado=",
-  ].some((q) => esConsultaR5(new URLSearchParams(q))) ||
-    !["importeMin=1", "importeMax=1", "tipo=Gasto&estado=Vigente"].every((q) => esConsultaR5(new URLSearchParams(q)));
+  ].some((q) => esConsultaR5(new URLSearchParams(q)));
 }
+
+test("AC-D33 R5: discriminación explícita por presencia de importeMin/importeMax (incluso vacíos)", () => {
+  const { esConsultaR5 } = require("./comida");
+  for (const q of [
+    "importeMin=1",
+    "importeMax=1",
+    "importeMin=",
+    "importeMax=",
+    "tipo=Gasto&estado=Vigente&importeMin=&importeMax=",
+    "tipo=Gasto&estado=Vigente&desde=2026-07-01&hasta=2026-07-31&importeMin=&importeMax=&page=1",
+  ])
+    expect([q, esConsultaR5(new URLSearchParams(q))]).toEqual([q, true]);
+  for (const q of ["tipo=Gasto&estado=Vigente", "tipo=Gasto&estado=Vigente&desde=2026-07-01&hasta=2026-07-31", "estado=", ""])
+    expect([q, esConsultaR5(new URLSearchParams(q))]).toEqual([q, false]);
+});
 
 test("AC-U29/AC-U33 lectura: devolucionRevision con vínculo, null explícito sin vínculo y la ficha conserva devolucion.revision", () => {
   const c = setup();
@@ -393,7 +409,18 @@ test("AC-D33 R5 HTTP: 401 sin sesión, 200 no-store, 422 VALIDATION y /api/comid
   expect(bad.status).toBe(422);
   expect(bad.data.code ?? bad.data.error?.code).toBe("VALIDATION");
   expect(last!.headers.get("cache-control")).toBe("no-store");
-  expect((await request(`/api/comida?${base}`)).status).toBe(422);
+  // R5 sin acotación temporal: 422; la URL canónica con parámetros vacíos activa R5.
+  expect((await request(`/api/comida?${base}&importeMin=&importeMax=`)).status).toBe(422);
+  // Petición legacy preexistente: conserva la forma de listComida (no cambia en silencio).
+  const legacyGasto = await request(`/api/comida?${base}`);
+  expect(legacyGasto.status).toBe(200);
+  expect(Object.keys(legacyGasto.data).sort()).toEqual(["contexto", "historico", "historicoTotal", "items", "page", "regimen", "total"]);
+  const legacyRango = await request(`/api/comida?${base}&${rng}`);
+  expect(legacyRango.status).toBe(200);
+  expect(Object.keys(legacyRango.data).sort()).toEqual(["contexto", "historico", "historicoTotal", "items", "page", "regimen", "total"]);
+  const canonico = await request(`/api/comida?${base}&${rng}&importeMin=&importeMax=&page=1`);
+  expect(canonico.status).toBe(200);
+  expect(Object.keys(canonico.data).sort()).toEqual(["items", "page", "total"]);
   const legacy = await request("/api/comida?estado=");
   expect(legacy.status).toBe(200);
   expect(Object.keys(legacy.data).sort()).toEqual(["contexto", "historico", "historicoTotal", "items", "page", "regimen", "total"]);
