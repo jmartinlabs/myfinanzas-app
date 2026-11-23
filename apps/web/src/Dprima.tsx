@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { Alert, PageHead, TableScroll, Tag } from "./ui";
 import {
-  CabeceraEjecucionMensual,
+  AbonosCelda,
   EjecutadoCelda,
   NOTA_ATRIBUCION,
   NOTA_DESVIACION,
@@ -398,7 +398,6 @@ export function Dprima({ go }: { go: (p: string) => void }) {
             <p className="muted">{NOTA_DESVIACION}</p>
             <TableScroll label="Tabla del plan mensual"><table className="table">
               <thead>
-                <CabeceraEjecucionMensual antes={6} />
                 <tr>
                   <th>Raíz</th>
                   <th>Fuente</th>
@@ -1061,7 +1060,9 @@ function MensualRow({
         </td>
       ))}
       <td>{amount(item.bruto)}</td>
-      <td>{amount(item.abonosBancarios)}</td>
+      <td>
+        <AbonosCelda fuente={item.fuente} valor={item.abonosBancarios} />
+      </td>
       <td>{amount(item.devoluciones)}</td>
       <td>
         <EjecutadoCelda

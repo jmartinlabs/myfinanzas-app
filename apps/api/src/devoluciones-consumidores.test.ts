@@ -11,6 +11,7 @@ import {
   getPlanMensualDprima,
   previewPartidaConfig,
 } from "./dprima";
+import { previewReparto } from "./repartos";
 import { cycleExecution, executionDetail, getCyclePlan } from "./planes-ciclo";
 import {
   agregarDescuentos,
@@ -432,5 +433,37 @@ test("F2A1-13: un histórico con devolución mayor que la compra no oculta el ex
   const d = dprima(c, c.A.id);
   expect(d.ejecutado).toBeNull();
   expect(d.estado).toBe("No disponible");
+  c.db.close();
+});
+
+test("F2A1-14: exceso en una sola compra anula solo el Presupuesto/raíz afectado; el otro conserva su ejecutado", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  buy(c, "60", { partida: c.leisure.id });
+  refund(c, compra, "100");
+  c.db.run("DROP TRIGGER IF EXISTS movimiento_devolucion_integrity");
+  c.db.run("UPDATE movimientos SET importe=5000 WHERE id=?", [compra]);
+  expect(plan(c, c.A.id, "PRE900").ejecutado).toBeNull();
+  expect(plan(c, c.A.id, "PRE901").ejecutado).toBe("60.00");
+  expect(dprima(c, c.A.id, c.food.id)).toMatchObject({ ejecutado: null, estado: "No disponible" });
+  expect(dprima(c, c.A.id, c.leisure.id).ejecutado).toBe("60.00");
+  c.db.close();
+});
+
+test("F2A1-15: Reparto sobre Dprima no persiste ejecutado de Gasto real: solo la vista previa cambia y no se sugiere importe", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  const antes = previewReparto(c.db, c.A.id, now, "Dprima");
+  const rowAntes = antes.items.find((i: any) => i.referencia === c.food.id)!;
+  expect(rowAntes.ejecutado).toBe("120.00");
+  refund(c, compra, "30");
+  const despues = previewReparto(c.db, c.A.id, now, "Dprima");
+  const rowDespues = despues.items.find((i: any) => i.referencia === c.food.id)!;
+  expect(rowDespues.ejecutado).toBe("90.00");
+  expect(rowDespues.importeSugerido).toBeNull();
+  expect(despues.reparto).toBeNull();
+  expect(c.db.query("SELECT COUNT(*) n FROM reparto_lineas").get()).toEqual({ n: 0 });
+  // contextRevision es salida opaca de la vista previa (no se guarda): refleja el cambio.
+  expect(despues.contextRevision).not.toBe(antes.contextRevision);
   c.db.close();
 });

@@ -268,6 +268,7 @@ export function executionDetail(
         ? descuentoPorCompras(
             db,
             all.map((r) => r.id),
+            proyectarDevoluciones(db),
           )
         : null;
     return {

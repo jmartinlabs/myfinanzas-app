@@ -58,14 +58,23 @@ export function EjecutadoCelda({
   );
 }
 
-/** Fila de encabezado agrupado de la ejecución mensual de Dprima (columnas 5 a 8). */
-export function CabeceraEjecucionMensual({ antes }: { antes: number }) {
+/**
+ * Rótulo de flujo bancario por celda: solo donde el valor es realmente un abono
+ * bancario (Gasto real con valor). Nunca por cabecera agrupada de toda la columna.
+ */
+export function AbonosCelda({
+  fuente,
+  valor,
+}: {
+  fuente: string | null | undefined;
+  valor: string | null;
+}) {
   return (
-    <tr>
-      <th colSpan={antes} />
-      <th colSpan={2}>{ROTULO_FLUJO}</th>
-      <th colSpan={2}>{ROTULO_GRE}</th>
-      <th colSpan={3} />
-    </tr>
+    <>
+      {valor === null ? "No disponible" : eur(valor)}
+      {fuente === "Gasto real" && valor !== null && (
+        <small className="help"> {ROTULO_FLUJO}</small>
+      )}
+    </>
   );
 }
