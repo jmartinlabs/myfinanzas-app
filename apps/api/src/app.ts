@@ -30,6 +30,8 @@ import {
 import {
   activateRegimen,
   comidaOptions,
+  esConsultaR5,
+  listComprasR5,
   getComidaMovement,
   listComida,
   prepareRegimen,
@@ -974,8 +976,14 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(
           integridadDevoluciones(db, new URL(req.url).searchParams),
         );
-      if (path === "/api/comida" && req.method === "GET")
-        return reply(listComida(db, new URL(req.url).searchParams));
+      if (path === "/api/comida" && req.method === "GET") {
+        const params = new URL(req.url).searchParams;
+        return reply(
+          esConsultaR5(params)
+            ? listComprasR5(db, params)
+            : listComida(db, params),
+        );
+      }
       const comidaAction = path.match(
         /^\/api\/comida\/(\d+)\/(metadata|devolucion|rol)$/,
       );

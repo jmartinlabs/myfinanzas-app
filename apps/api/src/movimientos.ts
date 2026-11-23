@@ -52,6 +52,7 @@ import {
   applyComidaMetadata,
   comidaDevolucion,
   comidaMetadata,
+  devolucionRevision,
   revalidateDevolucionPropia,
   revalidateDevolucionesCompra,
 } from "./comida";
@@ -514,6 +515,8 @@ export function getMovement(db: Database, id: string) {
     devolucionesResumen: devolucionesResumenGasto(db, id),
     // #572: mismo predicado que el gate del servidor (cualquier fila de vínculo).
     tieneVinculosDevolucion: compraTieneVinculosDevolucion(db, id),
+    // specs/38 §6: null explícito si la devolución no tiene fila de atribución.
+    devolucionRevision: devolucionRevision(db, id),
     auditoria: db
       .query(
         "SELECT revision,accion,motivo,instante,actor,anterior,posterior FROM movement_audit WHERE id=? ORDER BY revision",
