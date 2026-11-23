@@ -54,3 +54,21 @@ export function useCapacidadDevolucion(): {
   }, []);
   return estado;
 }
+
+/**
+ * ¿Rectificar/anular este Movimiento es una escritura de devolución cerrada?
+ * Lo es una devolución o una compra con devoluciones vinculadas (`count` del
+ * resumen R3, en la raíz de `GET /api/movimientos/{id}`). El servidor, que usa
+ * un predicado más amplio (cualquier fila de vínculo), es la autoridad.
+ */
+export function rectificarAnularCerrado(input: {
+  disponible: boolean;
+  tipo: string | undefined;
+  devolucionesResumen?: { count?: number } | null;
+}): boolean {
+  if (input.disponible) return false;
+  return (
+    input.tipo === "Devolución de gasto" ||
+    (input.devolucionesResumen?.count ?? 0) > 0
+  );
+}

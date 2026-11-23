@@ -776,17 +776,6 @@ export function writeComidaDevolucion(
   now = Date.now(),
   gate?: DevolucionGate,
 ) {
-  only(body, [
-    "revision",
-    "compra",
-    "partida",
-    "cicloOrigen",
-    "evidenciaRelacion",
-    "evidenciaOrigenTemporal",
-    "elegibilidad",
-    "estado",
-    "motivo",
-  ]);
   key(attempt);
   const hash = fingerprint(["devolucion", id, body]);
   return db
@@ -794,6 +783,18 @@ export function writeComidaDevolucion(
       return retry(db, "comida_devolucion_attempts", attempt, hash, now, () => {
         // #572: gate tras la reproducción idempotente y antes de tocar estado.
         exigirEscrituraDevolucion(db, gate, { origen: "comida-devolucion" });
+        // La estructura va después del gate (`specs/38` §1).
+        only(body, [
+          "revision",
+          "compra",
+          "partida",
+          "cicloOrigen",
+          "evidenciaRelacion",
+          "evidenciaOrigenTemporal",
+          "elegibilidad",
+          "estado",
+          "motivo",
+        ]);
         const row = movement(db, id);
         if (revision(body.revision) !== row.revision)
           throw new Problem(

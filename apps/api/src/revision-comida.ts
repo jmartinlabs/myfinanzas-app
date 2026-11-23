@@ -493,12 +493,6 @@ export function createRevisionComida(
   tipo: Tipo = "Detalle",
   gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, [...fieldsFor(tipo), "motivo", "fingerprint"]);
-  if (
-    body.tipo !== undefined &&
-    (typeof body.tipo !== "string" || body.tipo !== tipo)
-  )
-    fail({ tipo: "Tipo no válido para esta ruta." });
   const hash = fingerprint([
     "alta",
     tipo,
@@ -506,6 +500,13 @@ export function createRevisionComida(
   ]);
   return attempt(db, key, hash, now, () => {
     exigirGateLegacy(db, gate, body, null);
+    // La estructura va después del gate (`specs/38` §1).
+    rejectUnknown(body, [...fieldsFor(tipo), "motivo", "fingerprint"]);
+    if (
+      body.tipo !== undefined &&
+      (typeof body.tipo !== "string" || body.tipo !== tipo)
+    )
+      fail({ tipo: "Tipo no válido para esta ruta." });
     const candidate = validated(body, null, now, tipo),
       motivo = motive(body, false),
       time = new Date(now).toISOString(),
@@ -731,7 +732,6 @@ export function rectificarRevisionComida(
   tipo: Tipo = "Detalle",
   gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, [...fieldsFor(tipo), "revision", "motivo", "fingerprint"]);
   const hash = fingerprint([
     "rectificación",
     tipo,
@@ -740,6 +740,12 @@ export function rectificarRevisionComida(
   ]);
   return attempt(db, key, hash, now, () => {
     exigirGateLegacy(db, gate, body, id);
+    rejectUnknown(body, [
+      ...fieldsFor(tipo),
+      "revision",
+      "motivo",
+      "fingerprint",
+    ]);
     const old = find(db, id, tipo);
     if (old.estadoRegistro === "Anulado")
       throw new Problem(
@@ -804,7 +810,6 @@ export function anularRevisionComida(
   tipo: Tipo = "Detalle",
   gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, ["revision", "motivo", "fingerprint"]);
   const hash = fingerprint([
     "anulación",
     tipo,
@@ -813,6 +818,7 @@ export function anularRevisionComida(
   ]);
   return attempt(db, key, hash, now, () => {
     exigirGateLegacy(db, gate, body, id);
+    rejectUnknown(body, ["revision", "motivo", "fingerprint"]);
     const old = find(db, id, tipo);
     if (old.estadoRegistro === "Anulado")
       throw new Problem(
@@ -945,15 +951,6 @@ export function vincularRevisionComida(
   tipo: Tipo = "Detalle",
   gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, [
-    "revision",
-    "motivo",
-    "fingerprint",
-    "movimiento",
-    "tipoVinculo",
-    "evidenciaVinculo",
-    "desvincular",
-  ]);
   const hash = fingerprint([
     "vínculo",
     tipo,
@@ -962,6 +959,15 @@ export function vincularRevisionComida(
   ]);
   return attempt(db, key, hash, now, () => {
     exigirGateLegacy(db, gate, body, id);
+    rejectUnknown(body, [
+      "revision",
+      "motivo",
+      "fingerprint",
+      "movimiento",
+      "tipoVinculo",
+      "evidenciaVinculo",
+      "desvincular",
+    ]);
     const old = find(db, id, tipo);
     if (old.estadoRegistro === "Anulado")
       throw new Problem(

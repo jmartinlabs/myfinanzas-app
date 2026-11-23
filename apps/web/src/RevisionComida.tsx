@@ -912,6 +912,8 @@ function OperationDetail({
     alert = useRef<HTMLDivElement>(null),
     linkRef = useRef<HTMLDivElement>(null),
     annulRef = useRef<HTMLDivElement>(null);
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   const endpoint = (tipo === "Reposicion" ? reposBase : base) + "/" + id;
   const actualEndpoint = data
     ? (data.operacion.tipo === "Reposicion" ? reposBase : base) + "/" + id
@@ -1020,6 +1022,8 @@ function OperationDetail({
     );
   if (!data) return <p role="status">Cargando ficha…</p>;
   const o = data.operacion;
+  // Anular, vincular o editar una devolución legacy es una escritura de devolución.
+  const cerradoDevolucion = !devolucionDisponible && o.esDevolucion === true;
   const movements = (options?.movimientos ?? []).filter((m) => {
     if (m.anulado) return false;
     if (tipo === "Detalle")
@@ -1175,11 +1179,18 @@ function OperationDetail({
             cobertura de compensación no se calcula en E3.4.
           </p>
         )}
+        {o.estadoRegistro === "Vigente" && o.esDevolucion && !devolucionDisponible && (
+          <p id={DEVOLUCION_G1_ID} className="help" role="note">
+            {DEVOLUCION_G1}
+          </p>
+        )}
         <div className="actions">
           {o.estadoRegistro === "Vigente" && (
             <>
               <button
                 className="secondary"
+                disabled={cerradoDevolucion}
+                aria-describedby={cerradoDevolucion ? DEVOLUCION_G1_ID : undefined}
                 onClick={() =>
                   go(
                     (o.tipo === "Reposicion" ? reposBase : base) +
@@ -1191,10 +1202,20 @@ function OperationDetail({
               >
                 Editar
               </button>
-              <button className="secondary" onClick={() => setAnnulOpen((v) => !v)}>
+              <button
+                className="secondary"
+                disabled={cerradoDevolucion}
+                aria-describedby={cerradoDevolucion ? DEVOLUCION_G1_ID : undefined}
+                onClick={() => setAnnulOpen((v) => !v)}
+              >
                 Anular
               </button>
-              <button className="secondary" onClick={openLink}>
+              <button
+                className="secondary"
+                disabled={cerradoDevolucion}
+                aria-describedby={cerradoDevolucion ? DEVOLUCION_G1_ID : undefined}
+                onClick={openLink}
+              >
                 {o.estadoVinculo === "Sin vínculo" ? "Vincular" : "Cambiar vínculo"}
               </button>
             </>

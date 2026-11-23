@@ -703,3 +703,34 @@ test("F2G-AC-08: los escritores no HTTP (writeMovementInTransaction) clasifican 
   expect(hecho.movimiento.tipo).toBe("Gasto");
   w.db.close();
 });
+
+test("F2G-AC-14: el gate precede a la estructura: un campo desconocido en una ruta gateada da 503 cerrado y 422 abierto", async () => {
+  const h = await harness();
+  const { w, cerrada, abierta } = h;
+  const legacy = {
+    fecha: "2026-10-08", concepto: "Devolución legacy ficticia", importe: "12.00", direccion: "Entrada",
+    esDevolucion: true, clasificacion: "Pendiente revisar", evidenciaBancaria: "op ficticia", cuentaOrigen: "Cuenta ficticia",
+    campoInventado: 1,
+  };
+  const { campoInventado: _ignorado, ...valido } = legacy;
+  const fila = createRevisionComida(
+    w.db, { ...valido, evidenciaRelacionCompra: null }, randomUUID(), now, "Detalle", gateAbiertoParaPruebas,
+  ).operacion;
+  const casos: [string, unknown][] = [
+    [`/api/comida/${w.dev.id}/devolucion`, { campoInventado: 1 }],
+    ["/api/revision-comida", legacy],
+    [`/api/revision-comida/${fila.id}/rectificar`, { revision: 1, motivo: "x", campoInventado: 1 }],
+    [`/api/revision-comida/${fila.id}/anular`, { revision: 1, motivo: "x", campoInventado: 1 }],
+    [`/api/revision-comida/${fila.id}/vinculo`, { revision: 1, motivo: "x", campoInventado: 1 }],
+    ["/api/movimientos", { tipo: "Devolución de gasto", campoInventado: 1 }],
+  ];
+  for (const [ruta, cuerpo] of casos) {
+    await sinEfectos(h, () => cerrada.post(ruta, cuerpo));
+    const r = await abierta.post(ruta, cuerpo);
+    expect(r.status).toBe(422);
+  }
+  // Una operación NO gateada conserva su 422 estructural con el gate cerrado.
+  const normal = await cerrada.post("/api/revision-comida", { ...legacy, esDevolucion: false });
+  expect(normal.status).toBe(422);
+  w.db.close();
+});

@@ -5,6 +5,7 @@ import {
   DEVOLUCION_G1_ID,
   capacidadAbierta,
   leerCapacidadDevolucion,
+  rectificarAnularCerrado,
 } from "../src/devolucion-capacidad";
 import { Movimientos } from "../src/Movimientos";
 
@@ -70,4 +71,28 @@ test("F2G-AC-13: un enlace directo con tipo Devolución de gasto deja el envío 
   const submit = html.match(/<button[^>]*type="submit"[^>]*>/)?.[0] ?? "";
   expect(submit).toContain("disabled");
   expect(submit).toContain(`aria-describedby="${DEVOLUCION_G1_ID}"`);
+});
+
+test("F2G-AC-15: rectificar/anular se cierra para una devolución o una compra con vínculo (R3 en la raíz) y solo con el gate cerrado", () => {
+  const cerrado = (tipo: string, count?: number) =>
+    rectificarAnularCerrado({
+      disponible: false,
+      tipo,
+      devolucionesResumen: count === undefined ? undefined : { count },
+    });
+  expect(cerrado("Devolución de gasto")).toBe(true);
+  expect(cerrado("Gasto", 2)).toBe(true);
+  expect(cerrado("Gasto", 0)).toBe(false);
+  expect(cerrado("Gasto")).toBe(false);
+  expect(cerrado("Ingreso")).toBe(false);
+  expect(
+    rectificarAnularCerrado({ disponible: false, tipo: "Gasto", devolucionesResumen: null }),
+  ).toBe(false);
+  expect(
+    rectificarAnularCerrado({
+      disponible: true,
+      tipo: "Devolución de gasto",
+      devolucionesResumen: { count: 3 },
+    }),
+  ).toBe(false);
 });

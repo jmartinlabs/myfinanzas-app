@@ -30,6 +30,7 @@ import { monthLabel, type Cycle } from "./Ciclos";
 import {
   DEVOLUCION_G1,
   DEVOLUCION_G1_ID,
+  rectificarAnularCerrado,
   useCapacidadDevolucion,
 } from "./devolucion-capacidad";
 import {
@@ -89,8 +90,6 @@ type Movement = {
   estado: string;
   revision: number;
   ciclo: Cycle | null;
-  /** Resumen R3 de la compra: `count > 0` si tiene devoluciones vinculadas. */
-  devolucionesResumen?: { count: number } | null;
 };
 type Options = {
   deudas: Debt[];
@@ -157,7 +156,12 @@ type Audit = {
   anterior: Record<string, any> | null;
   posterior: Record<string, any>;
 };
-type Detail = { movimiento: Movement; auditoria: Audit[] };
+type Detail = {
+  movimiento: Movement;
+  auditoria: Audit[];
+  /** R3: resumen de devoluciones de la compra (raíz de la respuesta). */
+  devolucionesResumen?: { count: number } | null;
+};
 const base = "/movimientos";
 const date = (v: string) => v.split("-").reverse().join("/");
 const cycle = (v: Cycle | null) =>
@@ -793,10 +797,11 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
   const m = data.movimiento,
     // Rectificar/anular una devolución, o una compra con vínculo, es una
     // escritura de devolución (`specs/38` §4): cerrada mientras el gate lo esté.
-    escrituraDevolucionCerrada =
-      !devolucionDisponible &&
-      (m.tipo === "Devolución de gasto" ||
-        (m.devolucionesResumen?.count ?? 0) > 0),
+    escrituraDevolucionCerrada = rectificarAnularCerrado({
+      disponible: devolucionDisponible,
+      tipo: m.tipo,
+      devolucionesResumen: data.devolucionesResumen,
+    }),
     field = (label: string, v: ReactNode) => (
       <div data-label={label}>
         <dt>{label}</dt>
@@ -1165,6 +1170,7 @@ function MovementForm({
       ? referenceReturn
       : null;
   const [old, setOld] = useState<Movement | null>(null),
+    [vinculos, setVinculos] = useState<Detail["devolucionesResumen"]>(null),
     [form, setForm] = useState(
       returnDraft
         ? { ...empty, ...returnDraft.form }
@@ -1208,6 +1214,7 @@ function MovementForm({
       .then((d) => {
         if (!live) return;
         setOld(d.movimiento);
+        setVinculos(d.devolucionesResumen ?? null);
         if (!initialized.current) {
           const m = d.movimiento;
           setForm({
@@ -1701,8 +1708,11 @@ function MovementForm({
   const bloqueaDevolucion =
     !devolucionDisponible &&
     (form.tipo === "Devolución de gasto" ||
-      old?.tipo === "Devolución de gasto" ||
-      (old?.devolucionesResumen?.count ?? 0) > 0);
+      rectificarAnularCerrado({
+        disponible: devolucionDisponible,
+        tipo: old?.tipo,
+        devolucionesResumen: vinculos,
+      }));
   const button = coordinado
     ? plan
       ? "Registrar operación"
