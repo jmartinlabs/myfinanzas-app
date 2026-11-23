@@ -43,6 +43,7 @@ import {
 } from "./movement-ledger";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
 import {
+  compraTieneVinculosDevolucion,
   exigirEscrituraDevolucion,
   type DevolucionGate,
 } from "./devolucion-gate";
@@ -511,6 +512,8 @@ export function getMovement(db: Database, id: string) {
     movimiento: decorate(db, find(db, id), cycleMaster(db)),
     // R3 (SPEC39 §5.2): exactamente el `resumen` de R1, misma función.
     devolucionesResumen: devolucionesResumenGasto(db, id),
+    // #572: mismo predicado que el gate del servidor (cualquier fila de vínculo).
+    tieneVinculosDevolucion: compraTieneVinculosDevolucion(db, id),
     auditoria: db
       .query(
         "SELECT revision,accion,motivo,instante,actor,anterior,posterior FROM movement_audit WHERE id=? ORDER BY revision",

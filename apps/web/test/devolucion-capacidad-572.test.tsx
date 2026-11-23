@@ -53,13 +53,12 @@ test("F2G-AC-11: un error de carga (red, HTTP, JSON) = CERRADO y solo {disponibl
   ).toBe(false);
 });
 
-test("F2G-AC-12: el formulario de Movimientos arranca cerrado (carga pendiente) con G-1, aria-describedby y la opción Devolución de gasto deshabilitada", () => {
+test("F2G-AC-12: el formulario de Movimientos arranca cerrado con la opción Devolución de gasto deshabilitada, sin ruido de G-1 fuera de ella", () => {
   const html = renderToStaticMarkup(<Movimientos path="/movimientos/nuevo" go={() => {}} />);
-  expect(html).toContain(`id="${DEVOLUCION_G1_ID}"`);
-  expect(html).toContain(DEVOLUCION_G1);
-  expect(html).toMatch(new RegExp(`<select[^>]*aria-label="Tipo \\*"[^>]*aria-describedby="${DEVOLUCION_G1_ID}"`));
-  expect(html).toMatch(/<option disabled="">Devolución de gasto<\/option>/);
-  // Los demás Tipos siguen disponibles.
+  expect(html).toMatch(/<option disabled=""[^>]*>Devolución de gasto<\/option>/);
+  // La nota y el aria-describedby aparecen solo junto al control bloqueado.
+  expect(html).not.toContain(`id="${DEVOLUCION_G1_ID}"`);
+  expect(html).not.toContain(`aria-describedby="${DEVOLUCION_G1_ID}"`);
   for (const tipo of ["Ingreso", "Gasto", "Transferencia", "Amortización deuda"])
     expect(html).toMatch(new RegExp(`<option>${tipo}</option>`));
 });
@@ -68,6 +67,9 @@ test("F2G-AC-13: un enlace directo con tipo Devolución de gasto deja el envío 
   const html = renderToStaticMarkup(
     <Movimientos path="/movimientos/nuevo?tipo=Devolución de gasto" go={() => {}} />,
   );
+  expect(html).toContain(`id="${DEVOLUCION_G1_ID}"`);
+  expect(html).toContain(DEVOLUCION_G1);
+  expect(html).toMatch(new RegExp(`<select[^>]*aria-label="Tipo \\*"[^>]*aria-describedby="${DEVOLUCION_G1_ID}"`));
   const submit = html.match(/<button[^>]*type="submit"[^>]*>/)?.[0] ?? "";
   expect(submit).toContain("disabled");
   expect(submit).toContain(`aria-describedby="${DEVOLUCION_G1_ID}"`);
@@ -94,5 +96,27 @@ test("F2G-AC-15: rectificar/anular se cierra para una devolución o una compra c
       tipo: "Devolución de gasto",
       devolucionesResumen: { count: 3 },
     }),
+  ).toBe(false);
+});
+
+test("F2G-AC-16: una compra con vínculo cuya devolución se anuló (count 0) cierra por tieneVinculosDevolucion, igual que el servidor", () => {
+  expect(
+    rectificarAnularCerrado({
+      disponible: false,
+      tipo: "Gasto",
+      devolucionesResumen: { count: 0 },
+      tieneVinculosDevolucion: true,
+    }),
+  ).toBe(true);
+  expect(
+    rectificarAnularCerrado({
+      disponible: false,
+      tipo: "Gasto",
+      devolucionesResumen: { count: 0 },
+      tieneVinculosDevolucion: false,
+    }),
+  ).toBe(false);
+  expect(
+    rectificarAnularCerrado({ disponible: true, tipo: "Gasto", tieneVinculosDevolucion: true }),
   ).toBe(false);
 });

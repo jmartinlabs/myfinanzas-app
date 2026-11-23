@@ -734,3 +734,60 @@ test("F2G-AC-14: el gate precede a la estructura: un campo desconocido en una ru
   expect(normal.status).toBe(422);
   w.db.close();
 });
+
+test("F2G-AC-18: /comida/{id}/devolucion es ruta SOLO de devolución: clave inválida antes que gate; con clave válida, gate antes que estructura", async () => {
+  const h = await harness();
+  const { w, cerrada, abierta } = h;
+  const antes = huella(w.db);
+  // Servicio: el formato de la clave es lo único que precede (hace falta para buscar el recibo).
+  const codigo = (run: () => unknown) => {
+    try {
+      run();
+      return "OK";
+    } catch (e: any) {
+      return `${e.status}:${e.code}`;
+    }
+  };
+  expect(codigo(() => writeComidaDevolucion(w.db, w.dev.id, { campoInventado: 1 }, "corta", now))).toBe(
+    "422:IDEMPOTENCY_REQUIRED",
+  );
+  expect(codigo(() => writeComidaDevolucion(w.db, w.dev.id, { campoInventado: 1 }, randomUUID(), now))).toBe(
+    "503:DEVOLUTION_INTEGRATION_UNAVAILABLE",
+  );
+  expect(codigo(() => writeComidaDevolucion(w.db, w.dev.id, { campoInventado: 1 }, randomUUID(), now, gateAbiertoParaPruebas))).toBe(
+    "422:VALIDATION",
+  );
+  // HTTP: clave inválida (cabecera ausente) con el gate cerrado.
+  const sinClave = await cerrada.call("POST", `/api/comida/${w.dev.id}/devolucion`, { campoInventado: 1 });
+  expect(sinClave.status).toBe(422);
+  expect(sinClave.data.code).toBe("IDEMPOTENCY_REQUIRED");
+  es503(await cerrada.post(`/api/comida/${w.dev.id}/devolucion`, { campoInventado: 1 }));
+  expect((await abierta.post(`/api/comida/${w.dev.id}/devolucion`, { campoInventado: 1 })).status).toBe(422);
+  expect(huella(w.db)).toBe(antes);
+  w.db.close();
+});
+
+test("F2G-AC-19: compra cuya única devolución vinculada se anuló: el servidor clasifica «con vínculo» (503) y publica tieneVinculosDevolucion con el mismo predicado", async () => {
+  const h = await harness();
+  const { w, abierta, cerrada } = h;
+  const { getMovement } = await import("./movimientos");
+  expect(getMovement(w.db, w.compraVinculada.id).tieneVinculosDevolucion).toBe(true);
+  expect(getMovement(w.db, w.compraLibre.id).tieneVinculosDevolucion).toBe(false);
+  // Anular la devolución con el gate abierto inyectado.
+  const anular = await anulacion(h, w.dev.id);
+  expect((await abierta.post(`/api/movimientos/${w.dev.id}/anular`, anular)).status).toBe(200);
+  const compra = getMovement(w.db, w.compraVinculada.id);
+  expect(compra.devolucionesResumen?.count).toBe(0);
+  expect(compra.tieneVinculosDevolucion).toBe(true);
+  // El servidor sigue clasificando la compra como «con vínculo».
+  await sinEfectos(h, async () =>
+    cerrada.post(
+      `/api/movimientos/${w.compraVinculada.id}/rectificar`,
+      await bodyRect(h, w.compraVinculada.id, { importe: "130" }),
+    ),
+  );
+  // R3 sigue siendo exactamente el resumen de R1 (no se ha añadido nada dentro).
+  const { proyeccionDevolucionesCompra } = await import("./devoluciones");
+  expect(compra.devolucionesResumen).toEqual(proyeccionDevolucionesCompra(w.db, w.compraVinculada.id).resumen);
+  w.db.close();
+});

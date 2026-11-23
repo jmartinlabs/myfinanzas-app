@@ -330,7 +330,13 @@ export function Comida({ go }: { go: (p: string) => void }) {
           {notice}
         </p>
       )}
-      {!devolucionDisponible && (
+      {!devolucionDisponible &&
+        list?.items.some(
+          (i) =>
+            i.tipo === "Devolución de gasto" &&
+            !i.anulado &&
+            !i.agregadoTerminal,
+        ) && (
         <p id={DEVOLUCION_G1_ID} className="help" role="note">
           {DEVOLUCION_G1}
         </p>

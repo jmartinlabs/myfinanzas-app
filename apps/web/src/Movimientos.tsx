@@ -161,6 +161,8 @@ type Detail = {
   auditoria: Audit[];
   /** R3: resumen de devoluciones de la compra (raíz de la respuesta). */
   devolucionesResumen?: { count: number } | null;
+  /** Mismo predicado que el gate del servidor (cualquier fila de vínculo). */
+  tieneVinculosDevolucion?: boolean;
 };
 const base = "/movimientos";
 const date = (v: string) => v.split("-").reverse().join("/");
@@ -801,6 +803,7 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
       disponible: devolucionDisponible,
       tipo: m.tipo,
       devolucionesResumen: data.devolucionesResumen,
+      tieneVinculosDevolucion: data.tieneVinculosDevolucion,
     }),
     field = (label: string, v: ReactNode) => (
       <div data-label={label}>
@@ -1170,7 +1173,9 @@ function MovementForm({
       ? referenceReturn
       : null;
   const [old, setOld] = useState<Movement | null>(null),
-    [vinculos, setVinculos] = useState<Detail["devolucionesResumen"]>(null),
+    [vinculos, setVinculos] = useState<
+      Pick<Detail, "devolucionesResumen" | "tieneVinculosDevolucion">
+    >({}),
     [form, setForm] = useState(
       returnDraft
         ? { ...empty, ...returnDraft.form }
@@ -1214,7 +1219,10 @@ function MovementForm({
       .then((d) => {
         if (!live) return;
         setOld(d.movimiento);
-        setVinculos(d.devolucionesResumen ?? null);
+        setVinculos({
+          devolucionesResumen: d.devolucionesResumen ?? null,
+          tieneVinculosDevolucion: d.tieneVinculosDevolucion,
+        });
         if (!initialized.current) {
           const m = d.movimiento;
           setForm({
@@ -1711,7 +1719,7 @@ function MovementForm({
       rectificarAnularCerrado({
         disponible: devolucionDisponible,
         tipo: old?.tipo,
-        devolucionesResumen: vinculos,
+        ...vinculos,
       }));
   const button = coordinado
     ? plan
@@ -1759,7 +1767,7 @@ function MovementForm({
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
-      {!devolucionDisponible && (
+      {bloqueaDevolucion && (
         <p id={DEVOLUCION_G1_ID} className="help" role="note">
           {DEVOLUCION_G1}
         </p>
@@ -1814,7 +1822,7 @@ function MovementForm({
                     <select
                       aria-label="Tipo *"
                       aria-describedby={
-                        !devolucionDisponible ? DEVOLUCION_G1_ID : undefined
+                        bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined
                       }
                       value={form.tipo}
                       onChange={(e) => change("tipo", e.target.value)}
@@ -1824,7 +1832,10 @@ function MovementForm({
                       <option>Gasto</option>
                       <option>Transferencia</option>
                       <option>Amortización deuda</option>
-                      <option disabled={!devolucionDisponible}>
+                      <option
+                        disabled={!devolucionDisponible}
+                        title={!devolucionDisponible ? DEVOLUCION_G1 : undefined}
+                      >
                         Devolución de gasto
                       </option>
                     </select>,

@@ -57,18 +57,21 @@ export function useCapacidadDevolucion(): {
 
 /**
  * ¿Rectificar/anular este Movimiento es una escritura de devolución cerrada?
- * Lo es una devolución o una compra con devoluciones vinculadas (`count` del
- * resumen R3, en la raíz de `GET /api/movimientos/{id}`). El servidor, que usa
- * un predicado más amplio (cualquier fila de vínculo), es la autoridad.
+ * Lo es una devolución o una compra con vínculo. `tieneVinculosDevolucion`
+ * (raíz de `GET /api/movimientos/{id}`) usa el MISMO predicado que el gate del
+ * servidor; `devolucionesResumen.count` solo cuenta devoluciones vigentes y
+ * se mantiene como respaldo.
  */
 export function rectificarAnularCerrado(input: {
   disponible: boolean;
   tipo: string | undefined;
+  tieneVinculosDevolucion?: boolean | null;
   devolucionesResumen?: { count?: number } | null;
 }): boolean {
   if (input.disponible) return false;
   return (
     input.tipo === "Devolución de gasto" ||
+    input.tieneVinculosDevolucion === true ||
     (input.devolucionesResumen?.count ?? 0) > 0
   );
 }

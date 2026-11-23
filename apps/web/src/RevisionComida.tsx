@@ -1618,7 +1618,7 @@ function OperationForm({
                 </select>
               </Field>
             )}
-            {tipo === "Detalle" && !devolucionDisponible && (
+            {bloqueaDevolucion && (
               <p id={DEVOLUCION_G1_ID} className="help ui-form-span" role="note">
                 {DEVOLUCION_G1}
               </p>
@@ -1632,7 +1632,7 @@ function OperationForm({
                 <select
                   value={form.esDevolucion}
                   aria-describedby={
-                    !devolucionDisponible ? DEVOLUCION_G1_ID : undefined
+                    bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined
                   }
                   onChange={(e) => change("esDevolucion", e.target.value)}
                 >

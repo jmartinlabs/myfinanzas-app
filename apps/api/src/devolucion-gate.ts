@@ -89,11 +89,21 @@ export function esEscrituraDevolucion(
   // `DEVOLUTION_LINKED` y superconjunto del que recorre
   // `revalidateDevolucionesCompra` (que actualiza esas filas al rectificar o
   // anular la compra): falla cerrado.
-  if (old.tipo === "Gasto" && tablaVinculos(db))
-    return !!db
+  return old.tipo === "Gasto" && compraTieneVinculosDevolucion(db, id);
+}
+
+/**
+ * Predicado único de «compra con vínculo»: cualquier fila de
+ * `movimiento_devolucion` con `compra=id`. Lo usa el clasificador y se publica
+ * en `getMovement` (`tieneVinculosDevolucion`) para que el cliente coincida.
+ */
+export function compraTieneVinculosDevolucion(db: Database, id: string) {
+  return (
+    tablaVinculos(db) &&
+    !!db
       .query("SELECT 1 FROM movimiento_devolucion WHERE compra=? LIMIT 1")
-      .get(id);
-  return false;
+      .get(id)
+  );
 }
 
 function tablaVinculos(db: Database) {
