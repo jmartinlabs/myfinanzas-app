@@ -1,8 +1,10 @@
 # 14 — Gasto compartido: enmienda 14-E2 (circuito de preview, confirmación y dirty de la regularización)
 
-Status: **PROPUESTA — con revisión independiente aplicada; pendiente de la revisión de Álex y de la
-aprobación formal del usuario.** **NO AUTORIZA DEV, SQL, migraciones, cambio de datos ni
-despliegue, ni F6.**
+Status: **APROBADA — 2026-11-23**, aprobación formal del usuario, conforme al veredicto final
+**APTO** de Álex sobre el HEAD `b34465dc` (PR #577, merge `638a2fc0` en `test`). Fuente: mensaje
+humano directo del 2026-11-23, «Apruebo SPEC14-E2». Los **15 E2-AC permanecen `UNRUN`**: la
+aprobación es del contrato, no de su ejecución. **NO AUTORIZA DEV, SQL, migraciones, cambio de datos
+ni despliegue, ni F6.**
 Fecha: 2026-11-23. Issue: #576.
 Origen: veredictos finales de Álex sobre #539 (7106870347) y #549 (7106871512), que eligen una
 **enmienda focal documental a SPEC14-E1, antes del DEV de F6**, y la instrucción del usuario de
@@ -136,6 +138,6 @@ Idempotencia con la misma clave y un solo efecto: **E1-AC-27**. Regularización 
 ## 8 · Límites y pendientes
 
 No cambia contratos aprobados fuera de §1. Sin esquema ni migración. **Dependencias UNRUN:** el
-preview con trío de #547 para Movimientos (F4 de #538) y el DEV de F6. **Pendiente del usuario:**
-aprobación formal de esta enmienda; después, la autorización de DEV de F6. Hasta entonces la
-regularización no se expone. **No autoriza DEV, SQL, migraciones, datos reales ni despliegue.**
+preview con trío de #547 para Movimientos (F4 de #538) y el DEV de F6. **Aprobación formal:**
+cumplida el 2026-11-23. **Pendiente del usuario:** la autorización de DEV de F6 (y de F4, su
+prerrequisito). Hasta entonces la regularización no se expone. **No autoriza DEV, SQL, migraciones, datos reales ni despliegue.**
