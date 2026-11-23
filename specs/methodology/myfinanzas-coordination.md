@@ -366,4 +366,3 @@ La Skill es la canónica de la plantilla; esto se suma sin relajarla. Riesgos qu
 revisión: además de seguridad y persistencia/migración, la **lógica financiera** y la **integridad
 histórica**. La línea `Revisión externa: codex` escrita por el propietario en el cuerpo de una Issue
 equivale a `External review: codex`. Aviso y bloque de resultado: formato fijo de la Skill (ahora en inglés, antes en español).
-
