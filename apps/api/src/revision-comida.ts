@@ -4,6 +4,7 @@ import { Problem, decimal, money, getSaldo } from "./saldos";
 import { civil, cycleContext, cycleMaster, type Cycle } from "./ciclos";
 import { fingerprint, ledgerRows, type LedgerRow } from "./movement-ledger";
 import { spanishToday } from "./movimientos";
+import { esEscrituraDevolucion, exigirEscrituraDevolucion, type DevolucionGate } from "./devolucion-gate";
 import {
   revisionComidaById,
   revisionComidaRange,
@@ -464,25 +465,72 @@ function audit(
   );
 }
 
+/**
+ * #572: gate de devolución de la ruta legacy. Se invoca dentro del `attempt`
+ * (tras la reproducción idempotente) y antes de cualquier lectura que pueda
+ * lanzar 404/422; la fila previa se lee sin lanzar.
+ */
+function exigirGateLegacy(
+  db: Database,
+  gate: DevolucionGate | undefined,
+  body: Record<string, unknown>,
+  id: string | null,
+) {
+  const previa =
+    id !== null && /^\d+$/.test(id) ? revisionComidaById(db, id) : undefined;
+  exigirEscrituraDevolucion(db, gate, {
+    origen: "revision-comida",
+    body,
+    previaEsDevolucion: previa ? previa.esDevolucion === 1 : null,
+  });
+}
+
+/**
+ * Clasificación de solo lectura (misma función única) previa al `attempt`.
+ * Las operaciones que NO son de devolución conservan el orden y los códigos
+ * anteriores (estructura antes de la reproducción); las clasificadas aplican
+ * `specs/38` §1: reproducción → gate → estructura.
+ */
+function esDevolucionLegacy(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string | null,
+) {
+  const previa =
+    id !== null && /^\d+$/.test(id) ? revisionComidaById(db, id) : undefined;
+  return esEscrituraDevolucion(db, {
+    origen: "revision-comida",
+    body,
+    previaEsDevolucion: previa ? previa.esDevolucion === 1 : null,
+  });
+}
+
 export function createRevisionComida(
   db: Database,
   body: Record<string, unknown>,
   key: string,
   now = Date.now(),
   tipo: Tipo = "Detalle",
+  gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, [...fieldsFor(tipo), "motivo", "fingerprint"]);
-  if (
-    body.tipo !== undefined &&
-    (typeof body.tipo !== "string" || body.tipo !== tipo)
-  )
-    fail({ tipo: "Tipo no válido para esta ruta." });
+  const clasificada = esDevolucionLegacy(db, body, null);
+  const estructura = () => {
+    rejectUnknown(body, [...fieldsFor(tipo), "motivo", "fingerprint"]);
+    if (
+      body.tipo !== undefined &&
+      (typeof body.tipo !== "string" || body.tipo !== tipo)
+    )
+      fail({ tipo: "Tipo no válido para esta ruta." });
+  };
+  if (!clasificada) estructura();
   const hash = fingerprint([
     "alta",
     tipo,
     Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
   ]);
   return attempt(db, key, hash, now, () => {
+    exigirGateLegacy(db, gate, body, null);
+    if (clasificada) estructura();
     const candidate = validated(body, null, now, tipo),
       motivo = motive(body, false),
       time = new Date(now).toISOString(),
@@ -706,8 +754,18 @@ export function rectificarRevisionComida(
   key: string,
   now = Date.now(),
   tipo: Tipo = "Detalle",
+  gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, [...fieldsFor(tipo), "revision", "motivo", "fingerprint"]);
+  const clasificada = esDevolucionLegacy(db, body, id);
+  const estructura = () => {
+    rejectUnknown(body, [
+      ...fieldsFor(tipo),
+      "revision",
+      "motivo",
+      "fingerprint",
+    ]);
+  };
+  if (!clasificada) estructura();
   const hash = fingerprint([
     "rectificación",
     tipo,
@@ -715,6 +773,8 @@ export function rectificarRevisionComida(
     Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
   ]);
   return attempt(db, key, hash, now, () => {
+    exigirGateLegacy(db, gate, body, id);
+    if (clasificada) estructura();
     const old = find(db, id, tipo);
     if (old.estadoRegistro === "Anulado")
       throw new Problem(
@@ -777,8 +837,13 @@ export function anularRevisionComida(
   key: string,
   now = Date.now(),
   tipo: Tipo = "Detalle",
+  gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, ["revision", "motivo", "fingerprint"]);
+  const clasificada = esDevolucionLegacy(db, body, id);
+  const estructura = () => {
+    rejectUnknown(body, ["revision", "motivo", "fingerprint"]);
+  };
+  if (!clasificada) estructura();
   const hash = fingerprint([
     "anulación",
     tipo,
@@ -786,6 +851,8 @@ export function anularRevisionComida(
     Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
   ]);
   return attempt(db, key, hash, now, () => {
+    exigirGateLegacy(db, gate, body, id);
+    if (clasificada) estructura();
     const old = find(db, id, tipo);
     if (old.estadoRegistro === "Anulado")
       throw new Problem(
@@ -916,16 +983,21 @@ export function vincularRevisionComida(
   key: string,
   now = Date.now(),
   tipo: Tipo = "Detalle",
+  gate?: DevolucionGate,
 ) {
-  rejectUnknown(body, [
-    "revision",
-    "motivo",
-    "fingerprint",
-    "movimiento",
-    "tipoVinculo",
-    "evidenciaVinculo",
-    "desvincular",
-  ]);
+  const clasificada = esDevolucionLegacy(db, body, id);
+  const estructura = () => {
+    rejectUnknown(body, [
+      "revision",
+      "motivo",
+      "fingerprint",
+      "movimiento",
+      "tipoVinculo",
+      "evidenciaVinculo",
+      "desvincular",
+    ]);
+  };
+  if (!clasificada) estructura();
   const hash = fingerprint([
     "vínculo",
     tipo,
@@ -933,6 +1005,8 @@ export function vincularRevisionComida(
     Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
   ]);
   return attempt(db, key, hash, now, () => {
+    exigirGateLegacy(db, gate, body, id);
+    if (clasificada) estructura();
     const old = find(db, id, tipo);
     if (old.estadoRegistro === "Anulado")
       throw new Problem(

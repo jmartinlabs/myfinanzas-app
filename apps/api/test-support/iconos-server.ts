@@ -17,6 +17,7 @@ import { createApp } from "../src/app";
 import { createDebt } from "../src/deudas";
 import { previewMovement, writeMovement } from "../src/movimientos";
 import { getSaldo, updateSaldo } from "../src/saldos";
+import { gateAbiertoParaPruebas } from "./devolucion-gate-abierto";
 
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
@@ -41,6 +42,8 @@ function saveMovement(db: Database, body: Record<string, unknown>) {
     null,
     false,
     NOW,
+    undefined,
+    gateAbiertoParaPruebas,
   ).movimiento;
 }
 
@@ -156,6 +159,7 @@ BunRuntime.runMain(
   Layer.launch(
     HttpServer.serve(createApp(db, {
       key,
+      devolucionGate: gateAbiertoParaPruebas,
       // Origen de la ejecución (#514): sin él, el alta y la sesión del run se
       // rechazarían con 403 ORIGIN.
       origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,

@@ -14,6 +14,7 @@ import { artifactDir, fixtureContext, type Fixture } from "./fixture";
  */
 const comida = fixtureContext("comida-dprima-comida");
 const dprima = fixtureContext("comida-dprima-dprima");
+const comidaGate = fixtureContext("comida-dprima-gate");
 
 type OwnedFixture = {
   fixture: Fixture;
@@ -451,4 +452,73 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     await shot("dprima-390");
     expect(errors).toEqual([]);
   server.child.kill("SIGKILL");
+});
+
+test("F2G-E2E-01 (#572): con error de carga de la capacidad, la guarda queda CERRADA: Atribuir, Rectificar, Anular y el alta de Devolución deshabilitados con G-1, sin escritura", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(120000);
+  const G1 =
+    "Las operaciones de devolución no están disponibles hasta que el aviso de impacto y la confirmación estén integrados. Las devoluciones existentes se pueden consultar.";
+  const server = startServer(comidaGate);
+  try {
+    await login(page, request, server);
+    // El servidor de la prueba tiene el gate ABIERTO por inyección; el error de
+    // carga de la capacidad debe bastar para cerrar el cliente.
+    await page.route("**/api/devoluciones/capacidad", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Fallo ficticio." }),
+      }),
+    );
+    const escrituras: string[] = [];
+    page.on("request", (req) => {
+      const url = new URL(req.url());
+      if (
+        req.method() !== "GET" &&
+        /\/api\/(comida\/\d+\/devolucion|movimientos(\/\d+\/(rectificar|anular))?)$/.test(url.pathname)
+      )
+        escrituras.push(req.method() + " " + url.pathname);
+    });
+    await page.goto("/comida");
+    const refundRow = page.locator("tbody tr", { hasText: "Devolución ocio E2E" });
+    await expect(refundRow).toBeVisible();
+    const atribuir = refundRow.getByRole("button", { name: "Atribuir" });
+    await expect(atribuir).toBeDisabled();
+    const note = page.locator("#devolucion-gate-g1");
+    await expect(note).toHaveText(G1);
+    await expect(atribuir).toHaveAttribute("aria-describedby", "devolucion-gate-g1");
+    await atribuir.click({ force: true });
+    await expect(page.getByRole("button", { name: "Guardar atribución" })).toHaveCount(0);
+
+    // Detalle de la devolución: Rectificar y Anular cerrados.
+    const id = (await refundRow.locator("td").first().textContent())!.trim();
+    await page.goto("/movimientos/" + id);
+    await expect(page.getByRole("button", { name: "Rectificar", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Anular", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Anular", exact: true })).toHaveAttribute(
+      "aria-describedby",
+      "devolucion-gate-g1",
+    );
+    await expect(page.locator("#devolucion-gate-g1")).toHaveText(G1);
+
+    // Ruta directa a rectificar la devolución y alta directa con tipo Devolución.
+    for (const ruta of [
+      "/movimientos/" + id + "/rectificar",
+      "/movimientos/nuevo?tipo=" + encodeURIComponent("Devolución de gasto"),
+    ]) {
+      await page.goto(ruta);
+      await expect(page.locator("#devolucion-gate-g1")).toHaveText(G1);
+      const enviar = page.locator('form button[type="submit"]');
+      await expect(enviar).toBeDisabled();
+      await expect(enviar).toHaveAttribute("aria-describedby", "devolucion-gate-g1");
+    }
+    await page.waitForLoadState("networkidle");
+    expect(escrituras).toEqual([]);
+  } finally {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    server.child.kill("SIGKILL");
+  }
 });

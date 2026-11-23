@@ -4,6 +4,7 @@ import { Effect, Layer } from "effect";
 import { resolve } from "node:path";
 import { openDatabase } from "./database";
 import { createApp } from "./app";
+import { opcionesProduccion } from "./composicion-produccion";
 import { loadKey } from "./auth";
 import { apiBindHost } from "./server-config";
 import { assertDemoDatabase, demoScope } from "./demo-mode";
@@ -30,14 +31,17 @@ const program = Effect.acquireRelease(
   Effect.flatMap((db) =>
     Layer.launch(
       HttpServer.serve(
-        createApp(db, {
-          key: loadKey(db, keyPath),
-          origin:
-            demo?.origins[0] ??
-            process.env.APP_ORIGIN ??
-            "http://127.0.0.1:5173",
-          ...(demo ? { demo } : {}),
-        }),
+        createApp(
+          db,
+          opcionesProduccion({
+            key: loadKey(db, keyPath),
+            origin:
+              demo?.origins[0] ??
+              process.env.APP_ORIGIN ??
+              "http://127.0.0.1:5173",
+            demo: demo ?? undefined,
+          }),
+        ),
       ).pipe(
         Layer.provide(
           BunHttpServer.layer({

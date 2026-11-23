@@ -7,6 +7,7 @@ import { openDatabase } from "../src/database";
 import { loadKey, provision } from "../src/auth";
 import { createApp } from "../src/app";
 import { comidaDprimaFixture } from "./e2e-comida-dprima-fixture";
+import { gateAbiertoParaPruebas } from "./devolucion-gate-abierto";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 // Puerto y estado del contexto de la ejecución (#514). `E2E_STATE_DIR` es el
 // nombre que publica el arnés; `E2E_STATE` es el histórico de este fixture y el
@@ -27,6 +28,7 @@ BunRuntime.runMain(
     HttpServer.serve(
       createApp(db, {
         key,
+        devolucionGate: gateAbiertoParaPruebas,
         // Origen de la ejecución (#514): el alta y la sesión deben nacer en el
         // mismo origen que sirve el navegador, no en un literal.
         origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,

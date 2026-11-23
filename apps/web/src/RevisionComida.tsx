@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import {
+  DEVOLUCION_G1,
+  DEVOLUCION_G1_ID,
+  useCapacidadDevolucion,
+} from "./devolucion-capacidad";
+import {
   Alert,
   DataList,
   Field,
@@ -907,6 +912,8 @@ function OperationDetail({
     alert = useRef<HTMLDivElement>(null),
     linkRef = useRef<HTMLDivElement>(null),
     annulRef = useRef<HTMLDivElement>(null);
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   const endpoint = (tipo === "Reposicion" ? reposBase : base) + "/" + id;
   const actualEndpoint = data
     ? (data.operacion.tipo === "Reposicion" ? reposBase : base) + "/" + id
@@ -1015,6 +1022,8 @@ function OperationDetail({
     );
   if (!data) return <p role="status">Cargando ficha…</p>;
   const o = data.operacion;
+  // Anular, vincular o editar una devolución legacy es una escritura de devolución.
+  const cerradoDevolucion = !devolucionDisponible && o.esDevolucion === true;
   const movements = (options?.movimientos ?? []).filter((m) => {
     if (m.anulado) return false;
     if (tipo === "Detalle")
@@ -1170,11 +1179,18 @@ function OperationDetail({
             cobertura de compensación no se calcula en E3.4.
           </p>
         )}
+        {o.estadoRegistro === "Vigente" && o.esDevolucion && !devolucionDisponible && (
+          <p id={DEVOLUCION_G1_ID} className="help" role="note">
+            {DEVOLUCION_G1}
+          </p>
+        )}
         <div className="actions">
           {o.estadoRegistro === "Vigente" && (
             <>
               <button
                 className="secondary"
+                disabled={cerradoDevolucion}
+                aria-describedby={cerradoDevolucion ? DEVOLUCION_G1_ID : undefined}
                 onClick={() =>
                   go(
                     (o.tipo === "Reposicion" ? reposBase : base) +
@@ -1186,10 +1202,20 @@ function OperationDetail({
               >
                 Editar
               </button>
-              <button className="secondary" onClick={() => setAnnulOpen((v) => !v)}>
+              <button
+                className="secondary"
+                disabled={cerradoDevolucion}
+                aria-describedby={cerradoDevolucion ? DEVOLUCION_G1_ID : undefined}
+                onClick={() => setAnnulOpen((v) => !v)}
+              >
                 Anular
               </button>
-              <button className="secondary" onClick={openLink}>
+              <button
+                className="secondary"
+                disabled={cerradoDevolucion}
+                aria-describedby={cerradoDevolucion ? DEVOLUCION_G1_ID : undefined}
+                onClick={openLink}
+              >
                 {o.estadoVinculo === "Sin vínculo" ? "Vincular" : "Cambiar vínculo"}
               </button>
             </>
@@ -1372,6 +1398,8 @@ function OperationForm({
   go: (p: string) => void;
 }) {
   const endpoint = (tipo === "Reposicion" ? reposBase : base) + (id ? "/" + id : "");
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   const [form, setForm] = useState<Form>(emptyForm),
     [old, setOld] = useState<Operacion | null>(null),
     [reason, setReason] = useState(""),
@@ -1447,7 +1475,15 @@ function OperationForm({
           cuentaOrigen: form.cuentaOrigen || null,
           ...(id ? { revision: old?.revision, motivo: reason } : {}),
         };
+  const bloqueaDevolucion =
+    !devolucionDisponible &&
+    tipo === "Detalle" &&
+    (form.esDevolucion === "true" || old?.esDevolucion === true);
   async function submit() {
+    if (bloqueaDevolucion) {
+      setError(DEVOLUCION_G1);
+      return;
+    }
     setBusy(true);
     setError("");
     setFields({});
@@ -1582,6 +1618,11 @@ function OperationForm({
                 </select>
               </Field>
             )}
+            {bloqueaDevolucion && (
+              <p id={DEVOLUCION_G1_ID} className="help ui-form-span" role="note">
+                {DEVOLUCION_G1}
+              </p>
+            )}
             {tipo === "Detalle" && (
               <Field
                 id="esDevolucion"
@@ -1590,10 +1631,15 @@ function OperationForm({
               >
                 <select
                   value={form.esDevolucion}
+                  aria-describedby={
+                    bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined
+                  }
                   onChange={(e) => change("esDevolucion", e.target.value)}
                 >
                   <option value="false">No</option>
-                  <option value="true">Sí</option>
+                  <option value="true" disabled={!devolucionDisponible}>
+                    Sí
+                  </option>
                 </select>
               </Field>
             )}
@@ -1689,7 +1735,12 @@ function OperationForm({
             presupuestaria. No se aceptan campos calculados por el cliente.
           </p>
           <div className="actions">
-            <button className="primary" disabled={busy} onClick={submit}>
+            <button
+              className="primary"
+              disabled={busy || bloqueaDevolucion}
+              aria-describedby={bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined}
+              onClick={submit}
+            >
               {id ? "Guardar rectificación" : "Guardar"}
             </button>
             <button

@@ -13,6 +13,7 @@ import {
   listConciliaciones,
   type E35Metrics,
 } from "./conciliacion-ciclos";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 const now = Date.parse("2026-11-05T12:00:00Z");
 
@@ -273,6 +274,8 @@ function add(db: Database, body: Record<string, unknown>) {
     null,
     false,
     now,
+    undefined,
+    gateAbiertoParaPruebas,
   );
 }
 

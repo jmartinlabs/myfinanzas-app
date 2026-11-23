@@ -12,6 +12,7 @@ import {
   proyeccionDevolucionesCompra,
 } from "./devoluciones";
 import { financeRevision } from "./movement-ledger";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 /**
  * #538 F1 · lecturas de devoluciones de compras (SPEC39 §3-§5).
@@ -100,6 +101,8 @@ function add(db: Database, body: Record<string, unknown>) {
     null,
     false,
     now,
+    undefined,
+    gateAbiertoParaPruebas,
   );
 }
 let seq = 0;
@@ -245,6 +248,7 @@ test("AC-D39: Verificada No acreditada de 30 sobre 120 deja capacidad 90, descue
     },
     randomUUID(),
     now,
+    gateAbiertoParaPruebas,
   );
   const after = R1(c, compra).resumen;
   expect(after.descuentoEconomico).toBe("30.00");
@@ -379,6 +383,7 @@ test("AC-D19: un huérfano Acreditado con Partida y ciclo no netea en ninguna co
     },
     randomUUID(),
     now,
+    gateAbiertoParaPruebas,
   );
   const r1 = R1(c, compra).resumen;
   expect(r1.descuentoEconomico).toBe("0.00");
@@ -524,7 +529,11 @@ test("AC-D33: las rutas R1/R4 exigen sesión y devuelven 404/422 de dominio", as
   const origin = "http://127.0.0.1:5173";
   const password = "Pruebas ficticias Devoluciones " + randomUUID();
   const db = openDatabase(":memory:");
-  const handler = HttpApp.toWebHandler(createApp(db, { key: randomBytes(32), now: () => now }));
+  const handler = HttpApp.toWebHandler(createApp(db, {
+      key: randomBytes(32),
+      now: () => now,
+      devolucionGate: gateAbiertoParaPruebas,
+    }));
   let cookie = "",
     csrf = "";
   let last: Response | null = null;

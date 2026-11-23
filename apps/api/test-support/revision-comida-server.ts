@@ -11,6 +11,7 @@ import {
   vincularRevisionComida,
 } from "../src/revision-comida";
 import { revisionComidaFixture } from "./revision-comida-fixture";
+import { gateAbiertoParaPruebas } from "./devolucion-gate-abierto";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 // Puerto y estado del contexto de la ejecución (#508); los valores históricos
 // se conservan para arrancarlo a mano.
@@ -38,6 +39,7 @@ const detail = (over: Record<string, unknown>) =>
     crypto.randomUUID(),
     now,
     "Detalle",
+    gateAbiertoParaPruebas,
   ).operacion;
 const created = [
   detail({
@@ -87,6 +89,7 @@ const repos = createRevisionComida(
   crypto.randomUUID(),
   now,
   "Reposicion",
+  gateAbiertoParaPruebas,
 ).operacion;
 vincularRevisionComida(
   db,
@@ -101,6 +104,7 @@ vincularRevisionComida(
   crypto.randomUUID(),
   now,
   "Detalle",
+  gateAbiertoParaPruebas,
 );
 vincularRevisionComida(
   db,
@@ -115,6 +119,7 @@ vincularRevisionComida(
   crypto.randomUUID(),
   now,
   "Reposicion",
+  gateAbiertoParaPruebas,
 );
 writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
@@ -122,6 +127,7 @@ BunRuntime.runMain(
     HttpServer.serve(
       createApp(db, {
         key,
+        devolucionGate: gateAbiertoParaPruebas,
         origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
       }),
     ).pipe(
