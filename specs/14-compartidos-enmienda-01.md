@@ -4,7 +4,8 @@ Status: **PROPUESTA — pendiente de revisión independiente y de aprobación de
 **NO AUTORIZA DEV, SQL, migraciones, cambio de datos ni despliegue.**
 Fecha: 2026-11-23. Issue: #561.
 Afecta a la [especificación 14](14-compartidos-specification.md). Su base, Base B y la
-enmienda D5 (§15, implementada en v17, PR #90) **no se modifican**.
+enmienda D5 (§15, implementada en v17, PR #90) **no se modifican**, con una excepción declarada:
+el §4.1 **enmienda §7.1, §7.2, §7.3 y §7.5** para admitir el coste cero. Es la decisión **R7**.
 Origen: [SPEC39](39-devoluciones-compras-specification.md) §9 y §11.1, aprobada el
 2026-11-22. Allí SPEC14 figura como requisito previo de DEV, y `AC-D24`, `AC-D25` y
 `AC-D26` quedan condicionados a esta enmienda.
@@ -27,8 +28,9 @@ fuentes de SPEC39 (`AC-D25`).
 ## 1 · Lo que no cambia
 
 - F1–F6, R-MP, R-CC, los 39 AC base y los D5-AC-01…15.
-- El reparto en céntimos (§7.3), la atribución multi-Gasto del Recuperado (§7.4) y los Netos
-  (§7.5): solo cambia el valor de entrada `Aportado_p`, no las fórmulas.
+- El algoritmo de céntimos de §7.3 y la atribución multi-Gasto del Recuperado de §7.4. Cambian
+  dos entradas, `Aportado_p` (§4) y la base del reparto, que pasa de B_g a C_g (§4.1, R7).
+  Las fórmulas de Pendiente, Exceso y R-MP son las mismas.
 - El orden y las reglas de los estados (§6).
 - D5 completo: la aportación entrante, sus validaciones, su auditoría y su rectificación.
 - No se habilitan las Transferencias Exterior ordinarias. La única salida nueva es la
@@ -48,6 +50,7 @@ Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuar
 | **R3** | ¿Solo para el exceso que causa una devolución? | **Para cualquier `Exceso_p` del tercero**, venga de una devolución, de un cambio de partes o de un pago de más. La operación es la misma: devolverle dinero. | Exigir que exista una devolución vinculada. Añade un vínculo sin garantía adicional y deja sin vía el pago de más. |
 | **R4** | ¿Se puede regularizar a un tercero dado de baja? | **Sí, hasta su `Aportado_p` neto íntegro.** El motor no calcula cuota ni Exceso para una baja (su Asignado es «No aplica» y su aportado ya cuenta como atribución parcial), así que el límite no puede ser `Exceso_p`. La baja impide nuevas aportaciones, no devolver lo que puso. SPEC39 §9 incluye a los inactivos con saldo pendiente. **Es una decisión financiera tuya.** El cambio de participante de una regularización exige un Tercero activo, como en D5 §15.8. | Exigir que se reactive el participante antes de pagarle. Mantiene un único límite `Exceso_p`, a costa de reabrir el participante. |
 | **R5** | ¿Dónde se guarda? | **En la misma `movimiento_compartido`, con una columna `sentido` (`Aportación` o `Regularización`)** ligada por CHECK y trigger a `origen`/`destino` del movimiento. Hay lectores de esa tabla (§7.7) que, sin el sentido explícito, sumarían una salida como cobro. | Deducir el sentido del movimiento, sin columna. Es menos auditable y obliga a que cada lector lo recuerde. |
+| **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − descuento comercial vinculado y vigente. El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
 | **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) integrado, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
 
 El resto del documento está redactado con las cinco recomendaciones. Si el usuario elige otra
@@ -87,16 +90,25 @@ Lo que se deriva de ahí, con las mismas fórmulas:
   Recuperado atribuido a cada Gasto de p, y el Neto de cada Gasto vuelve a su valor sin
   reescribir nada.
 
-### 4.1 Enmienda a §7.1 y §7.2: coste cero
+### 4.1 Enmienda a §7.1, §7.2, §7.3 y §7.5: coste cero (R7)
 
 SPEC39 §9 exige adaptar el motor (`compartidos.ts:223-224` exige hoy `Bruto > 0`). Se enmienda:
 
-- **B_g** (Bruto del Gasto) = importe de la compra − descuento comercial vinculado y vigente,
-  con suelo en 0. **B** = Σ B_g. El motor lee el descuento de SPEC39; si no puede, la cobertura es
-  Parcial.
-- **Reparto válido** = `W > 0` y **al menos una compra elegible**, con `B ≥ 0`. Una devolución
-  total deja B = 0 y el caso sigue repartido, con cuotas 0 y `Exceso_p` = Aportado_p. Sin compras
+- **B y B_g** (Bruto) no cambian: importe de la compra o suma de compras elegibles.
+- **C_g** (coste económico del Gasto) = B_g − descuento comercial vinculado y vigente de esa
+  compra. **C** = Σ C_g, igual al `costeEconomicoCaso` de SPEC39 §9. No hay suelo: SPEC39 §4
+  impide que un descuento supere a su compra. Si un histórico inconsistente lo supera, el
+  motor genera una incidencia «Revisar», con cobertura Parcial, y no oculta el exceso con
+  `max(…,0)`.
+- §7.3 reparte **C_g** en lugar de B_g, con el mismo algoritmo. §7.5: Neto(g) = C_g − Rec(g);
+  N = C − R.
+- **Reparto válido** = `W > 0` y **al menos una compra elegible**, con `C ≥ 0`. Una devolución
+  total deja C = 0 y el caso sigue repartido, con cuotas 0 y `Exceso_p` = Aportado_p. Sin compras
   elegibles sigue siendo «Sin repartir»: coste cero con compras no es ausencia de compras.
+- Si el motor no puede leer el descuento, la cobertura es Parcial; nunca se asume 0.
+- **Inventario previo a DEV:** todos los consumidores de B y de N (informes, Flujo, Resumen
+  anual, E3.6) declaran si consumen B (bruto) o C (coste) y no cambian de significado sin que
+  se les avise.
 
 ### 4.2 Aportado negativo
 
@@ -249,7 +261,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | I-E1-2 | Cada movimiento tiene una sola acreditación, y el sentido es el del hecho. Ningún ID de `Devolución de gasto` aparece como aportación ni como regularización. |
 | I-E1-3 | `Σ regularizaciones vigentes de p ≤ Cobrado_p` en el momento de cada alta o rectificación. Si un cambio posterior rompe la igualdad, aparece una incidencia y nunca un recorte silencioso. |
 | I-E1-4 | Al regularizar no cambian ni la cuota del tercero, ni el Bruto, ni el cobro original, ni el descuento comercial. |
-| I-E1-5 | `N = C_T + Σ Pendiente_p − Σ Exceso_p` se sigue cumpliendo con el Aportado neto, solo si no hay bajas con Aportado ≠ 0 (condición ya existente en la base). |
+| I-E1-5 | `N = C_T + Σ Pendiente_p − Σ Exceso_p`, con N = C − R, se sigue cumpliendo con el Aportado neto, solo si no hay bajas con Aportado ≠ 0 (condición ya existente en la base). |
 | I-E1-6 | Tres conjuntos, calculados cada uno por su lado: ledger bancario por fechas, devoluciones comerciales y acreditaciones (entrantes y salientes). Sus IDs no se repiten entre conjuntos. |
 | I-E1-7 | Ninguna Transferencia S000 sin acreditación compartida, salvo las que ya admitía D5, pasa el servicio. |
 | I-E1-8 | Movimiento, acreditación, intento y auditoría son atómicos. Un 409 o un fallo inyectado no deja efectos parciales. |
@@ -271,7 +283,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | E1-AC-11 | Rectificar importe o fecha, o cambiar participante | Impacto, revisión, auditoría y revalidación del límite. Tipo, REF, S000 y sentido son inmutables. |
 | E1-AC-12 | Migración sucesora coordinada sobre una copia de la versión anterior, y base nueva equivalente (traza con `AC-D43`) | Se conservan IDs, auditorías, FK, triggers y CHECK de los demás tipos. Sin backfill. Repetir la migración no duplica nada. El contrato y el manifiesto quedan registrados. |
 | E1-AC-13 | Backup y restore | Un backup anterior migra. Un backup con regularizaciones falla cerrado en un binario que no las entiende. |
-| E1-AC-15 | Coste cero (§4.1): devolución total, B = 0, compra elegible | Caso repartido con cuotas 0, `Exceso_p` = Aportado_p; sin compras elegibles, «Sin repartir». |
+| E1-AC-15 | Coste cero (§4.1): devolución total, C = 0, B = 120, compra elegible | B sigue 120; caso repartido con cuotas 0 y `Exceso_p` = Aportado_p; sin compras elegibles, «Sin repartir». Histórico con descuento > compra: incidencia Revisar, sin `max(0)`. |
 | E1-AC-16 | Tercero de baja con aportado 60 (R4) | Regularización hasta 60; más, 422; el cambio de participante exige un Tercero activo. |
 | E1-AC-17 | Rectificar con Pendiente posterior (cobrado 60, regularización 15, cuota sube a 50) | Aumentar a 15 o más de 10 se rechaza; reducir el importe o cambiar la fecha se permite. |
 | E1-AC-18 | Devolución vinculada sin REF física, concurrente con una regularización | 409 por huella `contexto`; nuevo preview con el límite recalculado. |
@@ -300,14 +312,14 @@ reservado.
 
 ## 14 · Revisión independiente
 
-Revisión crítica de un rol distinto del autor, contra SPEC14, D5, SPEC39, spec05, SPEC33-E1,
-SPEC38 y el código. Veredicto: **APTO CON CAMBIOS**. Resolución:
+Revisión crítica de un **subagente independiente** (no es el veredicto de Álex), contra SPEC14,
+D5, SPEC39, spec05, SPEC33-E1, SPEC38 y el código. Veredicto: **APTO CON CAMBIOS**. Resolución:
 
 | Hallazgo | Resolución |
 | --- | --- |
-| Coste cero inalcanzable con §7.2 y `Bruto > 0` (bloqueante) | §4.1 enmienda §7.1/§7.2; AC E1-AC-15 |
+| Coste cero inalcanzable con §7.2 y `Bruto > 0` (bloqueante) | §4.1: B bruto intacto, coste C aparte; decisión **R7**; E1-AC-15 |
 | R4: una baja no tiene `Exceso_p` (bloqueante) | Límite = `Aportado_p`; decisión **R4** elevada; E1-AC-16 |
-| Cambio de participante contradice §15.8 | Tercero activo, sin excepción; sin decisión nueva |
+| Cambio de participante contradice §15.8 | El reviewer sugería elevarlo como decisión; **se resolvió distinto**: se eliminó la excepción y se mantiene D5 (Tercero activo), sin decisión nueva |
 | Fórmula de rectificación errónea | Corregida en §6; E1-AC-17 |
 | Aportado negativo sin contrato | §4.2: 409 en el servicio, incidencia como respaldo |
 | «Revisión esperada» inexistente | Huella `contexto`, ampliada a los vínculos de devolución; E1-AC-18 |
@@ -319,4 +331,10 @@ SPEC38 y el código. Veredicto: **APTO CON CAMBIOS**. Resolución:
 | Versiones | Una migración coordinada con #538 y #548 |
 | Fechas, identidad condicionada, trazas | §4, I-E1-5 y E1-AC-03/10/12 como trazas |
 
-**Sin desacuerdo material pendiente.** Las decisiones R1–R6 son tuyas.
+Una segunda revisión acotada del texto nuevo (§4.1, §4.2, límite del §5, fórmula del §6 y
+R4–R7) consta abajo. Las decisiones **R1–R7 son del usuario**. Álex debe verificar el conjunto
+antes de la aprobación.
+
+### Revisión acotada del texto corregido
+
+_Pendiente de anotar el resultado._
