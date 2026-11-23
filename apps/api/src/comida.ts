@@ -95,6 +95,10 @@ export function comidaDevolucion(db: Database, id: string) {
   return (db.query(`${devolucionSelect} WHERE movimiento=?`).get(id) ??
     null) as ComidaDevolucion | null;
 }
+/** Revisión de `movimiento_devolucion`; `null` explícito sin fila de atribución (specs/38 §6). */
+export function devolucionRevision(db: Database, id: string): number | null {
+  return comidaDevolucion(db, id)?.revision ?? null;
+}
 export function comidaRol(db: Database, id: string) {
   if (!comidaInstalled(db, "movimiento_rol_financiacion")) return null;
   return (db.query(`${rolSelect} WHERE movimiento=?`).get(id) ??
@@ -197,6 +201,120 @@ export function comidaOptions(db: Database) {
   }))();
 }
 
+function validateDateRange(desde: string | null, hasta: string | null) {
+  if (desde && !/^\d{4}-\d{2}-\d{2}$/.test(desde))
+    throw new Problem(422, "VALIDATION", "Fecha inicial inválida.");
+  if (hasta && !/^\d{4}-\d{2}-\d{2}$/.test(hasta))
+    throw new Problem(422, "VALIDATION", "Fecha final inválida.");
+  if (desde && hasta && desde > hasta)
+    throw new Problem(422, "VALIDATION", "El intervalo de fechas es inválido.");
+}
+
+/** Orden estable de listComida: fecha desc, id numérico desc (longitud, luego texto). */
+const ordenComida = (
+  a: { fecha: string; id: string },
+  b: { fecha: string; id: string },
+) =>
+  b.fecha.localeCompare(a.fecha) ||
+  b.id.length - a.id.length ||
+  b.id.localeCompare(a.id);
+
+export const COMIDA_PAGE_SIZE = 100;
+
+/** Importe de filtro R5: string decimal EUR exacto, no negativo; vacío = ausente. */
+function r5Money(raw: string | null, name: string): bigint | null {
+  if (raw === null || raw === "") return null;
+  if (!/^(0|[1-9]\d*)(\.\d{1,2})?$/.test(raw))
+    throw new Problem(422, "VALIDATION", `${name} inválido.`, {
+      [name]: "Importe EUR exacto, no negativo, máximo dos decimales.",
+    });
+  const v = money(raw)!;
+  return v;
+}
+
+/**
+ * R5 (specs/38 §2 y §6; SPEC39 AC-D33): selector de compras para atribuir o
+ * reatribuir una devolución. Solo lectura. Se activa con `importeMin`/`importeMax`
+ * o con la consulta canónica `tipo=Gasto&estado=Vigente` explícita; el resto de
+ * usos de `GET /api/comida` (p. ej. `?estado=`) conserva su forma.
+ */
+export function esConsultaR5(params: URLSearchParams) {
+  return (
+    params.has("importeMin") ||
+    params.has("importeMax") ||
+    (params.get("tipo") === "Gasto" && params.get("estado") === "Vigente")
+  );
+}
+export function listComprasR5(db: Database, params: URLSearchParams) {
+  const tipo = params.get("tipo") || "Gasto",
+    estadoFiltro = params.get("estado") || "Vigente";
+  if (tipo !== "Gasto" || estadoFiltro !== "Vigente")
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "R5 solo lista Gasto vigente (tipo=Gasto&estado=Vigente).",
+    );
+  const rawPage = params.get("page") ?? "1";
+  const page = /^\d+$/.test(rawPage) ? Number(rawPage) : NaN;
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100000)
+    throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
+  const desde = params.get("desde") || null,
+    hasta = params.get("hasta") || null;
+  validateDateRange(desde, hasta);
+  // specs/38 §2: «nunca lista sin acotación temporal» y no se limita al ciclo
+  // vigente; la spec no fija un rango por defecto, así que sin desde ni hasta
+  // se rechaza (la ampliación de rangos es acción humana).
+  if (!desde && !hasta)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "R5 exige acotación temporal: indica desde y/o hasta.",
+      { desde: "Indica al menos una fecha de acotación." },
+    );
+  const min = r5Money(params.get("importeMin"), "importeMin"),
+    max = r5Money(params.get("importeMax"), "importeMax");
+  if (min !== null && max !== null && min > max)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "importeMin no puede superar importeMax.",
+    );
+  return db.transaction(() => {
+    const terminal = new Map<string, boolean>();
+    const isTerminal = (id: string) => {
+      if (!terminal.has(id))
+        terminal.set(id, getSaldo(db, id).control === "Terminal");
+      return terminal.get(id)!;
+    };
+    const all = ledgerRows(db)
+      .filter(
+        (r) =>
+          r.tipo === "Gasto" &&
+          estado(r) === "Vigente" &&
+          (!desde || r.fecha >= desde) &&
+          (!hasta || r.fecha <= hasta) &&
+          (min === null || BigInt(r.importe) >= min) &&
+          (max === null || BigInt(r.importe) <= max) &&
+          !isTerminal(r.origen),
+      )
+      .sort(ordenComida);
+    return {
+      items: all
+        .slice((page - 1) * COMIDA_PAGE_SIZE, page * COMIDA_PAGE_SIZE)
+        .map((r) => ({
+          id: r.id,
+          fecha: r.fecha,
+          importe: decimal(r.importe)!,
+          concepto: r.concepto,
+          partida: r.partida,
+          saldo: r.origen,
+        })),
+      page,
+      total: all.length,
+    };
+  })();
+}
+
 export function listComida(db: Database, params = new URLSearchParams()) {
   return db.transaction(() => {
     const page = Number(params.get("page") ?? 1);
@@ -215,16 +333,7 @@ export function listComida(db: Database, params = new URLSearchParams()) {
       (etiqueta && ![...comidaEtiquetas, "Sin clasificar"].includes(etiqueta))
     )
       throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
-    if (desde && !/^\d{4}-\d{2}-\d{2}$/.test(desde))
-      throw new Problem(422, "VALIDATION", "Fecha inicial inválida.");
-    if (hasta && !/^\d{4}-\d{2}-\d{2}$/.test(hasta))
-      throw new Problem(422, "VALIDATION", "Fecha final inválida.");
-    if (desde && hasta && desde > hasta)
-      throw new Problem(
-        422,
-        "VALIDATION",
-        "El intervalo de fechas es inválido.",
-      );
+    validateDateRange(desde, hasta);
     const metadata = new Map(
       (
         db.query(`${metadataSelect} ORDER BY movimiento`).all() as ComidaMetadata[]
@@ -304,12 +413,7 @@ export function listComida(db: Database, params = new URLSearchParams()) {
             .toLocaleLowerCase("es")
             .includes(q),
       )
-      .sort(
-        (a, b) =>
-          b.fecha.localeCompare(a.fecha) ||
-          b.id.length - a.id.length ||
-          b.id.localeCompare(a.id),
-      );
+      .sort(ordenComida);
     const legacy = (
       db
         .query(
@@ -395,6 +499,7 @@ export function getComidaMovement(db: Database, id: string) {
       },
       metadata: comidaMetadata(db, id),
       devolucion: comidaDevolucion(db, id),
+      devolucionRevision: devolucionRevision(db, id),
       rol: comidaRol(db, id),
       auditoria: {
         movimiento: audit("movement_audit"),
