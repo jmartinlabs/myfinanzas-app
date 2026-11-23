@@ -33,9 +33,9 @@ Tipo: V4 · reconciliación de interfaces
 
 **Contrato compartido normativo:** [anexo de interfaces de SPEC38](38-e49b-cierre-validacion-interfaces.md), §§1–6; fuente única de códigos, shapes, estado proyectado, gate, Partida y reatribución. Esta reconciliación no autoriza DEV ni declara AC ejecutados.
 
-**Fecha:** 19/11/2026. **Estado:** borrador completo corregido para revisión; no aprobado. No autoriza DEV, migraciones, datos reales ni despliegue. Entrega local, no publicada.
+**Fecha:** aprobada el 2026-11-22. **Estado:** SPEC aprobada; **45 AC en UNRUN**. No autoriza DEV, migraciones, cambios de datos ni despliegue.
 
-**Base inspeccionada:** `test`, `e7a9f7fd50edeefe8f2ff27654ffdb758395416b`, árbol limpio. Esta versión sustituye normativamente la propuesta del comentario `7023047021`, conservado como histórico. La revisión NO APTA está en el comentario `7023813576`; los índices relativos de comentarios facilitados ya no identifican esos textos porque se añadieron comentarios posteriores. El cuerpo de #538 y las decisiones del usuario prevalecen. El Status actual del Project #4 no pudo verificarse: GraphQL agotó cuota; no se modifica ni se infiere. El encargo expreso autoriza exclusivamente esta corrección en scratch.
+**Base inspeccionada:** `test`, `765094cd`, con SPEC38 y la enmienda 33-E1 integradas. Texto normativo tomado del comentario `7024602562` de #538 sin reescritura; la política de disponibilidad operativa del 19/11 quedó **descartada** y se sustituye por el contrato aprobado de 33-E1 (§7). Veredicto APTO de Álex y aprobación formal del usuario el 2026-11-22.
 
 ## 1. Objeto, límites y propiedad
 
@@ -158,21 +158,19 @@ Se incorporan literalmente por referencia los shapes R1/R3, preview.devolucionIm
 
 Anular una devolución conserva vínculo, importe y fecha, retira su efecto bancario vigente y el descuento económico y libera capacidad. Desanular verifica compra vigente y capacidad dentro de la transacción. Rectificar importe/fecha/saldo de devolución válida aplica simultáneamente ledger, proyección e impacto; exceso se rechaza, nunca degrada automáticamente. Eliminación física no es vía de corrección.
 
-## 7. Disponibilidad operativa: contrato demostrable, no etiqueta
+## 7. Disponibilidad operativa: contrato aprobado (SPEC33-E1)
 
-Hoy Dprima calcula `P=max(T−G.neto−S,0)` y `sugerida=P/N` (`dprima.ts:901-934`); G netea devoluciones. **Se retira la afirmación anterior de que basta conservar G y renombrarlo bancaria para no cambiar DO.** G y S pueden compensarse solo si el dinero entra en el mismo saldo/ventana: no es una garantía.
+La norma vigente es la [enmienda 33-E1](33-dprima-simplificada-enmienda-01.md), aprobada el 2026-11-22. **`P = max(0, T − G − S)`** se mantiene con `G` gasto neto acumulado elegible y `S` saldo real exclusivo.
 
-Para separar economía de financiación sin crear una bolsa persistida:
-- `G_economico`: GRE de las compras del ámbito/ventana de la planificación, con su contrato de atribución. No alimenta P.
-- `G_operativo`: gastos brutos de ese mismo conjunto/ventana operativa, sin minorarlos por devoluciones comerciales.
-- `S_bancario`: posición real a corte del saldo de financiación.
-- `R_saldo`: efecto neto firmado de movimientos comerciales de devolución vigentes que ya estén incluidos en esa posición, desde su mismo origen de cálculo hasta corte; no solo devoluciones de esta planificación. Rectificaciones/anulaciones se reflejan por ledger vigente, no por elegibilidad económica.
-- `S_operativo = S_bancario − R_saldo`.
-- `P=max(T−G_operativo−S_operativo,0)`; sugerida con el mismo N y redondeo existentes. Si alguna fuente/cobertura no permite separar R, P y sugerida son No disponible, no cero ni fallback a G neto.
+- **Fotografía de apertura inmutable:** `T`, `G₀`, `S₀` y `P₀ = max(0, T−G₀−S₀)` quedan fijados al corte confirmado. Una transferencia o devolución posterior **no** reescribe `P₀`.
+- **Cálculo prospectivo `P(t)`:** `G(t)` y `S(t)` de hechos reales hasta un corte `t` **acreditado** —instante, fuente y revisiones—; es un cálculo nuevo, publicado separado y **nunca sustituto de `P₀`**.
+- **Compromiso de aportación:** dato de planificación auditable (motivo, actor, instante, revisión, estado `Vigente|Ejecutada|Anulada`, `movimiento_id`). **No** altera `P`, ni `S`, ni crea Movimiento; su único efecto es `pendienteDeDecidir(t) = max(0, P(t) − Σ compromisos Vigentes a t)`.
+- **Ejecución:** vínculo **1:1** entre transferencia real y compromiso, con transición a `Ejecutada` en la misma transacción del Movimiento. La doble financiación es imposible por construcción.
+- **Sobrecompromiso:** se **señala y exige revisión humana**; no se anula nada automáticamente ni se altera el histórico. Ejecutar la transferencia **no** lo resuelve: reduce `P(t)` y puede agravarlo.
 
-R_saldo no es cuenta ficticia, transferencia ni saldo persistido; es exclusión analítica de abonos comerciales para no financiarlos automáticamente. No se intenta neutralizar transferencias reales posteriores expresamente registradas por el usuario como una operación independiente: esas siguen sus contratos propietarios. Para el cambio aislado de una devolución, con T, compras, otros hechos, corte y N fijos, G_operativo no varía y el incremento de S_bancario se resta en R_saldo si entra en ese saldo; si entra en otro, ninguno varía. Por tanto P/sugerida no varían en ambos casos, incluyendo receptor en otro ciclo/ejercicio. El GRE sí varía en A y las posiciones reales sí en B.
+**Historia no normativa.** La política del 19/11 con `G_economico`, `G_operativo`, `R_saldo` y `S_operativo = S_bancario − R_saldo`, y su `P = max(T−G_operativo−S_operativo, 0)`, fue **descartada** el 2026-11-22. Se conserva en el comentario original de #538 como trazabilidad y **no impone reglas**. En particular, `R_saldo` no es una reserva vigente y `S_operativo` no es una magnitud del contrato.
 
-`Aportación a saldo`, `aTransferir`, recursos Comida y arrastres operativos no se recalculan desde GRE. Cualquier lector de posiciones que automáticamente financie ciclos debe usar esta separación por contrato, no el saldo bancario bruto como dinero generado por devolución. Si no puede implementarse y probarse, se bloquea la entrega integrada, no se afirma que DO está preservada. Es enmienda expresa de SPEC33, con ambas magnitudes visibles en preview y pruebas de apertura/arrastre.
+`Aportación a saldo`, `aTransferir`, recursos Comida y arrastres operativos no se recalculan desde GRE. Cualquier lector de posiciones que financie ciclos por su cuenta debe usar este contrato; si la separación no puede implementarse y probarse, se bloquea la entrega integrada en lugar de afirmar que la disponibilidad operativa está preservada.
 
 ## 8. Comida
 
@@ -204,12 +202,12 @@ Cada fila es alcance de entrega y de prueba; referencia al predicado §3, no una
 | Consumidor / propietario | Contrato corregido y reconciliación |
 | --- | --- |
 | Movimientos / SPEC04 | Compra bruta; devolución como hecho propio; ficha R3 derivada de R1. Sin mutación en GET. |
-| Saldos y posiciones / SPEC01 | Banco real por fecha/saldo, incluye devolución una vez; separado de S_operativo. |
+| Saldos y posiciones / SPEC01 | Banco real por fecha/saldo, incluye devolución una vez; ninguna magnitud presupuestaria se deriva de él. |
 | Clasificación / SPEC02 | Catálogo no agrega por sí mismo; todo agregado existente o añadido sigue compra vigente, nunca copia del vínculo. |
 | Plan de ciclo, presupuesto mensual / SPEC09,16 | Fuente Gasto real: GRE del intervalo/IDs de compras; detalle bruto−descuento reconciliado; desviación no DO. |
-| Aportación a saldo / SPEC09,33 | Sin neteo, devolución no transferencia ni aTransferir; integrar §7 en lectores operativos. |
+| Aportación a saldo / SPEC09,33 | Sin neteo, devolución no transferencia ni aTransferir; los lectores operativos aplican §7 aprobado (33-E1). |
 | Dprima ejecución mensual / SPEC33 | executed=GRE; columna devolución por compras del ciclo, no por fecha de abono. Cobros del ciclo separados. |
-| Dprima financiación G/P/sugerida / SPEC33 | Sustituir G neto en fórmula operativa conforme §7; publicar G_economico, G_operativo y separación de S. No «G no cambia» como garantía. |
+| Dprima financiación G/P/sugerida / SPEC33 | `P = max(0,T−G−S)` sin redefinir `G` ni `S`; publicar `P₀` histórico y `P(t)` prospectivo acreditado por separado, y los compromisos de aportación como dato de plan, nunca como Movimiento. |
 | Plan anual / SPEC10,16 | annualExecution usa compras por fecha del ejercicio natural y resta solo sus devoluciones; conserva contrato de cobertura, diferencia Presupuesto−GRE. |
 | Vehículos / SPEC propietaria de Vehículos | `vehiculos.ts:90-121` llama annualExecution con subconjuntos por REF/Partida: seleccionar IDs de esas compras del año y restar solo sus vínculos. Devolución no necesita REF física. No contaminar otra REF de misma Partida; neto0 con hechos no es ausencia. |
 | Flujo mensual base / SPEC12 | gasto y S conservan fórmula base bruta y unidades; cobros comerciales por fecha se muestran separados. S no se renombra DO ni saldo real completo; declarar exclusiones. |
@@ -280,7 +278,7 @@ Los AC son requisitos para DEV futura, **no resultados de pruebas ejecutadas**. 
 - **AC-D25 — Antidoble descuento:** construir conjuntos independientes por IDs/tipos de ledger, devoluciones y acreditaciones. ID de devolución inyectado como Recuperado o como regularización es rechazado/incidencia y nunca reduce dos veces. Sumatorios excluyen Titular; conciliar ledger por fechas y coste por compras, no validar solo una identidad de fuentes compartidas.
 - **AC-D26 — Compartido total:** caso cerrado que recibe devolución total se recalcula a coste0 verificable con compras; cobro60 permanece, salida real60 acreditada cierra. Sin gastos no es cero verificado; anular salida reabre pendiente60, no cobro original ni hecho ficticio.
 - **AC-D27 — Plan:** GRE y detalle por §10; Aportación a saldo/aTransferir no consumen devolución. Cobertura usa D04, no fórmula paralela.
-- **AC-D28 — Dprima y DO:** mantener T,N,compras y otros hechos fijos; comparar antes/después devolución30 al saldo financiador y a otro saldo, dentro/fuera de corte, A validado y ejercicio anterior. GRE cambia, G_operativo invariante; S_bancario y R_saldo compensan solo cuando corresponde. P/sugerida/aTransferir y arrastres no ganan disponibilidad. Repetir No acreditada, anulación, corrección de saldo y S no verificable (P No disponible). También probar valores no saturados de P, para que max(0) no esconda un error.
+- **AC-D28 — Dprima y DO (SPEC33-E1):** con `T`, `N`, compras y otros hechos fijos, comparar antes/después una devolución de 30 al saldo financiador y a otro saldo, dentro y fuera de corte, con el ciclo de compra validado y en ejercicio anterior. `P₀` y la fotografía de apertura **no cambian** en ningún caso; `P(t)`, recalculado a corte acreditado, refleja solo hechos reales. Un compromiso de aportación reduce `pendienteDeDecidir(t)` **sin** alterar `P`, `S` ni crear Movimiento; al ejecutarse la transferencia, `S(t)` sube, `P(t)` se recalcula, el compromiso pasa a `Ejecutada` y el derivado **no salta**. Probar sobrecompromiso señalado y con revisión exigida, asignaciones parciales y anulación por importe, y valores no saturados de `P` para que `max(0)` no oculte un error. Repetir con devolución No acreditada, anulación, corrección de saldo y fuente no verificable (`P(t)` No disponible).
 - **AC-D29 — Anual y Vehículos:** annualExecution netea solo IDs de compras suministrados. Dos vehículos/REF misma Partida, devoluciones en otro año: solo vehículo y año de compra cambian; total0 con hechos no se confunde con ausencia, cobertura anual conservada.
 - **AC-D30 — Resumen anual:** bloques GRE natural, FB base y flujoAjustado cumplen §10 y reconcilian con sus fuentes; no suma mixta ni descuento comercial repetido. Incluir frontera D07 y regularización real D24.
 - **AC-D31 — Inicio:** KPI ciclo=GRE, posiciones bancarias reales y disponible separados; D28 demuestra ausencia de financiación automática por devolución.
@@ -317,7 +315,7 @@ Estados UI: carga sin formulario confirmable; vacío sin devolución distingue a
 
 Riesgos principales: acoplar DO al GRE (§7); descontar por Partida global en subconjuntos (§10); confundir acreditación económica con capacidad (§4); cierre de coste cero no regularizado (§9); desplegar revisión estricta sin Comida (§5.3); migración de triggers/regularizaciones fuera de versión (§11). Mitigación: AC negativos y gate integrado, no etiquetas ni marcador decorativo.
 
-Pendientes de entrega (no decisiones económicas reabiertas): aprobación expresa de SPEC y después DEV; revisión cruzada #539/#549 y actualización propietarias SPEC09/10/12/14/16/24/25/33/Vehículos; concretar soporte versionado de acreditaciones de salida antes de implementar; contrato y DEV #547/#549 antes de exposición. `UNRUN`: tests de implementación, dry-run/savepoint real, rendimiento >12meses, clientes externos, datos reales, impacto cuantitativo del saneamiento. Project4 no verificable por cuota GraphQL; no se presenta como cambio de fase ni bloqueo de este borrador.
+Pendientes de entrega: **aprobación de SPEC14** —requisito previo— y después **autorización expresa de DEV** (la aprobación de esta SPEC ya se concedió el 2026-11-22); revisión cruzada #539/#549 y actualización propietarias SPEC09/10/12/14/16/24/25/33/Vehículos; concretar soporte versionado de acreditaciones de salida antes de implementar; contrato y DEV #547/#549 antes de exposición. `UNRUN`: tests de implementación, dry-run/savepoint real, rendimiento >12meses, clientes externos, datos reales, impacto cuantitativo del saneamiento. Project4 no verificable por cuota GraphQL; no se presenta como cambio de fase ni bloqueo de este borrador.
 
 ## 14. Respuesta a la revisión
 
@@ -329,7 +327,7 @@ Pendientes de entrega (no decisiones económicas reabiertas): aprobación expres
 | 4. Sin acreditar y tope | §4 y R1/R3 separan capacidadBancariaRestante de descuentoEconomico; trigger incluye todo Verificado; D39. U09 no promete pendiente invariable. |
 | 5. Identidad no detecta doble descuento | §9 exige fuentes/IDs/tipos disjuntos, titular excluido y reconciliación independiente; D25 prueba inyección contaminada. |
 | 6. Regularización y cero | §9 define salida bancaria real acreditada al tercero, efecto inverso/reversión, cierre y dependencia de persistencia; cero con compras distinto de ausencia; D24/D26. |
-| 7. DO no demostrada | §7 retira garantía heredada, separa G_operativo/GRE y S_operativo con R_saldo; D28 prueba ambos receptores/cortes, no saturado y arrastres. |
+| 7. DO no demostrada | §7 sustituido por el contrato aprobado de 33-E1: `P₀` inmutable, `P(t)` prospectivo acreditado y compromisos separados de Movimientos; D28 prueba ambos receptores/cortes, no saturado, sobrecompromiso y arrastres. |
 | 8. Matriz incompleta | §10 incluye Vehículos/annualExecution por IDs/REF, ajusteCompartidos/flujoAjustado y consumo anual; D29/D30/D32. |
 | 9. devolucionRevision rompe Comida | §5.3 hace actualización cliente/API una dependencia obligatoria; columnas ya existen, sin backfill; D37/D40. |
 | 10. Compatibilidad/marcador/v31-v32 | §2.3 y §11 eliminan marcador obligatorio y veto a nombres breves, declaran ampliaciones y cambios semánticos con pruebas; D01/D40/D43 exigen entrega coordinada v32, no techo31. |
@@ -346,55 +344,15 @@ D14/D17/D33/D35/D36/D45: Partida NULL/derivada, shapes publicados, atribuir/reat
 
 Fuente compartida: [anexo de interfaces de SPEC38](38-e49b-cierre-validacion-interfaces.md). Cambios limitados a los trece hallazgos y referencias afectadas; no modifica decisiones ajenas, no publica ni autoriza ejecución. Todos los AC permanecen UNRUN.
 
-# Correcciones integradas tras la aprobación del contrato
+# Procedencia y trazabilidad
 
-Las tres piezas siguientes forman parte de la SPEC aprobada. Se conservan con su origen
-(comentario de #538) para que el texto normativo y su corrección sean distinguibles.
+- **Texto normativo §1–§14:** comentario `7024602562` de #538, sin reescritura salvo las correcciones de coherencia documental de §7, §10, `AC-D28` y §14, que adaptan el documento al contrato ya aprobado.
+- **§7 vigente:** [enmienda 33-E1](33-dprima-simplificada-enmienda-01.md) en `test`. La política anterior de `R_saldo`/`S_operativo` quedó descartada el 2026-11-22 y solo vive como historia en el comentario original.
+- **Interfaces:** [anexo de interfaces de SPEC38](38-e49b-cierre-validacion-interfaces.md) y la SPEC propietaria #538.
+- **§9/§11:** la acreditación de salida a terceros exige contrato propietario en **SPEC14**, persistencia con migración versionada propia y reconciliación entre lo recuperado y lo regularizado. **Sin SPEC14 aprobada no hay DEV ni activación integral**, y `AC-D25` queda condicionado por dependencia.
 
-## §7 · Dos lecturas que no se mezclan
+## Estado
 
-### Lectura histórica de apertura: inmutable
+**SPEC aprobada el 2026-11-22. Los 45 AC (`AC-D01`…`AC-D45`) permanecen `UNRUN`.** La aprobación es del contrato, no de su ejecución.
 
-`T`, `G₀`, `S₀` y `P₀ = max(0, T − G₀ − S₀)` quedan fijados **al corte común de apertura confirmado**. Es la fotografía del ciclo y **no se reescribe nunca**: ni una transferencia posterior, ni una devolución posterior, ni un compromiso la alteran. `P₀` es un dato histórico, no un valor vivo.
-
-### Lectura prospectiva: cálculo nuevo con corte acreditado
-
-Separada de la anterior, y **nunca presentada como sustituta de ella**:
-
-- `G(t)` y `S(t)` se toman de los hechos reales hasta el corte `t`.
-- `P(t) = max(0, T − G(t) − S(t))` es un **cálculo nuevo**, no una corrección del histórico.
-- Cada lectura declara **corte, fuente y reproducible**: fecha del corte, de dónde salen `G(t)` y `S(t)`, y las revisiones vigentes en ese instante.
-- `pendienteDeDecidir(t) = max(0, P(t) − Σ compromisos Vigentes a t)`.
-
-**El derivado usa siempre `P(t)`, nunca `P₀`.** Mezclarlos producía el salto falso que señaló la revisión: al ejecutarse un compromiso deja de ser `Vigente`, y si el derivado se calculara sobre `P₀` pasaría de 380 a 400 aunque la realidad no haya empeorado. Sobre `P(t)` converge sin saltos.
-
-### Ejemplo con las dos lecturas separadas
-
-`T=500`, apertura: `G₀=100`, `S₀=0` → **`P₀ = 400` (histórico, congelado)**.
-
-| Momento | Lectura | `S` | `P` | Compromiso | Pendiente de decidir |
-| --- | --- | --- | --- | --- | --- |
-| Apertura | **histórica** | 0 | **400 `P₀`** | — | 400 (prospectiva en `t₀`) |
-| Decisión de 20 € | prospectiva en `t₁` | 0 | **400 `P(t₁)`** | 20 Vigente | **380** |
-| Transferencia real de 20 € | prospectiva en `t₂` | **20** | **380 `P(t₂)`** | 20 Ejecutada | **380** |
-| Relectura en `t₃` | prospectiva en `t₃` | 20 | 380 | 20 Ejecutada | 380 |
-| — | **histórica** | 0 | **400 `P₀`** | — | — |
-
-`P₀` sigue siendo **400** en la última fila: la transferencia movió el saldo real, no la fotografía de apertura. El pendiente de decidir no salta de 380 a 400 porque se calcula sobre `P(tᵢ)`.
-
-## §9/§11 · Compartidos: contrato propietario antes de DEV
-
-La acreditación de salida a terceros de Gastos compartidos **no queda cubierta por v32** ni debe asumirse entregada con ella. Requiere:
-
-1. **Contrato propietario en SPEC14**, con la semántica de la acreditación al participante y su efecto en lo aportado.
-2. **Persistencia propia con migración versionada**, declarada como incremento con su número de esquema, no como consecuencia implícita de otra migración.
-3. **Reconciliación** entre lo recuperado del comercio y lo regularizado por el participante, sin doble descuento.
-
-**Sin ese contrato aprobado, esta SPEC no autoriza DEV ni la activación integral de #538.** El AC correspondiente (AC-D25 y su escenario de reembolso total) queda condicionado a SPEC14 y se declara **UNRUN** por dependencia, no por falta de redacción.
-
-## Nota de integración
-
-La corrección de §5 y §7 de la **enmienda 33-E1** (`2bfa126e`, corregida en `765094cd`) afecta a
-[33-E1](33-dprima-simplificada-enmienda-01.md), no a este documento: aquí solo se consume su
-contrato. Las interfaces de esta SPEC viven en el
-[anexo de interfaces de SPEC38](38-e49b-cierre-validacion-interfaces.md) y en la propia #538.
+**No autoriza DEV, migraciones, cambios de datos ni despliegue.** La aprobación de SPEC14 —requisito previo— y la autorización expresa de DEV son decisiones independientes y pendientes.
