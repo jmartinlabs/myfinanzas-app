@@ -15,6 +15,7 @@ import {
   operationalReferenceTypes,
 } from "./reference-rules";
 import { vehicleFicha } from "./vehicle-rules";
+import { devolucionesResumenGasto } from "./devoluciones";
 import {
   aportacionMetadata,
   storeAportacion,
@@ -504,6 +505,8 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
 export function getMovement(db: Database, id: string) {
   return db.transaction(() => ({
     movimiento: decorate(db, find(db, id), cycleMaster(db)),
+    // R3 (SPEC39 §5.2): exactamente el `resumen` de R1, misma función.
+    devolucionesResumen: devolucionesResumenGasto(db, id),
     auditoria: db
       .query(
         "SELECT revision,accion,motivo,instante,actor,anterior,posterior FROM movement_audit WHERE id=? ORDER BY revision",
