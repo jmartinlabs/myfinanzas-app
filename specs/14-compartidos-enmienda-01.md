@@ -57,7 +57,7 @@ Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuar
 | **R2** | ¿Cómo se acredita un movimiento bancario? | **Recomendación de Álex: acreditaciones parciales** sobre un único Movimiento real. Cada porción es individual y auditable, con `suma acreditada ≤ importe real` y sin reutilizar una porción (SPEC39 §9). No se fabrican Movimientos bancarios, y se conserva la conciliación 1:1 con el extracto. **Efectos:** la cardinalidad deja de ser 0..1 (hay varias filas por Movimiento); el importe de cada porción se guarda en la acreditación, lo que **cambia I-D5-3 «sin copia de importe»** solo para las regularizaciones; hace falta un contador de porciones y su idempotencia; R5 y los E1-AC se adaptan. | **Movimiento entero a un único tercero, 0..1** (como el texto actual, igual que D5). Más simple, sin copia de importe. **Coste:** un cargo bancario que devuelva a dos terceros o a dos casos debe partirse en varios Movimientos, lo que rompe la conciliación 1:1. |
 | **R3** | ¿Solo para el exceso que causa una devolución? | **Para cualquier `Exceso_p` del tercero**, venga de una devolución, de un cambio de partes o de un pago de más. La operación es la misma: devolverle dinero. | Exigir que exista una devolución vinculada. Añade un vínculo sin garantía adicional y deja sin vía el pago de más. |
 | **R4** | ¿Se puede regularizar a un tercero dado de baja? | **Sí, hasta su `Aportado_p` neto íntegro.** El motor no calcula cuota ni Exceso para una baja (su Asignado es «No aplica» y su aportado ya cuenta como atribución parcial), así que el límite no puede ser `Exceso_p`. La baja impide nuevas aportaciones, no devolver lo que puso. SPEC39 §9 incluye a los inactivos con saldo pendiente. **Es una decisión financiera tuya.** El cambio de participante de una regularización exige un Tercero activo, como en D5 §15.8. | Exigir que se reactive el participante antes de pagarle. Mantiene un único límite `Exceso_p`, a costa de reabrir el participante. |
-| **R5** | ¿Dónde se guarda? | *(Elegida por el usuario; ver §7.3: combinada con R2 por porciones, la clave de D5 impide la columna, y el sentido se garantiza con tabla propia, **confirmado por el usuario el 2026-11-23**.)* **En la misma `movimiento_compartido`, con una columna `sentido` (`Aportación` o `Regularización`)** ligada por CHECK y trigger a `origen`/`destino` del movimiento. Hay lectores de esa tabla (§7.7) que, sin el sentido explícito, sumarían una salida como cobro. | Deducir el sentido del movimiento, sin columna. Es menos auditable y obliga a que cada lector lo recuerde. |
+| **R5** | ¿Dónde se guarda la regularización y cómo se distingue de la aportación? | **Contrato vigente único (elegido por el usuario y confirmado el 2026-11-23):** `movimiento_compartido` conserva **solo las aportaciones de D5** (entradas desde `S000`), y la regularización vive en una **tabla propia de porciones** (§7.3). El sentido es explícito por construcción: cada tabla tiene uno solo. Los lectores de aportaciones no ven salidas; los consumidores que necesitan las salidas leen la tabla de porciones (§7.6). | Una columna `sentido` en `movimiento_compartido`: **descartada**, porque su clave es el Movimiento y R2 exige varias porciones por Movimiento. |
 | **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − `descuentoEconomico` de SPEC39 §4 (solo devoluciones elegibles; una Verificada No acreditada no descuenta). El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
 | **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) y #549 integrados, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
 
@@ -75,8 +75,12 @@ aprobación formal de la enmienda. Tras estas elecciones se reescribieron §3, �
    fabrican Movimientos para repartirlo, y se conserva la conciliación 1:1 con el extracto.
 5. **Porción.** Cada porción es una acreditación individual y auditable: Movimiento, tercero,
    importe propio (> 0), evidencia, procedencia y revisión. Reglas: `Σ porciones vigentes del
-   Movimiento ≤ importe del Movimiento`; una porción no se reutiliza ni se solapa con otra; el
-   resto no acreditado se muestra como informativo y no bloquea. Un Movimiento lleva **una sola
+   Movimiento ≤ importe del Movimiento`; una porción no se reutiliza ni se solapa con otra.
+   **Alta nueva:** una regularización se registra con `Σ porciones = importe del Movimiento`; si
+   no cuadra, 422 y no se crea nada. **Hecho bancario real ya existente** (un histórico, o una
+   porción anulada después): se conserva y la diferencia `importe − Σ porciones vigentes` es una
+   **discrepancia de conciliación pendiente** (§5.1), nunca una regularización íntegra o
+   verificada ni un dato inocuo. No se inventa ningún Movimiento para cuadrarla. Un Movimiento lleva **una sola
    Referencia**, así que sus porciones pertenecen a **un único caso**: un cargo que sirva a dos
    casos es un hecho que esta enmienda no resuelve (§13).
 2. No es Gasto, no es Ingreso, no es `Devolución de gasto`, no crea Partida ni Subtipo, y no
@@ -149,7 +153,7 @@ cuyo contrato esta enmienda **no modifica**. Entonces:
 Endurecer D5 para bloquear esa anulación es una mejora posible y queda **fuera** de esta
 enmienda.
 
-**Estados.** No cambian. Un caso Cerrado que recibe una devolución pasa a **Excedido**; una
+**Estados.** No cambian. Un caso Cerrado que recibe una devolución parcial pasa a **Excedido**; si la devolución es **total** y deja C = 0 con aportaciones, pasa a «Revisar» hasta regularizar (§4.1); una
 regularización igual al exceso lo devuelve a **Cerrado**, si no hay incidencias. Si un cambio
 posterior —partes o nuevas compras— sube la cuota por encima de lo aportado neto, aparece
 **Pendiente**, y es correcto: el tercero vuelve a deber.
@@ -163,10 +167,11 @@ regularización no puede ser anterior a la del primer cobro acreditado de ese te
 
 | Operación | Resultado |
 | --- | --- |
-| `Transferencia` interno → S000, REF CAT013 con ficha, con una o más porciones a Terceros de la ficha, cada una `≤ límite` de su tercero (abajo), `Σ porciones ≤ importe del Movimiento`, evidencia y procedencia | **Permitida solo como regularización** |
+| `Transferencia` interno → S000, REF CAT013 con ficha, con una o más porciones a Terceros de la ficha, cada una `≤ límite` de su tercero (abajo), `Σ porciones = importe del Movimiento` en el alta, evidencia y procedencia | **Permitida solo como regularización** |
 | `Transferencia` interno → S000 sin REF CAT013, sin ficha o sin participante | 422: es una salida Exterior ordinaria y sigue prohibida |
 | Porción con `importe > límite` o con `límite = 0` | 422: no hay deuda con ese tercero; no se crea un pendiente inverso |
 | `Σ porciones > importe del Movimiento`, o una porción reutilizada o duplicada | 422; con concurrencia, 409 para la segunda |
+| Alta nueva con `Σ porciones < importe del Movimiento` | 422: una salida Exterior sin destino acreditado sigue prohibida; no hay salidas Exterior «no atribuidas» como caso normal |
 | Regularización desde un Saldo con régimen Comida | 422 (`comida.ts:972-983`, `e35.ts:391-393` los señalan como huecos de cobertura) |
 | Regularización al Titular | 422: el Titular no tiene aportación que devolver (F3) |
 | Regularización con Saldo origen inactivo, de tipo Exterior, Manual o Control Exterior | 422 |
@@ -187,6 +192,25 @@ IMMEDIATE que escribe. Se compara contra la huella `contexto` que mostró el pre
 límite no alcanza, 422. Esa huella debe incluir los vínculos de devolución de las compras del
 caso, hoy fuera de ella porque pueden no llevar la REF del caso. Dos regularizaciones
 concurrentes no pueden superar juntas el límite.
+
+### 5.1 Discrepancia de conciliación pendiente
+
+`discrepancia(M) = importe(M) − Σ porciones vigentes(M)` para cada Movimiento regularizante
+vigente. Si es > 0:
+
+- el motor genera la incidencia **«Revisar · salida sin acreditar»**, con Movimiento e importe;
+  **bloquea Cerrado** (P-F6) y deja la cobertura **Parcial** mientras exista;
+- la ficha y la conciliación bancaria la muestran como **discrepancia pendiente**, nunca como
+  regularización íntegra ni verificada, y el importe sin acreditar no se suma a ningún tercero;
+- no cambia el efecto bancario del Movimiento, que se conserva;
+- se resuelve **acreditando porciones adicionales** dentro del límite de cada tercero o, si la
+  salida no pertenece a este caso, por los procedimientos vigentes de rectificación o anulación
+  del Movimiento. No se crea ningún Movimiento para cuadrarla;
+- ejemplo de control: Movimiento 100, porciones 60 y 0 → discrepancia 40; Movimiento 100 con
+  porciones 60 y 40, anular la de 40 → discrepancia 40, con el efecto bancario intacto.
+
+Esta enmienda **no** permite salidas Exterior no atribuidas como situación normal: si se quisiera,
+sería una decisión material nueva del usuario.
 
 ## 6 · Rectificación, anulación e historia
 
@@ -241,9 +265,9 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
    **sentido explícito** de R5 queda garantizado por construcción: lo que está en esa tabla es
    regularización y lo que está en `movimiento_compartido` es aportación. **R5, tal como se
    eligió (una columna `sentido` en `movimiento_compartido`), se sustituye por esta separación
-   porque la clave de D5 lo impide; confirmado por el usuario el 2026-11-23.** Con esto, los
-   lectores actuales de `movimiento_compartido` no cambian y no pueden sumar una salida como
-   cobro.
+   porque la clave de D5 lo impide; confirmado por el usuario el 2026-11-23.** Con esto, `movimiento_compartido` sigue siendo solo de aportaciones D5; cada consumidor se
+   delimita en §7.6: unos leen aportaciones, otros leen porciones, y ninguno suma una salida
+   como cobro.
    - El importe de la porción **se copia en la acreditación**: es una excepción a I-D5-3 («sin
      copia de importe»), limitada a las regularizaciones. El importe, la fecha, el origen, el
      destino y la Referencia del Movimiento se siguen leyendo del hecho canónico.
@@ -261,14 +285,18 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
    partir de datos existentes. `PRAGMA foreign_key_check` vacío.
 5. **Backup y restore.** Un backup de la versión anterior se importa y migra. Un backup con
    regularizaciones **no** se restaura con un binario que no las entienda: falla cerrado
-   (SPEC39 §11). Verify y restore comprueban que **toda Transferencia vigente hacia `S000` tiene
-   al menos una porción vigente** y que `Σ porciones ≤ importe`: sin porción es un huérfano y se
-   rechaza.
-6. **Lectores.** Los lectores de `movimiento_compartido` (`aportaciones.ts`, `compartidos.ts`,
-   `movement-ledger.ts`, `e410-revalidacion.ts`, `e49.ts`, `precierre.ts`, `e410-recierre.ts` y
-   backup) **no cambian**: no ven porciones. Inventario obligatorio, con un AC por lector, de los
-   que deben **leer la tabla de porciones**: el motor de Compartidos (Regularizado_p), el
-   ledger, Flujo, la reconciliación de cierres (#547), backup/restore y verify.
+   (SPEC39 §11). Verify y restore comprueban que **toda Transferencia vigente hacia `S000` con
+   REF CAT013 tiene al menos una fila de porción** (vigente o anulada) y que
+   `Σ porciones vigentes ≤ importe`. Sin ninguna fila es un huérfano y se rechaza; con la suma
+   menor que el importe se conserva y se informa como discrepancia (§5.1), no se rechaza.
+6. **Lectores, por consumidor.**
+   - **Leen aportaciones (`movimiento_compartido`), sin cambio de contrato:** `aportaciones.ts`,
+     `e410-revalidacion.ts`, `e49.ts`, `precierre.ts`, `e410-recierre.ts` y la parte de
+     `compartidos.ts` que calcula `Cobrado_p`.
+   - **Deben leer además las porciones:** `compartidos.ts` (`Regularizado_p`, discrepancia),
+     `movement-ledger.ts`, Flujo (`ajusteCompartidos`), la reconciliación de cierres (#547),
+     backup/restore y verify.
+   - Inventario obligatorio, con un AC por consumidor; ninguno suma una salida como cobro.
 7. Auditoría en `compartido_audit`, con acciones propias de porción, e idempotencia en
    `compartido_attempts`, con clave por porción: repetir el alta no duplica la porción ni consume
    la suma dos veces. No se crea una auditoría ni un contador paralelos.
@@ -279,7 +307,8 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
   límite > 0, incluidas las bajas (R4). Formulario dedicado con:
   - caso y Referencia bloqueados;
   - una o varias **porciones**: tercero (solo entre los que tienen límite > 0) e importe, con el
-    máximo visible, más el total del Movimiento y lo no acreditado;
+    máximo visible, más el total del Movimiento y lo que falta por acreditar, que debe quedar a
+    0 para poder confirmar el alta;
   - importe total del Movimiento;
   - fecha, Saldo origen, evidencia y procedencia.
 
@@ -291,6 +320,9 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
   `compartido` admite una lista de porciones. Para acreditar porciones a un movimiento interno →
   S000 que ya exista, se usa la vía de históricos de D5, con las mismas reglas y el mismo límite. Hoy no existe ninguno: el CHECK lo
   impide.
+- **Discrepancia:** la ficha y la conciliación muestran `discrepancia(M)` y la incidencia
+  «Revisar · salida sin acreditar» (§5.1), y nunca presentan el Movimiento como regularizado
+  íntegramente mientras sea > 0.
 - **Lectura:** la ficha devuelve, por Tercero, `cobrado`, `regularizado`, `aportado`,
   `pendiente` y `exceso`, junto con la lista de porciones con su Movimiento, procedencia y estado.
   Se conservan las claves existentes. `aportado` pasa a ser neto: es un **cambio semántico
@@ -318,12 +350,12 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | ID | Invariante |
 | --- | --- |
 | I-E1-1 | Toda porción vigente pertenece a una `Transferencia` vigente interno → S000, con la REF CAT013 de su ficha y a un Tercero de esa ficha. |
-| I-E1-2 | `Σ porciones vigentes de un Movimiento ≤ su importe`; una porción no se reutiliza; el sentido es el del hecho. Ningún ID de `Devolución de gasto` aparece como aportación ni como regularización. |
+| I-E1-2 | `Σ porciones vigentes de un Movimiento ≤ su importe`, con `=` en el alta nueva; la diferencia posterior es una discrepancia pendiente (§5.1) y nunca una regularización íntegra; una porción no se reutiliza; el sentido es el del hecho. Ningún ID de `Devolución de gasto` aparece como aportación ni como regularización. |
 | I-E1-3 | `Σ regularizaciones vigentes de p ≤ Cobrado_p` en el momento de cada alta o rectificación. Si una anulación o rectificación posterior de D5 la rompe, aparece la incidencia del §4.2 y nunca un recorte silencioso. |
 | I-E1-4 | Al regularizar no cambian ni la cuota del tercero, ni el Bruto, ni el cobro original, ni el descuento comercial. |
 | I-E1-5 | `N = C_T + Σ Pendiente_p − Σ Exceso_p`, con N = C − R, se sigue cumpliendo con el Aportado neto, solo si no hay bajas con Aportado ≠ 0 (condición ya existente en la base). |
 | I-E1-6 | Conciliaciones **independientes** de: ledger bancario por fechas, devoluciones comerciales y acreditaciones (entrantes y salientes). Los **tipos de negocio son disjuntos**: un ID de `Devolución de gasto` nunca computa como aportación ni como regularización. El vínculo ledger ↔ acreditación **existe y es obligatorio** (la misma Transferencia aparece en el ledger y la referencia su acreditación): lo prohibido es el **doble cómputo**, no el join. |
-| I-E1-7 | Ninguna Transferencia S000 sin acreditación compartida (aportación D5 o al menos una porción), pasa el servicio. |
+| I-E1-7 | Ninguna Transferencia S000 sin acreditación compartida (aportación D5 o al menos una porción) pasa el servicio, y ninguna salida Exterior sin atribuir se da por normal. |
 | I-E1-8 | Movimiento, porciones, intento y auditoría son atómicos. Un 409 o un fallo inyectado no deja efectos parciales. |
 
 ## 11 · Criterios de aceptación (UNRUN)
@@ -352,6 +384,8 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | E1-AC-21 | Transferencia vigente → S000 sin acreditación, y cambio de `tipo`, `referencia` o extremo `S000` con acreditación vigente | Verify y restore la rechazan lo primero; el trigger bloquea lo segundo; el Saldo interno sí se rectifica. |
 | E1-AC-23 | Saldo origen con `Permite salida a Exterior` = No (R1) | 422; sin vía indirecta. |
 | E1-AC-24 | Un Movimiento de 100 con porciones de 60 a un tercero y 40 a otro | Un solo Movimiento y conciliación 1:1 con el extracto; Aportado de cada tercero baja lo que su porción; suma 100 ≤ 100. |
+| E1-AC-28 | Alta nueva con Movimiento 100 y porciones que suman 60 | 422, sin Movimiento ni porciones. |
+| E1-AC-29 | Hecho bancario existente: Movimiento 100, porciones 60, resto 40; y anular una porción de un Movimiento 100 = 60 + 40 | Discrepancia 40 en ambos casos; incidencia «Revisar · salida sin acreditar», Parcial, Cerrado bloqueado; el efecto bancario y el Movimiento se conservan; no aparece como regularización íntegra; verify y restore lo aceptan como discrepancia y rechazan un Movimiento sin ninguna fila de porción. |
 | E1-AC-25 | Porción que supera el importe del Movimiento o duplicada; reducir el importe del Movimiento por debajo de la suma | 422 y sin efecto; la reutilización de una porción se rechaza. |
 | E1-AC-26 | Anular una porción; anular el Movimiento | La primera libera esa parte y vuelve el Exceso de ese tercero; la segunda anula todas. Sin DELETE ni reactivación. |
 | E1-AC-27 | Repetir el alta de una porción con la misma clave | Un solo efecto; la suma no se consume dos veces. |
@@ -398,6 +432,8 @@ D5, SPEC39, spec05, SPEC33-E1, SPEC38 y el código. Veredicto: **APTO CON CAMBIO
 | Fechas, identidad condicionada, trazas | §4, I-E1-5 y E1-AC-03/10/12 como trazas |
 
 **Revisión de Álex (PR #562, `3cc8b6f2`):** APTO CON CAMBIOS OBLIGATORIOS; CI documental pass, sin ejecutar AC. Hallazgos: R2 (recomienda porciones, decisión del usuario), F1 enmendada expresamente por R7 (§1 y §4.1), I-E1-6 reformulada (conciliaciones independientes y tipos disjuntos, join obligatorio), guarda `Permite salida a Exterior` (§5, E1-AC-23) y versionado sin asumir v33 ni migración conjunta (§7.1). R1–R7 siguen pendientes de aprobación del usuario.
+
+**Corrección focal tras la revisión de Álex sobre `7b737aca`:** el resto bancario no acreditado es una discrepancia pendiente (§3.5, §5.1, §7.5, §8, I-E1-2/7, E1-AC-28/29), la fila R5 queda como único contrato vigente (tabla propia) y el absoluto «Cerrado pasa a Excedido» se acota a devoluciones parciales. Sin reabrir R1–R7.
 
 **Cambios tras las elecciones del usuario (2026-11-23):** R2 por porciones reescribe §3, §5–§8, §10, §11 y §13 y añade E1-AC-24…27. El texto posterior a la revisión de Álex y a las dos pasadas del subagente **no ha tenido una revisión independiente nueva**: queda para la revisión focal de Álex.
 
