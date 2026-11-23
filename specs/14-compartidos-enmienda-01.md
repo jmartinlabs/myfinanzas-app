@@ -50,10 +50,10 @@ Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuar
 | **R3** | ¿Solo para el exceso que causa una devolución? | **Para cualquier `Exceso_p` del tercero**, venga de una devolución, de un cambio de partes o de un pago de más. La operación es la misma: devolverle dinero. | Exigir que exista una devolución vinculada. Añade un vínculo sin garantía adicional y deja sin vía el pago de más. |
 | **R4** | ¿Se puede regularizar a un tercero dado de baja? | **Sí, hasta su `Aportado_p` neto íntegro.** El motor no calcula cuota ni Exceso para una baja (su Asignado es «No aplica» y su aportado ya cuenta como atribución parcial), así que el límite no puede ser `Exceso_p`. La baja impide nuevas aportaciones, no devolver lo que puso. SPEC39 §9 incluye a los inactivos con saldo pendiente. **Es una decisión financiera tuya.** El cambio de participante de una regularización exige un Tercero activo, como en D5 §15.8. | Exigir que se reactive el participante antes de pagarle. Mantiene un único límite `Exceso_p`, a costa de reabrir el participante. |
 | **R5** | ¿Dónde se guarda? | **En la misma `movimiento_compartido`, con una columna `sentido` (`Aportación` o `Regularización`)** ligada por CHECK y trigger a `origen`/`destino` del movimiento. Hay lectores de esa tabla (§7.7) que, sin el sentido explícito, sumarían una salida como cobro. | Deducir el sentido del movimiento, sin columna. Es menos auditable y obliga a que cada lector lo recuerde. |
-| **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − descuento comercial vinculado y vigente. El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
-| **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) integrado, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
+| **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − `descuentoEconomico` de SPEC39 §4 (solo devoluciones elegibles; una Verificada No acreditada no descuenta). El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
+| **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) y #549 integrados, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
 
-El resto del documento está redactado con las cinco recomendaciones. Si el usuario elige otra
+El resto del documento está redactado con las siete recomendaciones. Si el usuario elige otra
 alternativa, se revisan las secciones afectadas antes de aprobar.
 
 ## 3 · Semántica
@@ -80,7 +80,7 @@ tercero:
 
 Lo que se deriva de ahí, con las mismas fórmulas:
 
-- `Recuperado_p = Aportado_p` (F2); `R = Σ` de terceros; `N = B − R`.
+- `Recuperado_p = Aportado_p` (F2); `R = Σ` de terceros; `N = C − R` (§4.1; antes `B − R`).
 - `Pendiente_p = max(Asignado_p − Aportado_p, 0)`;
   `Exceso_p = max(Aportado_p − Asignado_p, 0)`.
 - Equivalencia con SPEC39: `pendienteRegularizacion(p) = Aportado_p − Asignado_p`. Si es
@@ -95,8 +95,8 @@ Lo que se deriva de ahí, con las mismas fórmulas:
 SPEC39 §9 exige adaptar el motor (`compartidos.ts:223-224` exige hoy `Bruto > 0`). Se enmienda:
 
 - **B y B_g** (Bruto) no cambian: importe de la compra o suma de compras elegibles.
-- **C_g** (coste económico del Gasto) = B_g − descuento comercial vinculado y vigente de esa
-  compra. **C** = Σ C_g, igual al `costeEconomicoCaso` de SPEC39 §9. No hay suelo: SPEC39 §4
+- **C_g** (coste económico del Gasto) = B_g − `descuentoEconomico` de esa compra (SPEC39 §4,
+  solo devoluciones elegibles). **C** = Σ C_g, igual al `costeEconomicoCaso` de SPEC39 §9. No hay suelo: SPEC39 §4
   impide que un descuento supere a su compra. Si un histórico inconsistente lo supera, el
   motor genera una incidencia «Revisar», con cobertura Parcial, y no oculta el exceso con
   `max(…,0)`.
@@ -105,6 +105,13 @@ SPEC39 §9 exige adaptar el motor (`compartidos.ts:223-224` exige hoy `Bruto > 0
 - **Reparto válido** = `W > 0` y **al menos una compra elegible**, con `C ≥ 0`. Una devolución
   total deja C = 0 y el caso sigue repartido, con cuotas 0 y `Exceso_p` = Aportado_p. Sin compras
   elegibles sigue siendo «Sin repartir»: coste cero con compras no es ausencia de compras.
+- Un Gasto con C_g < 0 es **inválido**: queda fuera de C y del reparto y genera la incidencia
+  «Revisar». `cuotasExactas` no admite importes negativos.
+- **Consecuencia, no excepción a R-MP:** con C = 0 todas las cuotas valen 0. Un tercero con
+  `Aportado_p > 0` queda en «recuperado sin cuota» (§7.4, AC-33/AC-39): incidencia «Revisar»,
+  cobertura Parcial y Cerrado bloqueado **hasta regularizar**. Es lo correcto, porque hay un
+  importe que devolver. Al regularizar el total, `Aportado_p = 0` y el caso puede cerrar. No se
+  fabrica una atribución a los Gastos mientras tanto.
 - Si el motor no puede leer el descuento, la cobertura es Parcial; nunca se asume 0.
 - **Inventario previo a DEV:** todos los consumidores de B y de N (informes, Flujo, Resumen
   anual, E3.6) declaran si consumen B (bruto) o C (coste) y no cambian de significado sin que
@@ -112,16 +119,17 @@ SPEC39 §9 exige adaptar el motor (`compartidos.ts:223-224` exige hoy `Bruto > 0
 
 ### 4.2 Aportado negativo
 
-`Aportado_p < 0` solo puede aparecer si se anula el movimiento bancario de una aportación
-entrante, hecho que esta enmienda no controla. El contrato es:
+`Aportado_p < 0` no puede crearlo una regularización, por el límite del §5 y la regla de fechas.
+Solo puede aparecer si después se anula o se rectifica a la baja una aportación entrante de D5,
+cuyo contrato esta enmienda **no modifica**. Entonces:
 
-- **Bloqueo en el servicio:** cualquier alta, rectificación, anulación o cambio de participante
-  hecho por la app que deje `Aportado_p < 0` se rechaza con 409 (I-E1-3). Se aplica a la
-  aportación entrante, no solo a la regularización.
-- **Si aun así ocurre** (por ejemplo, una anulación del movimiento por una vía previa): no se
-  recorta a cero; incidencia **«Revisar · regularización superior a lo aportado»** que bloquea
-  Cerrado (P-F6); Recuperado, Neto y cobertura **Parciales**; R-MP no distribuye un Recuperado
-  negativo; la detección de bajas con aportación usa `≠ 0`, no `> 0`.
+- no se recorta a cero;
+- incidencia **«Revisar · regularización superior a lo aportado»**, que bloquea Cerrado (P-F6);
+- Recuperado, Neto y cobertura **Parciales**;
+- R-MP no distribuye un Recuperado negativo, y la detección de bajas con aportación usa `≠ 0`.
+
+Endurecer D5 para bloquear esa anulación es una mejora posible y queda **fuera** de esta
+enmienda.
 
 **Estados.** No cambian. Un caso Cerrado que recibe una devolución pasa a **Excedido**; una
 regularización igual al exceso lo devuelve a **Cerrado**, si no hay incidencias. Si un cambio
@@ -147,7 +155,10 @@ regularización no puede ser anterior a la del primer cobro acreditado de ese te
 | Transferencia interna → interna con REF CAT013 | No regulariza ni aporta; conserva su efecto bancario |
 | Acreditar a la vez como aportación y como regularización, o a dos terceros | Imposible: 0..1 por movimiento, y el sentido lo fija el hecho |
 
-**Límite.** Para un Tercero activo es `Exceso_p`; para una baja, `Aportado_p` (R4). Se calcula
+**Límite** = `max(Aportado_p − Asignado_p, 0)`, con `Asignado_p = 0` para una baja (R4) o cuando
+C = 0 (§4.1). Es `Exceso_p` para un Tercero activo con cuota. La **fecha** exige además
+`Cobrado_p acumulado a esa fecha ≥ Regularizado_p acumulado incluida esta`: no se puede devolver
+antes de haber cobrado. Se calcula
 con el motor central, con las devoluciones vigentes de SPEC39, en la misma transacción
 IMMEDIATE que escribe. Se compara contra la huella `contexto` que mostró el preview
 (`IMPACT_CHANGED`, `compartidos.ts:1012-1042`): si cambió, 409 y nuevo preview; si no cambió y el
@@ -159,21 +170,22 @@ concurrentes no pueden superar juntas el límite.
 
 Se aplica §15.8 de D5, con estas reglas para la regularización:
 
-- **Anular** la regularización o su movimiento lo saca del motor, conserva metadatos, evidencia y
+- **Anular** la regularización **equivale a anular su movimiento** (`movimiento_compartido` no
+  tiene `anulado` propio; no se añade). Lo saca del motor, conserva metadatos, evidencia y
   auditoría, y **vuelve a mostrar el Exceso**. No modifica el cobro original ni crea un hecho
   ficticio (SPEC39 `AC-D26`). No se puede reactivar ni hacer DELETE.
 - Rectificar importe, fecha u origen exige vista de impacto, motivo, revisión y auditoría.
   Aumentar el importe o cambiar el participante revalida
-  `nuevo ≤ max(Cobrado_p − Σ otras regularizaciones de p − Asignado_p, 0)` (para una baja,
-  sin restar `Asignado_p`). **Reducir el importe o cambiar solo la fecha siempre se permite**,
+  `nuevo ≤ max(Cobrado_p − Σ otras regularizaciones de p − Asignado_p, 0)` (con `Asignado_p = 0`
+  para una baja o con C = 0). Un cambio de origen revalida además Comida, Saldo inactivo y
+  Exterior (§5). **Reducir el importe o cambiar solo la fecha siempre se permite**,
   salvo la regla de fechas del §4.
-- Mientras la acreditación esté vigente, son inmutables el Tipo, la Referencia, el destino `S000`
-  y el sentido. Para cambiarlos se anula y se registra un hecho nuevo.
+- Mientras la acreditación esté vigente, son inmutables el Tipo, la Referencia, el extremo `S000`
+  y el sentido. El otro extremo (el Saldo interno) sí se rectifica, como en D5 §15.8. Para cambiarlos se anula y se registra un hecho nuevo.
 - Si se cambia el participante, el nuevo debe ser un Tercero **activo** de la misma ficha con
   límite suficiente (D5 §15.8, sin excepción).
-- Un cambio de partes, participantes o compras que deje `Aportado_p < 0` se rechaza con 409
-  (§4.2); un cambio que deje `Exceso_p` positivo o `Pendiente_p` positivo es correcto y solo
-  cambia el estado.
+- Un cambio de partes, participantes o compras no altera `Aportado_p`: puede dejar `Exceso_p` o
+  `Pendiente_p` positivos, y solo cambia el estado.
 
 ## 7 · Persistencia y versión de esquema
 
@@ -198,8 +210,8 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
      **activo o de baja** (R4), solo en el alta.
 
    El límite **no** se valida en un trigger: depende del motor. El servicio lo valida en la
-   transacción. Un trigger sobre `movimientos` impide cambiar `tipo`, `referencia`, `origen` o
-   `destino` de un movimiento con acreditación vigente.
+   transacción. Un trigger sobre `movimientos` impide cambiar `tipo`, `referencia` y el extremo `S000`
+   de un movimiento con acreditación vigente; el Saldo interno sigue rectificable.
 4. **Migración conservadora.** Reconstrucción con copia, como v17. Conserva IDs, auditorías, FK,
    triggers y CHECK del resto de tipos. Sin reseed, sin backfill, sin crear regularizaciones a
    partir de datos existentes. `PRAGMA foreign_key_check` vacío.
@@ -217,9 +229,9 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 ## 8 · API y UI
 
 - **UI:** la acción «Devolver al tercero» aparece en la ficha **solo** si algún Tercero tiene
-  `Exceso_p > 0`. Formulario dedicado con:
+  límite > 0, incluidas las bajas (R4). Formulario dedicado con:
   - caso y Referencia bloqueados;
-  - tercero, solo entre los que tienen exceso;
+  - tercero, solo entre los que tienen límite > 0;
   - importe, con el máximo visible;
   - fecha, Saldo origen, evidencia y procedencia.
 
@@ -259,7 +271,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | --- | --- |
 | I-E1-1 | Toda regularización acreditada es una `Transferencia` vigente interno → S000, con la REF CAT013 de su ficha y un único Tercero de esa ficha. |
 | I-E1-2 | Cada movimiento tiene una sola acreditación, y el sentido es el del hecho. Ningún ID de `Devolución de gasto` aparece como aportación ni como regularización. |
-| I-E1-3 | `Σ regularizaciones vigentes de p ≤ Cobrado_p` en el momento de cada alta o rectificación. Si un cambio posterior rompe la igualdad, aparece una incidencia y nunca un recorte silencioso. |
+| I-E1-3 | `Σ regularizaciones vigentes de p ≤ Cobrado_p` en el momento de cada alta o rectificación. Si una anulación o rectificación posterior de D5 la rompe, aparece la incidencia del §4.2 y nunca un recorte silencioso. |
 | I-E1-4 | Al regularizar no cambian ni la cuota del tercero, ni el Bruto, ni el cobro original, ni el descuento comercial. |
 | I-E1-5 | `N = C_T + Σ Pendiente_p − Σ Exceso_p`, con N = C − R, se sigue cumpliendo con el Aportado neto, solo si no hay bajas con Aportado ≠ 0 (condición ya existente en la base). |
 | I-E1-6 | Tres conjuntos, calculados cada uno por su lado: ledger bancario por fechas, devoluciones comerciales y acreditaciones (entrantes y salientes). Sus IDs no se repiten entre conjuntos. |
@@ -271,25 +283,25 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | ID | Escenario | Resultado esperado |
 | --- | --- | --- |
 | E1-AC-01 | Compra 120, partes 50/50, devolución 30, cobro 60 (`AC-D24`) | Cuota 45, `Exceso` del tercero 15, estado Excedido. Tras regularizar 15: Aportado 45, pendiente 0, exceso 0, Cerrado. |
-| E1-AC-02 | Devolución total 120 con cobro 60 (`AC-D26`) | Coste 0 verificable con la compra elegible. Exceso 60; tras regularizar 60, Cerrado. Al anular la regularización vuelve el Exceso 60, y el cobro original queda intacto. |
+| E1-AC-02 | Devolución total 120 con cobro 60 (`AC-D26`) | Coste 0 verificable con la compra elegible. Antes de regularizar: incidencia «Revisar» (recuperado sin cuota), Parcial, sin Cerrado, límite 60. Tras regularizar 60, Cerrado. Al anular el movimiento de la regularización vuelve el límite 60, y el cobro original queda intacto. |
 | E1-AC-03 | (traza de `AC-D25`) Inyectar el ID de una `Devolución de gasto` como regularización o como aportación (`AC-D25`) | Rechazo o incidencia. Nunca resta dos veces. Los tres conjuntos se reconcilian por separado. |
-| E1-AC-04 | Regularizar con `importe > Exceso_p`, con `Exceso_p = 0` o al Titular | 422, sin efectos. |
+| E1-AC-04 | Regularizar con `importe > límite`, con `límite = 0`, al Titular o con una fecha anterior al cobro | 422, sin efectos. |
 | E1-AC-05 | Dos regularizaciones concurrentes que juntas superan el exceso | Una se confirma; la otra recibe 409, sin efecto parcial. |
 | E1-AC-06 | Transferencia interno → S000 sin REF CAT013, sin ficha o con origen no elegible | 422. Exterior ordinario sigue cerrado. |
-| E1-AC-07 | Tercero dado de baja con exceso | Se le puede regularizar; nuevas aportaciones siguen bloqueadas; no se reactiva. |
-| E1-AC-08 | Anular la aportación entrante después de regularizar | `Aportado_p < 0`; incidencia «Revisar»; Parcial; Cerrado bloqueado; sin recorte. |
+| E1-AC-07 | Tercero dado de baja con aportado neto > 0 | Se le puede regularizar hasta su límite (R4), y sus cuotas pasan a los demás;  nuevas aportaciones siguen bloqueadas; no se reactiva. |
+| E1-AC-08 | Anular la aportación entrante (D5, sin cambios) después de regularizar | `Aportado_p < 0`; incidencia «Revisar»; Parcial; Cerrado bloqueado; sin recorte; R-MP sin Recuperado negativo. |
 | E1-AC-09 | Multi-Gasto y multi-Partida | Tras regularizar, `rec(g,p)` sale del Aportado neto con céntimos exactos; la suma de Netos cuadra; se cumple la identidad de I-E1-5. |
 | E1-AC-10 | (traza de `AC-D32`) Flujo y Resumen | `ajusteCompartidos` incluye la salida en sentido inverso; la caja la muestra por su fecha; no se cuenta dos veces. |
 | E1-AC-11 | Rectificar importe o fecha, o cambiar participante | Impacto, revisión, auditoría y revalidación del límite. Tipo, REF, S000 y sentido son inmutables. |
 | E1-AC-12 | Migración sucesora coordinada sobre una copia de la versión anterior, y base nueva equivalente (traza con `AC-D43`) | Se conservan IDs, auditorías, FK, triggers y CHECK de los demás tipos. Sin backfill. Repetir la migración no duplica nada. El contrato y el manifiesto quedan registrados. |
 | E1-AC-13 | Backup y restore | Un backup anterior migra. Un backup con regularizaciones falla cerrado en un binario que no las entiende. |
-| E1-AC-15 | Coste cero (§4.1): devolución total, C = 0, B = 120, compra elegible | B sigue 120; caso repartido con cuotas 0 y `Exceso_p` = Aportado_p; sin compras elegibles, «Sin repartir». Histórico con descuento > compra: incidencia Revisar, sin `max(0)`. |
+| E1-AC-15 | Coste cero (§4.1): devolución total, C = 0, B = 120, compra elegible | B sigue 120; caso repartido con cuotas 0; con Aportado > 0, «Revisar» hasta regularizar; Gasto con C_g < 0, inválido; sin compras elegibles, «Sin repartir». Histórico con descuento > compra: incidencia Revisar, sin `max(0)`. |
 | E1-AC-16 | Tercero de baja con aportado 60 (R4) | Regularización hasta 60; más, 422; el cambio de participante exige un Tercero activo. |
-| E1-AC-17 | Rectificar con Pendiente posterior (cobrado 60, regularización 15, cuota sube a 50) | Aumentar a 15 o más de 10 se rechaza; reducir el importe o cambiar la fecha se permite. |
+| E1-AC-17 | Rectificar con Pendiente posterior (cobrado 60, regularización 15, cuota sube a 50) | Con la cuota en 50, el máximo es 60 − 50 = 10: pasar a más de 10 se rechaza; reducir el importe o cambiar solo la fecha se permite. |
 | E1-AC-18 | Devolución vinculada sin REF física, concurrente con una regularización | 409 por huella `contexto`; nuevo preview con el límite recalculado. |
 | E1-AC-19 | Cada lector de `movimiento_compartido` (§7.6) | Ninguno suma una regularización como cobro; un AC por lector. |
 | E1-AC-20 | Regularización desde Saldo con régimen Comida; fecha anterior al cobro | 422 en ambos casos. |
-| E1-AC-21 | Transferencia vigente → S000 sin acreditación, y cambio de `destino` con acreditación vigente | Verify y restore la rechazan; el trigger bloquea el cambio. |
+| E1-AC-21 | Transferencia vigente → S000 sin acreditación, y cambio de `tipo`, `referencia` o extremo `S000` con acreditación vigente | Verify y restore la rechazan lo primero; el trigger bloquea lo segundo; el Saldo interno sí se rectifica. |
 | E1-AC-22 | Sin #547 o #549 integrados (R6) | 503. |
 | E1-AC-14 | Ficha y API | Las claves existentes se mantienen. El cambio semántico de `aportado` está cubierto por prueba de contrato. Se devuelven `cobrado`, `regularizado`, la lista y los estados de UI a 390 y 1440. |
 
@@ -337,4 +349,19 @@ antes de la aprobación.
 
 ### Revisión acotada del texto corregido
 
-_Pendiente de anotar el resultado._
+Mismo subagente, sobre el commit `4abe1db8`. Veredicto: **APTO CON CAMBIOS**. Sostiene la
+fórmula de rectificación, I-E1-5 y N = C − R. Resolución:
+
+| Hallazgo | Resolución |
+| --- | --- |
+| Con C = 0 el tercero cae en «recuperado sin cuota» (bloqueante) | Se asume como consecuencia de la regla aprobada, no como excepción: «Revisar» hasta regularizar, sin atribución inventada (§4.1); E1-AC-02/15 corregidos. **El reviewer ofrecía una excepción a R-MP o esta alternativa; elegí la segunda por no tocar una regla aprobada.** |
+| C_g distinto de `descuentoEconomico` | Alineado con SPEC39 §4 |
+| C_g negativo rompe `cuotasExactas` | Gasto inválido con incidencia |
+| El trigger de §7 bloqueaba rectificaciones de D5 | Solo se protege `tipo`, `referencia` y el extremo `S000` |
+| §4.2 contradecía §1 al endurecer D5 | D5 no se toca; incidencia como único mecanismo; endurecer D5 queda fuera |
+| «Anular la regularización» sin columna | Equivale a anular el movimiento |
+| R4 inalcanzable desde la UI | Acción y selector por límite > 0, bajas incluidas; consecuencia declarada en E1-AC-07 |
+| Menores | Corregidos: `N = C − R`, «siete», #549 en R6, «límite» en AC, fecha por acumulado, AC-17 |
+
+**Desacuerdo material pendiente:** ninguno. Una tercera revisión no se pide: los cambios
+posteriores a esta son mecánicos y proceden de sus hallazgos.
