@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { cycleMaster, type Cycle } from "./ciclos";
+import { cycleForDate } from "./ciclos";
 import { comidaInstalled } from "./comida";
 import { decimal, Problem } from "./saldos";
 
@@ -90,7 +90,12 @@ export type DevolucionProyectada = {
 const filled = (v: string | null | undefined) =>
   typeof v === "string" && v.trim().length > 0;
 
-function compras(db: Database, cycles: Cycle[]) {
+function compras(db: Database, only?: string) {
+  const cache = new Map<string, string | null>();
+  const cicloDe = (fecha: string) => {
+    if (!cache.has(fecha)) cache.set(fecha, cycleForDate(db, fecha)?.id ?? null);
+    return cache.get(fecha)!;
+  };
   const rows = db
     .query(
       `SELECT c.id,c.fecha,CAST(c.importe AS TEXT) importe,c.anulado,c.tipo,
@@ -99,9 +104,10 @@ function compras(db: Database, cycles: Cycle[]) {
        FROM movimientos c
        JOIN saldos s ON s.id=c.origen
        LEFT JOIN partidas p ON p.id=c.partida
-       LEFT JOIN subcategorias q ON q.id=p.padre`,
+       LEFT JOIN subcategorias q ON q.id=p.padre
+       WHERE ${only === undefined ? "c.id IN (SELECT compra FROM movimiento_devolucion WHERE compra IS NOT NULL)" : "c.id=?"}`,
     )
-    .all() as {
+    .all(...(only === undefined ? [] : [only])) as {
     id: string;
     fecha: string;
     importe: string;
@@ -130,15 +136,9 @@ function compras(db: Database, cycles: Cycle[]) {
         partida: r.partida,
         referencia: r.referencia,
       },
-      ciclo: cicloDe(cycles, r.fecha),
+      ciclo: cicloDe(r.fecha),
     });
   return map;
-}
-export function cicloDe(cycles: Cycle[], fecha: string): string | null {
-  return (
-    cycles.find((c) => c.inicio <= fecha && (c.fin === null || fecha <= c.fin))
-      ?.id ?? null
-  );
 }
 /** Dimensiones derivadas de la compra: sin Partida/Subcategoría/Categoría no hay agregado clasificado. */
 const clasificada = (c: Clasificacion) =>
@@ -151,12 +151,14 @@ const validPurchase = (c: CompraInfo | undefined) =>
  * derivación de elegibilidad, clasificación, causa y diagnósticos; R1, R3 y R4
  * la comparten.
  */
-export function proyectarDevoluciones(db: Database): {
+export function proyectarDevoluciones(
+  db: Database,
+  compraId?: string,
+): {
   items: DevolucionProyectada[];
   compras: Map<string, CompraInfo>;
 } {
-  const cycles = cycleMaster(db);
-  const purchases = compras(db, cycles);
+  const purchases = compras(db, compraId);
   const installed = comidaInstalled(db, "movimiento_devolucion");
   const rows = db
     .query(
@@ -170,6 +172,7 @@ export function proyectarDevoluciones(db: Database): {
            FROM movimientos m
            LEFT JOIN movimiento_devolucion d ON d.movimiento=m.id
            WHERE m.tipo='Devolución de gasto' AND m.anulado=0
+             ${compraId === undefined ? "" : "AND d.compra=?"}
            ORDER BY length(m.id),m.id`
         : `SELECT m.id,m.fecha,CAST(m.importe AS TEXT) importe,m.destino,
              m.partida movimientoPartida,m.revision revisionMovimiento,
@@ -178,9 +181,10 @@ export function proyectarDevoluciones(db: Database): {
              NULL elegibilidad,NULL estado,NULL revision
            FROM movimientos m
            WHERE m.tipo='Devolución de gasto' AND m.anulado=0
+             ${compraId === undefined ? "" : "AND 0"}
            ORDER BY length(m.id),m.id`,
     )
-    .all() as {
+    .all(...(installed && compraId !== undefined ? [compraId] : [])) as {
     id: string;
     fecha: string;
     importe: string;
@@ -324,7 +328,8 @@ export type DevolucionesCompra = {
 };
 
 function pageNumber(value: unknown) {
-  const page = Number(value ?? 1);
+  const raw = String(value ?? "1");
+  const page = /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(page) || page < 1 || page > 100000)
     throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
   return page;
@@ -342,7 +347,7 @@ export function proyeccionDevolucionesCompra(
   const page = pageNumber(opts.page);
   const size = opts.pageSize ?? DEVOLUCIONES_PAGE_SIZE;
   return db.transaction(() => {
-    const { items: all, compras: purchases } = proyectarDevoluciones(db);
+    const { items: all, compras: purchases } = proyectarDevoluciones(db, compraId);
     const compra = purchases.get(compraId);
     if (!compra)
       throw new Problem(404, "NOT_FOUND", "Movimiento no encontrado.");
@@ -556,14 +561,4 @@ export function integridadDevoluciones(db: Database, params = new URLSearchParam
       conteo,
     };
   })();
-}
-
-/**
- * Adaptador de lectura (SPEC39 §2.3/AC-D01): un DTO de movimiento antiguo, sin
- * `devolucionesResumen`, y uno ampliado se leen igual; ausencia = null, nunca cero.
- */
-export function leerDevolucionesResumen(dto: {
-  devolucionesResumen?: DevolucionesResumen | null;
-}): DevolucionesResumen | null {
-  return dto.devolucionesResumen ?? null;
 }

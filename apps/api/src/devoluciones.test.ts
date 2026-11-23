@@ -9,7 +9,6 @@ import { getMovement, previewMovement, writeMovement } from "./movimientos";
 import { writeComidaDevolucion } from "./comida";
 import {
   integridadDevoluciones,
-  leerDevolucionesResumen,
   proyeccionDevolucionesCompra,
 } from "./devoluciones";
 import { financeRevision } from "./movement-ledger";
@@ -475,19 +474,45 @@ test("AC-D33: R3 es null para no Gastos y R1 distingue 404 de 422", () => {
   c.db.close();
 });
 
-test("AC-D01: un DTO de movimiento antiguo y uno ampliado se leen con el mismo adaptador y conservan sus claves", () => {
+test("R1/R3 de una compra no dependen de otras compras ni de devoluciones ajenas y no las incluyen", () => {
   const c = setup();
-  const compra = buy(c, "120");
-  refund(c, compra, "30");
-  const ampliado = JSON.parse(JSON.stringify(getMovement(c.db, compra)));
-  for (const key of ["movimiento", "auditoria", "contexto", "devolucionesResumen"])
-    expect(key in ampliado).toBe(true);
-  const { devolucionesResumen: _omitido, ...antiguo } = ampliado;
-  expect(leerDevolucionesResumen(antiguo)).toBeNull();
-  expect(leerDevolucionesResumen(ampliado)?.descuentoEconomico).toBe("30.00");
-  // Las claves del movimiento no cambian de nombre ni de forma.
-  expect(ampliado.movimiento.id).toBe(compra);
-  expect(ampliado.movimiento.importe).toBe("120.00");
+  const a = buy(c, "120");
+  const d1 = refund(c, a, "30");
+  refund(c, a, "40", { elegibilidad: "No acreditada", cicloOrigen: undefined, evidenciaOrigenTemporal: undefined }, { fecha: "2026-08-11" });
+  const solo = JSON.stringify([R1(c, a), getMovement(c.db, a).devolucionesResumen]);
+  // Datos ajenos: otra compra con devoluciones (también excesivas e inválidas) y un huérfano.
+  const b = buy(c, "200", { partida: c.leisure.id });
+  const e = refund(c, b, "50");
+  refund(c, b, "60", { estado: "Revisar" });
+  add(c.db, { tipo: "Devolución de gasto", fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana", nota: "" });
+  c.db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [b]);
+  expect(JSON.stringify([R1(c, a), getMovement(c.db, a).devolucionesResumen])).toBe(solo);
+  const r = R1(c, a);
+  expect(r.items.map((i) => i.id)).toContain(d1);
+  expect(r.items.map((i) => i.id)).not.toContain(e);
+  expect(r.resumen.ids).not.toContain(e);
+  expect(r.resumen).toMatchObject({ count: 2, descuentoEconomico: "30.00", devueltoVerificado: "70.00" });
+  // Misma cifra que la derivación global de R4 para sus devoluciones.
+  expect(integridadDevoluciones(c.db).items.some((i) => i.id === a)).toBe(false);
+  // Identidades inexistentes o con ceros a la izquierda: 404.
+  for (const id of ["0" + a, "00" + a, "99999"])
+    try {
+      R1(c, id);
+      throw new Error("debía fallar");
+    } catch (err) {
+      expect((err as { status: number }).status).toBe(404);
+    }
+  c.db.close();
+});
+
+test("paginación de R1/R4 solo admite enteros decimales", () => {
+  const c = setup();
+  const a = buy(c, "120");
+  for (const bad of ["0x10", "1e2", " 5 ", "-1", "0", "1.5", ""])
+    expect(() => R1(c, a, { page: bad })).toThrow("página inválidos");
+  for (const bad of ["0x10", "1e2", " 5 ", "0"])
+    expect(() => integridadDevoluciones(c.db, new URLSearchParams({ page: bad }))).toThrow("página inválidos");
+  expect(R1(c, a, { page: "1" }).page).toBe(1);
   c.db.close();
 });
 
@@ -502,10 +527,12 @@ test("AC-D33: las rutas R1/R4 exigen sesión y devuelven 404/422 de dominio", as
   const handler = HttpApp.toWebHandler(createApp(db, { key: randomBytes(32), now: () => now }));
   let cookie = "",
     csrf = "";
+  let last: Response | null = null;
   async function request(path: string) {
     const response = await handler(
       new Request(origin + path, { headers: { origin, cookie, "x-csrf-token": csrf } }),
     );
+    last = response.clone();
     return { status: response.status, data: await response.json() };
   }
   async function post(path: string, body: unknown) {
@@ -530,8 +557,11 @@ test("AC-D33: las rutas R1/R4 exigen sesión y devuelven 404/422 de dominio", as
   const enrolled = await post("/api/auth/enroll", { token: provision(db, now), password });
   await post("/api/auth/mfa", { code: totp(enrolled.data.secret).generate({ timestamp: now }) });
   expect((await request("/api/comida/compras/1/devoluciones")).status).toBe(404);
+  expect(last!.headers.get("cache-control")).toBe("no-store");
+  expect((await request("/api/comida/compras/1/devoluciones?page=0x10")).status).toBe(422);
   const integridad = await request("/api/devoluciones/integridad");
   expect(integridad.status).toBe(200);
+  expect(last!.headers.get("cache-control")).toBe("no-store");
   expect(integridad.data).toMatchObject({ items: [], total: 0, page: 1 });
   expect((await request("/api/devoluciones/integridad?page=0")).status).toBe(422);
   expect((await request("/api/devoluciones/integridad?categoria=otra")).status).toBe(422);
