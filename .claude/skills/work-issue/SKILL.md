@@ -9,11 +9,11 @@ Read and follow the canonical Skill `.agents/skills/work-issue/SKILL.md`; the on
 is the Claude note below. Arguments: `$ARGUMENTS`. Codex `$name` maps to `/name` here; a
 slash command grants no approval, model change or delegation by itself.
 
-`/work-issue opencode` names the queue, not a parallel worker: one Claude session works that
-agent's eligible Issues until the queue is empty, using `scripts/work-issue` for the mechanical
-steps only. Approvals still come from the issue workflow, and merge keeps its own gate.
-
 In Claude Code the agent identity is always `claude`: pass `--agent claude` to every
-`scripts/work-issue` call, including when `/work-issue` has no argument. With no argument the
-queue is the Issues without an agent label plus those labelled `agent:claude`; other agents'
-Issues are reported, never taken. Never reserve under another agent's name.
+`scripts/work-issue` call that takes or moves an Issue, including when `/work-issue` has no
+argument. The queue is the Issues without an agent label plus those labelled `agent:claude`;
+other agents' Issues are reported, never taken. The tool uses `--agent` both to filter the queue
+and to sign the reservation, so Claude does not work another agent's queue: `/work-issue opencode`
+(or any agent other than `claude`) is rejected with that explanation, and `next --agent opencode`
+is allowed only as a read-only look. Approvals still come from the issue workflow and merge keeps
+its own gate. Never reserve under another agent's name.
