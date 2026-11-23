@@ -5,6 +5,12 @@ import { ledgerRows, fingerprint, type LedgerRow } from "./movement-ledger";
 import { getSaldo, decimal, money, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
 import { comidaInstalled } from "./comida";
+import {
+  agregarDescuentos,
+  descuentoPorCompras,
+  proyectarDevoluciones,
+  type Cobertura,
+} from "./devoluciones";
 
 /**
  * SPEC33 D′ simplificada — services.
@@ -1215,27 +1221,10 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
     (r) =>
       end !== null && !r.anulado && r.fecha >= ciclo.inicio && r.fecha <= end,
   );
-  const devolutions = comidaInstalled(db, "movimiento_devolucion")
-    ? (db.query(
-        `SELECT d.movimiento,d.partida,m.partida movimientoPartida,d.compra,
-          d.estado,c.partida compraPartida,c.anulado compraAnulada,
-          c.tipo compraTipo,m.fecha,CAST(m.importe AS TEXT) importe,d.elegibilidad
-         FROM movimiento_devolucion d JOIN movimientos m ON m.id=d.movimiento
-         LEFT JOIN movimientos c ON c.id=d.compra WHERE m.anulado=0`,
-      ).all() as {
-        movimiento: string;
-        partida: string | null;
-        movimientoPartida: string | null;
-        compra: string | null;
-        estado: string;
-        compraPartida: string | null;
-        compraAnulada: number | null;
-        compraTipo: string | null;
-        fecha: string;
-        importe: string;
-        elegibilidad: string;
-      }[])
-    : [];
+  // SPEC39 §3/§10 (F2a-1): una sola proyección; la devolución sigue a la compra
+  // vigente (nunca d.partida/m.partida). El descuento económico se resta por IDs
+  // de las compras del ciclo; los abonos bancarios se miden aparte por fecha real.
+  const projection = proyectarDevoluciones(db);
   return db.transaction(() => ({
     ciclo,
     items: roots.map((line) => {
@@ -1243,6 +1232,9 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
       let bruto: bigint | null = null,
         devoluciones: bigint | null = null,
         executed: bigint | null = null,
+        abonos: bigint | null = null,
+        cobertura: Cobertura | null = null,
+        causas: string[] | null = null,
         reason: string | null = null;
       if (line.fuente === "No aplica") reason = "No comparable";
       else if (end === null) reason = "Periodo/corte no verificable";
@@ -1254,28 +1246,33 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
             set.has(r.partida),
         );
         bruto = sum(purchases.map((r) => BigInt(r.importe)));
-        const pending: string[] = [];
-        devoluciones = sum(
-          devolutions
-            .filter((d) => {
-              const partida = d.partida ?? d.movimientoPartida ?? d.compraPartida;
-              if (!partida || !set.has(partida)) return false;
-              if (d.fecha < ciclo.inicio || d.fecha > end!) return false;
-              const validLink =
-                !d.compra ||
-                (d.estado === "Verificado" &&
-                  d.compraAnulada === 0 &&
-                  d.compraTipo === "Gasto");
-              if (d.elegibilidad !== "Acreditada" || !validLink) {
-                pending.push(d.movimiento);
-                return false;
-              }
-              return true;
-            })
-            .map((d) => BigInt(d.importe)),
+        const discount = agregarDescuentos(
+          descuentoPorCompras(
+            db,
+            purchases.map((r) => r.id),
+            projection,
+          ).values(),
         );
-        // E2: Gasto real conserva la ejecución íntegra; el neto pertenece a G/financiación.
-        executed = bruto;
+        // Descuento atribuido a las compras DEL CICLO, aunque el abono llegue después.
+        devoluciones = discount.descuento;
+        cobertura = discount.cobertura;
+        causas = discount.causas;
+        // Flujo bancario por fecha real del abono, atribuido por la compra vigente.
+        abonos = sum(
+          projection.items
+            .filter(
+              (d) =>
+                d.verificado &&
+                d.clasificacion?.partida != null &&
+                set.has(d.clasificacion.partida) &&
+                d.fecha >= ciclo.inicio &&
+                d.fecha <= end!,
+            )
+            .map((d) => d.importe),
+        );
+        if (discount.exceso)
+          reason = "Devolución superior a la compra: ejecución no verificable.";
+        else executed = bruto - devoluciones;
       } else {
         if (!line.destino) reason = "Destino no definido";
         else if ((destinations.get(line.destino) ?? 0) > 1)
@@ -1302,6 +1299,9 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
         delMes: decimal(line.delMes),
         bruto: bruto === null ? null : decimal(bruto),
         devoluciones: devoluciones === null ? null : decimal(devoluciones),
+        abonosBancarios: abonos === null ? null : decimal(abonos),
+        cobertura,
+        causas,
         ejecutado: executed === null ? null : decimal(executed),
         pendiente: pending === null ? null : decimal(pending),
         estado:

@@ -90,7 +90,9 @@ export type DevolucionProyectada = {
 const filled = (v: string | null | undefined) =>
   typeof v === "string" && v.trim().length > 0;
 
-function compras(db: Database, only?: string) {
+function compras(db: Database, only?: string, installed = true) {
+  // Sin tabla de vínculos (esquema anterior) no hay compras con devoluciones.
+  if (!installed && only === undefined) return new Map<string, CompraInfo>();
   const cache = new Map<string, string | null>();
   const cicloDe = (fecha: string) => {
     if (!cache.has(fecha)) cache.set(fecha, cycleForDate(db, fecha)?.id ?? null);
@@ -158,8 +160,8 @@ export function proyectarDevoluciones(
   items: DevolucionProyectada[];
   compras: Map<string, CompraInfo>;
 } {
-  const purchases = compras(db, compraId);
   const installed = comidaInstalled(db, "movimiento_devolucion");
+  const purchases = compras(db, compraId, installed);
   const rows = db
     .query(
       installed
@@ -285,6 +287,39 @@ export function proyectarDevoluciones(
   return { items, compras: purchases };
 }
 
+/**
+ * Agregación ÚNICA por compra (R1, R3 y los consumidores económicos de F2a):
+ * devuelto verificado, descuento económico, pendiente, causas y cobertura.
+ */
+function agregarCompra(compra: CompraInfo, own: DevolucionProyectada[]) {
+  const anulada = compra.anulado;
+  let devuelto = 0n,
+    descuento = 0n,
+    pendiente = 0n;
+  const causas = new Set<CausaCobertura>();
+  for (const d of own) {
+    if (d.verificado) devuelto += d.importe;
+    if (d.elegible) descuento += d.importe;
+    if (d.vinculo!.estado === "Revisar") pendiente += d.importe;
+    if (d.causa) causas.add(d.causa);
+    for (const f of d.flags) causas.add(f);
+  }
+  if (anulada) causas.add("compraInvalida");
+  if (!clasificada(compra.clasificacion) && !anulada)
+    causas.add("sinClasificacion");
+  if (!compra.ciclo && !anulada) causas.add("periodoNoResoluble");
+  const exceso = devuelto > compra.importe;
+  const capacidad = anulada || exceso ? null : compra.importe - devuelto;
+  const gre =
+    anulada || descuento > compra.importe ? null : compra.importe - descuento;
+  const cobertura: Cobertura = anulada
+    ? "No disponible"
+    : causas.size || exceso
+      ? "Parcial"
+      : "Completa";
+  return { devuelto, descuento, pendiente, causas, exceso, capacidad, gre, cobertura };
+}
+
 /* ------------------------------------------------------------------ R1/R3 */
 
 export type DevolucionesResumen = {
@@ -358,31 +393,16 @@ export function proyeccionDevolucionesCompra(
         "Solo una compra individual (Gasto no Terminal) admite devoluciones.",
       );
     const own = all.filter((d) => d.compra === compraId && d.vinculo);
-    const anulada = compra.anulado;
-    let devuelto = 0n,
-      descuento = 0n,
-      pendiente = 0n;
-    const causas = new Set<CausaCobertura>();
-    for (const d of own) {
-      if (d.verificado) devuelto += d.importe;
-      if (d.elegible) descuento += d.importe;
-      if (d.vinculo!.estado === "Revisar") pendiente += d.importe;
-      if (d.causa) causas.add(d.causa);
-      for (const f of d.flags) causas.add(f);
-    }
-    if (anulada) causas.add("compraInvalida");
-    if (!clasificada(compra.clasificacion) && !anulada)
-      causas.add("sinClasificacion");
-    if (!compra.ciclo && !anulada) causas.add("periodoNoResoluble");
-    const exceso = devuelto > compra.importe;
-    const capacidad =
-      anulada || exceso ? null : compra.importe - devuelto;
-    const gre = anulada || descuento > compra.importe ? null : compra.importe - descuento;
-    const cobertura: Cobertura = anulada
-      ? "No disponible"
-      : causas.size || exceso
-        ? "Parcial"
-        : "Completa";
+    const {
+      devuelto,
+      descuento,
+      pendiente,
+      causas,
+      exceso,
+      capacidad,
+      gre,
+      cobertura,
+    } = agregarCompra(compra, own);
     const resumen: DevolucionesResumen = {
       count: own.length,
       bruto: decimal(compra.importe)!,
@@ -561,4 +581,102 @@ export function integridadDevoluciones(db: Database, params = new URLSearchParam
       conteo,
     };
   })();
+}
+
+/* ------------------------------------------------- F2a-1 · consumidores */
+
+export type DescuentoCompra = {
+  compra: string;
+  /** Suma de las devoluciones económicamente elegibles de ESTA compra. */
+  descuentoEconomico: bigint;
+  devueltoVerificado: bigint;
+  pendienteRevision: bigint;
+  /** La devolución verificada supera la compra: GRE no disponible, sin max(0). */
+  exceso: boolean;
+  cobertura: Cobertura;
+  causas: CausaCobertura[];
+  /** IDs de los movimientos de devolución vigentes vinculados a la compra. */
+  devoluciones: string[];
+};
+
+/**
+ * SPEC39 §3/§10 · descuento económico POR COMPRA para un conjunto de IDs que el
+ * consumidor ya ha seleccionado con sus propios filtros (Partida, REF, fecha de
+ * compra, ciclo). Reutiliza la proyección única; nunca devuelve una bolsa por
+ * Partida y solo resta devoluciones vinculadas a esos IDs. Una compra sin
+ * devoluciones devuelve cero con cobertura completa (cero con hechos ≠ ausencia
+ * la decide el consumidor, que ve los hechos de la compra).
+ *
+ * `proyeccion` permite al consumidor derivar una vez y consultar varios
+ * conjuntos (p. ej. un Presupuesto tras otro) sin segunda derivación.
+ */
+export function descuentoPorCompras(
+  db: Database,
+  ids: Iterable<string>,
+  proyeccion: ReturnType<typeof proyectarDevoluciones> = proyectarDevoluciones(db),
+): Map<string, DescuentoCompra> {
+  const wanted = new Set(ids);
+  const byCompra = new Map<string, DevolucionProyectada[]>();
+  for (const d of proyeccion.items)
+    if (d.vinculo && d.compra && wanted.has(d.compra))
+      byCompra.set(d.compra, [...(byCompra.get(d.compra) ?? []), d]);
+  const out = new Map<string, DescuentoCompra>();
+  for (const id of wanted) {
+    const own = byCompra.get(id) ?? [];
+    const compra = proyeccion.compras.get(id);
+    if (!compra) {
+      out.set(id, {
+        compra: id,
+        descuentoEconomico: 0n,
+        devueltoVerificado: 0n,
+        pendienteRevision: 0n,
+        exceso: false,
+        cobertura: "Completa",
+        causas: [],
+        devoluciones: [],
+      });
+      continue;
+    }
+    const a = agregarCompra(compra, own);
+    out.set(id, {
+      compra: id,
+      descuentoEconomico: a.descuento,
+      devueltoVerificado: a.devuelto,
+      pendienteRevision: a.pendiente,
+      // Alineado con R1: el GRE solo es no disponible si el descuento supera la compra.
+      exceso: a.descuento > compra.importe,
+      cobertura: a.cobertura,
+      causas: causasCobertura.filter((c) => a.causas.has(c)),
+      devoluciones: own.map((d) => d.id),
+    });
+  }
+  return out;
+}
+
+export type DescuentoAgregado = {
+  descuento: bigint;
+  exceso: boolean;
+  cobertura: Cobertura;
+  causas: CausaCobertura[];
+};
+/** Suma los descuentos de un conjunto ya seleccionado (céntimos, bigint). */
+export function agregarDescuentos(
+  descuentos: Iterable<DescuentoCompra>,
+): DescuentoAgregado {
+  let descuento = 0n,
+    exceso = false,
+    parcial = false;
+  const causas = new Set<CausaCobertura>();
+  for (const d of descuentos) {
+    descuento += d.descuentoEconomico;
+    exceso ||= d.exceso;
+    parcial ||= d.cobertura !== "Completa";
+    for (const c of d.causas) causas.add(c);
+  }
+  return {
+    descuento,
+    exceso,
+    cobertura: parcial || exceso ? "Parcial" : "Completa",
+    causas: causasCobertura.filter((c) => causas.has(c)),
+  };
 }

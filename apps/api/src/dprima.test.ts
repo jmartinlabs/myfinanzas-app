@@ -881,6 +881,86 @@ test("A3: una devolución de compra anterior a la planificación no reduce G", (
   db.close();
 });
 
+test("F2A1-G: gastoNeto/G de financiación NO cambia con devoluciones (clasificación, ventana y fórmula intactas; F7)", () => {
+  const { db, sub, account } = setup("500");
+  const root = partida(db, sub.id, "Raíz G inmutable");
+  configure(db, root.id, { fuente: "Aportación a saldo" });
+  const daughter = partida(db, sub.id, "Hija G inmutable");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const outside = partida(db, sub.id, "Partida ajena G");
+  cycle(db, "2026-05-20");
+  const c = cycle(db, "2026-06-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-07-01",
+    saldoInicial: "500",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "1000", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  const refund = (compra: string, fecha: string, importe: string) =>
+    add(db, {
+      tipo: "Devolución de gasto",
+      fecha,
+      importe,
+      saldo: account.id,
+      partida: daughter.id,
+      concepto: "Devolución ficticia G",
+      nota: "",
+      devolucion: {
+        estado: "Verificado",
+        compra,
+        evidenciaRelacion: "Motivo comercial ficticio",
+        elegibilidad: "Acreditada",
+        cicloOrigen: "1",
+        evidenciaOrigenTemporal: "Documento de compra ficticio",
+      },
+    }).movimiento.id as string;
+  const previous = expense(db, account.id, daughter.id, "2026-01-10", "30");
+  const a = expense(db, account.id, daughter.id, "2026-05-25", "100");
+  const b = expense(db, account.id, daughter.id, "2026-05-26", "50");
+  // Compra anterior a la ventana: su abono no reduce G (A3).
+  refund(previous.movimiento.id, "2026-06-05", "10");
+  refund(a.movimiento.id, "2026-06-06", "20");
+  const contradictory = refund(b.movimiento.id, "2026-06-07", "7");
+  // Copia legacy contradictoria (fixture SQL ficticio): G conserva la precedencia
+  // antigua d.partida ?? m.partida ?? compra.partida; SPEC39 F7 la sustituirá.
+  db.run("UPDATE movimiento_devolucion SET partida=? WHERE movimiento=?", [
+    outside.id,
+    contradictory,
+  ]);
+  const g = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  // Valores fijados contra origin/test (d7aaabf3) ANTES de F2a-1.
+  expect(g.G).toEqual({
+    bruto: "150.00",
+    devoluciones: "20.00",
+    neto: "130.00",
+    parcial: false,
+  });
+  db.close();
+});
+
 test("A4: la fuente aplicada en el ciclo manda en la apertura", () => {
   const { db, sub, account } = setup("0");
   const root = partida(db, sub.id, "Raíz fuente aplicada");
@@ -938,7 +1018,7 @@ test("A4: la fuente aplicada en el ciclo manda en la apertura", () => {
   db.close();
 });
 
-test("A5: el mensual de Gasto real conserva el importe íntegro", () => {
+test("A5: el mensual de Gasto real publica el bruto, el descuento de las compras del ciclo y la ejecución neta (GRE)", () => {
   const { db, sub, account } = setup("500");
   const root = partida(db, sub.id, "Raíz íntegra");
   configure(db, root.id, { fuente: "Gasto real" });
@@ -967,7 +1047,10 @@ test("A5: el mensual de Gasto real conserva el importe íntegro", () => {
   const item = mensual.items.find((i) => i.raiz === root.id)!;
   expect(item.bruto).toBe("100.00");
   expect(item.devoluciones).toBe("20.00");
-  expect(item.ejecutado).toBe("100.00");
+  // #538 F2a-1 · cambio semántico declarado (SPEC39 §10 «Dprima ejecución mensual», §11.2):
+  // executed pasa de bruto a GRE por IDs de compras del ciclo (antes 100.00).
+  expect(item.ejecutado).toBe("80.00");
+  expect(item.abonosBancarios).toBe("20.00");
   expect(item.pendiente).toBeNull();
   db.close();
 });
