@@ -308,8 +308,8 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 ## 12 · Cambio consecuente en spec05
 
 spec05 (§D5, AC-31) reserva las salidas `interno → Exterior`. Esta enmienda abre **una sola
-excepción**: la regularización CAT013 del §5. Igual que hizo D5, se añadirá a spec05 una nota
-breve que remita aquí, sin cambiar el texto aprobado del resto. Exterior ordinario sigue
+excepción**: la regularización CAT013 del §5. Igual que hizo D5, spec05 incluye una **nota de referencia** (§D5-5, añadida con esta propuesta)
+que remite aquí y no cambia ninguno de sus criterios aprobados. Exterior ordinario sigue
 reservado.
 
 ## 13 · Fuera de alcance
