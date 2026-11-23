@@ -85,6 +85,14 @@ test("F2A1-UI-09: el rótulo de abonos aclara que no es el flujo bancario comple
   expect(ROTULO_ABONOS).not.toContain("Flujo bancario");
   expect(NOTA_ATRIBUCION).toContain("no son el flujo bancario completo");
   expect(NOTA_ATRIBUCION).toContain("huérfanas");
+  // Precisión de Álex: la devolución elegible SÍ reduce el GRE; lo que no se hace es descontar otra vez el campo informativo de abonos.
+  expect(NOTA_ATRIBUCION).toContain("ya reducen el gasto real económico de la compra de origen");
+  expect(NOTA_ATRIBUCION).toContain("no se descuentan de nuevo del gasto real económico");
+  expect(NOTA_ATRIBUCION).not.toContain("no reducen el gasto real económico");
+  // Dónde se ven las huérfanas y Revisar: Movimientos e integridad global, no la cobertura de la raíz.
+  expect(NOTA_ATRIBUCION).toContain("Movimientos y en la integridad global");
+  expect(NOTA_ATRIBUCION).toContain("sin atribución de Partida cuando esta no es demostrable");
+  expect(NOTA_ATRIBUCION).not.toContain("visibles en la cobertura");
 });
 
 test("F2A1-UI-10: «—» si la columna no aplica a la fuente y «No disponible» solo si aplica y no es verificable; cero no es ausencia", () => {

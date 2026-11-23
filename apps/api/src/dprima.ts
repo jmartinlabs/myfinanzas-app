@@ -1258,8 +1258,11 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
         cobertura = discount.cobertura;
         causas = discount.causas;
         // Abonos VINCULADOS Y VERIFICADOS (Verificado, incluida No acreditada) por fecha real,
-        // atribuidos por la compra vigente. NO es el flujo bancario completo: excluye
-        // huérfanas, Revisar y compras inválidas (visibles en `causas`). No reduce el GRE.
+        // atribuidos por la compra vigente. Es informativo: NO se descuenta de nuevo del GRE;
+        // las devoluciones económicamente elegibles ya reducen el GRE de la compra de origen
+        // (`devoluciones`). NO es el flujo bancario completo: las huérfanas, Revisar y
+        // compras inválidas no suman a esta raíz y son visibles en Movimientos / integridad
+        // global (R4), sin atribución de Partida cuando esta no es demostrable.
         abonos = sum(
           projection.items
             .filter(

@@ -12,7 +12,7 @@ export const NOTA_DESVIACION =
   "Pendiente es la desviación analítica Del mes − Ejecutado, no dinero disponible: no habilita comprometer, aportar ni transferir.";
 export const ROTULO_ABONOS = "Abonos vinculados verificados (por fecha real)";
 export const NOTA_ATRIBUCION =
-  "Las devoluciones se descuentan de la compra a la que se vinculan, aunque el abono llegue en otro ciclo. Los abonos vinculados verificados se muestran aparte por su fecha real: no son el flujo bancario completo, porque excluyen huérfanas, vínculos en revisión y compras no válidas (visibles en la cobertura), y no reducen el gasto real económico.";
+  "Las devoluciones se descuentan de la compra a la que se vinculan, aunque el abono llegue en otro ciclo: las devoluciones económicamente elegibles ya reducen el gasto real económico de la compra de origen. Los abonos vinculados verificados se muestran aparte por su fecha real: no son el flujo bancario completo y no se descuentan de nuevo del gasto real económico. Las huérfanas, los vínculos en revisión y las compras no válidas no suman a esta Partida: quedan visibles en Movimientos y en la integridad global, sin atribución de Partida cuando esta no es demostrable.";
 
 /** «—» = la columna no aplica a la fuente; «No disponible» = aplica pero no es verificable. */
 export const NO_APLICA = "—";
