@@ -34,3 +34,8 @@ test-results/
 .codex/agents/models-local-*.toml
 .claude/agents/models-local-*.md
 .opencode/opencode.json
+
+# Permisos locales por usuario de Claude Code; nunca se versionan
+.claude/settings.local.json
+# Declaración local del tracker; nunca se versiona
+.agents/*.local.*

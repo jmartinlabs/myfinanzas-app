@@ -37,11 +37,11 @@ class ValidationTests(unittest.TestCase):
    self.change('README.md','text absent from this README','replacement')
  def test_rule_rewording_passes_validation(self):
   # The contract is the rule, not its wording: a legitimate rewrite must not fail CI.
-  self.change('specs/methodology/dynamic-agents.md','Replace stale current-state labels',
+  self.change('specs/methodology/dynamic-agents-external-clients.md','Replace stale current-state labels',
               'Overwrite outdated status labels')
   self.assertEqual(validate(self.root),[])
  def test_rule_removal_still_fails_validation(self):
-  self.change('specs/methodology/dynamic-agents.md','Replace stale current-state labels','')
+  self.change('specs/methodology/dynamic-agents-external-clients.md','Replace stale current-state labels','')
   self.assertRule('coordination')
  def test_structure(self):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
@@ -118,13 +118,13 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/dynamic-agents.md', 'fresh bounded context by default'),
    ('specs/methodology/dynamic-agents.md', 'not repeated status reminders'),
    ('specs/methodology/dynamic-agents.md', 'QA independently'),
-   ('specs/methodology/dynamic-agents.md', 'Optional OpenCode adapters may be present under'),
-   ('specs/methodology/dynamic-agents.md', 'explicit user authorization and supported tools'),
-   ('specs/methodology/dynamic-agents.md', 'separate checkouts/worktrees AND non-overlapping ownership'),
-   ('specs/methodology/dynamic-agents.md', 'Separate test ports, databases'),
-   ('specs/methodology/dynamic-agents.md', 'other-client usage is'),
-   ('specs/methodology/dynamic-agents.md', 'Replace stale current-state labels'),
-   ('specs/methodology/dynamic-agents.md', 'savings still need measurement'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'Optional OpenCode adapters may be present under'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'explicit user authorization and supported tools'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'separate checkouts/worktrees AND non-overlapping ownership'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'Separate test ports, databases'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'other-client usage is'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'Replace stale current-state labels'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'savings still need measurement'),
    ('templates/agent-work-packet.md', 'Client / version / session ID'),
    ('templates/agent-work-packet.md', 'Blocking notice'),
    ('templates/agent-work-packet.md', 'PR none unless the authorized scope includes publication'),
@@ -138,7 +138,7 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/coordinator-communication.md', 'A received handoff never authorizes merge'),
    ('specs/methodology/myfinanzas-coordination.md', 'nunca auto-merge'),
    ('specs/methodology/epic-orchestration.md', 'Branch/PR publication is ordinary inside the authorized scope'),
-   ('.agents/skills/orchestrate/SKILL.md', 'progressively spaced CI queries'),
+   ('.agents/skills/orchestrate/reference.md', 'progressively spaced CI queries'),
    ('.agents/skills/orchestrate/SKILL.md', 'A required check that fails and can be corrected'),
    ('.agents/skills/orchestrate/SKILL.md', '#7-closing-a-turn-or-stopping'),
    ('.agents/skills/dev/SKILL.md', 'negative/integration cases before code'),
@@ -180,7 +180,7 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/model-selection.md', '**5% or less:**'),
    ('specs/methodology/model-selection.md', '**including QA**'),
    ('specs/methodology/model-selection.md', 'after this warning'),
-   ('specs/methodology/dynamic-agents.md', 'OpenCode is not enabled'),
+   ('specs/methodology/dynamic-agents-external-clients.md', 'OpenCode is not enabled'),
    ('templates/agent-work-packet.md', 'HANDOFF → CODEX'),
    ('.agents/skills/orchestrate/SKILL.md', 'run `$handoff`'),
    ('.agents/skills/handoff/SKILL.md', 'Reread the written checkpoint'),
@@ -248,8 +248,8 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/dynamic-agents.md', 'Promise no persistence'),
    ('specs/methodology/dynamic-agents.md', 'Never claim a subagent'),
    ('specs/methodology/dynamic-agents.md', 'No universal agent count'),
-   ('.agents/skills/orchestrate/SKILL.md', 'execution mode adaptively'),
-   ('.agents/skills/orchestrate/SKILL.md', 'coordinator availability'),
+   ('.agents/skills/orchestrate/reference.md', 'execution mode adaptively'),
+   ('.agents/skills/orchestrate/reference.md', 'coordinator availability'),
    ('.agents/skills/orchestrate/SKILL.md', 'background persistence'),
    ('specs/methodology/myfinanzas-coordination.md', '### Modo de ejecución'),
    ('specs/methodology/myfinanzas-coordination.md', 'dynamic-agents.md#execution-mode-direct-foreground-background'),
@@ -271,9 +271,9 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/dynamic-agents.md', '## Delegation preference'),
    ('specs/methodology/dynamic-agents.md', 'one executor per task'),
    ('specs/methodology/dynamic-agents.md', 'Never create artificial agents'),
-   ('.agents/skills/orchestrate/SKILL.md', 'prefer a specialist for substantial'),
+   ('.agents/skills/orchestrate/reference.md', 'prefer a specialist for substantial'),
    ('.agents/skills/orchestrate/SKILL.md', 'one executor per task'),
-   ('.agents/skills/orchestrate/SKILL.md', 'never invent agents'),
+   ('.agents/skills/orchestrate/reference.md', 'never invent agents'),
    ('specs/methodology/epic-orchestration.md', 'one executor per task'),
   )
   for name,token in cases:
@@ -331,8 +331,8 @@ class ValidationTests(unittest.TestCase):
    ('specs/README.md', 'mismo cambio de la tarea'),
    ('specs/README.md', 'nunca en una PR creada solo para borrarlo'),
    ('.agents/skills/orchestrate/SKILL.md', 'limpieza-local-posterior-al-merge'),
-   ('.agents/skills/orchestrate/SKILL.md', 'next-session-and-checkpoint-retirement'),
-   ('.agents/skills/orchestrate/SKILL.md', 'Preserve dirty, unknown or other-task resources.'),
+   ('.agents/skills/orchestrate/reference.md', 'next-session-and-checkpoint-retirement'),
+   ('.agents/skills/orchestrate/reference.md', 'Preserve dirty, unknown or other-task resources.'),
   )
   for name,token in cases:
    with self.subTest(name=name,token=token):

@@ -7,7 +7,11 @@ import runpy
 import sys
 from urllib.parse import unquote, urlsplit
 SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev', 'relay')
-REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md',
+# Contracts split into a core plus an on-demand part are checked as one contract, so a rule is
+# enforced wherever it lives.
+CONTRACT_PARTS = {'specs/methodology/dynamic-agents.md': ('specs/methodology/dynamic-agents-external-clients.md',),
+ '.agents/skills/orchestrate/SKILL.md': ('.agents/skills/orchestrate/reference.md',)}
+REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md','specs/methodology/dynamic-agents-external-clients.md','.agents/skills/orchestrate/reference.md',
  *(f'specs/guidelines/{n}.md' for n in ('architecture','ui','quality','security')),
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
  *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
@@ -37,7 +41,9 @@ def validate(root):
  root=Path(root).resolve(); errors=[]
  def fail(rule,msg): errors.append(f'{rule}: {msg}')
  cache={}
- def read(name): return text(root/name)
+ def read(name):
+  parts=[root/name,*(root/extra for extra in CONTRACT_PARTS.get(name,()))]
+  return '\n'.join(text(q) for q in parts if q.is_file()) if (root/name).is_file() else ''
  def text(p):
   # Several rules inspect the same document; read each one once per run.
   key=str(p)
