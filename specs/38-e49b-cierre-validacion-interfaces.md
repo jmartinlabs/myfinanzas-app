@@ -23,7 +23,7 @@ ejecutada y todos sus criterios quedan **UNRUN** hasta que exista implementació
 
 ---
 
-Contrato único de esta reconciliación local. Borrador para aprobación: no autoriza DEV, publicación, datos reales ni despliegue. Las reglas de dominio no afectadas permanecen en su SPEC propietaria.
+Contrato único de esta reconciliación local, **aprobado el 2026-11-20** (véase la cabecera): no autoriza DEV, publicación, datos reales ni despliegue. Las reglas de dominio no afectadas permanecen en su SPEC propietaria.
 
 ## 1. Errores y precedencia
 
