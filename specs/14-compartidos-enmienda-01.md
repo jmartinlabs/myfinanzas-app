@@ -4,7 +4,8 @@ Status: **PROPUESTA — pendiente de la revisión focal de Álex y de la aprobac
 **Elecciones del usuario (respuesta en chat, 2026-11-23):** R1, R3, R4, R5, R6 y R7 según su
 recomendación; **R2 por porciones**. Son elecciones de contenido, **no** la aprobación formal de
 esta enmienda ni de ninguna otra cosa (merge, DEV, migraciones, datos). La combinación de R2 con
-R5 se resuelve en §7.3 y **requiere confirmación** del usuario.
+R5 se resuelve en §7.3 con una tabla propia de porciones: **confirmado por el usuario el
+2026-11-23** (respuesta en chat, «Sí, tabla propia»).
 **NO AUTORIZA DEV, SQL, migraciones, cambio de datos ni despliegue.**
 Fecha: 2026-11-23. Issue: #561.
 Afecta a la [especificación 14](14-compartidos-specification.md). Su base, Base B y la
@@ -56,12 +57,12 @@ Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuar
 | **R2** | ¿Cómo se acredita un movimiento bancario? | **Recomendación de Álex: acreditaciones parciales** sobre un único Movimiento real. Cada porción es individual y auditable, con `suma acreditada ≤ importe real` y sin reutilizar una porción (SPEC39 §9). No se fabrican Movimientos bancarios, y se conserva la conciliación 1:1 con el extracto. **Efectos:** la cardinalidad deja de ser 0..1 (hay varias filas por Movimiento); el importe de cada porción se guarda en la acreditación, lo que **cambia I-D5-3 «sin copia de importe»** solo para las regularizaciones; hace falta un contador de porciones y su idempotencia; R5 y los E1-AC se adaptan. | **Movimiento entero a un único tercero, 0..1** (como el texto actual, igual que D5). Más simple, sin copia de importe. **Coste:** un cargo bancario que devuelva a dos terceros o a dos casos debe partirse en varios Movimientos, lo que rompe la conciliación 1:1. |
 | **R3** | ¿Solo para el exceso que causa una devolución? | **Para cualquier `Exceso_p` del tercero**, venga de una devolución, de un cambio de partes o de un pago de más. La operación es la misma: devolverle dinero. | Exigir que exista una devolución vinculada. Añade un vínculo sin garantía adicional y deja sin vía el pago de más. |
 | **R4** | ¿Se puede regularizar a un tercero dado de baja? | **Sí, hasta su `Aportado_p` neto íntegro.** El motor no calcula cuota ni Exceso para una baja (su Asignado es «No aplica» y su aportado ya cuenta como atribución parcial), así que el límite no puede ser `Exceso_p`. La baja impide nuevas aportaciones, no devolver lo que puso. SPEC39 §9 incluye a los inactivos con saldo pendiente. **Es una decisión financiera tuya.** El cambio de participante de una regularización exige un Tercero activo, como en D5 §15.8. | Exigir que se reactive el participante antes de pagarle. Mantiene un único límite `Exceso_p`, a costa de reabrir el participante. |
-| **R5** | ¿Dónde se guarda? | *(Elegida por el usuario; ver §7.3: combinada con R2 por porciones, la clave de D5 impide la columna, y el sentido se garantiza con tabla propia, **pendiente de confirmar**.)* **En la misma `movimiento_compartido`, con una columna `sentido` (`Aportación` o `Regularización`)** ligada por CHECK y trigger a `origen`/`destino` del movimiento. Hay lectores de esa tabla (§7.7) que, sin el sentido explícito, sumarían una salida como cobro. | Deducir el sentido del movimiento, sin columna. Es menos auditable y obliga a que cada lector lo recuerde. |
+| **R5** | ¿Dónde se guarda? | *(Elegida por el usuario; ver §7.3: combinada con R2 por porciones, la clave de D5 impide la columna, y el sentido se garantiza con tabla propia, **confirmado por el usuario el 2026-11-23**.)* **En la misma `movimiento_compartido`, con una columna `sentido` (`Aportación` o `Regularización`)** ligada por CHECK y trigger a `origen`/`destino` del movimiento. Hay lectores de esa tabla (§7.7) que, sin el sentido explícito, sumarían una salida como cobro. | Deducir el sentido del movimiento, sin columna. Es menos auditable y obliga a que cada lector lo recuerde. |
 | **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − `descuentoEconomico` de SPEC39 §4 (solo devoluciones elegibles; una Verificada No acreditada no descuenta). El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
 | **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) y #549 integrados, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
 
-**Estado del texto.** Los §3–§11 recogen las elecciones del usuario: R1, R3, R4, R5 (con la
-salvedad del §7.3), R6 y R7 según su recomendación, y **R2 por porciones**. Siguen sin ser una
+**Estado del texto.** Los §3–§11 recogen las elecciones del usuario: R1, R3, R4, R5 (con tabla
+propia, §7.3, confirmada), R6 y R7 según su recomendación, y **R2 por porciones**. Siguen sin ser una
 aprobación formal de la enmienda. Tras estas elecciones se reescribieron §3, §5, §6, §7, §8,
 §10, §11 y §13.
 
@@ -240,7 +241,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
    **sentido explícito** de R5 queda garantizado por construcción: lo que está en esa tabla es
    regularización y lo que está en `movimiento_compartido` es aportación. **R5, tal como se
    eligió (una columna `sentido` en `movimiento_compartido`), se sustituye por esta separación
-   porque la clave de D5 lo impide; requiere confirmación del usuario.** Con esto, los
+   porque la clave de D5 lo impide; confirmado por el usuario el 2026-11-23.** Con esto, los
    lectores actuales de `movimiento_compartido` no cambian y no pueden sumar una salida como
    cobro.
    - El importe de la porción **se copia en la acreditación**: es una excepción a I-D5-3 («sin
