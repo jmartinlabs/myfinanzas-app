@@ -8,6 +8,7 @@ import { createCycle, cycleContext } from "./ciclos";
 import { getMovement, previewMovement, writeMovement } from "./movimientos";
 import { activateRegimen, getComidaMovement, listComida, listComprasR5, prepareRegimen } from "./comida";
 import { financeRevision } from "./movement-ledger";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 /**
  * #538 F1b (#571) · R5 selector de compras y devolucionRevision en la ficha (specs/38 §2/§6).
@@ -96,6 +97,9 @@ function add(db: Database, body: Record<string, unknown>) {
     null,
     false,
     now,
+    undefined,
+    // #572: el gate de producción está cerrado; las pruebas lo reciben inyectado.
+    gateAbiertoParaPruebas,
   );
 }
 let seq = 0;
