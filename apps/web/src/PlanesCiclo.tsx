@@ -3,6 +3,13 @@ import { api, eur, ApiError } from "./api";
 import { planDeltaEntries } from "./plan-delta";
 import { RepartoMensual } from "./RepartoMensual";
 import {
+  EjecutadoCelda,
+  NOTA_ATRIBUCION,
+  NOTA_DESVIACION,
+  ROTULO_GRE,
+  ROTULO_FLUJO,
+} from "./devolucion-rotulos";
+import {
   Alert,
   DataList,
   Field,
@@ -25,6 +32,11 @@ type Item = {
   linea: Line | null;
   aTransferir: string | null;
   ejecutado: string | null;
+  /** F2a-1: bruto y devoluciones de las compras del intervalo (GRE = bruto − devoluciones). */
+  bruto?: string | null;
+  devoluciones?: string | null;
+  cobertura?: string | null;
+  causas?: string[] | null;
   pendiente: string | null;
   estado: string | null;
   motivo: string | null;
@@ -301,7 +313,14 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       id: "ejecutado",
       header: "Ejecutado",
       kind: "amount",
-      cell: (item) => amount(item.ejecutado),
+      cell: (item) => (
+        <EjecutadoCelda
+          fuente={item.presupuesto.fuente}
+          valor={item.ejecutado}
+          cobertura={item.cobertura}
+          causas={item.causas}
+        />
+      ),
     },
     {
       id: "pendiente",
@@ -451,6 +470,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
               </button>
             </div>
           )}
+          <p className="muted">{NOTA_DESVIACION}</p>
           <div className="desktop-list plan-table">
             <Table
               caption="Plan del ciclo por Presupuesto"
@@ -683,6 +703,16 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
                 Total ejecutado: {amount(detail.ejecutado)}. {detail.motivo} ·{" "}
                 {detail.total} hechos elegibles.
               </p>
+              {detail.presupuesto.fuente === "Gasto real" &&
+                detail.bruto != null && (
+                  <p>
+                    {ROTULO_FLUJO} de las compras {amount(detail.bruto)} −
+                    devoluciones de esas compras {amount(detail.devoluciones)} ={" "}
+                    {ROTULO_GRE} {amount(detail.ejecutado)}.
+                  </p>
+                )}
+              <p>{NOTA_ATRIBUCION}</p>
+              <p>{NOTA_DESVIACION}</p>
               <p>
                 Solo hechos vigentes del periodo. Gasto real incluye cuotas y
                 Referencias; Aportación excluye Referencias y origen Exterior.
@@ -697,6 +727,9 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
                     }}
                   >
                     {m.fecha} · {m.tipo} · {amount(m.importe)}
+                    {m.descuentoEconomico && m.descuentoEconomico !== "0.00"
+                      ? ` · devolución −${eur(m.descuentoEconomico)}`
+                      : ""}
                   </a>
                 </p>
               ))}

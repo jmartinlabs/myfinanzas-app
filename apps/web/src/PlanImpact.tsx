@@ -1,6 +1,7 @@
 import { eur } from "./api";
+import { rotuloEjecutado } from "./devolucion-rotulos";
 type Result = {
-  presupuesto: { nombre: string };
+  presupuesto: { nombre: string; fuente?: string };
   ejecutado: string | null;
   pendiente: string | null;
   estado: string | null;
@@ -39,8 +40,11 @@ export function PlanImpact({
                   {d.antes.presupuesto.nombre} · {d.presupuesto}
                 </p>
                 <p>
-                  Ejecutado: {value(d.antes.ejecutado)} →{" "}
-                  {value(d.despues.ejecutado)}
+                  Ejecutado
+                  {rotuloEjecutado(d.antes.presupuesto.fuente)
+                    ? ` (${rotuloEjecutado(d.antes.presupuesto.fuente)})`
+                    : ""}
+                  : {value(d.antes.ejecutado)} → {value(d.despues.ejecutado)}
                 </p>
                 <p>
                   Pendiente: {value(d.antes.pendiente)} →{" "}

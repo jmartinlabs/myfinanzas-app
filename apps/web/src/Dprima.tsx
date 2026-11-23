@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { Alert, PageHead, TableScroll, Tag } from "./ui";
+import {
+  CabeceraEjecucionMensual,
+  EjecutadoCelda,
+  NOTA_ATRIBUCION,
+  NOTA_DESVIACION,
+} from "./devolucion-rotulos";
 
 type Cycle = {
   id: string;
@@ -62,6 +68,10 @@ type Mensual = {
     delMes: string | null;
     bruto: string | null;
     devoluciones: string | null;
+    /** F2a-1: abonos por fecha real del ciclo (flujo bancario), no descuento. */
+    abonosBancarios: string | null;
+    cobertura: string | null;
+    causas: string[] | null;
     ejecutado: string | null;
     pendiente: string | null;
     estado: string;
@@ -384,8 +394,11 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         {mensual ? (
           <>
             <p className="muted">{mensual.nota}</p>
+            <p className="muted">{NOTA_ATRIBUCION}</p>
+            <p className="muted">{NOTA_DESVIACION}</p>
             <TableScroll label="Tabla del plan mensual"><table className="table">
               <thead>
+                <CabeceraEjecucionMensual antes={6} />
                 <tr>
                   <th>Raíz</th>
                   <th>Fuente</th>
@@ -394,7 +407,8 @@ export function Dprima({ go }: { go: (p: string) => void }) {
                   <th>Esencial</th>
                   <th>Del mes</th>
                   <th>Bruto</th>
-                  <th>Devoluciones</th>
+                  <th>Abonos por fecha real</th>
+                  <th>Devoluciones de las compras del ciclo</th>
                   <th>Ejecutado</th>
                   <th>Pendiente</th>
                   <th>Estado</th>
@@ -1047,8 +1061,17 @@ function MensualRow({
         </td>
       ))}
       <td>{amount(item.bruto)}</td>
+      <td>{amount(item.abonosBancarios)}</td>
       <td>{amount(item.devoluciones)}</td>
-      <td>{amount(item.ejecutado)}</td>
+      <td>
+        <EjecutadoCelda
+          fuente={item.fuente}
+          valor={item.ejecutado}
+          cobertura={item.cobertura}
+          causas={item.causas}
+          vacio="No disponible"
+        />
+      </td>
       <td>{amount(item.pendiente)}</td>
       <td>
         <Tag inactive={item.estado === "No disponible"}>{item.estado}</Tag>
