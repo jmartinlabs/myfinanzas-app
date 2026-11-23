@@ -23,14 +23,22 @@ QA contract in [qa-review](../../roles/qa-review.md).
 ## Procedure
 1. Quota gate. Unreadable quota is reported as "not verified", not as normal or zero; at 25 % or less
    a task-specific authorization is required before launching.
-2. Record `git status` and the candidate SHA. Do not claim other agents' unpublished work.
-3. Run, read-only only:
-   - General: `codex review --base <base>` or `codex review --uncommitted`.
-   - Targeted: `codex exec --sandbox read-only --ephemeral -o <output file> "<short brief>"`.
+2. Before launching, check that `git rev-parse HEAD` equals the candidate SHA. If it does not, stop
+   and report it: never switch branch or checkout in a tree that may hold other agents' work. Then
+   save the fingerprint of the tree, which also covers changes that already existed (staged,
+   unstaged and untracked; ignored files are not covered):
+   `{ git rev-parse HEAD; git status --porcelain=v1 --untracked-files=all; git diff --binary HEAD; git ls-files --others --exclude-standard -z | xargs -0 shasum; } | shasum`
+   Do not claim other agents' unpublished work.
+3. Run with the sandbox forced to read-only and approvals that never escalate, on every path:
+   - General: `codex review -c 'sandbox_mode="read-only"' -c 'approval_policy="never"' --base <base>`
+     (or `--uncommitted`). `codex review` has no `--sandbox` flag: only `-c` sets it.
+   - Targeted: `codex exec --sandbox read-only -c 'approval_policy="never"' --ephemeral -o <output file> "<short brief>"`.
    The brief states objective, risks and affected paths; it never carries the Claude conversation.
    Leave model and effort as configured unless the user asked otherwise. Runs may be background.
-4. Verify the real result: exit code, existing non-empty output, and `git status`/`git diff`
-   identical to step 2. If the tree changed, stop and report it.
+4. Verify the real result: exit code, existing non-empty output, and that the run header printed by
+   the CLI shows `sandbox: read-only` and `approval: never`; otherwise the run did not meet the
+   authorization, so report it as such and do not rely on it. Recompute the step 2 fingerprint: it
+   must be identical. If it changed, stop and report it.
 5. Check each finding against the code. Report it as VERIFIED or NOT VERIFIED; list what could not
    be verified (for instance the effective model) as UNRUN or unverified, never as passed.
 

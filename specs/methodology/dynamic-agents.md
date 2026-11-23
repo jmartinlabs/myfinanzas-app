@@ -269,7 +269,8 @@ persistence or historical-integrity risk, or an Issue that expressly requests it
 each time. This is the only automatic client launch allowed; it is not a reviewer slot,
 not independent QA and not an approval. Procedure: [codex-review](../../.agents/skills/codex-review/SKILL.md).
 
-- Scope: `codex review` or `codex exec --sandbox read-only`; never edits, commits, PRs, `Status`
+- Scope: `codex review` or `codex exec`, both forced to `sandbox_mode=read-only` and
+  `approval_policy=never` and checked against the CLI header; never edits, commits, PRs, `Status`
   moves or merges. No new hooks or dependencies. Model, effort, parallelism and consumption follow
   the existing methodology and the user's own Codex configuration; any new rule on them is the user's decision.
 - The [quota gate](model-selection.md#quota-and-dispatch-gate) applies unchanged, including its
