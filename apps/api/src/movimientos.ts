@@ -47,6 +47,7 @@ import {
   applyComidaMetadata,
   comidaDevolucion,
   comidaMetadata,
+  devolucionRevision,
   revalidateDevolucionPropia,
   revalidateDevolucionesCompra,
 } from "./comida";
@@ -507,6 +508,8 @@ export function getMovement(db: Database, id: string) {
     movimiento: decorate(db, find(db, id), cycleMaster(db)),
     // R3 (SPEC39 §5.2): exactamente el `resumen` de R1, misma función.
     devolucionesResumen: devolucionesResumenGasto(db, id),
+    // specs/38 §6: null explícito si la devolución no tiene fila de atribución.
+    devolucionRevision: devolucionRevision(db, id),
     auditoria: db
       .query(
         "SELECT revision,accion,motivo,instante,actor,anterior,posterior FROM movement_audit WHERE id=? ORDER BY revision",
