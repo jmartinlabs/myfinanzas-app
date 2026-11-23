@@ -28,6 +28,12 @@ import {
 } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
 import {
+  DEVOLUCION_G1,
+  DEVOLUCION_G1_ID,
+  rectificarAnularCerrado,
+  useCapacidadDevolucion,
+} from "./devolucion-capacidad";
+import {
   ResumenAltaCoordinada,
   SeccionAltaCoordinada,
   coordinadoVacio,
@@ -150,7 +156,14 @@ type Audit = {
   anterior: Record<string, any> | null;
   posterior: Record<string, any>;
 };
-type Detail = { movimiento: Movement; auditoria: Audit[] };
+type Detail = {
+  movimiento: Movement;
+  auditoria: Audit[];
+  /** R3: resumen de devoluciones de la compra (raíz de la respuesta). */
+  devolucionesResumen?: { count: number } | null;
+  /** Mismo predicado que el gate del servidor (cualquier fila de vínculo). */
+  tieneVinculosDevolucion?: boolean;
+};
 const base = "/movimientos";
 const date = (v: string) => v.split("-").reverse().join("/");
 const cycle = (v: Cycle | null) =>
@@ -728,6 +741,8 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
     // vinculado. Se lee el mecanismo único: no hay una segunda fuente.
     [pendiente, setPendiente] = useState<TransferenciaPendienteDTO | null>(null),
     [pendienteRetry, setPendienteRetry] = useState(0);
+  // #572: gate de escrituras de devolución; ausente o error = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   useEffect(() => {
     let live = true;
     api<TransferenciaPendienteListaDTO>(
@@ -782,6 +797,14 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
     );
   if (!data) return <p role="status">Cargando Movimiento…</p>;
   const m = data.movimiento,
+    // Rectificar/anular una devolución, o una compra con vínculo, es una
+    // escritura de devolución (`specs/38` §4): cerrada mientras el gate lo esté.
+    escrituraDevolucionCerrada = rectificarAnularCerrado({
+      disponible: devolucionDisponible,
+      tipo: m.tipo,
+      devolucionesResumen: data.devolucionesResumen,
+      tieneVinculosDevolucion: data.tieneVinculosDevolucion,
+    }),
     field = (label: string, v: ReactNode) => (
       <div data-label={label}>
         <dt>{label}</dt>
@@ -805,12 +828,20 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
           <>
             <button
               className="secondary"
+              disabled={escrituraDevolucionCerrada}
+              aria-describedby={
+                escrituraDevolucionCerrada ? DEVOLUCION_G1_ID : undefined
+              }
               onClick={() => go(base + "/" + id + "/rectificar")}
             >
               Rectificar
             </button>
             <button
               className="secondary"
+              disabled={escrituraDevolucionCerrada}
+              aria-describedby={
+                escrituraDevolucionCerrada ? DEVOLUCION_G1_ID : undefined
+              }
               onClick={() => go(base + "/" + id + "/anular")}
             >
               Anular
@@ -818,6 +849,11 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
           </>
         )}
       </PageHead>
+      {escrituraDevolucionCerrada && !m.anulado && (
+        <p id={DEVOLUCION_G1_ID} className="help" role="note">
+          {DEVOLUCION_G1}
+        </p>
+      )}
       {m.anulado && (
         <div className="context-note">
           <p>
@@ -1129,12 +1165,17 @@ function MovementForm({
   initialType?: string;
 }) {
   const { options, error: optionsError, reload } = useOptions();
+  // #572: gate de escrituras de devolución; ausente o error de carga = cerrado.
+  const { disponible: devolucionDisponible } = useCapacidadDevolucion();
   const returnDraft =
     referenceReturn?.path ===
     (id ? base + "/" + id + "/rectificar" : base + "/nuevo")
       ? referenceReturn
       : null;
   const [old, setOld] = useState<Movement | null>(null),
+    [vinculos, setVinculos] = useState<
+      Pick<Detail, "devolucionesResumen" | "tieneVinculosDevolucion">
+    >({}),
     [form, setForm] = useState(
       returnDraft
         ? { ...empty, ...returnDraft.form }
@@ -1178,6 +1219,10 @@ function MovementForm({
       .then((d) => {
         if (!live) return;
         setOld(d.movimiento);
+        setVinculos({
+          devolucionesResumen: d.devolucionesResumen ?? null,
+          tieneVinculosDevolucion: d.tieneVinculosDevolucion,
+        });
         if (!initialized.current) {
           const m = d.movimiento;
           setForm({
@@ -1467,6 +1512,13 @@ function MovementForm({
     go(base + "/" + result.movimiento.id);
   }
   async function submit() {
+    // #572: ninguna ruta de escritura de devolución se llama con el gate cerrado
+    // (también con un borrador restaurado o un enlace directo a rectificar/anular).
+    if (bloqueaDevolucion) {
+      setError(DEVOLUCION_G1);
+      requestAnimationFrame(() => alert.current?.focus());
+      return;
+    }
     if (coordinado) {
       await submitCoordinado();
       return;
@@ -1661,6 +1713,14 @@ function MovementForm({
     (form.tipo === "Gasto" || form.tipo === "Amortización deuda") &&
     selected?.referenciaObligatoria === true &&
     selected?.referenciaDisponible === false;
+  const bloqueaDevolucion =
+    !devolucionDisponible &&
+    (form.tipo === "Devolución de gasto" ||
+      rectificarAnularCerrado({
+        disponible: devolucionDisponible,
+        tipo: old?.tipo,
+        ...vinculos,
+      }));
   const button = coordinado
     ? plan
       ? "Registrar operación"
@@ -1707,6 +1767,11 @@ function MovementForm({
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
+      {bloqueaDevolucion && (
+        <p id={DEVOLUCION_G1_ID} className="help" role="note">
+          {DEVOLUCION_G1}
+        </p>
+      )}
       {error && (
         <div tabIndex={-1} ref={alert}>
           <Alert>
@@ -1756,6 +1821,9 @@ function MovementForm({
                     "Tipo *",
                     <select
                       aria-label="Tipo *"
+                      aria-describedby={
+                        bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined
+                      }
                       value={form.tipo}
                       onChange={(e) => change("tipo", e.target.value)}
                     >
@@ -1764,7 +1832,12 @@ function MovementForm({
                       <option>Gasto</option>
                       <option>Transferencia</option>
                       <option>Amortización deuda</option>
-                      <option>Devolución de gasto</option>
+                      <option
+                        disabled={!devolucionDisponible}
+                        title={!devolucionDisponible ? DEVOLUCION_G1 : undefined}
+                      >
+                        Devolución de gasto
+                      </option>
                     </select>,
                   )}
                   {field(
@@ -2387,8 +2460,12 @@ function MovementForm({
               <button
                 className="primary"
                 type="submit"
+                aria-describedby={
+                  bloqueaDevolucion ? DEVOLUCION_G1_ID : undefined
+                }
                 disabled={
                   busy ||
+                  bloqueaDevolucion ||
                   !options ||
                   !!optionsError ||
                   conflict ||

@@ -4,6 +4,7 @@ import { ledgerRows, fingerprint, type LedgerRow } from "./movement-ledger";
 import { getSaldo, decimal, money, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
 import { e35Metrics } from "./e35";
+import { exigirEscrituraDevolucion, type DevolucionGate } from "./devolucion-gate";
 
 /**
  * COMIDA-UNICO-01 — Revisión Comida over central Movements.
@@ -94,6 +95,10 @@ export function comidaDevolucion(db: Database, id: string) {
   if (!comidaInstalled(db, "movimiento_devolucion")) return null;
   return (db.query(`${devolucionSelect} WHERE movimiento=?`).get(id) ??
     null) as ComidaDevolucion | null;
+}
+/** Revisión de `movimiento_devolucion`; `null` explícito sin fila de atribución (specs/38 §6). */
+export function devolucionRevision(db: Database, id: string): number | null {
+  return comidaDevolucion(db, id)?.revision ?? null;
 }
 export function comidaRol(db: Database, id: string) {
   if (!comidaInstalled(db, "movimiento_rol_financiacion")) return null;
@@ -197,6 +202,123 @@ export function comidaOptions(db: Database) {
   }))();
 }
 
+function validateDateRange(desde: string | null, hasta: string | null) {
+  if (desde && !/^\d{4}-\d{2}-\d{2}$/.test(desde))
+    throw new Problem(422, "VALIDATION", "Fecha inicial inválida.");
+  if (hasta && !/^\d{4}-\d{2}-\d{2}$/.test(hasta))
+    throw new Problem(422, "VALIDATION", "Fecha final inválida.");
+  if (desde && hasta && desde > hasta)
+    throw new Problem(422, "VALIDATION", "El intervalo de fechas es inválido.");
+}
+
+/** Orden estable de listComida: fecha desc, id numérico desc (longitud, luego texto). */
+const ordenComida = (
+  a: { fecha: string; id: string },
+  b: { fecha: string; id: string },
+) =>
+  b.fecha.localeCompare(a.fecha) ||
+  b.id.length - a.id.length ||
+  b.id.localeCompare(a.id);
+
+export const COMIDA_PAGE_SIZE = 100;
+
+/** Importe de filtro R5: string decimal EUR exacto, no negativo; vacío = ausente. */
+function r5Money(raw: string | null, name: string): bigint | null {
+  if (raw === null || raw === "") return null;
+  if (!/^(0|[1-9]\d*)(\.\d{1,2})?$/.test(raw))
+    throw new Problem(422, "VALIDATION", `${name} inválido.`, {
+      [name]: "Importe EUR exacto, no negativo, máximo dos decimales.",
+    });
+  const v = money(raw)!;
+  return v;
+}
+
+/**
+ * R5 (specs/38 §2 y §6; SPEC39 AC-D33): selector de compras para atribuir o
+ * reatribuir una devolución. Solo lectura.
+ *
+ * Discriminación EXPLÍCITA: R5 se activa únicamente por la **presencia** de
+ * `importeMin` o `importeMax` en la URL (incluso vacíos, como en la URL canónica
+ * de specs/38 §2: `...&importeMin=&importeMax=&page=`). Una petición legacy
+ * (p. ej. `?estado=` o `?tipo=Gasto&estado=Vigente` sin esos parámetros) conserva
+ * la respuesta de `listComida`: el DTO nunca cambia de forma en silencio.
+ */
+export function esConsultaR5(params: URLSearchParams) {
+  return params.has("importeMin") || params.has("importeMax");
+}
+export function listComprasR5(db: Database, params: URLSearchParams) {
+  const tipo = params.get("tipo") || "Gasto",
+    estadoFiltro = params.get("estado") || "Vigente";
+  if (tipo !== "Gasto" || estadoFiltro !== "Vigente")
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "R5 solo lista Gasto vigente (tipo=Gasto&estado=Vigente).",
+    );
+  const rawPage = params.get("page") ?? "1";
+  const page = /^\d+$/.test(rawPage) ? Number(rawPage) : NaN;
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100000)
+    throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
+  const desde = params.get("desde") || null,
+    hasta = params.get("hasta") || null;
+  validateDateRange(desde, hasta);
+  // specs/38 §2: «nunca lista sin acotación temporal» y no se limita al ciclo
+  // vigente; la spec no fija un rango por defecto, así que sin desde ni hasta
+  // se rechaza (la ampliación de rangos es acción humana).
+  if (!desde && !hasta)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "R5 exige acotación temporal: indica desde y/o hasta.",
+      { desde: "Indica al menos una fecha de acotación." },
+    );
+  const min = r5Money(params.get("importeMin"), "importeMin"),
+    max = r5Money(params.get("importeMax"), "importeMax");
+  if (min !== null && max !== null && min > max)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "importeMin no puede superar importeMax.",
+    );
+  return db.transaction(() => {
+    const terminal = new Map<string, boolean>();
+    const isTerminal = (id: string) => {
+      if (!terminal.has(id))
+        terminal.set(id, getSaldo(db, id).control === "Terminal");
+      return terminal.get(id)!;
+    };
+    const all = ledgerRows(db)
+      .filter(
+        (r) =>
+          r.tipo === "Gasto" &&
+          estado(r) === "Vigente" &&
+          (!desde || r.fecha >= desde) &&
+          (!hasta || r.fecha <= hasta) &&
+          (min === null || BigInt(r.importe) >= min) &&
+          (max === null || BigInt(r.importe) <= max) &&
+          !isTerminal(r.origen),
+      )
+      .sort(ordenComida);
+    return {
+      items: all
+        .slice((page - 1) * COMIDA_PAGE_SIZE, page * COMIDA_PAGE_SIZE)
+        .map((r) => ({
+          id: r.id,
+          fecha: r.fecha,
+          importe: decimal(r.importe)!,
+          concepto: r.concepto,
+          partida: r.partida,
+          // Decisión funcional (Álex, PR #580): `saldo` es el identificador del Saldo
+          // origen/pagador de la compra, no el saldo receptor de una devolución ni un
+          // importe de saldo bancario.
+          saldo: r.origen,
+        })),
+      page,
+      total: all.length,
+    };
+  })();
+}
+
 export function listComida(db: Database, params = new URLSearchParams()) {
   return db.transaction(() => {
     const page = Number(params.get("page") ?? 1);
@@ -215,16 +337,7 @@ export function listComida(db: Database, params = new URLSearchParams()) {
       (etiqueta && ![...comidaEtiquetas, "Sin clasificar"].includes(etiqueta))
     )
       throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
-    if (desde && !/^\d{4}-\d{2}-\d{2}$/.test(desde))
-      throw new Problem(422, "VALIDATION", "Fecha inicial inválida.");
-    if (hasta && !/^\d{4}-\d{2}-\d{2}$/.test(hasta))
-      throw new Problem(422, "VALIDATION", "Fecha final inválida.");
-    if (desde && hasta && desde > hasta)
-      throw new Problem(
-        422,
-        "VALIDATION",
-        "El intervalo de fechas es inválido.",
-      );
+    validateDateRange(desde, hasta);
     const metadata = new Map(
       (
         db.query(`${metadataSelect} ORDER BY movimiento`).all() as ComidaMetadata[]
@@ -304,12 +417,7 @@ export function listComida(db: Database, params = new URLSearchParams()) {
             .toLocaleLowerCase("es")
             .includes(q),
       )
-      .sort(
-        (a, b) =>
-          b.fecha.localeCompare(a.fecha) ||
-          b.id.length - a.id.length ||
-          b.id.localeCompare(a.id),
-      );
+      .sort(ordenComida);
     const legacy = (
       db
         .query(
@@ -395,6 +503,7 @@ export function getComidaMovement(db: Database, id: string) {
       },
       metadata: comidaMetadata(db, id),
       devolucion: comidaDevolucion(db, id),
+      devolucionRevision: devolucionRevision(db, id),
       rol: comidaRol(db, id),
       auditoria: {
         movimiento: audit("movement_audit"),
@@ -773,23 +882,27 @@ export function writeComidaDevolucion(
   body: Record<string, unknown>,
   attempt: string,
   now = Date.now(),
+  gate?: DevolucionGate,
 ) {
-  only(body, [
-    "revision",
-    "compra",
-    "partida",
-    "cicloOrigen",
-    "evidenciaRelacion",
-    "evidenciaOrigenTemporal",
-    "elegibilidad",
-    "estado",
-    "motivo",
-  ]);
   key(attempt);
   const hash = fingerprint(["devolucion", id, body]);
   return db
     .transaction(() => {
       return retry(db, "comida_devolucion_attempts", attempt, hash, now, () => {
+        // #572: gate tras la reproducción idempotente y antes de tocar estado.
+        exigirEscrituraDevolucion(db, gate, { origen: "comida-devolucion" });
+        // La estructura va después del gate (`specs/38` §1).
+        only(body, [
+          "revision",
+          "compra",
+          "partida",
+          "cicloOrigen",
+          "evidenciaRelacion",
+          "evidenciaOrigenTemporal",
+          "elegibilidad",
+          "estado",
+          "motivo",
+        ]);
         const row = movement(db, id);
         if (revision(body.revision) !== row.revision)
           throw new Problem(

@@ -30,6 +30,8 @@ import {
 import {
   activateRegimen,
   comidaOptions,
+  esConsultaR5,
+  listComprasR5,
   getComidaMovement,
   listComida,
   prepareRegimen,
@@ -299,6 +301,7 @@ import { conciliacionCiclo } from "./conciliacion-ciclos";
 import { resumenInicio } from "./resumen-inicio";
 import { resumenAnual } from "./resumen-anual";
 import { assertDemoDatabase, type DemoScope } from "./demo-mode";
+import { gateProduccion, type DevolucionGate } from "./devolucion-gate";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
@@ -321,6 +324,13 @@ export type AppOptions = {
   resumenInicio?: { mesesObjetivo?: number | null };
   /** Alcance DEMO ya validado en el arranque; ausente en TEST y PROD. */
   demo?: DemoScope;
+  /**
+   * #572 · Gate de escrituras de devolución. SOLO inyección de la raíz de
+   * composición de pruebas (`test-support/*`); la producción no lo pasa y usa
+   * el literal `devolucionIntegracionDisponible` (false). No hay camino por
+   * entorno, cabecera, base de datos ni query.
+   */
+  devolucionGate?: DevolucionGate;
 };
 export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   if (
@@ -371,6 +381,8 @@ export function createApp(db: Database, options: AppOptions) {
     options.demo?.origins,
   );
   const now = options.now ?? Date.now;
+  // Valor efectivo único: lo reciben los servicios y `GET /devoluciones/capacidad`.
+  const devolucionGate = options.devolucionGate ?? gateProduccion;
   async function handle(req: Request) {
     const headers = new Headers({
       "content-type": "application/json; charset=utf-8",
@@ -957,12 +969,21 @@ export function createApp(db: Database, options: AppOptions) {
             page: new URL(req.url).searchParams.get("page") ?? undefined,
           }),
         );
+      // #572: lectura de capacidad; mismo valor efectivo que reciben los servicios.
+      if (path === "/api/devoluciones/capacidad" && req.method === "GET")
+        return reply({ disponible: devolucionGate.disponible === true });
       if (path === "/api/devoluciones/integridad" && req.method === "GET")
         return reply(
           integridadDevoluciones(db, new URL(req.url).searchParams),
         );
-      if (path === "/api/comida" && req.method === "GET")
-        return reply(listComida(db, new URL(req.url).searchParams));
+      if (path === "/api/comida" && req.method === "GET") {
+        const params = new URL(req.url).searchParams;
+        return reply(
+          esConsultaR5(params)
+            ? listComprasR5(db, params)
+            : listComida(db, params),
+        );
+      }
       const comidaAction = path.match(
         /^\/api\/comida\/(\d+)\/(metadata|devolucion|rol)$/,
       );
@@ -975,7 +996,14 @@ export function createApp(db: Database, options: AppOptions) {
           );
         if (comidaAction[2] === "devolucion")
           return reply(
-            writeComidaDevolucion(db, comidaAction[1], body, key, now()),
+            writeComidaDevolucion(
+              db,
+              comidaAction[1],
+              body,
+              key,
+              now(),
+              devolucionGate,
+            ),
           );
         return reply(writeComidaRol(db, comidaAction[1], body, key, now()));
       }
@@ -1002,6 +1030,7 @@ export function createApp(db: Database, options: AppOptions) {
           req.headers.get("idempotency-key") ?? "",
           now(),
           "Detalle",
+          devolucionGate,
         );
         headers.set(
           "location",
@@ -1084,14 +1113,38 @@ export function createApp(db: Database, options: AppOptions) {
             return reply(previewRevisionComidaImpact(db, id, body, "Detalle"));
           if (action === "rectificar")
             return reply(
-              rectificarRevisionComida(db, id, body, key, now(), "Detalle"),
+              rectificarRevisionComida(
+                db,
+                id,
+                body,
+                key,
+                now(),
+                "Detalle",
+                devolucionGate,
+              ),
             );
           if (action === "anular")
             return reply(
-              anularRevisionComida(db, id, body, key, now(), "Detalle"),
+              anularRevisionComida(
+                db,
+                id,
+                body,
+                key,
+                now(),
+                "Detalle",
+                devolucionGate,
+              ),
             );
           return reply(
-            vincularRevisionComida(db, id, body, key, now(), "Detalle"),
+            vincularRevisionComida(
+              db,
+              id,
+              body,
+              key,
+              now(),
+              "Detalle",
+              devolucionGate,
+            ),
           );
         }
       }
@@ -2169,6 +2222,7 @@ const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
           false,
           now(),
           options.movementGuard,
+          devolucionGate,
         );
         headers.set("location", "/api/movimientos/" + result.movimiento.id);
         return reply(result, 201);
@@ -2202,6 +2256,7 @@ const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
               annul,
               now(),
               options.movementGuard,
+              devolucionGate,
             ),
           );
         }

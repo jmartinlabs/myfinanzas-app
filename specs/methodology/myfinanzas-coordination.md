@@ -325,3 +325,44 @@ La capacidad y sus controles viven en [dynamic agents](dynamic-agents.md#critica
 Hermes puede usar advisor verificado; una alternativa competente o relevo manual explícito no
 cambia gates. Álex mantiene solo asesoría financiera/funcional. La ausencia de revisor bloquea
 trabajo material/inseguro y QA obligatoria; no autoriza operaciones excluidas.
+
+## Reglas locales de `$work-issue`
+
+Se suman al [protocolo canónico](issue-workflow.md) y a la [Skill](../../.agents/skills/work-issue/SKILL.md); no lo relajan.
+
+- **This Skill never runs alone.** A client injects only the Skill that was invoked, so
+  `orchestrate` is loaded explicitly with each client's own mechanism (Hermes: `/orchestrate` or
+  `skill_view('orchestrate')`; Claude Code: `/orchestrate`; Codex and OpenCode: the Skill by name)
+  **before** reading the queue, reserving or executing a phase. The actor loads its role and the
+  Skill that owns each phase (`spec`, `dev`, `task`, `tweak`) before that phase runs. Without those
+  loads the delegation, quota and independent-QA rules are not in context and the session must not
+  claim it applied them.
+- **Markers are not authenticated.** Every agent publishes with the same GitHub account, so
+  anyone with `gh` can write a comment carrying a claim or block marker. The tool checks
+  structure, recency and consistency, never authorship; a receipt copied verbatim is
+  indistinguishable from a real one. Cryptographic attribution would need a separate agent identity.
+- **A block record authorizes one restore.** `--restore` trusts only the most recent report; if a
+  human re-blocks the Issue without a new block record, the tool does not move it.
+- **Flujo.** Branches follow `feature/* → test → main` and merge needs the user's explicit approval.
+- **Parámetros del tracker.** La herramienta no fija valores por defecto: pasa siempre
+  `--repo jmartinlabs/myfinanzas-app --owner jmartinlabs --project 4` (o decláralos en el
+  `.agents/tracker.local.yaml` local, que no se versiona y solo aporta `agents:` al script). Los
+  valores por defecto de versiones anteriores se retiraron al adoptar la versión canónica.
+- **Asignado.** Decisión del usuario (2026-11-23): el asignado de GitHub es un campo humano que los
+  agentes no leen, escriben ni usan como puerta; solo enrutan las etiquetas y solo reserva el
+  comentario de toma. Una Issue asignada a una persona sigue siendo elegible.
+- **Enlace PR ↔ Issue.** Las palabras de cierre no enlazan una PR que apunta a `test`; el enlace se
+  crea con `addCloseIssueReferences` y se verifica en ambos sentidos. Nunca llames a
+  `removeCloseIssueReferences`. La automatización del Project cierra la Issue al pasar a `Done`, no
+  el merge. Pon el número de la PR en el informe de `In Review`. Tras cualquier merge relee la
+  Issue y reábrela si se cerró sin un `Done` humano registrado.
+- **Recibo de contexto.** Se publica solo en Ready, In Progress o Blocked (no en Backlog, Done ni
+  revisiones); `--dry-run` no lo necesita; los hallazgos mecánicos son pistas, no veredictos, y
+  `take`/`move` se niegan sin un recibo válido para la huella actual.
+
+## Reglas locales de `$codex-review`
+
+La Skill es la canónica de la plantilla; esto se suma sin relajarla. Riesgos que justifican una
+revisión: además de seguridad y persistencia/migración, la **lógica financiera** y la **integridad
+histórica**. La línea `Revisión externa: codex` escrita por el propietario en el cuerpo de una Issue
+equivale a `External review: codex`. Aviso y bloque de resultado: formato fijo de la Skill (ahora en inglés, antes en español).

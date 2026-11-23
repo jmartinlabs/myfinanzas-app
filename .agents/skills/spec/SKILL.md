@@ -40,6 +40,10 @@ with a two-digit number, approved decisions and a local documentation commit.
    approval and commits the approved documents. Never self-approve or commit a draft as
    approved. Preserve unrelated user changes. Return approval evidence and dependency changes
    to the coordinator, which owns the shared epic board.
+   When a tracker is configured, also generate the executable Issues derived from the approved
+   SPEC in `Backlog`, one per deliverable, shaped by the [Issue template](../../../templates/issue.md)
+   and linked to the SPEC: deduplicate first, never mark them `Ready` and never authorize their
+   execution. Follow the [issue workflow](../../../specs/methodology/issue-workflow.md).
 ## Stop conditions
 Pause on unanswered questions, unapproved wireframes/specification or important conflicts.
 Preserve history and next action for resumption. Do not implement the feature. After the

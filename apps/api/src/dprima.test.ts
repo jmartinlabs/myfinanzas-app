@@ -22,6 +22,7 @@ import {
   previewPartidaConfig,
   writeMensual,
 } from "./dprima";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 const now = Date.parse("2026-10-21T12:00:00Z");
 process.env.NODE_ENV = "test";
@@ -77,6 +78,8 @@ function add(
     null,
     false,
     nowMs,
+    undefined,
+    gateAbiertoParaPruebas,
   );
 }
 function partida(
@@ -1038,6 +1041,8 @@ test("M7: una rectificación no puede mover un Gasto a una raíz con hijas", () 
       current.id,
       false,
       now,
+      undefined,
+      gateAbiertoParaPruebas,
     ),
   ).toThrow();
   expect(

@@ -21,6 +21,7 @@ import {
   previewPartidaConfig,
   writeMensual,
 } from "../src/dprima";
+import { gateAbiertoParaPruebas } from "./devolucion-gate-abierto";
 
 export const E2E_NOW = Date.parse("2026-10-31T12:00:00Z");
 
@@ -41,6 +42,8 @@ function add(
     null,
     false,
     now,
+    undefined,
+    gateAbiertoParaPruebas,
   );
 }
 
