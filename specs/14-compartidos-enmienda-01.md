@@ -27,7 +27,10 @@ fuentes de SPEC39 (`AC-D25`).
 
 ## 1 · Lo que no cambia
 
-- F1–F6, R-MP, R-CC, los 39 AC base y los D5-AC-01…15.
+- F2–F6, R-MP, R-CC, los 39 AC base y los D5-AC-01…15.
+- **F1 se enmienda expresamente (R7):** `F1 Neto = Bruto − Recuperado` pasa a `Neto = Coste económico
+  − Recuperado`, con `Coste económico = Bruto − descuentoEconomico` (§4.1). Sin R7 aprobada, F1
+  no cambia y el coste cero no se admite.
 - El algoritmo de céntimos de §7.3 y la atribución multi-Gasto del Recuperado de §7.4. Cambian
   dos entradas, `Aportado_p` (§4) y la base del reparto, que pasa de B_g a C_g (§4.1, R7).
   Las fórmulas de Pendiente, Exceso y R-MP son las mismas.
@@ -46,15 +49,20 @@ Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuar
 | ID | Pregunta | Recomendación | Alternativa |
 | --- | --- | --- | --- |
 | **R1** | ¿Cómo se representa la salida? | **Una `Transferencia` real de un Saldo interno a `S000`**, con la REF CAT013 del caso: es la simétrica de la D5. | Un tipo nuevo de Movimiento. Se descarta porque añade un tipo y sus consumidores sin aportar ninguna garantía más. |
-| **R2** | ¿Se puede acreditar solo una parte de un movimiento? | **No: cada movimiento se acredita entero a un único tercero, 0..1**, igual que en D5 (I-D5-2, I-D5-3). Es un subconjunto más estricto de SPEC39 §9 («una misma porción no se reutiliza»). **Coste:** un único cargo bancario que devuelva a dos terceros, o a dos casos, debe partirse en varios Movimientos, lo que afecta a la conciliación 1:1 con el extracto. | Acreditar porciones de un movimiento. Obligaría a copiar el importe en los metadatos, rompiendo I-D5-3, y a llevar un contador de porciones. |
+| **R2** | ¿Cómo se acredita un movimiento bancario? | **Recomendación de Álex: acreditaciones parciales** sobre un único Movimiento real. Cada porción es individual y auditable, con `suma acreditada ≤ importe real` y sin reutilizar una porción (SPEC39 §9). No se fabrican Movimientos bancarios, y se conserva la conciliación 1:1 con el extracto. **Efectos:** la cardinalidad deja de ser 0..1 (hay varias filas por Movimiento); el importe de cada porción se guarda en la acreditación, lo que **cambia I-D5-3 «sin copia de importe»** solo para las regularizaciones; hace falta un contador de porciones y su idempotencia; R5 y los E1-AC se adaptan. | **Movimiento entero a un único tercero, 0..1** (como el texto actual, igual que D5). Más simple, sin copia de importe. **Coste:** un cargo bancario que devuelva a dos terceros o a dos casos debe partirse en varios Movimientos, lo que rompe la conciliación 1:1. |
 | **R3** | ¿Solo para el exceso que causa una devolución? | **Para cualquier `Exceso_p` del tercero**, venga de una devolución, de un cambio de partes o de un pago de más. La operación es la misma: devolverle dinero. | Exigir que exista una devolución vinculada. Añade un vínculo sin garantía adicional y deja sin vía el pago de más. |
 | **R4** | ¿Se puede regularizar a un tercero dado de baja? | **Sí, hasta su `Aportado_p` neto íntegro.** El motor no calcula cuota ni Exceso para una baja (su Asignado es «No aplica» y su aportado ya cuenta como atribución parcial), así que el límite no puede ser `Exceso_p`. La baja impide nuevas aportaciones, no devolver lo que puso. SPEC39 §9 incluye a los inactivos con saldo pendiente. **Es una decisión financiera tuya.** El cambio de participante de una regularización exige un Tercero activo, como en D5 §15.8. | Exigir que se reactive el participante antes de pagarle. Mantiene un único límite `Exceso_p`, a costa de reabrir el participante. |
 | **R5** | ¿Dónde se guarda? | **En la misma `movimiento_compartido`, con una columna `sentido` (`Aportación` o `Regularización`)** ligada por CHECK y trigger a `origen`/`destino` del movimiento. Hay lectores de esa tabla (§7.7) que, sin el sentido explícito, sumarían una salida como cobro. | Deducir el sentido del movimiento, sin columna. Es menos auditable y obliga a que cada lector lo recuerde. |
 | **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − `descuentoEconomico` de SPEC39 §4 (solo devoluciones elegibles; una Verificada No acreditada no descuenta). El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
 | **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) y #549 integrados, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
 
-El resto del documento está redactado con las siete recomendaciones. Si el usuario elige otra
-alternativa, se revisan las secciones afectadas antes de aprobar.
+**Estado del texto.** Los §3–§11 están redactados con R1 y R3–R7 según su recomendación y con
+**R2 en su variante 0..1 (movimiento entero)**, que es la más sencilla pero **no la recomendada
+por Álex**. Si el usuario elige **porciones**, se reescriben antes de aprobar: §3 (cardinalidad),
+§5 (límite por porción y suma ≤ importe del Movimiento), §6 (rectificación de porciones), §7
+(esquema de `movimiento_compartido`, idempotencia y triggers), I-E1-2, I-E1-3, los E1-AC
+afectados y §13. Con cualquier otra decisión se revisan solo las secciones que ella nombra. Nada
+de esto está aprobado.
 
 ## 3 · Semántica
 
@@ -151,6 +159,7 @@ regularización no puede ser anterior a la del primer cobro acreditado de ese te
 | Regularización desde un Saldo con régimen Comida | 422 (`comida.ts:972-983`, `e35.ts:391-393` los señalan como huecos de cobertura) |
 | Regularización al Titular | 422: el Titular no tiene aportación que devolver (F3) |
 | Regularización con Saldo origen inactivo, de tipo Exterior, Manual o Control Exterior | 422 |
+| Regularización desde un Saldo con **`Permite salida a Exterior` = No** | 422. La regularización no abre una vía indirecta de salida: el Saldo origen debe tener el atributo maestro en Sí (spec01). El caso CAT013 no lo exime. Si R1 se aprueba, E1-AC-23 lo prueba. |
 | `Devolución de gasto` o Gasto/Ingreso usado como regularización | 422: SPEC39 separa las fuentes (`AC-D25`) |
 | Transferencia interna → interna con REF CAT013 | No regulariza ni aporta; conserva su efecto bancario |
 | Acreditar a la vez como aportación y como regularización, o a dos terceros | Imposible: 0..1 por movimiento, y el sentido lo fija el hecho |
@@ -194,10 +203,16 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 1. **Migración sucesora explícita.** **No** reescribe v17 ni v32, que ya están publicadas.
    SPEC38 §I3 propone **v33** para la retirada de fotos de #548, y #538 necesita otra para el
    trigger de `comida-schema.ts:173-178`. Cada reconstrucción de `movimientos` arrastra sus
-   dependientes: se **propone una sola migración coordinada** con #538 y #548, y el número se
-   cierra antes de DEV. Se registra en `schema-catalog.ts` con contrato admitido y manifiesto.
-   La prueba enumera los dependientes de forma dinámica, como `comida-schema.ts`, no con una
-   lista fija.
+   dependientes. **No se asume que v33 ni una migración conjunta estén autorizadas.** Propiedad,
+   secuencia y gates se fijan así, sin inventar número:
+   - **Propiedad:** la migración de esta enmienda es **propia de SPEC14**, como exige SPEC39
+     §9/§11; no se funde con la de #548 ni con la de #538 salvo decisión expresa del usuario.
+   - **Secuencia:** solo existe tras aprobar esta enmienda y recibir autorización de DEV; su número
+     es el siguiente libre en ese momento, contrastado con `schema-catalog.ts` y con las
+     propuestas de #538/#548. Si coinciden en el tiempo, se coordina la secuencia, no el número
+     de hoy.
+   - **Gates:** contrato admitido y manifiesto propios, sin reescribir v17 ni v32; la prueba
+     enumera los dependientes de `movimientos` de forma dinámica, como `comida-schema.ts`.
 2. **CHECK de `movimientos`.** Solo se relaja la **forma** para `Transferencia`:
    `origen != destino`, sin Partida ni Subtipo, y como mucho un extremo `S000`. CAT013, ficha,
    participante, límite y evidencia siguen siendo reglas del servicio. Cualquier otra
@@ -274,7 +289,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | I-E1-3 | `Σ regularizaciones vigentes de p ≤ Cobrado_p` en el momento de cada alta o rectificación. Si una anulación o rectificación posterior de D5 la rompe, aparece la incidencia del §4.2 y nunca un recorte silencioso. |
 | I-E1-4 | Al regularizar no cambian ni la cuota del tercero, ni el Bruto, ni el cobro original, ni el descuento comercial. |
 | I-E1-5 | `N = C_T + Σ Pendiente_p − Σ Exceso_p`, con N = C − R, se sigue cumpliendo con el Aportado neto, solo si no hay bajas con Aportado ≠ 0 (condición ya existente en la base). |
-| I-E1-6 | Tres conjuntos, calculados cada uno por su lado: ledger bancario por fechas, devoluciones comerciales y acreditaciones (entrantes y salientes). Sus IDs no se repiten entre conjuntos. |
+| I-E1-6 | Conciliaciones **independientes** de: ledger bancario por fechas, devoluciones comerciales y acreditaciones (entrantes y salientes). Los **tipos de negocio son disjuntos**: un ID de `Devolución de gasto` nunca computa como aportación ni como regularización. El vínculo ledger ↔ acreditación **existe y es obligatorio** (la misma Transferencia aparece en el ledger y la referencia su acreditación): lo prohibido es el **doble cómputo**, no el join. |
 | I-E1-7 | Ninguna Transferencia S000 sin acreditación compartida, salvo las que ya admitía D5, pasa el servicio. |
 | I-E1-8 | Movimiento, acreditación, intento y auditoría son atómicos. Un 409 o un fallo inyectado no deja efectos parciales. |
 
@@ -302,6 +317,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 | E1-AC-19 | Cada lector de `movimiento_compartido` (§7.6) | Ninguno suma una regularización como cobro; un AC por lector. |
 | E1-AC-20 | Regularización desde Saldo con régimen Comida; fecha anterior al cobro | 422 en ambos casos. |
 | E1-AC-21 | Transferencia vigente → S000 sin acreditación, y cambio de `tipo`, `referencia` o extremo `S000` con acreditación vigente | Verify y restore la rechazan lo primero; el trigger bloquea lo segundo; el Saldo interno sí se rectifica. |
+| E1-AC-23 | Saldo origen con `Permite salida a Exterior` = No (R1) | 422; sin vía indirecta. |
 | E1-AC-22 | Sin #547 o #549 integrados (R6) | 503. |
 | E1-AC-14 | Ficha y API | Las claves existentes se mantienen. El cambio semántico de `aportado` está cubierto por prueba de contrato. Se devuelven `cobrado`, `regularizado`, la lista y los estados de UI a 390 y 1440. |
 
@@ -333,7 +349,7 @@ D5, SPEC39, spec05, SPEC33-E1, SPEC38 y el código. Veredicto: **APTO CON CAMBIO
 | R4: una baja no tiene `Exceso_p` (bloqueante) | Límite = `Aportado_p`; decisión **R4** elevada; E1-AC-16 |
 | Cambio de participante contradice §15.8 | El reviewer sugería elevarlo como decisión; **se resolvió distinto**: se eliminó la excepción y se mantiene D5 (Tercero activo), sin decisión nueva |
 | Fórmula de rectificación errónea | Corregida en §6; E1-AC-17 |
-| Aportado negativo sin contrato | §4.2: 409 en el servicio, incidencia como respaldo |
+| Aportado negativo sin contrato | §4.2: D5 no se toca; la incidencia posterior es el único mecanismo (la primera versión proponía 409 en el servicio y se retiró) |
 | «Revisión esperada» inexistente | Huella `contexto`, ampliada a los vínculos de devolución; E1-AC-18 |
 | Lectores de `movimiento_compartido` | Columna `sentido` (**R5**), inventario y E1-AC-19 |
 | Régimen Comida | 422; E1-AC-20 |
@@ -342,6 +358,8 @@ D5, SPEC39, spec05, SPEC33-E1, SPEC38 y el código. Veredicto: **APTO CON CAMBIO
 | R2 y SPEC39 | Subconjunto admisible; coste declarado en R2 |
 | Versiones | Una migración coordinada con #538 y #548 |
 | Fechas, identidad condicionada, trazas | §4, I-E1-5 y E1-AC-03/10/12 como trazas |
+
+**Revisión de Álex (PR #562, `3cc8b6f2`):** APTO CON CAMBIOS OBLIGATORIOS; CI documental pass, sin ejecutar AC. Hallazgos: R2 (recomienda porciones, decisión del usuario), F1 enmendada expresamente por R7 (§1 y §4.1), I-E1-6 reformulada (conciliaciones independientes y tipos disjuntos, join obligatorio), guarda `Permite salida a Exterior` (§5, E1-AC-23) y versionado sin asumir v33 ni migración conjunta (§7.1). R1–R7 siguen pendientes de aprobación del usuario.
 
 Una segunda revisión acotada del texto nuevo (§4.1, §4.2, límite del §5, fórmula del §6 y
 R4–R7) consta abajo. Las decisiones **R1–R7 son del usuario**. Álex debe verificar el conjunto
