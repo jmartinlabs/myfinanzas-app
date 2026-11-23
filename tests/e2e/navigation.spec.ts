@@ -1,20 +1,24 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { artifactDir, fixtureContext } from "./fixture";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
 /**
  * UI · DEV-03 — navegación.
  *
- * Comprueba que los 24 enlaces se conservan sin cambiar sus `href`,
- * que el enlace autorizado `/fotos` se declara una sola vez, que los grupos y
+ * Comprueba que los 23 enlaces se conservan sin cambiar sus `href`,
+ * que `/fotos` ya no se declara (retirado con su pantalla en #555) y que los grupos y
  * el activo son perceptibles, que el título sigue a la ruta y que el menú móvil
  * funciona con teclado. El servidor es aislado y ficticio.
  */
 
-const API_PORT = 3023;
-const DIR = ".local/e2e-navigation";
+// Puerto y estado propios de la ejecución (#508).
+const fixture = fixtureContext("navigation");
+const API_PORT = fixture.port;
+const DIR = fixture.dir;
 let child: ReturnType<typeof spawn> | undefined;
 
 const EXPECTED_HREFS = [
@@ -33,7 +37,6 @@ const EXPECTED_HREFS = [
   "/ciclos",
   "/precierre",
   "/cierre",
-  "/fotos",
   "/dprima",
   "/comida",
   "/revision-comida",
@@ -50,7 +53,7 @@ test.beforeAll(async ({ request }) => {
     ["apps/api/test-support/navigation-server.ts"],
     {
       stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test" },
+      env: fixture.env,
     },
   );
   await expect
@@ -105,10 +108,10 @@ async function login(page: Page) {
   ).toBeVisible();
 }
 
-test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos y menú móvil accesible", async ({
+test("UI-01: 23 enlaces, accesos directos, grupos desplegables, activo, títulos y menú móvil accesible", async ({
   page,
 }) => {
-  mkdirSync("artifacts/ui-dev-03", { recursive: true });
+  const artifactsUiDev03 = artifactDir("ui-dev-03");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page);
@@ -123,12 +126,13 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       ),
     ).toBe(true);
 
-  // Los 24 enlaces se conservan y /fotos se declara una sola vez.
+  // #555 · §7.6: `/fotos` se retira con su pantalla; el resto sigue intacto.
   const hrefs = await nav
     .locator("a")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
-  expect(hrefs).toHaveLength(24);
-  expect(new Set(hrefs).size).toBe(24);
+  expect(hrefs).toHaveLength(23);
+  expect(new Set(hrefs).size).toBe(23);
+  expect(hrefs).not.toContain("/fotos");
   expect([...hrefs].sort()).toEqual([...EXPECTED_HREFS].sort());
   expect(hrefs).not.toContain("/");
   expect(hrefs).not.toContain("/saldos/nuevo");
@@ -139,7 +143,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     ["Patrimonio", ["/saldos", "/inversiones", "/deudas"]],
     ["Presupuestos y planificación", ["/dprima", "/planes-ciclo", "/nomina", "/clasificacion/partidas"]],
     ["Casos y gastos especiales", ["/referencias", "/anticipos", "/compartidos", "/vehiculos", "/comida", "/revision-comida"]],
-    ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre", "/fotos"]],
+    ["Ciclos y cierres", ["/ciclos", "/precierre", "/cierre"]],
     ["Funciones anteriores", ["/presupuestos", "/plan-anual"]],
   ];
   // Los dos accesos directos viven fuera de los grupos, en su propio bloque.
@@ -263,9 +267,9 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     expect(
       navLabels.filter((label) => new RegExp(`\\b${word}\\b`, "i").test(label)),
     ).toEqual([]);
-  mkdirSync("artifacts/ui-02", { recursive: true });
+  const artifactsUi02 = artifactDir("ui-02");
   await page.screenshot({
-    path: "artifacts/ui-02/nav-legacy-1440.png",
+    path: join(artifactsUi02, "nav-legacy-1440.png"),
     fullPage: true,
   });
   await presupuestos.locator(".nav-group-toggle").click();
@@ -431,7 +435,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
       ).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev-03/${file}`,
+      path: join(artifactsUiDev03, file),
       fullPage: true,
     });
     await page.keyboard.press("Escape");
@@ -456,7 +460,7 @@ test("UI-01: 24 enlaces, accesos directos, grupos desplegables, activo, títulos
     await expect(nav).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev-03/${file}`,
+      path: join(artifactsUiDev03, file),
       fullPage: true,
     });
   }

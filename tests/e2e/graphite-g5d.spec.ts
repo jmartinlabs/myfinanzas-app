@@ -1,32 +1,27 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3054;
-const STATE = ".local/e2e-referencias-g5d";
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("referencias-g5d");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/referencias-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        REFERENCIAS_PORT: String(PORT),
-        REFERENCIAS_STATE: STATE,
-      },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/referencias-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -34,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/referencias");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Graphite referencias " + randomUUID(),
   );
@@ -71,7 +67,7 @@ async function authenticate(page: Page) {
 
 test("G5d: Referencias premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/g5d", { recursive: true });
+  const artifacts = artifactDir("g5d");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -149,7 +145,7 @@ test("G5d: Referencias premium en Graphite, 1440/820/390", async ({ page }) => {
     await expect(page.getByText("5 referencias", { exact: false })).toBeVisible();
     await noOverflow();
     await page.screenshot({
-      path: `artifacts/g5d/referencias-lista-${width}.png`,
+      path: join(artifacts, `referencias-lista-${width}.png`),
       fullPage: true,
     });
   }
@@ -164,10 +160,10 @@ test("G5d: Referencias premium en Graphite, 1440/820/390", async ({ page }) => {
     page.getByRole("button", { name: "Desactivar referencia", exact: true }),
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
-  await page.screenshot({ path: "artifacts/g5d/referencias-ficha-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "referencias-ficha-1440.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
-  await page.screenshot({ path: "artifacts/g5d/referencias-ficha-390.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "referencias-ficha-390.png"), fullPage: true });
 
   // Ficha a 820
   await page.setViewportSize({ width: 820, height: 900 });
@@ -176,7 +172,7 @@ test("G5d: Referencias premium en Graphite, 1440/820/390", async ({ page }) => {
     page.getByRole("heading", { name: "Identificación", exact: true }),
   ).toBeVisible();
   await noOverflow();
-  await page.screenshot({ path: "artifacts/g5d/referencias-ficha-820.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "referencias-ficha-820.png"), fullPage: true });
 
   // Formulario
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -190,17 +186,17 @@ test("G5d: Referencias premium en Graphite, 1440/820/390", async ({ page }) => {
     page.getByRole("button", { name: "Guardar referencia", exact: true }),
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
-  await page.screenshot({ path: "artifacts/g5d/referencias-form-1440.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "referencias-form-1440.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
-  await page.screenshot({ path: "artifacts/g5d/referencias-form-390.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "referencias-form-390.png"), fullPage: true });
 
   // Formulario a 820
   await page.setViewportSize({ width: 820, height: 900 });
   await page.goto("/referencias/nueva");
   await expect(page.getByLabel("Nombre de Referencia *", { exact: true })).toBeVisible();
   await noOverflow();
-  await page.screenshot({ path: "artifacts/g5d/referencias-form-820.png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, "referencias-form-820.png"), fullPage: true });
 
   // Estado inválido: el borde conserva el color de error
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -234,7 +230,7 @@ test("G5d: Referencias premium en Graphite, 1440/820/390", async ({ page }) => {
     }
     await noOverflow();
     await page.screenshot({
-      path: `artifacts/g5d/casa-referencias-${name}-1440.png`,
+      path: join(artifacts, `casa-referencias-${name}-1440.png`),
       fullPage: true,
     });
   }

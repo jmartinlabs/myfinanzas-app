@@ -1,23 +1,26 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3014;
-const STATE = ".local/e2e-inicio";
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("inicio-hybrid-l2");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/inicio-server.ts"], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
-  });
+  const server = startFixtureServer(
+    "apps/api/test-support/inicio-server.ts",
+    fixture,
+  );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -25,22 +28,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function login(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/inicio");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill("Clave ficticia L2 " + randomUUID());
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.locator(".secret")).toBeVisible();
@@ -53,7 +57,7 @@ async function login(page: Page) {
 
 test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/l2", { recursive: true });
+  const artifacts = artifactDir("l2");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page);
@@ -123,11 +127,11 @@ test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) 
       await page.setViewportSize({ width, height });
       await noOverflow();
       await page.screenshot({
-        path: `artifacts/l2/inicio-${theme}-${width}.png`,
+        path: join(artifacts, `inicio-${theme}-${width}.png`),
         fullPage: true,
       });
       if (width === 1440) {
-        await page.screenshot({ path: `artifacts/l2/inicio-${theme}-fold.png` });
+        await page.screenshot({ path: join(artifacts, `inicio-${theme}-fold.png`) });
       }
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -144,7 +148,7 @@ test("L2: identidad de Inicio en Claro y Mixto, 1440/820/390", async ({ page }) 
     );
 
     await page.locator(".inicio-page .graphite-control").screenshot({
-      path: `artifacts/l2/hero-${theme}.png`,
+      path: join(artifacts, `hero-${theme}.png`),
     });
   }
 

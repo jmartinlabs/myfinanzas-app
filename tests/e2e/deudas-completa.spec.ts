@@ -2,14 +2,19 @@ import { test, expect, type Page } from "@playwright/test";
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { resolve } from "node:path";
+import { join } from "node:path";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
+
+const artifacts = artifactDir("e4-4");
 
 /*
  * E4.4 — Deuda completa y conciliación desde apertura.
  *
  * Isolated real Effect/Auth/SQLite process (no fixture endpoint, no MFA bypass),
- * fictional data only, 1440/390 screenshots in artifacts/e4-4. The E1.6 journey
+ * fictional data only, 1440/390 screenshots in the run's artifacts directory.
+ * The E1.6 journey
  * in tests/e2e/deudas.ts is preserved and remains the regression entry point.
  *
  * AC-29: this spec covers empty, loading, network error/retry, 401/404/409/422,
@@ -19,11 +24,14 @@ import { totp } from "../../apps/api/src/auth";
  * legacy Deuda without opening because the public API requires it explicitly.
  */
 
-const state = resolve(".local/e2e-deudas-completa");
-const origin = "http://127.0.0.1:3013";
+// Puerto y estado propios de la ejecución (#514): antes eran el 3013 fijo y
+// `.local/e2e-deudas-completa`, compartido por cualquier run simultánea.
+const FIXTURE = fixtureContext("deudas-completa");
+const state = FIXTURE.dir;
+const origin = FIXTURE.baseURL;
 
 // Run from apps/api so the workspace's own Effect/SQLite dependencies resolve;
-// the state directory is still the project-root `.local` one.
+// the state directory is the one this run reserved for the fixture.
 const serverProgram = [
   "import{mkdirSync,rmSync,writeFileSync}from'node:fs';",
   "import{BunHttpServer,BunRuntime}from'@effect/platform-bun';",
@@ -39,7 +47,9 @@ const serverProgram = [
   "mkdirSync(dir,{recursive:true,mode:0o700});",
   "const db=openDatabase(dir+'/demo.sqlite'),key=loadKey(db,dir+'/auth.key');",
   "writeFileSync(dir+'/bootstrap.txt',provision(db),{mode:0o600});",
-  "BunRuntime.runMain(Layer.launch(HttpServer.serve(createApp(db,{key})).pipe(Layer.provide(BunHttpServer.layer({hostname:'127.0.0.1',port:3013})))));",
+  "BunRuntime.runMain(Layer.launch(HttpServer.serve(createApp(db,{key})).pipe(Layer.provide(BunHttpServer.layer({hostname:'127.0.0.1',port:" +
+    JSON.stringify(FIXTURE.port) +
+    "})))));",
 ].join("");
 
 async function shot(page: Page, name: string) {
@@ -49,7 +59,7 @@ async function shot(page: Page, name: string) {
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: "artifacts/e4-4/" + name + ".png", fullPage: true });
+  await page.screenshot({ path: join(artifacts, name + ".png"), fullPage: true });
 }
 
 test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 1440/390 sin datos reales", async ({
@@ -62,10 +72,12 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
     env: { ...process.env, NODE_ENV: "test" },
   });
   let serverLog = "";
+  let serverExited = false;
   child.stderr.on("data", (chunk) => (serverLog += String(chunk)));
+  child.stdout?.on("data", (chunk) => (serverLog += String(chunk)));
+  child.on("exit", () => (serverExited = true));
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e4-4", { recursive: true });
   try {
     try {
       await expect
@@ -83,9 +95,21 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
     } catch (e) {
       throw new Error("API E4.4 no arrancó. " + serverLog + " " + String(e));
     }
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    requireFixtureState({
+      fixture: FIXTURE,
+      output: () => serverLog,
+      assertAlive: () => {
+        if (serverExited)
+          throw new Error(
+            `El fixture ${FIXTURE.name} terminó antes de servir: ${serverLog.trim() || "(sin salida)"}`,
+          );
+      },
+    });
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3013";
+      url.port = String(FIXTURE.port);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -856,13 +880,13 @@ test("E4.4 listado, ficha, condiciones, histórico, historia y conciliación 144
     await page.getByLabel("Cambiar tema").selectOption("casa");
     await expect(page.locator(".debt-detail")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-4/casa-detalle-1440.png",
+      path: join(artifacts, "casa-detalle-1440.png"),
       fullPage: true,
     });
     await page.goto("/deudas");
     await expect(page.locator(".deudas-page")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-4/casa-listado-1440.png",
+      path: join(artifacts, "casa-listado-1440.png"),
       fullPage: true,
     });
 

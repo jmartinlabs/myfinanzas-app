@@ -820,18 +820,15 @@ export function previewOpening(
           ? "No disponible: hechos del mismo día sin orden o acreditación insuficiente. La evidencia explícita debe justificar apertura."
           : "Solo hechos anteriores al Inicio; cobertura declarada con evidencia. Requiere confirmación.",
       existente: existing ?? null,
-      correccionBloqueada:
-        !!existing &&
-        (!protection.verificada || protection.bloqueos.length > 0),
+      // §4.2: la declaración de apertura deja de vetar en absoluto. Corregirla
+      // exige motivo y revisión —y conserva el original en la auditoría—, pero
+      // no depende de que un proveedor de fotos lo autorice.
+      correccionBloqueada: false,
       protecciones: protection,
       motivo: motive,
       revision: existing?.revision ?? null,
       proteccion: existing
-        ? !protection.verificada
-          ? "Corrección bloqueada: protección de cierres/fotos no verificable en esta entrega"
-          : protection.bloqueos.length
-            ? protection.bloqueos.join(". ")
-            : "Protecciones verificadas: corrección excepcional revisable, original trazable"
+        ? "Corrección excepcional revisable con motivo; el original queda trazable en la auditoría"
         : "La confirmación conserva la foto y su Inicio; no modifica Movimientos",
       fingerprint: fingerprint([
         current.contexto,
@@ -858,8 +855,6 @@ export function confirmOpening(
     const p = previewOpening(db, ref, body, provider);
     if (body.confirmado !== true || body.fingerprint !== p.fingerprint)
       fail("Revisa impacto y confirma expresamente.");
-    if (p.correccionBloqueada)
-      throw new Problem(409, "HISTORY_LOCKED", p.proteccion);
     if (p.existente)
       db.run(
         "UPDATE fotos_neto_apertura SET importe=?,evidencia=?,procedencia=?,cobertura=?,confirmado=?,revision=revision+1 WHERE referencia=? AND ciclo=?",

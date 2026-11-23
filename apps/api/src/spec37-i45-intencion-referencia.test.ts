@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
-import { contract, manifest, verifyContract } from "./schema-contract";
+import { contract, manifest, verifyContract } from "./schema-contract";import { restaurarTriggerAperturaV31 } from "./cierre-validacion-test-support";
+
 import { createCycle, cycleContext } from "./ciclos";
 import { createClassification } from "./clasificacion";
 import { createSaldo } from "./saldos";
@@ -43,7 +44,7 @@ import {
 const now = Date.parse("2026-10-25T12:00:00Z");
 const stamp = "2026-01-01T00:00:00.000Z";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
-const c31 = "C31-SPEC37-INTENCION-91C32F5";
+const c32 = "C32-SPEC38-VALIDACION-CIERRE";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-i45-"));
 
 type Fixture = {
@@ -340,6 +341,10 @@ function pendienteV30(db: Database) {
  */
 function revertToV30(db: Database) {
   db.exec(`
+    DROP TABLE cierre_validacion_manifiesto;
+    DROP TABLE validacion_attempts;
+    DROP TABLE cierre_validacion_audit;
+    DROP TABLE cierre_validacion;
     DROP TRIGGER transferencia_pendiente_intencion_forma_insert;
     DROP TRIGGER transferencia_pendiente_intencion_forma_update;
     DROP TRIGGER transferencia_pendiente_intencion_datos_insert;
@@ -347,11 +352,18 @@ function revertToV30(db: Database) {
     ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_evidencia;
     ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_apertura;
     ALTER TABLE transferencia_pendiente DROP COLUMN anticipo_nombre;
+    /* Retirada de los objetos de I2 antes de bajar a la versión previa. */
+    DROP TRIGGER anticipo_apertura_aplicada;
+    DROP TRIGGER anticipo_cycle_photo;
+    DROP TABLE anticipo_apertura_autorizacion;
+    DROP TABLE anticipo_apertura_guard;
+    DROP TABLE anticipo_apertura_evento;
     UPDATE schema_version SET version=30;`);
+  restaurarTriggerAperturaV31(db);
   expect(verifyContract(db, 30)).toBe(c30);
 }
 
-test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", () => {
+test("SPEC37-I4.5 G-v32: v30 → v32 es aditiva y conserva filas e identidad", () => {
   const dir = root();
   try {
     const path = join(dir, "v30.sqlite");
@@ -384,9 +396,9 @@ test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", (
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 31,
+        version: 32,
       });
-      expect(verifyContract(db, 31)).toBe(c31);
+      expect(verifyContract(db, 32)).toBe(c32);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Aditividad: ningún objeto de C30 desaparece y el único que cambia de
@@ -398,7 +410,13 @@ test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", (
           return JSON.stringify(now) !== JSON.stringify(object);
         })
         .map((object) => `${object.type}:${object.name}`);
-      expect(changed).toEqual(["table:transferencia_pendiente"]);
+      // SPEC38 I2 sustituye el veto absoluto de `anticipo_cycle_photo` por el
+      // procedimiento autorizado de §4.3: es el único objeto previo que cambia
+      // de forma además de la tabla extendida por `ALTER TABLE`.
+      expect(changed).toEqual([
+        "table:transferencia_pendiente",
+        "trigger:anticipo_cycle_photo",
+      ]);
       for (const object of contract(c30).objects)
         expect(current.has(`${object.type}:${object.name}`)).toBe(true);
 
@@ -450,7 +468,7 @@ test("SPEC37-I4.5 G-v31: v30 → v31 es aditiva y conserva filas e identidad", (
   }
 });
 
-test("SPEC37-I4.5 G-v31: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
+test("SPEC37-I4.5 G-v32: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
   const dir = root();
   try {
     const path = join(dir, "v30-incoherente.sqlite");
@@ -499,7 +517,7 @@ test("SPEC37-I4.5 G-v31: el preflight rechaza pendientes v30 incoherentes sin es
   }
 });
 
-test("SPEC37-I4.5 G-v31: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
+test("SPEC37-I4.5 G-v32: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
   const dir = root();
   try {
     const path = join(dir, "v30.sqlite");
@@ -516,7 +534,7 @@ test("SPEC37-I4.5 G-v31: una base v30 genuina migra y sigue confirmando su Refer
     }
     const migrated = openDatabase(path);
     try {
-      expect(verifyContract(migrated, 31)).toBe(c31);
+      expect(verifyContract(migrated, 32)).toBe(c32);
       // El trigger de v30 sigue vigente y la columna nueva no lo altera.
       expect(() =>
         migrated.run(

@@ -10,12 +10,6 @@ import { createHash } from "node:crypto";
 import { cashAt, cents, investmentInstalled } from "./investment-engine";
 
 import { Problem } from "./problem";
-import {
-  assertSaldoCreationWritable,
-  saldoClosureConflict,
-  saldoEconomicReview,
-  type SaldoGuardValue,
-} from "./e49-guards";
 export { Problem } from "./problem";
 export const pairs: Record<string, string[]> = {
   Efectivo: ["Movimientos", "Terminal", "No controlado", "Inversiones"],
@@ -297,6 +291,11 @@ function args(v: SaldoInput) {
     money(v.objetivo),
   ];
 }
+export type SaldoGuardValue = {
+  tipo: string;
+  control: string;
+  saldoApertura: string | null;
+};
 export type ImpactGuard = (
   id: string,
   fields: string[],
@@ -362,7 +361,6 @@ export function createSaldo(
           );
         return getSaldo(db, prev.saldo);
       }
-      assertSaldoCreationWritable(db, v);
       const row = db
         .query(
           "UPDATE counters SET next=next+1 WHERE name='saldo' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) value",
@@ -420,13 +418,18 @@ function planSaldo(
       JSON.stringify(value[f as keyof SaldoInput]) !==
       JSON.stringify(old[f as keyof SaldoInput]),
   );
-  const material = saldoClosureConflict(db, id, changed, value);
+  // §7.6: sin cierres fotográficos no existe el atributo «capturado por una
+  // foto». Lo que sí se conserva es la guarda real del dominio: un Saldo con
+  // uso económico exige revisión con motivo y huella, y nunca se bloquea por
+  // una foto histórica.
+  const material: never[] = [];
   const economicUse =
     saldoHasEconomicUse(db, id, changed) || guard(id, changed, value);
-  const review = material.length ? [] : saldoEconomicReview(db, changed);
-  const bloqueado = material.length > 0;
-  const requiereRevision =
-    !bloqueado && economicUse && review.length > 0;
+  const review: never[] = [];
+  const bloqueado = false;
+  // La revisión la decide el uso económico real del Saldo, no la existencia de
+  // un cierre: sin uso, el cambio es libre como antes de la primera foto.
+  const requiereRevision = economicUse;
   return {
     old,
     value,
@@ -506,12 +509,7 @@ export function updateSaldo(
           "La modificación afecta a tipo, control o apertura de un Saldo capturado por un cierre; revisa la foto y la ventana antes de cambiarlo.",
           { saldo: "Atributo capturado por un cierre." },
           {
-            cierres: p.material.map(({ ciclo, version, inicio, fin }) => ({
-              ciclo,
-              version,
-              inicio,
-              fin,
-            })),
+            cierres: [],
           },
         );
       if (p.requiereRevision) {
@@ -519,18 +517,11 @@ export function updateSaldo(
           throw new Problem(
             409,
             "RECTIFICATION_REQUIRED",
-            "El cambio es económico y existe un cierre. Revisa su impacto y confirma con motivo.",
+            "El cambio es económico o estructural: revisa su impacto y confirma con motivo la rectificación.",
             { saldo: "Revisa el impacto antes de guardar." },
             {
               fingerprint: p.fingerprint,
-              cierres: p.review.map(
-                ({ ciclo, version, inicio, fin }) => ({
-                  ciclo,
-                  version,
-                  inicio,
-                  fin,
-                }),
-              ),
+              cierres: [],
             },
           );
         if (confirmation.fingerprint !== p.fingerprint)

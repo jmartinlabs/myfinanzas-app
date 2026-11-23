@@ -1,20 +1,36 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const comidaOrigin = "http://127.0.0.1:3020";
-const comidaState = ".local/e2e-comida-dprima";
-const dprimaOrigin = "http://127.0.0.1:3021";
-const dprimaState = ".local/e2e-dprima";
+import { artifactDir, fixtureContext, type Fixture } from "./fixture";
 
-async function login(page: any, request: any, origin: string, state: string) {
+/**
+ * Puerto, estado y origen propios de la ejecución (#514): cada servidor tiene
+ * su listener y su SQLite dentro del contexto, así que dos runs simultáneos no
+ * comparten nada y este archivo deja de ocupar los puertos fijos 3020/3021.
+ */
+const comida = fixtureContext("comida-dprima-comida");
+const dprima = fixtureContext("comida-dprima-dprima");
+
+type OwnedFixture = {
+  fixture: Fixture;
+  child: ChildProcess;
+  output: () => string;
+  /** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+  assertAlive: () => void;
+};
+
+async function login(page: any, request: any, owned: OwnedFixture) {
   await expect
     .poll(
       async () => {
+        owned.assertAlive();
         try {
-          return (await request.get(origin + "/api/health")).status();
+          return (await request.get(owned.fixture.baseURL + "/api/health"))
+            .status();
         } catch {
           return 0;
         }
@@ -22,16 +38,25 @@ async function login(page: any, request: any, origin: string, state: string) {
       { timeout: 20000 },
     )
     .toBe(200);
-  expect((await request.get(origin + "/api/comida?estado=")).status()).toBe(401);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  owned.assertAlive();
+  expect(
+    existsSync(join(owned.fixture.dir, "bootstrap.txt")),
+    `El fixture ${owned.fixture.name} no provisionó ${owned.fixture.dir}/bootstrap.txt: ${owned.output().trim()}`,
+  ).toBe(true);
+  expect(
+    (await request.get(owned.fixture.baseURL + "/api/comida?estado=")).status(),
+  ).toBe(401);
   await page.route("**/api/**", async (route: any) => {
     const url = new URL(route.request().url());
-    url.port = new URL(origin).port;
+    url.port = String(owned.fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/comida");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(state + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(join(owned.fixture.dir, "bootstrap.txt"), "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia E2E " + randomUUID());
@@ -47,20 +72,36 @@ async function login(page: any, request: any, origin: string, state: string) {
     .click();
 }
 
-function startServer(port: number, state: string) {
-  return spawn(
+/** Arranca el servidor con el puerto y el estado de su contexto. */
+function startServer(fixture: Fixture): OwnedFixture {
+  const child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/e2e-comida-dprima-server.ts"],
     {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        E2E_PORT: String(port),
-        E2E_STATE: state,
-      },
+      stdio: ["ignore", "pipe", "pipe"],
+      env: fixture.env,
     },
   );
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture.name} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
+  return { fixture, child, output: () => output, assertAlive };
 }
 
 test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persistencia 1440/390", async ({
@@ -70,11 +111,11 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e2e-comida", { recursive: true });
-  const child = startServer(3020, comidaState);
-    await login(page, request, comidaOrigin, comidaState);
+  const artifactsE2eComida = artifactDir("e2e-comida");
+  const server = startServer(comida);
+    await login(page, request, server);
     const shot = (name: string) =>
-      page.screenshot({ path: `artifacts/e2e-comida/${name}.png`, fullPage: true });
+      page.screenshot({ path: join(artifactsE2eComida, `${name}.png`), fullPage: true });
     await page.goto("/comida");
     await expect(
       page.getByRole("heading", { name: "Comida", exact: true }),
@@ -216,7 +257,7 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
     ).toBeVisible();
     await shot("comida-390");
     expect(errors).toEqual([]);
-  child.kill("SIGKILL");
+  server.child.kill("SIGKILL");
 });
 
 test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390", async ({
@@ -226,11 +267,11 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  mkdirSync("artifacts/e2e-dprima", { recursive: true });
-  const child = startServer(3021, dprimaState);
-    await login(page, request, dprimaOrigin, dprimaState);
+  const artifactsE2eDprima = artifactDir("e2e-dprima");
+  const server = startServer(dprima);
+    await login(page, request, server);
     const shot = (name: string) =>
-      page.screenshot({ path: `artifacts/e2e-dprima/${name}.png`, fullPage: true });
+      page.screenshot({ path: join(artifactsE2eDprima, `${name}.png`), fullPage: true });
     await page.goto("/dprima");
     await expect(
       page.getByRole("heading", { name: "Partidas", exact: true }),
@@ -301,7 +342,8 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     // Mensual por raíz: gasto y aportación separados.
     await page.getByLabel("Ciclo del plan mensual").selectOption({ index: 1 });
     const monthlySection = page.getByRole("region", {
-      name: "Plan Mensual D′",
+      name: "Plan mensual por Partida raíz",
+      exact: true,
     });
     const monthly = monthlySection
       .locator("tbody tr", { hasText: "Raíz aportación E2E" })
@@ -408,5 +450,5 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     ).toBeEditable();
     await shot("dprima-390");
     expect(errors).toEqual([]);
-  child.kill("SIGKILL");
+  server.child.kill("SIGKILL");
 });

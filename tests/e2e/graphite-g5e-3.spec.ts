@@ -1,32 +1,27 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3061;
-const STATE = ".local/e2e-compartidos-g5e";
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("compartidos-g5e");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/compartido-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        COMPARTIDO_PORT: String(PORT),
-        COMPARTIDO_STATE: STATE,
-      },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/compartido-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -34,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.continue({ url: url.toString() });
   });
   await page.goto("/compartidos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia Graphite compartidos " + randomUUID());
@@ -71,7 +67,7 @@ async function authenticate(page: Page) {
 
 test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(240000);
-  mkdirSync("artifacts/g5e-3", { recursive: true });
+  const artifacts = artifactDir("g5e-3");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -149,7 +145,7 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
       expect((await cardLink.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
     await page.screenshot({
-      path: `artifacts/g5e-3/compartidos-lista-${width}.png`,
+      path: join(artifacts, `compartidos-lista-${width}.png`),
       fullPage: true,
     });
   }
@@ -202,7 +198,7 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
     await expect(people).toHaveCount(3);
     await noOverflow();
     await page.screenshot({
-      path: `artifacts/g5e-3/compartidos-detalle-${width}.png`,
+      path: join(artifacts, `compartidos-detalle-${width}.png`),
       fullPage: true,
     });
   }
@@ -223,7 +219,7 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
     page.getByRole("button", { name: "Añadir participante", exact: true }).last(),
   ).toHaveCSS("min-height", "44px");
   await page.screenshot({
-    path: "artifacts/g5e-3/compartidos-participante-1440.png",
+    path: join(artifacts, "compartidos-participante-1440.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Cancelar", exact: true }).first().click();
@@ -238,7 +234,7 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
     page.getByRole("button", { name: "Confirmar baja lógica", exact: true }),
   ).toHaveCSS("min-height", "44px");
   await page.screenshot({
-    path: "artifacts/g5e-3/compartidos-baja-1440.png",
+    path: join(artifacts, "compartidos-baja-1440.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Cancelar", exact: true }).first().click();
@@ -275,13 +271,13 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-3/compartidos-impacto-1440.png",
+    path: join(artifacts, "compartidos-impacto-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-3/compartidos-impacto-390.png",
+    path: join(artifacts, "compartidos-impacto-390.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Cancelar", exact: true }).first().click();
@@ -297,7 +293,7 @@ test("G5e-3: Compartidos premium en Graphite, 1440/820/390", async ({ page }) =>
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-3/compartidos-nuevo-1440.png",
+    path: join(artifacts, "compartidos-nuevo-1440.png"),
     fullPage: true,
   });
   await page.goto("/compartidos/REF001/aportaciones");

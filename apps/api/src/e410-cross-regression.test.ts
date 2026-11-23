@@ -11,7 +11,6 @@ import {
 } from "./e49";
 import { getReaperturaEstado, reabrirCierre } from "./e410";
 import { previewRecierre, reCerrarCiclo } from "./e410-recierre";
-import { assertDatesWritable } from "./e49-guards";
 import { Problem } from "./problem";
 
 /**
@@ -22,10 +21,12 @@ import { Problem } from "./problem";
  *   E4.9 closure → E4.10 reopening → rectification → E4.10 re-closure → E4.9.
  *
  * The goal is to keep the ordinary E4.9 contract intact after E4.10 has
- * created vN+1: duplicate closure remains blocked, T1 is locked again when the
- * window closes, E4.9 idempotency still replays/conflicts without creating a
- * version, the v1 photo/audit stay immutable, and a failed re-closure rolls
- * back without weakening E4.9 or E4.10 state. No E4.9 test is modified.
+ * created vN+1: duplicate closure remains blocked, a rectified fact on a
+ * validated cycle is accepted and persists (SPEC38 §7.6 retires the
+ * closed-window lock), E4.9 idempotency still replays/conflicts without
+ * creating a version, the v1 photo/audit stay immutable, and a failed
+ * re-closure rolls back without weakening E4.9 or E4.10 state. No E4.9 test is
+ * modified.
  *
  * The backup/E3.5 options below are synthetic fixtures that satisfy only the
  * fixture preflight. They neither acredit DT6/T-BKP nor make AC15 a real
@@ -204,14 +205,12 @@ test("E4.10/E4.9 cross: v1 → reapertura → rectificación → v2 cierra la ve
       reapertura: { id: reopened.reapertura.id, versionOrigen: 1 },
     });
 
-    // T1 inside the rectification window: the E4.9 guard accepts the fact only
-    // because E4.10 declares this cycle/date as the active window.
-    expect(() =>
-      assertDatesWritable(db, ["2026-01-20"], "registrar el Movimiento", {
-        allowActiveReopenedCycle: true,
-      }),
-    ).not.toThrow();
+    // T1 inside the rectification window: the fact is written and persists.
+    // Sustituye T1/HISTORY_LOCKED con `allowActiveReopenedCycle`: SPEC38 §7.6 retira el bloqueo por ventana cerrada.
     seedMovement(db, { id: "9102", fecha: "2026-01-20", importe: 700 });
+    expect(
+      db.query("SELECT importe FROM movimientos WHERE id=?").get("9102"),
+    ).toEqual({ importe: 700 });
 
     const pre = preview(db);
     expect(pre.comparacion.estado).toBe("ConCambios");
@@ -235,14 +234,12 @@ test("E4.10/E4.9 cross: v1 → reapertura → rectificación → v2 cierra la ve
       reapertura: null,
     });
 
-    // Once the window is closed, the same T1 date returns HISTORY_LOCKED again.
-    const t1 = problemOf(() =>
-      assertDatesWritable(db, ["2026-01-20"], "registrar el Movimiento", {
-        allowActiveReopenedCycle: true,
-      }),
-    );
-    expect(t1.status).toBe(409);
-    expect(t1.code).toBe("HISTORY_LOCKED");
+    // After the re-closure the same T1 date is still writable and persists.
+    // Sustituye 409 HISTORY_LOCKED tras cerrar la ventana: SPEC38 §7.6 retira el bloqueo por ventana cerrada.
+    seedMovement(db, { id: "9103", fecha: "2026-01-20", importe: 800 });
+    expect(
+      db.query("SELECT importe FROM movimientos WHERE id=?").get("9103"),
+    ).toEqual({ importe: 800 });
 
     // E4.9 remains the only ordinary close path, and it refuses to create v3.
     const ordinary = problemOf(() =>
@@ -496,11 +493,12 @@ test("E4.10/E4.9 cross: un fallo del re-cierre revierte todo y conserva la venta
         ),
       ).code,
     ).toBe("ALREADY_CLOSED");
-    expect(() =>
-      assertDatesWritable(db, ["2026-01-20"], "registrar el Movimiento", {
-        allowActiveReopenedCycle: true,
-      }),
-    ).not.toThrow();
+    // With the window still open after the rollback, T1 is written and persists.
+    // Sustituye T1/HISTORY_LOCKED con `allowActiveReopenedCycle`: SPEC38 §7.6 retira el bloqueo por ventana cerrada.
+    seedMovement(db, { id: "9303", fecha: "2026-01-20", importe: 900 });
+    expect(
+      db.query("SELECT importe FROM movimientos WHERE id=?").get("9303"),
+    ).toEqual({ importe: 900 });
 
     // Retrying after the rollback succeeds and creates exactly v2.
     const retry = reclose(db, preview(db), validOptions(), "retry-cross-" + randomUUID());

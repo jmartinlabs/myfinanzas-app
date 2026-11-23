@@ -1,9 +1,19 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
+import { contextFromEnv } from "../../apps/api/test-support/e2e-context";
+import { artifactDir } from "./fixture";
+
+/**
+ * Base de datos del servidor de la ejecución (#514): `<runRoot>/state/app`,
+ * no el `.local/e2e` compartido. Las mutaciones ficticias de clasificación
+ * deben tocar la misma SQLite que atiende la UI de este run.
+ */
+const appDb = join(contextFromEnv().stateDir("app"), "demo.sqlite");
+
 export async function classificationJourney(page: Page) {
-  mkdirSync("artifacts/e1-2", { recursive: true });
+  const artifacts = artifactDir("e1-2");
   const shot = async (name: string) => {
     await page.evaluate(() => scrollTo(0, 0));
     expect(
@@ -12,7 +22,7 @@ export async function classificationJourney(page: Page) {
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e1-2/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };
@@ -322,7 +332,7 @@ export async function classificationJourney(page: Page) {
     process.env.BUN_BIN ?? "bun",
     [
       "-e",
-      `import { Database } from 'bun:sqlite'; const db=new Database('.local/e2e/demo.sqlite'); db.run('UPDATE categorias SET anual=NULL,mensual=NULL,referencia=NULL WHERE id=?',[process.argv[1]]); db.close();`,
+      `import { Database } from 'bun:sqlite'; const db=new Database(${JSON.stringify(appDb)}); db.run('UPDATE categorias SET anual=NULL,mensual=NULL,referencia=NULL WHERE id=?',[process.argv[1]]); db.close();`,
       second,
     ],
     { env: { ...process.env, NODE_ENV: "test" }, stdio: "pipe" },
@@ -354,7 +364,7 @@ export async function classificationJourney(page: Page) {
     process.env.BUN_BIN ?? "bun",
     [
       "-e",
-      `import { Database } from 'bun:sqlite'; const db=new Database('.local/e2e/demo.sqlite'); db.run("INSERT OR IGNORE INTO annual_plan_lines(ejercicio,partida,presupuesto,periodo,esencial,revision) VALUES(2026,?,NULL,NULL,'Pendiente',1)",[process.argv[1]]); db.close();`,
+      `import { Database } from 'bun:sqlite'; const db=new Database(${JSON.stringify(appDb)}); db.run("INSERT OR IGNORE INTO annual_plan_lines(ejercicio,partida,presupuesto,periodo,esencial,revision) VALUES(2026,?,NULL,NULL,'Pendiente',1)",[process.argv[1]]); db.close();`,
       partida,
     ],
     { env: { ...process.env, NODE_ENV: "test" }, stdio: "pipe" },

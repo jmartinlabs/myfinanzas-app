@@ -6,6 +6,7 @@ import {
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import {
@@ -25,6 +26,8 @@ import {
   type MotionReport,
   type ScreenViewportAudit,
 } from "./ui-dev07-audit";
+
+import { artifactDir, fixtureContext, requireFixtureState, type Fixture } from "./fixture";
 
 /**
  * UI DEV-07 · I4 — matriz de evidencia y aserciones AA (solo test).
@@ -46,21 +49,31 @@ import {
  * 1440×1000 declarada en el paquete DEV-07.
  */
 
-const BASE_OUT = "artifacts/ui-dev07/base";
-const CRITICAL_OUT = "artifacts/ui-dev07/critical";
+const artifacts = artifactDir("ui-dev07");
+const BASE_OUT = join(artifacts, "base");
+const CRITICAL_OUT = join(artifacts, "critical");
 
-const INICIO_PORT = 3014;
-const ZERO_PORT = 3015;
-const THEME_PORT = 3013;
-const INICIO_AUTH_PORT = 3017;
-const CIERRE_LISTO_PORT = 3031;
-const CIERRE_TECLADO_PORT = 3032;
-const CIERRE_BLOQUEADO_PORT = 3034;
+const INICIO = fixtureContext("ui-dev07-inicio");
+const ZERO = fixtureContext("ui-dev07-inicio-zero");
+const INICIO_AUTH = fixtureContext("ui-dev07-inicio-auth");
+const THEME = fixtureContext("ui-dev07-theme");
+const INICIO_PORT = INICIO.port;
+const ZERO_PORT = ZERO.port;
+const THEME_PORT = THEME.port;
+const INICIO_AUTH_PORT = INICIO_AUTH.port;
+const CIERRE_LISTO = fixtureContext("ui-dev07-cierre-listo");
+const CIERRE_TECLADO = fixtureContext("ui-dev07-cierre-replay");
+const CIERRE_BLOQUEADO = fixtureContext("ui-dev07-cierre-bloqueado");
+const CIERRE_LISTO_PORT = CIERRE_LISTO.port;
+const CIERRE_TECLADO_PORT = CIERRE_TECLADO.port;
+const CIERRE_BLOQUEADO_PORT = CIERRE_BLOQUEADO.port;
 
 type ServerSpec = {
   id: string;
   script: string;
   port: number;
+  /** Entorno completo del fixture del contexto (#514). */
+  fixture?: Fixture;
   env?: Record<string, string>;
 };
 
@@ -69,57 +82,113 @@ const SERVERS: readonly ServerSpec[] = [
     id: "theme",
     script: "apps/api/test-support/theme-server.ts",
     port: THEME_PORT,
+    fixture: THEME,
   },
   {
     id: "inicio",
     script: "apps/api/test-support/inicio-server.ts",
     port: INICIO_PORT,
+    fixture: INICIO,
   },
   {
     id: "inicio-zero",
     script: "apps/api/test-support/inicio-server.ts",
     port: ZERO_PORT,
+    fixture: ZERO,
     env: { E46_SCENARIO: "zero" },
   },
   {
     // Fixture independiente para las pruebas de activación por teclado: la
-    // matriz ya enrola `.local/e2e-inicio` en este mismo worker.
+    // matriz ya enrola el suyo en este mismo worker.
     id: "inicio-auth",
     script: "apps/api/test-support/inicio-server.ts",
     port: INICIO_AUTH_PORT,
+    fixture: INICIO_AUTH,
     env: { E46_SCENARIO: "auth" },
   },
   {
     id: "cierre-listo",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_LISTO_PORT,
+    fixture: CIERRE_LISTO,
     env: { E49_SCENARIO: "listo", E49_PORT: String(CIERRE_LISTO_PORT) },
   },
   {
-    // Fixture independiente para la activación por teclado del cierre; la
-    // matriz ya enrola `.local/e2e-cierre-listo` en este mismo worker.
+    // Fixture independiente para la activación por teclado del cierre: la
+    // matriz corre en este mismo worker y cada una necesita su propio estado.
     id: "cierre-teclado",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_TECLADO_PORT,
+    fixture: CIERRE_TECLADO,
     env: { E49_SCENARIO: "replay", E49_PORT: String(CIERRE_TECLADO_PORT) },
   },
   {
     id: "cierre-bloqueado",
     script: "apps/api/test-support/cierre-server.ts",
     port: CIERRE_BLOQUEADO_PORT,
+    fixture: CIERRE_BLOQUEADO,
     env: {
-      E49_SCENARIO: "bloqueado",
+      // #555: el antiguo «bloqueado» por E3.5/backup ya no bloquea. El estado
+      // crítico que ocupa su lugar es `Pendiente` de validación.
+      E49_SCENARIO: "pendiente",
       E49_PORT: String(CIERRE_BLOQUEADO_PORT),
     },
   },
 ];
 
-const active: ChildProcess[] = [];
+const active: TrackedServer[] = [];
 
-async function waitForApi(request: APIRequestContext, port: number) {
+/**
+ * Servidor en marcha con su salida y su proceso bajo control: un fixture
+ * muerto no puede quedar enmascarado por un poll que responde.
+ */
+type TrackedServer = {
+  child: ChildProcess;
+  output: () => string;
+  assertAlive: () => void;
+  stop: () => void;
+};
+
+function track(child: ChildProcess): TrackedServer {
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  return {
+    child,
+    output: () => output,
+    assertAlive: () => {
+      const ended = exit;
+      if (!ended) return;
+      const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+      throw new Error(
+        `El fixture de UI DEV-07 terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+      );
+    },
+    stop: () => {
+      child.kill();
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+    },
+  };
+}
+
+async function waitForApi(
+  request: APIRequestContext,
+  port: number,
+  owned: TrackedServer,
+) {
   await expect
     .poll(
       async () => {
+        owned.assertAlive();
         try {
           return (await request.get(`http://127.0.0.1:${port}/api/health`))
             .status();
@@ -134,15 +203,21 @@ async function waitForApi(request: APIRequestContext, port: number) {
 
 async function startServer(request: APIRequestContext, spec: ServerSpec) {
   const child = spawn(process.env.BUN_BIN ?? "bun", [spec.script], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test", ...spec.env },
+    stdio: ["ignore", "pipe", "pipe"],
+    env: spec.fixture
+      ? { ...spec.fixture.env, ...spec.env }
+      : { ...process.env, NODE_ENV: "test", ...spec.env },
   });
-  active.push(child);
-  await waitForApi(request, spec.port).catch((error) => {
-    child.kill();
+  const owned = track(child);
+  active.push(owned);
+  await waitForApi(request, spec.port, owned).catch((error) => {
+    owned.stop();
     throw error;
   });
-  return child;
+  // El fixture provisionó su estado antes de servir: se navega solo entonces.
+  if (spec.fixture)
+    requireFixtureState({ ...owned, fixture: spec.fixture });
+  return owned;
 }
 
 async function routeApi(page: Page, port: number) {
@@ -234,10 +309,12 @@ async function waitForScreenReady(page: Page, screen: string) {
     await expect(page.locator("form.saldo-form")).toBeVisible();
     await expect(page.locator("#nombre")).toBeVisible();
   } else if (screen === "cierre") {
-    await expect(page.locator(".cierre-e49-status")).toBeVisible();
-    await expect(page.getByLabel("Ciclo")).toHaveValue("1");
+    // #555: la pantalla de cierre es la validación operativa; su lectura
+    // principal es el estado del conjunto, no un preflight fotográfico.
+    await expect(page.locator(".validacion-status")).toBeVisible();
+    await expect(page.getByLabel("Ciclo", { exact: true })).toHaveValue("1");
     await expect(
-      page.getByText("Listo", { exact: true }).first(),
+      page.locator(".ui-badge[data-estado]").first(),
     ).toBeVisible();
   }
 }
@@ -301,6 +378,19 @@ function assertViewportAudit(screen: string, audit: ScreenViewportAudit) {
     expect(
       audit.components.minStatusIcon,
       `${label}: icono de estado < 3`,
+    ).toBeGreaterThanOrEqual(3);
+  }
+  // #448: en Movimientos el glifo del chip de Tipo sí se mide (tinta del SVG).
+  if (screen === "movimientos") {
+    expect(
+      audit.components.movementTypeGlyphs,
+      `${label}: sin glifos de Tipo medidos`,
+    ).toBeGreaterThan(0);
+  }
+  if (audit.components.minMovementTypeGlyph !== null) {
+    expect(
+      audit.components.minMovementTypeGlyph,
+      `${label}: glifo del chip de Tipo < 3`,
     ).toBeGreaterThanOrEqual(3);
   }
 
@@ -633,7 +723,7 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.afterAll(() => {
-  for (const child of active) child.kill();
+  for (const server of active) server.stop();
 });
 
 test.describe("UI DEV-07 I4 · matriz base y AA", () => {
@@ -642,7 +732,7 @@ test.describe("UI DEV-07 I4 · matriz base y AA", () => {
   }) => {
     test.setTimeout(600000);
     await routeApi(page, INICIO_PORT);
-    await login(page, ".local/e2e-inicio", "/inicio");
+    await login(page, INICIO.dir, "/inicio");
     await expect(
       page.getByRole("heading", { name: "Inicio", exact: true }),
     ).toBeVisible();
@@ -677,25 +767,27 @@ test.describe("UI DEV-07 I4 · matriz base y AA", () => {
     }
   });
 
-  test("Cierre E4.9 preflight listo", async ({ page }) => {
+  test("Validación del cierre, estado Sin validar", async ({ page }) => {
     test.setTimeout(600000);
     await routeApi(page, CIERRE_LISTO_PORT);
-    await login(page, ".local/e2e-cierre-listo", "/cierre");
+    await login(page, CIERRE_LISTO.dir, "/cierre");
+    // #555 · §5: la pantalla ya no es «Cierre E4.9 preflight»; la lectura
+    // principal es el estado de validación y su cobertura.
     await expect(
       page.getByRole("heading", {
-        name: "Cierre financiero",
+        name: "Validación del cierre",
         exact: true,
       }),
     ).toBeVisible();
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(
-      page.getByText("Listo", { exact: true }).first(),
-    ).toBeVisible();
+      page.locator('.ui-badge[data-estado="SinValidar"]'),
+    ).toContainText("Sin validar");
     await auditAndCapture(
       page,
       "cierre",
       "/cierre",
-      "Cierre financiero",
+      "Validación del cierre",
       { navigate: false },
     );
   });
@@ -705,7 +797,7 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
   test("Inicio cero verificado", async ({ page }) => {
     test.setTimeout(300000);
     await routeApi(page, ZERO_PORT);
-    await login(page, ".local/e2e-inicio-zero", "/inicio");
+    await login(page, ZERO.dir, "/inicio");
     const liquidez = page.getByRole("article", {
       name: "Liquidez",
       exact: true,
@@ -720,7 +812,7 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
   }) => {
     test.setTimeout(300000);
     await routeApi(page, THEME_PORT);
-    await login(page, ".local/e2e-theme", "/saldos");
+    await login(page, THEME.dir, "/saldos");
     await page.goto("/saldos/S000");
     await expect(page.locator(".position-panel")).toBeVisible();
     await expect(
@@ -752,24 +844,26 @@ test.describe("UI DEV-07 I4 · estados críticos", () => {
     });
   });
 
-  test("Cierre bloqueado, sin foto parcial", async ({ page }) => {
+  test("Validación pendiente, sin foto ni bloqueo de cierre", async ({ page }) => {
     test.setTimeout(300000);
     await routeApi(page, CIERRE_BLOQUEADO_PORT);
-    await login(page, ".local/e2e-cierre-bloqueado", "/cierre");
+    await login(page, CIERRE_BLOQUEADO.dir, "/cierre");
     await page.getByLabel("Ciclo").selectOption("1");
+    // #555: el estado crítico deja de ser «Bloqueado» por E3.5/backup —que ya
+    // no bloquea— y pasa a ser `Pendiente`, con su acción humana explícita.
     await expect(
-      page.getByText("Bloqueado", { exact: true }).first(),
-    ).toBeVisible();
+      page.locator('.ui-badge[data-estado="Pendiente"]'),
+    ).toContainText("Pendiente");
+    await expect(
+      page.getByRole("button", { name: "Confirmar revisión", exact: true }),
+    ).toBeEnabled();
     await expect(
       page.getByText("El cierre está bloqueado", { exact: false }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Confirmar cierre", exact: true }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
     await expect(
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
-    await captureCritical(page, "cierre", "bloqueado", 1440, 1000);
+    await captureCritical(page, "cierre", "pendiente", 1440, 1000);
   });
 });
 
@@ -779,7 +873,7 @@ test.describe("UI DEV-07 · activación por teclado", () => {
   }) => {
     test.setTimeout(180000);
     await routeApi(page, INICIO_AUTH_PORT);
-    await login(page, ".local/e2e-inicio-auth", "/inicio");
+    await login(page, INICIO_AUTH.dir, "/inicio");
     await expect(
       page.getByRole("heading", { name: "Inicio", exact: true }),
     ).toBeVisible();
@@ -868,17 +962,19 @@ test.describe("UI DEV-07 · activación por teclado", () => {
     }
   });
 
-  test("botón de actualización del cierre", async ({ page }) => {
+  test("botón de actualización del estado de validación", async ({ page }) => {
     test.setTimeout(180000);
     await routeApi(page, CIERRE_TECLADO_PORT);
-    await login(page, ".local/e2e-cierre-replay", "/cierre");
+    await login(page, CIERRE_TECLADO.dir, "/cierre");
     await page.getByLabel("Ciclo").selectOption("1");
     await expect(
-      page.getByText("Listo", { exact: true }).first(),
+      page.locator('.ui-badge[data-estado="SinValidar"]'),
     ).toBeVisible();
 
+    // #555: la actualización lee el estado de validación; el preflight
+    // fotográfico está retirado y responde 410.
     const refresh = page.getByRole("button", {
-      name: "Actualizar revisión",
+      name: "Actualizar estado",
       exact: true,
     });
     for (const key of ["Enter", " "]) {
@@ -886,7 +982,7 @@ test.describe("UI DEV-07 · activación por teclado", () => {
       const response = page.waitForResponse(
         (item) =>
           item.request().method() === "GET" &&
-          /\/cierres\/[^/]+\/preflight/.test(item.url()),
+          /\/cierres\/[^/]+\/estado/.test(item.url()),
       );
       await page.keyboard.press(key);
       await response;

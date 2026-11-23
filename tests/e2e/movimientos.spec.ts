@@ -3,74 +3,43 @@ import { cycleOperationsJourney } from "./cycle-operations";
 import { presupuestos } from "./presupuestos";
 import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
-import { test, expect, type Page } from "@playwright/test";
-import { mkdirSync, readFileSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { expectMovementsParity } from "./movements-parity";
+import { test, expect } from "@playwright/test";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { reservePorts } from "../../apps/api/test-support/e2e-context";
+import { artifactDir, fixtureContext } from "./fixture";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s", "graphite-lime"] as const;
 
-/**
- * Paridad explícita tabla/carta: cada campo de la tarjeta conserva la misma
- * etiqueta, texto y enlace que la columna de la fila. No sustituye las
- * aserciones de contenido existentes; demuestra que la adaptación móvil no
- * pierde ni duplica información.
- */
-async function expectMovementsParity(page: Page) {
-  const table = await page.locator(".desktop-list").evaluate((root) => {
-    const clean = (value: string | null) =>
-      (value ?? "").replace(/\s+/g, " ").trim();
-    const headers = Array.from(root.querySelectorAll("thead th")).map((th) =>
-      clean(th.textContent),
-    );
-    return {
-      hrefs: Array.from(root.querySelectorAll("tbody a")).map((anchor) =>
-        anchor.getAttribute("href"),
-      ),
-      rows: Array.from(root.querySelectorAll("tbody tr")).map((row) => {
-        const cells = Array.from(row.querySelectorAll("td"));
-        return Object.fromEntries(
-          headers.map((header, index) => [
-            header,
-            clean(cells[index]?.textContent ?? ""),
-          ]),
-        );
-      }),
-    };
-  });
-  const cards = await page.locator(".movements-cards").evaluate((root) => {
-    const clean = (value: string | null) =>
-      (value ?? "").replace(/\s+/g, " ").trim();
-    return {
-      hrefs: Array.from(root.querySelectorAll(":scope > li a")).map((anchor) =>
-        anchor.getAttribute("href"),
-      ),
-      rows: Array.from(root.querySelectorAll(":scope > li")).map((card) =>
-        Object.fromEntries(
-          Array.from(card.querySelectorAll(".ui-data-list-field")).map(
-            (field) => [
-              field.getAttribute("data-label") ?? "",
-              clean(
-                field.querySelector(".ui-data-list-value")?.textContent ?? "",
-              ),
-            ],
-          ),
-        ),
-      ),
-    };
-  });
-  expect(table.rows.length).toBeGreaterThan(0);
-  expect(cards.rows).toEqual(table.rows);
-  expect(cards.hrefs).toEqual(table.hrefs);
-  await expect(
-    page.locator(".desktop-list tbody tr td[data-kind='amount']"),
-  ).toHaveCount(table.rows.length);
-  await expect(
-    page.locator(
-      ".movements-cards > li .ui-data-list-field[data-kind='amount']",
-    ),
-  ).toHaveCount(table.rows.length);
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("movimientos");
+const API_PORT = fixture.port;
+// #534: el servidor de restauración tomaba el 3004 fijo; con el contexto se
+// reserva por ejecución, como el resto de fixtures.
+const RESTORE_PORT = reservePorts(1)[0];
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture movimientos terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
 }
 
 test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y restauración con MFA", async ({
@@ -80,13 +49,22 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  const child = spawn(
+  child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/movimientos-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+    { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
   );
-  mkdirSync("artifacts/e1-4", { recursive: true });
-  mkdirSync("artifacts/dev-06-i2", { recursive: true });
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
+  const artifactsE14 = artifactDir("e1-4");
+  const artifactsDev06I2 = artifactDir("dev-06-i2");
   const shot = async (name: string) => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.evaluate(
@@ -99,7 +77,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e1-4/${name}.png`,
+      path: join(artifactsE14, `${name}.png`),
       fullPage: true,
     });
   };
@@ -119,7 +97,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await expectNoOverflow();
     await page.screenshot({
-      path: `artifacts/dev-06-i2/${name}.png`,
+      path: join(artifactsDev06I2, `${name}.png`),
       fullPage: true,
     });
   };
@@ -174,9 +152,10 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3003/api/health")
+              await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -185,9 +164,16 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         { timeout: 15000 },
       )
       .toBe(200);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture movimientos no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3003";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       await route.fulfill({ response });
     });
@@ -195,7 +181,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await navigate("/movimientos");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-movimientos/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect(page.locator(".secret")).toBeVisible();
@@ -356,12 +342,27 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       amount: string,
       balance: string,
     ) => {
+      const gasto = kind === "Gasto";
       await type.selectOption(kind);
-      await date.fill(when);
-      await money.fill(amount);
+      // #534: el alta de Gasto unificada (#484, spec 37 I5) usa etiquetas
+      // propias, así que los locators se resuelven DESPUÉS de elegir el Tipo.
+      await page
+        .getByLabel(gasto ? "Fecha del Gasto *" : "Fecha económica *", {
+          exact: true,
+        })
+        .fill(when);
+      await page
+        .getByLabel(gasto ? "Importe del Gasto (€) *" : "Importe (€) *", {
+          exact: true,
+        })
+        .fill(amount);
       await page
         .getByLabel(
-          kind === "Ingreso" ? "Saldo receptor *" : "Saldo origen *",
+          gasto
+            ? "Saldo pagador *"
+            : kind === "Ingreso"
+              ? "Saldo receptor *"
+              : "Saldo origen *",
           { exact: true },
         )
         .selectOption(balance);
@@ -553,7 +554,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     );
     await page.route("**/api/movimientos", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3003";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       expect(response.status()).toBe(201);
       await route.abort("failed");
@@ -913,7 +914,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await page.route("**/api/movimientos?*", async (route) => {
       await gate;
       const url = new URL(route.request().url());
-      url.port = "3003";
+      url.port = String(API_PORT);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -942,7 +943,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await page.route("**/api/movimientos?*", async (route) => {
       const url = new URL(route.request().url());
       listQueries.push(url.search);
-      url.port = "3003";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       const json = await response.json();
       if (json.movimientos.length) pagedRows = json.movimientos;
@@ -1013,7 +1014,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     expect((await get("/movimientos")).movimientos).toHaveLength(4);
     const e15 = await transferencias(page);
     const e16 = await deudas(page);
-    const e21 = await cycleOperationsJourney(page);
+    const e21 = await cycleOperationsJourney(page, String(API_PORT));
     const e22 = await presupuestos(page, e16);
     const e23 = await cyclePlanJourney(page, e22.id);
     const expectedDebt = (await get("/deudas/" + e16.id)).item.capitalPendiente;
@@ -1032,8 +1033,8 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         env: {
           ...process.env,
           NODE_ENV: "test",
-          E2E_RESTORE_DIR: ".local/e2e-movimientos",
-          E2E_RESTORE_PORT: "3004",
+          E2E_RESTORE_DIR: fixture.dir,
+          E2E_RESTORE_PORT: String(RESTORE_PORT),
         },
       },
     );
@@ -1043,7 +1044,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
           async () => {
             try {
               return (
-                await request.get("http://127.0.0.1:3004/api/health")
+                await request.get(`http://127.0.0.1:${RESTORE_PORT}/api/health`)
               ).status();
             } catch {
               return 0;
@@ -1054,7 +1055,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         .toBe(200);
       await page.route("**/api/**", async (route) => {
         const url = new URL(route.request().url());
-        url.port = "3004";
+        url.port = String(RESTORE_PORT);
         await route.fulfill({
           response: await route.fetch({ url: url.toString() }),
         });
@@ -1097,7 +1098,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
           .filter({ hasText: e23.budget }),
       ).toContainText("Excedido");
       await page.screenshot({
-        path: "artifacts/e2-3/restored-mobile.png",
+        path: join(artifactDir("e2-3"), "restored-mobile.png"),
         fullPage: true,
       });
       expect(
@@ -1153,7 +1154,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         }),
       ).toBeVisible();
       await page.screenshot({
-        path: "artifacts/e1-5/restored-mobile.png",
+        path: join(artifactDir("e1-5"), "restored-mobile.png"),
         fullPage: true,
       });
     } finally {
@@ -1161,7 +1162,9 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     }
     expect(errors).toEqual([]);
   } finally {
-    child.kill("SIGTERM");
+    child?.kill("SIGTERM");
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
     await page.unroute("**/api/**");
   }
 });

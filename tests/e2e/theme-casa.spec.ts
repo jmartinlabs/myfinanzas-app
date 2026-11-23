@@ -1,22 +1,42 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const API_PORT = 3013;
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
+
+// Puerto y estado propios de la ejecución (#514): las cuatro specs de tema
+// ocupaban 3013 y compartían `.local/e2e-theme`, así que cada una provisiona su
+// propia base y su propia cuenta.
+const THEME = fixtureContext("theme-casa");
+const API_PORT = THEME.port;
 let child: ReturnType<typeof spawn> | undefined;
+let fixtureOutput = "";
+let fixtureEnded = false;
+
+const assertAlive = () => {
+  if (fixtureEnded)
+    throw new Error(
+      `El fixture ${THEME.name} terminó antes de servir: ${fixtureOutput.trim() || "(sin salida)"}`,
+    );
+};
 
 test.beforeAll(async ({ request }) => {
   child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/theme-server.ts"], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
+    stdio: ["ignore", "pipe", "pipe"],
+    env: THEME.env,
   });
+  child.stdout?.on("data", (chunk) => (fixtureOutput += String(chunk)));
+  child.stderr?.on("data", (chunk) => (fixtureOutput += String(chunk)));
+  child.on("exit", () => (fixtureEnded = true));
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${API_PORT}/api/health`)).status();
+          return (await request.get(`${THEME.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -24,6 +44,7 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState({ fixture: THEME, output: () => fixtureOutput, assertAlive });
 });
 
 test.afterAll(() => {
@@ -39,7 +60,7 @@ async function authenticate(page: import("@playwright/test").Page) {
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-theme/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${THEME.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Casa " + randomUUID(),
   );
@@ -57,7 +78,7 @@ async function authenticate(page: import("@playwright/test").Page) {
 }
 
 test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ page }) => {
-  mkdirSync("artifacts/theme", { recursive: true });
+  const artifacts = artifactDir("theme");
   await authenticate(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -103,7 +124,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   ).toHaveCSS("font-family", /Newsreader/);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-saldos-1440.png",
+    path: join(artifacts, "casa-saldos-1440.png"),
     fullPage: true,
   });
 
@@ -113,7 +134,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
     page.locator(".saldo-detail-page .position-panel"),
   ).toContainText("Saldo actual");
   await page.screenshot({
-    path: "artifacts/theme/casa-saldo-detalle-1440.png",
+    path: join(artifacts, "casa-saldo-detalle-1440.png"),
     fullPage: true,
   });
   await page.locator(".saldo-detail-page > .back").click();
@@ -193,7 +214,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   }
 
   await page.screenshot({
-    path: "artifacts/theme/casa-1440.png",
+    path: join(artifacts, "casa-1440.png"),
     fullPage: true,
   });
 
@@ -206,7 +227,7 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(page.locator(".mobile-list li")).toHaveCount(5);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-390.png",
+    path: join(artifacts, "casa-390.png"),
     fullPage: true,
   });
 
@@ -218,13 +239,13 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(page.locator(".inicio-casa")).toHaveCount(0);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-inicio-390.png",
+    path: join(artifacts, "casa-inicio-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-inicio-1440.png",
+    path: join(artifacts, "casa-inicio-1440.png"),
     fullPage: true,
   });
 
@@ -292,6 +313,12 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
           text: node.textContent ?? "",
         })),
       );
+  // La lista se pinta cuando llegan los datos: esperar a que existan las filas
+  // evita leer importes antes de que se hayan renderizado (el chip con SVG
+  // añade coste de render y destapaba la carrera).
+  await expect
+    .poll(() => page.locator(".movement-amount").count(), { timeout: 15000 })
+    .toBeGreaterThanOrEqual(2);
   const amounts = await readAmounts();
   expect(amounts.length).toBeGreaterThanOrEqual(2);
   const inflow = amounts.find((a) => a.flow === "inflow");
@@ -307,22 +334,28 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
       .evaluateAll((nodes) =>
         nodes.map((node) => {
           const icon = node.querySelector(".movement-type-icon");
+          const glyph = icon?.querySelector("svg");
           return {
             tipo: node.getAttribute("data-tipo"),
             width: icon ? getComputedStyle(icon).width : null,
-            glyph: icon ? getComputedStyle(icon, "::before").content : null,
+            height: icon ? getComputedStyle(icon).height : null,
+            glyph: glyph ? glyph.innerHTML : null,
+            hidden: glyph?.getAttribute("aria-hidden"),
           };
         }),
       );
   const icons = await readIcons();
   const ingresoIcon = icons.find((i) => i.tipo === "Ingreso");
   const traspasoIcon = icons.find((i) => i.tipo === "Transferencia");
-  expect(ingresoIcon?.width).toBe("22px");
-  expect(ingresoIcon?.glyph).toContain("↓");
-  expect(traspasoIcon?.glyph).toContain("⇄");
+  // #448: caja única de 24 px y glifo SVG propio, no un carácter de fuente.
+  expect(ingresoIcon?.width).toBe("24px");
+  expect(ingresoIcon?.height).toBe("24px");
+  expect(ingresoIcon?.hidden).toBe("true");
+  expect(ingresoIcon?.glyph).toContain("<path");
+  expect(traspasoIcon?.glyph).not.toBe(ingresoIcon?.glyph);
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-movimientos-1440.png",
+    path: join(artifacts, "casa-movimientos-1440.png"),
     fullPage: true,
   });
 
@@ -340,11 +373,15 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   expect(cardAmounts.some((c) => c.flow === "inflow" && c.color === "rgb(30, 75, 58)")).toBe(true);
   await expect(page.locator(".movements-cards .movement-type-icon").first()).toHaveCSS(
     "width",
-    "22px",
+    "24px",
   );
+  // #448: el glifo sigue visible en tarjeta a 390 px.
+  await expect(
+    page.locator(".movements-cards .movement-type-icon svg").first(),
+  ).toBeVisible();
   await expectNoOverflow();
   await page.screenshot({
-    path: "artifacts/theme/casa-movimientos-390.png",
+    path: join(artifacts, "casa-movimientos-390.png"),
     fullPage: true,
   });
 
@@ -355,11 +392,11 @@ test("Casa: quinta apariencia, persistencia, tipografía y 1440/390", async ({ p
   await expect(html).toHaveAttribute("data-theme", "graphite-lime");
   await expect(body).toHaveCSS("background-color", "rgb(11, 12, 11)");
 
-  // Aislamiento: el icono de Graphite no hereda la caja de Casa.
+  // Aislamiento: la caja del chip es la misma en Graphite que en Casa (#448).
   await page.goto("/movimientos");
   await expect(page.locator(".movement-type-icon").first()).toHaveCSS(
     "width",
-    "28px",
+    "24px",
   );
   await expect(errors).toEqual([]);
 });

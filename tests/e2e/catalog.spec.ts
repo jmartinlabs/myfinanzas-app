@@ -1,12 +1,25 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { totp } from "../../apps/api/src/auth";
+import { contextFromEnv, reservePorts } from "../../apps/api/test-support/e2e-context";
 import { cycleJourney } from "./ciclos";
+import { artifactDir } from "./fixture";
 import { classificationJourney } from "./classification";
 
 const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
+
+/**
+ * Estado del servidor de la ejecución (#514): la base, la clave y el código de
+ * activación viven en `<runRoot>/state/app`, no en un `.local/e2e` compartido.
+ * El puerto de la restauración se reserva por ejecución para que dos runs no
+ * se pisen en el 3002 histórico.
+ */
+const appState = contextFromEnv().stateDir("app");
+const appDb = join(appState, "demo.sqlite");
+const restorePort = reservePorts(1)[0];
 
 test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración responsive", async ({
   page,
@@ -16,8 +29,8 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const password = "Contraseña ficticia de navegador " + randomUUID();
-  mkdirSync("artifacts/e1-1", { recursive: true });
-  mkdirSync("artifacts/dev-06-i3", { recursive: true });
+  const artifactsE11 = artifactDir("e1-1");
+  const artifactsDev06I3 = artifactDir("dev-06-i3");
   const shot = async (name: string) => {
     expect(
       await page.evaluate(
@@ -25,7 +38,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e1-1/${name}.png`,
+      path: join(artifactsE11, `${name}.png`),
       fullPage: true,
     });
   };
@@ -44,7 +57,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/dev-06-i3/${name}.png`,
+      path: join(artifactsDev06I3, `${name}.png`),
       fullPage: true,
     });
   };
@@ -52,7 +65,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e/bootstrap.txt", "utf8"));
+    .fill(readFileSync(join(appState, "bootstrap.txt"), "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.locator(".secret")).toBeVisible();
@@ -369,7 +382,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   // Future-import absence is an isolated fictitious fixture, not a new import feature.
   execFileSync(process.env.BUN_BIN ?? "bun", [
     "-e",
-    `import{Database}from'bun:sqlite';const db=new Database('.local/e2e/demo.sqlite');db.run("UPDATE saldos SET liquidez=NULL WHERE id='S001'");db.close();`,
+    `import{Database}from'bun:sqlite';const db=new Database(${JSON.stringify(appDb)});db.run("UPDATE saldos SET liquidez=NULL WHERE id='S001'");db.close();`,
   ]);
   await page.goto("/saldos/S001/editar");
   await expect(
@@ -415,7 +428,12 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   const bun = process.env.BUN_BIN ?? "bun";
   const restored = spawn(bun, ["apps/api/test-support/restore-server.ts"], {
     stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      E2E_RESTORE_DIR: appState,
+      E2E_RESTORE_PORT: String(restorePort),
+    },
   });
   try {
     await expect
@@ -423,7 +441,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
         async () => {
           try {
             return (
-              await request.get("http://127.0.0.1:3002/api/health")
+              await request.get(`http://127.0.0.1:${restorePort}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -434,7 +452,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       .toBe(200);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3002";
+      url.port = String(restorePort);
       const response = await route.fetch({ url: url.toString() });
       await route.fulfill({ response });
     });
@@ -473,7 +491,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       }),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e1-2/restored-mobile.png",
+      path: join(artifactDir("e1-2"), "restored-mobile.png"),
       fullPage: true,
     });
     await page.goto("/ciclos/" + cycles.first);
@@ -481,7 +499,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
     await expect(page.getByText("29/02/2028", { exact: true })).toBeVisible();
     await expect(page.locator(".global-header")).toContainText("No disponible");
     await page.screenshot({
-      path: "artifacts/e1-3/restored-mobile.png",
+      path: join(artifactDir("e1-3"), "restored-mobile.png"),
       fullPage: true,
     });
     console.log(

@@ -5,7 +5,8 @@ import {
   type Page,
 } from "@playwright/test";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { release as osRelease } from "node:os";
 import { totp } from "../../apps/api/src/auth";
@@ -27,6 +28,8 @@ import {
   type ScreenViewportAudit,
 } from "./ui-dev07-audit";
 
+import { artifactDir, fixtureContext, requireFixtureState, type Fixture } from "./fixture";
+
 /**
  * UI DEV-07 · I1 — línea base diagnóstica (solo test).
  *
@@ -41,9 +44,16 @@ import {
 // skipped en el parser de cobertura de `scripts/verify` y rompería CI.
 const ENABLED = process.env.UI_DEV07_AUDIT === "1";
 
-const OUT = "artifacts/ui-dev07-baseline";
-const INICIO_PORT = 3014;
-const CIERRE_PORT = 3031;
+const artifacts = artifactDir("ui-dev07-baseline");
+// Puerto y estado del contexto de la ejecución (#514): el fixture de Inicio ya
+// no ocupa 3014 ni `.local/e2e-inicio`.
+const INICIO = fixtureContext("ui-dev07-baseline-inicio");
+const INICIO_PORT = INICIO.port;
+// Puerto y estado del cierre salen del contexto de la ejecución (#514): antes
+// ocupaba 3031 y escribía en `.local/e2e-cierre-listo`, compartido con la
+// matriz y con `cierre.spec.ts`.
+const CIERRE = fixtureContext("ui-dev07-baseline-cierre-listo");
+const CIERRE_PORT = CIERRE.port;
 
 type ScreenRecord = {
   screen: string;
@@ -102,7 +112,7 @@ const report: {
   },
   command:
     "UI_DEV07_AUDIT=1 bunx playwright test tests/e2e/ui-dev07-baseline.spec.ts",
-  jsonPath: "artifacts/ui-dev07-baseline/report.json",
+  jsonPath: join(artifacts, "report.json"),
   pageErrors: [],
   limitations: [
     "Linux full verification not executed on this host.",
@@ -110,7 +120,7 @@ const report: {
     "Screens: Inicio base, Movimientos E4.6 C007, Saldos ficha S001, Saldos alta /saldos/nuevo and Cierre E4.9 preflight listo with cycle 1. Critical states are covered by the I4 matrix, not this baseline.",
     "Zoom measured as a 720x500 viewport equivalence (200% over 1440x1000), not native browser zoom.",
     "Chromium only; no Firefox/WebKit and no screen reader.",
-    "Contrast covers visible text, form-control borders and status glyphs; it does not cover placeholders, input values, pseudo-elements or SVG.",
+    "Contrast covers visible text, form-control borders, status glyphs and the effective stroke/fill of the Movimientos type-chip SVG (#448); it does not cover placeholders, input values, other SVGs or pseudo-elements.",
   ],
   exceptions: [
     "Inline prose links in Inicio (S001-S005, Comida) and table-cell links in Movimientos are treated as inline target-size exceptions; manual QA must confirm.",
@@ -134,14 +144,18 @@ const report: {
 
 function writeReport() {
   report.updatedAt = new Date().toISOString();
-  mkdirSync(OUT, { recursive: true });
-  writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 2));
+  writeFileSync(join(artifacts, "report.json"), JSON.stringify(report, null, 2));
 }
 
-async function waitForApi(request: APIRequestContext, port: number) {
+async function waitForApi(
+  request: APIRequestContext,
+  port: number,
+  assertAlive: () => void = () => {},
+) {
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
           return (await request.get(`http://127.0.0.1:${port}/api/health`))
             .status();
@@ -159,15 +173,40 @@ async function startServer(
   script: string,
   port: number,
   env: Record<string, string> = {},
+  fixture?: Fixture,
 ): Promise<ChildProcess> {
   const child = spawn(process.env.BUN_BIN ?? "bun", [script], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test", ...env },
+    stdio: ["ignore", "pipe", "pipe"],
+    env: fixture
+      ? { ...fixture.env, ...env }
+      : { ...process.env, NODE_ENV: "test", ...env },
   });
-  await waitForApi(request, port).catch((error) => {
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture?.name ?? script} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
+  await waitForApi(request, port, assertAlive).catch((error) => {
     child.kill();
     throw error;
   });
+  // El fixture provisionó su estado antes de servir: se navega solo entonces.
+  if (fixture)
+    requireFixtureState({ fixture, output: () => output, assertAlive });
   return child;
 }
 
@@ -431,10 +470,12 @@ if (ENABLED) {
       request,
       "apps/api/test-support/inicio-server.ts",
       INICIO_PORT,
+      {},
+      INICIO,
     );
     try {
       await routeApi(page, INICIO_PORT);
-      await login(page, ".local/e2e-inicio", "/inicio");
+      await login(page, INICIO.dir, "/inicio");
       await expect(
         page.getByRole("heading", { name: "Inicio", exact: true }),
       ).toBeVisible();
@@ -470,10 +511,11 @@ if (ENABLED) {
       "apps/api/test-support/cierre-server.ts",
       CIERRE_PORT,
       { E49_SCENARIO: "listo", E49_PORT: String(CIERRE_PORT) },
+      CIERRE,
     );
     try {
       await routeApi(page, CIERRE_PORT);
-      await login(page, ".local/e2e-cierre-listo", "/cierre");
+      await login(page, CIERRE.dir, "/cierre");
       await expect(
         page.getByRole("heading", { name: "Cierre financiero", exact: true }),
       ).toBeVisible();

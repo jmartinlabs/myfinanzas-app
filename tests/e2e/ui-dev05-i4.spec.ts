@@ -1,27 +1,54 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { fixtureContext } from "./fixture";
+
+import { artifactDir } from "./fixture";
 
 /**
  * UI · DEV-05 I4 — Clasificación, Referencias y Presupuestos.
  *
- * Servidor aislado en 3024 con MFA real. Las capturas y los estados de error
- * usan datos ficticios creados con la API pública del propio servidor de test.
+ * Servidor aislado con MFA real, en el puerto y el estado que el contexto de la
+ * ejecución reserva para este fixture (#514). Las capturas y los estados de
+ * error usan datos ficticios creados con la API pública del propio servidor de
+ * test.
  */
 
-const PORT = 3024;
-const DIR = ".local/e2e-ui-dev05-i4";
+// Puerto y estado propios de la ejecución (#514): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("ui-dev05-i4");
+const API_PORT = fixture.port;
 const THEMES = ["light-s", "dark-s", "hybrid-s"] as const;
 let child: ChildProcess | undefined;
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture ui-dev05-i4 terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 async function waitForApi(request: APIRequestContext) {
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`))
+          return (await request.get(`http://127.0.0.1:${API_PORT}/api/health`))
             .status();
         } catch {
           return 0;
@@ -36,32 +63,43 @@ test.beforeAll(async ({ request }) => {
   child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/ui-dev05-i4-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        APP_ORIGIN: process.env.APP_ORIGIN ?? "http://127.0.0.1:5173",
-      },
-    },
+    { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
   );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   await waitForApi(request);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  assertFixtureAlive();
+  expect(
+    existsSync(join(fixture.dir, "bootstrap.txt")),
+    `El fixture ui-dev05-i4 no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
 });
 
 test.afterAll(() => {
   child?.kill();
+  child?.stdout?.destroy();
+  child?.stderr?.destroy();
 });
 
 test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
   page,
 }) => {
   test.setTimeout(240000);
-  mkdirSync("artifacts/ui-dev05-i4", { recursive: true });
+  const artifacts = artifactDir("ui-dev05-i4");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(API_PORT);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
 
@@ -69,7 +107,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
   await page.goto("/referencias");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(`${DIR}/bootstrap.txt`, "utf8"));
+    .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.locator(".secret")).toBeVisible();
@@ -135,7 +173,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };
@@ -245,7 +283,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/clasificacion-error-${width}.png`,
+      path: join(artifacts, `clasificacion-error-${width}.png`),
       fullPage: true,
     });
 
@@ -264,7 +302,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/referencias-error-${width}.png`,
+      path: join(artifacts, `referencias-error-${width}.png`),
       fullPage: true,
     });
 
@@ -281,7 +319,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/presupuestos-error-${width}.png`,
+      path: join(artifacts, `presupuestos-error-${width}.png`),
       fullPage: true,
     });
   }
@@ -304,7 +342,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/clasificacion-ficha-dark-${width}.png`,
+      path: join(artifacts, `clasificacion-ficha-dark-${width}.png`),
       fullPage: true,
     });
 
@@ -321,7 +359,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/referencias-ficha-dark-${width}.png`,
+      path: join(artifacts, `referencias-ficha-dark-${width}.png`),
       fullPage: true,
     });
 
@@ -338,7 +376,7 @@ test("UI DEV-05 I4: formularios, fichas, errores, foco y temas", async ({
     await settle();
     await assertNoOverflow();
     await page.screenshot({
-      path: `artifacts/ui-dev05-i4/presupuestos-ficha-dark-${width}.png`,
+      path: join(artifacts, `presupuestos-ficha-dark-${width}.png`),
       fullPage: true,
     });
   }

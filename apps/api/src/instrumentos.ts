@@ -1,7 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { Problem } from "./problem";
-import { assertClosedInformativeFields } from "./e49-guards";
 import { cashAt, cents, investmentInstalled, positionsFor, scaledText } from "./investment-engine";
 import { purchaseDto, purchasesForInstrumento } from "./compras";
 import { salesForInstrumento } from "./ventas";
@@ -339,13 +338,7 @@ export function updateInstrumento(
         );
       if (!changed.length)
         throw new Problem(422, "VALIDATION", "No hay cambios que auditar.");
-      assertClosedInformativeFields(
-        db,
-        "instrumento",
-        changed,
-        "editar el Instrumento",
-      );
-      const revision = old.revision + 1;
+const revision = old.revision + 1;
       db.run(
         "UPDATE instrumentos SET nombre=?,isin=?,isin_evidencia=?,divisa_referencia=?,revision=?,actualizado_en=? WHERE id=? AND revision=?",
         [

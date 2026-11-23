@@ -1,27 +1,63 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext } from "./fixture";
+
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("inversiones");
+const API_PORT = fixture.port;
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture inversiones terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y anulación 390/1440", async ({
   page,
   request,
 }) => {
-  const child = spawn(
-      process.env.BUN_BIN ?? "bun",
-      ["apps/api/test-support/inversiones-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
-    ),
-    errors: string[] = [];
+  child = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inversiones-server.ts"],
+    { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
+  );
+  const errors: string[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   page.on("pageerror", (error) => errors.push(error.message));
   try {
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3010/api/health")
+              await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -31,11 +67,19 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       )
       .toBe(200);
     expect(
-      (await request.get("http://127.0.0.1:3010/api/instrumentos")).status(),
+      (await request.get(`http://127.0.0.1:${API_PORT}/api/instrumentos`))
+        .status(),
     ).toBe(401);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture inversiones no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3010";
+      url.port = String(API_PORT);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -43,7 +87,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.goto("/inversiones");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-inversiones/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Clave ficticia inversiones " + randomUUID());
@@ -89,12 +133,12 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       page.getByText("Fondo antiguo", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Inactiva", { exact: true }).first()).toBeVisible();
-    mkdirSync("artifacts/e4-1", { recursive: true });
+    const artifacts = artifactDir("e4-1");
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/instrumentos-list-1440.png",
+      path: join(artifacts, "instrumentos-list-1440.png"),
       fullPage: true,
     });
     await page.getByLabel("Estado").selectOption("Activa");
@@ -125,7 +169,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       page.getByRole("heading", { name: /Compras del Instrumento \(3\)/ }),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-1/instrumento-ficha-1440.png",
+      path: join(artifacts, "instrumento-ficha-1440.png"),
       fullPage: true,
     });
 
@@ -162,7 +206,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/compras-list-1440.png",
+      path: join(artifacts, "compras-list-1440.png"),
       fullPage: true,
     });
 
@@ -190,7 +234,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     const impact = page.getByLabel("Impacto de la operación");
     await expect(impact).toContainText("antes 1.810,40 € → después 1.800,40 €");
     await page.screenshot({
-      path: "artifacts/e4-1/compra-impacto-1440.png",
+      path: join(artifacts, "compra-impacto-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Confirmar compra" }).click();
@@ -211,7 +255,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.getByRole("button", { name: "Revisar compra" }).click();
     await expect(impact).toContainText("antes 1.800,40 € → después 2.025,40 €");
     await page.screenshot({
-      path: "artifacts/e4-1/rectificar-impacto-1440.png",
+      path: join(artifacts, "rectificar-impacto-1440.png"),
     });
     await page.route(
       /\/api\/compras\/\d+\/rectificar$/,
@@ -307,7 +351,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/instrumentos-list-390.png",
+      path: join(artifacts, "instrumentos-list-390.png"),
       fullPage: true,
     });
     await page.goto("/inversiones/compras");
@@ -316,7 +360,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/compras-list-390.png",
+      path: join(artifacts, "compras-list-390.png"),
       fullPage: true,
     });
     await page.locator(".inversiones-mobile li").first().getByRole("button", { name: "Rectificar" }).click();
@@ -327,7 +371,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/rectificar-390.png",
+      path: join(artifacts, "rectificar-390.png"),
     });
     await page.goto("/inversiones");
     await page.locator(".inversiones-mobile a", { hasText: "Fondo índice demo" }).click();
@@ -341,7 +385,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-1/instrumento-ficha-390.png",
+      path: join(artifacts, "instrumento-ficha-390.png"),
       fullPage: true,
     });
 
@@ -349,17 +393,19 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.getByLabel("Cambiar tema").selectOption("casa");
     await expect(page.locator(".inversion-detail-page")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-1/casa-instrumento-1440.png",
+      path: join(artifacts, "casa-instrumento-1440.png"),
       fullPage: true,
     });
     await page.goto("/inversiones");
     await expect(page.locator(".inversiones-page")).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-1/casa-listado-1440.png",
+      path: join(artifacts, "casa-listado-1440.png"),
       fullPage: true,
     });
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    child?.kill();
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
   }
 });

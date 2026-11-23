@@ -1,26 +1,27 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3029;
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("inicio-g5b");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "g5b" },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/inicio-server.ts",
+    fixture,
+    { E46_SCENARIO: "g5b" },
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -28,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/inicio");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-inicio-g5b/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Graphite inversiones " + randomUUID(),
   );
@@ -62,7 +64,7 @@ async function authenticate(page: Page) {
 
 test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/g5b", { recursive: true });
+  const artifacts = artifactDir("g5b");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -83,7 +85,7 @@ test("G5b: Inversiones y Deudas premium en Graphite, 1440/820/390", async ({ pag
       window.scrollTo(0, 0);
     });
     await page.screenshot({
-      path: `artifacts/g5b/${name}-${width}.png`,
+      path: join(artifacts, `${name}-${width}.png`),
       fullPage: true,
     });
   };

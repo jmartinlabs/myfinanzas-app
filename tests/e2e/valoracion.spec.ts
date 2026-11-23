@@ -1,29 +1,61 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext } from "./fixture";
 
-const API_PORT = 3011;
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("valoracion");
+const API_PORT = fixture.port;
 const LIST = "/inversiones/valoracion";
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture valoracion terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, errores y 390/1440", async ({
   page,
   request,
 }) => {
-  const child = spawn(
+  child = spawn(
       process.env.BUN_BIN ?? "bun",
       ["apps/api/test-support/valoracion-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
-    ),
-    errors: string[] = [],
-    serverLog: string[] = [];
-  child.stderr?.on("data", (chunk) => serverLog.push(String(chunk)));
+      { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
+    );
+  const errors: string[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   page.on("pageerror", (error) => errors.push(error.message));
   try {
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
               await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
@@ -42,6 +74,13 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
         )
       ).status(),
     ).toBe(401);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture valoracion no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
       url.port = String(API_PORT);
@@ -52,7 +91,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await page.goto("/inversiones");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-valoracion/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     const password = "Clave ficticia valoración " + randomUUID();
     await page
       .getByLabel("Contraseña", { exact: true })
@@ -84,7 +123,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(
       page.getByRole("heading", { name: "Valoración y resultados" }),
     ).toBeVisible();
-    mkdirSync("artifacts/e4-3", { recursive: true });
+    const artifacts = artifactDir("e4-3");
 
     const consultar = async (fecha: string, rows: number) => {
       await page.getByLabel(/Fecha de corte/).fill(fecha);
@@ -104,7 +143,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
         `http://127.0.0.1:${API_PORT}/api${path}`,
         {
           headers: {
-            origin: "http://127.0.0.1:5173",
+            origin: fixture.env.APP_ORIGIN,
             "x-csrf-token": session.csrf,
             "idempotency-key": randomUUID(),
           },
@@ -175,7 +214,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-1440.png",
+      path: join(artifacts, "valoracion-list-1440.png"),
       fullPage: true,
     });
 
@@ -191,7 +230,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     ).toContainText("Serie vacía");
     await expect(page.getByText("0,00 €")).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-serie-vacia-1440.png",
+      path: join(artifacts, "valoracion-serie-vacia-1440.png"),
       fullPage: true,
     });
 
@@ -210,7 +249,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-390.png",
+      path: join(artifacts, "valoracion-list-390.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -260,7 +299,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-detail-1440.png",
+      path: join(artifacts, "valoracion-detail-1440.png"),
       fullPage: true,
     });
     await page
@@ -279,7 +318,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-ficha-1440.png",
+      path: join(artifacts, "valoracion-ficha-1440.png"),
       fullPage: true,
     });
     await page.getByRole("link", { name: "Ver posición al corte" }).click();
@@ -362,7 +401,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-alta-automatica-1440.png",
+      path: join(artifacts, "valoracion-alta-automatica-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Guardar valoración" }).click();
@@ -395,7 +434,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-390-verificada.png",
+      path: join(artifacts, "valoracion-list-390-verificada.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -450,7 +489,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/a01-detail-1440.png",
+      path: join(artifacts, "a01-detail-1440.png"),
       fullPage: true,
     });
 
@@ -528,7 +567,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-alta-manual-1440.png",
+      path: join(artifacts, "valoracion-alta-manual-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Guardar valoración" }).click();
@@ -555,7 +594,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-409-duplicado-1440.png",
+      path: join(artifacts, "valoracion-409-duplicado-1440.png"),
       fullPage: true,
     });
     await page.getByLabel(/Importe EUR/).fill("-5.00");
@@ -566,7 +605,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-422-1440.png",
+      path: join(artifacts, "valoracion-422-1440.png"),
       fullPage: true,
     });
 
@@ -631,7 +670,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-409-revision-1440.png",
+      path: join(artifacts, "valoracion-409-revision-1440.png"),
       fullPage: true,
     });
     await expect(
@@ -697,7 +736,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-ficha-auditoria-1440.png",
+      path: join(artifacts, "valoracion-ficha-auditoria-1440.png"),
       fullPage: true,
     });
 
@@ -760,7 +799,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-detail-390.png",
+      path: join(artifacts, "valoracion-detail-390.png"),
       fullPage: true,
     });
     await page.getByRole("link", { name: "Nueva valoración" }).first().click();
@@ -778,7 +817,7 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-3/valoracion-alta-390.png",
+      path: join(artifacts, "valoracion-alta-390.png"),
       fullPage: true,
     });
 
@@ -832,8 +871,10 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
 
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
-    if (serverLog.length && errors.length)
-      console.error("valoracion-server:\n" + serverLog.join(""));
+    child?.kill();
+    if (fixtureOutput && errors.length)
+      console.error("valoracion-server:\n" + fixtureOutput);
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
   }
 });

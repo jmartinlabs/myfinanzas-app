@@ -1,22 +1,42 @@
 import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const API_PORT = 3013;
+import { artifactDir, fixtureContext, requireFixtureState } from "./fixture";
+
+// Puerto y estado propios de la ejecución (#514): las cuatro specs de tema
+// ocupaban 3013 y compartían `.local/e2e-theme`, así que cada una provisiona su
+// propia base y su propia cuenta.
+const THEME = fixtureContext("theme-graphite-g1");
+const API_PORT = THEME.port;
 let child: ReturnType<typeof spawn> | undefined;
+let fixtureOutput = "";
+let fixtureEnded = false;
+
+const assertAlive = () => {
+  if (fixtureEnded)
+    throw new Error(
+      `El fixture ${THEME.name} terminó antes de servir: ${fixtureOutput.trim() || "(sin salida)"}`,
+    );
+};
 
 test.beforeAll(async ({ request }) => {
   child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/theme-server.ts"], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
+    stdio: ["ignore", "pipe", "pipe"],
+    env: THEME.env,
   });
+  child.stdout?.on("data", (chunk) => (fixtureOutput += String(chunk)));
+  child.stderr?.on("data", (chunk) => (fixtureOutput += String(chunk)));
+  child.on("exit", () => (fixtureEnded = true));
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${API_PORT}/api/health`)).status();
+          return (await request.get(`${THEME.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -24,6 +44,7 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState({ fixture: THEME, output: () => fixtureOutput, assertAlive });
 });
 
 test.afterAll(() => {
@@ -39,7 +60,7 @@ async function authenticate(page: import("@playwright/test").Page) {
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-theme/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${THEME.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Graphite G1 " + randomUUID(),
   );
@@ -59,7 +80,7 @@ async function authenticate(page: import("@playwright/test").Page) {
 test("G1: shell, componentes, responsive y regresión de temas", async ({
   page,
 }) => {
-  mkdirSync("artifacts/graphite-g1", { recursive: true });
+  const artifacts = artifactDir("graphite-g1");
   await authenticate(page);
   const themeSelect = page.getByLabel(/Cambiar tema|Tema/);
   await themeSelect.selectOption("graphite-lime");
@@ -98,7 +119,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.locator(".desktop-list tbody tr").first()).toBeVisible();
   await page.locator("h1").blur();
   await page.screenshot({
-    path: "artifacts/graphite-g1/saldos-1440.png",
+    path: join(artifacts, "saldos-1440.png"),
     fullPage: true,
   });
 
@@ -110,7 +131,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     "12px",
   );
   await page.screenshot({
-    path: "artifacts/graphite-g1/inicio-1440.png",
+    path: join(artifacts, "inicio-1440.png"),
     fullPage: true,
   });
 
@@ -122,7 +143,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     "linear-gradient(160deg, rgb(23, 26, 22) 0%, rgb(17, 19, 17) 100%)",
   );
   await page.screenshot({
-    path: "artifacts/graphite-g1/movimientos-1440.png",
+    path: join(artifacts, "movimientos-1440.png"),
     fullPage: true,
   });
 
@@ -187,7 +208,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   ).toBeVisible();
   await page.locator("h1").blur();
   await page.screenshot({
-    path: "artifacts/graphite-g1/saldos-820.png",
+    path: join(artifacts, "saldos-820.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -196,7 +217,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
   await expect(page.locator(".inicio-context")).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/inicio-820.png",
+    path: join(artifacts, "inicio-820.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -204,7 +225,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await page.goto("/movimientos");
   await expect(page.getByRole("heading", { name: "Movimientos", exact: true })).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/movimientos-820.png",
+    path: join(artifacts, "movimientos-820.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -221,7 +242,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
     "linear-gradient(160deg, rgb(23, 26, 22) 0%, rgb(17, 19, 17) 100%)",
   );
   await page.screenshot({
-    path: "artifacts/graphite-g1/saldos-390.png",
+    path: join(artifacts, "saldos-390.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -230,7 +251,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
   await expect(page.locator(".inicio-context")).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/inicio-390.png",
+    path: join(artifacts, "inicio-390.png"),
     fullPage: true,
   });
   await noOverflow();
@@ -238,7 +259,7 @@ test("G1: shell, componentes, responsive y regresión de temas", async ({
   await page.goto("/movimientos");
   await expect(page.getByRole("heading", { name: "Movimientos", exact: true })).toBeVisible();
   await page.screenshot({
-    path: "artifacts/graphite-g1/movimientos-390.png",
+    path: join(artifacts, "movimientos-390.png"),
     fullPage: true,
   });
   await noOverflow();

@@ -1,23 +1,26 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3014;
-const STATE = ".local/e2e-inicio";
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("inicio-hybrid-l4");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/inicio-server.ts"], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
-  });
+  const server = startFixtureServer(
+    "apps/api/test-support/inicio-server.ts",
+    fixture,
+  );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -25,22 +28,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function login(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/inicio");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill("Clave ficticia L4 " + randomUUID());
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.locator(".secret")).toBeVisible();
@@ -53,7 +57,7 @@ async function login(page: Page) {
 
 test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
   test.setTimeout(180000);
-  mkdirSync("artifacts/l4", { recursive: true });
+  const artifacts = artifactDir("l4");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await login(page);
@@ -87,7 +91,7 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
       await expect(attention).toBeVisible();
       const attentionBox = await attention.boundingBox();
       expect(attentionBox!.height).toBeGreaterThanOrEqual(44);
-      await page.screenshot({ path: `artifacts/l4/inicio-${theme}-${width}.png` });
+      await page.screenshot({ path: join(artifacts, `inicio-${theme}-${width}.png`) });
 
       // Movimientos: sin overflow, enlaces de concepto y casillas sin recorte
       await page.goto("/movimientos");
@@ -105,7 +109,7 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
       expect(fits).toBe(true);
       const checkboxBox = await checkbox.boundingBox();
       expect(checkboxBox!.height).toBeGreaterThanOrEqual(44);
-      await page.screenshot({ path: `artifacts/l4/movimientos-${theme}-${width}.png` });
+      await page.screenshot({ path: join(artifacts, `movimientos-${theme}-${width}.png`) });
 
       // Estado vacío: filtros sin resultados
       await page.getByLabel("Buscar Concepto, Nota o ID").fill("zzzz-sin-resultados");
@@ -114,7 +118,7 @@ test("L4: responsive 820/390 y estados de Claro y Mixto", async ({ page }) => {
       await expect(empty).toHaveCSS("background-color", "rgb(255, 253, 249)");
       await expect(empty.locator("p").first()).toHaveCSS("font-size", "12px");
       await noOverflow();
-      await page.screenshot({ path: `artifacts/l4/estado-vacio-${theme}-${width}.png` });
+      await page.screenshot({ path: join(artifacts, `estado-vacio-${theme}-${width}.png`) });
     }
   }
 

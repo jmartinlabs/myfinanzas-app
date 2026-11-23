@@ -300,7 +300,7 @@ test("E4.1-AC-40/42/46: S004 pendiente, guard de cinco campos y rectificación r
         }),
       );
       expect(error.status).toBe(409);
-      expect(error.code).toBe("HISTORY_LOCKED");
+      expect(error.code).toBe("RECTIFICATION_REQUIRED");
       expect(getSaldo(db, "S003").revision).toBe(initialRevision);
     }
     expect(

@@ -1,32 +1,27 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3062;
-const STATE = ".local/e2e-payroll-g5e";
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("payroll-g5e");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/payroll-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        PAYROLL_PORT: String(PORT),
-        PAYROLL_STATE: STATE,
-      },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/payroll-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -34,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/nomina");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(STATE + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia Graphite nómina " + randomUUID());
@@ -93,7 +89,7 @@ async function createPayroll(page: Page) {
 
 test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   test.setTimeout(240000);
-  mkdirSync("artifacts/g5e-4", { recursive: true });
+  const artifacts = artifactDir("g5e-4");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await authenticate(page);
@@ -173,7 +169,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   expect(Math.round(box!.height)).toBe(20);
   await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-formulario-1440.png",
+    path: join(artifacts, "nomina-formulario-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 720, height: 500 });
@@ -190,7 +186,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   ).toHaveCSS("min-height", "44px");
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-revision-1440.png",
+    path: join(artifacts, "nomina-revision-1440.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Confirmar revisión de Nómina" }).click();
@@ -246,7 +242,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
       ).toHaveCSS("min-height", "44px");
     }
     await page.screenshot({
-      path: `artifacts/g5e-4/nomina-historico-${width}.png`,
+      path: join(artifacts, `nomina-historico-${width}.png`),
       fullPage: true,
     });
   }
@@ -273,7 +269,7 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   );
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-cobros-1440.png",
+    path: join(artifacts, "nomina-cobros-1440.png"),
     fullPage: true,
   });
 
@@ -295,13 +291,13 @@ test("G5e-4: Nómina premium en Graphite, 1440/820/390", async ({ page }) => {
   );
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-pronostico-1440.png",
+    path: join(artifacts, "nomina-pronostico-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow();
   await page.screenshot({
-    path: "artifacts/g5e-4/nomina-pronostico-390.png",
+    path: join(artifacts, "nomina-pronostico-390.png"),
     fullPage: true,
   });
 

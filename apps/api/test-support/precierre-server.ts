@@ -8,7 +8,13 @@ import { loadKey, provision } from "../src/auth";
 import { createApp } from "../src/app";
 
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
-const dir = process.env.E2E_STATE ?? ".local/e2e-precierre";
+// Estado del contexto de la ejecución (#514), con prioridad sobre el nombre
+// histórico `E2E_STATE`; sin contexto se conserva el directorio de siempre para
+// poder arrancarlo a mano.
+const dir =
+  process.env.E2E_STATE_DIR ??
+  process.env.E2E_STATE ??
+  ".local/e2e-precierre";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),

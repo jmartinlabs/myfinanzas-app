@@ -1,26 +1,27 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const PORT = 3021;
-let child: ReturnType<typeof spawn> | undefined;
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
+
+const fixture = fixtureContext("inicio-casa-deudas");
+let owned: OwnedFixture | undefined;
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/inicio-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "casa-deudas" },
-    },
+  const server = startFixtureServer(
+    "apps/api/test-support/inicio-server.ts",
+    fixture,
+    { E46_SCENARIO: "casa-deudas" },
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
+          return (await request.get(`${fixture.baseURL}/api/health`)).status();
         } catch {
           return 0;
         }
@@ -28,22 +29,23 @@ test.beforeAll(async ({ request }) => {
       { timeout: 15000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 async function authenticate(page: Page) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(PORT);
+    url.port = String(fixture.port);
     await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
   });
   await page.goto("/inicio");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(".local/e2e-inicio-casa-deudas/bootstrap.txt", "utf8"));
+    .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
   await page.getByLabel("Contraseña", { exact: true }).fill(
     "Clave ficticia Casa deudas " + randomUUID(),
   );
@@ -61,7 +63,7 @@ async function authenticate(page: Page) {
 }
 
 test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
-  mkdirSync("artifacts/ui-casa-deudas", { recursive: true });
+  const artifacts = artifactDir("ui-casa-deudas");
   await authenticate(page);
   await page.getByLabel("Cambiar tema").selectOption("casa");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
@@ -82,7 +84,7 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-deudas/deudas-1440.png",
+    path: join(artifacts, "deudas-1440.png"),
     fullPage: true,
   });
 
@@ -92,7 +94,7 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-deudas/deuda-detalle-1440.png",
+    path: join(artifacts, "deuda-detalle-1440.png"),
     fullPage: true,
   });
 
@@ -101,7 +103,7 @@ test("Casa: Deudas editorial, listado y ficha", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/ui-casa-deudas/deuda-detalle-390.png",
+    path: join(artifacts, "deuda-detalle-390.png"),
     fullPage: true,
   });
 });

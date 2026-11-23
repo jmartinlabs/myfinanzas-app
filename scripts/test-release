@@ -23,6 +23,21 @@ SEED_CONTAINERFILE = b'FROM scratch\n# test-only seed\n'
 SEED_IMAGE = 'sha256:' + '1' * 64
 
 
+def catalog_source(version=18, labelled=None, labels=None):
+    """Fixture of apps/api/src/schema-catalog.ts after the canonical refactor."""
+    if labelled is None:
+        labelled = version
+    numbers = ', '.join(str(value) for value in range(1, version + 1))
+    entries = labels if labels is not None else [
+        (value, 'e4.1' if value == version else 'e4.0')
+        for value in range(1, labelled + 1)]
+    table = '\n'.join(f'  {value}: "{prefix}-v{value}",' for value, prefix in entries)
+    return ('export const SUPPORTED = [' + numbers + '] as const;\n'
+            'export const schemaVersion = SUPPORTED[SUPPORTED.length - 1];\n'
+            'export const appLabels: Record<Supported, string> = {\n'
+            + table + '\n};\n')
+
+
 class ReleaseContextTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
@@ -64,10 +79,12 @@ class ReleaseContextTests(unittest.TestCase):
         self.write('apps/web/package.json', '{"private": true}\n')
         self.write('apps/web/index.html', '<div></div>\n')
         self.write('apps/web/vite.config.ts', 'export default {};\n')
+        self.write('apps/api/src/schema-catalog.ts', catalog_source())
         self.write('apps/api/src/database-identity.ts',
-                   'export const schemaVersion = 18;\n')
+                   'export { schemaVersion } from "./schema-catalog";\n')
+        # Test-only decoy: release must read the label from the catalog, not here.
         self.write('apps/api/src/backup.ts',
-                   'export const contract = "e4.1-v18";\n')
+                   'export const legacy = "e9.9-v18";\n')
         self.write('apps/api/src/contracts.json', '{}\n')
         self.write('apps/web/src/main.ts', 'export const amount = 1;\n')
         self.write('apps/web/public/themes.css', ':root { --bg: #141414; }\n')
@@ -87,6 +104,21 @@ class ReleaseContextTests(unittest.TestCase):
         subprocess.check_call(['git', '-C', str(self.root), 'add', '--all'])
         subprocess.check_call(['git', '-C', str(self.root), 'commit', '-qm', message])
         return self.git('rev-parse', 'HEAD')
+
+    def legacy_commit(self):
+        """A release published before apps/api/src/schema-catalog.ts existed."""
+        self.git('switch', '-q', '-c', 'pre-catalog', self.a)
+        (self.root / 'apps/api/src/schema-catalog.ts').unlink()
+        self.write('apps/api/src/database-identity.ts',
+                   'export const schemaVersion = 18;\n')
+        self.write('apps/api/src/backup.ts',
+                   'export const contract = "e4.1-v18";\n')
+        return self.commit('pre-catalog release')
+
+    def catalog_branch(self, name, source):
+        self.git('switch', '-q', '-c', name, self.a)
+        self.write('apps/api/src/schema-catalog.ts', source)
+        return self.commit('catalog ' + name)
 
     def age_archive(self):
         buffer = io.BytesIO()
@@ -184,6 +216,84 @@ class ReleaseContextTests(unittest.TestCase):
         self.assertNotEqual(inputs['healthcheck_sha256'], release.sha(NEW_HEALTHCHECK))
         self.assertNotEqual(inputs['recipe_sha256'],
                             release.sha(release.source_bytes('HEAD', 'infra/Containerfile')))
+
+    def test_contracts_come_from_the_canonical_catalog(self):
+        self.assertEqual(release.contracts_for(self.a), {
+            'schema': 18,
+            'data': 'e4.1-v18',
+            'authentication': 'argon2id-aesgcm-totp-session-v1',
+        })
+
+    def test_catalog_commit_does_not_read_legacy_identity(self):
+        self.git('switch', '-q', '-c', 'legacy-identity', self.a)
+        self.write('apps/api/src/database-identity.ts',
+                   'export const schemaVersion = 17;\n')
+        commit = self.commit('decoy identity')
+        self.assertEqual(release.contracts_for(commit)['schema'], 18)
+
+    def test_pre_catalog_release_reads_historical_sources(self):
+        commit = self.legacy_commit()
+        self.assertEqual(release.contracts_for(commit), {
+            'schema': 18,
+            'data': 'e4.1-v18',
+            'authentication': 'argon2id-aesgcm-totp-session-v1',
+        })
+        target = self.home / 'context-pre-catalog'
+        target.mkdir()
+        inputs = release.context(commit, target, self.age)
+        release.check_context(target, inputs)
+
+    def test_catalog_declarations_fail_closed(self):
+        cases = [
+            ('no-supported-versions',
+             'export const appLabels: Record<Supported, string> = {\n'
+             '  18: "e4.1-v18",\n};\n', 'supported versions'),
+            ('no-manifest-labels', 'export const SUPPORTED = [1, 2, 3] as const;\n',
+             'manifest labels'),
+            ('non-contiguous', 'export const SUPPORTED = [1, 2, 18] as const;\n',
+             'contiguous'),
+            ('repeated-label', catalog_source(labels=[(18, 'e4.1'), (18, 'e4.2')]),
+             'repeats the manifest label for schema 18'),
+            # Una etiqueta histórica ausente rompe la trazabilidad de un backup
+            # antiguo aunque la etiqueta vigente esté declarada.
+            ('missing-historical-label',
+             catalog_source(version=18,
+                            labels=[(value, 'e4.0') for value in range(1, 19) if value != 7]),
+             'omits the manifest label for schema 7'),
+            # Dos versiones con la misma etiqueta harían indistinguibles sus copias.
+            # El fixture añade `-v{versión}` al prefijo, así que la fuente va literal.
+            ('duplicated-label-value',
+             'export const SUPPORTED = [1, 2] as const;\n'
+             'export const appLabels: Record<Supported, string> = {\n'
+             '  1: "e4.0",\n'
+             '  2: "e4.0",\n'
+             '};\n',
+             'repeats the manifest label value e4.0'),
+            # `appLabels` debe cubrir exactamente SUPPORTED, sin claves sobrantes.
+            ('label-for-unsupported-version',
+             catalog_source(version=2,
+                            labels=[(1, 'e4.0-v1'), (2, 'e4.1-v2'), (3, 'e4.2-v3')]),
+             'manifest label for unsupported schema 3'),
+        ]
+        for name, source, expected in cases:
+            with self.subTest(case=name):
+                commit = self.catalog_branch('catalog-' + name, source)
+                with self.assertRaises(release.ReleaseError) as caught:
+                    release.contracts_for(commit)
+                self.assertIn(expected, str(caught.exception))
+
+    def test_missing_current_label_fails_before_writing_context(self):
+        commit = self.catalog_branch('catalog-no-current-label',
+                                     catalog_source(version=19, labelled=18))
+        target = self.home / 'context-no-current-label'
+        target.mkdir()
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.context(commit, target, self.age)
+        # El catálogo debe declarar una etiqueta para cada versión admitida, así
+        # que la ausencia de la vigente se detecta como etiqueta omitida.
+        self.assertIn('omits the manifest label for schema 19',
+                      str(caught.exception))
+        self.assertEqual(list(target.iterdir()), [])
 
     def test_context_carries_vite_public_assets(self):
         target = self.home / 'context-public'

@@ -1,7 +1,10 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+
+import { artifactDir } from "./fixture";
+
 export async function deudas(page: Page) {
-  mkdirSync("artifacts/e1-6", { recursive: true });
+  const artifacts = artifactDir("e1-6");
   const shot = async (name: string) => {
     await page.evaluate(() => scrollTo(0, 0));
     expect(
@@ -10,7 +13,7 @@ export async function deudas(page: Page) {
       ),
     ).toBe(true);
     await page.screenshot({
-      path: "artifacts/e1-6/" + name + ".png",
+      path: join(artifacts, name + ".png"),
       fullPage: true,
     });
   };
@@ -107,12 +110,15 @@ export async function deudas(page: Page) {
   ).data.saldo;
   await page.goto("/movimientos/nuevo");
   await page.getByLabel("Tipo *", { exact: true }).selectOption("Gasto");
+  // #534: el alta de Gasto usa etiquetas propias desde #484 (spec 37 I5).
   await page
-    .getByLabel("Fecha económica *", { exact: true })
+    .getByLabel("Fecha del Gasto *", { exact: true })
     .fill("2026-10-01");
-  await page.getByLabel("Importe (€) *", { exact: true }).fill("100");
   await page
-    .getByLabel("Saldo origen *", { exact: true })
+    .getByLabel("Importe del Gasto (€) *", { exact: true })
+    .fill("100");
+  await page
+    .getByLabel("Saldo pagador *", { exact: true })
     .selectOption(bank.id);
   await page.getByLabel("Partida *", { exact: true }).selectOption(p);
   await page

@@ -1,7 +1,10 @@
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
-export async function cycleOperationsJourney(page: Page) {
-  mkdirSync("artifacts/e2-1", { recursive: true });
+
+import { artifactDir } from "./fixture";
+
+export async function cycleOperationsJourney(page: Page, apiPort: string) {
+  const artifacts = artifactDir("e2-1");
   const get = (path: string) =>
     page.evaluate(
       async (path) => await (await fetch("/api" + path)).json(),
@@ -31,7 +34,7 @@ export async function cycleOperationsJourney(page: Page) {
       ),
     ).toBe(true);
     await page.screenshot({
-      path: `artifacts/e2-1/${name}.png`,
+      path: join(artifacts, `${name}.png`),
       fullPage: true,
     });
   };
@@ -128,7 +131,7 @@ export async function cycleOperationsJourney(page: Page) {
   await page.route(endpoint, async (route) => {
     await gate;
     const url = new URL(route.request().url());
-    url.port = "3003";
+    url.port = apiPort;
     await route.fulfill({
       response: await route.fetch({ url: url.toString() }),
     });
@@ -249,7 +252,7 @@ export async function cycleOperationsJourney(page: Page) {
   const priorTotal = (await get("/ciclos")).total;
   await page.route("**/api/ciclos/omitido", async (route) => {
     const url = new URL(route.request().url());
-    url.port = "3003";
+    url.port = apiPort;
     const response = await route.fetch({ url: url.toString() });
     expect(response.status()).toBe(201);
     await route.abort("failed");

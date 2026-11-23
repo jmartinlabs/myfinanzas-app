@@ -7,9 +7,15 @@ import {
 } from "./revision-comida-ledger";
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
+import {
+  aplicarAperturasReanclaje,
+  cerrarReanclaje,
+  planReanclaje,
+  prepararReanclaje,
+  verificarReanclaje,
+} from "./cierre-anticipo-apertura";
 import { Schema } from "effect";
 import { Problem, money, decimal } from "./saldos";
-import { assertClosedCyclesUnchanged } from "./e49-guards";
 
 export function civil(value: unknown): string {
   if (
@@ -118,6 +124,23 @@ export type ComidaImpact = {
   antes: Cycle | null;
   despues: Cycle | null;
   efecto: "temporal" | "historico";
+};
+
+/** Ciclo al que pertenece una fila por su fecha, con la ventana derivada. */
+export type PertenenciaCiclo = { id: string; inicio: string; fin: string | null };
+
+/**
+ * §4.1/AC-40: fila de Revisión Comida cuya **pertenencia** cambia al desplazar
+ * el Inicio. Identidad y fecha de la fila se publican intactas; sólo la
+ * pertenencia medida lleva antes/después.
+ */
+export type ComidaReasignada = {
+  id: string;
+  fecha: string;
+  tipo: RevisionComidaRow["tipo"];
+  estadoRegistro: RevisionComidaRow["estadoRegistro"];
+  antes: PertenenciaCiclo | null;
+  despues: PertenenciaCiclo | null;
 };
 const select =
   "SELECT id,inicio,mes_financiado,CAST(saldo_comida AS TEXT) saldo_comida,creado,revision,actualizado FROM ciclos ORDER BY inicio";
@@ -392,6 +415,8 @@ const operationKeys = [
   "contextRevision",
   "impactRevision",
   "confirmado",
+  /** §4.2: datos de reacreditación por REF cuando la clase es B. */
+  "anticipos",
 ];
 function operationInput(
   body: Record<string, unknown>,
@@ -432,7 +457,7 @@ function operationInput(
     );
   return { inicio, month, saldo, motivo: body.motivo.trim() };
 }
-function operationPlan(
+export function operationPlan(
   db: Database,
   operation: CycleOperation,
   id: string | null,
@@ -457,21 +482,12 @@ function operationPlan(
   if (operation === "rectificar" && !old)
     throw new Problem(404, "NOT_FOUND", "Ciclo no encontrado.");
   const v = operationInput(body, operation, old);
-  if (
-    old &&
-    old.inicio !== v.inicio &&
-    db
-      .query("SELECT name FROM sqlite_master WHERE name='fotos_neto_apertura'")
-      .get() &&
-    db
-      .query("SELECT referencia FROM fotos_neto_apertura WHERE ciclo=? LIMIT 1")
-      .get(old.id)
-  )
-    throw new Problem(
-      409,
-      "HISTORY_LOCKED",
-      "Inicio protegido por Neto apertura de Anticipo confirmado. Revisa sus fotografías; no se modifican silenciosamente.",
-    );
+  // §4.2: la declaración de Neto de apertura deja de vetar en absoluto. Se
+  // clasifica el reanclaje (A automático auditado, B con datos explícitos por
+  // REF) y la clase B sin evidencia detiene aquí, antes de escribir nada.
+  const reanclaje = old
+    ? planReanclaje(db, old.id, old.inicio, v.inicio, body.anticipos)
+    : null;
   if (
     beforeRows.some(
       (r) =>
@@ -536,8 +552,7 @@ function operationPlan(
   ].sort((a, b) => a.inicio.localeCompare(b.inicio));
   const before = deriveCycles(beforeRows, reference),
     after = deriveCycles(afterRows, reference);
-  assertClosedCyclesUnchanged(db, before, after);
-  const atDate = (all: Cycle[], date: string) =>
+const atDate = (all: Cycle[], date: string) =>
     all.find((c) => c.inicio <= date && (c.fin === null || date <= c.fin)) ??
     null;
   const period = (c: Cycle | null) =>
@@ -624,6 +639,25 @@ function operationPlan(
       antes: period(r.antes),
       despues: period(r.despues),
     }));
+  /**
+   * §4.1/AC-40: pertenencia antes/después de **todas** las filas de Revisión
+   * Comida cuya ventana derivada cambia, sin el recorte de página de
+   * `comidaImpacto` (que sirve a la UI paginada). La fila no se reescribe: su
+   * identidad y su fecha salen del mismo `revision_comida` que el maestro no
+   * toca. Una fila idéntica antes/después no aparece.
+   */
+  const comidaReasignada: ComidaReasignada[] = comidaAffected.map((r) => ({
+    id: r.id,
+    fecha: r.fecha,
+    tipo: r.tipo,
+    estadoRegistro: r.estadoRegistro,
+    antes: r.antes
+      ? { id: r.antes.id, inicio: r.antes.inicio, fin: r.antes.fin }
+      : null,
+    despues: r.despues
+      ? { id: r.despues.id, inicio: r.despues.inicio, fin: r.despues.fin }
+      : null,
+  }));
   const contextRevision = fingerprint([
     beforeRows,
     facts,
@@ -651,6 +685,7 @@ function operationPlan(
     impactRevision,
     operation,
     id,
+    reanclaje,
     before: old ? before.find((c) => c.id === old.id)! : null,
     after: after.find((c) => c.id === key)!,
     ciclos: cycles,
@@ -680,6 +715,7 @@ function operationPlan(
     page,
     contextoAntes,
     contextoDespues,
+    comidaReasignada,
     conciliacion: { estado: "pendiente", motivo: "Revisión Comida pendiente" },
   };
 }
@@ -755,55 +791,9 @@ export function writeCycleOperation(
           "CONTEXT_CHANGED",
           "Revisa nuevamente el impacto antes de confirmar.",
         );
-      let target = id;
-      if (operation === "omitido") {
-        const r = db
-          .query(
-            "UPDATE counters SET next=next+1 WHERE name='ciclos' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) n",
-          )
-          .get() as { n: string } | null;
-        if (!r)
-          throw new Problem(503, "ID_SPACE", "No se pudo reservar identidad.");
-        target = r.n;
-      }
-      const time = new Date(now).toISOString();
-      db.run("INSERT INTO cycle_operation_guard VALUES(1)");
-      try {
-        if (operation === "omitido")
-          db.run(
-            "INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado) VALUES(?,?,?,?,1,?)",
-            [target!, plan.values.inicio, plan.values.saldo, time, time],
-          );
-        else
-          db.run(
-            "UPDATE ciclos SET inicio=?,saldo_comida=?,revision=revision+1,actualizado=? WHERE id=?",
-            [plan.values.inicio, plan.values.saldo, time, target!],
-          );
-      } finally {
-        db.run("DELETE FROM cycle_operation_guard");
-      }
-      const result = getCycle(db, target!);
-      db.run("INSERT INTO cycle_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)", [
-        target!,
-        result.ciclo.revision,
-        operation,
-        plan.values.motivo,
-        time,
-        plan.before ? JSON.stringify(plan.before) : null,
-        JSON.stringify(result.ciclo),
-      ]);
-      db.run(
-        "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
-        [
-          "ciclo:" + target,
-          operation,
-          result.ciclo.revision,
-          JSON.stringify(["inicio", "saldoInicialComida"]),
-          time,
-          plan.before?.revision ?? 0,
-          plan.values.motivo,
-        ],
-      );
+      const result = aplicarOperacionCiclo(db, operation, id, plan, now, {
+        intento: key,
+      });
       db.run("INSERT INTO cycle_operation_attempts VALUES(?,?,?,?)", [
         key,
         hash,
@@ -813,6 +803,102 @@ export function writeCycleOperation(
       return result;
     })
     .immediate();
+}
+
+/**
+ * Escritura del maestro de ciclos, sin transacción propia: la usan la ruta
+ * histórica de operaciones de ciclo y el envoltorio atómico de §3.4 de I2, que
+ * ya poseen la transacción. El guard de ciclo, la auditoría natural y el
+ * contador viven aquí para que ambas rutas escriban exactamente lo mismo.
+ */
+export function aplicarOperacionCiclo(
+  db: Database,
+  operation: CycleOperation,
+  id: string | null,
+  plan: ReturnType<typeof operationPlan>,
+  now = Date.now(),
+  opciones: {
+    intento?: string;
+    actor?: string;
+    instante?: string;
+    huellaAnterior?: string | null;
+    huellaPosterior?: string | null;
+  } = {},
+) {
+  let target = id;
+  if (operation === "omitido") {
+    const r = db
+      .query(
+        "UPDATE counters SET next=next+1 WHERE name='ciclos' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) n",
+      )
+      .get() as { n: string } | null;
+    if (!r) throw new Problem(503, "ID_SPACE", "No se pudo reservar identidad.");
+    target = r.n;
+  }
+  const time = opciones.instante ?? new Date(now).toISOString();
+  // §4.3 paso 2: evento y capacidad **antes** de mover el Inicio.
+  const reanclaje =
+    plan.reanclaje && target && operation === "rectificar"
+      ? {
+          ciclo: target,
+          corteAnterior: plan.reanclaje.refs.length
+            ? (db.query("SELECT inicio FROM ciclos WHERE id=?").get(target) as { inicio: string })
+                .inicio
+            : plan.values.inicio,
+          corteNuevo: plan.values.inicio,
+          revisionCiclo: plan.before?.revision ?? 1,
+          plan: plan.reanclaje,
+          intento: opciones.intento ?? `CICLO:${target}:${now}`,
+          actor: opciones.actor ?? "usuario-unico",
+          instante: time,
+          huellaAnterior: opciones.huellaAnterior ?? null,
+          huellaPosterior: opciones.huellaPosterior ?? null,
+        }
+      : null;
+  if (reanclaje) prepararReanclaje(db, reanclaje);
+  db.run("INSERT INTO cycle_operation_guard VALUES(1)");
+  try {
+    if (operation === "omitido")
+      db.run(
+        "INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado) VALUES(?,?,?,?,1,?)",
+        [target!, plan.values.inicio, plan.values.saldo, time, time],
+      );
+    else
+      db.run(
+        "UPDATE ciclos SET inicio=?,saldo_comida=?,revision=revision+1,actualizado=? WHERE id=?",
+        [plan.values.inicio, plan.values.saldo, time, target!],
+      );
+  } finally {
+    db.run("DELETE FROM cycle_operation_guard");
+  }
+  if (reanclaje) {
+    aplicarAperturasReanclaje(db, reanclaje);
+    cerrarReanclaje(db);
+    verificarReanclaje(db, reanclaje);
+  }
+  const result = getCycle(db, target!);
+  db.run("INSERT INTO cycle_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)", [
+    target!,
+    result.ciclo.revision,
+    operation,
+    plan.values.motivo,
+    time,
+    plan.before ? JSON.stringify(plan.before) : null,
+    JSON.stringify(result.ciclo),
+  ]);
+  db.run(
+    "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
+    [
+      "ciclo:" + target,
+      operation,
+      result.ciclo.revision,
+      JSON.stringify(["inicio", "saldoInicialComida"]),
+      time,
+      plan.before?.revision ?? 0,
+      plan.values.motivo,
+    ],
+  );
+  return result;
 }
 export function cycleHistory(db: Database, id: string) {
   getCycle(db, id);

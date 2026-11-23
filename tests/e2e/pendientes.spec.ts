@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext, type Fixture } from "./fixture";
 
 /**
  * E3.6 — UI de pendientes y flujo ajustado.
@@ -13,23 +15,53 @@ import { totp } from "../../apps/api/src/auth";
  * emite GET y no ofrece acciones de escritura.
  */
 
-const ARTIFACTS = "artifacts/e3-6";
+const artifacts = artifactDir("e3-6");
 
-function start(script: string): ChildProcess {
-  return spawn(process.env.BUN_BIN ?? "bun", [script], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test" },
+type OwnedFixture = {
+  child: ChildProcess;
+  output: () => string;
+  /** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+  assertAlive: () => void;
+};
+
+/** Fixture con puerto y estado propios de la ejecución (#508). */
+function startFixture(script: string, fixture: Fixture): OwnedFixture {
+  const child = spawn(process.env.BUN_BIN ?? "bun", [script], {
+    stdio: ["ignore", "pipe", "pipe"],
+    env: fixture.env,
   });
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture.name} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
+  return { child, output: () => output, assertAlive };
 }
 
 async function ready(
   request: any,
   origin: string,
   path = "/api/pendientes",
+  assertAlive: () => void = () => {},
 ) {
   await expect
     .poll(
       async () => {
+        assertAlive();
         try {
           return (await request.get(origin + "/api/health")).status();
         } catch {
@@ -48,8 +80,13 @@ async function login(
   origin: string,
   bootstrap: string,
   target: string,
+  assertAlive: () => void = () => {},
 ) {
-  await ready(request, origin);
+  await ready(request, origin, "/api/pendientes", assertAlive);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  if (!existsSync(bootstrap))
+    throw new Error(`El fixture no provisionó ${bootstrap}.`);
   await page.route("**/api/**", async (route: any) => {
     const url = new URL(route.request().url());
     url.port = new URL(origin).port;
@@ -214,17 +251,24 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/compartido-server.ts");
+  // Puerto y estado propios de la ejecución (#514), como el resto de fixtures
+  // de esta spec: el servidor de Compartidos ya no ocupa 3009 ni
+  // `.local/e2e-compartidos`.
+  const fixtureCompartidos = fixtureContext("pendientes-compartidos");
+  const owned = startFixture(
+    "apps/api/test-support/compartido-server.ts",
+    fixtureCompartidos,
+  );
   try {
     await login(
       page,
       request,
-      "http://127.0.0.1:3009",
-      ".local/e2e-compartidos/bootstrap.txt",
+      fixtureCompartidos.baseURL,
+      `${fixtureCompartidos.dir}/bootstrap.txt`,
       "/pendientes",
+      owned.assertAlive,
     );
 
     // Lista por defecto: una fila por caso/tipo, sin total económico global.
@@ -248,7 +292,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByRole("columnheader", { name: "Caso / fuente", exact: true }),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w1-pendientes-1440.png",
+      path: join(artifacts, "w1-pendientes-1440.png"),
       fullPage: true,
     });
     expect(
@@ -313,7 +357,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       ),
     ).toBe(true);
     await page.screenshot({
-      path: ARTIFACTS + "/w2-pendientes-390.png",
+      path: join(artifacts, "w2-pendientes-390.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -359,7 +403,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByRole("link", { name: /Volver a pendientes/ }),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w3-detalle-compartido-1440.png",
+      path: join(artifacts, "w3-detalle-compartido-1440.png"),
       fullPage: true,
     });
 
@@ -449,7 +493,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByText(/No se suman al gasto\s+bruto del plan/),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w4-casos-ajuste-1440.png",
+      path: join(artifacts, "w4-casos-ajuste-1440.png"),
       fullPage: true,
     });
 
@@ -475,7 +519,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
     expect(writes).toEqual([]);
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    owned.child.kill();
   }
 });
 
@@ -484,17 +528,31 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/anticipo-server.ts");
+  // Puerto y estado propios de la ejecución (#508). El nombre distingue este
+  // arranque del de anticipos.spec.ts para no compartir estado en la misma run.
+  const fixture = fixtureContext("anticipo-pendientes");
+  const server = startFixture(
+    "apps/api/test-support/anticipo-server.ts",
+    fixture,
+  );
   try {
+    await ready(request, fixture.baseURL, "/api/pendientes", server.assertAlive);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    server.assertAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture anticipo no provisionó ${fixture.dir}/bootstrap.txt: ${server.output().trim()}`,
+    ).toBe(true);
     await login(
       page,
       request,
-      "http://127.0.0.1:3008",
-      ".local/e2e-anticipos/bootstrap.txt",
+      fixture.baseURL,
+      join(fixture.dir, "bootstrap.txt"),
       "/pendientes",
+      server.assertAlive,
     );
 
     await expect(
@@ -561,7 +619,7 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
       ),
     ).toBe(true);
     await page.screenshot({
-      path: ARTIFACTS + "/w5-estados-390.png",
+      path: join(artifacts, "w5-estados-390.png"),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -590,7 +648,9 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
     await expect(page.getByText("0,00 €")).toHaveCount(0);
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.child.kill();
+    server.child.stdout?.destroy();
+    server.child.stderr?.destroy();
   }
 });
 
@@ -599,17 +659,30 @@ test("E3.6 R1: conciliación de ciclo sin movimientos aparece como Alerta", asyn
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/pendientes-server.ts");
+  // Puerto y estado propios de la ejecución (#508).
+  const fixture = fixtureContext("pendientes");
+  const server = startFixture(
+    "apps/api/test-support/pendientes-server.ts",
+    fixture,
+  );
   try {
+    await ready(request, fixture.baseURL, "/api/pendientes", server.assertAlive);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    server.assertAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture pendientes no provisionó ${fixture.dir}/bootstrap.txt: ${server.output().trim()}`,
+    ).toBe(true);
     await login(
       page,
       request,
-      "http://127.0.0.1:3010",
-      ".local/e2e-pendientes/bootstrap.txt",
+      fixture.baseURL,
+      join(fixture.dir, "bootstrap.txt"),
       "/pendientes",
+      server.assertAlive,
     );
 
     const apertura = page
@@ -657,7 +730,9 @@ test("E3.6 R1: conciliación de ciclo sin movimientos aparece como Alerta", asyn
     await expect(page.getByText(/Alerta de conciliación/).first()).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.child.kill();
+    server.child.stdout?.destroy();
+    server.child.stderr?.destroy();
   }
 });
 
@@ -666,17 +741,32 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
   request,
 }) => {
   test.setTimeout(120000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const child = start("apps/api/test-support/monthly-server.ts");
+  // Puerto y estado propios de la ejecución (#508). El nombre distingue este
+  // arranque del de flujo-mensual.spec.ts, que usa el mismo servidor.
+  const fixture = fixtureContext("monthly-pendientes");
+  const API_PORT = fixture.port;
+  const server = startFixture(
+    "apps/api/test-support/monthly-server.ts",
+    fixture,
+  );
   try {
+    await ready(request, fixture.baseURL, "/api/pendientes", server.assertAlive);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    server.assertAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture monthly no provisionó ${fixture.dir}/bootstrap.txt: ${server.output().trim()}`,
+    ).toBe(true);
     await login(
       page,
       request,
-      "http://127.0.0.1:3008",
-      ".local/e2e-monthly/bootstrap.txt",
+      fixture.baseURL,
+      join(fixture.dir, "bootstrap.txt"),
       "/pendientes",
+      server.assertAlive,
     );
 
     await expect(page.getByText(/^5 filas/).first()).toBeVisible();
@@ -692,7 +782,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       "**/api/pendientes?*",
       async (route: any) => {
         const target = new URL(route.request().url());
-        target.port = "3008";
+        target.port = String(API_PORT);
         const response = await route.fetch({ url: target.toString() });
         held();
         await gate;
@@ -788,7 +878,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       page.getByText(/no es un cierre financiero ni modifica el saldo inicial/),
     ).toBeVisible();
     await page.screenshot({
-      path: ARTIFACTS + "/w3-conciliacion-1440.png",
+      path: join(artifacts, "w3-conciliacion-1440.png"),
       fullPage: true,
     });
 
@@ -845,7 +935,7 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
       }),
     ).toContainText("1.800,00 €");
     await page.screenshot({
-      path: ARTIFACTS + "/w4-flujo-ajustado-1440.png",
+      path: join(artifacts, "w4-flujo-ajustado-1440.png"),
       fullPage: true,
     });
     expect(
@@ -869,6 +959,8 @@ test("E3.6 W4/W5: flujo ajustado, conciliación no disponible, carga, error y se
     expect(page.url()).not.toMatch(/importe|\d+\.\d{2}/);
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.child.kill();
+    server.child.stdout?.destroy();
+    server.child.stderr?.destroy();
   }
 });

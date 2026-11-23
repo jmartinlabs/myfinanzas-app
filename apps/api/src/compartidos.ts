@@ -4,7 +4,6 @@ import { getClassification } from "./clasificacion";
 import { fingerprint, ledgerRows, type LedgerRow } from "./movement-ledger";
 import { getReference } from "./reference-rules";
 import { createReference } from "./referencias";
-import { closedWindowsForDates } from "./e49-guards";
 import {
   aportacionMetadata,
   aportacionesReferencia,
@@ -1614,25 +1613,6 @@ export function createParticipante(
     const usage = db
       .query("SELECT fecha FROM movimientos WHERE referencia=?")
       .all(referencia) as { fecha: string }[];
-    const closed = closedWindowsForDates(
-      db,
-      usage.map((row) => row.fecha),
-    );
-    if (closed.length && !motive)
-      throw new Problem(
-        422,
-        "VALIDATION",
-        "El participante afecta a un Gasto compartido con hechos en ventana cerrada; indica el motivo.",
-        { motivo: "Motivo obligatorio para el reparto posterior al cierre." },
-        {
-          cierres: closed.map(({ ciclo, version, inicio, fin }) => ({
-            ciclo,
-            version,
-            inicio,
-            fin,
-          })),
-        },
-      );
     const { row, ref } = ficha(db, referencia);
     if (ref.estado !== "Activa")
       throw new Problem(

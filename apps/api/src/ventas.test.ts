@@ -1513,7 +1513,7 @@ test("E4.2-AC-39/40: guard de Saldo y huella de Movimiento con Ventas", () => {
             ...change,
           }),
         ).code,
-      ).toBe("HISTORY_LOCKED");
+      ).toBe("RECTIFICATION_REQUIRED");
     }
     expect(
       updateSaldo(db, "S003", {
@@ -1554,7 +1554,7 @@ test("E4.2-AC-39: Saldo solo con Venta y Saldo con Compra y Venta anulada", () =
             ...change,
           }),
         ).code,
-      ).toBe("HISTORY_LOCKED");
+      ).toBe("RECTIFICATION_REQUIRED");
     // A cash Saldo that intervenes only in one Venta.
     const onlySale = createSaldo(
       db,
@@ -1595,7 +1595,7 @@ test("E4.2-AC-39: Saldo solo con Venta y Saldo con Compra y Venta anulada", () =
             ...change,
           }),
         ).code,
-      ).toBe("HISTORY_LOCKED");
+      ).toBe("RECTIFICATION_REQUIRED");
     // Deactivate/reactivate keep both operations; only the name is free.
     updateSaldo(db, onlySale.id, {
       revision: getSaldo(db, onlySale.id).revision,
@@ -1967,9 +1967,9 @@ test("E4.2-AC-36/AC-37: esquema v21 con una sola tabla y migración que conserva
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 31,
+        version: 32,
       });
-      expect(verifyContract(db, 31)).toBe("C31-SPEC37-INTENCION-91C32F5");
+      expect(verifyContract(db, 32)).toBe("C32-SPEC38-VALIDACION-CIERRE");
       const tables = (
         db
           .query(
@@ -1997,7 +1997,7 @@ test("E4.2-AC-36/AC-37: esquema v21 con una sola tabla y migración que conserva
         importeEur: "110.00",
       });
       expect(sale.venta.id).toBe("5002");
-      expect(verifyContract(db, 31)).toBe("C31-SPEC37-INTENCION-91C32F5");
+      expect(verifyContract(db, 32)).toBe("C32-SPEC38-VALIDACION-CIERRE");
     } finally {
       db.close();
     }

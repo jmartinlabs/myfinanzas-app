@@ -3,8 +3,11 @@ import {
   inspectIdentity,
   assertMode,
   keyHash,
-  schemaVersion,
 } from "./database-identity";
+import {
+  appLabelFor,
+  isKnownSchemaVersion,
+} from "./schema-catalog";
 import { verifyContract } from "./schema-contract";
 import {
   productionConfig,
@@ -56,12 +59,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-        24, 25, 26, 27, 28, 29, 30, schemaVersion,
-      ].includes(
-        versions[0].version,
-      ) ||
+      !isKnownSchemaVersion(versions[0].version) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
@@ -122,68 +120,7 @@ export function backup(
     const bytes = readFileSync(snapshot);
     const manifest = {
       format: 1,
-      app:
-        sourceVersion === 1
-          ? "e1.1-v1"
-          : sourceVersion === 2
-            ? "e1.2-v2"
-            : sourceVersion === 3
-              ? "e1.3-v3"
-              : sourceVersion === 4
-                ? "e1.4-v4"
-                : sourceVersion === 5
-                  ? "e1.5-v5"
-                  : sourceVersion === 6
-                    ? "sqlite-v6"
-                    : sourceVersion === 7
-                      ? "e1.6-v7"
-                      : sourceVersion === 8
-                        ? "e2.2-v8"
-                        : sourceVersion === 9
-                          ? "e2.1-v9"
-                          : sourceVersion === 10
-                            ? "e2.3-v10"
-                            : sourceVersion === 11
-                              ? "e2.4-v11"
-                              : sourceVersion === 12
-                                ? "e2.5-v12"
-                                : sourceVersion === 13
-                                  ? "e3.1-v13"
-                                  : sourceVersion === 14
-                                    ? "e3.3-v14"
-                                    : sourceVersion === 15
-                                      ? "e3.2-v15"
-                                      : sourceVersion === 16
-                                        ? "e3.4-v16"
-                                        : sourceVersion === 17
-                                          ? "e3.2-d5-v17"
-                                          : sourceVersion === 18
-                                            ? "e4.1-v18"
-                                            : sourceVersion === 19
-                                              ? "e3.4-v19"
-                                              : sourceVersion === 20
-                                                ? "e2.7-v20"
-                                                : sourceVersion === 21
-                                                  ? "e4.2-v21"
-                                                  : sourceVersion === 22
-                                                    ? "e35-v22"
-                                                    : sourceVersion === 23
-                                                      ? "e4.4-v23"
-                                                      : sourceVersion === 24
-                                                        ? "e4.3-v24"
-                                                        : sourceVersion === 25
-                                                          ? "e4.9-v25"
-                                                          : sourceVersion === 26
-                                                            ? "e4.10-v26"
-                                                            : sourceVersion === 27
-                                                              ? "e4.11-v27"
-                                                              : sourceVersion === 28
-                                                                ? "e36.1-v28"
-                                                                : sourceVersion === 29
-                                                                  ? "e36.3-v29"
-                                                                  : sourceVersion === 30
-                                                                    ? "e37.1-v30"
-                                                                    : "e37.2-v31",
+      app: appLabelFor(sourceVersion),
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -292,12 +229,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-        24, 25, 26, 27, 28, 29, 30, schemaVersion,
-      ].includes(
-        bundle.manifest.schema,
-      ) ||
+      !isKnownSchemaVersion(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");

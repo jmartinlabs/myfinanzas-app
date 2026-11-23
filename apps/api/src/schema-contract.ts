@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import contractsJson from "./schema-contracts.json";
-import { schemaVersion } from "./database-identity";
+import { contractIdFor, schemaVersion } from "./schema-catalog";
 
 export type ContractObject = {
   type: string;
@@ -50,29 +50,6 @@ export function contract(id: string) {
   return found;
 }
 
-export const admitted = {
-  14: "C14-VEHICULOS-C69E343",
-  15: "C15-COMPARTIDOS-AD2EDFE",
-  16: "C16-REVISION-COMIDA-26B6F0C",
-  17: "C17-D5-CF6954A",
-  18: "C18-INVERSION-306BBC5",
-  19: "C19-COMIDA-UNICO-01",
-  20: "C20-DPRIMA-SIMPLIFICADA",
-  21: "C21-VENTAS-E42",
-  22: "C22-E35-FIN-NETA",
-  23: "C23-E44-DEUDA-COMPLETA",
-  24: "C24-E43-VALORACION",
-  25: "C25-E49-CIERRE-FINANCIERO",
-  26: "C26-E410-REAPERTURA-V26",
-  27: "C27-E411-FOTOS-PERIODO",
-  28: "C28-REPARTO-PENDIENTE-6A31C23",
-  29: "C29-REPARTO-ORIGEN-86DED4B",
-  30: "C30-SPEC37-COORDINADO-0E1F34D",
-  31: "C31-SPEC37-INTENCION-91C32F5",
-  // Historical evidence only; never an upgrade origin.
-  historical14: "C14-COMPARTIDOS-FCE1107",
-} as const;
-
 export function manifest(db: Database): ContractObject[] {
   return (
     db
@@ -94,44 +71,7 @@ function literal(version: number) {
 
 /** Compares the exact canonical manifest before any persistent PRAGMA or write. */
 export function verifyContract(db: Database, version: number) {
-  const id =
-    version === 14
-      ? admitted[14]
-      : version === 15
-        ? admitted[15]
-        : version === 16
-          ? admitted[16]
-          : version === 17
-            ? admitted[17]
-            : version === 18
-              ? admitted[18]
-              : version === 19
-                ? admitted[19]
-                : version === 20
-                  ? admitted[20]
-                  : version === 21
-                    ? admitted[21]
-                    : version === 22
-                      ? admitted[22]
-                      : version === 23
-                        ? admitted[23]
-                        : version === 24
-                          ? admitted[24]
-                          : version === 25
-                            ? admitted[25]
-                            : version === 26
-                              ? admitted[26]
-                              : version === 27
-                                ? admitted[27]
-                                : version === 28
-                                  ? admitted[28]
-                                  : version === 29
-                                    ? admitted[29]
-                                    : version === 30
-                                      ? admitted[30]
-                                      : version === 31
-                                        ? admitted[31]
-                                        : null;
+  const id = contractIdFor(version);
   if (!id) return null;
   const expected = contract(id);
   if (

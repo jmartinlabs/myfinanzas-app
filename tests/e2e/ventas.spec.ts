@@ -1,8 +1,34 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext } from "./fixture";
+
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("ventas");
+const API_PORT = fixture.port;
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture ventas terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 /**
  * E4.2 acceptance walkthrough (SPEC22 AC-19/20/23/27/32/33/44 UI).
@@ -13,12 +39,21 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
   page,
   request,
 }) => {
-  const child = spawn(
+  child = spawn(
       process.env.BUN_BIN ?? "bun",
       ["apps/api/test-support/ventas-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
-    ),
-    errors: string[] = [];
+      { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
+    );
+  const errors: string[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   page.on("pageerror", (error) => errors.push(error.message));
   const light = () =>
     page.evaluate(() => {
@@ -57,9 +92,10 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3011/api/health")
+              await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -69,11 +105,18 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       )
       .toBe(200);
     expect(
-      (await request.get("http://127.0.0.1:3011/api/ventas")).status(),
+      (await request.get(`http://127.0.0.1:${API_PORT}/api/ventas`)).status(),
     ).toBe(401);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture ventas no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3011";
+      url.port = String(API_PORT);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -81,7 +124,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await page.goto("/inversiones");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-ventas/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Clave ficticia ventas " + randomUUID());
@@ -105,7 +148,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       })
       .click();
     await page.getByRole("link", { name: /Inversiones/ }).click();
-    mkdirSync("artifacts/e4-2", { recursive: true });
+    const artifacts = artifactDir("e4-2");
 
     // ---- W11: listing, cash and filters (1440) ----
     await ventasTab();
@@ -146,7 +189,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByText("15/03/2026", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({
-      path: "artifacts/e4-2/ventas-list-1440.png",
+      path: join(artifacts, "ventas-list-1440.png"),
       fullPage: true,
     });
     await page.getByLabel("Estado").selectOption("Anulada");
@@ -202,7 +245,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByText("Cerrada", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/Rentabilidad|Valor actual/)).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e4-2/instrumento-ficha-cero-1440.png",
+      path: join(artifacts, "instrumento-ficha-cero-1440.png"),
       fullPage: true,
     });
     await ventasTab();
@@ -244,7 +287,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     );
     await expect(impact).toContainText("antes 12,5 → después 7,5");
     await page.screenshot({
-      path: "artifacts/e4-2/venta-impacto-1440.png",
+      path: join(artifacts, "venta-impacto-1440.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Confirmar venta" }).focus();
@@ -261,7 +304,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByText(/10\/04\/2026 · Vigente/)).toBeVisible();
     await expect(detail.getByText(/Revisión/).first()).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-2/venta-ficha-1440.png",
+      path: join(artifacts, "venta-ficha-1440.png"),
       fullPage: true,
     });
 
@@ -285,7 +328,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       page.getByText(/Referencia cantidad×precio×cambio: 303,60 €/),
     ).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-2/rectificar-impacto-1440.png",
+      path: join(artifacts, "rectificar-impacto-1440.png"),
       fullPage: true,
     });
     await page.route(
@@ -317,7 +360,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       page.getByRole("button", { name: "Confirmar rectificación" }),
     ).toBeDisabled();
     await page.screenshot({
-      path: "artifacts/e4-2/rectificar-409-1440.png",
+      path: join(artifacts, "rectificar-409-1440.png"),
       fullPage: true,
     });
     await page
@@ -334,7 +377,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(detail).toContainText("1,00 €");
     await expect(page.getByText(/revisión 2/).first()).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-2/venta-rectificada-1440.png",
+      path: join(artifacts, "venta-rectificada-1440.png"),
       fullPage: true,
     });
 
@@ -355,7 +398,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(impact).toContainText("antes 9,5 → después 12,5");
     await expect(page.getByRole("button", { name: "Anular venta" })).toBeDisabled();
     await page.screenshot({
-      path: "artifacts/e4-2/anular-impacto-1440.png",
+      path: join(artifacts, "anular-impacto-1440.png"),
       fullPage: true,
     });
     await page.getByLabel(/Motivo \*/).fill("Duplicado ficticio");
@@ -366,7 +409,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Rectificar" })).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e4-2/venta-anulada-1440.png",
+      path: join(artifacts, "venta-anulada-1440.png"),
       fullPage: true,
     });
 
@@ -387,7 +430,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       0,
     );
     await page.screenshot({
-      path: "artifacts/e4-2/anular-d2-1440.png",
+      path: join(artifacts, "anular-d2-1440.png"),
       fullPage: true,
     });
 
@@ -421,7 +464,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByLabel(/Instrumento \*/)).toHaveValue("I1001");
     await expect(page.getByLabel(/Saldo de inversión \*/)).toHaveValue("S004");
     await page.screenshot({
-      path: "artifacts/e4-2/venta-cantidad-1440.png",
+      path: join(artifacts, "venta-cantidad-1440.png"),
       fullPage: true,
     });
     await page.getByLabel(/Cantidad \*/).fill("5");
@@ -475,7 +518,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
         .getByText("0,00 €"),
     ).toHaveCount(0);
     await page.screenshot({
-      path: "artifacts/e4-2/ventas-vacio-1440.png",
+      path: join(artifacts, "ventas-vacio-1440.png"),
       fullPage: true,
     });
     await page.unroute("**/api/ventas?*");
@@ -509,7 +552,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Reintentar" })).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-2/ventas-error-1440.png",
+      path: join(artifacts, "ventas-error-1440.png"),
       fullPage: true,
     });
     await page.unroute("**/api/ventas?*");
@@ -531,7 +574,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       "0,00 €",
     );
     await page.screenshot({
-      path: "artifacts/e4-2/efectivo-no-disponible-1440.png",
+      path: join(artifacts, "efectivo-no-disponible-1440.png"),
       fullPage: true,
     });
     await page.unroute("**/api/instrumentos/opciones");
@@ -539,7 +582,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     // ---- AC-44 UI: missing references are shown as «Revisar», never repaired ----
     await page.route("**/api/ventas?*", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3011";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       const body = await response.json();
       body.ventas[0] = {
@@ -556,7 +599,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     });
     await page.route(/\/api\/ventas\/\d+$/, async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3011";
+      url.port = String(API_PORT);
       const response = await route.fetch({ url: url.toString() });
       const body = await response.json();
       body.venta = {
@@ -584,7 +627,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     ).toBeVisible();
     await expect(page.getByText(/Incidencia «Revisar»/).first()).toBeVisible();
     await page.screenshot({
-      path: "artifacts/e4-2/venta-revisar-1440.png",
+      path: join(artifacts, "venta-revisar-1440.png"),
       fullPage: true,
     });
     await page.unroute("**/api/ventas?*");
@@ -692,7 +735,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.locator(".inversiones-mobile li")).toHaveCount(4);
     await noOverflow();
     await page.screenshot({
-      path: "artifacts/e4-2/ventas-list-390.png",
+      path: join(artifacts, "ventas-list-390.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Nueva venta" }).click();
@@ -709,7 +752,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByLabel(/Precio unitario \*/)).toBeFocused();
     await noOverflow();
     await page.screenshot({
-      path: "artifacts/e4-2/venta-form-390.png",
+      path: join(artifacts, "venta-form-390.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Cancelar" }).click();
@@ -722,7 +765,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     ).toBeVisible();
     await noOverflow();
     await page.screenshot({
-      path: "artifacts/e4-2/venta-ficha-390.png",
+      path: join(artifacts, "venta-ficha-390.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Rectificar" }).click();
@@ -736,7 +779,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(impact).toContainText("antes 0 → después 1");
     await noOverflow();
     await page.screenshot({
-      path: "artifacts/e4-2/rectificar-impacto-390.png",
+      path: join(artifacts, "rectificar-impacto-390.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Cancelar" }).click();
@@ -748,7 +791,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(impact).toContainText("antes 0 → después 2");
     await noOverflow();
     await page.screenshot({
-      path: "artifacts/e4-2/anular-impacto-390.png",
+      path: join(artifacts, "anular-impacto-390.png"),
       fullPage: true,
     });
     await page.getByRole("link", { name: "‹ Volver" }).click();
@@ -767,7 +810,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByText(/No disponible hasta E4.3/)).toBeVisible();
     await noOverflow();
     await page.screenshot({
-      path: "artifacts/e4-2/instrumento-ficha-cero-390.png",
+      path: join(artifacts, "instrumento-ficha-cero-390.png"),
       fullPage: true,
     });
 
@@ -787,10 +830,10 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       (await fetch("/api/auth/session")).json(),
     );
     const sale = await page.request.post(
-      "http://127.0.0.1:3011/api/ventas",
+      `http://127.0.0.1:${API_PORT}/api/ventas`,
       {
         headers: {
-          origin: "http://127.0.0.1:5173",
+          origin: fixture.env.APP_ORIGIN,
           "x-csrf-token": session.csrf,
           "idempotency-key": randomUUID(),
         },
@@ -820,7 +863,7 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     ).toHaveValue("Transferencia AC-40");
     expect(errors).toEqual([]);
     await page.screenshot({
-      path: "artifacts/e4-2/movimiento-impacto-invalidado-390.png",
+      path: join(artifacts, "movimiento-impacto-invalidado-390.png"),
       fullPage: true,
     });
 
@@ -844,12 +887,14 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByLabel(/Fecha \*/)).toHaveValue("2026-04-11");
     await expect(page.getByLabel(/Cantidad \*/)).toHaveValue("2");
     await page.screenshot({
-      path: "artifacts/e4-2/sesion-expirada-390.png",
+      path: join(artifacts, "sesion-expirada-390.png"),
       fullPage: true,
     });
     await page.unroute("**/api/ventas/impacto");
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    child?.kill();
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
   }
 });

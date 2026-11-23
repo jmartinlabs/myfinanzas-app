@@ -1,13 +1,16 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext } from "./fixture";
 
 /**
  * SPEC37 · I6 — regresión E2E de los casos base.
  *
- * Recorrido real con servidor aislado (3030), MFA real y SQLite:
+ * Recorrido real con servidor aislado (puerto y estado propios de la ejecución),
+ * MFA real y SQLite:
  *
  *  - AC-01: un Gasto normal es un único hecho, sin Transferencia, pendiente ni
  *    alerta (la bandeja queda en 0 y la lista no marca nada).
@@ -20,22 +23,56 @@ import { totp } from "../../apps/api/src/auth";
  * Todo ficticio: sin datos reales y sin Excel.
  */
 
-const PORT = 3030;
-const DIR = ".local/e2e-spec37-i6";
-const SHOTS = "artifacts/spec37-i6";
+// Puerto y estado propios de la ejecución (#508): dos runs de esta spec no
+// comparten listener ni base. El fixture conserva 3030/`.local/e2e-spec37-i6`
+// como defaults para arranque manual.
+const fixture = fixtureContext("spec37-i6");
+const PORT = fixture.port;
+const DIR = fixture.dir;
+const artifacts = artifactDir("spec37-i6");
 let child: ChildProcess | undefined;
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin stderr)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture SPEC37 I6 terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test.beforeAll(async ({ request }) => {
-  // `E2E_APP_ORIGIN` solo existe para ejecuciones locales que sirven el build en
-  // otro puerto; por defecto es el origen del `playwright.config.ts` del repo.
-  const appOrigin = process.env.E2E_APP_ORIGIN ?? "http://127.0.0.1:5173";
-  child = spawn(process.env.BUN_BIN ?? "bun", ["apps/api/test-support/spec37-i6-server.ts"], {
-    stdio: "pipe",
-    env: { ...process.env, NODE_ENV: "test", APP_ORIGIN: appOrigin },
+  // El origen lo publica el contexto de la ejecución (`APP_ORIGIN` y
+  // `E2E_APP_ORIGIN`); sin él, el fixture usa el del `playwright.config.ts`.
+  child = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/spec37-i6-server.ts"],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: fixture.env,
+    },
+  );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
   });
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
           return (await request.get(`http://127.0.0.1:${PORT}/api/health`)).status();
         } catch {
@@ -45,17 +82,25 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  // El sondeo debe hablar con NUESTRO fixture: proceso vivo y base ficticia
+  // provisionada por él en el directorio de esta run (no otro 200 ajeno).
+  assertFixtureAlive();
+  expect(
+    existsSync(`${DIR}/bootstrap.txt`),
+    `El fixture no provisionó ${DIR}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
 });
 
 test.afterAll(() => {
   child?.kill();
+  child?.stdout?.destroy();
+  child?.stderr?.destroy();
 });
 
 test("SPEC37 I6: Gasto normal, modalidad A sin Transferencia y cancelación sin escritura", async ({
   page,
 }) => {
   test.setTimeout(300000);
-  mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/api/**", async (route) => {
@@ -118,11 +163,11 @@ test("SPEC37 I6: Gasto normal, modalidad A sin Transferencia y cancelación sin 
     await page.setViewportSize({ width: 1440, height: 1000 });
     await settle();
     await noOverflow();
-    await page.screenshot({ path: `${SHOTS}/${name}-1440.png`, fullPage: true });
+    await page.screenshot({ path: join(artifacts, `${name}-1440.png`), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await settle();
     await noOverflow();
-    await page.screenshot({ path: `${SHOTS}/${name}-390.png`, fullPage: true });
+    await page.screenshot({ path: join(artifacts, `${name}-390.png`), fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });
   };
 

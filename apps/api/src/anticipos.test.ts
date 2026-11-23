@@ -441,7 +441,24 @@ test("AC14/15/19/30–36/43 explicit photo, signed zero/negative, late confirmat
     revision: 1,
     motivo: "corrección acreditada",
   });
-  expect(p2.correccionBloqueada).toBe(true);
+  // §4.2: la corrección de la declaración ya no se veta por un proveedor de
+  // fotos; exige motivo y revisión, y conserva el original.
+  expect(p2.correccionBloqueada).toBe(false);
+  const corregida = confirmOpening(
+    db,
+    ref,
+    {
+      ...body,
+      ...p2,
+      confirmado: true,
+      revision: 1,
+      motivo: "corrección acreditada",
+    },
+    crypto.randomUUID(),
+    now,
+  );
+  expect(corregida.fotos[0]).toMatchObject({ importe: "0.00", revision: 2 });
+  // Reutilizar la revisión anterior sí se rechaza: la corrección exige la viva.
   expect(() =>
     confirmOpening(
       db,
@@ -456,7 +473,7 @@ test("AC14/15/19/30–36/43 explicit photo, signed zero/negative, late confirmat
       crypto.randomUUID(),
       now,
     ),
-  ).toThrow();
+  ).toThrow("contexto");
   const ref2 = create(db, "Cero verificado"),
     z = previewOpening(db, ref2, { ...body, importe: "0" });
   confirmOpening(
@@ -572,19 +589,26 @@ test("AC36 safe exceptional correction only with verifiable provider, reason/rev
   expect(
     JSON.parse((result.auditoria[0] as { anterior: string }).anterior).importe,
   ).toBe("0.00");
+  // §4.2: la corrección de una apertura deja de estar vetada por un proveedor
+  // de fotos. Sigue exigiendo motivo y revisión, y el original queda en la
+  // auditoría; lo que desaparece es el bloqueo absoluto por declaración.
   const locked = () => ({ ...source(), bloqueos: ["Cierre protegido"] });
   const p2 = previewOpening(db, ref, { ...b, revision: 2 }, locked);
-  expect(p2.correccionBloqueada).toBe(true);
-  expect(() =>
-    confirmOpening(
-      db,
-      ref,
-      { ...b, ...p2, confirmado: true },
-      crypto.randomUUID(),
-      now,
-      locked,
-    ),
-  ).toThrow("Cierre protegido");
+  expect(p2.correccionBloqueada).toBe(false);
+  const segunda = confirmOpening(
+    db,
+    ref,
+    { ...b, ...p2, confirmado: true },
+    crypto.randomUUID(),
+    now,
+    locked,
+  );
+  expect(segunda.fotos).toHaveLength(1);
+  expect(segunda.fotos[0]).toMatchObject({ importe: "-10.00", revision: 3 });
+  // El motivo sigue siendo obligatorio para una corrección excepcional.
+  expect(() => previewOpening(db, ref, { ...b, revision: 3, motivo: "" })).toThrow(
+    "Motivo",
+  );
   db.close();
 });
 
@@ -851,6 +875,9 @@ test("AC22/42/43 rectification stays atomic with metadata and source amounts; sn
     }),
   ).toThrow("apertura");
   const { previewCycleOperation } = await import("./ciclos");
+  // §4.2/§4.3: mover el Inicio con declaraciones de apertura ya no se veta en
+  // absoluto; la clase B exige datos explícitos por REF y, sin ellos, no se
+  // guarda el Inicio.
   expect(() =>
     previewCycleOperation(db, "rectificar", c.id, {
       inicio: "2026-06-21",
@@ -859,7 +886,25 @@ test("AC22/42/43 rectification stays atomic with metadata and source amounts; sn
       motivo: "cambio de Inicio",
       contextRevision: cycleContext(db).revision,
     }),
-  ).toThrow("Inicio protegido");
+  ).toThrow("exige importe explícito");
+  const conDatos = previewCycleOperation(db, "rectificar", c.id, {
+    inicio: "2026-06-21",
+    saldoInicialComida: "0",
+    revision: c.revision,
+    motivo: "cambio de Inicio",
+    anticipos: [
+      {
+        referencia: ref,
+        importe: String(opening.importe),
+        evidencia: "evidencia ficticia de reacreditación",
+        procedencia: "revisión explícita de prueba",
+        coberturaVerificada: true,
+        confirmado: true,
+        motivo: "Reacreditar la apertura con el corte nuevo",
+      },
+    ],
+  });
+  expect(conDatos.after.inicio).toBe("2026-06-21");
   db.close();
 });
 test("AC21/22 ledger exact beyond2^53 and aggregateint64; metadata has no monetary duplicate", () => {

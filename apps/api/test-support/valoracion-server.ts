@@ -20,7 +20,10 @@ import { createSale } from "../src/ventas";
 import { createValuation } from "../src/e43";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 
-const dir = ".local/e2e-valoracion";
+// Puerto y estado del contexto de la ejecución (#508); los valores históricos
+// se conservan para arrancarlo a mano.
+const PORT = Number(process.env.E2E_PORT ?? 3011);
+const dir = process.env.E2E_STATE_DIR ?? ".local/e2e-valoracion";
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite"),
@@ -201,8 +204,14 @@ valorar("S006", i1005.id, "2026-04-30", { tipo: "Manual", valorEur: "205.00" });
 writeFileSync(dir + "/bootstrap.txt", provision(db, now), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key, now: () => now })).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3011 })),
+    HttpServer.serve(
+      createApp(db, {
+        key,
+        now: () => now,
+        origin: process.env.APP_ORIGIN ?? process.env.E2E_APP_ORIGIN,
+      }),
+    ).pipe(
+      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: PORT })),
     ),
   ),
 );

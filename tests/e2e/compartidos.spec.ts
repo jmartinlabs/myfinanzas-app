@@ -1,16 +1,20 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer } from "./fixture";
+
+const fixture = fixtureContext("compartidos");
+
 test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/1440", async ({
   page,
   request,
 }) => {
-  const child = spawn(
-      process.env.BUN_BIN ?? "bun",
-      ["apps/api/test-support/compartido-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+  const server = startFixtureServer(
+      "apps/api/test-support/compartido-server.ts",
+      fixture,
     ),
     errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -18,9 +22,10 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect
       .poll(
         async () => {
+          server.assertAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3009/api/health")
+              await request.get(`${fixture.baseURL}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -30,20 +35,23 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
       )
       .toBe(200);
     expect(
-      (await request.get("http://127.0.0.1:3009/api/compartidos/fichas"))
+      (await request.get(`${fixture.baseURL}/api/compartidos/fichas`))
         .status(),
     ).toBe(401);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    requireFixtureState(server);
     // Enrutado nativo del navegador: route.fetch resetea la respuesta grande de
     // /compartidos/fichas contra el servidor Bun de test en Node 26.
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3009";
+      url.port = String(fixture.port);
       await route.continue({ url: url.toString() });
     });
     await page.goto("/compartidos");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-compartidos/bootstrap.txt", "utf8"));
+      .fill(readFileSync(`${fixture.dir}/bootstrap.txt`, "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Contraseña ficticia compartidos " + randomUUID());
@@ -66,7 +74,7 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect(page.getByRole("heading", { name: "Gastos compartidos" })).toBeVisible();
     await expect(page.getByText("Piso 2026", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Solo mío", { exact: true }).first()).toBeVisible();
-    mkdirSync("artifacts/e3-2", { recursive: true });
+    const artifacts = artifactDir("e3-2");
     const shots = async (name: string) => {
       for (const [width, height] of [
         [1440, 1000],
@@ -89,7 +97,7 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
         );
         await page.screenshot({
           animations: "disabled",
-          path: `artifacts/e3-2/${name}-${width}.png`,
+          path: join(artifacts, `${name}-${width}.png`),
           fullPage: true,
         });
       }
@@ -310,6 +318,6 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect(page.getByRole("heading", { name: "Gastos compartidos" })).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    server.stop();
   }
 });

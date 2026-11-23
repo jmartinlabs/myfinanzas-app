@@ -22,6 +22,80 @@ const now = Date.parse("2026-03-10T12:00:00Z");
 const origin = "http://127.0.0.1:5173";
 const password = "Solo pruebas E4.9 " + randomUUID();
 
+/*
+ * SPEC38 §7.6 — retirada funcional de la vía fotográfica.
+ *
+ * Las pruebas de esta suite que ejercitaban el contrato de cierre (preflight,
+ * cerrar, foto, reapertura y fotos de periodo) comprueban ahora la retirada:
+ * `410` con el código fijado por ruta, el sustituto declarado, `cache-control:
+ * no-store` y **cero escrituras**. Ninguna se elimina: cada una conserva su
+ * fixture y sus aserciones de seguridad, y sólo cambia el contrato esperado.
+ */
+
+/** Tablas que ninguna ruta retirada puede modificar. */
+const TABLAS_SIN_ESCRITURA = [
+  "cierres",
+  "fotos_cierre",
+  "cierre_audit",
+  "cierre_attempts",
+  "movimientos",
+  "saldos",
+  "operaciones_inversion",
+  "ciclos",
+  "presupuestos",
+  "cycle_plans",
+  "cycle_plan_lines",
+  "cycle_plan_audit",
+  "deudas",
+  "regimen_comida",
+  "movimiento_anticipo",
+] as const;
+
+/** Snapshot de conteos; una tabla ausente se marca en vez de romper la prueba. */
+function snapshot(db: Database) {
+  const conteos: Record<string, unknown> = {};
+  for (const tabla of TABLAS_SIN_ESCRITURA)
+    try {
+      conteos[tabla] = db.query(`SELECT COUNT(*) n FROM ${tabla}`).get();
+    } catch {
+      conteos[tabla] = "ausente";
+    }
+  return conteos;
+}
+
+type CodigoRetirada =
+  | "CIERRE_FOTOGRAFICO_RETIRADO"
+  | "REAPERTURA_RETIRADA"
+  | "FOTO_RETIRADA"
+  | "FOTOS_RETIRADAS";
+
+type Respuesta = {
+  status: number;
+  data: Record<string, any>;
+  headers: Headers;
+};
+
+/**
+ * Contrato único de la retirada: `410`, código por ruta, `sustituto` en
+ * `detalles` (publicado en el cuerpo), `no-store` y `link` sólo si hay
+ * sustituto. Un `3xx`, `404` o `500` no satisface esta aserción.
+ */
+function expectRetirada(
+  respuesta: Respuesta,
+  esperado: { code: CodigoRetirada; sustituto?: string | null },
+) {
+  expect(respuesta.status).toBe(410);
+  expect(respuesta.data.code).toBe(esperado.code);
+  expect(respuesta.data).toHaveProperty("sustituto");
+  expect(respuesta.data.sustituto).toBe(esperado.sustituto ?? null);
+  expect(respuesta.headers.get("cache-control")).toBe("no-store");
+  if (esperado.sustituto)
+    expect(respuesta.headers.get("link")).toBe(
+      `<${esperado.sustituto}>; rel="alternate"`,
+    );
+  else expect(respuesta.headers.get("link")).toBeNull();
+}
+
 function seedCycles(db: Database) {
   const t = "2026-01-01T00:00:00.000Z";
   for (const [id, inicio, s0] of [
@@ -70,7 +144,7 @@ function fixture(options: CierreOptions = validOptions()) {
     method = "GET",
     body?: unknown,
     headers: Record<string, string> = {},
-  ) {
+  ): Promise<Respuesta> {
     const r = await handler(
       new Request(origin + path, {
         method,
@@ -110,22 +184,22 @@ function fixture(options: CierreOptions = validOptions()) {
     expect(verified.status).toBe(200);
     return verified;
   }
-  async function close(
-    ciclo: string,
-    body: Record<string, unknown> = {},
-    keyValue = randomUUID(),
-  ) {
+  // La antigua cadena preview→confirm se conserva como cadena de rutas
+  // retiradas: preflight y cerrar responden 410 con el mismo sustituto.
+  async function retiradaCierre(ciclo: string) {
+    const sustituto = `/api/cierres/${ciclo}/estado`;
     const pre = await request(`/api/cierres/${ciclo}/preflight`);
-    expect(pre.status).toBe(200);
+    expectRetirada(pre, { code: "CIERRE_FOTOGRAFICO_RETIRADO", sustituto });
     const result = await request(
       `/api/cierres/${ciclo}/cerrar`,
       "POST",
-      { fingerprint: pre.data.fingerprint, ...body },
-      { "idempotency-key": keyValue },
+      { fingerprint: "0".repeat(64) },
+      { "idempotency-key": randomUUID() },
     );
-    return { pre, result, key: keyValue };
+    expectRetirada(result, { code: "CIERRE_FOTOGRAFICO_RETIRADO", sustituto });
+    return { pre, result };
   }
-  return { db, key, request, enroll, close };
+  return { db, key, request, enroll, retiradaCierre };
 }
 
 function planNoVerificable(db: Database) {
@@ -250,59 +324,97 @@ function performanceOperation(
   );
 }
 
-test("E4.9 B: 401/403/405 and no-store on closure routes", async () => {
+test("[retirada] E4.9 B: 401/403 y 410 por ruta, sin 200/405/404 en la vía fotográfica", async () => {
+  // Sustituye el contrato preflight 200 / cerrar 201 / 405 por método / foto 404: retirado por SPEC38 §7.6.
   const f = fixture();
   expect((await f.request("/api/cierres/1/preflight")).status).toBe(401);
+  expect((await f.request("/api/cierres/1/foto")).status).toBe(401);
+  expect((await f.request("/api/fotos/periodos")).status).toBe(401);
   await f.enroll();
-  const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.headers.get("cache-control")).toBe("no-store");
-  expect(pre.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
-  expect(pre.data.plan.estado).toBe("SinPlan");
-  expect(pre.data.e49Bloqueado).toBe(false);
+  const before = snapshot(f.db);
 
+  const pre = await f.request("/api/cierres/1/preflight");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("fingerprint");
+  // El sustituto declarado no es un redirect: es una lectura viva que responde 200.
+  const sustituto = await f.request("/api/cierres/1/estado");
+  expect(sustituto.status).toBe(200);
+  expect(sustituto.headers.get("cache-control")).toBe("no-store");
+  expect(sustituto.data.ciclo).toBe("1");
+  expect(sustituto.data.validacion.estado).toBe("SinValidar");
+
+  // La seguridad precede a la retirada: sin CSRF no hay 410, sigue habiendo 403.
   const noCsrf = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "x-csrf-token": "" },
   );
   expect(noCsrf.status).toBe(403);
   expect(noCsrf.data.code).toBe("CSRF");
 
+  // Ningún payload retirado mantiene su 422: la ruta se retiró antes de validar.
   const invalidFingerprint = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
     { fingerprint: "no-es-un-fingerprint" },
     { "idempotency-key": randomUUID() },
   );
-  expect(invalidFingerprint.status).toBe(422);
-  expect(invalidFingerprint.data.code).toBe("VALIDATION");
+  expectRetirada(invalidFingerprint, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   const missingKey = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
   );
-  expect(missingKey.status).toBe(422);
-  expect(missingKey.data.code).toBe("IDEMPOTENCY_REQUIRED");
-  const missingPhoto = await f.request("/api/cierres/1/foto");
-  expect(missingPhoto.status).toBe(404);
-  const invalidVersion = await f.request("/api/cierres/1/foto?version=0");
-  expect(invalidVersion.status).toBe(422);
+  expectRetirada(missingKey, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
 
-  const wrongPreflight = await f.request(
-    "/api/cierres/1/preflight",
-    "POST",
-    {},
-  );
-  expect(wrongPreflight.status).toBe(405);
-  expect(wrongPreflight.headers.get("allow")).toBe("GET");
+  const missingPhoto = await f.request("/api/cierres/1/foto");
+  expectRetirada(missingPhoto, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+  const invalidVersion = await f.request("/api/cierres/1/foto?version=0");
+  expectRetirada(invalidVersion, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+
+  // Sin `allow`: el 410 no anuncia un método alternativo porque la ruta no existe.
+  const wrongPreflight = await f.request("/api/cierres/1/preflight", "POST", {});
+  expectRetirada(wrongPreflight, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(wrongPreflight.headers.get("allow")).toBeNull();
   const wrongClose = await f.request("/api/cierres/1/cerrar");
-  expect(wrongClose.status).toBe(405);
-  expect(wrongClose.headers.get("allow")).toBe("POST");
+  expectRetirada(wrongClose, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(wrongClose.headers.get("allow")).toBeNull();
+
+  const reabrir = await f.request("/api/cierres/1/reabrir", "POST", {});
+  expectRetirada(reabrir, {
+    code: "REAPERTURA_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+  const periodos = await f.request("/api/fotos/periodos");
+  expectRetirada(periodos, { code: "FOTOS_RETIRADAS", sustituto: null });
+
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: preflight blocks without next Inicio, D4/E3.5 and backup", async () => {
+test("[retirada] E4.9 B: los bloqueos de preflight ya no se publican y no hay escritura que bloquear", async () => {
+  // Sustituye el preflight 200 con bloqueos SIN_SIGUIENTE_INICIO/E35/BACKUP y el 409 del cierre: retirados por SPEC38 §7.6.
   const f = fixture(
     validOptions({
       e35: { verificable: false, motivo: "E3.5 fixture no verificable" },
@@ -310,161 +422,147 @@ test("E4.9 B: preflight blocks without next Inicio, D4/E3.5 and backup", async (
     }),
   );
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/3/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.e49Bloqueado).toBe(true);
-  expect(pre.data.estado).toBe("Bloqueado");
-  expect(pre.data.ventana.fin).toBeNull();
-  const codes = pre.data.bloqueos.map((b: { code: string }) => b.code);
-  expect(codes).toContain("SIN_SIGUIENTE_INICIO");
-  expect(codes).toContain("E35_NO_VERIFICABLE");
-  expect(codes).toContain("BACKUP_NO_VERIFICABLE");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/3/estado",
+  });
+  expect(pre.data).not.toHaveProperty("bloqueos");
+  expect(pre.data).not.toHaveProperty("ventana");
   expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
   const close = await f.request(
     "/api/cierres/3/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(close.status).toBe(409);
-  expect(close.data.code).toBe("SIN_SIGUIENTE_INICIO");
+  expectRetirada(close, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/3/estado",
+  });
+  expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: SinPlan closes v1 with app/schema metadata and no live writes", async () => {
+test("[retirada] E4.9 B: SinPlan no crea cierre, foto ni auditoría porque las rutas responden 410", async () => {
+  // Sustituye el cierre 201 con foto v1, metadatos app/schema y alias /cierre: retirados por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
-  const before = {
-    movimientos: f.db.query("SELECT COUNT(*) n FROM movimientos").get(),
-    saldos: f.db.query("SELECT COUNT(*) n FROM saldos").get(),
-    operaciones: f.db.query("SELECT COUNT(*) n FROM operaciones_inversion").get(),
-    ciclos: f.db.query("SELECT COUNT(*) n FROM ciclos").get(),
-  };
-  const { pre, result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.version).toBe(1);
-  expect(result.data.foto.appVersion).toBe("0.0.0-fixture");
-  expect(result.data.foto.schemaVersion).toBe(31);
-  expect(result.data.foto.plan.estado).toBe("SinPlan");
-  expect(result.data.foto.hechos.estado).toBe("Sin hechos");
-  expect(result.data.foto.ventana.saldoInicial).toBe("100.00");
-  expect(result.data.foto.inversion.efectivo).toBe("0.00");
-  expect(result.data.foto.inversion.valoracion).toBe("No disponible");
-  expect(result.data.foto.fingerprint).toBe(pre.data.fingerprint);
-  expect(result.data.foto.cobertura.totales.valoracion.estado).toBe(
-    "No disponible",
-  );
-  expect(result.data.foto.cobertura.totales.anticipos.estado).toBe("Parcial");
+  const before = snapshot(f.db);
+  const { pre, result } = await f.retiradaCierre("1");
+  expect(pre.data).not.toHaveProperty("plan");
+  expect(result.data).not.toHaveProperty("foto");
 
   const state = await f.request("/api/cierres/1/estado");
   expect(state.status).toBe(200);
   // E4.8 compatibility: top-level fields remain those of getPrecierreEstado.
   expect(state.data.ciclo).toBe("1");
   expect(state.data.revision).toMatch(/^[a-f0-9]{64}$/);
-  expect(state.data).toHaveProperty("e4_9Bloqueado");
   expect(state.data).toHaveProperty("bloqueos");
-  // E4.9 closure state is additive under `cierre`.
-  expect(state.data.cierre.estado).toBe("Cerrado");
-  expect(state.data.cierre.version).toBe(1);
-  expect(state.data.cierre.fotoVersion).toBe(1);
+  // §5: `e4_9Bloqueado` y el bloque `cierre` dejaron de ser autoridad.
+  expect(state.data).not.toHaveProperty("e4_9Bloqueado");
+  expect(state.data).not.toHaveProperty("cierre");
+  expect(state.data.validacion.estado).toBe("SinValidar");
+
   const alias = await f.request("/api/cierres/1/cierre");
-  expect(alias.data.estado).toBe("Cerrado");
-  expect(alias.data.version).toBe(1);
-
-  const after = {
-    movimientos: f.db.query("SELECT COUNT(*) n FROM movimientos").get(),
-    saldos: f.db.query("SELECT COUNT(*) n FROM saldos").get(),
-    operaciones: f.db.query("SELECT COUNT(*) n FROM operaciones_inversion").get(),
-    ciclos: f.db.query("SELECT COUNT(*) n FROM ciclos").get(),
-  };
-  expect(after).toEqual(before);
-  expect(f.db.query("SELECT COUNT(*) n FROM cierre_audit").get()).toEqual({ n: 1 });
-
+  expectRetirada(alias, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   const photo = await f.request("/api/cierres/1/foto");
-  expect(photo.status).toBe(200);
-  expect(photo.data.foto.version).toBe(1);
-  const unchanged = await f.request("/api/cierres/1/foto");
-  expect(unchanged.data).toEqual(photo.data);
+  expectRetirada(photo, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+
+  expect(snapshot(f.db)).toEqual(before);
+  expect(f.db.query("SELECT COUNT(*) n FROM cierre_audit").get()).toEqual({ n: 0 });
+  expect(f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get()).toEqual({ n: 0 });
 });
 
-test("E4.9 B: PlanNoVerificable blocks without a photo", async () => {
+test("[retirada] E4.9 B: PlanNoVerificable ya no bloquea una foto inexistente: preflight y cerrar responden 410", async () => {
+  // Sustituye el bloqueo 200/409 con `PLAN_NO_VERIFICABLE`: el bloqueo se retiró con la ruta (SPEC38 §7.6).
   const f = fixture();
   planNoVerificable(f.db);
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.plan.estado).toBe("PlanNoVerificable");
-  expect(
-    pre.data.bloqueos.map((b: { code: string }) => b.code),
-  ).toContain("PLAN_NO_VERIFICABLE");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("plan");
   const close = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(close.status).toBe(409);
-  expect(close.data.code).toBe("PLAN_NO_VERIFICABLE");
+  expectRetirada(close, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get()).toEqual({
     n: 0,
   });
   expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: a captured plan is frozen with its final lines", async () => {
+test("[retirada] E4.9 B: el plan capturado ya no se congela en foto; la lectura viva lo refleja", async () => {
+  // Sustituye la foto v1 con `plan.estado=Capturado` y sus líneas finales: retirada por SPEC38 §7.6.
   const f = fixture();
   capturedPlan(f.db);
   await f.enroll();
-  const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.plan.estado).toBe("Capturado");
-  expect(pre.data.e49Bloqueado).toBe(false);
+  const before = snapshot(f.db);
+  const { pre, result } = await f.retiradaCierre("1");
+  expect(pre.data).not.toHaveProperty("plan");
+  expect(result.data).not.toHaveProperty("foto");
 
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.plan.estado).toBe("Capturado");
-  expect(result.data.foto.plan.items).toHaveLength(1);
-  expect(result.data.foto.plan.items[0]).toMatchObject({
-    presupuesto: "PRE9101",
-    nombre: "Plan capturado E4.9",
-    base: "10.00",
-    esencial: "5.00",
-    delMes: "2.00",
-  });
-  expect(result.data.foto.cobertura.totales.plan.estado).toBe("Completo");
+  // La lectura viva (precierre) sigue leyendo el mismo plan capturado.
+  const vivo = await f.request("/api/cierres/precierre/1");
+  expect(vivo.status).toBe(200);
+  expect(vivo.data.plan.estado).toBe("PlanVerificado");
 
   const photo = await f.request("/api/cierres/1/foto");
-  expect(photo.data.foto.plan).toEqual(result.data.foto.plan);
+  expectRetirada(photo, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(f.db.query("SELECT COUNT(*) n FROM cycle_plan_lines").get()).toEqual({
+    n: 1,
+  });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: idempotent replay, payload conflict and stale preview", async () => {
+test("[retirada] E4.9 B: la idempotencia del cierre ya no existe: toda clave responde 410 sin intento registrado", async () => {
+  // Sustituye replay 201, `replayed`, `IDEMPOTENCY_CONFLICT` y `ALREADY_CLOSED`: retirados por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   const key = randomUUID();
-  const body = { fingerprint: pre.data.fingerprint, motivo: "Cierre ficticio" };
+  const body = { fingerprint: "0".repeat(64), motivo: "Cierre ficticio" };
   const first = await f.request("/api/cierres/1/cerrar", "POST", body, {
     "idempotency-key": key,
   });
-  expect(first.status).toBe(201);
+  expectRetirada(first, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   const replay = await f.request("/api/cierres/1/cerrar", "POST", body, {
     "idempotency-key": key,
   });
-  expect(replay.status).toBe(201);
-  expect(replay.data.foto).toEqual(first.data.foto);
-  expect(replay.data.replayed).toBe(true);
-
-  // A same key/payload replay after the 24 h window must keep returning the
-  // same photo, not ALREADY_CLOSED.
-  f.db.run("UPDATE cierre_attempts SET expires=? WHERE key=?", [now - 1, key]);
-  const afterExpiry = await f.request("/api/cierres/1/cerrar", "POST", body, {
-    "idempotency-key": key,
+  expectRetirada(replay, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
   });
-  expect(afterExpiry.status).toBe(201);
-  expect(afterExpiry.data.replayed).toBe(true);
-  expect(afterExpiry.data.foto).toEqual(first.data.foto);
-  expect(
-    f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get(),
-  ).toEqual({ n: 1 });
+  expect(first.data).not.toHaveProperty("replayed");
 
   const changed = await f.request(
     "/api/cierres/1/cerrar",
@@ -472,8 +570,10 @@ test("E4.9 B: idempotent replay, payload conflict and stale preview", async () =
     { ...body, motivo: "Otro motivo" },
     { "idempotency-key": key },
   );
-  expect(changed.status).toBe(409);
-  expect(changed.data.code).toBe("IDEMPOTENCY_CONFLICT");
+  expectRetirada(changed, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
 
   const double = await f.request(
     "/api/cierres/1/cerrar",
@@ -481,12 +581,20 @@ test("E4.9 B: idempotent replay, payload conflict and stale preview", async () =
     body,
     { "idempotency-key": randomUUID() },
   );
-  expect(double.status).toBe(409);
-  expect(double.data.code).toBe("ALREADY_CLOSED");
+  expectRetirada(double, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
 
+  // Una revisión que cambia entre "preview" y "confirm" tampoco altera la respuesta.
   const stale = fixture();
   await stale.enroll();
+  const staleBefore = snapshot(stale.db);
   const stalePre = await stale.request("/api/cierres/1/preflight");
+  expectRetirada(stalePre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   createInstrumento(
     stale.db,
     {
@@ -501,34 +609,58 @@ test("E4.9 B: idempotent replay, payload conflict and stale preview", async () =
   const staleClose = await stale.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: stalePre.data.fingerprint },
+    { fingerprint: stalePre.data.sustituto },
     { "idempotency-key": randomUUID() },
   );
-  expect(staleClose.status).toBe(409);
-  expect(staleClose.data.code).toBe("REVISION_CONFLICT");
+  expectRetirada(staleClose, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(
-    stale.db.query("SELECT COUNT(*) n FROM fotos_cierre").get(),
+    stale.db.query("SELECT COUNT(*) n FROM cierre_attempts").get(),
   ).toEqual({ n: 0 });
+  expect(snapshot(stale.db)).toEqual(staleBefore);
+
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM cierre_attempts").get(),
+  ).toEqual({ n: 0 });
+  expect(f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get()).toEqual({
+    n: 0,
+  });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: AC-13 an ordinary closure neither reopens nor creates v2", async () => {
+test("[retirada] E4.9 B: AC-13 sin cierre no hay reapertura ni v2 porque cada ruta responde 410", async () => {
+  // Sustituye el cierre v1, el 409 `ALREADY_CLOSED` y el 404 de `foto?version=2`: retirados por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
-  const first = await f.close("1");
-  expect(first.result.status).toBe(201);
-
-  const again = await f.close("1", { motivo: "Reintento ordinario" });
-  expect(again.result.status).toBe(409);
-  expect(again.result.data.code).toBe("ALREADY_CLOSED");
+  const before = snapshot(f.db);
+  await f.retiradaCierre("1");
+  await f.retiradaCierre("1");
+  const reapertura = await f.request("/api/cierres/1/reapertura", "POST", {
+    motivo: "Reintento ordinario",
+  });
+  expectRetirada(reapertura, {
+    code: "REAPERTURA_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+  const cancelar = await f.request("/api/cierres/1/reapertura/cancelar", "POST");
+  expectRetirada(cancelar, {
+    code: "REAPERTURA_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(
     f.db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
-  ).toEqual({ n: 1 });
+  ).toEqual({ n: 0 });
   expect(
     f.db.query("SELECT version FROM cierres WHERE ciclo='1'").get(),
-  ).toEqual({ version: 1 });
-  expect((await f.request("/api/cierres/1/foto?version=2")).status).toBe(404);
-  const current = await f.request("/api/cierres/1/foto");
-  expect(current.data.foto.version).toBe(1);
+  ).toBeNull();
+  const v2 = await f.request("/api/cierres/1/foto?version=2");
+  expectRetirada(v2, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
 test("E4.9 B: a failure before commit rolls back closure, photo, audit and attempt", () => {
@@ -564,101 +696,58 @@ test("E4.9 B: a failure before commit rolls back closure, photo, audit and attem
   });
 });
 
-test("E4.9 B: out-of-order closure requires motive, audits and preserves later photo", async () => {
+test("[retirada] E4.9 B: el cierre fuera de orden ya no exige motivo ni deja auditoría ni foto posterior", async () => {
+  // Sustituye el 422 `MOTIVO_REQUERIDO`, la auditoría `cierre_fuera_de_orden` y la foto posterior: retirados por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
-  const later = await f.close("2");
-  expect(later.result.status).toBe(201);
-  const laterPhoto = later.result.data.foto;
+  const before = snapshot(f.db);
+  const later = await f.retiradaCierre("2");
+  expect(later.result.data).not.toHaveProperty("cierre");
 
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.coherencia.requerida).toBe(true);
-  expect(pre.data.coherencia.contradicciones).toEqual([]);
-  expect(
-    pre.data.avisos.map((a: { code: string }) => a.code),
-  ).toContain("CIERRE_FUERA_DE_ORDEN");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("coherencia");
+  expect(pre.data).not.toHaveProperty("avisos");
 
   const noMotive = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(noMotive.status).toBe(422);
-  expect(noMotive.data.code).toBe("MOTIVO_REQUERIDO");
+  expectRetirada(noMotive, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
 
   const closed = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint, motivo: "Cierre tardío ficticio" },
+    { fingerprint: "0".repeat(64), motivo: "Cierre tardío ficticio" },
     { "idempotency-key": randomUUID() },
   );
-  expect(closed.status).toBe(201);
-  expect(closed.data.foto.version).toBe(1);
-  expect(closed.data.cierre.fin).toBe("2026-01-31");
+  expectRetirada(closed, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
 
-  const audit = f.db
-    .query(
-      "SELECT accion,motivo FROM cierre_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1",
-    )
-    .get();
-  expect(audit).toEqual({
-    accion: "cierre_fuera_de_orden",
-    motivo: "Cierre tardío ficticio",
+  expect(f.db.query("SELECT COUNT(*) n FROM cierre_audit").get()).toEqual({
+    n: 0,
   });
-  const posteriorRow = f.db
-    .query(
-      "SELECT posterior FROM cierre_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1",
-    )
-    .get() as { posterior: string };
-  const posterior = JSON.parse(posteriorRow.posterior) as {
-    coherence: {
-      ciclo: string;
-      version: number;
-      resultado: string;
-      comparado: {
-        efectivo: { almacenado: string | null; vivo: string | null };
-        cuentas: {
-          almacenado: { saldo: string; disponible: string }[] | null;
-          vivo: { saldo: string; disponible: string }[];
-        };
-        posiciones: {
-          almacenado: { instrumento: string; cantidad: string }[] | null;
-          vivo: { instrumento: string; cantidad: string }[];
-        };
-      };
-    }[];
-  };
-  expect(posterior.coherence[0]).toMatchObject({
-    ciclo: "2",
-    version: 1,
-    resultado: "Coherente",
-    comparado: {
-      efectivo: { almacenado: "0.00", vivo: "0.00" },
-      cuentas: {
-        almacenado: [{ saldo: "S003", disponible: "0.00" }],
-        vivo: [{ saldo: "S003", disponible: "0.00" }],
-      },
-      posiciones: { almacenado: [], vivo: [] },
-    },
-  });
-  const laterNow = f.db
-    .query(
-      "SELECT fingerprint,creado_utc FROM fotos_cierre WHERE ciclo='2' AND version=1",
-    )
-    .get();
-  expect(laterNow).toEqual({
-    fingerprint: laterPhoto.fingerprint,
-    creado_utc: laterPhoto.creadoUtc,
-  });
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='2'").get(),
+  ).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: AC-20 contradiction blocks an out-of-order closure", async () => {
+test("[retirada] E4.9 B: AC-20 la contradicción con cierre posterior ya no se evalúa: preflight y cerrar responden 410", async () => {
+  // Sustituye el 409 `INCOHERENCIA_CON_CIERRE_POSTERIOR` y la comparación de coherencia: retirados por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
-  const later = await f.close("2");
-  expect(later.result.status).toBe(201);
+  await f.retiradaCierre("2");
   const instrumento = createInstrumento(
     f.db,
     {
@@ -678,26 +767,31 @@ test("E4.9 B: AC-20 contradiction blocks an out-of-order closure", async () => {
     precio: "50000000",
     importe: 5000,
   });
+  const beforeCierre = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.coherencia.contradicciones.length).toBeGreaterThan(0);
-  expect(
-    pre.data.bloqueos.map((b: { code: string }) => b.code),
-  ).toContain("INCOHERENCIA_CON_CIERRE_POSTERIOR");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("coherencia");
   const close = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(close.status).toBe(409);
-  expect(close.data.code).toBe("INCOHERENCIA_CON_CIERRE_POSTERIOR");
+  expectRetirada(close, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(
     f.db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
   ).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(beforeCierre);
 });
 
-test("E4.9 B: photo captures inherited positions at Fin and excludes later operations", async () => {
+test("[retirada] E4.9 B: las posiciones heredadas a Fin ya no se fotografían: cerrar y foto responden 410", async () => {
+  // Sustituye la foto con posiciones/efectivo a Fin y operaciones excluidas: retirada por SPEC38 §7.6.
   const f = fixture();
   updateSaldo(f.db, "S003", {
     revision: getSaldo(f.db, "S003").revision,
@@ -733,22 +827,22 @@ test("E4.9 B: photo captures inherited positions at Fin and excludes later opera
     importe: 3000,
   });
   await f.enroll();
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.inversion.posiciones).toEqual([
-    { instrumento, saldoInversion: "S004", cantidad: "2" },
-  ]);
-  expect(result.data.foto.inversion.efectivo).toBe("80.00");
-  expect(result.data.foto.hechos.estado).toBe("Sin hechos");
+  const before = snapshot(f.db);
+  const { result } = await f.retiradaCierre("1");
+  expect(result.data).not.toHaveProperty("foto");
+  const photo = await f.request("/api/cierres/1/foto");
+  expectRetirada(photo, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(
-    result.data.foto.inversion.operaciones.map(
-      (operation: { id: string }) => operation.id,
-    ),
-  ).toEqual(["9101"]);
-  expect(result.data.foto.ventana.saldoInicial).toBe("100.00");
+    f.db.query("SELECT COUNT(*) n FROM operaciones_inversion").get(),
+  ).toEqual({ n: 2 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: AC-16 includes operations at Fin and excludes the next Inicio", async () => {
+test("[retirada] E4.9 B: AC-16 el corte en Fin ya no se captura en foto: cerrar y foto responden 410", async () => {
+  // Sustituye la foto con `ventana.fin`, efectivo y operaciones al corte: retirada por SPEC38 §7.6.
   const f = fixture();
   updateSaldo(f.db, "S003", {
     revision: getSaldo(f.db, "S003").revision,
@@ -784,26 +878,31 @@ test("E4.9 B: AC-16 includes operations at Fin and excludes the next Inicio", as
     importe: 2000,
   });
   await f.enroll();
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.ventana.fin).toBe("2026-01-31");
-  expect(result.data.foto.inversion.posiciones).toEqual([
-    { instrumento, saldoInversion: "S004", cantidad: "1" },
-  ]);
-  expect(result.data.foto.inversion.efectivo).toBe("90.00");
+  const before = snapshot(f.db);
+  const { result } = await f.retiradaCierre("1");
+  expect(result.data).not.toHaveProperty("foto");
+  const photo = await f.request("/api/cierres/1/foto");
+  expectRetirada(photo, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(
-    result.data.foto.inversion.operaciones.map(
-      (operation: { id: string }) => operation.id,
-    ),
-  ).toEqual(["9301"]);
+    f.db.query("SELECT COUNT(*) n FROM operaciones_inversion").get(),
+  ).toEqual({ n: 2 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: photo is not recalculated from later live changes", async () => {
+test("[retirada] E4.9 B: sin foto inmutable no hay recálculo que comparar: la foto responde 410 antes y después", async () => {
+  // Sustituye la foto congelada que no se recalcula tras cambios vivos: retirada por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  const before = await f.request("/api/cierres/1/foto");
+  const before = snapshot(f.db);
+  await f.retiradaCierre("1");
+  const first = await f.request("/api/cierres/1/foto");
+  expectRetirada(first, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
   createInstrumento(
     f.db,
     {
@@ -816,7 +915,14 @@ test("E4.9 B: photo is not recalculated from later live changes", async () => {
     now,
   );
   const after = await f.request("/api/cierres/1/foto");
-  expect(after.data).toEqual(before.data);
+  expectRetirada(after, {
+    code: "FOTO_RETIRADA",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(after.data.code).toBe(first.data.code);
+  expect(after.data.sustituto).toBe(first.data.sustituto);
+  expect(after.data.requestId).not.toBe(first.data.requestId);
+  expect(snapshot(f.db)).toEqual(before);
 });
 
 test("E4.9 B: provider exposes the same closure state used by preflight", () => {
@@ -839,71 +945,99 @@ test("E4.9 B: provider exposes the same closure state used by preflight", () => 
   expect(photo.foto.fingerprint).toBe(pre.fingerprint);
 });
 
-test("E4.9 B: AC-20 a later closure created between preview and confirm is REVISION_CONFLICT", async () => {
+test("[retirada] E4.9 B: AC-20 el preview ya no caduca contra un cierre posterior: cerrar responde 410", async () => {
+  // Sustituye el 409 `REVISION_CONFLICT` por fingerprint caducado: retirado por SPEC38 §7.6.
   const f = fixture();
   await f.enroll();
-  const later = await f.close("2");
-  expect(later.result.status).toBe(201);
-
-  const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.coherencia.requerida).toBe(true);
-
-  // A new later cycle makes cycle 3 closable; closing it after the preview
-  // adds a second coherence entry and must invalidate the preview fingerprint.
+  // Un ciclo nuevo entre "preview" y "confirm" ya no puede construirse: no hay cierre.
   f.db.run(
     "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('4','2026-04-01',10000,'2026-01-01T00:00:00.000Z')",
   );
-  const laterStill = await f.close("3");
-  expect(laterStill.result.status).toBe(201);
+  const before = snapshot(f.db);
+  await f.retiradaCierre("2");
+
+  const pre = await f.request("/api/cierres/1/preflight");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("coherencia");
+
+  await f.retiradaCierre("3");
 
   const stale = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(stale.status).toBe(409);
-  expect(stale.data.code).toBe("REVISION_CONFLICT");
+  expectRetirada(stale, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(
     f.db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
   ).toEqual({ n: 0 });
   expect(
     f.db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
   ).toEqual({ n: 0 });
+  expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: default E3.5 provider unblocks a verifiable cycle", async () => {
+test("[retirada] E4.9 B: el proveedor E3.5 por defecto ya no desbloquea un cierre retirado", async () => {
+  // Sustituye el preflight 200 con `e35.verificable=true` y `e49Bloqueado=false`: retirado por SPEC38 §7.6.
   const f = fixture(validOptions({ e35: undefined }));
   verifiableRegimen(f.db);
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(pre.data.e35.verificable).toBe(true);
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("e35");
+  // El proveedor por defecto sigue vivo en la lectura viva, sin aviso de E3.5.
+  const vivo = await f.request("/api/cierres/precierre/1");
+  expect(vivo.status).toBe(200);
   expect(
-    pre.data.bloqueos.map((b: { code: string }) => b.code),
+    vivo.data.fuentes.find((fuente: { key: string }) => fuente.key === "e35")
+      .estado,
+  ).toBe("Verificado");
+  expect(
+    vivo.data.avisos.map((aviso: { code: string }) => aviso.code),
   ).not.toContain("E35_NO_VERIFICABLE");
-  expect(pre.data.e49Bloqueado).toBe(false);
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: hechos con movimientos captures Con hechos", async () => {
+test("[retirada] E4.9 B: los hechos con movimientos ya no se capturan: cerrar responde 410 y la lectura viva los ve", async () => {
+  // Sustituye la foto con `hechos.estado=Con hechos` y totales de ingresos: retirada por SPEC38 §7.6.
   const f = fixture();
   januaryMovement(f.db);
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.data.hechos.estado).toBe("Con hechos");
-  expect(pre.data.hechos.fuentes[0]).toMatchObject({
-    fuente: "Movimientos",
-    hechos: 1,
-    acreditado: true,
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
   });
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.hechos.estado).toBe("Con hechos");
-  expect(result.data.foto.hechos.totales.ingresos).toBe("12.34");
+  expect(pre.data).not.toHaveProperty("hechos");
+  const vivo = await f.request("/api/cierres/precierre/1");
+  expect(
+    vivo.data.fuentes.find(
+      (fuente: { key: string }) => fuente.key === "movimientos",
+    ),
+  ).toMatchObject({ cobertura: "1 hechos", estado: "Verificado" });
+  const { result } = await f.retiradaCierre("1");
+  expect(result.data).not.toHaveProperty("foto");
+  expect(f.db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual({
+    n: 1,
+  });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: AC-21 a new investment operation is a fact, inherited positions are not", async () => {
+test("[retirada] E4.9 B: AC-21 una operación nueva ya no se captura como hecho en foto", async () => {
+  // Sustituye la foto con `hechos.estado=Con hechos`, movimientos vacíos y una posición: retirada por SPEC38 §7.6.
   const f = fixture();
   updateSaldo(f.db, "S003", {
     revision: getSaldo(f.db, "S003").revision,
@@ -931,38 +1065,40 @@ test("E4.9 B: AC-21 a new investment operation is a fact, inherited positions ar
     importe: 1000,
   });
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.data.hechos.estado).toBe("Con hechos");
-  expect(pre.data.hechos.fuentes).toContainEqual({
-    fuente: "Operaciones de inversión",
-    hechos: 1,
-    acreditado: true,
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
   });
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.hechos.estado).toBe("Con hechos");
-  expect(result.data.foto.hechos.movimientos).toEqual([]);
-  expect(result.data.foto.inversion.posiciones).toHaveLength(1);
+  const { result } = await f.retiradaCierre("1");
+  expect(result.data).not.toHaveProperty("foto");
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM operaciones_inversion").get(),
+  ).toEqual({ n: 1 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: Deuda master alone does not create hechos in the cycle", async () => {
+test("[retirada] E4.9 B: el maestro de Deuda ya no se captura en hechos de foto", async () => {
+  // Sustituye la foto con `hechos.estado=Sin hechos` y `auxiliares.deuda`: retirada por SPEC38 §7.6.
   const f = fixture();
   seedDeuda(f.db);
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.data.hechos.estado).toBe("Sin hechos");
-  expect(pre.data.hechos.fuentes).toContainEqual({
-    fuente: "Deuda",
-    hechos: 0,
-    acreditado: true,
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
   });
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.hechos.estado).toBe("Sin hechos");
-  expect(result.data.foto.auxiliares.deuda).toHaveLength(1);
+  expect(pre.data).not.toHaveProperty("hechos");
+  const { result } = await f.retiradaCierre("1");
+  expect(result.data).not.toHaveProperty("foto");
+  expect(f.db.query("SELECT COUNT(*) n FROM deudas").get()).toEqual({ n: 1 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: S0 cero is a fact and closes with saldoInicial 0.00", async () => {
+test("[retirada] E4.9 B: S0 cero ya no se congela en una foto: cerrar responde 410", async () => {
+  // Sustituye la foto con `ventana.saldoInicial="0.00"` y `Sin hechos`: retirada por SPEC38 §7.6.
   const f = fixture();
   f.db.run(
     `INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES
@@ -970,30 +1106,36 @@ test("E4.9 B: S0 cero is a fact and closes with saldoInicial 0.00", async () => 
        ('5','2026-05-01',10000,'2026-01-01T00:00:00.000Z')`,
   );
   await f.enroll();
-  const { result } = await f.close("4");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.ventana.saldoInicial).toBe("0.00");
-  expect(result.data.foto.hechos.estado).toBe("Sin hechos");
+  const before = snapshot(f.db);
+  const { result } = await f.retiradaCierre("4");
+  expect(result.data).not.toHaveProperty("foto");
+  expect(f.db.query("SELECT COUNT(*) n FROM ciclos").get()).toEqual({ n: 5 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: AC-15 Anticipos stays Parcial with a captured fixture", async () => {
+test("[retirada] E4.9 B: AC-15 Anticipos sigue Parcial en la lectura viva, ya sin foto", async () => {
+  // Sustituye la foto con `auxiliares.anticipos` y la cobertura `AC36 PARCIAL`: retirada por SPEC38 §7.6.
   const f = fixture();
   januaryMovement(f.db);
   seedAnticipo(f.db);
   await f.enroll();
-  const { result } = await f.close("1");
-  expect(result.status).toBe(201);
-  expect(result.data.foto.auxiliares.anticipos).toHaveLength(1);
-  expect(result.data.foto.cobertura.totales.anticipos).toMatchObject({
-    estado: "Parcial",
+  const before = snapshot(f.db);
+  const vivo = await f.request("/api/cierres/precierre/1");
+  expect(
+    vivo.data.fuentes.find(
+      (fuente: { key: string }) => fuente.key === "anticipos",
+    ),
+  ).toMatchObject({ cobertura: "1 hechos", estado: "Parcial" });
+  const { result } = await f.retiradaCierre("1");
+  expect(result.data).not.toHaveProperty("foto");
+  expect(f.db.query("SELECT COUNT(*) n FROM movimiento_anticipo").get()).toEqual({
+    n: 1,
   });
-  expect(result.data.foto.cobertura.totales.anticipos.motivo).toContain(
-    "AC36 PARCIAL",
-  );
-  expect(result.data.foto.cobertura.estado).toBe("Parcial");
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: verified backup without restore proof blocks before writing", async () => {
+test("[retirada] E4.9 B: el backup sin restauración probada ya no bloquea porque la ruta responde 410", async () => {
+  // Sustituye el preflight 200 con `BACKUP_NO_VERIFICABLE` y el 409 del cierre: retirados por SPEC38 §7.6.
   const f = fixture(
     validOptions({
       backup: {
@@ -1004,64 +1146,72 @@ test("E4.9 B: verified backup without restore proof blocks before writing", asyn
     }),
   );
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(
-    pre.data.bloqueos.map((b: { code: string }) => b.code),
-  ).toContain("BACKUP_NO_VERIFICABLE");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("bloqueos");
   const close = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(close.status).toBe(409);
-  expect(close.data.code).toBe("BACKUP_NO_VERIFICABLE");
+  expectRetirada(close, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: E4.1 unavailable blocks with E4_1_NO_DISPONIBLE", async () => {
+test("[retirada] E4.9 B: E4.1 no disponible ya no bloquea un preflight que responde 410", async () => {
+  // Sustituye el bloqueo `E4_1_NO_DISPONIBLE` y `inversion.efectivo=null` del preflight: retirados por SPEC38 §7.6.
   const f = fixture();
   f.db.run(
     "UPDATE saldos SET tipo='Exterior', control='Exterior' WHERE control='Inversiones'",
   );
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(
-    pre.data.bloqueos.map((b: { code: string }) => b.code),
-  ).toContain("E4_1_NO_DISPONIBLE");
-  expect(pre.data.inversion.efectivo).toBeNull();
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
+  expect(pre.data).not.toHaveProperty("inversion");
+  expect(pre.data).not.toHaveProperty("bloqueos");
+  expect(snapshot(f.db)).toEqual(before);
 });
 
-test("E4.9 B: an absent Deuda table makes auxiliary fail and blocks FUENTE_NO_LEGIBLE", async () => {
+test("[retirada] E4.9 B: una tabla Deuda ausente ya no produce FUENTE_NO_LEGIBLE en el cierre retirado", async () => {
+  // Sustituye el bloqueo `FUENTE_NO_LEGIBLE` y la cobertura `No disponible`: retirados por SPEC38 §7.6.
   const f = fixture();
   f.db.run("ALTER TABLE deudas RENAME TO deudas_off");
   await f.enroll();
+  const before = snapshot(f.db);
+  expect(before.deudas).toBe("ausente");
   const pre = await f.request("/api/cierres/1/preflight");
-  expect(pre.status).toBe(200);
-  expect(
-    pre.data.bloqueos.map((b: { code: string }) => b.code),
-  ).toContain("FUENTE_NO_LEGIBLE");
-  expect(pre.data.cobertura.totales.deuda.estado).toBe("No disponible");
-  expect(pre.data.hechos.fuentes).toContainEqual({
-    fuente: "Deuda",
-    hechos: 0,
-    acreditado: false,
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
   });
+  expect(pre.data).not.toHaveProperty("bloqueos");
   const close = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint },
+    { fingerprint: "0".repeat(64) },
     { "idempotency-key": randomUUID() },
   );
-  expect(close.status).toBe(409);
-  expect(
-    close.data.bloqueos.map((b: { code: string }) => b.code),
-  ).toContain("FUENTE_NO_LEGIBLE");
+  expectRetirada(close, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/1/estado",
+  });
   expect(f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get()).toEqual({
     n: 0,
   });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
 test("E4.9 B: documented precierre endpoint never reports Listo con avisos while blocked", async () => {
@@ -1071,17 +1221,20 @@ test("E4.9 B: documented precierre endpoint never reports Listo con avisos while
   expect(pre.status).toBe(200);
   expect(pre.headers.get("cache-control")).toBe("no-store");
   expect(pre.data.ciclo.id).toBe("1");
-  expect(pre.data.e4_9Bloqueado).toBe(true);
-  expect(pre.data.estado).toBe("Bloqueado");
+  // SPEC38 §5 retiró `e4_9Bloqueado`: `estado` y `bloqueos` son la autoridad
+  // vigente; sin bloqueos, "Listo con avisos" no contradice nada.
+  expect(pre.data).not.toHaveProperty("e4_9Bloqueado");
+  expect(pre.data.bloqueos).toEqual([]);
   expect(
-    pre.data.estado === "Listo con avisos" && pre.data.e4_9Bloqueado,
+    pre.data.estado === "Listo con avisos" && pre.data.bloqueos.length > 0,
   ).toBe(false);
   expect(
     pre.data.fuentes.map((source: { key: string }) => source.key),
   ).toEqual(expect.arrayContaining(["e35", "e42", "e44", "e36"]));
 });
 
-test("E4.9 B: S0 above the exact safe-integer range returns a motivated 422", async () => {
+test("[retirada] E4.9 B: el 422 motivado de S0 fuera de rango ya no se alcanza: preflight responde 410", async () => {
+  // Sustituye el 422 `S0_FUERA_DE_RANGO` con `fields.saldoInicialComida`: retirado por SPEC38 §7.6.
   const f = fixture();
   f.db.run(
     `INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES
@@ -1089,11 +1242,16 @@ test("E4.9 B: S0 above the exact safe-integer range returns a motivated 422", as
        ('5','2026-05-01',10000,'2026-01-01T00:00:00.000Z')`,
   );
   await f.enroll();
+  const before = snapshot(f.db);
   const pre = await f.request("/api/cierres/4/preflight");
-  expect(pre.status).toBe(422);
-  expect(pre.data.code).toBe("S0_FUERA_DE_RANGO");
-  expect(pre.data.fields.saldoInicialComida).toContain("90071992547409.91");
+  expectRetirada(pre, {
+    code: "CIERRE_FOTOGRAFICO_RETIRADO",
+    sustituto: "/api/cierres/4/estado",
+  });
+  expect(pre.data).not.toHaveProperty("saldoInicialComida");
+  expect(pre.data.fields).toEqual({});
   expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+  expect(snapshot(f.db)).toEqual(before);
 });
 
 test("E4.9 B: app version is reproducible from package/env with documented fallback", () => {

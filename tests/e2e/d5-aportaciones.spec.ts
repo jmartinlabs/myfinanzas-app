@@ -1,27 +1,63 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { readFileSync, mkdirSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext } from "./fixture";
+
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("d5");
+const API_PORT = fixture.port;
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture d5 terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
 
 test("D5 real MFA: aportación, preview, states, historical review and responsive 390/1440", async ({
   page,
   request,
 }) => {
-  const child = spawn(
-      process.env.BUN_BIN ?? "bun",
-      ["apps/api/test-support/d5-server.ts"],
-      { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
-    ),
-    errors: string[] = [];
+  child = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/d5-server.ts"],
+    { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
+  );
+  const errors: string[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   page.on("pageerror", (e) => errors.push(e.message));
   try {
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3010/api/health")
+              await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -31,12 +67,22 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
       )
       .toBe(200);
     expect(
-      (await request.get("http://127.0.0.1:3010/api/compartidos/fichas"))
-        .status(),
+      (
+        await request.get(
+          `http://127.0.0.1:${API_PORT}/api/compartidos/fichas`,
+        )
+      ).status(),
     ).toBe(401);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture d5 no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3010";
+      url.port = String(API_PORT);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -44,7 +90,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
     await page.goto("/compartidos");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-d5/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Contraseña ficticia D5 " + randomUUID());
@@ -65,7 +111,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
     await expect(
       page.getByRole("heading", { name: "Gastos compartidos" }),
     ).toBeVisible();
-    mkdirSync("artifacts/e3-2-d5", { recursive: true });
+    const artifacts = artifactDir("e3-2-d5");
     const shots = async (name: string) => {
       for (const [width, height] of [
         [1440, 1000],
@@ -88,7 +134,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
         );
         await page.screenshot({
           animations: "disabled",
-          path: `artifacts/e3-2-d5/${name}-${width}.png`,
+          path: join(artifacts, `${name}-${width}.png`),
           fullPage: true,
         });
       }
@@ -251,6 +297,8 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
     // tests: movementOptions never exposes S000 and the form filters Exterior.
     expect(errors).toEqual([]);
   } finally {
-    child.kill();
+    child?.kill();
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
   }
 });

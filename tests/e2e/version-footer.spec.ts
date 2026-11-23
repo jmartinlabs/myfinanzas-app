@@ -1,15 +1,19 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { fixtureContext, artifactDir } from "./fixture";
 
 /**
  * #502 — pie persistente de versión.
  *
- * Recorrido real con servidor aislado (3040), MFA real y SQLite; el build de
- * `apps/web/dist` se sirve en un puerto libre (5290 por defecto) con proxy a la
- * API, de modo que el navegador habla con la aplicación tal como se despliega.
+ * Recorrido real con servidor de fixture aislado, MFA real y SQLite. El puerto
+ * y el estado los reserva el contexto de la ejecución para este fixture (#514)
+ * y todo `/api/**` del navegador se reescribe a ese listener: la base que
+ * provisiona el código de activación es la misma que atiende el alta, el login
+ * y `/api/version` (desajuste documentado en #525).
  *
  * Comprueba:
  *  - pie visible sin desplazarse a 1440 y a 390, pegado al fondo del viewport;
@@ -21,41 +25,68 @@ import { totp } from "../../apps/api/src/auth";
  *  - fallback explícito si `/api/version` no responde.
  *
  * Todo ficticio: sin datos reales, sin Excel y sin estado persistente entre
- * ejecuciones (el fixture borra `.local/e2e-version` al arrancar).
+ * ejecuciones (el fixture borra su directorio de estado al arrancar).
  */
 
-const PORT = 3040;
-const DIR = ".local/e2e-version";
-const SHOTS = "artifacts/version-footer";
+// Puerto y estado propios de la ejecución (#514): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite.
+const fixture = fixtureContext("version");
+const API_PORT = fixture.port;
+const artifacts = artifactDir("version-footer");
 const APP_VERSION = "0.2.0";
 const APP_SHA = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678";
 const SHORT_SHA = APP_SHA.slice(0, 7);
-const SCHEMA = 31;
+const SCHEMA = 32;
 let child: ChildProcess | undefined;
 
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture version terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
+
 test.beforeAll(async ({ request }) => {
-  const appOrigin = process.env.E2E_APP_ORIGIN ?? "http://127.0.0.1:5290";
   child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/version-server.ts"],
     {
-      stdio: "pipe",
+      stdio: ["ignore", "pipe", "pipe"],
       env: {
-        ...process.env,
-        NODE_ENV: "test",
+        ...fixture.env,
         APP_ENV: "TEST",
         APP_VERSION,
         APP_SHA,
-        APP_ORIGIN: appOrigin,
       },
     },
   );
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   await expect
     .poll(
       async () => {
+        assertFixtureAlive();
         try {
           return (
-            await request.get(`http://127.0.0.1:${PORT}/api/health`)
+            await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
           ).status();
         } catch {
           return 0;
@@ -64,17 +95,26 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  assertFixtureAlive();
+  expect(
+    existsSync(join(fixture.dir, "bootstrap.txt")),
+    `El fixture version no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+  ).toBe(true);
 });
 
 test.afterAll(() => {
   child?.kill();
+  child?.stdout?.destroy();
+  child?.stderr?.destroy();
 });
 
 async function login(page: Page) {
   await page.goto("/saldos");
   await page
     .getByLabel("Código de activación")
-    .fill(readFileSync(DIR + "/bootstrap.txt", "utf8"));
+    .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("Clave ficticia versión " + randomUUID());
@@ -120,11 +160,21 @@ async function expectPinnedFooter(page: Page) {
 
 test("#502 pie de versión persistente, panel accesible y viewport bajo", async ({
   page,
+  request,
 }) => {
   test.setTimeout(300000);
-  mkdirSync(SHOTS, { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+
+  // #525 — todo `/api/**` del navegador se atiende en el fixture: el código de
+  // activación que lee la spec y la base que responde el alta son la misma.
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(API_PORT);
+    await route.fulfill({
+      response: await route.fetch({ url: url.toString() }),
+    });
+  });
 
   await login(page);
 
@@ -147,7 +197,9 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   ).toBeVisible();
 
   // ── Identidad servida: misma fuente que /api/version ─────────────────────
-  const response = await page.request.get("/api/version");
+  // Se consulta el fixture que atiende el navegador (`page.request` no pasa por
+  // los route handlers de la página, así que no se puede delegar en el proxy).
+  const response = await request.get(`${fixture.baseURL}/api/version`);
   expect(response.status()).toBe(200);
   expect(await response.json()).toEqual({
     app: { version: APP_VERSION, sha: SHORT_SHA, label: "release" },
@@ -247,7 +299,9 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     "AUTH_KEY_PATH",
     "password",
     "Bearer",
-    "127.0.0.1:3040",
+    // El puerto del fixture es dinámico: la cadena prohibida se deriva del
+    // mismo valor que atiende la ejecución.
+    `127.0.0.1:${API_PORT}`,
   ])
     expect(visibleText).not.toContain(forbidden);
 
@@ -301,12 +355,12 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
       });
     }
     await page.screenshot({
-      path: `${SHOTS}/panel-390x${height}-abierto.png`,
+      path: join(artifacts, `panel-390x${height}-abierto.png`),
       fullPage: false,
     });
     // Recorte del panel completo: evidencia de su cabecera, cierre y scroll.
     await panel.screenshot({
-      path: `${SHOTS}/panel-elemento-390x${height}.png`,
+      path: join(artifacts, `panel-elemento-390x${height}.png`),
     });
     // El disparador del pie sigue accesible con el panel abierto.
     await expect(versionToggle).toBeVisible();
@@ -323,7 +377,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   const casaBox = await geometry();
   expect(casaBox.panelBottom).toBeLessThanOrEqual(casaBox.footerTop - 1);
   await page.screenshot({
-    path: `${SHOTS}/panel-390x500-casa.png`,
+    path: join(artifacts, "panel-390x500-casa.png"),
     fullPage: false,
   });
   await page.keyboard.press("Escape");
@@ -353,11 +407,11 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await versionToggle.click();
   await expect(panel).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/panel-1440-anclado.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "panel-1440-anclado.png"), fullPage: false });
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await page.screenshot({
-    path: `${SHOTS}/pie-1440.png`,
+    path: join(artifacts, "pie-1440.png"),
     fullPage: false,
   });
 
@@ -387,7 +441,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     // Segunda apariencia con el panel abierto: mismo anclaje, otra identidad.
     if (id === "casa")
       await page.screenshot({
-        path: `${SHOTS}/panel-1440-casa.png`,
+        path: join(artifacts, "panel-1440-casa.png"),
         fullPage: false,
       });
     await page.keyboard.press("Escape");
@@ -406,7 +460,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await themeSelect.selectOption({ value: "casa" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "casa");
   await expectPinnedFooter(page);
-  await page.screenshot({ path: `${SHOTS}/pie-1440-casa.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "pie-1440-casa.png"), fullPage: false });
 
   // ── 390 ─────────────────────────────────────────────────────────────────
   await page.setViewportSize({ width: 390, height: 844 });
@@ -417,7 +471,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   await expect(page.locator(".app-version-env")).toHaveText("· TEST");
   await expect(page.locator(".sidebar-bottom")).toBeHidden();
   await page.screenshot({
-    path: `${SHOTS}/pie-390.png`,
+    path: join(artifacts, "pie-390.png"),
     fullPage: false,
   });
   await versionToggle.click();
@@ -426,7 +480,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
   expect(panelBox.x).toBeGreaterThanOrEqual(0);
   expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(391);
   await page.screenshot({
-    path: `${SHOTS}/panel-390.png`,
+    path: join(artifacts, "panel-390.png"),
     fullPage: false,
   });
   await page.keyboard.press("Escape");
@@ -471,7 +525,7 @@ test("#502 pie de versión persistente, panel accesible y viewport bajo", async 
     innerWidth: window.innerWidth,
   }));
   expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
-  await page.screenshot({ path: `${SHOTS}/pie-390x500.png`, fullPage: false });
+  await page.screenshot({ path: join(artifacts, "pie-390x500.png"), fullPage: false });
 
   expect(errors).toEqual([]);
 });

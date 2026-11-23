@@ -24,6 +24,22 @@ const fpV1 = "a".repeat(64);
 const fpV2 = "b".repeat(64);
 const fpFor = (version: number) => (version === 1 ? fpV1 : fpV2);
 
+/** SPEC38 §7.6: ruta retirada = 410 con código, no-store y sustituto declarado. */
+function expectRetirada(
+  response: { status: number; data: Record<string, any>; headers: Headers },
+  code: string,
+  sustituto: string | null,
+) {
+  expect(response.status).toBe(410);
+  expect(response.data.code).toBe(code);
+  expect(response.data.message).toBeTypeOf("string");
+  expect(response.data.sustituto).toBe(sustituto);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("link")).toBe(
+    sustituto === null ? null : `<${sustituto}>; rel="alternate"`,
+  );
+}
+
 /** By-id reads are explicit: they never declare the automatic latest marker. */
 function conConsultaPorId<T extends { seleccionVersion: { porDefecto: boolean } }>(
   dto: T,
@@ -328,7 +344,7 @@ test("E4.11 I3: trimestre y año componen varios ciclos sin escribir E4.9", () =
     identidad: {
       versionAgregado: "A1",
       versionApp: "0.0.0-fixture",
-      versionEsquema: 31,
+      versionEsquema: 32,
       actor: "usuario-unico",
       motivo: null,
     },
@@ -2078,7 +2094,10 @@ function fixture() {
   return { db, request, enroll };
 }
 
-test("E4.11 I3: rutas GET/POST, 405 y snapshot sin escrituras colaterales", async () => {
+test("E4.11 I3: rutas GET/POST retiradas (410) y snapshot sin escrituras colaterales", async () => {
+  // Contrato sustituido: POST /api/fotos/periodos creaba el agregado (201 +
+  // location), el GET devolvía la foto por periodo/id (200, 404 de versión o
+  // 422 de parámetros) y el resto de métodos respondía 405 con `allow`.
   const f = fixture();
   seedCycle(f.db, "1", "2026-01-01");
   seedCycle(f.db, "2", "2026-02-01");
@@ -2092,13 +2111,14 @@ test("E4.11 I3: rutas GET/POST, 405 y snapshot sin escrituras colaterales", asyn
   await f.enroll();
   const before = snapshotE49(f.db);
 
+  // El POST retirado no llega a la idempotencia ni crea agregado alguno.
   const missingKey = await f.request("/api/fotos/periodos", "POST", {
     tipo: "Trimestre",
     ejercicio: 2026,
     trimestre: 1,
   });
-  expect(missingKey.status).toBe(422);
-  expect(missingKey.data.code).toBe("IDEMPOTENCY_REQUIRED");
+  expectRetirada(missingKey, "FOTOS_RETIRADAS", null);
+  expect(missingKey.headers.get("location")).toBeNull();
 
   const created = await f.request(
     "/api/fotos/periodos",
@@ -2106,105 +2126,57 @@ test("E4.11 I3: rutas GET/POST, 405 y snapshot sin escrituras colaterales", asyn
     { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
     { "idempotency-key": key("api") },
   );
-  expect(created.status).toBe(201);
-  expect(created.headers.get("location")).toBe("/api/fotos/periodos/1");
-  expect(created.headers.get("cache-control")).toBe("no-store");
-  expect(created.data).toMatchObject({
-    origen: "Foto",
-    id: 1,
-    periodo: { ejercicio: 2026, trimestre: 1 },
-    identidad: { versionAgregado: "A1", versionEsquema: 31 },
-    replayed: false,
-  });
+  expectRetirada(created, "FOTOS_RETIRADAS", null);
+  expect(created.headers.get("location")).toBeNull();
 
+  // El replay y el conflicto de payload ya no tienen sujeto: la misma clave
+  // recibe el mismo 410 sin intento persistido.
   const replay = await f.request(
     "/api/fotos/periodos",
     "POST",
     { tipo: "Trimestre", ejercicio: 2026, trimestre: 1 },
     { "idempotency-key": key("api") },
   );
-  expect(replay.status).toBe(201);
-  expect(replay.data).toEqual({ ...created.data, replayed: true });
-
+  expectRetirada(replay, "FOTOS_RETIRADAS", null);
   const conflict = await f.request(
     "/api/fotos/periodos",
     "POST",
     { tipo: "Trimestre", ejercicio: 2026, trimestre: 2 },
     { "idempotency-key": key("api") },
   );
-  expect(conflict.status).toBe(409);
-  expect(conflict.data.code).toBe("IDEMPOTENCY_CONFLICT");
+  expectRetirada(conflict, "FOTOS_RETIRADAS", null);
 
-  const latest = await f.request(
+  // Toda lectura retirada es el mismo 410: vigente, versión explícita, por id,
+  // id inexistente y parámetros inválidos compartían recurso retirado.
+  for (const path of [
     "/api/fotos/periodos?tipo=Trimestre&ejercicio=2026&trimestre=1",
-  );
-  expect(latest.status).toBe(200);
-  expect(latest.data).toMatchObject({
-    id: 1,
-    seleccionVersion: { version: "A1", porDefecto: true },
-  });
-
-  const explicit = await f.request(
     "/api/fotos/periodos?tipo=Trimestre&ejercicio=2026&trimestre=1&version=A1",
-  );
-  expect(explicit.status).toBe(200);
-  expect(explicit.data.seleccionVersion.porDefecto).toBe(false);
+    "/api/fotos/periodos/1",
+    "/api/fotos/periodos/999",
+    "/api/fotos/periodos?tipo=Trimestre&ejercicio=2026&trimestre=1&version=A9",
+    "/api/fotos/periodos?tipo=Trimestre&ejercicio=2026",
+    "/api/fotos/periodos?tipo=Anio&ejercicio=2027",
+  ])
+    expectRetirada(await f.request(path), "FOTOS_RETIRADAS", null);
 
-  const byId = await f.request("/api/fotos/periodos/1");
-  expect(byId.status).toBe(200);
-  expect(byId.data.seleccionVersion).toEqual({
-    version: "A1",
-    porDefecto: false,
-    regla: "P7-D",
-  });
-  expect(byId.data).toEqual(conConsultaPorId(latest.data));
-
-  expect(
-    (await f.request("/api/fotos/periodos/999")).status,
-  ).toBe(404);
-  expect(
-    (
-      await f.request(
-        "/api/fotos/periodos?tipo=Trimestre&ejercicio=2026&trimestre=1&version=A9",
-      )
-    ).status,
-  ).toBe(404);
-  expect(
-    (
-      await f.request(
-        "/api/fotos/periodos?tipo=Trimestre&ejercicio=2026",
-      )
-    ).status,
-  ).toBe(422);
-  expect(
-    (
-      await f.request(
-        "/api/fotos/periodos?tipo=Anio&ejercicio=2027",
-      )
-    ).status,
-  ).toBe(422);
-
-  for (const method of ["PATCH", "DELETE", "PUT"]) {
-    const collection = await f.request(
-      "/api/fotos/periodos",
-      method,
-      {},
-    );
-    expect(collection.status).toBe(405);
-    expect(collection.headers.get("allow")).toBe("GET, POST");
-    expect(collection.data.code).toBe("METHOD_NOT_ALLOWED");
-
-    const item = await f.request("/api/fotos/periodos/1", method, {});
-    expect(item.status).toBe(405);
-    expect(item.headers.get("allow")).toBe("GET");
+  // El 410 no depende del método: no hay `allow` ni alias de solo lectura.
+  for (const path of ["/api/fotos/periodos", "/api/fotos/periodos/1"]) {
+    for (const method of ["GET", "POST", "PATCH", "DELETE", "PUT"]) {
+      const response = await f.request(
+        path,
+        method,
+        method === "GET" ? undefined : {},
+      );
+      expectRetirada(response, "FOTOS_RETIRADAS", null);
+    }
   }
 
-  // AC12: the only E4.11 write is the period aggregate; E4.9 is untouched.
+  // AC12: ningún intento escribe E4.9 ni crea agregado de periodo.
   expect(snapshotE49(f.db)).toEqual(before);
   expect(
     f.db.query("SELECT COUNT(*) AS n FROM fotos_periodo").get(),
-  ).toEqual({ n: 1 });
+  ).toEqual({ n: 0 });
   expect(
     f.db.query("SELECT COUNT(*) AS n FROM foto_periodo_componentes").get(),
-  ).toEqual({ n: 2 });
+  ).toEqual({ n: 0 });
 });

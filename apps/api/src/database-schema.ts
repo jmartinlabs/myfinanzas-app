@@ -25,6 +25,9 @@ import {
 } from "./spec36-schema";
 import { spec37SchemaV30 } from "./spec37-schema";
 import { spec37SchemaV31 } from "./spec37-schema-v31";
+import { cierreValidacionSchemaV32 } from "./cierre-validacion-schema";
+import { importarCierresLegados } from "./cierre-validacion-migracion";
+import { migrarMetadatosLegados } from "./cierre-validacion-metadatos";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -33,9 +36,9 @@ import { referenceSchema } from "./reference-schema";
 import {
   installIdentity,
   inspectIdentity,
-  schemaVersion,
   type Identity,
 } from "./database-identity";
+import { isKnownSchemaVersion, schemaVersion } from "./schema-catalog";
 
 // Internal schema builder: receives a connection, never opens a path or grants runtime access.
 export function prepareSchema(db: Database, identity: Identity) {
@@ -52,9 +55,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, schemaVersion].includes(
-        versions[0].version,
-      )
+      !isKnownSchemaVersion(versions[0].version)
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
@@ -112,9 +113,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, schemaVersion].includes(
-            versions[0].version,
-          )
+          !isKnownSchemaVersion(versions[0].version)
         )
           throw new Error("Esquema no compatible; no se modificará esta base.");
         if (versions[0].version === 1) classificationSchema(db);
@@ -155,6 +154,15 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 29) repartoMensualSchemaV29(db);
         if (versions[0].version < 30) spec37SchemaV30(db);
         if (versions[0].version < 31) spec37SchemaV31(db);
+        if (versions[0].version < 32) {
+          cierreValidacionSchemaV32(db);
+          // E1b forma parte de I1: la importación conservadora corre en la misma
+          // transacción que crea v32. Sin cierres legados es un no-op.
+          importarCierresLegados(db);
+          // §7.3: los metadatos que deben sobrevivir al borrado se migran en la
+          // misma transacción, después de que exista la fila de cada ciclo.
+          migrarMetadatosLegados(db);
+        }
         return; // Existing data is never re-seeded.
       }
       if (
@@ -284,6 +292,11 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (schemaVersion >= 29) repartoMensualSchemaV29(db);
       if (schemaVersion >= 30) spec37SchemaV30(db);
       if (schemaVersion >= 31) spec37SchemaV31(db);
+      if (schemaVersion >= 32) {
+        cierreValidacionSchemaV32(db);
+        importarCierresLegados(db);
+        migrarMetadatosLegados(db);
+      }
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {

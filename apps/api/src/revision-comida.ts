@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import { consumerImpactFingerprint } from "./consumer-impact";
 import { Problem, decimal, money, getSaldo } from "./saldos";
 import { civil, cycleContext, cycleMaster, type Cycle } from "./ciclos";
 import { fingerprint, ledgerRows, type LedgerRow } from "./movement-ledger";
@@ -9,12 +10,6 @@ import {
   revisionComidaRows,
   type RevisionComidaRow,
 } from "./revision-comida-ledger";
-import {
-  assertRevisionComidaClosureImpact,
-  closedWindowsForDates,
-  consumerImpactFingerprint,
-  informativeFields,
-} from "./e49-guards";
 
 export const clasificaciones = [
   "Comida",
@@ -408,9 +403,9 @@ function attempt<T>(
     .immediate();
 }
 
+/** Huella de impacto de una operación de Revisión Comida (§7.6: sin cierres). */
 type ImpactAudit = {
   fingerprint: string;
-  cierres: { ciclo: string; version: number; inicio: string; fin: string }[];
 };
 
 function audit(
@@ -495,71 +490,9 @@ export function createRevisionComida(
     const changed = Object.keys(body).filter(
       (field) => !["motivo", "fingerprint", "tipo"].includes(field),
     );
-    const informative = informativeFields.revisionComida ?? [];
-    const windows = closedWindowsForDates(db, [candidate.fecha]);
-    let creationImpact: ImpactAudit | null = null;
-    if (windows.length) {
-      assertRevisionComidaClosureImpact(
-        db,
-        [candidate.fecha],
-        true,
-        motivo,
-        "registrar la operación de Revisión Comida",
-      );
-      const expected = revisionCreationFingerprint(
-        tipo,
-        changed.filter((field) => !informative.includes(field)),
-        windows,
-      );
-      if (
-        typeof body.fingerprint !== "string" ||
-        !/^[a-f0-9]{64}$/.test(body.fingerprint)
-      )
-        throw new Problem(
-          409,
-          "IMPACTO_NO_VERIFICABLE",
-          "No se puede registrar la operación: falta la huella de impacto de Revisión Comida.",
-          {
-            fingerprint:
-              "Genera la vista de impacto de alta y envía su huella.",
-          },
-          {
-            cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-              ciclo,
-              version,
-              inicio,
-              fin,
-            })),
-          },
-        );
-      if (body.fingerprint !== expected)
-        throw new Problem(
-          409,
-          "IMPACT_CHANGED",
-          "No se puede registrar la operación: el impacto de Revisión Comida ha cambiado; vuelve a revisarlo.",
-          {
-            fingerprint:
-              "La huella de impacto no coincide con el estado actual.",
-          },
-          {
-            cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-              ciclo,
-              version,
-              inicio,
-              fin,
-            })),
-          },
-        );
-      creationImpact = {
-        fingerprint: body.fingerprint,
-        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-          ciclo,
-          version,
-          inicio,
-          fin,
-        })),
-      };
-    }
+    // §7.6: el alta deja de estar condicionada por ventanas cerradas. Queda la
+    // auditoría natural del hecho y la detección de coincidencias.
+    const creationImpact: ImpactAudit | null = null;
     if (tipo === "Reposicion") {
       const duplicate = rows.find(
         (r) =>
@@ -638,10 +571,13 @@ function revisionImpactFingerprint(
 }
 
 /**
- * T2 Revisión Comida closure review. A row whose old or new date belongs to a
- * closed window keeps the photo intact, but needs motive + a consumer impact
- * fingerprint + audit, and a readable auxiliary photo block. If the impact
- * cannot be credited the change is blocked (DEV-06).
+ * Revisión de impacto de una Revisión Comida existente (§7.6).
+ *
+ * La condición deja de ser la existencia de un cierre: lo que manda es que la
+ * fila tenga **efecto real**, es decir que esté vinculada a un movimiento. Sin
+ * vínculo no hay atribución que alterar y el cambio sólo exige su motivo; con
+ * vínculo, el cambio exige motivo y huella de impacto de los consumidores. No
+ * hay lista blanca de campos «informativos»: no se exonera nada por su nombre.
  */
 function requireClosureReview(
   db: Database,
@@ -653,32 +589,23 @@ function requireClosureReview(
   action: string,
   economicFields: readonly string[] = changed,
 ) {
-  const nextDate = typeof body.fecha === "string" ? body.fecha : null;
-  const windows = closedWindowsForDates(db, [old.fecha, nextDate]);
-  if (!windows.length) return null;
-  const informative = informativeFields.revisionComida ?? [];
-  const economic = economicFields.filter(
-    (field) => !informative.includes(field),
+  // Sólo el contenido económico exige huella de impacto. El vínculo tiene su
+  // propio procedimiento —elegibilidad, evidencia obligatoria, estado
+  // Verificado— y el estado/concepto/evidencias tienen su auditoría con motivo:
+  // encadenar guards distintos sólo produce mensajes que no corresponden.
+  const economicos = economicFields.filter((field) =>
+    [
+      "fecha",
+      "importe",
+      "direccion",
+      "esDevolucion",
+      "clasificacion",
+      "fueraPresupuestoHistorico",
+    ].includes(field),
   );
-  // T3: a purely informative change (concepto) keeps working after a close;
-  // the caller still requires and audits its motive.
-  if (!economic.length) return null;
-  assertRevisionComidaClosureImpact(
-    db,
-    [old.fecha, nextDate],
-    true,
-    body.motivo,
-    action,
-  );
-  const fingerprintChanged = changed.filter(
-    (field) => !informative.includes(field),
-  );
-  const expected = revisionImpactFingerprint(
-    id,
-    tipo,
-    old,
-    fingerprintChanged,
-  );
+  if (!economicos.length) return null;
+  if (!old.movimiento) return null;
+  const expected = revisionImpactFingerprint(id, tipo, old, economicos);
   if (
     typeof body.fingerprint !== "string" ||
     !/^[a-f0-9]{64}$/.test(body.fingerprint)
@@ -691,14 +618,6 @@ function requireClosureReview(
         fingerprint:
           "Genera la vista de impacto de Revisión Comida y envía su huella.",
       },
-      {
-        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-          ciclo,
-          version,
-          inicio,
-          fin,
-        })),
-      },
     );
   if (body.fingerprint !== expected)
     throw new Problem(
@@ -706,24 +625,8 @@ function requireClosureReview(
       "IMPACT_CHANGED",
       `No se puede ${action}: el impacto de Revisión Comida ha cambiado; vuelve a revisarlo.`,
       { fingerprint: "La huella de impacto no coincide con el estado actual." },
-      {
-        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-          ciclo,
-          version,
-          inicio,
-          fin,
-        })),
-      },
     );
-  return {
-    fingerprint: body.fingerprint,
-    cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-      ciclo,
-      version,
-      inicio,
-      fin,
-    })),
-  };
+  return { fingerprint: body.fingerprint };
 }
 
 /** Preview for the T2 Revisión Comida impact certificate. */
@@ -740,24 +643,20 @@ export function previewRevisionComidaImpact(
       (field) =>
         !["revision", "motivo", "fingerprint", "tipo"].includes(field),
     );
+    // §7.6: sin cierres no hay ventanas que consultar y no se exonera ningún
+    // campo por su nombre. El motivo se exige cuando la fila tiene efecto real
+    // —está vinculada a un movimiento—, no cuando cae en una foto histórica.
     const nextDate = typeof body.fecha === "string" ? body.fecha : null;
-    const windows = closedWindowsForDates(db, [old.fecha, nextDate]);
-    const informative = informativeFields.revisionComida ?? [];
-    const fingerprintChanged = changed.filter(
-      (field) => !informative.includes(field),
-    );
+    const fingerprintChanged = changed;
+    const requiereMotivo =
+      !!old.movimiento && (nextDate !== old.fecha || changed.length > 0);
     return {
       operacion: id,
       revision: old.revision,
       cambios: changed,
       cambiosEconomicos: fingerprintChanged,
-      cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-        ciclo,
-        version,
-        inicio,
-        fin,
-      })),
-      requiereMotivo: windows.length > 0,
+      cierres: [],
+      requiereMotivo,
       fingerprint: revisionImpactFingerprint(
         id,
         tipo,
@@ -773,27 +672,9 @@ export function previewRevisionComidaImpact(
  * result is captured by the photo, so an alta dated inside a closed window
  * needs the same impact fingerprint, motive and audit as a modification (M4).
  */
-function revisionCreationFingerprint(
-  tipo: Tipo,
-  changed: readonly string[],
-  windows: ClosedWindowLike[],
-) {
-  return consumerImpactFingerprint("revisionComidaAlta", tipo, changed, [
-    windows.map(({ ciclo, version, inicio, fin }) => ({
-      ciclo,
-      version,
-      inicio,
-      fin,
-    })),
-  ]);
+function revisionCreationFingerprint(tipo: Tipo, changed: readonly string[]) {
+  return consumerImpactFingerprint("revisionComidaAlta", tipo, changed, []);
 }
-
-type ClosedWindowLike = {
-  ciclo: string;
-  version: number;
-  inicio: string;
-  fin: string;
-};
 
 export function previewRevisionComidaCreationImpact(
   db: Database,
@@ -806,26 +687,13 @@ export function previewRevisionComidaCreationImpact(
     const changed = Object.keys(body).filter(
       (field) => !["motivo", "fingerprint", "tipo"].includes(field),
     );
-    const informative = informativeFields.revisionComida ?? [];
-    const fingerprintChanged = changed.filter(
-      (field) => !informative.includes(field),
-    );
-    const windows = closedWindowsForDates(db, [candidate.fecha]);
+    // §7.6: el alta no depende de ventanas cerradas ni de campos exentos.
     return {
       cambios: changed,
-      cambiosEconomicos: fingerprintChanged,
-      cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
-        ciclo,
-        version,
-        inicio,
-        fin,
-      })),
-      requiereMotivo: windows.length > 0,
-      fingerprint: revisionCreationFingerprint(
-        tipo,
-        fingerprintChanged,
-        windows,
-      ),
+      cambiosEconomicos: changed,
+      cierres: [],
+      requiereMotivo: false,
+      fingerprint: revisionCreationFingerprint(tipo, changed),
     };
   })();
 }

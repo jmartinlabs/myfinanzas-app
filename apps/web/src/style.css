@@ -6328,6 +6328,62 @@ textarea {
   font-size: var(--text-xs);
 }
 
+/* Tipo · icono compartido por las seis apariencias ------------------------
+ * Geometría única: caja 24, glifo 16 y separación 8 para Claro, Oscuro,
+ * Mixto, Graphite Lime, Casa y Aurora. Las capas de tema solo deciden color,
+ * fondo y borde; el SVG hereda el color con `currentColor`. */
+.movement-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.movement-type-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.movement-type-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.movement-type-copy {
+  min-width: 0;
+}
+
+/* Oscuro estrena el chip con los roles semánticos del sistema: los mismos
+ * tokens del tema, sin valores nuevos ni reglas por apariencia. */
+:root[data-theme="dark-s"] .movement-type[data-tipo="Ingreso"] .movement-type-icon,
+:root[data-theme="dark-s"] .movement-type[data-tipo="Devolución de gasto"] .movement-type-icon {
+  border-color: var(--positive-border);
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+:root[data-theme="dark-s"] .movement-type[data-tipo="Gasto"] .movement-type-icon,
+:root[data-theme="dark-s"] .movement-type[data-tipo="Amortización deuda"] .movement-type-icon {
+  border-color: var(--negative-border);
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+:root[data-theme="dark-s"] .movement-type[data-tipo="Transferencia"] .movement-type-icon {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 /* Estados de carga, vacío por filtros y error dentro del panel. */
 .movements-list > .empty {
   display: flex;
@@ -6914,4 +6970,41 @@ textarea {
    tarjetas se muestra en todos los anchos, no solo por debajo de 760 px. */
 .pending-transfers .ui-data-list {
   display: grid;
+}
+
+/* SPEC38 · I2 — validación operativa (issue 555).
+ * Bloque aditivo y aislado: consume solo tokens existentes, no redefine las
+ * reglas de cierre/fotos retiradas ni ninguna apariencia. La marca de estado se
+ * compone de badge + texto, nunca solo color; la tabla de cobertura se
+ * transforma en tarjetas por debajo de 760 px, como el resto de tablas. */
+.validacion-status .validacion-metrics .metric:first-child {
+  grid-column: span 2;
+  border-color: var(--accent-border);
+  background: var(--section);
+}
+.validacion-status .validacion-metrics .metric:first-child dd {
+  font-size: clamp(20px, 2.2vw, 28px);
+}
+/* Texto funcional a 12 px, como el badge del cierre E4.9 y el de Inicio: la
+ * marca de estado y la cobertura se leen como texto, no como ornamento. */
+.validacion-page .ui-badge {
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+.validacion-desktop {
+  min-width: 0;
+}
+.validacion-cards {
+  margin: var(--space-2) 0 0;
+}
+@media (max-width: 760px) {
+  .validacion-status .validacion-metrics .metric:first-child {
+    grid-column: auto;
+  }
+  .validacion-desktop {
+    display: none;
+  }
+  .validacion-cards {
+    margin-top: 0;
+  }
 }

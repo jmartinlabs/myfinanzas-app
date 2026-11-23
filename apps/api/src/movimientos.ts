@@ -15,6 +15,7 @@ import {
   operationalReferenceTypes,
 } from "./reference-rules";
 import { vehicleFicha } from "./vehicle-rules";
+import { devolucionesResumenGasto } from "./devoluciones";
 import {
   aportacionMetadata,
   storeAportacion,
@@ -40,10 +41,6 @@ import {
   positionCents,
   type LedgerRow,
 } from "./movement-ledger";
-import {
-  assertMovementClosureImpact,
-  type MovementEffectRow,
-} from "./e49-guards";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
 import {
   applyComidaDevolucion,
@@ -508,6 +505,8 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
 export function getMovement(db: Database, id: string) {
   return db.transaction(() => ({
     movimiento: decorate(db, find(db, id), cycleMaster(db)),
+    // R3 (SPEC39 §5.2): exactamente el `resumen` de R1, misma función.
+    devolucionesResumen: devolucionesResumenGasto(db, id),
     auditoria: db
       .query(
         "SELECT revision,accion,motivo,instante,actor,anterior,posterior FROM movement_audit WHERE id=? ORDER BY revision",
@@ -662,19 +661,6 @@ function protect(
   old: LedgerRow | null,
   next: unknown,
 ) {
-  assertMovementClosureImpact(
-    db,
-    old,
-    next && typeof next === "object"
-      ? {
-          ...(next as MovementEffectRow),
-          importe: String(
-            money((next as { importe: string }).importe) ?? 0n,
-          ),
-        }
-      : null,
-    "registrar el Movimiento",
-  );
   const protection = guard?.(action, old, next);
   if (protection?.blocked)
     throw new Problem(

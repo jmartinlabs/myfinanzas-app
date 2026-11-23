@@ -5,40 +5,87 @@ import {
   type Page,
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 import { RESUMEN_ANUAL_NOW } from "../../apps/api/test-support/resumen-anual-clock";
+
+import { artifactDir, fixtureContext, type Fixture } from "./fixture";
+
+const artifacts = artifactDir("e4-7");
 
 /**
  * E4.7 — UI /resumen-anual con MFA real y un servidor aislado.
  *
  * El servidor de test siembra las fixtures ficticias C007/C008. Nunca toca una
- * base real. Las capturas van a `artifacts/e4-7/` (ignorado por Git).
+ * base real. Las capturas van al directorio de artefactos de la run, fuera del
+ * repositorio.
+ *
+ * Cada escenario tiene puerto y estado **propios de la ejecución** (#514): los
+ * cinco listeners del archivo ya no ocupan los puertos históricos 3018-3022 ni
+ * los directorios `.local/e2e-e47*`, así que dos runs simultáneos no comparten
+ * nada y no chocan con los fixtures de `inicio`/`comida-dprima`.
  */
 
-const BASE_PORT = 3018;
-const EMPTY_PORT = 3019;
-const ERROR_PORT = 3020;
-const FILTERS_PORT = 3021;
-const CONCURRENCY_PORT = 3022;
-const BASE_DIR = ".local/e2e-e47";
-const EMPTY_DIR = ".local/e2e-e47-empty";
-const ERROR_DIR = ".local/e2e-e47-error";
-const FILTERS_DIR = ".local/e2e-e47-filters";
-const CONCURRENCY_DIR = ".local/e2e-e47-concurrency";
-let base: ChildProcess | undefined;
-let empty: ChildProcess | undefined;
-let error: ChildProcess | undefined;
-let filters: ChildProcess | undefined;
-let concurrency: ChildProcess | undefined;
+const BASE = fixtureContext("resumen-anual-base");
+const EMPTY = fixtureContext("resumen-anual-vacio");
+const ERROR = fixtureContext("resumen-anual-error");
+const FILTERS = fixtureContext("resumen-anual-filtros");
+const CONCURRENCY = fixtureContext("resumen-anual-concurrencia");
 
-async function waitForApi(request: APIRequestContext, port: number) {
+type OwnedFixture = {
+  fixture: Fixture;
+  child: ChildProcess;
+  output: () => string;
+  /** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+  assertAlive: () => void;
+};
+
+/** Arranca el servidor del escenario con el puerto y estado de su contexto. */
+function startFixture(fixture: Fixture, scenario?: "empty"): OwnedFixture {
+  const child = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/resumen-anual-server.ts"],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...fixture.env,
+        ...(scenario ? { E47_SCENARIO: scenario } : {}),
+      },
+    },
+  );
+  let output = "";
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  child.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    exit = { code, signal };
+  });
+  const assertAlive = () => {
+    const ended = exit;
+    if (!ended) return;
+    const how = `código ${ended.code ?? "null"}${ended.signal ? ` / señal ${ended.signal}` : ""}`;
+    throw new Error(
+      `El fixture ${fixture.name} terminó antes de servir (${how}): ${output.trim() || "(sin salida)"}`,
+    );
+  };
+  return { fixture, child, output: () => output, assertAlive };
+}
+
+const served: OwnedFixture[] = [];
+
+async function waitForApi(request: APIRequestContext, owned: OwnedFixture) {
   await expect
     .poll(
       async () => {
+        owned.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${port}/api/health`))
+          return (await request.get(`${owned.fixture.baseURL}/api/health`))
             .status();
         } catch {
           return 0;
@@ -47,77 +94,30 @@ async function waitForApi(request: APIRequestContext, port: number) {
       { timeout: 20000 },
     )
     .toBe(200);
+  // El fixture provisionó su base ficticia antes de servir: se navega solo
+  // cuando el estado de esta run está en disco.
+  owned.assertAlive();
+  expect(
+    existsSync(join(owned.fixture.dir, "bootstrap.txt")),
+    `El fixture ${owned.fixture.name} no provisionó ${owned.fixture.dir}/bootstrap.txt: ${owned.output().trim()}`,
+  ).toBe(true);
 }
 
 test.beforeAll(async ({ request }) => {
-  base = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/resumen-anual-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test" },
-    },
-  );
-  empty = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/resumen-anual-server.ts"],
-    {
-      stdio: "pipe",
-      env: { ...process.env, NODE_ENV: "test", E47_SCENARIO: "empty" },
-    },
-  );
-  error = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/resumen-anual-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        E47_PORT: String(ERROR_PORT),
-        E47_DIR: ERROR_DIR,
-      },
-    },
-  );
-  filters = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/resumen-anual-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        E47_PORT: String(FILTERS_PORT),
-        E47_DIR: FILTERS_DIR,
-      },
-    },
-  );
-  concurrency = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/resumen-anual-server.ts"],
-    {
-      stdio: "pipe",
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        E47_PORT: String(CONCURRENCY_PORT),
-        E47_DIR: CONCURRENCY_DIR,
-      },
-    },
-  );
-  await waitForApi(request, BASE_PORT);
-  await waitForApi(request, EMPTY_PORT);
-  await waitForApi(request, ERROR_PORT);
-  await waitForApi(request, FILTERS_PORT);
-  await waitForApi(request, CONCURRENCY_PORT);
+  served.push(startFixture(BASE));
+  served.push(startFixture(EMPTY, "empty"));
+  served.push(startFixture(ERROR));
+  served.push(startFixture(FILTERS));
+  served.push(startFixture(CONCURRENCY));
+  for (const owned of served) await waitForApi(request, owned);
 });
 
 test.afterAll(() => {
-  base?.kill();
-  empty?.kill();
-  error?.kill();
-  filters?.kill();
-  concurrency?.kill();
+  for (const owned of served) {
+    owned.child.kill();
+    owned.child.stdout?.destroy();
+    owned.child.stderr?.destroy();
+  }
 });
 
 async function routeApi(page: Page, port: number) {
@@ -305,11 +305,10 @@ async function expectContrast(page: Page) {
 test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-7", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await routeApi(page, BASE_PORT);
-  await login(page, BASE_DIR);
+  await routeApi(page, BASE.port);
+  await login(page, BASE.dir);
   await page.goto("/resumen-anual?ejercicio=2026");
 
   await expect(
@@ -450,7 +449,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
     await expectNoOverflow(page);
     await resetScroll(page);
     await page.screenshot({
-      path: `artifacts/e4-7/resumen-anual-${theme}-1440.png`,
+      path: join(artifacts, `resumen-anual-${theme}-1440.png`),
       fullPage: true,
     });
 
@@ -463,7 +462,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
     await expectContrast(page);
     await resetScroll(page);
     await page.screenshot({
-      path: `artifacts/e4-7/resumen-anual-${theme}-390.png`,
+      path: join(artifacts, `resumen-anual-${theme}-390.png`),
       fullPage: true,
     });
   }
@@ -488,7 +487,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   // N1: si la lectura de deuda falla, no se muestra «Corte aplicado».
   await page.route("**/api/resumen-anual*", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(BASE_PORT);
+    url.port = String(BASE.port);
     const response = await route.fetch({ url: url.toString() });
     const json: any = await response.json();
     json.patrimonio.deuda = {
@@ -528,7 +527,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await page.unroute("**/api/resumen-anual*");
   await page.route("**/api/resumen-anual*", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(BASE_PORT);
+    url.port = String(BASE.port);
     const response = await route.fetch({ url: url.toString() });
     const json: any = await response.json();
     json.patrimonio = null;
@@ -557,9 +556,8 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
 test("AC23: sin datos no se convierte en 0,00 ni en filas inventadas", async ({
   page,
 }) => {
-  mkdirSync("artifacts/e4-7", { recursive: true });
-  await routeApi(page, EMPTY_PORT);
-  await login(page, EMPTY_DIR);
+  await routeApi(page, EMPTY.port);
+  await login(page, EMPTY.dir);
   await page.goto("/resumen-anual?ejercicio=2026");
 
   await expect(page.locator(".e47-empty-page")).toContainText(
@@ -585,7 +583,7 @@ test("AC23: sin datos no se convierte en 0,00 ni en filas inventadas", async ({
 
   await resetScroll(page);
   await page.screenshot({
-    path: "artifacts/e4-7/resumen-anual-vacio-1440.png",
+    path: join(artifacts, "resumen-anual-vacio-1440.png"),
     fullPage: true,
   });
 });
@@ -595,8 +593,8 @@ test("AC23/24: error de fuente y sesión expirada sin cifras ni fugas", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await routeApi(page, ERROR_PORT);
-  await login(page, ERROR_DIR);
+  await routeApi(page, ERROR.port);
+  await login(page, ERROR.dir);
   await page.goto("/resumen-anual?ejercicio=2026");
   await expect(
     page.getByRole("heading", { name: "Resumen anual", exact: true }),
@@ -635,7 +633,7 @@ test("AC23/24: error de fuente y sesión expirada sin cifras ni fugas", async ({
   // AC23: solo el carril afectado degrada; el resto conserva su lectura.
   await page.route("**/api/resumen-anual*", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(ERROR_PORT);
+    url.port = String(ERROR.port);
     const response = await route.fetch({ url: url.toString() });
     const json: any = await response.json();
     json.carriles.plan = {
@@ -691,8 +689,8 @@ test("AC23/24: error de fuente y sesión expirada sin cifras ni fugas", async ({
 test("AC21: filtros funcionales y conservación al volver de un enlace", async ({
   page,
 }) => {
-  await routeApi(page, FILTERS_PORT);
-  await login(page, FILTERS_DIR);
+  await routeApi(page, FILTERS.port);
+  await login(page, FILTERS.dir);
   await page.goto("/resumen-anual?ejercicio=2026");
   await expect(
     page.getByRole("heading", { name: "Resumen anual", exact: true }),
@@ -785,8 +783,8 @@ test("AC21: filtros funcionales y conservación al volver de un enlace", async (
 test("AC25: descarta la respuesta antigua de una consulta retenida", async ({
   page,
 }) => {
-  await routeApi(page, CONCURRENCY_PORT);
-  await login(page, CONCURRENCY_DIR);
+  await routeApi(page, CONCURRENCY.port);
+  await login(page, CONCURRENCY.dir);
   await page.goto("/resumen-anual?ejercicio=2026");
   await expect(page.locator(".e47-context")).toContainText("2026");
 
@@ -807,7 +805,7 @@ test("AC25: descarta la respuesta antigua de una consulta retenida", async ({
 
   await page.route("**/api/resumen-anual*", async (route) => {
     const url = new URL(route.request().url());
-    url.port = String(CONCURRENCY_PORT);
+    url.port = String(CONCURRENCY.port);
     if (url.searchParams.get("ejercicio") === "2027") {
       firstHeld = true;
       firstStarted();

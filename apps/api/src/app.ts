@@ -40,6 +40,21 @@ import {
 } from "./comida";
 import { e35Metrics } from "./e35";
 import {
+  integridadDevoluciones,
+  proyeccionDevolucionesCompra,
+} from "./devoluciones";
+import { proyectarValidacion } from "./cierre-validacion-estado";
+import {
+  confirmarRevisionCiclo,
+  previewValidacion,
+  validarCiclo,
+} from "./cierre-validacion-servicio";
+import {
+  confirmarRectificacion,
+  previewRectificacion,
+} from "./cierre-validacion-rectificaciones";
+import { rutaFotograficaRetirada } from "./cierre-validacion-retirada";
+import {
   getRevisionComida,
   listOperaciones,
   listReposiciones,
@@ -933,6 +948,19 @@ export function createApp(db: Database, options: AppOptions) {
       );
       if (comidaMetricsPath && req.method === "GET")
         return reply(e35Metrics(db, comidaMetricsPath[1], now()));
+      const comidaCompraDevoluciones = path.match(
+        /^\/api\/comida\/compras\/(\d+)\/devoluciones$/,
+      );
+      if (comidaCompraDevoluciones && req.method === "GET")
+        return reply(
+          proyeccionDevolucionesCompra(db, comidaCompraDevoluciones[1], {
+            page: new URL(req.url).searchParams.get("page") ?? undefined,
+          }),
+        );
+      if (path === "/api/devoluciones/integridad" && req.method === "GET")
+        return reply(
+          integridadDevoluciones(db, new URL(req.url).searchParams),
+        );
       if (path === "/api/comida" && req.method === "GET")
         return reply(listComida(db, new URL(req.url).searchParams));
       const comidaAction = path.match(
@@ -1253,7 +1281,7 @@ export function createApp(db: Database, options: AppOptions) {
             ),
           );
       }
-      const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
+const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
       if (precierre) {
         if (req.method !== "GET") {
           headers.set("allow", "GET");
@@ -1269,6 +1297,20 @@ export function createApp(db: Database, options: AppOptions) {
           )(),
         );
       }
+      /* ---------------------------------------------------------------- *
+       * §7.6 · Retirada funcional de la vía fotográfica
+       *
+       * El código se fija **por ruta**, no por prefijo, y ninguna responde
+       * 3xx ni 500. Un POST retirado no se presenta como alias de solo
+       * lectura: no hay versión de cierre que consultar porque no hay cierre
+       * fotográfico. Las lecturas financieras vivas siguen disponibles en el
+       * informe vivo y en el estado de validación.
+       * ---------------------------------------------------------------- */
+      const retirada = rutaFotograficaRetirada(path, new URL(req.url).search);
+      if (retirada) {
+        if (retirada.sustituto) headers.set("link", `<${retirada.sustituto}>; rel="alternate"`);
+        throw new Problem(410, retirada.code, retirada.message, {}, retirada);
+      }
       const cierreEstado = path.match(/^\/api\/cierres\/(\d+)\/estado$/);
       if (cierreEstado) {
         if (req.method !== "GET") {
@@ -1276,250 +1318,136 @@ export function createApp(db: Database, options: AppOptions) {
           throw new Problem(
             405,
             "METHOD_NOT_ALLOWED",
-            "El estado de cierre es de solo lectura.",
+            "El estado de validación es de solo lectura.",
           );
         }
         return reply(
-          db.transaction(() => ({
-            // E4.8 shape stays at the top level (SPEC26 AC-15); the E4.9
-            // closure state and the E4.10 reopening state are additive.
-            ...getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
-            cierre: getCierreEstado(db, cierreEstado[1]),
-            reapertura: {
-              ...getReaperturaEstado(db, cierreEstado[1]),
-              elegibilidad: getReaperturaElegibilidad(db, cierreEstado[1]),
+          db.transaction(() => {
+            const raiz = getPrecierreEstado(db, cierreEstado[1], now(), options.precierre);
+            // §5: el precierre queda en la raíz y el estado de validación es
+            // aditivo. No hay `cierre` ni `reapertura`: esa semántica se
+            // retiró, y `e4_9Bloqueado` deja de ser autoridad.
+            const precierreRaiz = raiz;
+            return {
+              ...precierreRaiz,
+              validacion: proyectarValidacion(db, cierreEstado[1]),
+            };
+          })(),
+        );
+      }
+      const validacionPreview = path.match(
+        /^\/api\/cierres\/(\d+)\/validacion\/preview$/,
+      );
+      if (validacionPreview) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El preview de validación es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() => {
+            const preview = previewValidacion(db, validacionPreview[1], now());
+            headers.set("cache-control", "no-store");
+            return preview;
+          })(),
+        );
+      }
+      const validarCierre = path.match(/^\/api\/cierres\/(\d+)\/validar$/);
+      if (validarCierre) {
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La validación se confirma con POST.",
+          );
+        }
+        const cuerpo = await jsonBody(req);
+        return reply(
+          validarCiclo(
+            db,
+            validarCierre[1],
+            {
+              key: req.headers.get("idempotency-key") ?? "",
+              fingerprint: String(cuerpo.fingerprint ?? ""),
+              contextRevision: String(cuerpo.contextRevision ?? ""),
+              impactRevision: String(cuerpo.impactRevision ?? ""),
+              actor: options.cierre?.actor ?? "usuario-unico",
+              instante: new Date(now()).toISOString(),
+              motivo: typeof cuerpo.motivo === "string" ? cuerpo.motivo : null,
             },
-          }))(),
+            now(),
+          ),
         );
       }
-      const cierrePreflight = path.match(
-        /^\/api\/cierres\/(\d+)\/preflight$/,
+      const confirmarRevision = path.match(
+        /^\/api\/cierres\/(\d+)\/revision\/confirmar$/,
       );
-      if (cierrePreflight) {
-        if (req.method !== "GET") {
-          headers.set("allow", "GET");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "El preflight de cierre es de solo lectura.",
-          );
-        }
-        return reply(
-          db.transaction(() =>
-            previewCierre(db, cierrePreflight[1], options.cierre, now()),
-          )(),
-        );
-      }
-      const cierreFoto = path.match(/^\/api\/cierres\/(\d+)\/foto$/);
-      if (cierreFoto) {
-        if (req.method !== "GET") {
-          headers.set("allow", "GET");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "La foto de cierre es de solo lectura.",
-          );
-        }
-        const rawVersion = new URL(req.url).searchParams.get("version");
-        let version: number | undefined;
-        if (rawVersion !== null) {
-          version = Number(rawVersion);
-          if (
-            !Number.isSafeInteger(version) ||
-            version < 1 ||
-            rawVersion !== String(version)
-          )
-            throw new Problem(422, "VALIDATION", "Versión de foto inválida.", {
-              version: "Indica una versión positiva.",
-            });
-        }
-        return reply(
-          db.transaction(() => getFotoCierre(db, cierreFoto[1], version))(),
-        );
-      }
-      const cierreState = path.match(/^\/api\/cierres\/(\d+)\/cierre$/);
-      if (cierreState) {
-        if (req.method !== "GET") {
-          headers.set("allow", "GET");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "El estado de cierre es de solo lectura.",
-          );
-        }
-        return reply(
-          db.transaction(() => getCierreEstado(db, cierreState[1]))(),
-        );
-      }
-      const cierreConfirm = path.match(/^\/api\/cierres\/(\d+)\/cerrar$/);
-      if (cierreConfirm) {
+      if (confirmarRevision) {
         if (req.method !== "POST") {
           headers.set("allow", "POST");
           throw new Problem(
             405,
             "METHOD_NOT_ALLOWED",
-            "El cierre se confirma con POST.",
+            "La confirmación de revisión se envía con POST.",
           );
         }
-        const result = confirmCierre(
-          db,
-          cierreConfirm[1],
-          await jsonBody(req),
-          req.headers.get("idempotency-key") ?? "",
-          options.cierre,
-          now(),
-        );
-        headers.set("location", `/api/cierres/${cierreConfirm[1]}/foto`);
-        return reply(result, 201);
-      }
-      const reaperturaEstado = path.match(
-        /^\/api\/cierres\/(\d+)\/reapertura$/,
-      );
-      if (reaperturaEstado) {
-        if (req.method !== "GET") {
-          headers.set("allow", "GET");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "El estado de reapertura es de solo lectura.",
-          );
-        }
+        const cuerpo = await jsonBody(req);
         return reply(
-          db.transaction(() =>
-            getReaperturaEstado(db, reaperturaEstado[1]),
-          )(),
+          confirmarRevisionCiclo(db, confirmarRevision[1], {
+            key: req.headers.get("idempotency-key") ?? "",
+            fingerprint: String(cuerpo.fingerprint ?? ""),
+            contextRevision: String(cuerpo.contextRevision ?? ""),
+            impactRevision: String(cuerpo.impactRevision ?? ""),
+            actor: options.cierre?.actor ?? "usuario-unico",
+            instante: new Date(now()).toISOString(),
+            motivo: typeof cuerpo.motivo === "string" ? cuerpo.motivo : null,
+          }),
         );
       }
-      const revalidacion = path.match(
-        /^\/api\/cierres\/(\d+)\/revalidacion$/,
-      );
-      if (revalidacion) {
-        if (req.method !== "GET") {
-          headers.set("allow", "GET");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "La revalidación de dependencias es de solo lectura.",
-          );
-        }
+      if (path === "/api/impacto/preview" && req.method === "POST") {
+        const cuerpo = await jsonBody(req);
+        const tipo = cuerpo.tipo;
+        const ciclo = cuerpo.ciclo;
+        if (tipo !== "ciclo")
+          throw new Problem(422, "VALIDATION", "Tipo de impacto no admitido.", {
+            tipo: "Este incremento previsualiza correcciones del maestro de ciclos.",
+          });
+        if (typeof ciclo !== "string" || !/^\d+$/.test(ciclo))
+          throw new Problem(422, "VALIDATION", "ID Ciclo inválido.", {
+            ciclo: "Indica un ciclo válido.",
+          });
+        headers.set("cache-control", "no-store");
+        return reply(previewRectificacion(db, ciclo, cuerpo, now()));
+      }
+      if (path === "/api/impacto/confirmar" && req.method === "POST") {
+        const cuerpo = await jsonBody(req);
+        if (cuerpo.tipo !== "ciclo")
+          throw new Problem(422, "VALIDATION", "Tipo de impacto no admitido.", {
+            tipo: "Este incremento confirma correcciones del maestro de ciclos.",
+          });
+        if (typeof cuerpo.ciclo !== "string" || !/^\d+$/.test(cuerpo.ciclo))
+          throw new Problem(422, "VALIDATION", "ID Ciclo inválido.", {
+            ciclo: "Indica un ciclo válido.",
+          });
         return reply(
-          db.transaction(() =>
-            getRevalidacion(db, revalidacion[1], options.revalidacion),
-          )(),
+          confirmarRectificacion(
+            db,
+            cuerpo.ciclo,
+            {
+              ...cuerpo,
+              fingerprint: String(cuerpo.fingerprint ?? ""),
+              contextRevision: String(cuerpo.contextRevision ?? ""),
+              impactRevision: String(cuerpo.impactRevision ?? ""),
+            },
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+            options.cierre?.actor ?? "usuario-unico",
+          ),
         );
-      }
-      const reabrirCierrePath = path.match(
-        /^\/api\/cierres\/(\d+)\/reabrir$/,
-      );
-      if (reabrirCierrePath) {
-        if (req.method !== "POST") {
-          headers.set("allow", "POST");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "La reapertura se confirma con POST.",
-          );
-        }
-        const result = reabrirCierre(
-          db,
-          reabrirCierrePath[1],
-          await jsonBody(req),
-          req.headers.get("idempotency-key") ?? "",
-          options.reapertura,
-          now(),
-        );
-        headers.set(
-          "location",
-          `/api/cierres/${reabrirCierrePath[1]}/reapertura`,
-        );
-        return reply(result, 201);
-      }
-      const repreview = path.match(
-        /^\/api\/cierres\/(\d+)\/repreflight$/,
-      );
-      if (repreview) {
-        if (req.method !== "GET") {
-          headers.set("allow", "GET");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "La vista previa del re-cierre es de solo lectura.",
-          );
-        }
-        return reply(
-          db.transaction(() =>
-            previewRecierre(
-              db,
-              repreview[1],
-              {
-                ...options.cierre,
-                ...options.revalidacion,
-                ...options.recierre,
-              },
-              now(),
-            ),
-          )(),
-        );
-      }
-      const reCerrarPath = path.match(
-        /^\/api\/cierres\/(\d+)\/recerrar$/,
-      );
-      if (reCerrarPath) {
-        if (req.method !== "POST") {
-          headers.set("allow", "POST");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "El re-cierre se confirma con POST.",
-          );
-        }
-        const result = reCerrarCiclo(
-          db,
-          reCerrarPath[1],
-          await jsonBody(req),
-          req.headers.get("idempotency-key") ?? "",
-          {
-            ...options.cierre,
-            ...options.revalidacion,
-            ...options.recierre,
-          },
-          now(),
-        );
-        const version = (result as { foto?: { version?: number } }).foto
-          ?.version;
-        headers.set(
-          "location",
-          version
-            ? `/api/cierres/${reCerrarPath[1]}/foto?version=${version}`
-            : `/api/cierres/${reCerrarPath[1]}/foto`,
-        );
-        return reply(result, 201);
-      }
-      const cancelarReaperturaPath = path.match(
-        /^\/api\/cierres\/(\d+)\/(?:reapertura\/cancelar|cancelar)$/,
-      );
-      if (cancelarReaperturaPath) {
-        if (req.method !== "POST") {
-          headers.set("allow", "POST");
-          throw new Problem(
-            405,
-            "METHOD_NOT_ALLOWED",
-            "La cancelación de la reapertura se confirma con POST.",
-          );
-        }
-        const result = cancelarReapertura(
-          db,
-          cancelarReaperturaPath[1],
-          await jsonBody(req),
-          req.headers.get("idempotency-key") ?? "",
-          { ...options.cierre, ...options.cancelacion },
-          now(),
-        );
-        headers.set(
-          "location",
-          `/api/cierres/${cancelarReaperturaPath[1]}/reapertura`,
-        );
-        return reply(result, 200);
       }
       // E4.11 I4 — contraste vivo de solo lectura. Etiquetado `CalculoVivo`,
       // separado de toda foto y sin escribir ni completar bloques No disponible.

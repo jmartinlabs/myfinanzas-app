@@ -643,7 +643,25 @@ function apiFixture(options: ReaperturaOptions = { actor: "Alex" }) {
   return { db, request, enroll };
 }
 
+/** SPEC38 §7.6: ruta retirada = 410 con código, no-store y sustituto declarado. */
+function expectRetirada(
+  response: { status: number; data: Record<string, any>; headers: Headers },
+  code: string,
+  sustituto: string | null,
+) {
+  expect(response.status).toBe(410);
+  expect(response.data.code).toBe(code);
+  expect(response.data.message).toBeTypeOf("string");
+  expect(response.data.sustituto).toBe(sustituto);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("link")).toBe(
+    sustituto === null ? null : `<${sustituto}>; rel="alternate"`,
+  );
+}
+
 test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () => {
+  // Contrato sustituido: POST /reabrir creaba la ventana (201 + location) con
+  // idempotencia 422/201/409 y GET /reapertura devolvía 200 su estado.
   const f = apiFixture();
   try {
     const keyValue = key();
@@ -657,14 +675,13 @@ test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () =>
     ).toBe(401);
     await f.enroll();
 
+    const before = snapshot(f.db);
+    const sustituto = "/api/cierres/1/estado";
+
+    // La lectura de la ventana está retirada: el estado vivo se lee en /estado.
     const state = await f.request("/api/cierres/1/reapertura");
-    expect(state.status).toBe(200);
-    expect(state.data).toEqual({
-      ciclo: "1",
-      estado: "Cerrado",
-      version: 1,
-      reapertura: null,
-    });
+    expectRetirada(state, "REAPERTURA_RETIRADA", sustituto);
+    expect(state.data).not.toHaveProperty("reapertura");
 
     const wrongOrigin = await f.request(
       "/api/cierres/1/reabrir",
@@ -684,13 +701,10 @@ test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () =>
     expect(noCsrf.status).toBe(403);
     expect(noCsrf.data.code).toBe("CSRF");
 
-    const noKey = await f.request(
-      "/api/cierres/1/reabrir",
-      "POST",
-      validBody,
-    );
-    expect(noKey.status).toBe(422);
-    expect(noKey.data.code).toBe("IDEMPOTENCY_REQUIRED");
+    // La idempotencia ya no tiene sujeto: la ruta responde 410 antes de la
+    // clave de intento, con y sin ella.
+    const noKey = await f.request("/api/cierres/1/reabrir", "POST", validBody);
+    expectRetirada(noKey, "REAPERTURA_RETIRADA", sustituto);
 
     const opened = await f.request(
       "/api/cierres/1/reabrir",
@@ -698,21 +712,8 @@ test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () =>
       validBody,
       { "idempotency-key": keyValue },
     );
-    expect(opened.status).toBe(201);
-    expect(opened.headers.get("location")).toBe(
-      "/api/cierres/1/reapertura",
-    );
-    expect(opened.data).toMatchObject({
-      ciclo: "1",
-      estado: "Reabierto",
-      version: 1,
-      replayed: false,
-      reapertura: {
-        versionOrigen: 1,
-        actor: "Alex",
-        motivo: "Motivo de reapertura",
-      },
-    });
+    expectRetirada(opened, "REAPERTURA_RETIRADA", sustituto);
+    expect(opened.headers.get("location")).toBeNull();
 
     const replay = await f.request(
       "/api/cierres/1/reabrir",
@@ -720,9 +721,7 @@ test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () =>
       validBody,
       { "idempotency-key": keyValue },
     );
-    expect(replay.status).toBe(201);
-    expect(replay.data.replayed).toBe(true);
-    expect(replay.data.reapertura).toEqual(opened.data.reapertura);
+    expectRetirada(replay, "REAPERTURA_RETIRADA", sustituto);
 
     const conflict = await f.request(
       "/api/cierres/1/reabrir",
@@ -730,45 +729,38 @@ test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () =>
       { versionEsperada: 1, motivo: "Distinto" },
       { "idempotency-key": keyValue },
     );
-    expect(conflict.status).toBe(409);
-    expect(conflict.data.code).toBe("IDEMPOTENCY_CONFLICT");
+    expectRetirada(conflict, "REAPERTURA_RETIRADA", sustituto);
 
-    const reopened = await f.request("/api/cierres/1/reapertura");
-    expect(reopened.status).toBe(200);
-    expect(reopened.data).toEqual({
-      ciclo: "1",
-      estado: "Reabierto",
-      version: 1,
-      reapertura: opened.data.reapertura,
-    });
-
-    const estado = await f.request("/api/cierres/1/estado");
-    expect(estado.status).toBe(200);
-    expect(estado.data).toHaveProperty("e4_9Bloqueado");
-    expect(estado.data).toHaveProperty("bloqueos");
-    expect(estado.data.cierre.estado).toBe("Cerrado");
-    expect(estado.data.cierre.version).toBe(1);
-    expect(estado.data.reapertura).toMatchObject({
-      ciclo: "1",
-      estado: "Reabierto",
-      version: 1,
-      reapertura: opened.data.reapertura,
-    });
-    expect(estado.data.reapertura.elegibilidad).toMatchObject({
-      puedeReabrir: false,
-    });
-
+    // El 405 de método desaparece: el 410 no depende del método.
     const getOnPost = await f.request("/api/cierres/1/reabrir");
-    expect(getOnPost.status).toBe(405);
-    expect(getOnPost.headers.get("allow")).toBe("POST");
+    expectRetirada(getOnPost, "REAPERTURA_RETIRADA", sustituto);
+    expect(getOnPost.headers.get("allow")).toBeNull();
 
     const postOnGet = await f.request(
       "/api/cierres/1/reapertura",
       "POST",
       {},
     );
-    expect(postOnGet.status).toBe(405);
-    expect(postOnGet.headers.get("allow")).toBe("GET");
+    expectRetirada(postOnGet, "REAPERTURA_RETIRADA", sustituto);
+    expect(postOnGet.headers.get("allow")).toBeNull();
+
+    // El sustituto es la lectura viva: conserva bloqueos y validación, y ya no
+    // expone cierre ni reapertura.
+    const estado = await f.request(sustituto);
+    expect(estado.status).toBe(200);
+    expect(estado.data).toHaveProperty("bloqueos");
+    expect(estado.data).toHaveProperty("validacion");
+    expect(estado.data).not.toHaveProperty("cierre");
+    expect(estado.data).not.toHaveProperty("reapertura");
+
+    // Ningún intento retirado abre ventana, escribe evento ni toca la foto.
+    expect(snapshot(f.db)).toEqual(before);
+    expect(f.db.query("SELECT COUNT(*) n FROM reaperturas").get()).toEqual({
+      n: 0,
+    });
+    expect(f.db.query("SELECT COUNT(*) n FROM reapertura_activa").get()).toEqual(
+      { n: 0 },
+    );
   } finally {
     f.db.close();
   }

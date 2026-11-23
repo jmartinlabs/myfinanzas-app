@@ -1,22 +1,26 @@
 import { test, expect, type Page } from "@playwright/test";
-import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+
+import { artifactDir, fixtureContext, requireFixtureState, startFixtureServer, type OwnedFixture } from "./fixture";
 
 /**
  * UI · DEV-05 — reservas de motivo.
  *
- * Servidor aislado en 3036 con MFA real y datos ficticios. Los tres estados
+ * Servidor aislado con puerto y estado del contexto (#514), MFA real y
+ * datos ficticios. Los tres estados
  * de error usan la respuesta real del servidor. En las anulaciones se envía un
  * motivo por encima del máximo del servidor para alcanzar el 422 sin desactivar
  * la confirmación que la UI exige con motivo (AC-32).
  */
 
-const PORT = 3036;
-const DIR = ".local/e2e-ui-dev05-motivo";
-const ARTIFACTS = "artifacts/ui-dev05-motivo";
-let child: ChildProcess | undefined;
+const fixture = fixtureContext("ui-dev05-motivo");
+const PORT = fixture.port;
+const DIR = fixture.dir;
+const artifacts = artifactDir("ui-dev05-motivo");
+let owned: OwnedFixture | undefined;
 
 async function login(page: Page) {
   await page.goto("/inversiones");
@@ -60,16 +64,17 @@ async function expectMotivoError(
 }
 
 test.beforeAll(async ({ request }) => {
-  child = spawn(
-    process.env.BUN_BIN ?? "bun",
-    ["apps/api/test-support/ui-dev05-motivo-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+  const server = startFixtureServer(
+    "apps/api/test-support/ui-dev05-motivo-server.ts",
+    fixture,
   );
+  owned = server;
   await expect
     .poll(
       async () => {
+        server.assertAlive();
         try {
-          return (await request.get(`http://127.0.0.1:${PORT}/api/health`))
+          return (await request.get(`${fixture.baseURL}/api/health`))
             .status();
         } catch {
           return 0;
@@ -78,17 +83,17 @@ test.beforeAll(async ({ request }) => {
       { timeout: 20000 },
     )
     .toBe(200);
+  requireFixtureState(server);
 });
 
 test.afterAll(() => {
-  child?.kill();
+  owned?.stop();
 });
 
 test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async ({
   page,
 }) => {
   test.setTimeout(180000);
-  mkdirSync(ARTIFACTS, { recursive: true });
   const ids = JSON.parse(readFileSync(`${DIR}/ids.json`, "utf8")) as {
     compra: string;
     venta: string;
@@ -173,13 +178,13 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
     "Revisa los campos indicados.",
   );
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-compra-error-1440.png`,
+    path: join(artifacts, "anular-compra-error-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(compraMotivo).toBeFocused();
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-compra-error-390.png`,
+    path: join(artifacts, "anular-compra-error-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -213,13 +218,13 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
     "Revisa los campos indicados.",
   );
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-venta-error-1440.png`,
+    path: join(artifacts, "anular-venta-error-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(ventaMotivo).toBeFocused();
   await page.screenshot({
-    path: `${ARTIFACTS}/anular-venta-error-390.png`,
+    path: join(artifacts, "anular-venta-error-390.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -247,13 +252,13 @@ test("UI DEV-05 motivo: error asociado y foco en venta, compra y ciclo", async (
     "Indica el motivo de la operación.",
   );
   await page.screenshot({
-    path: `${ARTIFACTS}/ciclo-omitido-error-1440.png`,
+    path: join(artifacts, "ciclo-omitido-error-1440.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(cicloMotivo).toBeFocused();
   await page.screenshot({
-    path: `${ARTIFACTS}/ciclo-omitido-error-390.png`,
+    path: join(artifacts, "ciclo-omitido-error-390.png"),
     fullPage: true,
   });
 

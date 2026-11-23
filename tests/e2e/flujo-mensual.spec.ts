@@ -1,26 +1,64 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { readFileSync, mkdirSync } from "node:fs";
+import { spawn, type ChildProcess } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { artifactDir, fixtureContext } from "./fixture";
+
+// Puerto y estado propios de la ejecución (#508): dos runs simultáneos de esta
+// misma spec no comparten listener ni SQLite. El nombre distingue este arranque
+// del de pendientes.spec.ts, que usa el mismo servidor.
+const fixture = fixtureContext("monthly-flujo");
+const API_PORT = fixture.port;
+
+/** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */
+let child: ChildProcess | undefined;
+let fixtureOutput = "";
+let fixtureExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+  null;
+
+function fixtureFailure(): string {
+  const detail = fixtureOutput.trim() || "(sin salida)";
+  const how = fixtureExit
+    ? `código ${fixtureExit.code ?? "null"}${fixtureExit.signal ? ` / señal ${fixtureExit.signal}` : ""}`
+    : "salida no registrada";
+  return `El fixture monthly terminó antes de servir (${how}): ${detail}`;
+}
+
+/** Un fixture muerto no puede quedar enmascarado por un poll que responde. */
+function assertFixtureAlive() {
+  if (fixtureExit) throw new Error(fixtureFailure());
+}
+
 test("E2.6 real MFA/read model, coverage, sources, async selection, errors and responsive review", async ({
   page,
   request,
 }) => {
-  const child = spawn(
+  child = spawn(
     process.env.BUN_BIN ?? "bun",
     ["apps/api/test-support/monthly-server.ts"],
-    { stdio: "pipe", env: { ...process.env, NODE_ENV: "test" } },
+    { stdio: ["ignore", "pipe", "pipe"], env: fixture.env },
   );
   const errors: string[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    fixtureOutput += chunk.toString();
+  });
+  child.on("exit", (code, signal) => {
+    fixtureExit = { code, signal };
+  });
   page.on("pageerror", (e) => errors.push(e.message));
   try {
     await expect
       .poll(
         async () => {
+          assertFixtureAlive();
           try {
             return (
-              await request.get("http://127.0.0.1:3008/api/health")
+              await request.get(`http://127.0.0.1:${API_PORT}/api/health`)
             ).status();
           } catch {
             return 0;
@@ -30,11 +68,18 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
       )
       .toBe(200);
     expect(
-      (await request.get("http://127.0.0.1:3008/api/flujo-mensual/1")).status(),
+      (await request.get(`http://127.0.0.1:${API_PORT}/api/flujo-mensual/1`)).status(),
     ).toBe(401);
+    // El fixture provisionó su base ficticia antes de servir: se navega solo
+    // cuando el estado de esta run está en disco.
+    assertFixtureAlive();
+    expect(
+      existsSync(join(fixture.dir, "bootstrap.txt")),
+      `El fixture monthly no provisionó ${fixture.dir}/bootstrap.txt: ${fixtureOutput.trim()}`,
+    ).toBe(true);
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
-      url.port = "3008";
+      url.port = String(API_PORT);
       await route.fulfill({
         response: await route.fetch({ url: url.toString() }),
       });
@@ -42,7 +87,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
     await page.goto("/flujo-mensual?ciclo=1");
     await page
       .getByLabel("Código de activación")
-      .fill(readFileSync(".local/e2e-monthly/bootstrap.txt", "utf8"));
+      .fill(readFileSync(join(fixture.dir, "bootstrap.txt"), "utf8"));
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("Clave ficticia mensual " + randomUUID());
@@ -130,7 +175,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
       "**/api/flujo-mensual/2",
       async (route) => {
         const response = await route.fetch({
-          url: "http://127.0.0.1:3008/api/flujo-mensual/2",
+          url: `http://127.0.0.1:${API_PORT}/api/flujo-mensual/2`,
         });
         held();
         await gate;
@@ -179,7 +224,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
     ).toBeVisible();
     await select.selectOption("1");
     await expect(margin).toContainText("150,00 €");
-    mkdirSync("artifacts/e2-6", { recursive: true });
+    const artifacts = artifactDir("e2-6");
     const contrast = await page.evaluate(() => {
       function rgb(v: string) {
         return v
@@ -238,7 +283,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         );
       });
-      await page.screenshot({ path: `artifacts/e2-6/flujo-${width}.png` });
+      await page.screenshot({ path: join(artifacts, `flujo-${width}.png`) });
       for (const section of ["flow-plan", "flow-current", "flow-coverage"]) {
         await page
           .locator(
@@ -248,7 +293,7 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
           )
           .scrollIntoViewIfNeeded();
         await page.screenshot({
-          path: `artifacts/e2-6/${section}-${width}.png`,
+          path: join(artifacts, `${section}-${width}.png`),
         });
       }
     }
@@ -285,9 +330,11 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
     ).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
-    child.kill("SIGTERM");
+    child?.kill("SIGTERM");
+    child?.stdout?.destroy();
+    child?.stderr?.destroy();
     await new Promise<void>((resolve) => {
-      if (child.exitCode !== null) resolve();
+      if (!child || child.exitCode !== null) resolve();
       else child.once("exit", () => resolve());
     });
   }

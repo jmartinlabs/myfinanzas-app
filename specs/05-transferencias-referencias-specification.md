@@ -420,3 +420,12 @@ spec14 §15; una aprobación de E1.5 o de Base B no la concede. D5 no habilita
 Exterior ordinario ni salidas, no convierte Gasto CAT013 en aportación y no
 completa E3.2; B-T11 sigue UNRUN.
 Sin implementación, migraciones, datos reales, merge ni despliegue.
+
+### D5-5 Enmienda 14-E1: regularización de salida (APROBADA, solo referencia)
+
+Referencia únicamente. [spec14 enmienda 14-E1](14-compartidos-enmienda-01.md), **aprobada por el
+usuario el 2026-11-23**, abre **una única** excepción a la reserva de salidas `interno → Exterior`:
+la **regularización** CAT013 (Transferencia de un Saldo interno a S000 acreditada por porciones a
+Terceros de una ficha, §5 de esa enmienda). Este documento **no cambia su texto**: AC-03, AC-31
+y D5-4 se conservan, y la excepción se rige por la enmienda. Exterior ordinario y cualquier otra
+salida siguen reservados. Sin implementación, migraciones, datos reales ni despliegue.

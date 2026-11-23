@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { civil, getCycle } from "./ciclos";
-import { closedWindows } from "./e49-guards";
+import { estadoPersistido } from "./cierre-validacion-estado";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 import {
@@ -295,18 +295,15 @@ function requireCycle(db: Database, value: unknown) {
   return getCycle(db, value).ciclo;
 }
 
-function cycleClosed(db: Database, ciclo: string) {
-  return closedWindows(db).some((window) => window.ciclo === ciclo);
-}
-
-function assertOpenCycle(db: Database, ciclo: string) {
-  if (cycleClosed(db, ciclo))
-    throw new Problem(
-      409,
-      "CICLO_CERRADO",
-      "El Ciclo tiene un cierre financiero; no admite cambios de reparto.",
-      { ciclo },
-    );
+/**
+ * §7.6/G2: el reparto deja de estar bloqueado por un cierre fotográfico y
+ * tampoco lo bloquea una revisión pendiente. El cambio real se mide como
+ * materialidad REPARTO y marca la validación del ciclo; `cicloCerrado` es sólo
+ * el aviso informativo que lee el estado de validación (si el contrato falta,
+ * `estadoPersistido` falla 503 y no se asume «sin validar», G4).
+ */
+function cicloPendiente(db: Database, ciclo: string) {
+  return estadoPersistido(db, ciclo).estado === "Pendiente";
 }
 
 function repartoRow(db: Database, id: number): RepartoRow | null {
@@ -571,14 +568,13 @@ function repartoDto(db: Database, row: RepartoRow) {
       canceladas: pendings.filter((pending) => pending.estado === "Cancelada")
         .length,
     },
-    cicloCerrado: cycleClosed(db, row.ciclo),
-    puedeEditar: row.estado === "Borrador" && !cycleClosed(db, row.ciclo),
-    puedeAnadirLineas:
-      row.estado !== "Completado" && !cycleClosed(db, row.ciclo),
+    // Aviso informativo: `dirty` no bloquea la edición (G2). Los flags describen
+    // sólo el estado del reparto; el cierre financiero ya no restringe nada.
+    cicloCerrado: cicloPendiente(db, row.ciclo),
+    puedeEditar: row.estado === "Borrador",
+    puedeAnadirLineas: row.estado !== "Completado",
     puedeGenerar:
-      row.estado !== "Completado" &&
-      !cycleClosed(db, row.ciclo) &&
-      items.some((line) => line.puedeGenerarse),
+      row.estado !== "Completado" && items.some((line) => line.puedeGenerarse),
     ...completion,
   };
 }
@@ -683,7 +679,7 @@ export function crearReparto(
           );
         return { creado: false, reparto: repartoDto(db, existing) };
       }
-      assertOpenCycle(db, ciclo.id);
+
       let origenComun: string | null = null;
       if (body.origenComun !== undefined && body.origenComun !== null)
         origenComun = assertEligible(db, body.origenComun, "origenComun");
@@ -914,7 +910,7 @@ export function actualizarReparto(
         { fuentePlan: row.fuente_plan },
       );
     requireRevision(row.revision, body.revision, "reparto");
-    assertOpenCycle(db, row.ciclo);
+
     if (row.estado !== "Borrador")
       throw new Problem(
         409,
@@ -1176,7 +1172,7 @@ export function crearLineaReparto(
     () => {
       const reparto = repartoRow(db, id);
       if (!reparto) throw new Problem(404, "NOT_FOUND", "Reparto no encontrado.");
-      assertOpenCycle(db, reparto.ciclo);
+
       if (reparto.estado === "Completado")
         throw new Problem(
           409,
@@ -1274,7 +1270,7 @@ export function actualizarLineaReparto(
       const line = lineRow(db, id, lineaId);
       if (!line)
         throw new Problem(404, "NOT_FOUND", "Línea de reparto no encontrada.");
-      assertOpenCycle(db, reparto.ciclo);
+
       const frozen = db
         .query("SELECT id FROM transferencia_pendiente WHERE reparto_linea=?")
         .get(line.id) as { id: number } | null;
@@ -1457,7 +1453,6 @@ export function generarReparto(
       }
       const row = repartoRow(db, id);
       if (!row) throw new Problem(404, "NOT_FOUND", "Reparto no encontrado.");
-      assertOpenCycle(db, row.ciclo);
       if (row.estado === "Completado")
         throw new Problem(
           409,
@@ -1681,7 +1676,7 @@ function seguimientoData(db: Database, row: RepartoRow) {
           "El precierre solo avisa: las Transferencias pendientes no entran en la foto.",
       },
       contexto,
-      cicloCerrado: cycleClosed(db, row.ciclo),
+      cicloCerrado: cicloPendiente(db, row.ciclo),
     },
   };
 }
