@@ -39,6 +39,10 @@ import {
   writeComidaRol,
 } from "./comida";
 import { e35Metrics } from "./e35";
+import {
+  integridadDevoluciones,
+  proyeccionDevolucionesCompra,
+} from "./devoluciones";
 import { proyectarValidacion } from "./cierre-validacion-estado";
 import {
   confirmarRevisionCiclo,
@@ -944,6 +948,19 @@ export function createApp(db: Database, options: AppOptions) {
       );
       if (comidaMetricsPath && req.method === "GET")
         return reply(e35Metrics(db, comidaMetricsPath[1], now()));
+      const comidaCompraDevoluciones = path.match(
+        /^\/api\/comida\/compras\/(\d+)\/devoluciones$/,
+      );
+      if (comidaCompraDevoluciones && req.method === "GET")
+        return reply(
+          proyeccionDevolucionesCompra(db, comidaCompraDevoluciones[1], {
+            page: new URL(req.url).searchParams.get("page") ?? undefined,
+          }),
+        );
+      if (path === "/api/devoluciones/integridad" && req.method === "GET")
+        return reply(
+          integridadDevoluciones(db, new URL(req.url).searchParams),
+        );
       if (path === "/api/comida" && req.method === "GET")
         return reply(listComida(db, new URL(req.url).searchParams));
       const comidaAction = path.match(
