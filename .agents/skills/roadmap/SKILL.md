@@ -24,3 +24,6 @@ source/date in the roadmap. Review and commit only approved documentation change
 Wait for missing product decisions or roadmap approval; save pending questions. Do not
 implement code during this workflow. Stop after the approved roadmap is committed, and
 suggest `$spec 01` for the first epic.
+Under `$init-project` with a tracker available, each approved epic may be mirrored once as a
+`Backlog` ticket linked to its roadmap row; creating it never marks work `Ready` and never
+authorizes its SPEC or implementation.

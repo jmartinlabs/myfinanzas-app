@@ -19,11 +19,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "work-issue"
 FIXTURE = ROOT / "scripts" / "fixtures" / "work-issue-project.json"
+SKILL = ROOT / ".agents" / "skills" / "work-issue" / "SKILL.md"
+PROTOCOL = ROOT / "specs" / "methodology" / "issue-workflow.md"
 
 MODULE = runpy.run_path(str(SCRIPT))
 normalise = MODULE["normalise"]
 plan = MODULE["plan"]
 classify = MODULE["classify"]
+load_catalogue = MODULE["load_catalogue"]
+DEFAULT_AGENTS = MODULE["DEFAULT_AGENTS"]
 render = MODULE["render"]
 Service = MODULE["Service"]
 Gh = MODULE["Gh"]
@@ -34,6 +38,8 @@ report_body = MODULE["report_body"]
 CLAIM_MARKER = MODULE["CLAIM_MARKER"]
 STATUSES = MODULE["STATUSES"]
 HUMAN_ONLY = MODULE["HUMAN_ONLY"]
+READY = MODULE["READY"]
+same_repo = MODULE["same_repo"]
 EXIT_OK = MODULE["EXIT_OK"]
 EXIT_REFUSED = MODULE["EXIT_REFUSED"]
 EXIT_FAILED = MODULE["EXIT_FAILED"]
@@ -41,12 +47,15 @@ EXIT_EMPTY = MODULE["EXIT_EMPTY"]
 session_queue = MODULE["session_queue"]
 parse_issues = MODULE["parse_issues"]
 
+REPO = "acme/widgets"
 # Agent-owned In Progress status -> the review status it may deliver into.
 REVIEW = {
     "Analysis In Progress": "Analysis In Review",
     "Specification In Progress": "Specification In Review",
     "Development In Progress": "Development In Review",
 }
+# Eligible queue for `hermes` in the fixture, in the order a session must work it.
+QUEUE = [101, 110, 111, 112, 117, 103, 102]
 
 
 def load_items():
@@ -66,16 +75,28 @@ class FakeGh:
 
     def __init__(self, items=None, fail=(), claims=None, race=False, truncated=False,
                  drift_status=None, fail_item_after=None, drop_comments=False,
-                 repo="jmartinlabs/myfinanzas-app"):
+                 tamper_report=False, ghost_comment=False, fail_comments_after=None,
+                 assign_conflict=False, drift_after_write=None, repo=REPO,
+                 owner="acme", number=7):
         self.data = copy.deepcopy(items if items is not None else load_items())
         self.repo = repo
+        self.owner = owner
+        self.number = number
+        self.diagnosis = None
         self.fail = set(fail)
         self.race = race
         self.truncated = truncated
         self.drift_status = drift_status
         self.fail_item_after = fail_item_after
         self.drop_comments = drop_comments
+        self.tamper_report = tamper_report
+        self.ghost_comment = ghost_comment
+        self.fail_comments_after = fail_comments_after
+        self.assign_conflict = assign_conflict
+        self.drift_after_write = drift_after_write
         self.item_reads = 0
+        self.comment_reads = 0
+        self.written_status = None
         self.calls = []
         self.next_id = 1000
         self.comments_store = {item.number: [dict(entry) for entry in (claims or {}).get(item.number, [])]
@@ -86,69 +107,65 @@ class FakeGh:
         self.calls.append(("preflight",))
 
     def whoami(self):
-        return "jmartinlabs"
+        return "acme-bot"
 
     def pr_state(self, number):
-        return {"state": "OPEN", "merged": False, "title": "PR de prueba"}
+        return {"state": "OPEN", "merged": False, "title": "Fixture PR"}
 
     def items(self):
         if "items" in self.fail:
-            raise WorkIssueError("lectura del Project falló")
-        return copy.deepcopy(self.data)
+            raise WorkIssueError("Project read failed")
+        pool = copy.deepcopy(self.data)
+        # Mirror the adapter contract: the read also records what it proved.
+        own = [item for item in pool if same_repo(item.repository, self.repo)]
+        self.diagnosis = {"total": len(pool), "issues": pool, "own": own,
+                          "own_ready": [item for item in own if item.status in READY]}
+        return pool
 
     def item(self, number, items=None):
         self.item_reads += 1
         if "item" in self.fail:
-            raise WorkIssueError("relectura falló")
+            raise WorkIssueError("re-read failed")
         if self.fail_item_after is not None and self.item_reads > self.fail_item_after:
-            raise WorkIssueError("relectura falló")
+            raise WorkIssueError("re-read failed")
         for entry in self.data:
             if entry.number == number:
                 clone = copy.deepcopy(entry)
                 if self.drift_status and self.item_reads > 1:
                     clone.status = self.drift_status
                 return clone
-        raise WorkIssueError("la Issue #%d no está en el Project" % number)
+        raise WorkIssueError("Issue #%d is not in the Project" % number)
 
     def comments(self, number):
+        self.comment_reads += 1
         if "comments" in self.fail:
-            raise WorkIssueError("lectura de comentarios falló")
+            raise WorkIssueError("comment read failed")
+        if self.fail_comments_after is not None and self.comment_reads > self.fail_comments_after:
+            raise WorkIssueError("comment read failed")
         return [dict(entry) for entry in self.comments_store.setdefault(number, [])]
 
     # writes
     def comment(self, number, body):
         if "comment" in self.fail:
-            raise WorkIssueError("publicación del comentario falló")
+            raise WorkIssueError("comment publication failed")
         self.calls.append(("comment", number))
         if self.drop_comments:
             return None
         self.next_id += 1
-        self.comments_store.setdefault(number, []).append({"id": self.next_id, "body": body})
+        if self.ghost_comment:
+            return self.next_id
+        stored = body.replace("- A: Development In Review", "- A: Development In Progress") \
+            if self.tamper_report else body
+        self.comments_store.setdefault(number, []).append({"id": self.next_id, "body": stored})
         if self.race:
             rival = claim_body("opencode", "Coordinador funcional", "development",
                                fixture_item(number))
             self.comments_store[number].insert(0, {"id": 500, "body": rival})
         return self.next_id
 
-    def assign(self, number):
-        if "assign" in self.fail:
-            raise WorkIssueError("asignación falló")
-        self.calls.append(("assign", number))
-        for entry in self.data:
-            if entry.number == number:
-                entry.assignees = ["jmartinlabs"]
-
-    def unassign(self, number):
-        if "unassign" in self.fail:
-            raise WorkIssueError("retirada del assignee falló")
-        self.calls.append(("unassign", number))
-        for entry in self.data:
-            if entry.number == number:
-                entry.assignees = []
-
     def retract_comment(self, comment_id):
         if "retract" in self.fail:
-            raise WorkIssueError("retirada del comentario falló")
+            raise WorkIssueError("comment retraction failed")
         self.calls.append(("retract", comment_id))
         for number, entries in self.comments_store.items():
             self.comments_store[number] = [entry for entry in entries
@@ -156,11 +173,14 @@ class FakeGh:
 
     def set_status(self, item, status):
         if "status" in self.fail:
-            raise WorkIssueError("cambio de Status falló")
+            raise WorkIssueError("Status change failed")
         self.calls.append(("status", item.number, status))
+        self.written_status = status
         for entry in self.data:
             if entry.number == item.number:
                 entry.status = status
+                if self.drift_after_write is not None and status != self.drift_after_write:
+                    entry.status = self.drift_after_write   # someone else moves it immediately
 
 
 def service(github, agent="hermes", out=None):
@@ -168,10 +188,63 @@ def service(github, agent="hermes", out=None):
     return Service(github, agent, "Coordinador funcional", out or (lambda line: None))
 
 
-SUMMARY = ("## Decisiones vigentes\n- Ninguna decisión pendiente.\n"
-           "## Estado\n- Sin trabajo iniciado en esta fase.\n"
-           "## Alcance autorizado\n- El descrito en la Issue.\n"
-           "## Fuentes consultadas\n- Cuerpo, historial y referencias.\n")
+SUMMARY = ("## Decisiones vigentes\n- No pending decision.\n"
+           "## Estado\n- No work started in this phase.\n"
+           "## Alcance autorizado\n- The one described in the Issue.\n"
+           "## Fuentes consultadas\n- Body, history and references.\n")
+
+# Literal comments produced by the operating pilot. They are copied as fixture data, not
+# generated by this candidate, so a silent rename of the wire format fails these tests.
+PILOT_CLAIM = """Autor: hermes
+Rol: Coordinador funcional
+Fase: Development
+Tipo: Inicio
+
+## Toma de la Issue
+
+- **Issue:** #120 — Portable fixture Issue
+- **Status previo:** Development In Progress
+- Ejecutor: hermes
+
+Reserva best-effort: comentario de toma + assignee, con relectura posterior. La etiqueta de agente es enrutamiento, no autorización.
+
+<!-- work-issue:claim agent=hermes issue=120 -->"""
+
+PILOT_BLOCK = """Autor: hermes
+Rol: Coordinador funcional
+Fase: Development
+Tipo: Bloqueo
+
+## Cambio de estado
+
+<!-- work-issue:record -->
+- Issue: #120
+- De: Development In Progress
+- A: Blocked
+- Previous Status: Development In Progress
+<!-- /work-issue:record -->
+
+Reason: pending decision. Exit: user answer.
+
+<!-- work-issue:report agent=hermes issue=120 -->
+<!-- work-issue:block agent=hermes issue=120 -->"""
+
+PILOT_RECEIPT = """Autor: hermes
+Rol: Coordinador funcional
+Fase: Development
+Tipo: Contexto
+## Decisiones vigentes
+- No pending decision.
+## Estado
+- No work started in this phase.
+## Alcance autorizado
+- The one described in the Issue.
+## Fuentes consultadas
+- Body, history and references.
+
+Huella del contexto: `{digest}` ({count} comentarios). Una reanudación solo puede reutilizar este recibo mientras la huella no cambie.
+
+<!-- work-issue:context agent=hermes issue=101 fingerprint={digest} comments={count} -->"""
 
 
 def seed_receipts(github, agent="hermes"):
@@ -180,7 +253,11 @@ def seed_receipts(github, agent="hermes"):
         material = [entry for entry in github.comments_store.get(item.number, [])
                     if not MODULE["context_of"](entry["body"])]
         digest = MODULE["fingerprint"](item, material)
-        body = MODULE["context_body"](agent, "Coordinador funcional", "development", item,
+        phase = MODULE["phase_of"](item.status)
+        if phase is None and item.status == "Blocked":
+            previous = Service(github, agent).blocked_previous(item.number, agent, material)
+            phase = MODULE["phase_of"](previous or "")
+        body = MODULE["context_body"](agent, "Coordinador funcional", phase or "development", item,
                                       SUMMARY, digest, len(material))
         github.next_id += 1
         github.comments_store.setdefault(item.number, []).append(
@@ -203,94 +280,101 @@ class DiscoveryTests(unittest.TestCase):
         statuses = {decision.item.status for decision in decisions}
         self.assertEqual(statuses, {"Ready Analysis", "Ready Specification", "Ready Development"})
         numbers = {decision.item.number for decision in decisions}
-        self.assertNotIn(405, numbers)   # Backlog
-        self.assertNotIn(400, numbers)   # ya en In Progress
+        self.assertNotIn(115, numbers)   # Backlog
+        self.assertNotIn(118, numbers)   # P0 in Backlog
+        self.assertNotIn(120, numbers)   # already In Progress
 
     def test_free_item_is_eligible_without_agent(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 402][0]
+        decision = [d for d in plan(load_items()) if d.item.number == 102][0]
         self.assertEqual(decision.kind, "eligible")
         self.assertEqual(decision.route, "")
 
     def test_single_label_routes_the_item(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 410][0]
+        decision = [d for d in plan(load_items()) if d.item.number == 103][0]
         self.assertEqual((decision.kind, decision.route), ("eligible", "hermes"))
 
     def test_two_labels_are_not_dispatched(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 412][0]
+        decision = [d for d in plan(load_items()) if d.item.number == 105][0]
         self.assertEqual(decision.kind, "label-conflict")
 
     def test_unknown_namespaced_label_fails_closed(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 413][0]
+        decision = [d for d in plan(load_items()) if d.item.number == 106][0]
         self.assertEqual(decision.kind, "unknown-agent")
 
-    def test_assignee_is_not_authorization_and_blocks_take(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 414][0]
-        self.assertEqual(decision.kind, "taken")
+    def test_assignee_is_ignored_by_routing(self):
+        item = fixture_item(102)
+        item.assignees = ["someone"]
+        self.assertTrue(classify(item, "hermes").eligible)
 
     def test_agent_filter_keeps_own_label_and_free_items(self):
         decisions = {d.item.number: d for d in plan(load_items(), "hermes")}
-        self.assertEqual(decisions[410].kind, "eligible")   # dirigida a hermes
-        self.assertEqual(decisions[402].kind, "eligible")   # libre
-        self.assertEqual(decisions[411].kind, "other-agent")
-        self.assertEqual(decisions[406].kind, "eligible")
+        self.assertEqual(decisions[103].kind, "eligible")   # routed to hermes
+        self.assertEqual(decisions[102].kind, "eligible")   # free
+        self.assertEqual(decisions[104].kind, "other-agent")
+        self.assertEqual(decisions[101].kind, "eligible")
 
     def test_open_dependency_blocks_dispatch(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 415][0]
+        decision = [d for d in plan(load_items()) if d.item.number == 108][0]
         self.assertEqual(decision.kind, "blocked-dependency")
-        self.assertEqual(decision.pending, [406])
+        self.assertEqual(decision.pending, [101])
 
     def test_unverifiable_dependency_blocks_dispatch(self):
-        decision = [d for d in plan(load_items()) if d.item.number == 416][0]
+        decision = [d for d in plan(load_items()) if d.item.number == 109][0]
         self.assertEqual(decision.kind, "unverified-dependency")
         self.assertEqual(decision.unverified, [9999])
 
+    def test_satisfied_dependency_is_eligible(self):
+        decision = [d for d in plan(load_items()) if d.item.number == 117][0]
+        self.assertEqual(decision.kind, "eligible")
+        self.assertEqual(decision.dependencies, [100])
+
     def test_priority_orders_the_plan(self):
         decisions = plan(load_items())
-        self.assertEqual(decisions[0].item.number, 417)   # único P0
+        self.assertEqual(decisions[0].item.number, 101)   # P0 development first
 
     def test_priority_orders_only_eligible_work(self):
         decisions = plan(load_items(), "hermes")
         eligible = [d.item.number for d in decisions if d.eligible]
-        self.assertEqual(eligible[:3], [417, 450, 451])   # P0, P1, P2 elegibles
+        self.assertEqual(eligible[:4], [101, 110, 111, 112])   # P0, P0, P1, P2
 
     def test_ineligible_p0_never_leads_the_inventory(self):
         decisions = plan(load_items(), "hermes")
         self.assertTrue(decisions[0].eligible, decisions[0].kind)
-        self.assertEqual(decisions[0].item.number, 417)   # P0 elegible
+        self.assertEqual(decisions[0].item.number, 101)
         eligible_count = sum(1 for decision in decisions if decision.eligible)
         self.assertTrue(all(d.eligible for d in decisions[:eligible_count]))
         self.assertTrue(all(not d.eligible for d in decisions[eligible_count:]))
         tail = [d.item.number for d in decisions[eligible_count:]]
-        self.assertEqual(tail[:3], [414, 452, 453])       # las tres P0, todas al final
+        self.assertEqual(tail[:3], [107, 113, 114])       # the three P0s, all at the end
 
     def test_p0_in_backlog_is_not_a_candidate(self):
         numbers = {d.item.number for d in plan(load_items(), "hermes")}
-        self.assertNotIn(455, numbers)                    # P0 en Backlog no entra en el plan
+        self.assertNotIn(118, numbers)
 
     def test_priority_is_normalised_before_ranking(self):
         items = load_items()
         for item in items:
-            if item.number == 406:
+            if item.number == 112:
                 item.priority = "p0"
-            elif item.number == 450:
+            elif item.number == 111:
                 item.priority = " P1 "
         eligible = [d.item.number for d in plan(items, "hermes") if d.eligible]
-        self.assertEqual(eligible[:3], [406, 417, 450])   # "p0" empata con P0 y va delante de P1
+        self.assertEqual(eligible[:4], [101, 110, 112, 111])
 
     def test_unknown_priority_is_treated_as_not_prioritised(self):
         items = load_items()
         for item in items:
-            if item.number == 417:
+            if item.number == 101:
                 item.priority = "P3"
         eligible = [d.item.number for d in plan(items, "hermes") if d.eligible]
-        self.assertEqual(eligible[:2], [450, 451])        # P1 y P2 delante de un valor fuera de catálogo
+        self.assertEqual(eligible[:2], [110, 111])
 
     def test_ineligible_p0_does_not_delay_eligible_work(self):
         decisions = {d.item.number: d for d in plan(load_items(), "hermes")}
-        for number in (452, 453):
+        for number in (113, 114):
             self.assertFalse(decisions[number].eligible)
-        self.assertTrue(decisions[450].eligible)           # P1 sigue disponible
-        self.assertTrue(decisions[402].eligible)           # sin prioridad, sigue disponible
+        self.assertTrue(decisions[111].eligible)           # P1 still available
+        self.assertTrue(decisions[102].eligible)           # unprioritised, still available
 
     def test_plan_line_does_not_reorder_the_selection(self):
         lines = []
@@ -298,169 +382,169 @@ class DiscoveryTests(unittest.TestCase):
         plan_line = [line for line in lines if line.startswith("PLAN")][0]
         self.assertEqual(
             plan_line,
-            "PLAN — agente hermes: #417 (P0), #450 (P1), #451 (P2), "
-            "#406 (sin prioridad), #410 (sin prioridad), #402 (sin prioridad)")
+            "PLAN — agent hermes: #101 (P0), #110 (P0), #111 (P1), #112 (P2), "
+            "#117 (unprioritised), #103 (unprioritised), #102 (unprioritised)")
 
     def test_take_never_writes_priority(self):
         github = FakeGh()
-        self.assertEqual(service(github).take(451), EXIT_OK)      # P2, no la primera elegible
-        self.assertEqual([call[0] for call in github.calls], ["comment", "assign", "status"])
-        self.assertEqual(fixture_item(451, github.data).priority, "P2")
+        self.assertEqual(service(github).take(112), EXIT_OK)      # P2, not the first eligible
+        self.assertEqual([call[0] for call in github.calls], ["comment", "status"])
+        self.assertEqual(fixture_item(112, github.data).priority, "P2")
 
     def test_render_prints_inventory_and_distribution(self):
         lines = []
         render(plan(load_items()), None, lines.append)
         text = "\n".join(lines)
-        self.assertIn("INVENTARIO", text)
+        self.assertIn("INVENTORY", text)
         self.assertIn("PLAN", text)
-        self.assertIn("#406", text)
+        self.assertIn("#101", text)
 
     def test_render_reports_an_empty_project(self):
         lines = []
         render([], None, lines.append)
-        self.assertIn("Sin Issues en Ready", "\n".join(lines))
+        self.assertIn("No Issues in Ready", "\n".join(lines))
 
 
 class TakeTests(unittest.TestCase):
-    def test_take_publishes_claim_assigns_and_moves_in_order(self):
+    def test_take_publishes_claim_and_moves_without_touching_the_assignee(self):
         github = FakeGh()
-        code = service(github).take(406)
+        code = service(github).take(101)
         self.assertEqual(code, EXIT_OK)
-        self.assertEqual(github.calls, [("comment", 406), ("assign", 406),
-                                        ("status", 406, "Development In Progress")])
-        after = fixture_item(406, github.data)
+        self.assertEqual(github.calls, [("comment", 101),
+                                        ("status", 101, "Development In Progress")])
+        after = fixture_item(101, github.data)
         self.assertEqual(after.status, "Development In Progress")
-        self.assertEqual(after.assignees, ["jmartinlabs"])
+        self.assertEqual(after.assignees, [])
 
     def test_take_comment_carries_identity_header_and_marker(self):
         github = FakeGh()
-        service(github).take(406)
-        body = github.comments_store[406][-1]["body"]
+        service(github).take(101)
+        body = github.comments_store[101][-1]["body"]
         for field in ("Autor: hermes", "Rol: Coordinador funcional", "Fase: Development",
                       "Tipo: Inicio"):
             self.assertIn(field, body)
-        self.assertIn("<!-- work-issue:claim agent=hermes issue=406 -->", body)
+        self.assertIn("<!-- work-issue:claim agent=hermes issue=101 -->", body)
 
     def test_dry_run_writes_nothing(self):
         github = FakeGh()
-        self.assertEqual(service(github).take(406, dry_run=True), EXIT_OK)
+        self.assertEqual(service(github).take(101, dry_run=True), EXIT_OK)
         self.assertEqual(github.calls, [])
 
     def test_take_refuses_item_routed_to_another_agent(self):
         github = FakeGh()
-        self.assertEqual(service(github).take(411), EXIT_REFUSED)
+        self.assertEqual(service(github).take(104), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_take_refuses_ambiguous_labels(self):
         github = FakeGh()
-        self.assertEqual(service(github).take(412), EXIT_REFUSED)
+        self.assertEqual(service(github).take(105), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_take_refuses_unknown_agent_label(self):
         github = FakeGh()
-        self.assertEqual(service(github).take(413), EXIT_REFUSED)
+        self.assertEqual(service(github).take(106), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
-    def test_take_refuses_item_with_assignee(self):
+    def test_take_ignores_an_existing_assignee(self):
         github = FakeGh()
-        self.assertEqual(service(github).take(414), EXIT_REFUSED)
-        self.assertEqual(github.calls, [])
+        fixture_item(101, github.data).assignees = ["someone"]
+        self.assertEqual(service(github).take(101), EXIT_OK)
+        self.assertEqual(fixture_item(101, github.data).assignees, ["someone"])
 
     def test_take_refuses_existing_claim(self):
-        item = fixture_item(406)
-        prior = {"id": 10, "body": claim_body("opencode", "Coordinador funcional",
-                                              "development", item)}
-        github = FakeGh(claims={406: [prior]})
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        item = fixture_item(101)
+        prior = {"id": 10, "body": claim_body("opencode", "Coordinador funcional", "development", item)}
+        github = FakeGh(claims={101: [prior]})
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_take_aborts_when_a_competing_claim_appears(self):
         github = FakeGh(race=True)
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
-        self.assertNotIn(("assign", 406), github.calls)
-        self.assertNotIn(("status", 406, "Development In Progress"), github.calls)
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
+        self.assertNotIn(("status", 101, "Development In Progress"), github.calls)
 
     def test_take_does_not_claim_success_when_a_write_fails(self):
-        github = FakeGh(fail={"assign"})
-        self.assertEqual(service(github).take(406), EXIT_FAILED)
-        self.assertNotIn(("status", 406, "Development In Progress"), github.calls)
+        github = FakeGh(fail={"status"})
+        self.assertEqual(service(github).take(101), EXIT_FAILED)
+        self.assertNotIn(("status", 101, "Development In Progress"), github.calls)
         self.assertTrue([call for call in github.calls if call[0] == "retract"])
 
     def test_take_stops_when_the_project_cannot_be_read(self):
         github = FakeGh(fail={"items"})
         with self.assertRaises(WorkIssueError):
-            service(github).take(406)
+            service(github).take(101)
 
     def test_take_rejects_an_agent_outside_the_catalogue(self):
         with self.assertRaises(WorkIssueError):
-            Service(FakeGh(), "claude").take(406)
+            Service(FakeGh(), "gemini").take(101)
 
 
 class MoveTests(unittest.TestCase):
     def in_progress(self, status="Development In Progress", agent="hermes"):
         items = load_items()
-        fixture_item(400, items).status = status
-        claim = claim_body(agent, "Coordinador funcional", "development",
-                           fixture_item(400, items))
-        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+        fixture_item(120, items).status = status
+        claim = claim_body(agent, "Coordinador funcional", "development", fixture_item(120, items))
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim}]})
 
     def test_agent_may_deliver_to_review(self):
         github = self.in_progress()
-        code = service(github).move(400, "Development In Review", note="PR #999 y pruebas")
+        code = service(github).move(120, "Development In Review", note="PR #9 and tests")
         self.assertEqual(code, EXIT_OK)
-        self.assertEqual(github.calls, [("comment", 400), ("status", 400, "Development In Review")])
-        body = github.comments_store[400][-1]["body"]
+        self.assertEqual(github.calls, [("comment", 120), ("status", 120, "Development In Review")])
+        body = github.comments_store[120][-1]["body"]
         self.assertIn("De: Development In Progress", body)
         self.assertIn("A: Development In Review", body)
 
     def test_agent_never_moves_work_into_a_human_status(self):
         for target in sorted(HUMAN_ONLY):
             github = self.in_progress()
-            self.assertEqual(service(github).move(400, target), EXIT_REFUSED, target)
+            self.assertEqual(service(github).move(120, target), EXIT_REFUSED, target)
             self.assertEqual(github.calls, [], target)
 
     def test_review_rejection_is_human_only(self):
         github = self.in_progress("Development In Review")
-        self.assertEqual(service(github).move(400, "Development In Progress"), EXIT_REFUSED)
+        self.assertEqual(service(github).move(120, "Development In Progress"), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_blocked_requires_the_previous_status(self):
         github = self.in_progress()
-        self.assertEqual(service(github).move(400, "Blocked", note="falta decisión"), EXIT_REFUSED)
+        self.assertEqual(service(github).move(120, "Blocked", note="decision missing"),
+                         EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_blocked_records_previous_status_and_note(self):
         github = self.in_progress()
-        code = service(github).move(400, "Blocked", previous_status="Development In Progress",
-                                    note="Motivo: decisión pendiente. Condición: respuesta del usuario.")
+        code = service(github).move(120, "Blocked",
+                                    previous_status="Development In Progress",
+                                    note="Reason: pending decision. Exit: user answer.")
         self.assertEqual(code, EXIT_OK)
-        body = github.comments_store[400][-1]["body"]
+        body = github.comments_store[120][-1]["body"]
         self.assertIn("Previous Status: Development In Progress", body)
-        self.assertIn("Condición", body)
+        self.assertIn("Exit:", body)
 
     def test_restore_uses_the_recorded_previous_status(self):
         github = self.in_progress()
         svc = service(github)
-        self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
-                                  note="Motivo: decisión pendiente."), EXIT_OK)
-        blocked = github.comments_store[400][-1]["body"]
+        self.assertEqual(svc.move(120, "Blocked", previous_status="Development In Progress",
+                                  note="Reason: pending decision."), EXIT_OK)
+        blocked = github.comments_store[120][-1]["body"]
         self.assertIn("Fase: Development", blocked)
-        self.assertIn("<!-- work-issue:block agent=hermes issue=400 -->", blocked)
+        self.assertIn("<!-- work-issue:block agent=hermes issue=120 -->", blocked)
         seed_receipts(github)
-        self.assertEqual(svc.move(400, "Development In Progress", restore=True), EXIT_OK)
-        self.assertIn(("status", 400, "Development In Progress"), github.calls)
+        self.assertEqual(svc.move(120, "Development In Progress", restore=True), EXIT_OK)
+        self.assertIn(("status", 120, "Development In Progress"), github.calls)
 
     def test_restore_without_a_record_is_refused(self):
         github = self.in_progress("Blocked")
-        self.assertEqual(service(github).move(400, "Development In Progress", restore=True),
+        self.assertEqual(service(github).move(120, "Development In Progress", restore=True),
                          EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_restore_cannot_jump_to_another_status(self):
         github = self.in_progress()
         svc = service(github)
-        svc.move(400, "Blocked", previous_status="Development In Progress", note="motivo")
-        self.assertEqual(svc.move(400, "Development In Review", restore=True), EXIT_REFUSED)
+        svc.move(120, "Blocked", previous_status="Development In Progress", note="reason")
+        self.assertEqual(svc.move(120, "Development In Review", restore=True), EXIT_REFUSED)
 
     def test_transition_validation_rejects_unknown_status(self):
         self.assertIsNotNone(validate_transition("Development In Progress", "Doing"))
@@ -468,25 +552,51 @@ class MoveTests(unittest.TestCase):
 
     def test_move_dry_run_writes_nothing(self):
         github = self.in_progress()
-        self.assertEqual(service(github).move(400, "Development In Review", dry_run=True), EXIT_OK)
+        self.assertEqual(service(github).move(120, "Development In Review", dry_run=True),
+                         EXIT_OK)
         self.assertEqual(github.calls, [])
 
     def test_move_refuses_when_another_agent_holds_the_claim(self):
         items = load_items()
         github = FakeGh(items=items,
-                        claims={400: [{"id": 11, "body": claim_body(
+                        claims={120: [{"id": 11, "body": claim_body(
                             "opencode", "Coordinador funcional", "development",
-                            fixture_item(400, items))}]})
-        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_REFUSED)
+                            fixture_item(120, items))}]})
+        self.assertEqual(service(github).move(120, "Development In Review"), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_move_allows_the_agent_that_published_the_claim(self):
         items = load_items()
         github = FakeGh(items=items,
-                        claims={400: [{"id": 11, "body": claim_body(
+                        claims={120: [{"id": 11, "body": claim_body(
                             "hermes", "Coordinador funcional", "development",
-                            fixture_item(400, items))}]})
-        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_OK)
+                            fixture_item(120, items))}]})
+        self.assertEqual(service(github).move(120, "Development In Review"), EXIT_OK)
+
+
+def fake_gh(directory, auth="Token scopes: 'repo', 'project'", items=None, items_code=0):
+    """Write a fake `gh` into `directory` and return the environment that uses it."""
+    fake = Path(directory) / "gh"
+    payload = json.dumps(items if items is not None else
+                         json.loads(FIXTURE.read_text(encoding="utf-8")))
+    fake.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, os, sys\n"
+        "state = %r\n"
+        "args = sys.argv[1:]\n"
+        "open(os.path.join(state, 'calls.log'), 'a').write(' '.join(args) + '\\n')\n"
+        "if args[:2] == ['auth', 'status']:\n"
+        "    sys.stderr.write(%r)\n"
+        "    sys.exit(0)\n"
+        "if args[:2] == ['project', 'item-list']:\n"
+        "    if %d:\n"
+        "        sys.stderr.write('HTTP 404: Could not resolve to a Project')\n"
+        "        sys.exit(1)\n"
+        "    sys.stdout.write(%r)\n"
+        "    sys.exit(0)\n"
+        "sys.exit(1)\n" % (directory, auth, items_code, payload), encoding="utf-8")
+    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+    return dict(os.environ, PATH=directory + os.pathsep + os.environ.get("PATH", ""))
 
 
 class AdapterTests(unittest.TestCase):
@@ -496,90 +606,115 @@ class AdapterTests(unittest.TestCase):
                 return 0, "", auth
             if argv[:3] == ["gh", "project", "item-list"]:
                 return items_code, json.dumps(items if items is not None else
-                                              json.loads(FIXTURE.read_text(encoding="utf-8"))), "fallo"
-            return 1, "", "inesperado: " + " ".join(argv)
+                                              json.loads(FIXTURE.read_text(encoding="utf-8"))), "failed"
+            return 1, "", "unexpected: " + " ".join(argv)
         return run
 
+    def state(self):
+        directory = tempfile.mkdtemp(prefix="work-issue-cli-")
+        self.addCleanup(lambda: __import__("shutil").rmtree(directory, ignore_errors=True))
+        return directory
+
     def test_preflight_requires_the_project_scope(self):
-        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app",
-                    runner=self.runner(auth="Token scopes: 'repo'"))
+        github = Gh("acme", 7, REPO, runner=self.runner(auth="Token scopes: 'repo'"))
         with self.assertRaises(WorkIssueError):
             github.preflight()
 
     def test_missing_project_is_a_blocker_not_an_empty_inventory(self):
-        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app",
-                    runner=self.runner(items_code=1))
+        github = Gh("acme", 7, REPO, runner=self.runner(items_code=1))
         with self.assertRaises(WorkIssueError):
             github.items()
 
     def test_items_are_normalised(self):
-        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app", runner=self.runner())
+        github = Gh("acme", 7, REPO, runner=self.runner())
         items = github.items()
         self.assertEqual(len(items), len(load_items()))
-        self.assertEqual(fixture_item(406, items).status, "Ready Development")
+        self.assertEqual(fixture_item(101, items).status, "Ready Development")
 
     def test_pull_requests_are_not_work_items(self):
         raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
         raw["items"][0]["content"]["type"] = "PullRequest"
-        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app", runner=self.runner(items=raw))
+        github = Gh("acme", 7, REPO, runner=self.runner(items=raw))
         numbers = [item.number for item in github.items()]
-        self.assertNotIn(406, numbers)
+        self.assertNotIn(100, numbers)
         self.assertEqual(len(numbers), len(load_items()) - 1)
 
     def test_cli_inventory_runs_read_only_through_a_fake_gh(self):
-        state = tempfile.mkdtemp(prefix="work-issue-cli-")
-        self.addCleanup(lambda: subprocess.run(["rm", "-rf", state]))
-        fake = Path(state) / "gh"
-        fake.write_text(
-            "#!/usr/bin/env python3\n"
-            "import json, os, sys\n"
-            "args = sys.argv[1:]\n"
-            "open(os.path.join(%r, 'calls.log'), 'a').write(' '.join(args) + '\\n')\n"
-            "if args[:2] == ['auth', 'status']:\n"
-            "    print(\"Token scopes: 'repo', 'project'\")\n"
-            "    sys.exit(0)\n"
-            "if args[:2] == ['project', 'item-list']:\n"
-            "    sys.stdout.write(open(os.path.join(%r, 'items.json')).read())\n"
-            "    sys.exit(0)\n"
-            "sys.exit(1)\n" % (state, state), encoding="utf-8")
-        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
-        Path(state, "items.json").write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
-        env = dict(os.environ, PATH=state + os.pathsep + os.environ.get("PATH", ""))
-        proc = subprocess.run([sys.executable, str(SCRIPT), "inventory"], capture_output=True,
-                              text=True, encoding="utf-8", env=env)
+        state = self.state()
+        env = fake_gh(state)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO, "--project", "7",
+                               "inventory"], capture_output=True, text=True, encoding="utf-8",
+                              env=env)
         self.assertEqual(proc.returncode, EXIT_OK, proc.stderr)
-        self.assertIn("INVENTARIO", proc.stdout)
-        self.assertIn("#406", proc.stdout)
+        self.assertIn("INVENTORY", proc.stdout)
+        self.assertIn("#101", proc.stdout)
         calls = Path(state, "calls.log").read_text(encoding="utf-8").splitlines()
         self.assertTrue(all(line.startswith(("auth status", "project item-list"))
                             for line in calls), calls)
+        self.assertIn("project item-list 7 --owner acme --format json --limit 1000", calls)
         self.assertFalse(any(line.startswith(("issue", "project item-edit"))
                              for line in calls), calls)
 
     def test_cli_reports_a_blocker_when_the_project_cannot_be_read(self):
-        state = tempfile.mkdtemp(prefix="work-issue-cli-")
-        self.addCleanup(lambda: subprocess.run(["rm", "-rf", state]))
-        fake = Path(state) / "gh"
-        fake.write_text(
-            "#!/usr/bin/env python3\n"
-            "import sys\n"
-            "args = sys.argv[1:]\n"
-            "if args[:2] == ['auth', 'status']:\n"
-            "    print(\"Token scopes: 'repo', 'project'\")\n"
-            "    sys.exit(0)\n"
-            "sys.stderr.write('HTTP 404: Could not resolve to a Project')\n"
-            "sys.exit(1)\n", encoding="utf-8")
-        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
-        env = dict(os.environ, PATH=state + os.pathsep + os.environ.get("PATH", ""))
-        proc = subprocess.run([sys.executable, str(SCRIPT), "inventory"], capture_output=True,
-                              text=True, encoding="utf-8", env=env)
+        state = self.state()
+        env = fake_gh(state, items_code=1)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO, "--project", "7",
+                               "inventory"], capture_output=True, text=True, encoding="utf-8",
+                              env=env)
         self.assertEqual(proc.returncode, EXIT_FAILED)
-        self.assertIn("Bloqueado", proc.stderr)
-        self.assertNotIn("INVENTARIO", proc.stdout)
+        self.assertIn("Blocked", proc.stderr)
+        self.assertNotIn("INVENTORY", proc.stdout)
+
+    def test_cli_fails_closed_without_a_project(self):
+        state = self.state()
+        env = fake_gh(state)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO, "inventory"],
+                              capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(proc.returncode, EXIT_FAILED)
+        self.assertIn("no GitHub Project configured", proc.stderr)
+        self.assertIn("issue-workflow.md", proc.stderr)
+        self.assertFalse(Path(state, "calls.log").exists())
+
+    def test_cli_requires_an_explicit_repository(self):
+        state = self.state()
+        env = fake_gh(state)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--project", "7", "inventory"],
+                              capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(proc.returncode, EXIT_REFUSED)
+        self.assertIn("--repo", proc.stderr)
+        self.assertFalse(Path(state, "calls.log").exists())
+
+    def test_cli_rejects_a_malformed_repository(self):
+        state = self.state()
+        env = fake_gh(state)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", "widgets", "--project", "7",
+                               "inventory"], capture_output=True, text=True, encoding="utf-8",
+                              env=env)
+        self.assertEqual(proc.returncode, EXIT_REFUSED)
+        self.assertIn("OWNER/NAME", proc.stderr)
+
+    def test_cli_uses_the_configured_owner_and_repository(self):
+        state = self.state()
+        env = fake_gh(state)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", "other-org/gadgets",
+                               "--owner", "team-owner", "--project", "9", "inventory"],
+                              capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(proc.returncode, EXIT_OK, proc.stderr)
+        calls = Path(state, "calls.log").read_text(encoding="utf-8").splitlines()
+        self.assertIn("project item-list 9 --owner team-owner --format json --limit 1000", calls)
+
+    def test_cli_rejects_a_non_positive_project(self):
+        state = self.state()
+        env = fake_gh(state)
+        proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO, "--project", "0",
+                               "inventory"], capture_output=True, text=True, encoding="utf-8",
+                              env=env)
+        self.assertEqual(proc.returncode, EXIT_REFUSED)
+        self.assertFalse(Path(state, "calls.log").exists())
 
 
 class RegressionTests(unittest.TestCase):
-    """Defects found by independent QA on the first candidate."""
+    """Defects found by independent QA on the pilot candidate."""
 
     def test_blocking_requires_the_exact_current_status(self):
         self.assertIsNotNone(validate_transition(
@@ -591,46 +726,43 @@ class RegressionTests(unittest.TestCase):
 
     def test_block_then_restore_cannot_skip_a_phase(self):
         items = load_items()
-        fixture_item(402, items).status = "Analysis In Progress"
-        claim = claim_body("hermes", "Coordinador funcional", "analysis",
-                           fixture_item(402, items))
-        github = FakeGh(items=items, claims={402: [{"id": 3, "body": claim}]})
+        fixture_item(102, items).status = "Analysis In Progress"
+        fixture_item(102, items).assignees = ["acme-bot"]
+        claim = claim_body("hermes", "Coordinador funcional", "analysis", fixture_item(102, items))
+        github = FakeGh(items=items, claims={102: [{"id": 3, "body": claim}]})
         svc = service(github)
-        self.assertEqual(svc.move(402, "Blocked", previous_status="Development In Progress"),
+        self.assertEqual(svc.move(102, "Blocked", previous_status="Development In Progress"),
                          EXIT_REFUSED)
-        self.assertEqual(svc.move(402, "Blocked", previous_status="Analysis In Progress",
-                                  note="motivo"), EXIT_OK)
-        self.assertEqual(svc.move(402, "Development In Progress", restore=True), EXIT_REFUSED)
-        self.assertNotIn(("status", 402, "Development In Progress"), github.calls)
+        self.assertEqual(svc.move(102, "Blocked", previous_status="Analysis In Progress",
+                                  note="reason"), EXIT_OK)
+        self.assertEqual(svc.move(102, "Development In Progress", restore=True), EXIT_REFUSED)
+        self.assertNotIn(("status", 102, "Development In Progress"), github.calls)
 
     def test_move_without_a_claim_is_refused(self):
         items = load_items()
-        fixture_item(400, items).status = "Development In Progress"
+        fixture_item(120, items).status = "Development In Progress"
         github = FakeGh(items=items)
-        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_REFUSED)
+        self.assertEqual(service(github).move(120, "Development In Review"), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_move_without_agent_is_an_error_not_a_comment(self):
         items = load_items()
-        fixture_item(400, items).status = "Development In Progress"
+        fixture_item(120, items).status = "Development In Progress"
         with self.assertRaises(WorkIssueError):
-            Service(FakeGh(items=items), None).move(400, "Development In Review")
+            Service(FakeGh(items=items), None).move(120, "Development In Review")
 
-    def test_failed_status_write_rolls_back_the_claim_and_the_assignee(self):
+    def test_failed_status_write_rolls_back_the_claim(self):
         github = FakeGh(fail={"status"})
-        self.assertEqual(service(github).take(406), EXIT_FAILED)
-        self.assertIn(("assign", 406), github.calls)
-        self.assertIn(("unassign", 406), github.calls)
+        self.assertEqual(service(github).take(101), EXIT_FAILED)
         self.assertTrue([call for call in github.calls if call[0] == "retract"])
-        self.assertEqual(claim_comments(github, 406), [])
-        self.assertEqual(fixture_item(406, github.data).assignees, [])
+        self.assertEqual(claim_comments(github, 101), [])
 
     def test_collision_retracts_our_comment_and_allows_a_retry(self):
         github = FakeGh(race=True)
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
         self.assertTrue([call for call in github.calls if call[0] == "retract"])
-        self.assertNotIn(("assign", 406), github.calls)
-        self.assertEqual([entry["id"] for entry in claim_comments(github, 406)], [500])
+        self.assertNotIn(("assign", 101), github.calls)
+        self.assertEqual([entry["id"] for entry in claim_comments(github, 101)], [500])
 
     def test_inventory_shows_priority_and_dependencies(self):
         lines = []
@@ -639,59 +771,86 @@ class RegressionTests(unittest.TestCase):
         self.assertIn("Pri", text)
         self.assertIn("P0", text)
         self.assertIn("Deps", text)
-        self.assertIn("#406", text)
+        self.assertIn("#101", text)
 
-    def test_namespaced_agent_labels_route_or_fail_closed(self):
-        item = fixture_item(402)
-        item.labels = ["to:hermes"]
+    def test_agent_labels_route_or_fail_closed(self):
+        item = fixture_item(102)
+        item.labels = ["agent:hermes"]
         self.assertEqual(classify(item, "hermes").route, "hermes")
-        item.labels = ["to:claude"]
+        item.labels = ["agent:claude"]
+        self.assertEqual(classify(item, "claude").route, "claude")
+        self.assertEqual(classify(item, "hermes").kind, "other-agent")
+        item.labels = ["agent:gemini"]
         self.assertEqual(classify(item, "hermes").kind, "unknown-agent")
+
+    def test_to_prefix_is_no_longer_a_routing_label(self):
+        item = fixture_item(102)
+        item.labels = ["to:hermes"]
+        self.assertEqual(classify(item, "hermes").route, "")
+
+    def test_no_agent_queue_holds_only_unrouted_issues(self):
+        items = load_items()
+        routed = [d.item.number for d in plan(items, None, unrouted_only=True)
+                  if d.kind == "other-agent"]
+        eligible = [d.item.number for d in plan(items, None, unrouted_only=True) if d.eligible]
+        self.assertTrue(routed)
+        self.assertFalse(set(routed) & set(eligible))
+
+    def test_catalogue_is_configurable_and_fails_closed(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(load_catalogue(root), list(DEFAULT_AGENTS))
+            path = Path(root) / ".agents"
+            path.mkdir()
+            (path / "tracker.local.yaml").write_text("agents: [Claude, codex]  # mine\n")
+            self.assertEqual(load_catalogue(root), ["claude", "codex"])
+            (path / "tracker.local.yaml").write_text("agents: bad name!\n")
+            with self.assertRaises(ValueError):
+                load_catalogue(root)
 
     def test_negated_dependencies_are_ignored(self):
         self.assertEqual(MODULE["dependencies"]("No depende de #7 ni de nada."), [])
         self.assertEqual(MODULE["dependencies"]("Depends on #3."), [3])
-        self.assertEqual(MODULE["dependencies"]("Dependencias: #4, #5."), [4, 5])
+        self.assertEqual(MODULE["dependencies"]("It does not depend on #5."), [])
+        self.assertEqual(MODULE["dependencies"]("Dependencies: #4, #5."), [4, 5])
 
     def test_relations_are_recovered_from_the_body(self):
         related = MODULE["relations"](
-            "Épica E4.4 · SPEC specs/36-reparto.md · ver #391 y #406")
+            "Epic E4.4 · SPEC specs/36-allocation.md · see #91 and #101")
         self.assertEqual(related["epics"], ["E4.4"])
-        self.assertEqual(related["specs"], ["specs/36-reparto.md"])
-        self.assertIn(391, related["issues"])
-        self.assertIn(406, related["issues"])
+        self.assertEqual(related["specs"], ["specs/36-allocation.md"])
+        self.assertIn(91, related["issues"])
+        self.assertIn(101, related["issues"])
 
     def test_truncated_project_refuses_to_reserve(self):
         with self.assertRaises(WorkIssueError):
-            service(FakeGh(truncated=True)).take(406)
+            service(FakeGh(truncated=True)).take(101)
 
     def test_inventory_warns_when_the_project_was_truncated(self):
         lines = []
         Service(FakeGh(truncated=True), "hermes", "Coordinador funcional",
                 lines.append).inventory()
-        self.assertIn("límite de lectura", "\n".join(lines))
+        self.assertIn("read limit", "\n".join(lines))
 
     def test_executor_is_distinguished_from_the_author(self):
         github = FakeGh()
         seed_receipts(github)
         Service(github, "hermes", "Coordinador funcional", lambda line: None,
-                executor="OpenCode").take(406)
-        self.assertIn("Ejecutor: OpenCode", github.comments_store[406][-1]["body"])
+                executor="OpenCode").take(101)
+        self.assertIn("Ejecutor: OpenCode", github.comments_store[101][-1]["body"])
 
 
 class SecondRoundTests(unittest.TestCase):
-    """Defects found by the second independent QA round (candidate 8a6f20c)."""
+    """Defects found by the second independent QA round on the pilot."""
 
     def claimed(self, status="Development In Progress", agent="hermes"):
         items = load_items()
-        fixture_item(400, items).status = status
-        claim = claim_body(agent, "Coordinador funcional", "development",
-                           fixture_item(400, items))
-        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+        fixture_item(120, items).status = status
+        claim = claim_body(agent, "Coordinador funcional", "development", fixture_item(120, items))
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim}]})
 
     def test_previous_status_is_rejected_outside_a_block(self):
         github = self.claimed()
-        self.assertEqual(service(github).move(400, "Development In Review",
+        self.assertEqual(service(github).move(120, "Development In Review",
                                               previous_status="Development In Progress",
                                               note="x"), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
@@ -699,127 +858,132 @@ class SecondRoundTests(unittest.TestCase):
     def test_restore_ignores_a_previous_status_written_in_a_plain_note(self):
         github = self.claimed()
         svc = service(github)
-        self.assertEqual(svc.move(400, "Development In Review",
+        self.assertEqual(svc.move(120, "Development In Review",
                                   note="Previous Status: Analysis In Progress"), EXIT_OK)
-        fixture_item(400, github.data).status = "Blocked"   # el usuario bloquea sin comentario
-        self.assertEqual(svc.move(400, "Analysis In Progress", restore=True), EXIT_REFUSED)
-        self.assertNotIn(("status", 400, "Analysis In Progress"), github.calls)
+        fixture_item(120, github.data).status = "Blocked"   # the user blocks without a comment
+        self.assertEqual(svc.move(120, "Analysis In Progress", restore=True), EXIT_REFUSED)
+        self.assertNotIn(("status", 120, "Analysis In Progress"), github.calls)
 
     def test_blocked_only_from_agent_in_progress(self):
         for status in ("Done", "Backlog", "Ready Development"):
             github = self.claimed(status)
-            self.assertEqual(service(github).move(400, "Blocked",
+            self.assertEqual(service(github).move(120, "Blocked",
                                                   previous_status=status), EXIT_REFUSED, status)
             self.assertEqual(github.calls, [], status)
 
     def test_take_aborts_when_the_status_changed_underneath(self):
         github = FakeGh(drift_status="Backlog")
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
         self.assertTrue([call for call in github.calls if call[0] == "retract"])
-        self.assertNotIn(("assign", 406), github.calls)
-        self.assertEqual(fixture_item(406, github.data).status, "Ready Development")
+        self.assertNotIn(("assign", 101), github.calls)
+        self.assertEqual(fixture_item(101, github.data).status, "Ready Development")
 
     def test_verification_read_failure_reports_pending_writes(self):
         github = FakeGh(fail_item_after=2)
         seed_receipts(github)
         lines = []
-        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(101)
         self.assertEqual(code, EXIT_FAILED)
-        self.assertIn(("unassign", 406), github.calls)
-        self.assertIn("relectura", "\n".join(lines))
+        self.assertNotIn(("unassign", 101), github.calls)
+        self.assertIn("unverified", "\n".join(lines))
+        self.assertIn("re-read", "\n".join(lines))
 
     def test_options_after_the_subcommand_are_accepted(self):
         parser = MODULE["build_parser"]()
-        args = parser.parse_args(["take", "--issue", "406", "--agent", "hermes",
+        args = parser.parse_args(["take", "--issue", "101", "--agent", "hermes",
                                   "--executor", "OpenCode", "--role", "Ejecutor"])
         self.assertEqual(MODULE["resolve_option"](args, "executor"), "OpenCode")
         self.assertEqual(MODULE["resolve_option"](args, "role"), "Ejecutor")
 
     def test_missing_agent_is_a_protocol_refusal(self):
-        self.assertEqual(MODULE["main"](["take", "--issue", "406"]), EXIT_REFUSED)
-        self.assertEqual(MODULE["main"](["move", "--issue", "406", "--to", "Blocked"]),
+        self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7",
+                                         "take", "--issue", "101"]), EXIT_REFUSED)
+        self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7",
+                                         "move", "--issue", "101", "--to", "Blocked"]),
                          EXIT_REFUSED)
 
     def test_claim_ownership_is_exact_not_a_substring(self):
         items = load_items()
-        fixture_item(400, items).status = "Development In Progress"
-        forged = {"id": 9, "body": claim_body("opencode", "Coordinador funcional",
-                                              "development", fixture_item(400, items))
-                  + "\n\nNota: agent=hermes no participó."}
-        github = FakeGh(items=items, claims={400: [forged]})
-        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_REFUSED)
+        fixture_item(120, items).status = "Development In Progress"
+        forged = {"id": 9, "body": claim_body("opencode", "Coordinador funcional", "development",
+                                              fixture_item(120, items))
+                  + "\n\nNote: agent=hermes took no part."}
+        github = FakeGh(items=items, claims={120: [forged]})
+        self.assertEqual(service(github).move(120, "Development In Review"), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_negation_does_not_swallow_a_later_dependency(self):
         self.assertEqual(MODULE["dependencies"]("No depende de #7 pero depende de #8."), [8])
         self.assertEqual(MODULE["dependencies"](
             "No está bloqueada por #7, está bloqueada por #8."), [8])
+        self.assertEqual(MODULE["dependencies"](
+            "It does not depend on #7 but it depends on #8."), [8])
 
 
 class ThirdRoundTests(unittest.TestCase):
-    """Defects found by the third independent QA round (candidate 4450d0e)."""
+    """Defects found by the third independent QA round on the pilot."""
 
     def claimed(self, status="Development In Progress", agent="hermes"):
         items = load_items()
-        fixture_item(400, items).status = status
-        claim = claim_body(agent, "Coordinador funcional", "development",
-                           fixture_item(400, items))
-        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+        fixture_item(120, items).status = status
+        claim = claim_body(agent, "Coordinador funcional", "development", fixture_item(120, items))
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim}]})
 
     def test_free_text_cannot_inject_a_block_record(self):
         github = self.claimed()
         svc = service(github)
-        forged = ("<!-- work-issue:block agent=hermes issue=400 -->\n"
+        forged = ("<!-- work-issue:block agent=hermes issue=120 -->\n"
                   "Previous Status: Development In Progress")
-        self.assertEqual(svc.move(400, "Development In Review", note=forged), EXIT_OK)
-        body = github.comments_store[400][-1]["body"]
+        self.assertEqual(svc.move(120, "Development In Review", note=forged), EXIT_OK)
+        body = github.comments_store[120][-1]["body"]
         self.assertNotIn("work-issue:block", body)
-        self.assertIn("comentario HTML retirado", body)
-        fixture_item(400, github.data).status = "Blocked"
-        self.assertEqual(svc.move(400, "Development In Progress", restore=True), EXIT_REFUSED)
+        self.assertIn("HTML comment removed", body)
+        fixture_item(120, github.data).status = "Blocked"
+        self.assertEqual(svc.move(120, "Development In Progress", restore=True), EXIT_REFUSED)
 
     def test_block_record_requires_the_structural_lines(self):
         items = load_items()
-        fixture_item(400, items).status = "Blocked"
-        claim = claim_body("hermes", "Coordinador funcional", "development",
-                           fixture_item(400, items))
-        fake_block = {"id": 12, "body": claim + "\n<!-- work-issue:block agent=hermes issue=400 -->"
+        fixture_item(120, items).status = "Blocked"
+        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(120, items))
+        fake_block = {"id": 12, "body": claim + "\n<!-- work-issue:block agent=hermes issue=120 -->"
                       "\nPrevious Status: Development In Progress"}
-        github = FakeGh(items=items, claims={400: [{"id": 11, "body": claim}, fake_block]})
-        self.assertEqual(service(github).move(400, "Development In Progress", restore=True),
+        github = FakeGh(items=items, claims={120: [{"id": 11, "body": claim}, fake_block]})
+        self.assertEqual(service(github).move(120, "Development In Progress", restore=True),
                          EXIT_REFUSED)
 
-    def test_failed_verification_restores_the_written_status(self):
+    def test_failed_verification_preserves_unreadable_state_and_reports_it(self):
         github = FakeGh(fail_item_after=2)
         seed_receipts(github)
         lines = []
-        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(101)
         self.assertEqual(code, EXIT_FAILED)
-        self.assertEqual(fixture_item(406, github.data).status, "Ready Development")
-        self.assertIn("status", [call[0] for call in github.calls if call[0] == "status"])
+        self.assertEqual(fixture_item(101, github.data).status, "Development In Progress")
+        self.assertEqual([call for call in github.calls if call[0] == "status"],
+                         [("status", 101, "Development In Progress")])
+        self.assertIn("pending write", "\n".join(lines))
 
     def test_take_does_not_claim_success_without_a_persisted_claim(self):
         github = FakeGh(drop_comments=True)
-        self.assertEqual(service(github).take(406), EXIT_FAILED)
-        self.assertNotIn(("assign", 406), github.calls)
+        self.assertEqual(service(github).take(101), EXIT_FAILED)
+        self.assertNotIn(("assign", 101), github.calls)
 
     def test_restore_only_applies_from_blocked(self):
         github = self.claimed("Ready Development")
-        self.assertEqual(service(github).move(400, "Analysis In Progress", restore=True),
+        self.assertEqual(service(github).move(120, "Analysis In Progress", restore=True),
                          EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_same_agent_can_resume_an_issue_it_already_claimed(self):
         items = load_items()
-        fixture_item(406, items).assignees = ["jmartinlabs"]     # devolución de review
-        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(406, items))
-        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
-        self.assertEqual(service(github).take(406), EXIT_OK)
-        self.assertEqual(len(claim_comments(github, 406)), 1)      # no duplica la toma
+        fixture_item(101, items).assignees = ["acme-bot"]     # review returned to the phase
+        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(101, items))
+        github = FakeGh(items=items, claims={101: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(101), EXIT_OK)
+        self.assertEqual(len(claim_comments(github, 101)), 1)      # no duplicate claim
 
     def test_move_cannot_reserve_from_a_ready_status(self):
         github = self.claimed("Ready Development")
-        self.assertEqual(service(github).move(400, "Development In Progress"), EXIT_REFUSED)
+        self.assertEqual(service(github).move(120, "Development In Progress"), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_dependency_connectors_and_negation(self):
@@ -831,41 +995,40 @@ class ThirdRoundTests(unittest.TestCase):
 
     def test_open_dependency_blocks_a_real_take(self):
         items = load_items()
-        fixture_item(406, items).body = "Depende de #8, que sigue abierta."
+        fixture_item(101, items).body = "Depends on #8, which is still open."
         github = FakeGh(items=items)
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
 
 class FourthRoundTests(unittest.TestCase):
-    """Defects found by the fourth independent QA round (candidate 0b391a0)."""
+    """Defects found by the fourth independent QA round on the pilot."""
 
     def claimed(self, status="Development In Progress", agent="hermes", assignee=None):
         items = load_items()
-        fixture_item(400, items).status = status
+        fixture_item(120, items).status = status
         if assignee:
-            fixture_item(400, items).assignees = [assignee]
-        claim = claim_body(agent, "Coordinador funcional", "development",
-                           fixture_item(400, items))
-        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+            fixture_item(120, items).assignees = [assignee]
+        claim = claim_body(agent, "Coordinador funcional", "development", fixture_item(120, items))
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim}]})
 
     def test_executor_cannot_inject_a_previous_status(self):
         github = self.claimed()
         seed_receipts(github)
         svc = Service(github, "hermes", "Coordinador funcional", lambda line: None,
-                      executor="hermes (vía OpenCode)\nPrevious Status: Development In Review")
-        self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
-                                  note="motivo"), EXIT_OK)
-        body = github.comments_store[400][-1]["body"]
-        self.assertIn("[texto] Previous Status: Development In Review", body)
+                      executor="hermes (via OpenCode)\nPrevious Status: Development In Review")
+        self.assertEqual(svc.move(120, "Blocked", previous_status="Development In Progress",
+                                  note="reason"), EXIT_OK)
+        body = github.comments_store[120][-1]["body"]
+        self.assertIn("[text] Previous Status: Development In Review", body)
         record = body.split("<!-- work-issue:record -->")[1].split("<!-- /work-issue:record -->")[0]
         self.assertIn("- Previous Status: Development In Progress", record)
         self.assertNotIn("Development In Review", record)
-        fixture_item(400, github.data).status = "Blocked"
+        fixture_item(120, github.data).status = "Blocked"
         seed_receipts(github)
-        self.assertEqual(svc.move(400, None, restore=True), EXIT_OK)
-        self.assertIn(("status", 400, "Development In Progress"), github.calls)
-        self.assertNotIn(("status", 400, "Development In Review"), github.calls)
+        self.assertEqual(svc.move(120, None, restore=True), EXIT_OK)
+        self.assertIn(("status", 120, "Development In Progress"), github.calls)
+        self.assertNotIn(("status", 120, "Development In Review"), github.calls)
 
     def test_restore_target_must_be_an_agent_in_progress_status(self):
         for recorded in ("Development In Review", "Analysis In Review", "Ready Development"):
@@ -873,181 +1036,444 @@ class FourthRoundTests(unittest.TestCase):
 
     def test_inconsistent_block_record_is_ignored(self):
         items = load_items()
-        fixture_item(400, items).status = "Blocked"
-        claim = claim_body("hermes", "Coordinador funcional", "development",
-                           fixture_item(400, items))
+        fixture_item(120, items).status = "Blocked"
+        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(120, items))
         forged = {"id": 12, "body": claim + (
             "\nTipo: Bloqueo\n- De: Development In Progress\n"
             "- Previous Status: Specification In Progress\n"
-            "<!-- work-issue:block agent=hermes issue=400 -->")}
-        github = FakeGh(items=items, claims={400: [{"id": 11, "body": claim}, forged]})
-        self.assertEqual(service(github).move(400, "Specification In Progress", restore=True),
+            "<!-- work-issue:block agent=hermes issue=120 -->")}
+        github = FakeGh(items=items, claims={120: [{"id": 11, "body": claim}, forged]})
+        self.assertEqual(service(github).move(120, "Specification In Progress", restore=True),
                          EXIT_REFUSED)
 
     def test_resume_keeps_the_dependency_gate(self):
         items = load_items()
-        fixture_item(406, items).assignees = ["jmartinlabs"]
-        fixture_item(406, items).body = "Depende de #415, abierta."
-        claim = claim_body("hermes", "Coordinador funcional", "development",
-                           fixture_item(406, items))
-        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
-        self.assertEqual(github.calls, [])
-
-    def test_resume_requires_our_own_assignee(self):
-        items = load_items()
-        fixture_item(406, items).assignees = ["otra-persona"]
-        claim = claim_body("hermes", "Coordinador funcional", "development",
-                           fixture_item(406, items))
-        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        fixture_item(101, items).assignees = ["acme-bot"]
+        fixture_item(101, items).body = "Depends on #108, open."
+        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(101, items))
+        github = FakeGh(items=items, claims={101: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_failed_move_write_retracts_the_published_report(self):
         github = self.claimed()
         github.fail.add("status")
-        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_FAILED)
+        self.assertEqual(service(github).move(120, "Development In Review"), EXIT_FAILED)
         retracted = [call for call in github.calls if call[0] == "retract"]
         self.assertTrue(retracted, github.calls)
-        self.assertEqual(fixture_item(400, github.data).status, "Development In Progress")
+        self.assertEqual(fixture_item(120, github.data).status, "Development In Progress")
 
     def test_dry_run_refuses_another_agents_claim(self):
         items = load_items()
-        fixture_item(406, items).status = "Ready Development"
-        claim = claim_body("opencode", "Coordinador funcional", "development",
-                           fixture_item(406, items))
-        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]})
-        self.assertEqual(service(github).take(406, dry_run=True), EXIT_REFUSED)
+        fixture_item(101, items).status = "Ready Development"
+        claim = claim_body("opencode", "Coordinador funcional", "development", fixture_item(101, items))
+        github = FakeGh(items=items, claims={101: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(101, dry_run=True), EXIT_REFUSED)
 
     def test_rollback_keeps_a_preexisting_assignee(self):
         items = load_items()
-        fixture_item(406, items).assignees = ["jmartinlabs"]
-        claim = claim_body("hermes", "Coordinador funcional", "development",
-                           fixture_item(406, items))
-        github = FakeGh(items=items, claims={406: [{"id": 11, "body": claim}]}, fail={"status"})
-        self.assertEqual(service(github).take(406), EXIT_FAILED)
-        self.assertNotIn(("unassign", 406), github.calls)
-        self.assertEqual(fixture_item(406, github.data).assignees, ["jmartinlabs"])
+        fixture_item(101, items).assignees = ["acme-bot"]
+        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(101, items))
+        github = FakeGh(items=items, claims={101: [{"id": 11, "body": claim}]}, fail={"status"})
+        self.assertEqual(service(github).take(101), EXIT_FAILED)
+        self.assertNotIn(("unassign", 101), github.calls)
+        self.assertEqual(fixture_item(101, github.data).assignees, ["acme-bot"])
 
     def test_argument_validation_precedes_github_access(self):
         class Exploding:
             def __init__(self, *args, **kwargs):
-                raise AssertionError("no debe construir el adaptador")
+                raise AssertionError("the adapter must not be built")
 
         original = MODULE["Gh"]
         MODULE["Gh"] = Exploding
         try:
-            self.assertEqual(MODULE["main"](["move", "--issue", "400", "--agent", "hermes"]),
+            self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7",
+                                             "move", "--issue", "120", "--agent", "hermes"]),
                              EXIT_REFUSED)
         finally:
             MODULE["Gh"] = original
 
 
 class FifthRoundTests(unittest.TestCase):
-    """Reservations from the fifth independent QA round (candidate 22b6b9b)."""
+    """Reservations from the fifth independent QA round on the pilot."""
 
     def in_progress(self, status="Development In Progress", agent="hermes"):
         items = load_items()
-        fixture_item(400, items).status = status
-        claim = claim_body(agent, "Coordinador funcional", "development",
-                           fixture_item(400, items))
-        return FakeGh(items=items, claims={400: [{"id": 11, "body": claim}]})
+        fixture_item(120, items).status = status
+        claim = claim_body(agent, "Coordinador funcional", "development", fixture_item(120, items))
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim}]})
 
     def test_move_retracts_only_the_comment_it_created(self):
         github = self.in_progress()
         historical = {"id": 550, "body": report_body(
-            "hermes", "Coordinador funcional", "development", fixture_item(400),
+            "hermes", "Coordinador funcional", "development", fixture_item(120),
             "Development In Review")}
-        github.comments_store[400].append(historical)
+        github.comments_store[120].append(historical)
         github.fail.add("status")
-        self.assertEqual(service(github).move(400, "Development In Review"), EXIT_FAILED)
+        self.assertEqual(service(github).move(120, "Development In Review"), EXIT_FAILED)
         retracted = [call[1] for call in github.calls if call[0] == "retract"]
         self.assertEqual(len(retracted), 1)
         self.assertNotEqual(retracted[0], 550)
-        remaining = [entry["id"] for entry in github.comments_store[400]]
+        remaining = [entry["id"] for entry in github.comments_store[120]]
         self.assertIn(550, remaining)
 
     def test_a_historical_block_record_does_not_authorise_a_second_restore(self):
         github = self.in_progress()
         svc = service(github)
-        self.assertEqual(svc.move(400, "Blocked", previous_status="Development In Progress",
-                                  note="motivo"), EXIT_OK)
+        self.assertEqual(svc.move(120, "Blocked", previous_status="Development In Progress",
+                                  note="reason"), EXIT_OK)
         seed_receipts(github)
-        self.assertEqual(svc.move(400, None, restore=True), EXIT_OK)
-        fixture_item(400, github.data).status = "Blocked"     # el usuario vuelve a bloquear
+        self.assertEqual(svc.move(120, None, restore=True), EXIT_OK)
+        fixture_item(120, github.data).status = "Blocked"     # the user blocks it again
         seed_receipts(github)
-        self.assertEqual(svc.move(400, None, restore=True), EXIT_REFUSED)
+        self.assertEqual(svc.move(120, None, restore=True), EXIT_REFUSED)
 
     def test_inconsistent_record_with_markers_is_ignored(self):
         items = load_items()
-        fixture_item(400, items).status = "Blocked"
-        claim = claim_body("hermes", "Coordinador funcional", "development",
-                           fixture_item(400, items))
+        fixture_item(120, items).status = "Blocked"
+        claim = claim_body("hermes", "Coordinador funcional", "development", fixture_item(120, items))
         forged = report_body("hermes", "Coordinador funcional", "development",
-                             fixture_item(400, items), "Blocked",
+                             fixture_item(120, items), "Blocked",
                              previous_status="Development In Progress")
         forged = forged.replace("- De: Development In Progress",
                                 "- De: Specification In Progress")
-        github = FakeGh(items=items, claims={400: [{"id": 11, "body": claim},
+        github = FakeGh(items=items, claims={120: [{"id": 11, "body": claim},
                                                    {"id": 12, "body": forged}]})
-        self.assertIsNone(service(github).blocked_previous(400, "hermes"))
-        self.assertEqual(service(github).move(400, "Development In Progress", restore=True),
+        self.assertIsNone(service(github).blocked_previous(120, "hermes"))
+        self.assertEqual(service(github).move(120, "Development In Progress", restore=True),
                          EXIT_REFUSED)
 
     def test_non_positive_issue_is_rejected_before_github(self):
         class Exploding:
             def __init__(self, *args, **kwargs):
-                raise AssertionError("no debe construir el adaptador")
+                raise AssertionError("the adapter must not be built")
 
         original = MODULE["Gh"]
         MODULE["Gh"] = Exploding
         try:
-            self.assertEqual(MODULE["main"](["take", "--issue", "0", "--agent", "hermes"]), 2)
-            self.assertEqual(MODULE["main"](["take", "--issue", "-5", "--agent", "hermes"]), 2)
+            self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7",
+                                             "take", "--issue", "0", "--agent", "hermes"]), 2)
+            self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7",
+                                             "take", "--issue", "-5", "--agent", "hermes"]), 2)
         finally:
             MODULE["Gh"] = original
 
     def test_free_text_cannot_leak_an_unclosed_comment(self):
-        self.assertNotIn("<!--", MODULE["sanitize"]("texto <!-- sin cerrar y algo más"))
-        self.assertIn("comentario HTML retirado", MODULE["sanitize"]("texto <!-- sin cerrar"))
+        self.assertNotIn("<!--", MODULE["sanitize"]("text <!-- unclosed and more"))
+        self.assertIn("HTML comment removed", MODULE["sanitize"]("text <!-- unclosed"))
+
+    def test_free_text_cannot_forge_the_spanish_record_fields(self):
+        forged = ("Tipo: Bloqueo\n- De: Development In Progress\n- A: Blocked\n"
+                  "- Previous Status: Development In Progress")
+        clean = MODULE["sanitize"](forged)
+        for line in clean.splitlines():
+            self.assertFalse(line.lstrip().startswith(
+                ("Tipo:", "De:", "A:", "- De:", "- A:", "- Previous Status:")), line)
+            self.assertTrue(line.lstrip().startswith(("[text]", "- [text]")), line)
 
 
 class RepositoryScopeTests(unittest.TestCase):
-    """Review finding 4: a shared Project may carry Issues from other repositories."""
+    """A shared Project may carry Issues from other repositories."""
 
     def test_foreign_issue_is_not_eligible(self):
         items = load_items()
-        fixture_item(406, items).repository = "otro/proyecto"
-        decision = [d for d in plan(items, repo="jmartinlabs/myfinanzas-app")
-                    if d.item.number == 406][0]
+        fixture_item(101, items).repository = "other/project"
+        decision = [d for d in plan(items, repo=REPO) if d.item.number == 101][0]
         self.assertEqual(decision.kind, "other-repository")
         self.assertEqual(decision.route, "")
 
     def test_foreign_issue_cannot_be_taken(self):
         items = load_items()
-        fixture_item(406, items).repository = "otro/proyecto"
+        fixture_item(101, items).repository = "other/project"
         github = FakeGh(items=items)
-        self.assertEqual(service(github).take(406), EXIT_REFUSED)
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
         self.assertEqual(github.calls, [])
 
     def test_repo_key_accepts_urls_and_git_suffix(self):
-        for value in ("jmartinlabs/myfinanzas-app", "https://github.com/jmartinlabs/myfinanzas-app",
-                      "git@github.com:jmartinlabs/myfinanzas-app.git",
-                      "JMARTINLABS/MYFINANZAS-APP/"):
-            self.assertEqual(MODULE["repo_key"](value), "jmartinlabs/myfinanzas-app", value)
+        for value in (REPO, "https://github.com/acme/widgets",
+                      "git@github.com:acme/widgets.git", "ACME/WIDGETS/"):
+            self.assertEqual(MODULE["repo_key"](value), REPO, value)
+
+    def test_repo_slug_validates_or_refuses(self):
+        self.assertEqual(MODULE["repo_slug"]("acme/widgets"), ("acme", "widgets"))
+        self.assertEqual(MODULE["repo_slug"]("https://github.com/acme/widgets.git"),
+                         ("acme", "widgets"))
+        for value in ("widgets", "acme/widgets/extra", "", None):
+            with self.assertRaises(ValueError):
+                MODULE["repo_slug"](value)
 
     def test_adapter_refuses_an_item_from_another_repository(self):
         raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        raw["items"][0]["content"]["repository"] = "otro/proyecto"
-        github = Gh("jmartinlabs", 4, "jmartinlabs/myfinanzas-app", runner=AdapterTests().runner(
-            items=raw))
+        raw["items"][1]["content"]["repository"] = "other/project"
+        github = Gh("acme", 7, REPO, runner=AdapterTests().runner(items=raw))
         with self.assertRaises(WorkIssueError) as caught:
-            github.item(406)
-        self.assertIn("otro/proyecto", str(caught.exception))
+            github.item(101)
+        self.assertIn("other/project", str(caught.exception))
+
+
+class ProjectDiagnosisTests(unittest.TestCase):
+    """A Project that returns no work for the requested repository is diagnosed, not assumed.
+
+    An empty Project, a Project holding another repository's Issues and a Project whose own
+    Issues are all outside a Ready status share one symptom. The tool must name the case, and
+    must never turn a legitimate read into a failure or a real failure into an empty queue.
+    """
+
+    def items(self, *specs):
+        """(number, status, repository) triples, so a case reads as what it means."""
+        return [MODULE["Item"](number=number, title="Issue %d" % number, status=status,
+                               repository=repository)
+                for number, status, repository in specs]
+
+    def test_an_empty_project_is_a_notice_and_not_an_error(self):
+        out = []
+        service(FakeGh(items=[]), out=out.append).inventory()
+        text = "\n".join(out)
+        self.assertIn("Notice: Project #7 (acme) returned no items.", text)
+        self.assertIn("A new Project is legitimately empty; nothing is wrong.", text)
+        out = []
+        self.assertEqual(service(FakeGh(items=[]), out=out.append).next_issue(), EXIT_EMPTY)
+        self.assertIn("Notice: Project #7 (acme) returned no items.", "\n".join(out))
+
+    def test_drafts_and_pull_requests_are_a_legitimately_empty_project(self):
+        raw = {"items": [{"content": {"type": "DraftIssue"}},
+                         {"content": {"type": "PullRequest", "number": 4}}]}
+        github = Gh("acme", 7, REPO, runner=AdapterTests().runner(items=raw))
+        out = []
+        Service(github, "hermes", "Coordinador funcional", out.append).inventory()
+        text = "\n".join(out)
+        self.assertIn("returned no items", text)
+        self.assertIn("holds 2 draft or pull-request item(s); only Issues are work items", text)
+        self.assertNotIn("WARNING", text)
+
+    def test_foreign_items_warn_that_the_project_is_probably_the_wrong_one(self):
+        items = self.items((301, "Ready Development", "other/project"),
+                           (302, "Backlog", "another/thing"),
+                           (303, "Ready Analysis", "other/project"))
+        out = []
+        service(FakeGh(items=items), out=out.append).inventory()
+        text = "\n".join(out)
+        self.assertIn("WARNING: Project #7 (acme) contains no items for %s; found items from: "
+                      "another/thing, other/project." % REPO, text)
+        self.assertIn("You may be reading the wrong Project. Nothing has been reserved.", text)
+        self.assertNotIn("Notice:", text)
+        out = []
+        self.assertEqual(service(FakeGh(items=items), out=out.append).next_issue(), EXIT_EMPTY)
+        self.assertIn("WARNING: Project #7 (acme) contains no items for %s" % REPO,
+                      "\n".join(out))
+
+    def test_own_items_outside_ready_are_an_informative_notice(self):
+        items = self.items((301, "Backlog", REPO), (302, "Done", REPO),
+                           (303, "Analysis In Progress", REPO))
+        out = []
+        service(FakeGh(items=items), out=out.append).inventory()
+        text = "\n".join(out)
+        self.assertIn("Notice: %s has 3 item(s) in Project #7 (acme), none in a Ready status."
+                      % REPO, text)
+        self.assertNotIn("WARNING", text)
+        self.assertNotIn("wrong Project", text)
+        out = []
+        self.assertEqual(service(FakeGh(items=items), out=out.append).next_issue(), EXIT_EMPTY)
+        self.assertIn("none in a Ready status", "\n".join(out))
+        self.assertNotIn("WARNING", "\n".join(out))
+
+    def test_a_failed_project_read_blocks_without_the_warning(self):
+        out = []
+        with self.assertRaises(WorkIssueError):
+            service(FakeGh(fail={"items"}), out=out.append).inventory()
+        self.assertEqual(out, [])
+        with tempfile.TemporaryDirectory(prefix="work-issue-diagnosis-") as state:
+            proc = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO,
+                                   "--project", "7", "inventory"],
+                                  capture_output=True, text=True, encoding="utf-8",
+                                  env=fake_gh(state, items_code=1))
+        self.assertEqual(proc.returncode, EXIT_FAILED)
+        self.assertIn("Blocked:", proc.stderr)
+        self.assertNotIn("WARNING", proc.stdout)
+        self.assertNotIn("returned no items", proc.stdout)
+
+    def test_truncated_next_still_blocks_and_still_diagnoses(self):
+        items = self.items((301, "Ready Development", "other/project"))
+        out = []
+        with self.assertRaises(WorkIssueError):
+            service(FakeGh(items=items, truncated=True), out=out.append).next_issue()
+        self.assertIn("WARNING: Project #7 (acme) contains no items for %s" % REPO,
+                      "\n".join(out))
+
+    def test_own_ready_items_add_no_notice(self):
+        out = []
+        service(FakeGh(), out=out.append).inventory()
+        text = "\n".join(out)
+        self.assertIn("INVENTORY", text)
+        self.assertNotIn("Notice:", text)
+        self.assertNotIn("WARNING", text)
+        out = []
+        self.assertEqual(service(FakeGh(), out=out.append).next_issue(), EXIT_OK)
+        self.assertNotIn("Notice:", "\n".join(out))
+
+    def test_cli_exit_codes_survive_an_empty_project(self):
+        with tempfile.TemporaryDirectory(prefix="work-issue-diagnosis-") as state:
+            env = fake_gh(state, items={"items": []})
+            inventory = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO,
+                                        "--project", "7", "inventory"],
+                                       capture_output=True, text=True, encoding="utf-8", env=env)
+            following = subprocess.run([sys.executable, str(SCRIPT), "--repo", REPO,
+                                        "--project", "7", "next", "--agent", "hermes"],
+                                       capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertEqual(inventory.returncode, EXIT_OK, inventory.stderr)
+        self.assertIn("Notice: Project #7 (acme) returned no items.", inventory.stdout)
+        self.assertEqual(following.returncode, EXIT_EMPTY, following.stderr)
+        self.assertIn("Notice: Project #7 (acme) returned no items.", following.stdout)
+
+
+class PilotCompatibilityTests(unittest.TestCase):
+    """The wire format is the one the operating pilot already publishes."""
+
+    def test_roles_and_sections_are_the_pilot_identifiers(self):
+        self.assertEqual(MODULE["ROLES"],
+                         ("Coordinador funcional", "Ejecutor", "Revisor"))
+        self.assertEqual(MODULE["CONTEXT_SECTIONS"],
+                         ("## Decisiones vigentes", "## Estado", "## Alcance autorizado",
+                          "## Fuentes consultadas"))
+
+    def test_generated_comments_use_the_pilot_header_and_record_keys(self):
+        item = fixture_item(120)
+        claim = claim_body("hermes", "Coordinador funcional", "development", item)
+        report = report_body("hermes", "Coordinador funcional", "development", item,
+                             "Development In Review", note="delivered")
+        for body in (claim, report):
+            for token in ("Autor: hermes", "Rol: Coordinador funcional", "Fase: Development"):
+                self.assertIn(token, body)
+            for token in ("Author:", "Role:", "Phase:", "Type:", "Executor:", "From:", "To:"):
+                self.assertNotIn(token, body)
+        self.assertIn("Tipo: Inicio", claim)
+        self.assertIn("Tipo: Informe", report)
+        self.assertIn("- De: Development In Progress", report)
+        self.assertIn("- A: Development In Review", report)
+
+    def test_pilot_claim_is_recognized(self):
+        self.assertEqual(MODULE["comment_kind"](PILOT_CLAIM), "claim")
+        self.assertEqual(MODULE["claim_of"](PILOT_CLAIM), ("hermes", 120))
+
+    def test_pilot_block_record_authorizes_the_restore(self):
+        items = load_items()
+        fixture_item(120, items).status = "Blocked"
+        github = FakeGh(items=items, claims={120: [
+            {"id": 11, "body": PILOT_CLAIM},
+            {"id": 12, "body": PILOT_BLOCK},
+        ]})
+        svc = service(github)          # a fresh receipt on top of the pilot comments
+        self.assertEqual(svc.blocked_previous(120, "hermes"), "Development In Progress")
+        self.assertEqual(svc.move(120, None, restore=True), EXIT_OK)
+        self.assertIn(("status", 120, "Development In Progress"), github.calls)
+
+    def test_pilot_receipt_is_current_and_unblocks_take(self):
+        github = FakeGh()
+        material = []
+        digest = MODULE["fingerprint"](fixture_item(101), material)
+        github.comments_store[101] = [
+            {"id": 5, "body": PILOT_RECEIPT.format(digest=digest, count=len(material))}]
+        lines = []
+        svc = Service(github, "hermes", "Coordinador funcional", lines.append)
+        self.assertEqual(svc.context(101, "hermes"), EXIT_OK)
+        self.assertIn("Checkpoint: CURRENT", "\n".join(lines))
+        self.assertEqual(svc.take(101), EXIT_OK)
+
+    def test_marker_alone_or_text_after_it_is_not_a_receipt(self):
+        marker = PILOT_RECEIPT.format(digest="0123456789ab", count=0).splitlines()[-1]
+        self.assertFalse(MODULE["is_receipt_body"](marker))
+        self.assertNotEqual(MODULE["comment_kind"](marker), "context")
+        self.assertIsNone(MODULE["context_of"](
+            PILOT_RECEIPT.format(digest="0123456789ab", count=0) + "\ntrailing note"))
+
+    def test_the_english_candidate_format_is_not_treated_as_a_block(self):
+        english = PILOT_BLOCK.replace("Tipo: Bloqueo", "Type: Block").replace(
+            "- De:", "- From:").replace("- A:", "- To:")
+        items = load_items()
+        fixture_item(120, items).status = "Blocked"
+        github = FakeGh(items=items, claims={120: [
+            {"id": 11, "body": PILOT_CLAIM},
+            {"id": 12, "body": english},
+        ]})
+        self.assertIsNone(service(github).blocked_previous(120, "hermes"))
+
+
+class CrossRepositoryDependencyTests(unittest.TestCase):
+    """A dependency number only resolves inside the target repository."""
+
+    def item(self, number, status, repository=REPO, body="", assignees=None):
+        return MODULE["Item"](number=number, title="Issue %d" % number, status=status,
+                              body=body, repository=repository,
+                              assignees=list(assignees or []))
+
+    def decisions(self, items):
+        return {decision.item.number: decision
+                for decision in plan(items, "hermes", repo=REPO)}
+
+    def test_foreign_done_never_satisfies_a_local_dependency(self):
+        local = self.item(101, "Ready Development", body="Depends on #7.")
+        foreign_done = self.item(7, "Done", repository="other/project")
+        foreign_ready = self.item(8, "Ready Development", repository="other/project")
+        decisions = self.decisions([local, foreign_done, foreign_ready])
+        self.assertEqual(decisions[101].kind, "unverified-dependency")
+        self.assertEqual(decisions[101].unverified, [7])
+        self.assertEqual(decisions[8].kind, "other-repository")   # still inventoried
+
+    def test_number_collisions_do_not_depend_on_item_order(self):
+        cases = (("Ready Development", "Done", "blocked-dependency"),
+                 ("Done", "Ready Development", "eligible"))
+        for local_status, foreign_status, expected in cases:
+            with self.subTest(local=local_status, foreign=foreign_status):
+                target = self.item(101, "Ready Development", body="Depends on #7.")
+                local = self.item(7, local_status)
+                foreign = self.item(7, foreign_status, repository="other/project")
+                for order in ([target, local, foreign], [target, foreign, local]):
+                    decision = self.decisions(order)[101]
+                    self.assertEqual(decision.kind, expected)
+
+    def test_take_writes_nothing_when_only_a_foreign_done_issue_matches(self):
+        local = self.item(101, "Ready Development", body="Depends on #7.")
+        foreign = self.item(7, "Done", repository="other/project")
+        github = FakeGh(items=[local, foreign])
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_qualified_dependency_fails_closed_even_with_a_local_done_number(self):
+        local = self.item(101, "Ready Development", body="Depends on other/project#7.")
+        local_done = self.item(7, "Done")
+        decisions = self.decisions([local, local_done])
+        self.assertEqual(decisions[101].kind, "unverified-dependency")
+        self.assertEqual(decisions[101].unverified, [7])
+        self.assertEqual(MODULE["dependencies"](local.body), [])
+        self.assertEqual(MODULE["qualified_dependencies"](local.body), [7])
+        self.assertEqual(MODULE["qualified_dependencies"](
+            "No depende de other/project#7."), [])
+        github = FakeGh(items=[local, local_done])
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_qualified_issue_url_dependency_fails_closed(self):
+        local = self.item(
+            101, "Ready Development",
+            body="Depends on https://github.com/other/project/issues/7")
+        local_done = self.item(7, "Done")
+        decision = self.decisions([local, local_done])[101]
+        self.assertEqual(decision.kind, "unverified-dependency")
+        self.assertEqual(decision.unverified, [7])
+
+    def test_resumption_writes_nothing_when_the_dependency_is_only_foreign(self):
+        local = self.item(101, "Ready Development", body="Depends on #7.",
+                          assignees=["acme-bot"])
+        foreign = self.item(7, "Done", repository="other/project")
+        claim = claim_body("hermes", "Coordinador funcional", "development", local)
+        github = FakeGh(items=[local, foreign], claims={101: [{"id": 11, "body": claim}]})
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+        self.assertEqual(len(claim_comments(github, 101)), 1)
 
 
 class ContextTests(unittest.TestCase):
-    """Issue #406 (2026-11-12): context recovery before substantive work."""
+    """Context recovery before substantive work."""
 
     def svc(self, github, agent="hermes"):
         return Service(github, agent, "Coordinador funcional", lambda line: None)
@@ -1055,23 +1481,23 @@ class ContextTests(unittest.TestCase):
     def with_comments(self, comments, body=""):
         items = load_items()
         if body:
-            fixture_item(406, items).body = body
+            fixture_item(101, items).body = body
         github = FakeGh(items=items)
-        github.comments_store[406] = [dict(entry) for entry in comments]
+        github.comments_store[101] = [dict(entry) for entry in comments]
         return github
 
     def read_context(self, github, agent="hermes", repo_root="."):
         lines = []
         code = Service(github, agent, "Coordinador funcional", lines.append).context(
-            406, agent, repo_root=repo_root)
+            101, agent, repo_root=repo_root)
         return code, "\n".join(lines)
 
     def test_take_requires_a_context_receipt(self):
         github = FakeGh()
         lines = []
-        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(406)
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(101)
         self.assertEqual(code, EXIT_REFUSED)
-        self.assertIn("recibo de contexto vigente", "\n".join(lines))
+        self.assertIn("context receipt", "\n".join(lines))
         self.assertEqual(github.calls, [])
 
     def test_reading_the_history_is_not_needed_twice_when_the_checkpoint_is_valid(self):
@@ -1079,29 +1505,29 @@ class ContextTests(unittest.TestCase):
         seed_receipts(github)
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
-        self.assertIn("Checkpoint: VIGENTE", out)
+        self.assertIn("Checkpoint: CURRENT", out)
 
     def test_checkpoint_expires_when_a_new_comment_arrives(self):
         github = FakeGh()
         seed_receipts(github)
-        github.comments_store[406].append({"id": 900, "body": "Comentario nuevo del usuario"})
+        github.comments_store[101].append({"id": 900, "body": "New user comment"})
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
-        self.assertIn("CADUCADO", out)
-        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
+        self.assertIn("EXPIRED", out)
+        self.assertEqual(self.svc(github).take(101), EXIT_REFUSED)
 
     def test_checkpoint_expires_when_the_status_changes(self):
         github = FakeGh()
         seed_receipts(github)
-        fixture_item(406, github.data).status = "Backlog"
-        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
+        fixture_item(101, github.data).status = "Backlog"
+        self.assertEqual(self.svc(github).take(101), EXIT_REFUSED)
 
     def test_context_reads_the_whole_history_not_only_the_last_comment(self):
         github = self.with_comments([
-            {"id": 1, "body": "Apruebo el alcance del piloto.", "user": {"login": "jmartinlabs"}},
-            {"id": 2, "body": "Nota de progreso sin decisión."},
-            {"id": 3, "body": "Otra nota."},
-            {"id": 4, "body": "Último comentario puramente informativo."},
+            {"id": 1, "body": "I approve the fixture scope.", "user": {"login": "acme-bot"}},
+            {"id": 2, "body": "Progress note without a decision."},
+            {"id": 3, "body": "Another note."},
+            {"id": 4, "body": "Last comment, purely informative."},
         ])
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
@@ -1114,7 +1540,7 @@ class ContextTests(unittest.TestCase):
     def test_an_agent_claim_does_not_count_as_a_decision(self):
         github = self.with_comments([
             {"id": 1, "body": claim_body("hermes", "Coordinador funcional", "development",
-                                         fixture_item(406))},
+                                         fixture_item(101))},
         ])
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
@@ -1123,8 +1549,8 @@ class ContextTests(unittest.TestCase):
         self.assertIn("authorization-unverified", out)
 
     def test_context_detects_conflicting_claims(self):
-        claims = [claim_body("hermes", "Coordinador funcional", "development", fixture_item(406)),
-                  claim_body("opencode", "Coordinador funcional", "development", fixture_item(406))]
+        claims = [claim_body("hermes", "Coordinador funcional", "development", fixture_item(101)),
+                  claim_body("opencode", "Coordinador funcional", "development", fixture_item(101))]
         github = self.with_comments([{"id": 1, "body": claims[0]}, {"id": 2, "body": claims[1]}])
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
@@ -1133,27 +1559,27 @@ class ContextTests(unittest.TestCase):
     def test_context_detects_a_report_that_disagrees_with_the_status(self):
         github = self.with_comments([
             {"id": 1, "body": report_body("hermes", "Coordinador funcional", "development",
-                                          fixture_item(406), "Development In Review",
-                                          note="informe")},
+                                          fixture_item(101), "Development In Review",
+                                          note="report")},
         ])
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
         self.assertIn("status-vs-report", out)
 
     def test_context_reports_a_missing_spec_reference(self):
-        github = self.with_comments([{"id": 1, "body": "Ver specs/99-inexistente.md"}])
+        github = self.with_comments([{"id": 1, "body": "See specs/99-missing.md"}])
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
         self.assertIn("spec-missing", out)
         root = tempfile.mkdtemp(prefix="wi-spec-")
         self.addCleanup(lambda: __import__("shutil").rmtree(root, ignore_errors=True))
         Path(root, "specs").mkdir(parents=True, exist_ok=True)
-        Path(root, "specs/99-inexistente.md").write_text("SPEC", encoding="utf-8")
+        Path(root, "specs/99-missing.md").write_text("SPEC", encoding="utf-8")
         code, out = self.read_context(github, repo_root=root)
         self.assertNotIn("spec-missing", out)
 
     def test_context_blocks_when_the_history_cannot_be_fully_read(self):
-        comments = [{"id": number, "body": "nota %d" % number}
+        comments = [{"id": number, "body": "note %d" % number}
                     for number in range(1, MODULE["COMMENT_LIMIT"] + 2)]
         github = self.with_comments(comments)
         code, out = self.read_context(github)
@@ -1167,131 +1593,127 @@ class ContextTests(unittest.TestCase):
 
     def test_context_publishes_a_bound_receipt_and_unblocks_take(self):
         github = FakeGh()
-        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
+        self.assertEqual(self.svc(github).take(101), EXIT_REFUSED)
         code = Service(github, "hermes", "Coordinador funcional",
-                       lambda line: None).context(406, "hermes", publish=True, summary=SUMMARY)
+                       lambda line: None).context(101, "hermes", publish=True, summary=SUMMARY)
         self.assertEqual(code, EXIT_OK)
-        self.assertTrue(MODULE["context_of"](github.comments_store[406][-1]["body"]))
-        self.assertEqual(self.svc(github).take(406), EXIT_OK)
+        self.assertTrue(MODULE["context_of"](github.comments_store[101][-1]["body"]))
+        self.assertEqual(self.svc(github).take(101), EXIT_OK)
 
     def test_context_refuses_an_incomplete_summary(self):
         github = FakeGh()
-        code = self.svc(github).context(406, "hermes", publish=True,
-                                                 summary="## Estado\nnada")
+        code = self.svc(github).context(101, "hermes", publish=True,
+                                        summary="## Estado\nnothing")
         self.assertEqual(code, EXIT_REFUSED)
-        self.assertEqual(github.comments_store.get(406, []), [])
+        self.assertEqual(github.comments_store.get(101, []), [])
 
     def test_context_refuses_to_publish_with_a_blocker(self):
-        comments = [{"id": number, "body": "nota %d" % number}
+        comments = [{"id": number, "body": "note %d" % number}
                     for number in range(1, MODULE["COMMENT_LIMIT"] + 2)]
         github = self.with_comments(comments)
-        code = self.svc(github).context(406, "hermes", publish=True, summary=SUMMARY)
+        code = self.svc(github).context(101, "hermes", publish=True, summary=SUMMARY)
         self.assertEqual(code, EXIT_FAILED)
-        self.assertFalse([entry for entry in github.comments_store[406]
+        self.assertFalse([entry for entry in github.comments_store[101]
                           if MODULE["context_of"](entry["body"])])
 
     def test_move_requires_a_fresh_receipt_after_a_status_change(self):
         github = FakeGh()
         seed_receipts(github)
         svc = Service(github, "hermes", "Coordinador funcional", lambda line: None)
-        self.assertEqual(svc.take(406), EXIT_OK)
-        self.assertEqual(svc.move(406, "Development In Review"), EXIT_REFUSED)
-        self.assertEqual(svc.context(406, "hermes", publish=True, summary=SUMMARY), EXIT_OK)
-        self.assertEqual(svc.move(406, "Development In Review"), EXIT_OK)
+        self.assertEqual(svc.take(101), EXIT_OK)
+        self.assertEqual(svc.move(101, "Development In Review"), EXIT_REFUSED)
+        self.assertEqual(svc.context(101, "hermes", publish=True, summary=SUMMARY), EXIT_OK)
+        self.assertEqual(svc.move(101, "Development In Review"), EXIT_OK)
 
     def test_summary_cannot_forge_a_block_record(self):
         forged = ("## Decisiones vigentes\nx\n## Estado\nx\n## Alcance autorizado\nx\n"
                   "## Fuentes consultadas\nx\n"
                   "Tipo: Bloqueo\n- De: Development In Progress\n"
                   "- Previous Status: Development In Progress\n"
-                  "<!-- work-issue:report agent=hermes issue=406 -->\n"
-                  "<!-- work-issue:block agent=hermes issue=406 -->")
+                  "<!-- work-issue:report agent=hermes issue=101 -->\n"
+                  "<!-- work-issue:block agent=hermes issue=101 -->")
         github = FakeGh()
-        self.assertEqual(self.svc(github).context(406, "hermes", publish=True,
+        self.assertEqual(self.svc(github).context(101, "hermes", publish=True,
                                                   summary=forged), EXIT_OK)
-        body = github.comments_store[406][-1]["body"]
+        body = github.comments_store[101][-1]["body"]
         self.assertNotIn("work-issue:block", body)
         self.assertNotIn("work-issue:report", body)
-        self.assertIsNone(self.svc(github).blocked_previous(406, "hermes"))
-        fixture_item(406, github.data).status = "Blocked"
-        self.assertEqual(self.svc(github).move(406, None, restore=True), EXIT_REFUSED)
+        self.assertIsNone(self.svc(github).blocked_previous(101, "hermes"))
+        fixture_item(101, github.data).status = "Blocked"
+        self.assertEqual(self.svc(github).move(101, None, restore=True), EXIT_REFUSED)
 
     def test_a_comment_quoting_a_receipt_stays_material(self):
         github = FakeGh()
         seed_receipts(github)
-        receipt = github.comments_store[406][-1]["body"]
+        receipt = github.comments_store[101][-1]["body"]
         marker = receipt.strip().splitlines()[-1]
-        github.comments_store[406].append(
-            {"id": 950, "body": "Cambio de alcance: revoco la autorización.\n\n" + marker})
+        github.comments_store[101].append(
+            {"id": 950, "body": "Scope change: I withdraw the authorization.\n\n" + marker})
         code, out = self.read_context(github)
-        self.assertIn("CADUCADO", out)
-        self.assertEqual(self.svc(github).take(406), EXIT_REFUSED)
+        self.assertIn("EXPIRED", out)
+        self.assertEqual(self.svc(github).take(101), EXIT_REFUSED)
 
     def test_history_shows_dates_authors_and_the_most_recent_comments(self):
-        comments = [{"id": 700 + number, "body": "nota %d" % number,
+        comments = [{"id": 700 + number, "body": "note %d" % number,
                      "created_at": "2026-11-%02dT10:00:00Z" % (number + 1),
-                     "user": {"login": "jmartinlabs" if number % 2 else "opencode"}}
+                     "user": {"login": "acme-bot" if number % 2 else "opencode"}}
                     for number in range(20)]
         github = self.with_comments(comments)
         code, out = self.read_context(github)
         self.assertEqual(code, EXIT_OK)
         self.assertIn("2026-11-20", out)
-        self.assertIn("jmartinlabs", out)
+        self.assertIn("acme-bot", out)
         self.assertTrue(any(line.strip().startswith("719 ") for line in out.splitlines()), out)
-        self.assertIn("comentarios omitidos", out)
+        self.assertIn("comments omitted", out)
 
     def test_publishing_refuses_a_status_outside_the_agent_phases(self):
-        github = FakeGh()
-        fixture_item(406, github.data).status = "Backlog"
-        self.assertEqual(self.svc(github).context(406, "hermes", publish=True,
-                                                  summary=SUMMARY), EXIT_REFUSED)
-        self.assertEqual(github.comments_store.get(406, []), [])
+        for status in ("Backlog", "Done"):
+            github = FakeGh()
+            fixture_item(101, github.data).status = status
+            self.assertEqual(self.svc(github).context(101, "hermes", publish=True,
+                                                      summary=SUMMARY), EXIT_REFUSED, status)
+            self.assertEqual(github.comments_store.get(101, []), [], status)
 
     def test_dry_run_does_not_require_a_receipt(self):
         github = FakeGh()
-        self.assertEqual(self.svc(github).take(406, dry_run=True), EXIT_OK)
+        self.assertEqual(self.svc(github).take(101, dry_run=True), EXIT_OK)
         self.assertEqual(github.calls, [])
 
     def test_take_refuses_an_unreadable_history(self):
-        github = self.with_comments([{"id": number, "body": "nota %d" % number}
+        github = self.with_comments([{"id": number, "body": "note %d" % number}
                                      for number in range(1, MODULE["COMMENT_LIMIT"] + 2)])
-        self.assertEqual(self.svc(github).take(406), EXIT_FAILED)
+        self.assertEqual(self.svc(github).take(101), EXIT_FAILED)
         self.assertEqual(github.calls, [])
+
+    def test_move_refuses_an_unreadable_history(self):
+        github = self.with_comments([{"id": number, "body": "note %d" % number}
+                                     for number in range(1, MODULE["COMMENT_LIMIT"] + 2)])
+        self.assertEqual(self.svc(github).move(101, "Development In Review"), EXIT_FAILED)
 
     def test_missing_summary_file_is_a_protocol_refusal(self):
         make = MODULE["build_parser"]().parse_args
-        args = make(["context", "--issue", "406", "--agent", "hermes",
+        args = make(["context", "--issue", "101", "--agent", "hermes",
                      "--publish", "--summary-file", "/nonexistent/summary.md"])
         self.assertIsNone(MODULE["read_summary"](args)[0])
         self.assertIn("No such file", MODULE["read_summary"](args)[1])
-        read_only = make(["context", "--issue", "406", "--agent", "hermes",
+        read_only = make(["context", "--issue", "101", "--agent", "hermes",
                           "--summary-file", "/nonexistent/summary.md"])
         self.assertEqual(MODULE["read_summary"](read_only), (None, None))
-        self.assertEqual(MODULE["main"](["context", "--issue", "406", "--agent", "hermes",
-                                        "--publish", "--summary-file",
-                                        "/nonexistent/summary.md"]), EXIT_REFUSED)
+        self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7", "context",
+                                       "--issue", "101", "--agent", "hermes",
+                                       "--publish", "--summary-file",
+                                       "/nonexistent/summary.md"]), EXIT_REFUSED)
 
     def test_a_missing_gh_binary_is_a_controlled_failure(self):
         stderr = io.StringIO()
         with unittest.mock.patch.object(MODULE["subprocess"], "run",
                                         side_effect=FileNotFoundError("gh")), \
                 contextlib.redirect_stderr(stderr):
-            code = MODULE["main"](["inventory", "--agent", "hermes"])
+            code = MODULE["main"](["--repo", REPO, "--project", "7", "inventory",
+                                   "--agent", "hermes"])
         self.assertEqual(code, EXIT_FAILED)
-        self.assertIn("no se pudo ejecutar gh", stderr.getvalue())
+        self.assertIn("could not execute gh", stderr.getvalue())
         self.assertNotIn("Traceback", stderr.getvalue())
-
-    def test_publishing_refuses_a_done_status(self):
-        github = FakeGh()
-        fixture_item(406, github.data).status = "Done"
-        self.assertEqual(self.svc(github).context(406, "hermes", publish=True,
-                                                  summary=SUMMARY), EXIT_REFUSED)
-        self.assertEqual(github.comments_store.get(406, []), [])
-
-    def test_move_refuses_an_unreadable_history(self):
-        github = self.with_comments([{"id": number, "body": "nota %d" % number}
-                                     for number in range(1, MODULE["COMMENT_LIMIT"] + 2)])
-        self.assertEqual(self.svc(github).move(406, "Development In Review"), EXIT_FAILED)
 
 
 class SessionContinuityTests(unittest.TestCase):
@@ -1302,34 +1724,33 @@ class SessionContinuityTests(unittest.TestCase):
                        lines.append if lines is not None else (lambda line: None))
 
     def head(self, lines):
-        return [line for line in lines if line.startswith("SIGUIENTE")][0]
+        return [line for line in lines if line.startswith("NEXT")][0]
 
     def test_next_prints_the_whole_queue_in_priority_order(self):
         lines = []
         self.assertEqual(self.session(FakeGh(), lines=lines).next_issue("hermes"), EXIT_OK)
         text = "\n".join(lines)
-        self.assertIn("COLA hermes (6): #417 (P0), #450 (P1), #451 (P2), #406 (sin prioridad), "
-                      "#410 (sin prioridad), #402 (sin prioridad)", text)
-        self.assertIn("SIGUIENTE #417 — Ready Development · fase development", text)
+        self.assertIn("QUEUE hermes (7): #101 (P0), #110 (P0), #111 (P1), #112 (P2), "
+                      "#117 (unprioritised), #103 (unprioritised), #102 (unprioritised)", text)
+        self.assertIn("NEXT #101 — Ready Development · phase development", text)
         self.assertIn("move --to \"Development In Review\"", text)
-        self.assertNotIn("reanudación", text)             # toma nueva, no reanudación
+        self.assertNotIn("resumption", text)
 
     def test_queue_order_is_eligibility_then_priority(self):
         decisions = plan(load_items(), "hermes")
-        self.assertEqual([d.item.number for d in session_queue(decisions)],
-                         [417, 450, 451, 406, 410, 402])
-        self.assertEqual([d.item.number for d in session_queue(decisions, [417, 450])],
-                         [451, 406, 410, 402])
+        self.assertEqual([d.item.number for d in session_queue(decisions)], QUEUE)
+        self.assertEqual([d.item.number for d in session_queue(decisions, [101, 110])],
+                         [111, 112, 117, 103, 102])
 
     def test_next_never_offers_another_agents_issue_or_a_blocked_one(self):
         lines = []
         self.session(FakeGh(), lines=lines).next_issue("hermes")
         text = "\n".join(lines)
-        self.assertNotIn("SIGUIENTE #452", text)          # P0 dirigida a opencode
-        self.assertIn("#452 no elegible: other-agent", text)
-        self.assertIn("#414 no elegible: taken", text)
-        self.assertIn("#453 no elegible: blocked-dependency", text)
-        self.assertIn("#416 no elegible: unverified-dependency", text)
+        self.assertNotIn("NEXT #113", text)          # P0 routed to opencode
+        self.assertIn("#113 not eligible: other-agent", text)
+        self.assertIn("#107 not eligible: other-agent", text)
+        self.assertIn("#108 not eligible: blocked-dependency", text)
+        self.assertIn("#109 not eligible: unverified-dependency", text)
 
     def test_next_does_not_write(self):
         github = FakeGh()
@@ -1339,53 +1760,61 @@ class SessionContinuityTests(unittest.TestCase):
 
     def test_exhausted_queue_reports_empty_and_the_reason(self):
         lines = []
-        code = self.session(FakeGh(), lines=lines).next_issue(
-            "hermes", [417, 450, 451, 406, 410, 402])
+        code = self.session(FakeGh(), lines=lines).next_issue("hermes", QUEUE)
         self.assertEqual(code, EXIT_EMPTY)
         text = "\n".join(lines)
-        self.assertIn("SIN TRABAJO ELEGIBLE para hermes", text)
-        self.assertIn("#417 omitida: ya gestionada en esta sesión", text)
-        self.assertIn("#453 no elegible: blocked-dependency", text)
+        self.assertIn("NO ELIGIBLE WORK for hermes", text)
+        self.assertIn("#101 skipped: already handled in this session", text)
+        self.assertIn("#114 not eligible: blocked-dependency", text)
 
     def test_truncated_project_is_not_a_complete_queue(self):
         with self.assertRaises(WorkIssueError):
             self.session(FakeGh(truncated=True)).next_issue("hermes")
 
-    def test_next_requires_a_catalogue_agent(self):
+    def test_next_rejects_an_agent_outside_the_catalogue(self):
         with self.assertRaises(WorkIssueError):
-            Service(FakeGh(), None, "Coordinador funcional").next_issue(None)
+            Service(FakeGh(), None, "Coordinador funcional").next_issue("gemini")
+
+    def test_next_without_an_agent_lists_only_unrouted_issues(self):
+        lines = []
+        self.assertEqual(Service(FakeGh(), None, "Coordinador funcional",
+                                 lines.append).next_issue(None), EXIT_OK)
+        text = "\n".join(lines)
+        self.assertIn("QUEUE (no agent)", text)
+        self.assertIn("#103 not eligible: other-agent", text)
+        self.assertNotIn("NEXT #103", text)
 
     def test_a_pending_human_decision_does_not_block_the_next_issue(self):
         github = FakeGh()
         svc = service(github)
-        self.assertEqual(svc.take(417), EXIT_OK)
+        self.assertEqual(svc.take(101), EXIT_OK)
         seed_receipts(github)
-        self.assertEqual(svc.move(417, "Development In Review",
-                                  note="Falta decisión del usuario sobre el alcance"), EXIT_OK)
+        self.assertEqual(svc.move(101, "Development In Review",
+                                  note="User decision pending on the scope"), EXIT_OK)
         lines = []
         self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
-        self.assertIn("SIGUIENTE #450", self.head(lines))
-        self.assertEqual(fixture_item(417, github.data).status, "Development In Review")
+        self.assertIn("NEXT #110", self.head(lines))
+        self.assertEqual(fixture_item(101, github.data).status, "Development In Review")
 
     def test_a_dependency_in_review_keeps_its_dependent_out_of_the_queue(self):
         github = FakeGh()
         svc = service(github)
-        self.assertEqual(svc.take(406), EXIT_OK)          # #415 depende de #406
+        self.assertEqual(svc.take(101), EXIT_OK)          # #108 depends on #101
         seed_receipts(github)
-        self.assertEqual(svc.move(406, "Development In Review", note="entregada"), EXIT_OK)
+        self.assertEqual(svc.move(101, "Development In Review", note="delivered"), EXIT_OK)
         lines = []
         self.session(github, lines=lines).next_issue("hermes")
         text = "\n".join(lines)
-        self.assertIn("#415 no elegible: blocked-dependency", text)
-        self.assertNotIn("SIGUIENTE #415", text)
+        self.assertIn("#108 not eligible: blocked-dependency", text)
+        self.assertNotIn("NEXT #108", text)
 
     def test_one_session_works_every_eligible_issue_and_stops_when_empty(self):
         github = FakeGh()
-        svc = service(github)                              # recibo del estado Ready
+        svc = service(github)                              # receipt for the Ready state
         worked, rounds = [], 0
         while True:
             rounds += 1
-            self.assertLessEqual(rounds, 10, "la sesión no terminó por sí sola")
+            self.assertLessEqual(rounds, 10, "the session did not end by itself")
             lines = []
             code = self.session(github, lines=lines).next_issue("hermes")
             if code == EXIT_EMPTY:
@@ -1394,66 +1823,362 @@ class SessionContinuityTests(unittest.TestCase):
             number = int(self.head(lines).split("#")[1].split()[0])
             self.assertEqual(svc.take(number), EXIT_OK)
             worked.append(number)
-            seed_receipts(github)                          # nuevo estado, nuevo recibo
+            seed_receipts(github)                          # new state, new receipt
             status = fixture_item(number, github.data).status
-            self.assertEqual(svc.move(number, REVIEW[status], note="entregada"), EXIT_OK)
-            # La entrega de una Issue no cierra la sesión: la siguiente ronda sigue.
+            self.assertEqual(svc.move(number, REVIEW[status], note="delivered"), EXIT_OK)
+            # Delivering one Issue never closes the session: the next round continues.
             self.assertEqual(self.session(github).next_issue("hermes"), EXIT_EMPTY
-                             if len(worked) == 6 else EXIT_OK)
+                             if len(worked) == len(QUEUE) else EXIT_OK)
 
-        self.assertEqual(worked, [417, 450, 451, 406, 410, 402])
-        self.assertNotIn(415, worked)                      # dependencia aún no Done
+        self.assertEqual(worked, QUEUE)
         self.assertEqual(rounds, len(worked) + 1)
         for number in worked:
             item = fixture_item(number, github.data)
             self.assertTrue(item.status.endswith("In Review"), item.status)
             self.assertNotEqual(item.status, "Done")
             self.assertEqual(len(claim_comments(github, number)), 1)
-        self.assertFalse([entry for entry in github.data if entry.status == "Done"])
+        self.assertFalse([entry for entry in github.data if entry.status == "Done"
+                          and entry.number != 100])
 
     def test_a_rejected_review_returns_to_the_head_of_the_queue(self):
         github = FakeGh()
         svc = service(github)
-        self.assertEqual(svc.take(417), EXIT_OK)
+        self.assertEqual(svc.take(101), EXIT_OK)
         seed_receipts(github)
-        self.assertEqual(svc.move(417, "Development In Review", note="entregada"), EXIT_OK)
-        for entry in github.data:                      # el usuario devuelve la Issue a la fase
-            if entry.number == 417:
+        self.assertEqual(svc.move(101, "Development In Review", note="delivered"), EXIT_OK)
+        for entry in github.data:                      # the user returns the Issue to the phase
+            if entry.number == 101:
                 entry.status = "Ready Development"
         lines = []
         self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
-        self.assertIn("SIGUIENTE #417", self.head(lines))
-        self.assertIn("reanudación", self.head(lines))
-        seed_receipts(github)                          # nuevo estado Ready, nuevo recibo
-        self.assertEqual(svc.take(417), EXIT_OK)       # reanuda su propia toma
-        self.assertEqual(len(claim_comments(github, 417)), 1)
-
-    def test_a_history_over_the_read_limit_is_not_offered_as_resumable(self):
-        github = FakeGh()
-        svc = service(github)
-        self.assertEqual(svc.take(417), EXIT_OK)
-        seed_receipts(github)
-        self.assertEqual(svc.move(417, "Development In Review", note="entregada"), EXIT_OK)
-        for entry in github.data:                      # el usuario la devuelve a la fase
-            if entry.number == 417:
-                entry.status = "Ready Development"
-        limit = MODULE["COMMENT_LIMIT"]
-        github.comments_store[417] += [{"id": 9000 + n, "body": "nota %d" % n}
-                                       for n in range(limit)]
-        lines = []
-        self.assertEqual(self.session(github, lines=lines).next_issue("hermes"), EXIT_OK)
-        self.assertNotIn("SIGUIENTE #417", self.head(lines))
-        self.assertIn("#417 no elegible: taken — historial por encima del límite",
-                      "\n".join(lines))
+        self.assertIn("NEXT #101", self.head(lines))
+        seed_receipts(github)                          # new Ready state, new receipt
+        self.assertEqual(svc.take(101), EXIT_OK)       # resumes its own claim
+        self.assertEqual(len(claim_comments(github, 101)), 1)
 
     def test_reserved_issue_leaves_the_queue_without_a_double_claim(self):
         github = FakeGh()
         svc = service(github)
-        self.assertEqual(svc.take(417), EXIT_OK)           # ya reservada: fuera de Ready
+        self.assertEqual(svc.take(101), EXIT_OK)           # already reserved: out of Ready
         lines = []
         self.session(github, lines=lines).next_issue("hermes")
-        self.assertIn("SIGUIENTE #450", self.head(lines))
-        self.assertEqual(len(claim_comments(github, 417)), 1)
+        self.assertIn("NEXT #110", self.head(lines))
+        self.assertEqual(len(claim_comments(github, 101)), 1)
+
+
+class LateClaimGh(FakeGh):
+    """A rival claim that only becomes visible after the first history read."""
+
+    def __init__(self, *args, after=1, number=120, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.after = after
+        self.claim_number = number
+
+    def comments(self, number):
+        entries = super().comments(number)
+        if number == self.claim_number and self.comment_reads > self.after:
+            rival = {"id": 777, "body": claim_body(
+                "opencode", "Coordinador funcional", "development", fixture_item(number))}
+            if all(entry["id"] != 777 for entry in entries):
+                entries = entries + [rival]
+        return entries
+
+
+class OwnershipExclusivityTests(unittest.TestCase):
+    """A delivery is refused unless the agent holds the only claim; the assignee is ignored.
+
+    A historical claim of our own is not enough: a foreign assignee or a competing claim means
+    the Issue is not ours to write, and the tool never takes it over or clears it.
+    """
+
+    def progress(self, assignees=None, rival=False, status="Development In Progress"):
+        items = load_items()
+        fixture_item(120, items).status = status
+        if assignees is not None:
+            fixture_item(120, items).assignees = list(assignees)
+        comments = [{"id": 11, "body": claim_body(
+            "hermes", "Coordinador funcional", "development", fixture_item(120, items))}]
+        if rival:
+            comments.append({"id": 12, "body": claim_body(
+                "opencode", "Coordinador funcional", "development", fixture_item(120, items))})
+        return FakeGh(items=items, claims={120: comments})
+
+    def blocked(self, assignees=None):
+        items = load_items()
+        fixture_item(120, items).status = "Development In Progress"
+        if assignees is not None:
+            fixture_item(120, items).assignees = list(assignees)
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(120, items))
+        block = report_body("hermes", "Coordinador funcional", "development",
+                            fixture_item(120, items), "Blocked",
+                            previous_status="Development In Progress", note="reason")
+        fixture_item(120, items).status = "Blocked"
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim},
+                                                 {"id": 12, "body": block}]})
+
+    def test_move_ignores_a_foreign_assignee(self):
+        github = self.progress(assignees=["other-human"])
+        code = service(github).move(120, "Development In Review", note="QA only")
+        self.assertEqual(code, EXIT_OK)
+        self.assertEqual(fixture_item(120, github.data).assignees, ["other-human"])
+
+    def test_move_refuses_a_competing_claim_even_when_ours_is_older(self):
+        github = self.progress(rival=True)
+        self.assertEqual(service(github).move(120, "Development In Review", note="QA only"),
+                         EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+        self.assertEqual(fixture_item(120, github.data).status, "Development In Progress")
+
+    def test_move_dry_run_applies_the_same_ownership_gate(self):
+        for github in (self.progress(rival=True),):
+            self.assertEqual(service(github).move(120, "Development In Review", dry_run=True),
+                             EXIT_REFUSED, github.item_reads)
+            self.assertEqual(github.calls, [])
+
+    def test_restore_ignores_a_foreign_assignee(self):
+        github = self.blocked(assignees=["other-human"])
+        self.assertEqual(service(github).move(120, None, restore=True), EXIT_OK)
+
+    def test_move_rechecks_the_ownership_immediately_before_writing(self):
+        github = LateClaimGh(items=load_items(), claims={120: [{"id": 11, "body": claim_body(
+            "hermes", "Coordinador funcional", "development", fixture_item(120))}]})
+        fixture_item(120, github.data).status = "Development In Progress"
+        code = service(github).move(120, "Development In Review", note="QA only")
+        self.assertEqual(code, EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+        self.assertEqual(fixture_item(120, github.data).status, "Development In Progress")
+
+    def test_exclusive_ownership_still_delivers(self):
+        github = self.progress(assignees=["acme-bot"])
+        self.assertEqual(service(github).move(120, "Development In Review", note="delivered"),
+                         EXIT_OK)
+        self.assertIn(("status", 120, "Development In Review"), github.calls)
+
+
+class WriteConfirmationTests(unittest.TestCase):
+    """No write is declared successful until the comment is read back and identified."""
+
+    def progress(self, **kwargs):
+        items = load_items()
+        fixture_item(120, items).status = "Development In Progress"
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(120, items))
+        return FakeGh(items=items, claims={120: [{"id": 11, "body": claim}]}, **kwargs)
+
+    def test_move_does_not_change_the_status_when_the_report_is_not_persisted(self):
+        github = self.progress(drop_comments=True)
+        lines = []
+        code = service(github, "hermes", lines.append).move(
+            120, "Development In Review", note="delivered")
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertNotIn(("status", 120, "Development In Review"), github.calls)
+        self.assertEqual(fixture_item(120, github.data).status, "Development In Progress")
+        self.assertIn("not confirmed", "\n".join(lines))
+
+    def test_move_does_not_change_the_status_when_the_report_was_modified(self):
+        github = self.progress(tamper_report=True)
+        lines = []
+        code = service(github, "hermes", lines.append).move(
+            120, "Development In Review", note="delivered")
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertNotIn(("status", 120, "Development In Review"), github.calls)
+        self.assertEqual(report_comments(github, 120), [])
+        self.assertTrue([call for call in github.calls if call[0] == "retract"])
+        self.assertIn("differs", "\n".join(lines))
+
+    def test_move_reports_the_pending_report_when_it_cannot_be_retracted(self):
+        github = self.progress(tamper_report=True, fail={"retract"})
+        lines = []
+        code = service(github, "hermes", lines.append).move(
+            120, "Development In Review", note="delivered")
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertIn("pending write", "\n".join(lines))
+        self.assertNotIn(("status", 120, "Development In Review"), github.calls)
+
+    def test_move_does_not_change_the_status_when_the_readback_fails(self):
+        github = self.progress(fail_comments_after=2)
+        lines = []
+        code = service(github, "hermes", lines.append).move(
+            120, "Development In Review", note="delivered")
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertNotIn(("status", 120, "Development In Review"), github.calls)
+        self.assertEqual(fixture_item(120, github.data).status, "Development In Progress")
+
+    def test_take_does_not_overwrite_a_status_changed_after_its_write(self):
+        github = FakeGh(drift_after_write="Backlog")
+        seed_receipts(github)
+        lines = []
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).take(101)
+        self.assertEqual(code, EXIT_FAILED)
+        writes = [call for call in github.calls if call[0] == "status"]
+        self.assertEqual(writes, [("status", 101, "Development In Progress")])
+        self.assertEqual(fixture_item(101, github.data).status, "Backlog")
+        self.assertIn("not overwritten", "\n".join(lines))
+
+    def test_context_does_not_report_success_without_a_persisted_receipt(self):
+        github = FakeGh(ghost_comment=True)
+        lines = []
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).context(
+            101, "hermes", publish=True, summary=SUMMARY)
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertNotIn("Context published", "\n".join(lines))
+        self.assertEqual(github.comments_store[101], [])
+
+    def test_context_retracts_its_receipt_when_the_state_changed_while_publishing(self):
+        github = FakeGh(drift_status="Ready Analysis")
+        lines = []
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).context(
+            101, "hermes", publish=True, summary=SUMMARY)
+        self.assertEqual(code, EXIT_FAILED)
+        self.assertIn("changed", "\n".join(lines))
+        self.assertNotIn("Context published", "\n".join(lines))
+        self.assertTrue([call for call in github.calls if call[0] == "retract"])
+        self.assertEqual([entry for entry in github.comments_store[101]
+                          if MODULE["context_of"](entry["body"])], [])
+
+
+class ReceiptStructureTests(unittest.TestCase):
+    """The receipt structure the protocol promises is validated, not assumed."""
+
+    INVENTED = ("Autor: invented\nTipo: Contexto\nHuella del contexto: WRONG\n"
+                "<!-- work-issue:context agent=hermes issue=101 fingerprint=%s comments=0 -->")
+
+    def receipt(self, digest="0123456789ab", count=0, item=None):
+        return MODULE["context_body"]("hermes", "Coordinador funcional", "development",
+                                      item or fixture_item(101), SUMMARY, digest, count)
+
+    def test_a_body_without_rol_phase_and_sections_is_not_a_receipt(self):
+        body = self.INVENTED % MODULE["fingerprint"](fixture_item(101), [])
+        self.assertFalse(MODULE["is_receipt_body"](body))
+        self.assertNotEqual(MODULE["comment_kind"](body), "context")
+
+    def test_take_refuses_a_receipt_without_the_declared_structure(self):
+        github = FakeGh()
+        body = self.INVENTED % MODULE["fingerprint"](fixture_item(101), [])
+        github.comments_store[101] = [{"id": 1, "body": body}]
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_a_receipt_whose_visible_fingerprint_disagrees_with_the_marker_is_material(self):
+        body = self.receipt().replace("Huella del contexto: `0123456789ab`",
+                                      "Huella del contexto: `ffffffffffff`")
+        self.assertFalse(MODULE["is_receipt_body"](body))
+        github = FakeGh()
+        github.comments_store[101] = [{"id": 1, "body": body}]
+        self.assertEqual(service(github).take(101), EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_a_receipt_missing_one_section_is_material(self):
+        body = self.receipt().replace("## Alcance autorizado\n- The one described in the "
+                                      "Issue.\n", "")
+        self.assertFalse(MODULE["is_receipt_body"](body))
+
+    def test_a_receipt_with_an_unknown_role_or_phase_is_material(self):
+        for broken in (self.receipt().replace("Rol: Coordinador funcional", "Rol: Autor inventado"),
+                       self.receipt().replace("Fase: Development", "Fase: ?"),
+                       self.receipt().replace("Fase: Development", "Fase: invented")):
+            self.assertFalse(MODULE["is_receipt_body"](broken), broken)
+
+    def test_a_receipt_with_a_second_header_inside_the_body_is_material(self):
+        body = self.receipt().replace("## Estado\n", "## Estado\nFase: Development\n")
+        self.assertFalse(MODULE["is_receipt_body"](body))
+
+    def test_the_pilot_receipt_is_still_a_receipt(self):
+        self.assertTrue(MODULE["is_receipt_body"](
+            PILOT_RECEIPT.format(digest="0123456789ab", count=0)))
+
+    def test_summary_sections_must_be_exact_ordered_and_non_empty(self):
+        validate = MODULE["validate_summary"]
+        self.assertIsNone(validate(SUMMARY))
+        self.assertIn("missing sections", validate("## Estado\nnothing"))
+        self.assertIn("order", validate("## Estado\nx\n## Decisiones vigentes\nx\n"
+                                       "## Alcance autorizado\nx\n## Fuentes consultadas\nx\n"))
+        self.assertIn("empty sections", validate(
+            "## Decisiones vigentes\n\n## Estado\nx\n## Alcance autorizado\nx\n"
+            "## Fuentes consultadas\nx\n"))
+        self.assertIn("outside", validate("Prefacio\n" + SUMMARY))
+        self.assertIn("empty", validate("   \n"))
+
+    def test_context_publish_refuses_a_blocked_issue_without_its_own_record(self):
+        github = FakeGh()
+        fixture_item(101, github.data).status = "Blocked"
+        lines = []
+        code = Service(github, "hermes", "Coordinador funcional", lines.append).context(
+            101, "hermes", publish=True, summary=SUMMARY)
+        self.assertEqual(code, EXIT_REFUSED)
+        self.assertEqual(github.comments_store[101], [])
+        self.assertIn("phase", "\n".join(lines))
+
+    def test_context_publish_derives_the_blocked_phase_from_its_own_record(self):
+        items = load_items()
+        fixture_item(120, items).status = "Development In Progress"
+        claim = claim_body("hermes", "Coordinador funcional", "development",
+                           fixture_item(120, items))
+        block = report_body("hermes", "Coordinador funcional", "development",
+                            fixture_item(120, items), "Blocked",
+                            previous_status="Development In Progress", note="reason")
+        fixture_item(120, items).status = "Blocked"
+        github = FakeGh(items=items, claims={120: [{"id": 11, "body": claim},
+                                                   {"id": 12, "body": block}]})
+        code = Service(github, "hermes", "Coordinador funcional", lambda line: None).context(
+            120, "hermes", publish=True, summary=SUMMARY)
+        self.assertEqual(code, EXIT_OK)
+        body = github.comments_store[120][-1]["body"]
+        self.assertIn("Fase: Development", body)
+        self.assertTrue(MODULE["is_receipt_body"](body))
+
+
+class FinalBoundaryTests(unittest.TestCase):
+    def progress(self, assignees=None, github_type=FakeGh):
+        items = load_items()
+        item = fixture_item(120, items)
+        item.status = "Development In Progress"
+        if assignees is not None:
+            item.assignees = assignees
+        claim = claim_body("hermes", "Coordinador funcional", "development", item)
+        github = github_type(items=items, claims={120: [{"id": 11, "body": claim}]})
+        seed_receipts(github)
+        return github
+
+    def test_delivery_does_not_depend_on_the_assignee(self):
+        github = self.progress(assignees=[])
+        self.assertEqual(Service(github, "hermes").move(120, "Development In Review"),
+                         EXIT_OK)
+
+    def test_unreadable_rollback_never_overwrites_unverified_state(self):
+        github = self.progress()
+        github.fail.add("item")
+        item = fixture_item(120, github.data)
+        pending = Service(github, "hermes")._rollback(
+            120, status_to="Ready Development", item=item,
+            status_written="Development In Progress")
+        self.assertTrue(pending)
+        self.assertEqual(github.calls, [])
+        self.assertEqual(item.status, "Development In Progress")
+
+    def test_a_receipt_from_another_phase_never_authorizes_delivery(self):
+        github = self.progress()
+        receipt = github.comments_store[120][-1]
+        receipt["body"] = receipt["body"].replace("Fase: Development", "Fase: Analysis")
+        self.assertEqual(Service(github, "hermes").move(120, "Development In Review"),
+                         EXIT_REFUSED)
+        self.assertEqual(github.calls, [])
+
+    def test_state_is_rechecked_after_publishing_the_report(self):
+        class HumanMoveDuringReport(FakeGh):
+            def comment(self, number, body):
+                comment_id = super().comment(number, body)
+                if MODULE["report_of"](body):
+                    fixture_item(number, self.data).status = "Backlog"
+                return comment_id
+
+        github = self.progress(github_type=HumanMoveDuringReport)
+        self.assertEqual(Service(github, "hermes").move(120, "Development In Review"),
+                         EXIT_REFUSED)
+        self.assertFalse([call for call in github.calls if call[0] == "status"])
+        self.assertEqual(fixture_item(120, github.data).status, "Backlog")
+        self.assertEqual(report_comments(github, 120), [])
 
 
 class ParserTests(unittest.TestCase):
@@ -1461,9 +2186,9 @@ class ParserTests(unittest.TestCase):
         parser = MODULE["build_parser"]()
         resolve = MODULE["resolve_agent"]
         self.assertEqual(resolve(parser.parse_args(
-            ["take", "--issue", "406", "--agent", "hermes"])), "hermes")
+            ["take", "--issue", "101", "--agent", "hermes"])), "hermes")
         self.assertEqual(resolve(parser.parse_args(
-            ["--agent", "hermes", "take", "--issue", "406"])), "hermes")
+            ["--agent", "hermes", "take", "--issue", "101"])), "hermes")
         self.assertEqual(resolve(parser.parse_args(
             ["--agent", "hermes", "inventory"])), "hermes")
         self.assertIsNone(resolve(parser.parse_args(["inventory"])))
@@ -1479,12 +2204,13 @@ class ParserTests(unittest.TestCase):
         original = MODULE["Gh"]
         MODULE["Gh"] = FakeGitHub
         try:
-            code = MODULE["main"](["move", "--issue", "406", "--agent", "hermes"])
+            code = MODULE["main"](["--repo", REPO, "--project", "7", "move",
+                                   "--issue", "101", "--agent", "hermes"])
         finally:
             MODULE["Gh"] = original
         self.assertEqual(code, 2)
 
-    def test_next_requires_an_agent_before_any_github_access(self):
+    def test_take_requires_an_agent_before_any_github_access(self):
         created = []
 
         class FakeGitHub:
@@ -1494,8 +2220,10 @@ class ParserTests(unittest.TestCase):
         original = MODULE["Gh"]
         MODULE["Gh"] = FakeGitHub
         try:
-            self.assertEqual(MODULE["main"](["next"]), EXIT_REFUSED)
-            self.assertEqual(MODULE["main"](["next", "--agent", "hermes",
+            self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7", "take",
+                                             "--issue", "101"]), EXIT_REFUSED)
+            self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "7", "next",
+                                             "--agent", "hermes",
                                              "--exclude", "418,x"]), EXIT_REFUSED)
         finally:
             MODULE["Gh"] = original
@@ -1510,57 +2238,21 @@ class ParserTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_issues(malformed)
 
+    def test_project_is_validated_before_github_access(self):
+        class Exploding:
+            def __init__(self, *args, **kwargs):
+                raise AssertionError("the adapter must not be built")
 
-class SkillContractTests(unittest.TestCase):
-    """The written contract makes the session behaviour repeatable without reminders."""
-
-    SKILL = ROOT / ".agents" / "skills" / "work-issue" / "SKILL.md"
-    ORCHESTRATE = ROOT / ".agents" / "skills" / "orchestrate" / "SKILL.md"
-
-    def test_work_issue_defines_a_continuous_session_over_the_whole_queue(self):
-        text = self.SKILL.read_text(encoding="utf-8")
-        self.assertIn("## Session continuity — one invocation, the whole eligible queue", text)
-        self.assertIn("`scripts/work-issue next --agent X", text)
-        self.assertIn("### Session ledger (closing report)", text)
-        self.assertIn("the turn yields only when no eligible work remains", text)
-        self.assertNotIn("An Issue other than the one reserved stays untouched", text)
-
-    def test_work_issue_keeps_gates_and_one_reservation_at_a_time(self):
-        text = self.SKILL.read_text(encoding="utf-8")
-        self.assertIn("reservation at a time", text)
-        self.assertIn("needs the user's explicit approval", text)
-        self.assertIn("no cron, webhook, bot or", text)
-
-    def test_skill_separates_the_procedure_from_the_command_line_tool(self):
-        text = self.SKILL.read_text(encoding="utf-8")
-        self.assertIn("## Skill and tool — two different things", text)
-        self.assertIn("is the *procedure*", text)
-        self.assertIn("is the *command-line tool*", text)
-        self.assertIn("has no session or memory of its own between calls", text)
-        self.assertNotIn("equivalently `scripts/work-issue --agent", text)
-
-    def test_orchestrate_consumes_the_queue_without_yielding_after_one_issue(self):
-        text = self.ORCHESTRATE.read_text(encoding="utf-8")
-        self.assertIn("consumes that queue continuously", text)
-        self.assertIn("A `$work-issue` session obeys the same rule", text)
-        self.assertIn("blocks only itself", text)
-        self.assertNotIn("the inventory is not a queue", text)
-
-    def test_work_issue_requires_loading_orchestrate_before_processing(self):
-        """A reference to another Skill is not a load: the obligation must be explicit."""
-        text = self.SKILL.read_text(encoding="utf-8")
-        for token in ("**This Skill never runs alone.**", "A reference is not a load",
-                      "Hermes: `/orchestrate` or `skill_view('orchestrate')`",
-                      "Claude Code: `/orchestrate`", "the Skill by name",
-                      "Skill that owns each phase", "must not claim it applied them",
-                      "before** reading the queue"):
-            self.assertIn(token, text)
-        marker = text.index("This Skill never runs alone")
-        for following in ("## Selection order", "## Procedure", "## Context recovery"):
-            self.assertLess(marker, text.index(following), following)
-        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-        self.assertIn("carga `$orchestrate` antes de leer la cola", agents)
-        self.assertIn("/work-issue hermes", agents)
+        original = MODULE["Gh"]
+        MODULE["Gh"] = Exploding
+        try:
+            self.assertEqual(MODULE["main"](["--repo", REPO, "inventory"]), EXIT_FAILED)
+            self.assertEqual(MODULE["main"](["--repo", REPO, "--project", "0",
+                                             "inventory"]), EXIT_REFUSED)
+            with self.assertRaises(SystemExit):
+                MODULE["main"](["--repo", REPO, "--project", "seven", "inventory"])
+        finally:
+            MODULE["Gh"] = original
 
 
 class ContractTests(unittest.TestCase):
@@ -1572,6 +2264,89 @@ class ContractTests(unittest.TestCase):
         for status in STATUSES:
             for target in HUMAN_ONLY:
                 self.assertIsNotNone(validate_transition(status, target), (status, target))
+
+    def test_agents_catalogue_is_the_documented_one(self):
+        self.assertEqual(MODULE["AGENTS"], ["opencode", "hermes", "codex", "claude"])
+
+    def test_tool_has_no_project_repository_or_owner_defaults(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        for token in ("jmartinlabs", "myfinanzas", "default=4", 'default="jmartinlabs"'):
+            self.assertNotIn(token, source.lower() if token.islower() else source, token)
+        parser = MODULE["build_parser"]()
+        args = parser.parse_args(["inventory"])
+        self.assertIsNone(args.repo)
+        self.assertIsNone(args.project)
+        self.assertIsNone(args.owner)
+
+    def test_fixture_is_generic(self):
+        text = FIXTURE.read_text(encoding="utf-8").lower()
+        for token in ("myfinanzas", "jmartinlabs", "opencode-pilot"):
+            self.assertNotIn(token, text)
+
+    def test_skill_keeps_the_procedure_and_the_tool_apart(self):
+        text = SKILL.read_text(encoding="utf-8")
+        self.assertIn("## Session continuity", text)
+        self.assertIn("## Skill and tool", text)
+        self.assertIn("one reservation at a time", text)
+        self.assertIn("no cron, webhook, bot", text)
+        self.assertIn("## Stop conditions", text)
+        self.assertIn("issue-workflow.md", text)
+        self.assertNotIn("myfinanzas", text.lower())
+
+    def test_skill_documents_the_manual_protocol_without_a_project(self):
+        text = SKILL.read_text(encoding="utf-8")
+        self.assertIn("manual protocol", text)
+        self.assertIn("--project", text)
+        self.assertIn("--repo", text)
+        self.assertIn("Only when no Project is configured", text)
+        self.assertIn("no CLI receipt", text)
+
+    def test_skill_defines_the_receipt_file_contract(self):
+        text = SKILL.read_text(encoding="utf-8")
+        for token in ("## Context receipt", "--summary-file", "--publish",
+                      "## Decisiones vigentes", "## Estado", "## Alcance autorizado",
+                      "## Fuentes consultadas", "Huella del contexto",
+                      "last non-empty line", "never proves the reading",
+                      "including the agent's own claim or report", "after `take`"):
+            self.assertIn(token, text, token)
+
+    def test_protocol_restricts_the_manual_path_and_documents_the_real_link_risk(self):
+        text = PROTOCOL.read_text(encoding="utf-8")
+        self.assertIn("only when no Project is configured", text)
+        self.assertIn("never substitutes for `Ready {Phase}`", text)
+        self.assertIn("closing-capable", text)
+        self.assertIn("can close the Issue", text)
+        self.assertIn("no human `Done` acceptance was recorded", text)
+        self.assertNotIn("merging never closes the Issue", text)
+        self.assertNotIn("nothing auto-merges or auto-closes",
+                         (ROOT / "README.md").read_text(encoding="utf-8"))
+        issue_template = (ROOT / "templates" / "issue.md").read_text(encoding="utf-8")
+        self.assertNotIn("A merge never closes the Issue by itself", issue_template)
+        self.assertIn("reopen", issue_template)
+
+    def test_protocol_is_canonical_and_complete(self):
+        text = PROTOCOL.read_text(encoding="utf-8")
+        for token in ("12 statuses", "Ready Analysis", "Ready Development", "Blocked",
+                      "Previous Status", "Backlog", "Single source", "optional",
+                      "Refs #", "addCloseIssueReferences", "reopen", "phase:analysis",
+                      "identity", "Issue", "SPEC", "PR", "## Context receipt",
+                      "Autor", "Rol", "Fase", "Tipo", "De:", "A:"):
+            self.assertIn(token, text, token)
+
+    def test_documentation_wiring(self):
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        orchestrate = (ROOT / ".agents" / "skills" / "orchestrate" / "SKILL.md").read_text(
+            encoding="utf-8")
+        init_project = (ROOT / ".agents" / "skills" / "init-project" / "SKILL.md").read_text(
+            encoding="utf-8")
+        spec = (ROOT / ".agents" / "skills" / "spec" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("issue-workflow.md", agents)
+        self.assertIn("work-issue", orchestrate)
+        self.assertIn("planning Issues each SPEC needs in `Backlog`", init_project)
+        self.assertIn("generate its executable\nIssues", init_project)
+        self.assertIn("generate the executable Issues derived from the approved", spec)
+        self.assertTrue((ROOT / "templates" / "issue.md").is_file())
+        self.assertTrue((ROOT / ".claude" / "skills" / "work-issue" / "SKILL.md").is_file())
 
 
 if __name__ == "__main__":
