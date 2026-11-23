@@ -1,11 +1,13 @@
 # 14 — Gasto compartido: enmienda 14-E1 (regularización de salida al tercero)
 
-Status: **PROPUESTA — pendiente de la revisión focal de Álex y de la aprobación formal del usuario.**
-**Elecciones del usuario (respuesta en chat, 2026-11-23):** R1, R3, R4, R5, R6 y R7 según su
-recomendación; **R2 por porciones**. Son elecciones de contenido, **no** la aprobación formal de
-esta enmienda ni de ninguna otra cosa (merge, DEV, migraciones, datos). La combinación de R2 con
-R5 se resuelve en §7.3 con una tabla propia de porciones: **confirmado por el usuario el
-2026-11-23** (respuesta en chat, «Sí, tabla propia»).
+Status: **APROBADA — 2026-11-23**, aprobación formal del usuario, conforme al veredicto final
+**APTO** de Álex sobre el HEAD `544fecc5` (PR #562, merge `97128152` en `test`).
+Fuente: mensaje humano directo del 2026-11-23, «apruebo formalmente SPEC14-E1 (#561), con R1–R7
+según las decisiones acordadas». **R1–R7 aprobadas:** R1 Transferencia interno → S000 con REF
+CAT013; R2 por porciones de un único Movimiento real; R3 cualquier exceso real; R4 bajas hasta su
+aportado neto; R5 tabla propia de porciones (confirmada el 2026-11-23); R6 mismo gate de
+exposición; R7 F1 enmendada, con B bruto y coste económico C. La aprobación es del contrato: los
+**29 E1-AC permanecen `UNRUN`**.
 **NO AUTORIZA DEV, SQL, migraciones, cambio de datos ni despliegue.**
 Fecha: 2026-11-23. Issue: #561.
 Afecta a la [especificación 14](14-compartidos-specification.md). Su base, Base B y la
@@ -49,7 +51,7 @@ fuentes de SPEC39 (`AC-D25`).
 
 ## 2 · Decisiones que se elevan al usuario
 
-Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuario lo diga.
+Cada una llevaba una recomendación. **El usuario aprobó el 2026-11-23 las siete en la forma que recoge este documento** (ver la cabecera). La tabla conserva la alternativa descartada de cada una como historia.
 
 | ID | Pregunta | Recomendación | Alternativa |
 | --- | --- | --- | --- |
@@ -61,10 +63,8 @@ Cada una lleva una recomendación. Ninguna se da por aprobada hasta que el usuar
 | **R7** | ¿Cómo se admite el coste cero (devolución total)? | **Mantener B como bruto y añadir un coste económico C_g.** C_g = B_g − `descuentoEconomico` de SPEC39 §4 (solo devoluciones elegibles; una Verificada No acreditada no descuenta). El reparto, `Exceso_p`, Neto(g) y N usan C; B sigue siendo el bruto del hecho (SPEC39 §4: «el bruto permanece en el hecho original»; AC-D32 conserva el bruto en Flujo). **Cambia el significado de N** (F1: N = C − R en lugar de B − R), por lo que se inventarían los consumidores de B y N antes de DEV. | Redefinir B como neto. Cambia el significado de B en todos sus consumidores y confunde el bruto con el coste, que SPEC39 mantiene separados. |
 | **R6** | ¿Se aplica el mismo gate de exposición que a las devoluciones? | **Sí:** la regularización se expone solo con #547 (v32) y #549 integrados, bajo el mismo gate 503 de SPEC39 §11. | Sin gate. La regularización existe sin devoluciones (R3), pero comparte el motor de impacto y el estado dirty de #547. |
 
-**Estado del texto.** Los §3–§11 recogen las elecciones del usuario: R1, R3, R4, R5 (con tabla
-propia, §7.3, confirmada), R6 y R7 según su recomendación, y **R2 por porciones**. Siguen sin ser una
-aprobación formal de la enmienda. Tras estas elecciones se reescribieron §3, §5, §6, §7, §8,
-§10, §11 y §13.
+**Estado del texto.** Los §3–§11 recogen las decisiones aprobadas: R1, R3, R4, R5 (tabla propia,
+§7.3), R6 y R7 según su recomendación, y R2 por porciones.
 
 ## 3 · Semántica
 
@@ -395,7 +395,7 @@ Contrato sin SQL; los detalles concretos se cierran en el paquete DEV autorizado
 ## 12 · Cambio consecuente en spec05
 
 spec05 (§D5, AC-31) reserva las salidas `interno → Exterior`. Esta enmienda abre **una sola
-excepción**: la regularización CAT013 del §5. Igual que hizo D5, spec05 incluye una **nota de referencia** (§D5-5, añadida con esta propuesta)
+excepción**: la regularización CAT013 del §5. Igual que hizo D5, spec05 incluye una **nota de referencia** (§D5-5)
 que remite aquí y no cambia ninguno de sus criterios aprobados. Exterior ordinario sigue
 reservado.
 
@@ -435,11 +435,11 @@ D5, SPEC39, spec05, SPEC33-E1, SPEC38 y el código. Veredicto: **APTO CON CAMBIO
 
 **Corrección focal tras la revisión de Álex sobre `7b737aca`:** el resto bancario no acreditado es una discrepancia pendiente (§3.5, §5.1, §7.5, §8, I-E1-2/7, E1-AC-28/29), la fila R5 queda como único contrato vigente (tabla propia) y el absoluto «Cerrado pasa a Excedido» se acota a devoluciones parciales. Sin reabrir R1–R7.
 
-**Cambios tras las elecciones del usuario (2026-11-23):** R2 por porciones reescribe §3, §5–§8, §10, §11 y §13 y añade E1-AC-24…27. El texto posterior a la revisión de Álex y a las dos pasadas del subagente **no ha tenido una revisión independiente nueva**: queda para la revisión focal de Álex.
+**Cambios tras las elecciones del usuario (2026-11-23):** R2 por porciones reescribe §3, §5–§8, §10, §11 y §13 y añade E1-AC-24…27; la corrección focal posterior añade E1-AC-28 y 29. La revisión focal de Álex sobre `7b737aca` y su veredicto final sobre `544fecc5` cubren ese texto.
 
 Una segunda revisión acotada del texto nuevo (§4.1, §4.2, límite del §5, fórmula del §6 y
-R4–R7) consta abajo. Las decisiones **R1–R7 son del usuario**. Álex debe verificar el conjunto
-antes de la aprobación.
+R4–R7) consta abajo. Las decisiones **R1–R7 son del usuario**. Álex verificó el conjunto en su
+revisión focal y en su veredicto final (PR #562).
 
 ### Revisión acotada del texto corregido
 
@@ -457,5 +457,5 @@ fórmula de rectificación, I-E1-5 y N = C − R. Resolución:
 | R4 inalcanzable desde la UI | Acción y selector por límite > 0, bajas incluidas; consecuencia declarada en E1-AC-07 |
 | Menores | Corregidos: `N = C − R`, «siete», #549 en R6, «límite» en AC, fecha por acumulado, AC-17 |
 
-**Desacuerdo material pendiente:** ninguno. Una tercera revisión no se pide: los cambios
-posteriores a esta son mecánicos y proceden de sus hallazgos.
+**Desacuerdo material pendiente:** ninguno. Los cambios posteriores a esta revisión proceden de
+sus hallazgos y de los de Álex, y fueron verificados por él (veredicto final **APTO**).
