@@ -258,6 +258,21 @@ Prefer a verified appropriate route when designated (Hermes may use advisor). Re
 versus observed identity: mismatch means the designated route failed; unavailable metadata means
 identity unverified, not proof of mismatch. Reuse [route verification](model-selection.md).
 An alternative competent reviewer in the same client or explicit manual handoff is valid;
-never launch another client automatically. Without a reviewer continue only objectively checked
+never launch another client automatically, except the standing authorization below. Without a reviewer continue only objectively checked
 benign small reversible authorized work, recording the limitation; block material/unsafe work
 and required independent QA. Silence is never approval. Álex remains financial/functional only.
+
+#### Standing authorization: Codex CLI as read-only external reviewer
+The user authorized permanently (2026-11-23) that a Claude Code coordinator may use the local
+Codex CLI as an independent, **read-only** reviewer when justified — a financial, security,
+persistence or historical-integrity risk, or an Issue that expressly requests it — without asking
+each time. This is the only automatic client launch allowed; it is not a reviewer slot,
+not independent QA and not an approval. Procedure: [codex-review](../../.agents/skills/codex-review/SKILL.md).
+
+- Scope: `codex review` or `codex exec --sandbox read-only`; never edits, commits, PRs, `Status`
+  moves or merges. No new hooks or dependencies. Model, effort, parallelism and consumption follow
+  the existing methodology and the user's own Codex configuration; any new rule on them is the user's decision.
+- The [quota gate](model-selection.md#quota-and-dispatch-gate) applies unchanged, including its
+  25 % rule: the standing authorization is general and does not replace the task-specific one.
+- Independent QA, ownership, approvals and merge gates are unchanged. Findings are evidence to
+  verify against the code, never a verdict.
