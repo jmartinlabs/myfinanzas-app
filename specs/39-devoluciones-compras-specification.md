@@ -9,7 +9,8 @@ Veredicto previo: revisión de Álex del 2026-11-22 sobre `765094cd`, **APTO**.
 Procedencia: #538. Texto normativo del §1 al §14 tomado del comentario `7024602562` sin
 reescritura; las correcciones posteriores se integran abajo con su origen.
 **NO AUTORIZA DEV, MIGRACIONES, CAMBIOS DE DATOS NI DESPLIEGUE.** Son decisiones independientes:
-la aprobación de SPEC14 —requisito previo— y la autorización expresa de DEV.
+la **aprobación de SPEC14-E1, ya cumplida el 2026-11-23** (PR #562, merge `97128152`); su **DEV e
+integración, aún pendientes**; y la autorización expresa de DEV de #538.
 
 ## Estado y dependencias
 
@@ -17,8 +18,10 @@ la aprobación de SPEC14 —requisito previo— y la autorización expresa de DE
 - §7 reconciliado con [enmienda 33-E1](33-dprima-simplificada-enmienda-01.md): `P` y apertura
   inmutables, `P(t)` prospectivo con corte acreditado, compromiso de aportación separado de la
   ejecución real y vínculo 1:1 con la transferencia.
-- §9/§11: **SPEC14 es dependencia obligatoria** antes de DEV; `AC-D25` condicionado por
-  dependencia. La acreditación a terceros no queda cubierta por v32.
+- §9/§11: **SPEC14-E1 es dependencia obligatoria**. Su aprobación está cumplida (2026-11-23,
+  [enmienda 14-E1](14-compartidos-enmienda-01.md)); su **DEV e integración siguen pendientes** y
+  son necesarios antes de exponer la regularización. `AC-D25` queda condicionado por esa
+  dependencia hasta entonces. La acreditación a terceros no queda cubierta por v32.
 
 # Contrato (§1–§14, 45 AC)
 
@@ -315,7 +318,7 @@ Estados UI: carga sin formulario confirmable; vacío sin devolución distingue a
 
 Riesgos principales: acoplar DO al GRE (§7); descontar por Partida global en subconjuntos (§10); confundir acreditación económica con capacidad (§4); cierre de coste cero no regularizado (§9); desplegar revisión estricta sin Comida (§5.3); migración de triggers/regularizaciones fuera de versión (§11). Mitigación: AC negativos y gate integrado, no etiquetas ni marcador decorativo.
 
-Pendientes de entrega: **aprobación de SPEC14** —requisito previo— y después **autorización expresa de DEV** (la aprobación de esta SPEC ya se concedió el 2026-11-22); revisión cruzada #539/#549 y actualización propietarias SPEC09/10/12/14/16/24/25/33/Vehículos; concretar soporte versionado de acreditaciones de salida antes de implementar; contrato y DEV #547/#549 antes de exposición. `UNRUN`: tests de implementación, dry-run/savepoint real, rendimiento >12meses, clientes externos, datos reales, impacto cuantitativo del saneamiento. Project4 no verificable por cuota GraphQL; no se presenta como cambio de fase ni bloqueo de este borrador.
+Pendientes de entrega: **SPEC14-E1 aprobada el 2026-11-23 (requisito previo cumplido); pendientes su DEV e integración** y, de forma independiente, la **autorización expresa de DEV** de #538 (la aprobación de esta SPEC ya se concedió el 2026-11-22); revisión cruzada #539/#549 y actualización propietarias SPEC09/10/12/14/16/24/25/33/Vehículos; concretar soporte versionado de acreditaciones de salida antes de implementar; contrato y DEV #547/#549 antes de exposición. `UNRUN`: tests de implementación, dry-run/savepoint real, rendimiento >12meses, clientes externos, datos reales, impacto cuantitativo del saneamiento. Project4 no verificable por cuota GraphQL; no se presenta como cambio de fase ni bloqueo de este borrador.
 
 ## 14. Respuesta a la revisión
 
@@ -349,10 +352,10 @@ Fuente compartida: [anexo de interfaces de SPEC38](38-e49b-cierre-validacion-int
 - **Texto normativo §1–§14:** comentario `7024602562` de #538, sin reescritura salvo las correcciones de coherencia documental de §7, §10, `AC-D28` y §14, que adaptan el documento al contrato ya aprobado.
 - **§7 vigente:** [enmienda 33-E1](33-dprima-simplificada-enmienda-01.md) en `test`. La política anterior de `R_saldo`/`S_operativo` quedó descartada el 2026-11-22 y solo vive como historia en el comentario original.
 - **Interfaces:** [anexo de interfaces de SPEC38](38-e49b-cierre-validacion-interfaces.md) y la SPEC propietaria #538.
-- **§9/§11:** la acreditación de salida a terceros exige contrato propietario en **SPEC14**, persistencia con migración versionada propia y reconciliación entre lo recuperado y lo regularizado. **Sin SPEC14 aprobada no hay DEV ni activación integral**, y `AC-D25` queda condicionado por dependencia.
+- **§9/§11:** la acreditación de salida a terceros exige contrato propietario en **SPEC14**, persistencia con migración versionada propia y reconciliación entre lo recuperado y lo regularizado. SPEC14-E1 está **aprobada (2026-11-23)**; **sin su DEV e integración verificada no hay activación integral**, y `AC-D25` queda condicionado por dependencia.
 
 ## Estado
 
 **SPEC aprobada el 2026-11-22. Los 45 AC (`AC-D01`…`AC-D45`) permanecen `UNRUN`.** La aprobación es del contrato, no de su ejecución.
 
-**No autoriza DEV, migraciones, cambios de datos ni despliegue.** La aprobación de SPEC14 —requisito previo— y la autorización expresa de DEV son decisiones independientes y pendientes.
+**No autoriza DEV, migraciones, cambios de datos ni despliegue.** La aprobación de SPEC14-E1 ya está cumplida (2026-11-23); su DEV e integración y la autorización expresa de DEV de #538 son decisiones independientes y siguen pendientes.
