@@ -1050,7 +1050,7 @@ test("A5: el mensual de Gasto real publica el bruto, el descuento de las compras
   // #538 F2a-1 · cambio semántico declarado (SPEC39 §10 «Dprima ejecución mensual», §11.2):
   // executed pasa de bruto a GRE por IDs de compras del ciclo (antes 100.00).
   expect(item.ejecutado).toBe("80.00");
-  expect(item.abonosBancarios).toBe("20.00");
+  expect(item.abonosVinculadosVerificados).toBe("20.00");
   expect(item.pendiente).toBeNull();
   db.close();
 });

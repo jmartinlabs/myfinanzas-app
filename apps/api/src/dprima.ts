@@ -1257,7 +1257,9 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
         devoluciones = discount.descuento;
         cobertura = discount.cobertura;
         causas = discount.causas;
-        // Flujo bancario por fecha real del abono, atribuido por la compra vigente.
+        // Abonos VINCULADOS Y VERIFICADOS (Verificado, incluida No acreditada) por fecha real,
+        // atribuidos por la compra vigente. NO es el flujo bancario completo: excluye
+        // huérfanas, Revisar y compras inválidas (visibles en `causas`). No reduce el GRE.
         abonos = sum(
           projection.items
             .filter(
@@ -1299,7 +1301,7 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
         delMes: decimal(line.delMes),
         bruto: bruto === null ? null : decimal(bruto),
         devoluciones: devoluciones === null ? null : decimal(devoluciones),
-        abonosBancarios: abonos === null ? null : decimal(abonos),
+        abonosVinculadosVerificados: abonos === null ? null : decimal(abonos),
         cobertura,
         causas,
         ejecutado: executed === null ? null : decimal(executed),

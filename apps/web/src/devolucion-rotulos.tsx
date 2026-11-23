@@ -10,8 +10,25 @@ export const ROTULO_GRE = "Gasto real económico (neto)";
 export const ROTULO_FLUJO = "Flujo bancario bruto";
 export const NOTA_DESVIACION =
   "Pendiente es la desviación analítica Del mes − Ejecutado, no dinero disponible: no habilita comprometer, aportar ni transferir.";
+export const ROTULO_ABONOS = "Abonos vinculados verificados (por fecha real)";
 export const NOTA_ATRIBUCION =
-  "Las devoluciones se descuentan de la compra a la que se vinculan, aunque el abono llegue en otro ciclo; los abonos por fecha real se muestran aparte como flujo bancario.";
+  "Las devoluciones se descuentan de la compra a la que se vinculan, aunque el abono llegue en otro ciclo. Los abonos vinculados verificados se muestran aparte por su fecha real: no son el flujo bancario completo, porque excluyen huérfanas, vínculos en revisión y compras no válidas (visibles en la cobertura), y no reducen el gasto real económico.";
+
+/** «—» = la columna no aplica a la fuente; «No disponible» = aplica pero no es verificable. */
+export const NO_APLICA = "—";
+export const NO_DISPONIBLE = "No disponible";
+/**
+ * Única función que distingue ambos casos. `gasto`: bruto, devoluciones y abonos
+ * (solo Gasto real); `ejecucion`: ejecutado y pendiente (toda fuente comparable).
+ */
+export function aplicaColumna(
+  columna: "gasto" | "ejecucion",
+  fuente: string | null | undefined,
+) {
+  return columna === "gasto" ? fuente === "Gasto real" : fuente !== "No aplica";
+}
+export const textoValor = (valor: string | null, aplica: boolean) =>
+  valor !== null ? eur(valor) : aplica ? NO_DISPONIBLE : NO_APLICA;
 
 /** Solo Gasto real cambia de magnitud (bruto → GRE); Aportación sigue siendo flujo. */
 export const rotuloEjecutado = (fuente: string | null | undefined) =>
@@ -39,41 +56,40 @@ export function EjecutadoCelda({
   valor,
   cobertura,
   causas,
-  vacio = "—",
 }: {
   fuente: string | null | undefined;
   valor: string | null;
   cobertura?: string | null;
   causas?: string[] | null;
-  vacio?: ReactNode;
 }) {
   const rotulo = rotuloEjecutado(fuente);
   const parcial = rotulo ? textoCobertura(cobertura, causas) : null;
   return (
     <>
-      {valor === null ? vacio : eur(valor)}
-      {rotulo && <small className="help"> {rotulo}</small>}
+      {textoValor(valor, aplicaColumna("ejecucion", fuente))}
+      {rotulo && valor !== null && <small className="help"> {rotulo}</small>}
       {parcial && <small className="help"> · {parcial}</small>}
     </>
   );
 }
 
-/**
- * Rótulo de flujo bancario por celda: solo donde el valor es realmente un abono
- * bancario (Gasto real con valor). Nunca por cabecera agrupada de toda la columna.
- */
-export function AbonosCelda({
+/** Celda de importe de una columna con aplicabilidad por fuente (Pendiente, Bruto, Devoluciones). */
+export function ImporteCelda({
   fuente,
+  columna,
   valor,
+  rotulo,
 }: {
   fuente: string | null | undefined;
+  columna: "gasto" | "ejecucion";
   valor: string | null;
+  rotulo?: string;
 }) {
   return (
     <>
-      {valor === null ? "No disponible" : eur(valor)}
-      {fuente === "Gasto real" && valor !== null && (
-        <small className="help"> {ROTULO_FLUJO}</small>
+      {textoValor(valor, aplicaColumna(columna, fuente))}
+      {rotulo && valor !== null && fuente === "Gasto real" && (
+        <small className="help"> {rotulo}</small>
       )}
     </>
   );

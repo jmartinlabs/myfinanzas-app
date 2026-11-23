@@ -178,14 +178,14 @@ test("F2A1-01 (AC-D18/AC-D03): compra 120 en A y abono 30 en B → GRE de A = 90
   expect([pb.bruto, pb.devoluciones, pb.ejecutado]).toEqual(["0.00", "0.00", "0.00"]);
   // Dprima: A baja a GRE; B no recibe gasto negativo; el abono va aparte por su fecha real.
   const da = dprima(c, c.A.id);
-  expect([da.bruto, da.devoluciones, da.ejecutado, da.abonosBancarios]).toEqual([
+  expect([da.bruto, da.devoluciones, da.ejecutado, da.abonosVinculadosVerificados]).toEqual([
     "120.00",
     "30.00",
     "90.00",
     "0.00",
   ]);
   const db_ = dprima(c, c.B.id);
-  expect([db_.bruto, db_.devoluciones, db_.ejecutado, db_.abonosBancarios]).toEqual([
+  expect([db_.bruto, db_.devoluciones, db_.ejecutado, db_.abonosVinculadosVerificados]).toEqual([
     "0.00",
     "0.00",
     "0.00",
@@ -208,7 +208,7 @@ test("F2A1-02 (AC-D08): parciales 30+40 sobre 120 → descuento 70 y GRE 50 en P
   expect([p.devoluciones, p.ejecutado, p.cobertura, p.causas]).toEqual(["70.00", "50.00", "Completa", []]);
   const d = dprima(c, c.A.id);
   expect([d.devoluciones, d.ejecutado]).toEqual(["70.00", "50.00"]);
-  expect(dprima(c, c.B.id).abonosBancarios).toBe("70.00");
+  expect(dprima(c, c.B.id).abonosVinculadosVerificados).toBe("70.00");
   c.db.close();
 });
 
@@ -244,7 +244,7 @@ test("F2A1-04 (AC-D39): Verificada No acreditada → descuento 0, GRE 120, cober
     "Parcial",
     ["sinAcreditacion"],
   ]);
-  expect(dprima(c, c.B.id).abonosBancarios).toBe("30.00");
+  expect(dprima(c, c.B.id).abonosVinculadosVerificados).toBe("30.00");
   c.db.close();
 });
 
@@ -280,7 +280,7 @@ test("F2A1-05 (AC-D04): huérfano sinVinculo, con y sin fila de vínculo, no net
   expect(plan(c, c.A.id).ejecutado).toBe("100.00");
   expect(plan(c, c.A.id).devoluciones).toBe("0.00");
   expect(dprima(c, c.A.id).ejecutado).toBe("100.00");
-  expect(dprima(c, c.B.id).abonosBancarios).toBe("0.00");
+  expect(dprima(c, c.B.id).abonosVinculadosVerificados).toBe("0.00");
   // Y la pieza común no los ve como descuento de la compra.
   expect(descuentoPorCompras(c.db, [compra]).get(compra)!.descuentoEconomico).toBe(0n);
   c.db.close();
@@ -299,7 +299,7 @@ test("F2A1-06 (AC-D04): vínculo Revisar no netea y declara cobertura parcial co
   ]);
   expect(dprima(c, c.A.id).causas).toEqual(["revisar"]);
   // Revisar no está confirmado: no es abono atribuible a la Partida.
-  expect(dprima(c, c.B.id).abonosBancarios).toBe("0.00");
+  expect(dprima(c, c.B.id).abonosVinculadosVerificados).toBe("0.00");
   c.db.close();
 });
 
@@ -318,11 +318,11 @@ test("F2A1-07 (AC-D18/AC-D02): reclasificar la compra mueve bruto y descuento al
   expect(legacy).toEqual({ dp: c.food.id, mp: c.food.id });
   expect(plan(c, c.A.id, "PRE900")).toMatchObject({ bruto: "0.00", devoluciones: "0.00", ejecutado: "0.00" });
   expect(plan(c, c.A.id, "PRE901")).toMatchObject({ bruto: "120.00", devoluciones: "30.00", ejecutado: "90.00" });
-  expect(dprima(c, c.A.id, c.food.id)).toMatchObject({ bruto: "0.00", devoluciones: "0.00", ejecutado: "0.00", abonosBancarios: "0.00" });
+  expect(dprima(c, c.A.id, c.food.id)).toMatchObject({ bruto: "0.00", devoluciones: "0.00", ejecutado: "0.00", abonosVinculadosVerificados: "0.00" });
   expect(dprima(c, c.A.id, c.leisure.id)).toMatchObject({ bruto: "120.00", devoluciones: "30.00", ejecutado: "90.00" });
   // El abono bancario sigue a la Partida vigente de la compra.
-  expect(dprima(c, c.B.id, c.food.id).abonosBancarios).toBe("0.00");
-  expect(dprima(c, c.B.id, c.leisure.id).abonosBancarios).toBe("30.00");
+  expect(dprima(c, c.B.id, c.food.id).abonosVinculadosVerificados).toBe("0.00");
+  expect(dprima(c, c.B.id, c.leisure.id).abonosVinculadosVerificados).toBe("30.00");
   c.db.close();
 });
 
@@ -385,25 +385,25 @@ test("F2A1-10 (AC-D18): la ejecución de A baja al abonar en B y la de B no se m
   const compra = buy(c, "120");
   buy(c, "40", { fecha: "2026-07-25" }); // compra propia de B
   const antes = { a: dprima(c, c.A.id), b: dprima(c, c.B.id) };
-  expect([antes.a.ejecutado, antes.b.ejecutado, antes.b.abonosBancarios]).toEqual(["120.00", "40.00", "0.00"]);
+  expect([antes.a.ejecutado, antes.b.ejecutado, antes.b.abonosVinculadosVerificados]).toEqual(["120.00", "40.00", "0.00"]);
   refund(c, compra, "30");
   const despues = { a: dprima(c, c.A.id), b: dprima(c, c.B.id) };
   expect(despues.a.ejecutado).toBe("90.00");
   expect(despues.b.ejecutado).toBe(antes.b.ejecutado);
   expect(despues.b.bruto).toBe(antes.b.bruto);
-  expect(despues.b.abonosBancarios).toBe("30.00");
+  expect(despues.b.abonosVinculadosVerificados).toBe("30.00");
   expect(plan(c, c.A.id).ejecutado).toBe("90.00");
   expect(plan(c, c.B.id).ejecutado).toBe("40.00");
   c.db.close();
 });
 
-test("F2A1-11: un abono anterior o posterior al ciclo queda fuera de abonosBancarios (ventana por fecha real)", () => {
+test("F2A1-11: un abono anterior o posterior al ciclo queda fuera de abonosVinculadosVerificados (ventana por fecha real)", () => {
   const c = setup();
   const compra = buy(c, "120");
   refund(c, compra, "30", {}, { fecha: "2026-07-19" }); // último día de A
   refund(c, compra, "10", {}, { fecha: "2026-08-20" }); // primer día de C
-  expect(dprima(c, c.A.id).abonosBancarios).toBe("30.00");
-  expect(dprima(c, c.B.id).abonosBancarios).toBe("0.00");
+  expect(dprima(c, c.A.id).abonosVinculadosVerificados).toBe("30.00");
+  expect(dprima(c, c.B.id).abonosVinculadosVerificados).toBe("0.00");
   // El descuento sigue a la compra: A descuenta ambos.
   expect(dprima(c, c.A.id)).toMatchObject({ devoluciones: "40.00", ejecutado: "80.00" });
   c.db.close();
@@ -416,7 +416,7 @@ test("F2A1-12: sin tabla de vínculos (esquema anterior) Plan y Dprima no fallan
   c.db.run("DROP TABLE movimiento_devolucion");
   const item = cycleExecution(c.db, c.A.id, now).items.find((i) => i.presupuesto.id === "PRE900")!;
   expect(item).toMatchObject({ bruto: "50.00", devoluciones: "0.00", ejecutado: "50.00" });
-  expect(dprima(c, c.A.id)).toMatchObject({ ejecutado: "50.00", abonosBancarios: "0.00" });
+  expect(dprima(c, c.A.id)).toMatchObject({ ejecutado: "50.00", abonosVinculadosVerificados: "0.00" });
   c.db.close();
 });
 
@@ -465,5 +465,17 @@ test("F2A1-15: Reparto sobre Dprima no persiste ejecutado de Gasto real: solo la
   expect(c.db.query("SELECT COUNT(*) n FROM reparto_lineas").get()).toEqual({ n: 0 });
   // contextRevision es salida opaca de la vista previa (no se guarda): refleja el cambio.
   expect(despues.contextRevision).not.toBe(antes.contextRevision);
+  c.db.close();
+});
+
+test("F2A1-16: la clave se llama abonosVinculadosVerificados y abonosBancarios ya no existe (sin alias)", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  refund(c, compra, "30", sinAcreditar);
+  const item = dprima(c, c.B.id) as Record<string, unknown>;
+  expect(item.abonosVinculadosVerificados).toBe("30.00");
+  expect("abonosBancarios" in item).toBe(false);
+  // Verificada No acreditada cuenta como abono vinculado sin reducir el GRE.
+  expect(dprima(c, c.A.id).ejecutado).toBe("120.00");
   c.db.close();
 });

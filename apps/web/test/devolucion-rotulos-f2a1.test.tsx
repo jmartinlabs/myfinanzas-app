@@ -1,7 +1,12 @@
 import { test, expect } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
-  AbonosCelda,
+  ImporteCelda,
+  NO_APLICA,
+  NO_DISPONIBLE,
+  ROTULO_ABONOS,
+  aplicaColumna,
+  textoValor,
   EjecutadoCelda,
   NOTA_ATRIBUCION,
   NOTA_DESVIACION,
@@ -34,7 +39,7 @@ test("F2A1-UI-03: la celda Ejecutado de Gasto real lleva «Gasto real económico
   expect(aportacion).not.toContain(ROTULO_GRE);
   // Cero con hechos se pinta 0,00; ausencia se pinta como no disponible, nunca como cero.
   expect(renderToStaticMarkup(<EjecutadoCelda fuente="Gasto real" valor="0.00" />)).toContain("0,00");
-  expect(renderToStaticMarkup(<EjecutadoCelda fuente="Gasto real" valor={null} vacio="No disponible" />)).toContain(
+  expect(renderToStaticMarkup(<EjecutadoCelda fuente="Gasto real" valor={null} />)).toContain(
     "No disponible",
   );
 });
@@ -54,12 +59,57 @@ test("F2A1-UI-05: ninguna celda rotula como GRE o flujo bancario una fila que no
   for (const fuente of ["Aportación a saldo", "No aplica"]) {
     const e = renderToStaticMarkup(<EjecutadoCelda fuente={fuente} valor="40.00" />);
     expect(e).not.toContain(ROTULO_GRE);
-    const a = renderToStaticMarkup(<AbonosCelda fuente={fuente} valor="40.00" />);
-    expect(a).not.toContain(ROTULO_FLUJO);
+    for (const rotulo of [ROTULO_FLUJO, ROTULO_ABONOS]) {
+      const a = renderToStaticMarkup(
+        <ImporteCelda fuente={fuente} columna="gasto" valor="40.00" rotulo={rotulo} />,
+      );
+      expect(a).not.toContain(rotulo);
+    }
   }
-  const g = renderToStaticMarkup(<AbonosCelda fuente="Gasto real" valor="30.00" />);
-  expect(g).toContain(ROTULO_FLUJO);
-  expect(renderToStaticMarkup(<AbonosCelda fuente="Gasto real" valor={null} />)).not.toContain(ROTULO_FLUJO);
+  const g = renderToStaticMarkup(
+    <ImporteCelda fuente="Gasto real" columna="gasto" valor="30.00" rotulo={ROTULO_ABONOS} />,
+  );
+  expect(g).toContain(ROTULO_ABONOS);
+  expect(g).not.toContain(ROTULO_FLUJO);
+  const bruto = renderToStaticMarkup(
+    <ImporteCelda fuente="Gasto real" columna="gasto" valor="120.00" rotulo={ROTULO_FLUJO} />,
+  );
+  expect(bruto).toContain(ROTULO_FLUJO);
+  expect(
+    renderToStaticMarkup(<ImporteCelda fuente="Gasto real" columna="gasto" valor={null} rotulo={ROTULO_ABONOS} />),
+  ).not.toContain(ROTULO_ABONOS);
+});
+
+test("F2A1-UI-09: el rótulo de abonos aclara que no es el flujo bancario completo y no usa «Flujo bancario bruto»", () => {
+  expect(ROTULO_ABONOS).toBe("Abonos vinculados verificados (por fecha real)");
+  expect(ROTULO_ABONOS).not.toContain("Flujo bancario");
+  expect(NOTA_ATRIBUCION).toContain("no son el flujo bancario completo");
+  expect(NOTA_ATRIBUCION).toContain("huérfanas");
+});
+
+test("F2A1-UI-10: «—» si la columna no aplica a la fuente y «No disponible» solo si aplica y no es verificable; cero no es ausencia", () => {
+  expect(aplicaColumna("gasto", "Gasto real")).toBe(true);
+  expect(aplicaColumna("gasto", "Aportación a saldo")).toBe(false);
+  expect(aplicaColumna("gasto", "No aplica")).toBe(false);
+  expect(aplicaColumna("ejecucion", "Aportación a saldo")).toBe(true);
+  expect(aplicaColumna("ejecucion", "No aplica")).toBe(false);
+  expect(NO_APLICA).toBe("—");
+  expect(NO_DISPONIBLE).toBe("No disponible");
+  expect(textoValor(null, false)).toBe("—");
+  expect(textoValor(null, true)).toBe("No disponible");
+  expect(textoValor("0.00", true)).toContain("0,00");
+  // Gasto real con exceso: ejecutado null → No disponible (aplica y no verificable).
+  expect(renderToStaticMarkup(<EjecutadoCelda fuente="Gasto real" valor={null} />)).toContain("No disponible");
+  // No aplica: nunca «No disponible».
+  const na = renderToStaticMarkup(<EjecutadoCelda fuente="No aplica" valor={null} />);
+  expect(na).toContain("—");
+  expect(na).not.toContain("No disponible");
+  const bruto = renderToStaticMarkup(<ImporteCelda fuente="Aportación a saldo" columna="gasto" valor={null} />);
+  expect(bruto).toContain("—");
+  expect(bruto).not.toContain("No disponible");
+  expect(
+    renderToStaticMarkup(<ImporteCelda fuente="Gasto real" columna="gasto" valor={null} />),
+  ).toContain("No disponible");
 });
 
 test("F2A1-UI-06: las notas no traducen presupuesto − GRE a disponibilidad y separan el abono bancario por fecha", () => {
@@ -72,9 +122,10 @@ test("F2A1-UI-06: las notas no traducen presupuesto − GRE a disponibilidad y s
 test("F2A1-UI-07: los cuatro lectores de «Ejecutado» de Plan de ciclo y Dprima usan los rótulos compartidos", async () => {
   const { readFileSync } = await import("node:fs");
   const src = (f: string) => readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8");
-  expect(src("Dprima.tsx")).toContain("AbonosCelda");
+  expect(src("Dprima.tsx")).toContain("ImporteCelda");
   expect(src("Dprima.tsx")).toContain("EjecutadoCelda");
-  expect(src("Dprima.tsx")).toContain("abonosBancarios");
+  expect(src("Dprima.tsx")).toContain("abonosVinculadosVerificados");
+  expect(src("Dprima.tsx")).not.toContain("abonosBancarios");
   expect(src("PlanesCiclo.tsx")).toContain("EjecutadoCelda");
   expect(src("PlanesCiclo.tsx")).toContain("NOTA_DESVIACION");
   expect(src("PlanImpact.tsx")).toContain("rotuloEjecutado");

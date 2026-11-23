@@ -4,6 +4,8 @@ import { planDeltaEntries } from "./plan-delta";
 import { RepartoMensual } from "./RepartoMensual";
 import {
   EjecutadoCelda,
+  aplicaColumna,
+  textoValor,
   NOTA_ATRIBUCION,
   NOTA_DESVIACION,
   ROTULO_GRE,
@@ -328,7 +330,10 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       kind: "amount",
       cell: (item) => (
         <>
-          {amount(item.pendiente)}
+          {textoValor(
+            item.pendiente,
+            aplicaColumna("ejecucion", item.presupuesto.fuente),
+          )}
           <p>{item.estado ?? "—"}</p>
         </>
       ),

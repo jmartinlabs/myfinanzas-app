@@ -18,7 +18,7 @@ import {
   type TransferenciaPendienteDTO,
 } from "./api";
 import { TransferenciaPendienteFicha } from "./TransferenciaPendienteFicha";
-import { rotuloEjecutado } from "./devolucion-rotulos";
+import { aplicaColumna, rotuloEjecutado, textoValor } from "./devolucion-rotulos";
 import {
   Alert,
   DataList,
@@ -942,8 +942,11 @@ const propuestaColumns = (
       const rotulo = rotuloEjecutado(entidadItem(item)?.fuente);
       return (
         <>
-          {amount(item.ejecutado)}
-          {rotulo && <small className="help"> {rotulo}</small>}
+          {textoValor(
+            item.ejecutado,
+            aplicaColumna("ejecucion", entidadItem(item)?.fuente),
+          )}
+          {rotulo && item.ejecutado !== null && <small className="help"> {rotulo}</small>}
         </>
       );
     },
@@ -953,7 +956,10 @@ const propuestaColumns = (
     header: pendienteHeader(fuente),
     cell: (item) => (
       <>
-        {amount(item.pendiente)}
+        {textoValor(
+          item.pendiente,
+          aplicaColumna("ejecucion", entidadItem(item)?.fuente),
+        )}
         <p>{item.estado ?? "Sin estado comparable"}</p>
         {(item.efectoAcumulado !== null || item.restante !== null) && (
           <p className="help">

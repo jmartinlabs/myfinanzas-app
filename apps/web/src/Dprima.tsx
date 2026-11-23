@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { Alert, PageHead, TableScroll, Tag } from "./ui";
 import {
-  AbonosCelda,
   EjecutadoCelda,
+  ImporteCelda,
   NOTA_ATRIBUCION,
   NOTA_DESVIACION,
+  ROTULO_ABONOS,
+  ROTULO_FLUJO,
 } from "./devolucion-rotulos";
 
 type Cycle = {
@@ -69,7 +71,7 @@ type Mensual = {
     bruto: string | null;
     devoluciones: string | null;
     /** F2a-1: abonos por fecha real del ciclo (flujo bancario), no descuento. */
-    abonosBancarios: string | null;
+    abonosVinculadosVerificados: string | null;
     cobertura: string | null;
     causas: string[] | null;
     ejecutado: string | null;
@@ -406,7 +408,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
                   <th>Esencial</th>
                   <th>Del mes</th>
                   <th>Bruto</th>
-                  <th>Abonos por fecha real</th>
+                  <th>{ROTULO_ABONOS}</th>
                   <th>Devoluciones de las compras del ciclo</th>
                   <th>Ejecutado</th>
                   <th>Pendiente</th>
@@ -1059,21 +1061,31 @@ function MensualRow({
           />
         </td>
       ))}
-      <td>{amount(item.bruto)}</td>
       <td>
-        <AbonosCelda fuente={item.fuente} valor={item.abonosBancarios} />
+        <ImporteCelda fuente={item.fuente} columna="gasto" valor={item.bruto} rotulo={ROTULO_FLUJO} />
       </td>
-      <td>{amount(item.devoluciones)}</td>
+      <td>
+        <ImporteCelda
+          fuente={item.fuente}
+          columna="gasto"
+          valor={item.abonosVinculadosVerificados}
+          rotulo={ROTULO_ABONOS}
+        />
+      </td>
+      <td>
+        <ImporteCelda fuente={item.fuente} columna="gasto" valor={item.devoluciones} />
+      </td>
       <td>
         <EjecutadoCelda
           fuente={item.fuente}
           valor={item.ejecutado}
           cobertura={item.cobertura}
           causas={item.causas}
-          vacio="No disponible"
         />
       </td>
-      <td>{amount(item.pendiente)}</td>
+      <td>
+        <ImporteCelda fuente={item.fuente} columna="ejecucion" valor={item.pendiente} />
+      </td>
       <td>
         <Tag inactive={item.estado === "No disponible"}>{item.estado}</Tag>
         {item.motivo && <small>{item.motivo}</small>}

@@ -1,5 +1,4 @@
-import { eur } from "./api";
-import { rotuloEjecutado } from "./devolucion-rotulos";
+import { aplicaColumna, rotuloEjecutado, textoValor } from "./devolucion-rotulos";
 type Result = {
   presupuesto: { nombre: string; fuente?: string };
   ejecutado: string | null;
@@ -20,7 +19,8 @@ export function PlanImpact({
   impact: PlanImpactData | null | undefined;
 }) {
   if (!impact) return null;
-  const value = (n: string | null) => (n === null ? "—" : eur(n));
+  const value = (n: string | null, fuente?: string) =>
+    textoValor(n, aplicaColumna("ejecucion", fuente));
   return (
     <section aria-label="Impacto en planes del ciclo">
       <h3>Impacto en planes del ciclo</h3>
@@ -44,11 +44,12 @@ export function PlanImpact({
                   {rotuloEjecutado(d.antes.presupuesto.fuente)
                     ? ` (${rotuloEjecutado(d.antes.presupuesto.fuente)})`
                     : ""}
-                  : {value(d.antes.ejecutado)} → {value(d.despues.ejecutado)}
+                  : {value(d.antes.ejecutado, d.antes.presupuesto.fuente)} →{" "}
+                  {value(d.despues.ejecutado, d.despues.presupuesto.fuente)}
                 </p>
                 <p>
-                  Pendiente: {value(d.antes.pendiente)} →{" "}
-                  {value(d.despues.pendiente)}
+                  Pendiente: {value(d.antes.pendiente, d.antes.presupuesto.fuente)} →{" "}
+                  {value(d.despues.pendiente, d.despues.presupuesto.fuente)}
                 </p>
                 <p>
                   Estado: {d.antes.estado ?? "—"} → {d.despues.estado ?? "—"}
