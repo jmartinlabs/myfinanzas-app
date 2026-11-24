@@ -13,11 +13,9 @@ remain authoritative, so never contradict them here.
 
 | Task | State | Owner (start/stop, permission-sensitive operations) | Branch / candidate SHA | Checks last verified | PR / CI / merge | Next action | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| UNDECIDED | PENDIENTE | UNVERIFIED | UNVERIFIED | UNRUN | UNVERIFIED | UNDECIDED | none |
+| UNDECIDED | UNDECIDED | UNVERIFIED | UNVERIFIED | UNRUN | UNVERIFIED | UNDECIDED | none |
 
-States: PENDIENTE, ENVIADO, RECIBIDO, VERIFICADO, BLOQUEADO — see
-[external clients](../specs/methodology/dynamic-agents-external-clients.md). `DESCONOCIDO`
-only when the evidence cannot choose one.
+`State` is free text; use `UNVERIFIED` when the evidence cannot decide.
 
 ## Verified increments
 
