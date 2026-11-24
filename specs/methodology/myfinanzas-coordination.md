@@ -85,7 +85,7 @@ curso con rama/SHA/PR, QA disponible, dependencias abiertas, bloqueos con su con
 salida, decisiones vigentes y la siguiente acción verificable.
 
 Se reutilizan `$handoff` y `$work-issue`; no se crea otra base de estado, servicio, bot, cron ni
-campo nuevo del Project. La designación se registra en esta regla y en el handoff o comentario de
+campo nuevo del Project. La designación vigente se registra en el handoff o en un comentario de
 la Issue; el Status sigue expresando la fase autorizada de cada trabajo, nunca la identidad de
 quien coordina. El relevo se comunica a los agentes implicados.
 

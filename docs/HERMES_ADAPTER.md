@@ -2,8 +2,8 @@
 
 Hermes es un **cliente adicional** del mismo harness. El coordinador técnico lo designa el
 usuario para cada periodo de trabajo; el rol no queda atado al proveedor, y Hermes y OpenCode son
-clientes válidos como coordinador, ejecutor o sustituto. Este adaptador no crea un segundo coordinador, no
-sustituye ninguna Skill y no cambia reglas, aprobaciones ni estado del proyecto.
+clientes válidos como coordinador, ejecutor o sustituto. Este adaptador no crea un segundo
+coordinador, no sustituye ninguna Skill y no cambia reglas, aprobaciones ni estado del proyecto.
 
 Se apoya en la integración aprobada y fusionada en
 [agent-project-template#49](https://github.com/jmartinlabs/agent-project-template/pull/49)
