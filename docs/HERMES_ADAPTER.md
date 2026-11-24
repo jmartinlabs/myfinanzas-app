@@ -163,8 +163,8 @@ de slot ni inventes una ruta por tarea. No se cambia configuración ni autentica
 Instrucción inicial opcional: «Coordina con el modelo de esta sesión; para implementación usa
 la opción worker verificada y para revisión crítica la opción advisor verificada, con contexto
 independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
-declara la limitación y aplica los gates/fallback canónicos». La cuota sigue
-vigente cualquiera que sea el cliente coordinador.
+declara la limitación y aplica los gates/fallback canónicos». Los límites del
+proveedor se respetan igual con cualquier cliente coordinador, sin pago ni otro proveedor sin consentimiento.
 
 ## Delegación por rol en el perfil real
 

@@ -14,7 +14,7 @@ resolved.
 The user declares external availability for each execution; absent a declaration, OpenCode is not
 enabled and no conversation is created. Do not launch or integrate it via CLI, MCP or APIs. When enabled,
 publish the copyable content below through Agent Relay v1; the recipient reads it on `Lee` and returns
-through the same conversation. Include including a recommended model from that installation's verified catalog (otherwise mark it
+through the same conversation. Include a recommended model from that installation's verified catalog (otherwise mark it
 unverified and request the catalog before assigning a model). Branch pushes and PR creation follow the
 [publication policy](approvals.md#publicación-de-rama-y-pr); the packet grants none. Continue useful
 independent authorized work, then wait; never repeatedly query the user or a worker for unchanged

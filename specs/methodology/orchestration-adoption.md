@@ -469,6 +469,7 @@ cambian. Verificación local: `python3 scripts/check-project`, `python3 scripts/
 `python3.12 scripts/verify baseline` PASS. El comportamiento real de un cliente no se
 declara medido por este cambio documental.
 
-
 ## Local observed evidence (moved from dynamic-agents, 2026-11-24)
 On 2026-11-01, two general subagents (task IDs E3.5 and DEV22) were launched with `background: true` in OpenCode, in independent worktrees and branches; their sessions started 4 ms apart and their activity overlapped 4 min 35 s while the coordinator stayed available, with independent QA afterwards. The requested model was DeepSeek V4.1 Flash; this record does not re-verify that identity. It proves technical viability only: no token saving, quality gain or blanket parallelization is claimed.
+
+*(`model-selection.md`, `coordinator-communication.md` y `orchestrate/reference.md` se retiraron en #588; las menciones anteriores son histórico.)*

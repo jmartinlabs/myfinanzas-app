@@ -163,6 +163,15 @@ def validate(root):
  }.items():
   for token in tokens:
    if not satisfied(read(name),token): fail('coordination',f'{name}: missing {token}')
+ # Rules that survive the simplification stay guarded where they now live.
+ for name,tokens in {
+  '.agents/skills/orchestrate/SKILL.md':('## Execution continuity','a partial result','authorized, executable work remains','completed work with its evidence','user request to stop','blocker that cannot be resolved','**responsible party**'),
+  '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
+  'specs/methodology/dynamic-agents-external-clients.md':('~:OpenCode is not enabled',),
+  'specs/methodology/myfinanzas-coordination.md':('### Modo de ejecución','merge exige aprobación','ownership disjunto','Agent Relay v1'),
+ }.items():
+  for token in tokens:
+   if not satisfied(read(name),token): fail('coordination',f'{name}: missing {token}')
  # Post-merge cleanup and checkpoint retirement stay canonical in approvals/handoff.
  for name,tokens in {
   'specs/methodology/approvals.md':('## Limpieza local posterior al merge','cierre ordinario',

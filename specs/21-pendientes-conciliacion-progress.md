@@ -35,7 +35,7 @@ expediente duplicado.
 - `AGENTS.md`, `specs/README.md`, `specs/project.md`.
 - `.agents/skills/spec/SKILL.md` y plantillas de brainstorming/specification/testplan.
 - `specs/methodology/myfinanzas-coordination.md`, `approvals.md`, `workflows.md`,
-  `dynamic-agents-external-clients.md`.
+  `coordinator-communication.md`.
 - `specs/roadmap.md` (E2.3, E2.6, E3.1–E3.6, DT5, E4.6/E4.7).
 - `specs/functional-reference-v5.11.md` (R1–R4/R6, P1–P7).
 - `specs/epic-board.md` y checkpoints; se contrastaron con Git/PR cuando el tablero
