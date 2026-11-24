@@ -1,9 +1,9 @@
 # MyFinanzas · Uso con Hermes Agent (adaptador de agent-project-template PR #49)
 
-Hermes es un **cliente adicional** del mismo harness y, por decisión del usuario (2026-11-12),
-el **coordinador técnico activo**; el rol no queda atado al proveedor y OpenCode sigue siendo un
-cliente válido como ejecutor o sustituto. Este adaptador no crea un segundo coordinador, no
-sustituye ninguna Skill y no cambia reglas, aprobaciones ni estado del proyecto.
+Hermes es un **cliente adicional** del mismo harness. El coordinador técnico lo designa el
+usuario para cada periodo de trabajo; el rol no queda atado al proveedor, y Hermes y OpenCode son
+clientes válidos como coordinador, ejecutor o sustituto. Este adaptador no crea un segundo
+coordinador, no sustituye ninguna Skill y no cambia reglas, aprobaciones ni estado del proyecto.
 
 Se apoya en la integración aprobada y fusionada en
 [agent-project-template#49](https://github.com/jmartinlabs/agent-project-template/pull/49)
@@ -43,7 +43,7 @@ hermes                                       # arrancar SIEMPRE en la raíz del 
 
 ## Autoridad y límites en MyFinanzas
 
-- **Hermes ejerce hoy como coordinador designado** y gestiona el estado operativo en el Project #4; `specs/epic-board.md` es histórico. Cualquier
+- **Cuando el usuario designa a Hermes como coordinador**, este gestiona el estado operativo en el Project #4; `specs/epic-board.md` es histórico. Cualquier
   cliente compatible puede sustituirlo por decisión del usuario con el handoff de
   [Cambio de coordinador](../specs/methodology/myfinanzas-coordination.md#cambio-de-coordinador);
   ningún coordinador abre una cola paralela ni un segundo scheduler.
