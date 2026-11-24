@@ -310,7 +310,11 @@ test("F2B-05 (AC-D21/AC-D04): sinVinculo no netea y un huérfano de ámbito desc
   expect(a.cobertura.devolucionesPendientes).toEqual([]);
   // Se informan (integridad global), sin atribuirse a Comida.
   expect(a.devoluciones.sinVinculo).toEqual([huerfanaIng, huerfanaOtro]);
-  expect(a.cobertura.motivos.join(" ")).toContain("no atribuibles a Comida");
+  // Advertencia explícita de integridad, fuera de la cobertura y sin bloqueo.
+  expect(a.cobertura.motivos.join(" ")).not.toContain("sin compra válida");
+  expect(a.integridad.advertencia).toContain("no atribuibles a Comida");
+  expect(a.integridad.ids).toEqual([huerfanaIng, huerfanaOtro]);
+  expect(a.integridad.bloquea).toBe(false);
   c.db.close();
 });
 
@@ -407,13 +411,30 @@ test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la dev
   const count = () =>
     (c.db.query("SELECT COUNT(*) n FROM movimientos").get() as { n: number }).n;
   const sin = m(c, c.A.id);
+  const sinB = m(c, c.B.id);
   expect(sin.recursos.valor).toBe("4880.00"); // S0 5000 + F 0 + R 0 − C_n 120
   const dev = refund(c, compra, "30");
   const n = count();
   const a = m(c, c.A.id);
+  // GRE: el abono (recibido en B) reduce retroactivamente el neto de A…
   expect(a.compensable.neto.valor).toBe("90.00");
-  expect(a.recursos.valor).toBe("4910.00"); // S0 + F + R − C_n(90)
+  // …pero los recursos operativos de A NO aumentan (SPEC39 §7, §8, AC-D20/D23).
+  expect(a.recursos.valor).toBe("4880.00");
+  expect(a.recursos.valor).toBe(sin.recursos.valor);
+  expect(a.obligacion.cn).toBe("120.00");
+  expect(a.obligacion.falta).toBe(sin.obligacion.falta);
   expect(a.financiacion).toMatchObject({ f: sin.financiacion.f, reposicionesCaja: sin.financiacion.reposicionesCaja });
+  // B: sin recursos ni financiación nueva por el abono.
+  const b = m(c, c.B.id);
+  expect(b.recursos.valor).toBe(sinB.recursos.valor);
+  expect(b.financiacion).toMatchObject({ f: sinB.financiacion.f, reposicionesCaja: sinB.financiacion.reposicionesCaja });
+  // El abono es un hecho bancario real de B: el puente de A conserva el cierre
+  // analítico y absorbe la diferencia de periodo en «otros», no en recursos.
+  expect(a.puente).not.toBeNull();
+  expect(a.puente!.cierreAnalitico).toBe(a.cierreAnalitico.valor);
+  expect(
+    (Number(a.puente!.baseAnalitica) + Number(a.puente!.otrosEfectos)).toFixed(2),
+  ).toBe(a.puente!.cierreAnalitico);
   expect(count()).toBe(n); // una lectura no crea movimientos
   // Anulación de la compra (fixture) + rectificación P4: el abono queda como hecho
   // bancario con vínculo en Revisar; no netea nada ni se duplica en ningún ciclo.
@@ -421,6 +442,7 @@ test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la dev
   revalidateDevolucionesCompra(c.db, compra, now);
   const x = m(c, c.A.id);
   expect(x.compensable.bruto.valor).toBe("0.00");
+  expect(x.recursos.valor).toBe("5000.00"); // sin compra vigente no hay C_n operativo
   expect(x.compensable.devoluciones.valor).toBe("0.00");
   expect(x.compensable.neto.valor).toBe("0.00");
   expect(x.devoluciones.compraInvalida).toEqual([]); // fecha 07-25 cae en B
@@ -428,6 +450,26 @@ test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la dev
   expect(m(c, c.B.id).compras.devoluciones.valor).toBe("0.00");
   expect(m(c, c.B.id).compensable.devoluciones.valor).toBe("0.00");
   expect(count()).toBe(n);
+  c.db.close();
+});
+
+test("F2B-09b (AC-D23): abono recibido dentro del mismo ciclo sí descuenta del operativo; GRE y recursos coinciden en ese caso", () => {
+  const c = setup();
+  const compra = add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe: "120",
+    saldo: c.ing.id,
+    partida: c.leisure.id,
+    concepto: "Compra compensable ficticia",
+    nota: "",
+    comida: { etiqueta: "Ocio" },
+  }).movimiento.id as string;
+  refund(c, compra, "30", {}, { fecha: "2026-07-10" });
+  const a = m(c, c.A.id);
+  expect(a.compensable.neto.valor).toBe("90.00");
+  expect(a.recursos.valor).toBe("4910.00"); // el abono ocurre en A: comportamiento previo conservado
+  expect(a.obligacion.cn).toBe("90.00");
   c.db.close();
 });
 

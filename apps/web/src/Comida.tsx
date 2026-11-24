@@ -73,6 +73,7 @@ type Metrics = {
   regimen: RegimenDto;
   periodo: { inicio: string; corte: string };
   cobertura: { estado: string; motivos: string[]; sinClasificar: string[]; devolucionesPendientes: string[] };
+  integridad?: { advertencia: string | null; ids: string[]; bloquea: false };
   compras: { bruto: Metric; devoluciones: Metric; neto: Metric };
   compensable: { bruto: Metric; devoluciones: Metric; neto: Metric };
   reposiciones: { obligacion: string | null; ids: string[] };
@@ -407,6 +408,11 @@ export function Comida({ go }: { go: (p: string) => void }) {
                     <li key={m}>{m}</li>
                   ))}
                 </ul>
+              )}
+              {metrics.integridad?.advertencia && (
+                <p className="muted" role="note">
+                  Advertencia de integridad: {metrics.integridad.advertencia}
+                </p>
               )}
               <dl className="metrics">
                 <MetricRow label="Comida bruto" metric={metrics.compras.bruto} />

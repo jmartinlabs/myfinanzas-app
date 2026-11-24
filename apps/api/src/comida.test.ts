@@ -2218,7 +2218,7 @@ test("H10 (F2b): una devolución acreditada sin compra no netea y se informa com
   // Nota QA: el Parcial ya no prueba la devolución huérfana (no degrada, AC-D21); lo prueba el motivo informativo siguiente.
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
-  expect(metrics.cobertura.motivos.join(" ")).toContain("no atribuibles a Comida");
+  expect(metrics.integridad.advertencia).toContain("no atribuibles a Comida");
   expect(metrics.compensable.devoluciones.valor).toBe("0.00");
   db.close();
 });

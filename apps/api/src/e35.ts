@@ -328,6 +328,16 @@ export function e35Metrics(
     const compDev = aggComp.descuento;
     const netFood = foodBruto - foodDev;
     const netComp = compBruto - compDev;
+    // SPEC39 §7/§8, AC-D20/AC-D23: el GRE (netFood/netComp) se reduce retroactivamente,
+    // pero recursos, financiación y obligación de reposición son operativos y NO se
+    // recalculan desde GRE: solo descuentan el abono recibido dentro de este ciclo.
+    // Una devolución recibida en otro ciclo no altera sus recursos.
+    const compDevOp = sum(
+      ofScope
+        .filter((i) => i.elegible && compSet.has(i.compra!) && inWindow(i.fecha))
+        .map((i) => i.importe),
+    );
+    const netCompOp = compBruto - compDevOp;
     const pending = unclassified.map((p) => p.row.id);
     const coverageFood =
       !metaOk || !devOk
@@ -375,7 +385,7 @@ export function e35Metrics(
     const falta =
       coverageFood === null
         ? (() => {
-            const raw = netComp - rObl.total;
+            const raw = netCompOp - rObl.total;
             return raw > 0n ? raw : 0n;
           })()
         : null;
@@ -480,14 +490,14 @@ export function e35Metrics(
         };
       if (coverageFood !== null)
         return { estado: "No disponible" as const, motivo: coverageFood };
-      if (netComp === 0n)
+      if (netCompOp === 0n)
         return { estado: "Sin obligación acreditada" as const, motivo: "" };
-      if (netComp < 0n)
+      if (netCompOp < 0n)
         return {
           estado: "Parcial" as const,
           motivo: "C_n negativo: devoluciones elegibles superan el compensable bruto.",
         };
-      return rObl.total >= netComp
+      return rObl.total >= netCompOp
         ? { estado: "Completada" as const, motivo: "" }
         : {
             estado: "Parcial" as const,
@@ -497,7 +507,7 @@ export function e35Metrics(
 
     const s0 = cents(ciclo.saldoInicialComida);
     const resourcesSubtotal = financing.available
-      ? s0 + financing.f + financing.rCaja - netComp
+      ? s0 + financing.f + financing.rCaja - netCompOp
       : null;
     const resources =
       financing.available && coverageFood === null ? resourcesSubtotal : null;
@@ -577,7 +587,7 @@ export function e35Metrics(
               financing.d -
               (financing.f +
                 financing.rCaja -
-                netComp -
+                netCompOp -
                 netFood),
             close: analyticsClose,
           }
@@ -662,9 +672,6 @@ export function e35Metrics(
           ...(pendingDev.length
             ? [`Devoluciones sin atribución elegible: ${pendingDev.map((r) => r.id).join(", ")}.`]
             : []),
-          ...(sinVinculo.length || compraInvalida.length
-            ? [`Devoluciones sin compra válida no atribuibles a Comida (no netean ni degradan su cobertura; ver integridad global): ${[...sinVinculo, ...compraInvalida].join(", ")}.`]
-            : []),
           ...(comprasSinClasificacion.length
             ? [`Compras de Comida con devolución sin clasificación requerida (sinClasificacion): ${comprasSinClasificacion.join(", ")}.`]
             : []),
@@ -678,6 +685,18 @@ export function e35Metrics(
         ],
         sinClasificar: pending,
         devolucionesPendientes: pendingDev.map((r) => r.id),
+      },
+      // Advertencia de integridad, separada de la cobertura económica (SPEC39 §3.3,
+      // AC-D21): un abono sin compra válida no netea ni degrada Comida, pero se avisa.
+      // Informativa: no bloquea precierre ni cierre; su tratamiento en precierre queda
+      // para F4 (sin nuevo bloqueo automático).
+      integridad: {
+        advertencia:
+          sinVinculo.length || compraInvalida.length
+            ? `Devoluciones sin compra válida, no atribuibles a Comida: ${[...sinVinculo, ...compraInvalida].join(", ")}. No netean ni degradan la cobertura económica de Comida; requieren revisión en Movimientos.`
+            : null,
+        ids: [...sinVinculo, ...compraInvalida],
+        bloquea: false as const,
       },
       compras: {
         bruto: metric(
@@ -751,7 +770,7 @@ export function e35Metrics(
           },
       obligacion: {
         ...obligacionEstado,
-        cn: decimal(netComp),
+        cn: decimal(netCompOp),
         robl: decimal(rObl.total),
         falta: falta === null ? null : decimal(falta),
         ids: rObl.ids,
