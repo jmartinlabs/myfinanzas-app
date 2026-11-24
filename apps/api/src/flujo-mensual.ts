@@ -13,6 +13,7 @@ import { debtPeriod } from "./deudas";
 import { D } from "./payroll-decimal";
 import {
   agregarDescuentos,
+  causasCobertura,
   descuentoPorCompras,
   proyectarDevoluciones,
   type CausaCobertura,
@@ -140,7 +141,7 @@ function gastoRealEconomico(
     (exceso
       ? ". No disponible: una devolución supera su compra (sin max(0))"
       : cobertura === "Parcial"
-        ? `. Cobertura de devoluciones parcial (${[...causas].join(", ") || "exceso"}): las no elegibles no se netean`
+        ? `. Cobertura de devoluciones parcial (${causasCobertura.filter((x) => causas.has(x)).join(", ") || "exceso"}): las no elegibles no se netean`
         : "") +
     ". Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo";
   const base = metric(
@@ -157,7 +158,7 @@ function gastoRealEconomico(
     descuentoEconomico: decimal(agg.descuento),
     devoluciones: {
       cobertura: exceso ? "Parcial" : cobertura,
-      causas: [...causas],
+      causas: causasCobertura.filter((x) => causas.has(x)),
       exceso,
       ids: eligibleIds,
       sinVinculoEnIntervalo,
