@@ -320,6 +320,8 @@ test("F2A2-08 (AC-D01/D30 parcial): Resumen anual con devoluciones Revisar / No 
   expect([pa.ejecutado.valor, pa.ejecutado.estado, pa.cobertura.estado]).toEqual(["100.00", "Parcial", "Parcial"]);
   expect(pa.ejecutado.motivo).toContain("revisar");
   expect(pa.diferencia!.estado).toBe("Parcial");
+  expect(pa.diferencia!.motivo).toContain("provisional");
+  expect(pa.diferencia!.motivo).not.toContain("verificado.");
   // GRE de b: 100 + 40 - (0 + 40) = 100; parcial por sinAcreditacion, nunca «Cero verificado».
   expect([pb.ejecutado.valor, pb.ejecutado.estado]).toEqual(["100.00", "Parcial"]);
   expect(pb.ejecutado.motivo).toContain("sinAcreditacion");

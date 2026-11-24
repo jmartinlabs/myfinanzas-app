@@ -773,7 +773,9 @@ function planSection(
                   item.diferencia === null
                     ? item.motivo ??
                       "Diferencia no verificable sin un Ejecutado completo."
-                    : "Diferencia = Presupuesto − Ejecutado verificado.",
+                    : devParcial
+                      ? "Diferencia = Presupuesto − Ejecutado provisional: la cobertura de devoluciones es parcial."
+                      : "Diferencia = Presupuesto − Ejecutado verificado.",
                 cobertura: itemCobertura,
                 fuente: ejecutado.fuente,
                 contexto: ejecutado.contexto,
