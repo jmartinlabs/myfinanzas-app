@@ -2,7 +2,7 @@ import { test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
 import { openDatabase } from "./database";
-import { createSaldo } from "./saldos";
+import { createSaldo, getSaldo } from "./saldos";
 import { createClassification } from "./clasificacion";
 import { createCycle, cycleContext } from "./ciclos";
 import { previewMovement, writeMovement } from "./movimientos";
@@ -167,6 +167,14 @@ const plan = (c: Ctx, ciclo: string, presupuesto = "PRE900") =>
 const dprima = (c: Ctx, ciclo: string, raiz: string = c.food.id) =>
   getPlanMensualDprima(c.db, ciclo, c.at).items.find((i) => i.raiz === raiz)!;
 const cents = (v: string | null) => BigInt(v!.replace(".", ""));
+const decimalSum = (v: string, euros: bigint) => {
+  const n = cents(v) + euros * 100n;
+  return `${n / 100n}.${String(n % 100n).padStart(2, "0")}`;
+};
+type Anual = ReturnType<typeof resumenAnual>;
+/** GRE natural de una Partida (publicado por Partida, sin total anual). */
+const nat = (r: Anual, partida: string) =>
+  r.carriles.plan.gastoRealEconomicoNatural.partidas.find((p) => p.partidaId === partida);
 
 const tablasLectura = [
   "movimientos",
@@ -233,7 +241,11 @@ test("F2C-03 (AC-D32/D34): abono en OTRO ciclo: GRE retroactivo en el ciclo de l
   const compra = buy(c, "120");
   buy(c, "40", { fecha: "2026-07-25" }); // compra propia de B
   const antes = { a: flow(c, c.A.id), b: flow(c, c.B.id) };
+  const posAntes = { cuenta: getSaldo(c.db, c.account.id).posicion.importe, otra: getSaldo(c.db, c.other.id).posicion.importe };
   refund(c, compra, "30");
+  // Banco real por el motor de posiciones: solo el receptor sube 30; la cuenta de la compra no se mueve.
+  expect(getSaldo(c.db, c.other.id).posicion.importe).toBe(decimalSum(posAntes.otra!, 30n));
+  expect(getSaldo(c.db, c.account.id).posicion.importe).toBe(posAntes.cuenta!);
   const a = flow(c, c.A.id);
   const b = flow(c, c.B.id);
   // A: bruto igual; GRE baja; el abono no está en A.
@@ -396,10 +408,23 @@ test("F2C-09 (AC-D31): Inicio: KPI de gasto del ciclo = GRE = Plan = Dprima; «g
   expect(ciclo.gastoRealEconomico.subtotal).toBe(dprima(c, c.A.id).ejecutado!);
   // Sin devoluciones inelegibles, la cobertura de devoluciones es completa (el estado Parcial es el del banco).
   expect(ciclo.gastoRealEconomico.cobertura.motivos).toEqual([]);
-  // presupuesto − GRE no se traduce a disponibilidad: Inicio no publica un «disponible» derivado.
-  expect(JSON.stringify(ini.secciones.ciclo)).not.toContain("disponible operativ");
-  // Saldos reales aparte: la liquidez cuenta el abono una vez por el saldo, no por el GRE.
-  expect(ini.secciones.liquidez.metrica.clave).toBe("liquidez");
+  // Saldo real aparte y sin financiación automática: la posición del receptor sube 30 por el abono
+  // (hecho bancario) y ninguna sección de objetivo/ahorro cambia por el neteo del GRE.
+  const sinDev = setup();
+  const compra2 = buy(sinDev, "120");
+  buy(sinDev, "40", { fecha: "2026-07-18" });
+  const cifras = (d: ReturnType<typeof resumenInicio>) =>
+    JSON.stringify(
+      [d.secciones.objetivo.metrica, d.secciones.objetivo.mesesCubiertos, d.secciones.ahorro.ahorroResidual].map(
+        (m) => [m.valor, m.estado],
+      ),
+    );
+  const objetivoAntes = cifras(resumenInicio(sinDev.db, sinDev.at));
+  refund(sinDev, compra2, "30", {}, { fecha: "2026-07-10" });
+  const dtoDespues = resumenInicio(sinDev.db, sinDev.at);
+  expect(cifras(dtoDespues)).toBe(objetivoAntes);
+  expect(getSaldo(sinDev.db, sinDev.other.id).posicion.importe).toBe("130.00");
+  sinDev.db.close();
   c.db.close();
 });
 
@@ -433,20 +458,29 @@ test("F2C-11 (AC-D30/D32): Resumen anual: cada ciclo coincide con Flujo; bloque 
   const A = r.carriles.realidad.ciclos.find((x) => x.cicloId === c.A.id)!;
   expect(A.gasto.subtotal).toBe("180.00");
   expect(A.gastoRealEconomico.subtotal).toBe("140.00");
-  // Natural: misma fuente que Plan anual (partida a partida) y suma exacta.
+  // Natural: misma fuente que Plan anual, por Partida y SIN total (SPEC25 P-10).
   const anual = getAnnualPlan(c.db, 2026, c.at);
-  const parts = [...anual.items, ...anual.sinLinea];
-  const suma = parts.reduce((n, i) => n + cents(i.subtotalRegistrado), 0n);
+  for (const i of [...anual.items, ...anual.sinLinea]) {
+    const p = nat(r, i.partida.id)!;
+    expect([p.bruto, p.descuentoAtribuido, p.gastoRealEconomico]).toEqual([
+      i.brutoRegistrado,
+      i.devoluciones.descuentoAtribuido,
+      i.subtotalRegistrado,
+    ]);
+  }
+  expect(nat(r, c.food.id)).toMatchObject({ bruto: "120.00", descuentoAtribuido: "30.00", gastoRealEconomico: "90.00" });
+  expect(nat(r, c.leisure.id)).toMatchObject({ bruto: "60.00", descuentoAtribuido: "10.00", gastoRealEconomico: "50.00" });
   const natural = r.carriles.plan.gastoRealEconomicoNatural;
-  expect(cents(natural.subtotal)).toBe(suma);
-  expect(cents(natural.subtotal)).toBe(14000n);
+  expect(natural.total.estado).toBe("No aplica");
+  expect("subtotal" in natural || "valor" in natural).toBe(false);
   expect(natural.etiqueta).toBe("Gasto real económico (neto) · ejercicio natural");
-  expect(natural.estado).toBe("Parcial"); // sin control/histórico acreditado: no es total anual
-  expect(natural.motivo).toContain("No es la suma de Ciclos");
+  expect(natural.estado).toBe("Parcial"); // sin control/histórico acreditado
+  expect(natural.motivo).toContain("Sin total anual");
   expect(natural.motivo).toContain("vivo");
-  // El natural sale de compras del año: un año sin compras no hereda ni inventa nada.
+  // Un año sin compras no hereda ni inventa nada.
   const otro = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2025" }), c.at);
-  expect(otro.carriles.plan.gastoRealEconomicoNatural.subtotal).toBeNull();
+  expect(otro.carriles.plan.gastoRealEconomicoNatural.partidas).toEqual([]);
+  expect(otro.carriles.plan.gastoRealEconomicoNatural.estado).toBe("No disponible");
   c.db.close();
 });
 
@@ -462,7 +496,9 @@ test("F2C-12 (AC-D30/D01): REF/Partida sin contaminar: la devolución de Superme
   const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at);
   const A = r.carriles.realidad.ciclos.find((x) => x.cicloId === c.A.id)!;
   expect(A.gastoRealEconomico.subtotal).toBe("150.00");
-  expect(r.carriles.plan.gastoRealEconomicoNatural.subtotal).toBe("150.00");
+  expect(nat(r, c.food.id)!.gastoRealEconomico).toBe("90.00");
+  expect(nat(r, c.leisure.id)!.gastoRealEconomico).toBe("60.00");
+  expect(nat(r, c.leisure.id)!.descuentoAtribuido).toBe("0.00");
   c.db.close();
 });
 
@@ -483,8 +519,9 @@ test("F2C-13 (AC-D30/D01): frontera diciembre/enero: la compra de diciembre baja
   expect(fn.metrics.devolucionesCobradas.subtotal).toBe("40.00");
   const y26 = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), at);
   const y27 = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2027" }), at);
-  expect(y26.carriles.plan.gastoRealEconomicoNatural.subtotal).toBe("60.00");
-  expect(y27.carriles.plan.gastoRealEconomicoNatural.subtotal).toBeNull();
+  expect(nat(y26, c.food.id)).toMatchObject({ bruto: "100.00", descuentoAtribuido: "40.00", gastoRealEconomico: "60.00" });
+  expect(nat(y27, c.food.id)).toBeUndefined();
+  expect(y27.carriles.plan.gastoRealEconomicoNatural.estado).toBe("No disponible");
   // El ciclo que cruza el año aparece en ambos ejercicios con la misma cifra (sin prorrateo).
   const ids = (r: typeof y26) => r.carriles.realidad.ciclos.map((x) => x.cicloId);
   expect(ids(y26)).toContain(mid.id);
@@ -514,12 +551,13 @@ test("F2C-14 (AC-D30): con control anual acreditado el natural es Verificado y r
   });
   const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at, { annualProvider: provider });
   const natural = r.carriles.plan.gastoRealEconomicoNatural;
-  expect(natural.valor).toBe("90.00");
-  expect(natural.subtotal).toBe("90.00");
   expect(natural.estado).toBe("Verificado");
+  expect(nat(r, c.food.id)!.gastoRealEconomico).toBe("90.00");
   const anual = getAnnualPlan(c.db, 2026, c.at, provider);
   expect([...anual.items, ...anual.sinLinea].find((i) => i.partida.id === c.food.id)!.ejecutado).toBe("90.00");
-  expect(natural.valor).toBe(flow(c, c.A.id).gastoRealEconomico.subtotal!);
+  expect(nat(r, c.food.id)!.gastoRealEconomico).toBe(flow(c, c.A.id).gastoRealEconomico.subtotal!);
+  // El Ejecutado del carril es la misma cifra.
+  expect(r.carriles.plan.items.find((i) => i.partidaId === c.food.id)!.ejecutado.valor).toBe("90.00");
   c.db.close();
 });
 
@@ -529,16 +567,30 @@ test("F2C-15 (AC-D01/D30): cobertura parcial en el natural con Revisar; cero net
   refund(c, compra, "10", { estado: "Revisar" });
   const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at);
   const n = r.carriles.plan.gastoRealEconomicoNatural;
-  expect(n.subtotal).toBe("100.00");
+  expect(nat(r, c.food.id)).toMatchObject({ gastoRealEconomico: "100.00", cobertura: "Parcial", causas: ["revisar"] });
   expect(n.estado).toBe("Parcial");
   expect(n.motivo).toContain("revisar");
   const c2 = setup();
   const t = buy(c2, "50");
   refund(c2, t, "50");
   const r2 = resumenAnual(c2.db, new URLSearchParams({ ejercicio: "2026" }), c2.at);
-  expect(r2.carriles.plan.gastoRealEconomicoNatural.subtotal).toBe("0.00");
+  // Cero neto con hechos: «0.00», no null ni ausencia.
+  expect(nat(r2, c2.food.id)).toMatchObject({ bruto: "50.00", gastoRealEconomico: "0.00", compras: 1 });
   c.db.close();
   c2.db.close();
+});
+
+test("F2C-22 (AC-D01): exceso histórico: el natural no publica cifra para la Partida (sin max(0)) y declara que no es verificable", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  refund(c, compra, "100");
+  c.db.run("DROP TRIGGER IF EXISTS movimiento_devolucion_integrity");
+  c.db.run("UPDATE movimientos SET importe=5000 WHERE id=?", [compra]);
+  const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at);
+  expect(nat(r, c.food.id)).toMatchObject({ exceso: true, gastoRealEconomico: null });
+  expect(r.carriles.plan.gastoRealEconomicoNatural.estado).toBe("Parcial");
+  expect(r.carriles.plan.gastoRealEconomicoNatural.motivo).toContain("sin max(0)");
+  c.db.close();
 });
 
 test("F2C-16 (AC-D01): las lecturas son GET puros: no mutan filas, revisiones ni tablas dirty", () => {

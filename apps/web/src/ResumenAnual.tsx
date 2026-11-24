@@ -81,8 +81,21 @@ type CarrilPlan = {
   estado: EstadoMetrica;
   motivo: string;
   items: CarrilPlanItem[];
-  /** Gasto real económico (neto) del ejercicio natural por compras (SPEC39); no suma Ciclos. */
-  gastoRealEconomicoNatural: Metrica;
+  /** GRE del ejercicio natural por compras (SPEC39), por Partida y sin total anual (SPEC25). */
+  gastoRealEconomicoNatural: {
+    estado: EstadoMetrica;
+    motivo: string;
+    partidas: {
+      partidaId: string;
+      bruto: string;
+      descuentoAtribuido: string;
+      gastoRealEconomico: string | null;
+      cobertura: string;
+      causas: string[];
+      exceso: boolean;
+      compras: number;
+    }[];
+  };
   cobertura: Cobertura;
   fuente: Fuente;
   enlace: Enlace;
@@ -825,11 +838,12 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
       <div className="e47-grid-2">
         <section className="panel e47-lane" aria-labelledby="e47-plan">
           <LaneHead title="Plan" motor="E2.4 · plan anual" lane={plan} />
-          <MetricCard metrica={plan.gastoRealEconomicoNatural} go={go} />
           <p className="e47-note">
             El Ejecutado de cada Partida es Gasto real económico (neto): compras
-            del ejercicio natural menos sus devoluciones elegibles.
+            del ejercicio natural menos sus devoluciones elegibles. Sin total
+            anual: no se suman Partidas ni Ciclos.
           </p>
+          <p className="e47-note">{plan.gastoRealEconomicoNatural.motivo}</p>
           {plan.items.length === 0 ? (
             <p className="e47-empty">Sin plan ni ejecución para el filtro.</p>
           ) : (

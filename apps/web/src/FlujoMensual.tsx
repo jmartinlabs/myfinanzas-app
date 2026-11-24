@@ -656,9 +656,14 @@ export function FlujoMensual({
                 />
               </div>
               <p className="muted">
-                Bruto {data.gastoRealEconomico.bruto ?? "No disponible"} ·
-                Descuento económico{" "}
-                {data.gastoRealEconomico.descuentoEconomico ?? "No disponible"}{" "}
+                Bruto{" "}
+                {data.gastoRealEconomico.bruto === null
+                  ? "No disponible"
+                  : euro(data.gastoRealEconomico.bruto)}{" "}
+                · Descuento económico{" "}
+                {data.gastoRealEconomico.descuentoEconomico === null
+                  ? "No disponible"
+                  : euro(data.gastoRealEconomico.descuentoEconomico)}{" "}
                 · Cobertura de devoluciones{" "}
                 {data.gastoRealEconomico.devoluciones.cobertura}
                 {data.gastoRealEconomico.devoluciones.causas.length > 0 &&
