@@ -473,6 +473,27 @@ test("F2B-09b (AC-D23): abono recibido dentro del mismo ciclo sí descuenta del 
   c.db.close();
 });
 
+test("F2B-09c (AC-D23): dos abonos de la misma compra, uno en A y otro en B → GRE descuenta ambos; recursos de A solo el de A", () => {
+  const c = setup();
+  const compra = add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe: "120",
+    saldo: c.ing.id,
+    partida: c.leisure.id,
+    concepto: "Compra compensable ficticia",
+    nota: "",
+    comida: { etiqueta: "Ocio" },
+  }).movimiento.id as string;
+  refund(c, compra, "30", {}, { fecha: "2026-07-10" });
+  refund(c, compra, "20"); // 2026-07-25, ciclo B
+  const a = m(c, c.A.id);
+  expect(a.compensable.neto.valor).toBe("70.00"); // GRE: 120 − 30 − 20
+  expect(a.recursos.valor).toBe("4910.00"); // operativo: solo el abono de A
+  expect(a.obligacion.cn).toBe("90.00");
+  c.db.close();
+});
+
 test("F2B-10: descuento mayor que la compra → neto no verificable (null), sin max(0)", () => {
   const c = setup();
   const p = buy(c, "100");
