@@ -316,7 +316,7 @@ registro; solo exige Linux/glibc para los logs declarados. Su modo
 revisado —con veredicto favorable— para reutilizar su QA; no sustituye la lectura de la
 salida cruda ni convierte un PASS declarado en evidencia. Al cierre enlazar un checkpoint
 vigente con SHA/PR/evidencias, conservando historia.
-[Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);
+[Contrato portable y clientes externos](../methodology/dynamic-agents.md#preflight-and-context);
 [desviaciones/procedencia](../methodology/orchestration-adoption.md#harness-v280--adopción-local).
 
 ## Coordinación v2.14.0 selectiva — publicación y continuidad
@@ -328,5 +328,5 @@ por tocar metodología/scripts. Un check fallido y corregible dentro del alcance
 investiga y repite antes de cerrar; no se declara PASS sin comando, entorno, candidato y
 evidencia. La publicación autorizada de rama/PR no autoriza merge y no sustituye la CI
 Linux obligatoria del SHA candidato. Estados, retorno manual y cierre en
-[comunicación](../methodology/coordinator-communication.md); procedencia y límites en
+[clientes externos](../methodology/dynamic-agents-external-clients.md); procedencia y límites en
 [adopción](../methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26).

@@ -17,7 +17,7 @@ E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redun
 La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
 v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
 autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. Cada cliente configura manualmente sus modelos y rutas; los subagentes respetan esa configuración nativa y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](model-selection.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. Los clientes externos (hoy OpenCode) se habilitan por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
+El coordinador conserva su modelo. Cada cliente configura manualmente sus modelos y rutas; los subagentes respetan esa configuración nativa y la verificación de selección y de límites del proveedor de [`$orchestrate`](../../.agents/skills/orchestrate/SKILL.md#procedure) (paso 4); nunca se activa pago, créditos ni otro proveedor sin consentimiento expreso. Los recursos nunca eximen de los gates financieros, de seguridad, de QA independiente ni de desarrollo/merge. Los clientes externos (hoy OpenCode) se habilitan por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
 
 ## Reparto de responsabilidades — rol de coordinador, asesor y usuario
 
@@ -157,15 +157,14 @@ implementación, QA y infraestructura son perfiles; no procesos residentes.
 
 La elección directo/foreground/background y sus condiciones de soporte, aislamiento y aviso
 inicial se rigen por la política canónica de
-[agentes dinámicos](dynamic-agents.md#execution-mode-direct-foreground-background). Aquí solo
+[agentes dinámicos](../../.agents/skills/orchestrate/SKILL.md#procedure). Aquí solo
 constan las particularidades locales:
 
 - El modo no altera los gates: especificación y desarrollo se aprueban por separado, las
   decisiones financieras siguen protegidas, la QA es independiente y el merge exige aprobación
   explícita e identificable.
 - Los escritores concurrentes requieren ownership disjunto y worktrees aislados; sin aislamiento
-  seguro se serializa. El gate de cuota sigue aplicando a toda tarea Codex,
-  incluida QA.
+  seguro se serializa. Los límites del proveedor se respetan sin pago ni cambio de proveedor sin consentimiento.
 - Agent Relay v1 continúa siendo solo transporte, sin cambios de protocolo.
 - Antecedente local: E3.5 y DEV22 en OpenCode (2026-11-01) acreditaron viabilidad técnica del
   background, no ahorro de tokens ni paralelismo general.
@@ -180,13 +179,13 @@ del coordinador. Los delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff. Un informe
 intermedio o un check corregible no cierra el turno mientras quede trabajo autorizado:
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción
-humana exacta y estado/motivo de espera conforme a [comunicación](coordinator-communication.md#7-closing-a-turn-or-stopping).
+humana exacta y estado/motivo de espera conforme al [cierre de `$orchestrate`](../../.agents/skills/orchestrate/SKILL.md#execution-continuity).
 
 ## Comunicación Agent Relay v1 — adaptación focal v2.10.0/v2.14.0
 
 Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, revisada contra
 v2.14.0/`98b5351`, sobre harness local v2.9.0, sin sustituir sus contratos.
-[Comunicación del coordinador](coordinator-communication.md) exige Task ID y sesión
+El protocolo de [clientes externos](dynamic-agents-external-clients.md) exige Task ID y sesión
 funcional estables, retorno `HANDOFF → CODEX` completo en cada seguimiento (también
 bloqueos), procedencia del estado, acción humana exacta y motivo de espera al cerrar.
 El usuario activa `Lee`; Agent Relay v1 no controla chats ni cambia gates de cuota/modelo,
@@ -321,7 +320,7 @@ al riesgo. Evaluar conservar/ajustar/revertir al cierre; traslado reutilizable a
 plantilla requiere evidencia y autorización propias.
 
 ### Revisión técnica crítica
-La capacidad y sus controles viven en [dynamic agents](dynamic-agents.md#critical-technical-review-as-a-capability).
+La capacidad y sus controles viven en [dynamic agents](dynamic-agents.md#critical-technical-review).
 Hermes puede usar advisor verificado; una alternativa competente o relevo manual explícito no
 cambia gates. Álex mantiene solo asesoría financiera/funcional. La ausencia de revisor bloquea
 trabajo material/inseguro y QA obligatoria; no autoriza operaciones excluidas.
@@ -335,7 +334,7 @@ Se suman al [protocolo canónico](issue-workflow.md) y a la [Skill](../../.agent
   `skill_view('orchestrate')`; Claude Code: `/orchestrate`; Codex and OpenCode: the Skill by name)
   **before** reading the queue, reserving or executing a phase. The actor loads its role and the
   Skill that owns each phase (`spec`, `dev`, `task`, `tweak`) before that phase runs. Without those
-  loads the delegation, quota and independent-QA rules are not in context and the session must not
+  loads the delegation, model and independent-QA rules are not in context and the session must not
   claim it applied them.
 - **Markers are not authenticated.** Every agent publishes with the same GitHub account, so
   anyone with `gh` can write a comment carrying a claim or block marker. The tool checks
@@ -365,4 +364,4 @@ Se suman al [protocolo canónico](issue-workflow.md) y a la [Skill](../../.agent
 La Skill es la canónica de la plantilla; esto se suma sin relajarla. Riesgos que justifican una
 revisión: además de seguridad y persistencia/migración, la **lógica financiera** y la **integridad
 histórica**. La línea `Revisión externa: codex` escrita por el propietario en el cuerpo de una Issue
-equivale a `External review: codex`. Aviso y bloque de resultado: formato fijo de la Skill (ahora en inglés, antes en español).
+equivale a `External review: codex` y admite `model=` y `effort=` (la petición solo vale para esa ejecución; no se edita `~/.codex/config.toml`). Aviso y bloque de resultado: formato fijo de la Skill (ahora en inglés, antes en español).

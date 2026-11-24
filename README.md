@@ -289,8 +289,8 @@ misma cola secuencialmente. [Reglas locales](specs/methodology/myfinanzas-coordi
 [fuente/pruebas de adopción](specs/methodology/orchestration-adoption.md).
 El trabajo autorizado de código o documentación incluye publicar su rama y crear o
 actualizar su PR; el merge conserva aprobación explícita y nunca se auto-fusiona.
-La [comunicación del coordinador](specs/methodology/coordinator-communication.md)
-define retornos manuales y el cierre con responsable, acción humana y motivo de espera.
+El protocolo de [clientes externos](specs/methodology/dynamic-agents-external-clients.md)
+define retornos manuales y el cierre con responsable, acción humana y motivo de espera lo fija `$orchestrate`.
 Clientes adicionales: Hermes reutiliza las mismas Skills canónicas de `.agents/skills/` tras
 `hermes skills trust` por checkout y ejerce hoy como coordinador designado; OpenCode sigue
 disponible como ejecutor ([adaptador Hermes](docs/HERMES_ADAPTER.md)).

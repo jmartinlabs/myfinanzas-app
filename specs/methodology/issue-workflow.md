@@ -250,43 +250,22 @@ for acceptance.
 
 ## Tool adapter
 
-```bash
-scripts/work-issue --repo OWNER/NAME --project N inventory
-scripts/work-issue --repo OWNER/NAME --project N next --agent hermes [--exclude 1,2]
-scripts/work-issue --repo OWNER/NAME --project N take --issue N --agent hermes [--dry-run]
-scripts/work-issue --repo OWNER/NAME --project N context --issue N --agent hermes \
-  [--publish --summary-file path]
-scripts/work-issue --repo OWNER/NAME --project N move --issue N --agent hermes \
-  --to "Development In Review" --note "..."
-scripts/work-issue --repo OWNER/NAME --project N move --issue N --agent hermes \
-  --to Blocked --previous-status "Development In Progress" --note "Reason: ... Exit: ..."
-scripts/work-issue --repo OWNER/NAME --project N move --issue N --agent hermes --restore
-```
+`scripts/work-issue` (`--help` lists its subcommands and flags; exit codes: `0` ok, `2` refused by the protocol with nothing changed or its own writes retracted, `3` blocked or failed write, `4` the agent's queue is empty) implements this protocol
+for GitHub; another tracker adapts the same states without a new state engine. Configuration is explicit
+and its flags precede the subcommand: `--repo` is required, `--owner` overrides an organization-owned
+Project and `--project` is **never guessed**; without it the adapter fails closed, writes nothing and
+invents no queue. A read that returns no work is diagnosed (empty Project, another repository's Issues, no
+Ready status) without changing its exit code, and a read that fails is a blocker, never an empty queue.
+`inventory`, `next` and every `--dry-run` are read-only.
 
-Configuration is explicit and its flags precede the subcommand: `--repo` is required, `--owner`
-overrides an organization-owned Project and `--project` is **never guessed**. Without `--project`
-the adapter fails closed and points to this protocol; it writes nothing, invents no queue and
-does not fall back to a local state. Exit codes: `0` ok, `2` refused by the protocol (nothing
-changed, or its own writes were retracted), `3` blocked or failed write (the output lists what
-could not be undone), `4` the agent's queue is empty. `inventory`, `next` and every `--dry-run`
-are read-only.
+The Project association is local state, not template content: a checkout may declare `repo`, `owner` and
+`project` in `.agents/tracker.local.yaml`, a file that is never committed. Its values are the only valid
+pair for that checkout and are passed explicitly on every call; a clone or a derived project never
+inherits them.
 
-A read that returns no work for the requested repository is diagnosed, not failed. An empty
-Project, a Project holding only another repository's Issues and a Project whose own Issues are
-all outside a Ready status share the symptom of an empty queue, so the adapter names the case it
-found — with the Project and the repository explicit — and the diagnosis never changes the exit
-code: a legitimately empty Project and a wrong one are only told apart by what the read returned,
-not by its code. A read that fails is still a blocker with `3`, never an empty queue.
-
-The Project association is local state, not template content: a checkout may declare `repo`,
-`owner` and `project` in `.agents/tracker.local.yaml`, a file that is never committed. Its values
-are the only valid pair for that checkout and are passed explicitly on every call; a clone or a
-derived project never inherits them.
-
-Limits to declare, never overclaim: markers are unauthenticated structure (a shared account can
-publish them), the receipt proves structure rather than reading, reservation has a
-read-then-write window, and continuity belongs to the active session. No bot, cron, webhook or
-deployment is part of this protocol.
+Limits to declare, never overclaim: markers are unauthenticated structure (a shared account can publish
+them), the receipt proves structure rather than reading, reservation has a read-then-write window, and
+continuity belongs to the active session. No bot, cron, webhook or deployment is part of this protocol.
 
 ## Adopting it in a project
 

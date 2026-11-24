@@ -9,9 +9,8 @@ from urllib.parse import unquote, urlsplit
 SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev', 'relay')
 # Contracts split into a core plus an on-demand part are checked as one contract, so a rule is
 # enforced wherever it lives.
-CONTRACT_PARTS = {'specs/methodology/dynamic-agents.md': ('specs/methodology/dynamic-agents-external-clients.md',),
- '.agents/skills/orchestrate/SKILL.md': ('.agents/skills/orchestrate/reference.md',)}
-REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md','specs/methodology/dynamic-agents-external-clients.md','.agents/skills/orchestrate/reference.md',
+CONTRACT_PARTS = {'specs/methodology/dynamic-agents.md': ('specs/methodology/dynamic-agents-external-clients.md',)}
+REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md','specs/methodology/dynamic-agents-external-clients.md',
  *(f'specs/guidelines/{n}.md' for n in ('architecture','ui','quality','security')),
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
  *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
@@ -139,31 +138,8 @@ def validate(root):
  except (ValueError,TypeError): fail('usage-hooks','invalid reporting hook configuration')
  # Preserve portable coordination obligations; live behavior is evaluated separately.
  for name,tokens in {
-  'specs/methodology/dynamic-agents.md':('scope-sized preflight',
-   'suspending escalation, the worker notifies the coordinator',
-   'Advance notice is not another user approval gate',
-   'If higher-priority runtime instructions require a direct escalation retry without a prior user message',
-   'blocking operation in justification', 'fresh bounded context by default',
-   'Inherit full history only for a concrete dependency',
-   'not repeated status reminders', 'Space CI queries progressively',
-   'QA independently', 'Workers in other clients',
-   'start/stop owner', 'Optional OpenCode adapters may be present under',
-   'explicit user authorization and supported tools',
-   'separate checkouts/worktrees AND non-overlapping ownership',
-   'Separate test ports, databases', 'Worker output is evidence, never',
-   'other-client usage is', 'one current summary', 're:(replace|overwrite|supersede)\w* .{0,40}(stale|outdated|obsolete).{0,40}(label|status)',
-   'savings still need measurement'),
-  'templates/agent-work-packet.md':('Client / version / session ID',
-   'Start/stop owner and permitted communication route', 'Instruction entry points',
-   'Context:', 'Preflight / operation owners', 'Shared test resources',
-   'Verification environment / candidate', 'Blocking notice', 'Evidence destination',
-   'PR none unless the authorized scope includes publication', 'Push and create'),
   'specs/methodology/approvals.md':('Publicación de rama y PR',
    'No se necesita otra aprobación de', 'Nunca activar auto-merge'),
-  'specs/methodology/coordinator-communication.md':('HANDOFF → CODEX',
-   '## 7. Closing a turn or stopping', '#execution-continuity',
-   'This section defines only the communication contract', 'Exact human action',
-   'A received handoff never authorizes merge'),
   'specs/methodology/epic-orchestration.md':('Branch/PR publication is ordinary inside the authorized scope',
    '~:local draft, a registered proposal and a published proposal',
    '~:A local commit alone'),
@@ -171,10 +147,7 @@ def validate(root):
    'candidate SHA', 'PR / CI / merge', 'BLOQUEADO'),
   'templates/testplan.md':('Before implementation', 'negative/error and integration',
    'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
-  '.agents/skills/orchestrate/SKILL.md':('fresh bounded context',
-   'progressively spaced CI queries', 'one current summary',
-   '## Execution continuity', 'A required check that fails and can be corrected',
-   '#7-closing-a-turn-or-stopping'),
+  'specs/methodology/dynamic-agents-external-clients.md':('PENDIENTE','ENVIADO','RECIBIDO','VERIFICADO','BLOQUEADO','DESCONOCIDO','HANDOFF → CODEX','HANDOFF → CLAUDE CODE','HANDOFF → HERMES'),
   'specs/methodology/myfinanzas-coordination.md':('Publicar rama y crear o',
    'nunca auto-merge', 'no cierra el turno'),
   '.agents/skills/dev/SKILL.md':('negative/integration cases before code',
@@ -207,23 +180,9 @@ def validate(root):
  }.items():
   for token in tokens:
    if not satisfied(read(name),token): fail('lifecycle',f'{name}: missing {token}')
- # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
- coordinator=read('specs/methodology/coordinator-communication.md')
- for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):
-  if token.lower() in coordinator.lower(): fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
- # Resource policy guards are structural; runtime behavior needs separate trials.
- for name,tokens in {
-  'specs/methodology/model-selection.md':('There is no hardcoded model or effort ceiling','do not spawn','requested versus observed','fork_turns="none"','**25% or less:**','**5% or less:**','**including QA**','after this warning','Token accounting in the usage reader is not subscription quota'),
-  'specs/methodology/dynamic-agents.md':('OpenCode is not enabled',),
-  'templates/agent-work-packet.md':('HANDOFF → CODEX','Recommended model:','Final status','Branch, commit SHA, PR','Quota gate:'),
-  '.agents/skills/orchestrate/SKILL.md':('quota dispatch gate','run `$handoff`'),
-  '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('resource-policy',f'{name}: missing {token}')
  # Active policy has no fixed model ceiling; models are configured in each client.
  active_model_policy = ('AGENTS.md', '.agents/skills/orchestrate/SKILL.md',
-  'specs/methodology/model-selection.md', 'specs/methodology/workflows.md',
+  'specs/methodology/workflows.md',
   'specs/methodology/myfinanzas-coordination.md', 'docs/HERMES_ADAPTER.md',
   'docs/GUIA_VISUAL_ORQUESTACION.md')
  for name in active_model_policy:
@@ -233,41 +192,19 @@ def validate(root):
  # Effective delegation contracts: reject missing or contradictory safety rules.
  for name,tokens in {
   '.agents/roles/implementation.md':('~:Standard uses `$task`','~:Full uses `$dev` only with approved spec AND separate development authorization','~:before acting'),
-  'specs/methodology/dynamic-agents.md':('re:one (?:short|brief) decision','~:direct with a concrete reason','~:Reevaluate when scope grows','~:finish/stop acknowledgement','off limits to parent writes','executor loads its role','Native workers may return compact structured','Manual Agent Relay still requires','immediate stop with no threshold','Stop only owned tasks/processes','no global cleanup/reset','a different model is not necessary','block material/unsafe work'),
-  'specs/methodology/model-selection.md':('~:unavailable metadata means effective identity','~:not proof that the route was not used'),
   '.agents/roles/qa-review.md':('reused raw evidence','UNRUN','do not automatically rerun'),
-  'templates/agent-work-packet.md':('Native packet — required core','role + phase Skill','**Packet ID:**','**Workflow / authorization:**','**Write files and sole ownership:**','**Verification commands / expected evidence:**'),
  }.items():
   for token in tokens:
    if not satisfied(read(name),token): fail('effective-delegation',f'{name}: missing {token}')
- if '## Quota and dispatch gate' in read('specs/methodology/dynamic-agents.md'):
-  fail('effective-delegation','quota policy duplicated outside model-selection')
- for name in ('AGENTS.md','.agents/skills/orchestrate/SKILL.md'):
-  if 'dynamic-agents.md#quota-and-dispatch-gate' in read(name):
-   fail('effective-delegation',f'{name}: stale quota source')
  for name in ('.agents/roles/implementation.md','.claude/agents/implementation.md','.opencode/agents/implementation.md'):
   if 'approved-spec-only' in read(name) or 'Necesita aprobación de spec Y' in read(name):
    fail('effective-delegation',f'{name}: Standard route incorrectly requires Full spec')
- # Execution mode is adaptive; background needs verified support and never claims persistence.
- for name,tokens in {
-  'specs/methodology/dynamic-agents.md':('## Execution mode: direct, foreground, background',
-   '**Direct (coordinator).**','**Foreground subagent.**','**Background subagent.**',
-   'verified support in the active client',"coordinator's turn does not finish",
-   'Promise no persistence','Never claim a subagent','No universal agent count'),
-  '.agents/skills/orchestrate/SKILL.md':('execution mode adaptively','coordinator availability','background persistence'),
-  'specs/methodology/myfinanzas-coordination.md':('### Modo de ejecución',
-   'dynamic-agents.md#execution-mode-direct-foreground-background','merge exige aprobación',
-   'ownership disjunto','Agent Relay v1'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('execution-mode',f'{name}: missing {token}')
  # Delegation preference, functional DRAFT scope and packet execution mode are canonical.
- dynamic_policy=read('specs/methodology/dynamic-agents.md')
- for token in ('## Delegation preference','one executor per task','Never create artificial agents'):
-  if not satisfied(dynamic_policy,token): fail('delegation-preference',f'dynamic policy missing {token}')
- orchestrator_skill=read('.agents/skills/orchestrate/SKILL.md')
- for token in ('~:Prefer a specialist for substantial','one executor per task','never invent agents'):
-  if not satisfied(orchestrator_skill,token): fail('delegation-preference',f'orchestrator missing {token}')
+ # Orchestrator only: the instruction exists and the Claude profiles cannot spawn agents themselves.
+ if 'The user talks only to the orchestrator' not in read('AGENTS.md'): fail('orchestrator-only','AGENTS.md must state that the user talks only to the orchestrator')
+ for profile in ('functional','implementation','qa-review','infrastructure'):
+  tools=re.search(r'(?m)^tools:\s*(.*)$',read(f'.claude/agents/{profile}.md'))
+  if not tools or re.search(r'\bAgent\b',tools[1]): fail('orchestrator-only',f'.claude/agents/{profile}.md must not declare the Agent tool')
  if 'one executor per task' not in read('specs/methodology/epic-orchestration.md'): fail('delegation-preference','epic scheduler missing one executor per task')
  functional_role=read('.agents/roles/functional.md').lower()
  for token in ('create and append','draft specifications','acceptance criteria'):
@@ -275,9 +212,6 @@ def validate(root):
  spec_skill=read('.agents/skills/spec/SKILL.md')
  for token in ('delegate may create and append','A functional delegate may write draft specification sections','Only the user approves'):
   if token not in spec_skill: fail('functional-scope',f'spec skill missing {token}')
- work_packet=read('templates/agent-work-packet.md')
- for token in ('Execution mode','documentary editing within the authorized packet'):
-  if not satisfied(work_packet,token): fail('delegation-preference',f'agent work packet missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')
