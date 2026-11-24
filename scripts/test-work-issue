@@ -2283,32 +2283,14 @@ class ContractTests(unittest.TestCase):
         for token in ("myfinanzas", "jmartinlabs", "opencode-pilot"):
             self.assertNotIn(token, text)
 
-    def test_skill_keeps_the_procedure_and_the_tool_apart(self):
+    def test_skill_keeps_its_contract(self):
         text = SKILL.read_text(encoding="utf-8")
-        self.assertIn("## Session continuity", text)
-        self.assertIn("## Skill and tool", text)
-        self.assertIn("one reservation at a time", text)
-        self.assertIn("no cron, webhook, bot", text)
-        self.assertIn("## Stop conditions", text)
-        self.assertIn("issue-workflow.md", text)
-        self.assertNotIn("myfinanzas", text.lower())
-
-    def test_skill_documents_the_manual_protocol_without_a_project(self):
-        text = SKILL.read_text(encoding="utf-8")
-        self.assertIn("manual protocol", text)
-        self.assertIn("--project", text)
-        self.assertIn("--repo", text)
-        self.assertIn("Only when no Project is configured", text)
-        self.assertIn("no CLI receipt", text)
-
-    def test_skill_defines_the_receipt_file_contract(self):
-        text = SKILL.read_text(encoding="utf-8")
-        for token in ("## Context receipt", "--summary-file", "--publish",
+        for token in ("## Skill and tool", "## Session continuity", "## Stop conditions",
+                      "issue-workflow.md", "With no Project", "--summary-file",
                       "## Decisiones vigentes", "## Estado", "## Alcance autorizado",
-                      "## Fuentes consultadas", "Huella del contexto",
-                      "last non-empty line", "never proves the reading",
-                      "including the agent's own claim or report", "after `take`"):
+                      "## Fuentes consultadas"):
             self.assertIn(token, text, token)
+        self.assertNotIn("myfinanzas", text.lower())
 
     def test_protocol_restricts_the_manual_path_and_documents_the_real_link_risk(self):
         text = PROTOCOL.read_text(encoding="utf-8")

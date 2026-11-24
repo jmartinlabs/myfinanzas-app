@@ -8,7 +8,13 @@ import {
 } from "./movement-ledger";
 import { Problem, money, decimal } from "./saldos";
 import { spanishToday } from "./movimientos";
-import { eligibleDevolutionCents } from "./comida";
+import {
+  agregarDescuentos,
+  descuentoPorCompras,
+  proyectarDevoluciones,
+  type Cobertura,
+  type CausaCobertura,
+} from "./devoluciones";
 
 export type PlanBudget = {
   id: string;
@@ -90,7 +96,12 @@ export function planResult(
   line: PlanLine | undefined,
   total: bigint | null,
   reason: string | null,
-  detail?: { bruto: bigint; devoluciones: bigint },
+  detail?: {
+    bruto: bigint;
+    devoluciones: bigint;
+    cobertura?: Cobertura;
+    causas?: CausaCobertura[];
+  },
 ) {
   const planned = line?.delMes ?? null,
     pending =
@@ -108,6 +119,9 @@ export function planResult(
     aTransferir: decimal(planned),
     bruto: detail ? decimal(detail.bruto) : null,
     devoluciones: detail ? decimal(detail.devoluciones) : null,
+    /** SPEC39 §3.3: cobertura del descuento de las compras del intervalo. */
+    cobertura: detail?.cobertura ?? null,
+    causas: detail?.causas ?? null,
     ejecutado: total === null ? null : decimal(total),
     pendiente: pending === null ? null : decimal(pending),
     estado:
@@ -150,7 +164,9 @@ export function cycleExecution(
     rows = ledgerRows(db),
     catalog = overrides?.budgets ?? budgets(db),
     links = overrides?.parts ?? parts(db),
-    devolutions = eligibleDevolutionCents(db, ciclo);
+    // SPEC39 §3/§10: una sola proyección; cada Presupuesto resta SOLO los
+    // descuentos de las compras que él mismo selecciona por su intervalo.
+    projection = proyectarDevoluciones(db);
   const periodReason =
     cycle.inicio > spanishToday(now)
       ? "Ciclo no iniciado"
@@ -178,21 +194,36 @@ export function cycleExecution(
             (cycle.fin ?? cycle.corte)!,
           );
       const gross = facts.reduce((n, r) => n + BigInt(r.importe), 0n);
-      const ids = new Set(
-        links.filter((p) => p.presupuesto === b.id).map((p) => p.id),
-      );
-      const netted =
-        b.fuente === "Gasto real"
-          ? [...devolutions.entries()]
-              .filter(([partida]) => ids.has(partida))
-              .reduce((n, [, d]) => n + d.cents, 0n)
-          : 0n;
+      // Compras del intervalo ya seleccionadas por executionFacts (IDs).
+      const discount =
+        b.fuente === "Gasto real" && !reason
+          ? agregarDescuentos(
+              descuentoPorCompras(
+                db,
+                facts.map((r) => r.id),
+                projection,
+              ).values(),
+            )
+          : null;
+      const netted = discount?.descuento ?? 0n;
+      // Devolución mayor que la compra: no se oculta con max(0).
+      const excess = discount?.exceso === true;
+      const unverifiable = excess
+        ? "Devolución superior a la compra: ejecución no verificable."
+        : reason;
       return planResult(
         b,
         lines.find((l) => l.presupuesto === b.id),
-        reason ? null : gross - netted,
-        reason,
-        reason ? undefined : { bruto: gross, devoluciones: netted },
+        unverifiable ? null : gross - netted,
+        unverifiable,
+        reason
+          ? undefined
+          : {
+              bruto: gross,
+              devoluciones: netted,
+              cobertura: discount?.cobertura,
+              causas: discount?.causas,
+            },
       );
     }),
   };
@@ -221,7 +252,8 @@ export function executionDetail(
     const page = Number(params.get("page") ?? 1);
     if (!Number.isSafeInteger(page) || page < 1 || page > 100000)
       fail("Página inválida.");
-    const all = item.motivo
+    // bruto null = periodo/fuente no comparable; un exceso de devolución sí lista hechos.
+    const all = item.bruto === null
       ? []
       : executionFacts(
           item.presupuesto,
@@ -230,6 +262,15 @@ export function executionDetail(
           data.ciclo.inicio,
           (data.ciclo.fin ?? data.ciclo.corte)!,
         );
+    // Detalle reconciliado: bruto − descuento por compra, de la misma proyección.
+    const discounts =
+      item.presupuesto.fuente === "Gasto real" && item.bruto !== null
+        ? descuentoPorCompras(
+            db,
+            all.map((r) => r.id),
+            proyectarDevoluciones(db),
+          )
+        : null;
     return {
       ...item,
       periodo: data.ciclo,
@@ -242,6 +283,9 @@ export function executionDetail(
           fecha: r.fecha,
           tipo: r.tipo,
           importe: decimal(r.importe),
+          descuentoEconomico: discounts
+            ? decimal(discounts.get(r.id)!.descuentoEconomico)
+            : null,
           partida: r.partida,
           referencia: r.referencia,
           origen: r.origen,
@@ -377,6 +421,8 @@ function proposal(
         : {
             bruto: aggregateCents(i.bruto),
             devoluciones: aggregateCents(i.devoluciones),
+            cobertura: i.cobertura ?? undefined,
+            causas: i.causas ?? undefined,
           },
     );
   });

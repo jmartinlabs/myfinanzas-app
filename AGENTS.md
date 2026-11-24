@@ -29,9 +29,8 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 - El coordinador mantiene identificados los siguientes trabajos del roadmap y sus dependencias; mientras algo avanza o espera, prepara SPEC, investigación, paquete DEV ya autorizado o diseño QA sin cruzar gates. Replanifica ante resultados o bloqueos y deja una siguiente acción verificable; no crees trabajo artificial ni un segundo scheduler.
 - [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte canónico (solo bajo petición; no crea conversaciones). [$work-issue](.agents/skills/work-issue/SKILL.md) (protocolo: [issue-workflow](specs/methodology/issue-workflow.md)) recoge trabajo ya autorizado en Issues/Projects: el Status del Project es el gate de fase, la etiqueta `agent:X` (el nombre suelto es un alias) solo enruta y reservar exige un recibo de contexto vigente; una invocación con agente (`work-issue` con el agente nombrado; en Hermes, `/work-issue hermes`, porque `@` es mención de archivo) es una sesión que agota la cola elegible de ese agente, una Issue a la vez, hasta que no queda trabajo o aparece un bloqueo real. Toda sesión de `$work-issue` carga `$orchestrate` antes de leer la cola.
 - [Flujos](specs/methodology/workflows.md) para clasificar; [agentes](specs/methodology/dynamic-agents.md) (su parte de [clientes externos](specs/methodology/dynamic-agents-external-clients.md) solo si interviene otro cliente)
-  y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)
-  para paquetes y retornos. Antes de nuevas tareas: [modelos](specs/methodology/model-selection.md)
-  y [gate de cuota](specs/methodology/model-selection.md#quota-and-dispatch-gate).
+  y [roles](.agents/roles/README.md) al delegar (las reglas de modelo y límites del proveedor están en `$orchestrate`).
+- The user talks only to the orchestrator. Roles and auxiliary workers act solely on a coordinator's work packet: they never run `work-issue`, claim Issues, write Project `Status` or delegate further. This is an instruction, and a technical control only where a client enforces it, never a guarantee.
 - **Modelos por rol**: los configura manualmente el usuario en cada cliente; el harness no guarda selección ni genera agentes. Hermes conserva la delegación nativa `model_map` y despacha con `option: <rol>` cuando la ruta está configurada.
 - El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue` (usuario: `Backlog → Ready`, revisión, `Done`, desbloqueo; agente: reserva, `{Phase} In Review` y `Blocked` solo desde su fase en curso); sin tablero paralelo.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
@@ -39,7 +38,7 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 - Un ejecutor por tarea: delegar lo sustancial, segundo plano si permite avanzar en paralelo y QA
   independiente siempre; sin agentes artificiales.
 - [$handoff](.agents/skills/handoff/SKILL.md) consolida y para; continúa el alcance autorizado hasta
-  completarlo o un bloqueo real, indicando responsable, acción humana y estado ([cierre](specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping)).
+  completarlo o un bloqueo real, indicando responsable, acción humana y estado ([cierre](.agents/skills/orchestrate/SKILL.md#execution-continuity)).
 
 ## Integridad y límites
 - Rigor en lógica financiera, integridad histórica, seguridad y persistencia; sin reglas

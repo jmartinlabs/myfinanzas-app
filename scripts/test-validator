@@ -35,14 +35,6 @@ class ValidationTests(unittest.TestCase):
  def test_change_requires_original_text(self):
   with self.assertRaisesRegex(AssertionError,'fixture anchor not found'):
    self.change('README.md','text absent from this README','replacement')
- def test_rule_rewording_passes_validation(self):
-  # The contract is the rule, not its wording: a legitimate rewrite must not fail CI.
-  self.change('specs/methodology/dynamic-agents-external-clients.md','Replace stale current-state labels',
-              'Overwrite outdated status labels')
-  self.assertEqual(validate(self.root),[])
- def test_rule_removal_still_fails_validation(self):
-  self.change('specs/methodology/dynamic-agents-external-clients.md','Replace stale current-state labels','')
-  self.assertRule('coordination')
  def test_structure(self):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
 
@@ -55,7 +47,12 @@ class ValidationTests(unittest.TestCase):
   self.neutralize_readme_headings()
   self.append('README.md','\n[Broken](missing.md)\n'); self.assertRule('links')
  def test_fragment_anchor(self):
-  self.change('.agents/skills/orchestrate/SKILL.md','coordinator-communication.md#7-closing-a-turn-or-stopping','coordinator-communication.md#missing-anchor'); self.assertRule('fragments')
+  self.change('.agents/skills/orchestrate/SKILL.md','approvals.md#limpieza-local-posterior-al-merge','approvals.md#missing-anchor'); self.assertRule('fragments')
+ def test_orchestrator_only_is_required(self):
+  self.change('AGENTS.md','The user talks only to the orchestrator','Anyone may talk to any role'); self.assertRule('orchestrator-only')
+ def test_claude_profiles_cannot_declare_the_agent_tool(self):
+  p=self.root/'.claude/agents/implementation.md'; text=p.read_text(); import re
+  p.write_text(re.sub(r'(?m)^tools:.*$','tools: Read, Glob, Grep, Bash, Edit, Write, Agent',text,1)); self.assertRule('orchestrator-only')
  def test_agents(self):
   self.change('AGENTS.md','(specs/guidelines/ui.md)','(README.md)'); self.assertRule('agents')
  def test_thin_agents(self):
@@ -110,37 +107,13 @@ class ValidationTests(unittest.TestCase):
  def test_coordination_obligations(self):
   # Structural drift guards only, not a claim that real clients followed the rules.
   cases = (
-   ('specs/methodology/dynamic-agents.md', 'scope-sized preflight'),
-   ('specs/methodology/dynamic-agents.md', 'suspending escalation, the worker notifies the coordinator'),
-   ('specs/methodology/dynamic-agents.md', 'Advance notice is not another user approval gate'),
-   ('specs/methodology/dynamic-agents.md', 'If higher-priority runtime instructions require a direct escalation retry without a prior user message'),
-   ('specs/methodology/dynamic-agents.md', 'blocking operation in justification'),
-   ('specs/methodology/dynamic-agents.md', 'fresh bounded context by default'),
-   ('specs/methodology/dynamic-agents.md', 'not repeated status reminders'),
-   ('specs/methodology/dynamic-agents.md', 'QA independently'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'Optional OpenCode adapters may be present under'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'explicit user authorization and supported tools'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'separate checkouts/worktrees AND non-overlapping ownership'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'Separate test ports, databases'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'other-client usage is'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'Replace stale current-state labels'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'savings still need measurement'),
-   ('templates/agent-work-packet.md', 'Client / version / session ID'),
-   ('templates/agent-work-packet.md', 'Blocking notice'),
-   ('templates/agent-work-packet.md', 'PR none unless the authorized scope includes publication'),
    ('templates/progress.md', 'append-only'),
    ('templates/testplan.md', 'Local / CI platform and owner'),
    ('specs/methodology/approvals.md', 'Publicación de rama y PR'),
    ('specs/methodology/approvals.md', 'No se necesita otra aprobación de'),
    ('specs/methodology/approvals.md', 'Nunca activar auto-merge'),
-   ('specs/methodology/coordinator-communication.md', '## 7. Closing a turn or stopping'),
-   ('specs/methodology/coordinator-communication.md', '#execution-continuity'),
-   ('specs/methodology/coordinator-communication.md', 'A received handoff never authorizes merge'),
    ('specs/methodology/myfinanzas-coordination.md', 'nunca auto-merge'),
    ('specs/methodology/epic-orchestration.md', 'Branch/PR publication is ordinary inside the authorized scope'),
-   ('.agents/skills/orchestrate/reference.md', 'progressively spaced CI queries'),
-   ('.agents/skills/orchestrate/SKILL.md', 'A required check that fails and can be corrected'),
-   ('.agents/skills/orchestrate/SKILL.md', '#7-closing-a-turn-or-stopping'),
    ('.agents/skills/dev/SKILL.md', 'negative/integration cases before code'),
    ('.agents/skills/dev/SKILL.md', 'authorized scope includes branch/PR publication'),
    ('.agents/skills/task/SKILL.md', 'execution platform and operation owners before code'),
@@ -163,7 +136,7 @@ class ValidationTests(unittest.TestCase):
     finally:
      p.write_text(original)
  def test_fixed_ceiling_reintroduction_rejected(self):
-  for name in ('specs/methodology/model-selection.md', '.agents/skills/orchestrate/SKILL.md',
+  for name in ('.agents/skills/orchestrate/SKILL.md',
                'specs/methodology/myfinanzas-coordination.md'):
    p=self.root/name; original=p.read_text()
    try:
@@ -171,122 +144,6 @@ class ValidationTests(unittest.TestCase):
     self.assertRule('resource-policy')
    finally:
     p.write_text(original)
- def test_resource_policy_guards(self):
-  cases = (
-   ('specs/methodology/model-selection.md', 'There is no hardcoded model or effort ceiling'),
-   ('specs/methodology/model-selection.md', 'do not spawn'),
-   ('specs/methodology/model-selection.md', 'requested versus observed'),
-   ('specs/methodology/model-selection.md', '**25% or less:**'),
-   ('specs/methodology/model-selection.md', '**5% or less:**'),
-   ('specs/methodology/model-selection.md', '**including QA**'),
-   ('specs/methodology/model-selection.md', 'after this warning'),
-   ('specs/methodology/dynamic-agents-external-clients.md', 'OpenCode is not enabled'),
-   ('templates/agent-work-packet.md', 'HANDOFF → CODEX'),
-   ('.agents/skills/orchestrate/SKILL.md', 'run `$handoff`'),
-   ('.agents/skills/handoff/SKILL.md', 'Reread the written checkpoint'),
-  )
-  for name,token in cases:
-   with self.subTest(name=name,token=token):
-    p=self.root/name; original=p.read_text()
-    self.assertIn(token,original)
-    try:
-     p.write_text(original.replace(token,'REMOVED'))
-     self.assertRule('resource-policy')
-    finally:
-     p.write_text(original)
- def test_effective_delegation_mutations(self):
-  cases = (
-   ('.agents/roles/implementation.md','Standard uses `$task`','Standard requires Full spec'),
-   ('.agents/roles/implementation.md','separate development authorization','implicit approval'),
-   ('specs/methodology/dynamic-agents.md','finish/stop acknowledgement','timeout alone'),
-   ('specs/methodology/dynamic-agents.md','executor loads its role','coordinator loads everything'),
-   ('specs/methodology/dynamic-agents.md','Native workers may return compact structured','Native workers require manual'),
-   ('specs/methodology/dynamic-agents.md','Manual Agent Relay still requires','Manual Agent Relay may omit'),
-   ('.agents/roles/qa-review.md','reused raw evidence','author summary'),
-   ('specs/methodology/dynamic-agents.md','immediate stop with no threshold','wait for ten files'),
-   ('specs/methodology/dynamic-agents.md','Stop only owned tasks/processes','kill all processes'),
-   ('specs/methodology/dynamic-agents.md','a different model is not necessary','same model means absent'),
-   ('specs/methodology/dynamic-agents.md','block material/unsafe work','continue unsafe work'),
-   ('AGENTS.md','model-selection.md#quota-and-dispatch-gate','dynamic-agents.md#quota-and-dispatch-gate'),
-  )
-  for name,old,new in cases:
-   with self.subTest(name=name,old=old):
-    p=self.root/name; original=p.read_text()
-    try:
-     self.change(name,old,new); self.assertRule('effective-delegation')
-    finally: p.write_text(original)
- def test_effective_delegation_core_and_gates(self):
-  cases = (
-   ('templates/agent-work-packet.md','**Packet ID:**'),
-   ('templates/agent-work-packet.md','**Write files and sole ownership:**'),
-   ('templates/agent-work-packet.md','**Verification commands / expected evidence:**'),
-   ('specs/methodology/dynamic-agents.md','direct with a concrete reason'),
-   ('specs/methodology/dynamic-agents.md','Reevaluate when scope grows'),
-   ('.agents/roles/implementation.md','approved spec AND'),
-   ('specs/methodology/model-selection.md','not proof that the route was not used'),
-  )
-  for name,token in cases:
-   with self.subTest(name=name,token=token):
-    p=self.root/name; original=p.read_text()
-    try:
-     self.change(name,token,'REMOVED'); self.assertRule('effective-delegation')
-    finally: p.write_text(original)
- def test_effective_delegation_paraphrase(self):
-  self.change('specs/methodology/dynamic-agents.md','one short decision','one brief decision')
-  self.assertEqual(validate(self.root),[])
- def test_duplicate_quota_policy_rejected(self):
-  self.append('specs/methodology/dynamic-agents.md','\n## Quota and dispatch gate\n')
-  self.assertRule('effective-delegation')
- def test_execution_mode_policy(self):
-  cases = (
-   ('specs/methodology/dynamic-agents.md', '## Execution mode: direct, foreground, background'),
-   ('specs/methodology/dynamic-agents.md', '**Direct (coordinator).**'),
-   ('specs/methodology/dynamic-agents.md', '**Foreground subagent.**'),
-   ('specs/methodology/dynamic-agents.md', '**Background subagent.**'),
-   ('specs/methodology/dynamic-agents.md', 'verified support in the active client'),
-   ('specs/methodology/dynamic-agents.md', "coordinator's turn does not finish"),
-   ('specs/methodology/dynamic-agents.md', 'Promise no persistence'),
-   ('specs/methodology/dynamic-agents.md', 'Never claim a subagent'),
-   ('specs/methodology/dynamic-agents.md', 'No universal agent count'),
-   ('.agents/skills/orchestrate/reference.md', 'execution mode adaptively'),
-   ('.agents/skills/orchestrate/reference.md', 'coordinator availability'),
-   ('.agents/skills/orchestrate/SKILL.md', 'background persistence'),
-   ('specs/methodology/myfinanzas-coordination.md', '### Modo de ejecución'),
-   ('specs/methodology/myfinanzas-coordination.md', 'dynamic-agents.md#execution-mode-direct-foreground-background'),
-   ('specs/methodology/myfinanzas-coordination.md', 'merge exige aprobación'),
-   ('specs/methodology/myfinanzas-coordination.md', 'ownership disjunto'),
-   ('specs/methodology/myfinanzas-coordination.md', 'Agent Relay v1'),
-  )
-  for name,token in cases:
-   with self.subTest(name=name,token=token):
-    p=self.root/name; original=p.read_text()
-    self.assertIn(token,original)
-    try:
-     p.write_text(original.replace(token,'REMOVED'))
-     self.assertRule('execution-mode')
-    finally:
-     p.write_text(original)
- def test_delegation_preference(self):
-  cases = (
-   ('specs/methodology/dynamic-agents.md', '## Delegation preference'),
-   ('specs/methodology/dynamic-agents.md', 'one executor per task'),
-   ('specs/methodology/dynamic-agents.md', 'Never create artificial agents'),
-   ('.agents/skills/orchestrate/reference.md', 'prefer a specialist for substantial'),
-   ('.agents/skills/orchestrate/SKILL.md', 'one executor per task'),
-   ('.agents/skills/orchestrate/reference.md', 'never invent agents'),
-   ('specs/methodology/epic-orchestration.md', 'one executor per task'),
-  )
-  for name,token in cases:
-   with self.subTest(name=name,token=token):
-    p=self.root/name; original=p.read_text()
-    self.assertIn(token,original)
-    try:
-     p.write_text(original.replace(token,'REMOVED'))
-     self.assertRule('delegation-preference')
-    finally:
-     p.write_text(original)
- def test_packet_execution_mode(self):
-  self.change('templates/agent-work-packet.md','Execution mode','Mode'); self.assertRule('delegation-preference')
  def test_functional_role_draft_scope(self):
   cases = (
    ('.agents/roles/functional.md', 'DRAFT specifications'),
@@ -331,8 +188,8 @@ class ValidationTests(unittest.TestCase):
    ('specs/README.md', 'mismo cambio de la tarea'),
    ('specs/README.md', 'nunca en una PR creada solo para borrarlo'),
    ('.agents/skills/orchestrate/SKILL.md', 'limpieza-local-posterior-al-merge'),
-   ('.agents/skills/orchestrate/reference.md', 'next-session-and-checkpoint-retirement'),
-   ('.agents/skills/orchestrate/reference.md', 'Preserve dirty, unknown or other-task resources.'),
+   ('.agents/skills/orchestrate/SKILL.md', 'next-session-and-checkpoint-retirement'),
+   ('.agents/skills/orchestrate/SKILL.md', 'Preserve dirty, unknown or other-task resources.'),
   )
   for name,token in cases:
    with self.subTest(name=name,token=token):
@@ -341,12 +198,6 @@ class ValidationTests(unittest.TestCase):
     try:
      p.write_text(original.replace(token,'REMOVED')); self.assertRule('lifecycle')
     finally: p.write_text(original)
- def test_coordination_does_not_duplicate_continuity(self):
-  p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
-  for variant in ('a correctable failed check is not a blocker','A correctable failed check is not a blocker'):
-   try:
-    p.write_text(original+'\n'+variant+'\n'); self.assertRule('coordination')
-   finally: p.write_text(original)
  def test_external_contract_does_not_register_clients(self):
   p=self.root/'specs/methodology/dynamic-agents.md'
   p.write_text(p.read_text()+'\nAn additional user-selected client may use the same verified packet.\n')

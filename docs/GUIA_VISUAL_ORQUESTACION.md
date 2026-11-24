@@ -7,7 +7,7 @@ Los ejemplos de E1.7 del upstream son ilustrativos, no crean una entrega del roa
 real. En MyFinanzas, aprobar una spec NO basta para iniciar dev: hace falta autorización
 expresa de desarrollo. La adopción no inicia dev06 ni spec07. No copiar CI ni desplegar.
 
-**Cómo empezar:** [README](../README.md) · [Política de agentes dinámicos](../specs/methodology/dynamic-agents.md) · [Coordinación de épicas](../specs/methodology/epic-orchestration.md) · [Modelos](../specs/methodology/model-selection.md) · [Tablero](../templates/epic-board.md).
+**Cómo empezar:** [README](../README.md) · [Política de agentes dinámicos](../specs/methodology/dynamic-agents.md) · [Coordinación de épicas](../specs/methodology/epic-orchestration.md) · [Tablero](../templates/epic-board.md).
 
 ## 1. La arquitectura: un coordinador, agentes bajo demanda
 
@@ -168,7 +168,7 @@ flowchart TD
     M --> V
 ```
 
-La selección respeta la [política canónica de modelos](../specs/methodology/model-selection.md) y las capacidades verificadas del cliente. Los subagentes usan la configuración nativa que el usuario fija manualmente en cada cliente, sin techo predeterminado; el coordinador conserva su modelo. Si no puede garantizarse la selección permitida, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
+La selección respeta la [regla de modelos de `$orchestrate`](../.agents/skills/orchestrate/SKILL.md#procedure) y las capacidades verificadas del cliente. Los subagentes usan la configuración nativa que el usuario fija manualmente en cada cliente, sin techo predeterminado; el coordinador conserva su modelo. Si no puede garantizarse la selección permitida, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
 
 ## 9. ¿Qué instala realmente esta template?
 

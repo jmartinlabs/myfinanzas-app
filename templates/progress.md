@@ -16,7 +16,7 @@ remain authoritative, so never contradict them here.
 | UNDECIDED | PENDIENTE | UNVERIFIED | UNVERIFIED | UNRUN | UNVERIFIED | UNDECIDED | none |
 
 States: PENDIENTE, ENVIADO, RECIBIDO, VERIFICADO, BLOQUEADO — see
-[coordinator communication](../specs/methodology/coordinator-communication.md). `DESCONOCIDO`
+[external clients](../specs/methodology/dynamic-agents-external-clients.md). `DESCONOCIDO`
 only when the evidence cannot choose one.
 
 ## Verified increments

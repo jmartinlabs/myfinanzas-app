@@ -157,14 +157,14 @@ El modelo del chat y las rutas `worker`/`advisor` de `model_map` son selecciones
 cambiar el primero no prueba ni cambia las opciones fijadas para delegados. Usa únicamente
 proveedores ya conectados y modelos cuyo catálogo esté verificado. Declara las opciones
 solicitadas antes del despacho y contrasta la ruta efectiva con el
-[verificador existente](../specs/methodology/model-selection.md); no infieras éxito de un nombre
+[verificador existente](#delegation-routes-effective-model-check-delegationbackend-model_map); no infieras éxito de un nombre
 de slot ni inventes una ruta por tarea. No se cambia configuración ni autenticación automáticamente.
 
 Instrucción inicial opcional: «Coordina con el modelo de esta sesión; para implementación usa
 la opción worker verificada y para revisión crítica la opción advisor verificada, con contexto
 independiente. Registra solicitado/observado; si la opción no está disponible o acreditada,
-declara la limitación y aplica los gates/fallback canónicos». La cuota sigue
-vigente cualquiera que sea el cliente coordinador.
+declara la limitación y aplica los gates/fallback canónicos». Los límites del
+proveedor se respetan igual con cualquier cliente coordinador, sin pago ni otro proveedor sin consentimiento.
 
 ## Delegación por rol en el perfil real
 
@@ -223,8 +223,53 @@ delegation:
   ya esté guardado.
 - `provider`/`model` deben ser proveedores ya conectados y modelos verificados; declara en el
   packet lo solicitado y contrasta la ruta efectiva con
-  [model-selection](../specs/methodology/model-selection.md). Los modelos y proveedores los fija
+  [rutas de delegación](#delegation-routes-effective-model-check-delegationbackend-model_map). Los modelos y proveedores los fija
   manualmente el usuario en el perfil; este adaptador no los genera, sincroniza ni versiona.
 - Este adaptador **no** escribe configuración de perfil ni ejecuta `hermes config`: documenta
   la forma del bloque para una edición revisada y manual del perfil. Sin plugins, flags ni
   rutas nuevas.
+
+## Delegation routes (effective-model check, `delegation.backend: model_map`)
+A route is a **slot** defined by an entry in `delegation.backends.model_map.options` — name,
+provider, model, optional reasoning effort — not a fixed model. `worker`, `advisor` or any other
+name may change provider, model or effort without touching the verifier, its tests or this
+document. A route's actual choices come from the user's manual client configuration and its
+verified availability; the advisor slot never replaces independent QA.
+
+Measured failure mode (Hermes `model_map`, 2026-11-15): a per-task route parameter sometimes
+never reaches the tool. The emitted call carries only `goal`/`context`, no error is raised, and
+the task runs on the backend's `default` route — an `advisor` review silently executed by
+`worker`. Of four dispatches, the two with a `goal` above ~2 500 characters lost it and the two
+with a short `goal` (material in `context`) kept it. Keep `goal` short and put the payload in
+`context`; the runtime copies arguments verbatim and the route resolved correctly whenever the
+field arrived, so the loss is upstream of the plugin, not a routing bug to work around.
+
+Before accepting a routed result, read the effective route from metadata: while it runs,
+`delegate_task(action='list')` reports each child's `model`; afterwards,
+`scripts/check-delegation-route --profile <profile> --delegation <id> --expect-label <option>
+[--expect-provider <provider>] [--expect-model <model>] [--expect-effort <effort>]` reads it from
+`state.db`. It passes only when every task finished `completed` and matched every requested
+expectation; a task that did not finish, a mismatch, unreadable or malformed metadata, or a call
+without any expectation never yields PASS (exit 2 is "no verdict", never a pass).
+
+Where the expectations come from, and what the runtime can answer:
+
+- **Recovered per task** by the check: route `label`, `provider`, `model`, `reasoning_effort` and
+  the task's `status`.
+- **Not recovered**: the option name requested at dispatch. Hermes keeps `task_json.model` — the
+  model resolved at dispatch, blank when the tasks of a batch took different routes — but not the
+  `option` parameter, nor the requested provider or effort. The coordinator therefore supplies the
+  expectations from the option entry it actually dispatched with.
+- Take them from **that** entry, not from the runtime's resolved values and not from the config as
+  it reads after the run: the configuration can change between dispatch and check, and a model
+  configured now is not the one expected then.
+- Prefer `--delegation <id>` over `--latest`: with concurrent sessions the newest row may belong to
+  another delegation.
+
+A mismatch means the designated route failed; unavailable metadata means effective identity
+is unverified, not proof that the route was not used. Do not credit the designated route in
+either case; stop further dispatch at a safe boundary and investigate or record the blocker.
+A same-model reviewer with independent context can still be independent QA; route identity
+and independent review are separate checks.
+
+La regla genérica de modelo pedido frente a observado está en [`$orchestrate`](../.agents/skills/orchestrate/SKILL.md#procedure) (paso 4); esta sección es la lectura específica de Hermes.
