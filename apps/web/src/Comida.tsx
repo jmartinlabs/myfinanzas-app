@@ -73,6 +73,7 @@ type Metrics = {
   regimen: RegimenDto;
   periodo: { inicio: string; corte: string };
   cobertura: { estado: string; motivos: string[]; sinClasificar: string[]; devolucionesPendientes: string[] };
+  integridad?: { advertencia: string | null; ids: string[]; bloquea: false };
   compras: { bruto: Metric; devoluciones: Metric; neto: Metric };
   compensable: { bruto: Metric; devoluciones: Metric; neto: Metric };
   reposiciones: { obligacion: string | null; ids: string[] };
@@ -408,23 +409,31 @@ export function Comida({ go }: { go: (p: string) => void }) {
                   ))}
                 </ul>
               )}
+              {metrics.integridad?.advertencia && (
+                <p className="muted" role="note">
+                  Advertencia de integridad: {metrics.integridad.advertencia}
+                </p>
+              )}
               <dl className="metrics">
                 <MetricRow label="Comida bruto" metric={metrics.compras.bruto} />
                 <MetricRow
-                  label="Devoluciones de comida"
+                  label="Devoluciones de comida (por compra de origen)"
                   metric={metrics.compras.devoluciones}
                 />
-                <MetricRow label="Comida neto" metric={metrics.compras.neto} />
+                <MetricRow
+                  label="Comida · Gasto real económico (neto)"
+                  metric={metrics.compras.neto}
+                />
                 <MetricRow
                   label="Compensable bruto"
                   metric={metrics.compensable.bruto}
                 />
                 <MetricRow
-                  label="Devoluciones compensables"
+                  label="Devoluciones compensables (por compra de origen)"
                   metric={metrics.compensable.devoluciones}
                 />
                 <MetricRow
-                  label="Compensable neto"
+                  label="Compensable · Gasto real económico (neto)"
                   metric={metrics.compensable.neto}
                 />
                 <MetricRow

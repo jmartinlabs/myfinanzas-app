@@ -1,0 +1,508 @@
+import { test, expect } from "bun:test";
+import { Database } from "bun:sqlite";
+import { randomUUID } from "node:crypto";
+import { openDatabase } from "./database";
+import { createSaldo } from "./saldos";
+import { createClassification } from "./clasificacion";
+import { createCycle, cycleContext } from "./ciclos";
+import { previewMovement, writeMovement } from "./movimientos";
+import { confirmPartidaConfig, getPlanMensualDprima, previewPartidaConfig } from "./dprima";
+import { getCyclePlan } from "./planes-ciclo";
+import {
+  activateRegimen,
+  comidaMetrics,
+  prepareRegimen,
+  revalidateDevolucionesCompra,
+  writeComidaMetadata,
+} from "./comida";
+import { descuentoPorCompras } from "./devoluciones";
+import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+
+/**
+ * #538 F2b · Comida y e35 con la proyección única (SPEC39 §3, §8, §10).
+ * El descuento sigue a la COMPRA de Comida, no a la fecha ni al saldo del abono.
+ * SQLite ficticia en memoria; ningún dato real. El gate se inyecta abierto solo en pruebas.
+ */
+const now = Date.parse("2026-10-21T12:00:00Z");
+process.env.NODE_ENV = "test";
+
+function setup() {
+  const db = openDatabase(":memory:");
+  const cat = createClassification(
+    db,
+    "categorias",
+    { nombre: "Gastos ficticios", anual: "Gasto", mensual: "Gasto", referencia: false },
+    randomUUID(),
+  );
+  const sub = createClassification(
+    db,
+    "subcategorias",
+    { nombre: "Subcategoría ficticia", padre: cat.id },
+    randomUUID(),
+  );
+  db.run("INSERT INTO presupuestos VALUES('PRE900','Plan comida ficticio','Gasto real','S001','Activo',1,'f','f')");
+  db.run("INSERT INTO presupuestos VALUES('PRE901','Plan ocio ficticio','Gasto real','S001','Activo',1,'f','f')");
+  const food = createClassification(
+    db,
+    "partidas",
+    { nombre: "Supermercado ficticio", padre: sub.id, presupuesto: "PRE900" },
+    randomUUID(),
+  );
+  const leisure = createClassification(
+    db,
+    "partidas",
+    { nombre: "Ocio ficticio", padre: sub.id, presupuesto: "PRE901" },
+    randomUUID(),
+  );
+  for (const p of [food, leisure]) {
+    const cambios = { fuente: "Gasto real" };
+    const pv = previewPartidaConfig(db, p.id, { cambios, motivo: "Configuración ficticia" });
+    confirmPartidaConfig(
+      db,
+      p.id,
+      { cambios, motivo: "Configuración ficticia", fingerprint: pv.fingerprint },
+      randomUUID(),
+      now,
+    );
+  }
+  const mk = (nombre: string, opening: string) =>
+    createSaldo(
+      db,
+      {
+        nombre,
+        tipo: "Efectivo",
+        control: "Movimientos",
+        saldoApertura: opening,
+        fechaApertura: "2026-01-01",
+        permiteSalidaExterior: true,
+      },
+      randomUUID(),
+      now,
+    );
+  const ing = mk("ING Comida ficticia", "5000");
+  const other = mk("Otra cuenta ficticia", "5000");
+  const cycles = ["2026-06-20", "2026-07-20", "2026-08-20", "2026-09-20"].map(
+    (inicio) =>
+      createCycle(
+        db,
+        { inicio, saldoInicialComida: "5000", contextRevision: cycleContext(db).revision },
+        randomUUID(),
+        now,
+      ).ciclo,
+  );
+  const A = cycles[0],
+    B = cycles[1];
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: A.id,
+      apertura: "5000",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  return { db, food, leisure, ing, other, A, B };
+}
+type Ctx = ReturnType<typeof setup>;
+
+function add(db: Database, body: Record<string, unknown>) {
+  const plan = previewMovement(db, body, null, false, now);
+  return writeMovement(
+    db,
+    { ...body, fingerprint: plan.fingerprint, contextRevision: plan.contextRevision },
+    randomUUID(),
+    null,
+    false,
+    now,
+    undefined,
+    gateAbiertoParaPruebas,
+  );
+}
+let seq = 0;
+/** Compra de Comida: sale del saldo ING (régimen activo) con etiqueta Comida; ciclo A. */
+function buy(c: Ctx, importe: string, over: Record<string, unknown> = {}) {
+  return add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe,
+    saldo: c.ing.id,
+    partida: c.food.id,
+    concepto: `Compra ficticia ${++seq}`,
+    nota: "",
+    comida: { etiqueta: "Comida" },
+    ...over,
+  }).movimiento.id as string;
+}
+/** Compra AJENA a Comida: sale de otro saldo, sin metadato de Comida. */
+function buyAjena(c: Ctx, importe: string) {
+  return add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe,
+    saldo: c.other.id,
+    partida: c.leisure.id,
+    concepto: `Compra ajena ficticia ${++seq}`,
+    nota: "",
+  }).movimiento.id as string;
+}
+function refund(
+  c: Ctx,
+  compra: string,
+  importe: string,
+  link: Record<string, unknown> = {},
+  over: Record<string, unknown> = {},
+) {
+  return add(c.db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-07-25",
+    importe,
+    saldo: c.ing.id,
+    concepto: "Devolución ficticia",
+    nota: "",
+    ...over,
+    devolucion: {
+      estado: "Verificado",
+      compra,
+      evidenciaRelacion: "Evidencia ficticia",
+      elegibilidad: "Acreditada",
+      cicloOrigen: c.A.id,
+      evidenciaOrigenTemporal: "Documento ficticio",
+      ...link,
+    },
+  }).movimiento.id as string;
+}
+const sinAcreditar = {
+  elegibilidad: "No acreditada",
+  cicloOrigen: undefined,
+  evidenciaOrigenTemporal: undefined,
+};
+const m = (c: Ctx, ciclo: string) => comidaMetrics(c.db, ciclo, now);
+const plan = (c: Ctx, ciclo: string, p = "PRE900") =>
+  getCyclePlan(c.db, ciclo, now).items.find((i) => i.presupuesto.id === p)!;
+const dprima = (c: Ctx, ciclo: string, raiz: string) =>
+  getPlanMensualDprima(c.db, ciclo, now).items.find((i) => i.raiz === raiz)!;
+
+test("F2B-01 (AC-D20/AC-D05): compra 120 en A y abono 30 en B → neto A 90, B sin cambio; el abono no es financiación ni duplica", () => {
+  const c = setup();
+  const before = m(c, c.A.id);
+  const compra = buy(c, "120");
+  const sin = m(c, c.A.id);
+  expect(sin.compras.neto.valor).toBe("120.00");
+  const dev = refund(c, compra, "30");
+  const a = m(c, c.A.id);
+  expect([a.compras.bruto.valor, a.compras.devoluciones.valor, a.compras.neto.valor]).toEqual([
+    "120.00",
+    "30.00",
+    "90.00",
+  ]);
+  expect(a.compras.devoluciones.ids).toEqual([dev]);
+  expect(a.cobertura.estado).toBe("Verificable");
+  const b = m(c, c.B.id);
+  expect([b.compras.bruto.valor, b.compras.devoluciones.valor, b.compras.neto.valor]).toEqual([
+    "0.00",
+    "0.00",
+    "0.00",
+  ]);
+  // OTRO_CICLO informa en ambos extremos y no impide el neteo ni degrada la cobertura.
+  expect(a.devoluciones.otroCiclo).toEqual([dev]);
+  expect(b.devoluciones.otroCiclo).toEqual([dev]);
+  expect(b.cobertura.estado).toBe("Verificable");
+  // El abono (saldo ING) no es financiación nueva: F/Rcaja intactos; el hecho bancario
+  // es único (un solo movimiento de devolución) y el banco lo ve por su fecha real.
+  expect(a.financiacion).toMatchObject({ f: before.financiacion.f, reposicionesCaja: before.financiacion.reposicionesCaja });
+  expect(
+    (c.db.query("SELECT COUNT(*) n FROM movimientos WHERE tipo='Devolución de gasto'").get() as { n: number }).n,
+  ).toBe(1);
+  expect(b.devolucionesObservadas.valor).toBe("30.00");
+  c.db.close();
+});
+
+test("F2B-02 (AC-D21): compra de Comida frente a compra ajena; la devolución ajena no degrada la cobertura de Comida", () => {
+  const c = setup();
+  const comida = buy(c, "100");
+  refund(c, comida, "20");
+  const ajena = buyAjena(c, "60");
+  // Devoluciones ajenas con causas que, de ser de Comida, degradarían: Revisar y No acreditada.
+  refund(c, ajena, "10", { estado: "Revisar" }, { saldo: c.other.id });
+  refund(c, ajena, "5", sinAcreditar, { saldo: c.other.id });
+  const a = m(c, c.A.id);
+  expect([a.compras.bruto.valor, a.compras.devoluciones.valor, a.compras.neto.valor]).toEqual([
+    "100.00",
+    "20.00",
+    "80.00",
+  ]);
+  expect(a.cobertura.estado).toBe("Verificable");
+  expect(a.cobertura.devolucionesPendientes).toEqual([]);
+  expect(a.compras.neto.estado).toBe("Verificado");
+  expect(a.devoluciones.revisar).toEqual([]);
+  expect(a.devoluciones.sinAcreditacion).toEqual([]);
+  c.db.close();
+});
+
+test("F2B-03 (AC-D08/AC-D09 aplicados a Comida): parciales 30+40 y total", () => {
+  const c = setup();
+  const p = buy(c, "120");
+  refund(c, p, "30");
+  const d2 = refund(c, p, "40", {}, { fecha: "2026-07-26" });
+  let a = m(c, c.A.id);
+  expect([a.compras.devoluciones.valor, a.compras.neto.valor]).toEqual(["70.00", "50.00"]);
+  expect(a.compras.devoluciones.ids).toContain(d2);
+  expect(a.compras.devoluciones.ids.length).toBe(2);
+  // Total (importe de la compra entera): neto 0,00 verificado, no ausencia.
+  const t = buy(c, "10.50", { fecha: "2026-07-06" });
+  refund(c, t, "10.50", {}, { fecha: "2026-07-27" });
+  a = m(c, c.A.id);
+  expect([a.compras.bruto.valor, a.compras.neto.valor]).toEqual(["130.50", "50.00"]);
+  c.db.close();
+});
+
+test("F2B-04 (AC-D04/AC-D39): No acreditada → descuento 0 y cobertura Parcial con causa visible; Revisar igual; ninguno es «verificado»", () => {
+  const c = setup();
+  const p1 = buy(c, "120");
+  const na = refund(c, p1, "30", sinAcreditar);
+  let a = m(c, c.A.id);
+  expect([a.compras.devoluciones.valor, a.compras.neto.valor]).toEqual(["0.00", "120.00"]);
+  expect(a.devoluciones.sinAcreditacion).toEqual([na]);
+  expect(a.cobertura.estado).toBe("Parcial");
+  expect(a.compras.neto.estado).toBe("Parcial");
+  expect(a.compras.neto.motivo).toContain(na);
+  const p2 = buy(c, "100", { fecha: "2026-07-06" });
+  const rv = refund(c, p2, "12", { estado: "Revisar" });
+  a = m(c, c.A.id);
+  expect(a.devoluciones.revisar).toEqual([rv]);
+  expect(a.compras.devoluciones.valor).toBe("0.00");
+  expect(a.compras.neto.valor).toBe("220.00");
+  expect(a.compras.neto.motivo).toContain("Revisar");
+  expect(a.faltaPorReponer.valor).toBeNull();
+  c.db.close();
+});
+
+test("F2B-05 (AC-D21/AC-D04): sinVinculo no netea y un huérfano de ámbito desconocido no degrada Comida, ni en ING ni en otro saldo", () => {
+  const c = setup();
+  buy(c, "100");
+  const orphan = (saldo: string, fecha: string, importe: string) =>
+    add(c.db, {
+      tipo: "Devolución de gasto",
+      fecha,
+      importe,
+      saldo,
+      partida: c.food.id,
+      concepto: "Huérfana ficticia",
+      nota: "",
+    }).movimiento.id as string;
+  const huerfanaIng = orphan(c.ing.id, "2026-07-10", "11");
+  const huerfanaOtro = orphan(c.other.id, "2026-07-11", "7");
+  const a = m(c, c.A.id);
+  expect(a.compras.devoluciones.valor).toBe("0.00");
+  expect(a.compras.neto.valor).toBe("100.00");
+  expect(a.compras.neto.estado).toBe("Verificado");
+  expect(a.cobertura.estado).toBe("Verificable");
+  expect(a.cobertura.devolucionesPendientes).toEqual([]);
+  // Se informan (integridad global), sin atribuirse a Comida.
+  expect(a.devoluciones.sinVinculo).toEqual([huerfanaIng, huerfanaOtro]);
+  // Advertencia explícita de integridad, fuera de la cobertura y sin bloqueo.
+  expect(a.cobertura.motivos.join(" ")).not.toContain("sin compra válida");
+  expect(a.integridad.advertencia).toContain("no atribuibles a Comida");
+  expect(a.integridad.ids).toEqual([huerfanaIng, huerfanaOtro]);
+  expect(a.integridad.bloquea).toBe(false);
+  c.db.close();
+});
+
+test("F2B-06 (AC-D02/AC-D18): reclasificar la compra (etiqueta) mueve bruto y descuento juntos, sin copias legacy", () => {
+  const c = setup();
+  const p = buy(c, "120");
+  const dev = refund(c, p, "30");
+  // Copia legacy contradictoria (fixture SQL ficticio): no debe prevalecer.
+  c.db.run("UPDATE movimiento_devolucion SET partida=? WHERE movimiento=?", [c.leisure.id, dev]);
+  c.db.run("UPDATE movimientos SET partida=? WHERE id=?", [c.leisure.id, dev]);
+  let a = m(c, c.A.id);
+  expect([a.compras.bruto.valor, a.compras.devoluciones.valor, a.compensable.bruto.valor]).toEqual([
+    "120.00",
+    "30.00",
+    "0.00",
+  ]);
+  writeComidaMetadata(
+    c.db,
+    p,
+    { revision: 1, etiqueta: "Ocio", motivo: "Reclasificación ficticia" },
+    randomUUID(),
+    now,
+  );
+  a = m(c, c.A.id);
+  expect([a.compras.bruto.valor, a.compras.devoluciones.valor, a.compras.neto.valor]).toEqual([
+    "0.00",
+    "0.00",
+    "0.00",
+  ]);
+  expect([a.compensable.bruto.valor, a.compensable.devoluciones.valor, a.compensable.neto.valor]).toEqual([
+    "120.00",
+    "30.00",
+    "90.00",
+  ]);
+  expect(a.compensable.devoluciones.ids).toEqual([dev]);
+  c.db.close();
+});
+
+test("F2B-07 (AC-D22): compra Comida sin dimensión requerida → sinClasificacion y cobertura parcial, no sinAcreditacion ni cero completo", () => {
+  const c = setup();
+  const p = buy(c, "120");
+  // Fixture SQL ficticio: la Partida pierde su Subcategoría (clasificación requerida ausente).
+  c.db.run("PRAGMA foreign_keys=OFF");
+  c.db.run("UPDATE partidas SET padre='SUB999' WHERE id=?", [c.food.id]);
+  refund(c, p, "30");
+  const a = m(c, c.A.id);
+  expect(a.compras.neto.valor).toBe("90.00");
+  expect(a.compras.neto.estado).toBe("Parcial");
+  expect(a.cobertura.motivos.join(" ")).toContain("sinClasificacion");
+  expect(a.devoluciones.sinAcreditacion).toEqual([]);
+  expect(a.cobertura.estado).toBe("Parcial");
+  c.db.close();
+});
+
+test("F2B-08 (AC-D02/AC-D18/AC-D27): reconciliación al céntimo Plan = Dprima = Comida para el mismo conjunto de compras", () => {
+  const c = setup();
+  const p1 = buy(c, "120.35");
+  const p2 = buy(c, "80.10", { fecha: "2026-07-10" });
+  const p3 = buy(c, "40", { fecha: "2026-07-11" });
+  refund(c, p1, "30.07");
+  refund(c, p1, "40.05", {}, { fecha: "2026-08-02" });
+  refund(c, p2, "80.10", {}, { fecha: "2026-08-03" });
+  refund(c, p3, "9", sinAcreditar);
+  const a = m(c, c.A.id);
+  const pl = plan(c, c.A.id);
+  const dp = dprima(c, c.A.id, c.food.id);
+  expect([a.compras.bruto.valor, a.compras.devoluciones.valor, a.compras.neto.valor]).toEqual([
+    "240.45",
+    "150.22",
+    "90.23",
+  ]);
+  expect([pl.bruto, pl.devoluciones, pl.ejecutado]).toEqual(["240.45", "150.22", "90.23"]);
+  expect([dp.bruto, dp.devoluciones, dp.ejecutado]).toEqual(["240.45", "150.22", "90.23"]);
+  // Misma pieza común por IDs de compras.
+  const d = descuentoPorCompras(c.db, [p1, p2, p3]);
+  expect([...d.values()].reduce((s, x) => s + x.descuentoEconomico, 0n)).toBe(15022n);
+  // La no acreditada coincide en cobertura Parcial en las tres vistas.
+  expect([a.cobertura.estado, pl.cobertura, dp.cobertura]).toEqual(["Parcial", "Parcial", "Parcial"]);
+  c.db.close();
+});
+
+test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la devolución; la anulación de la compra no duplica ni netea", () => {
+  const c = setup();
+  const compra = add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe: "120",
+    saldo: c.ing.id,
+    partida: c.leisure.id,
+    concepto: "Compra compensable ficticia",
+    nota: "",
+    comida: { etiqueta: "Ocio" },
+  }).movimiento.id as string;
+  const count = () =>
+    (c.db.query("SELECT COUNT(*) n FROM movimientos").get() as { n: number }).n;
+  const sin = m(c, c.A.id);
+  const sinB = m(c, c.B.id);
+  expect(sin.recursos.valor).toBe("4880.00"); // S0 5000 + F 0 + R 0 − C_n 120
+  const dev = refund(c, compra, "30");
+  const n = count();
+  const a = m(c, c.A.id);
+  // GRE: el abono (recibido en B) reduce retroactivamente el neto de A…
+  expect(a.compensable.neto.valor).toBe("90.00");
+  // …pero los recursos operativos de A NO aumentan (SPEC39 §7, §8, AC-D20/D23).
+  expect(a.recursos.valor).toBe("4880.00");
+  expect(a.recursos.valor).toBe(sin.recursos.valor);
+  expect(a.obligacion.cn).toBe("120.00");
+  expect(a.obligacion.falta).toBe(sin.obligacion.falta);
+  expect(a.financiacion).toMatchObject({ f: sin.financiacion.f, reposicionesCaja: sin.financiacion.reposicionesCaja });
+  // B: sin recursos ni financiación nueva por el abono.
+  const b = m(c, c.B.id);
+  expect(b.recursos.valor).toBe(sinB.recursos.valor);
+  expect(b.financiacion).toMatchObject({ f: sinB.financiacion.f, reposicionesCaja: sinB.financiacion.reposicionesCaja });
+  // El abono es un hecho bancario real de B: el puente de A conserva el cierre
+  // analítico y absorbe la diferencia de periodo en «otros», no en recursos.
+  expect(a.puente).not.toBeNull();
+  expect(a.puente!.cierreAnalitico).toBe(a.cierreAnalitico.valor);
+  expect(
+    (Number(a.puente!.baseAnalitica) + Number(a.puente!.otrosEfectos)).toFixed(2),
+  ).toBe(a.puente!.cierreAnalitico!);
+  expect(count()).toBe(n); // una lectura no crea movimientos
+  // Anulación de la compra (fixture) + rectificación P4: el abono queda como hecho
+  // bancario con vínculo en Revisar; no netea nada ni se duplica en ningún ciclo.
+  c.db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [compra]);
+  revalidateDevolucionesCompra(c.db, compra, now);
+  const x = m(c, c.A.id);
+  expect(x.compensable.bruto.valor).toBe("0.00");
+  expect(x.recursos.valor).toBe("5000.00"); // sin compra vigente no hay C_n operativo
+  expect(x.compensable.devoluciones.valor).toBe("0.00");
+  expect(x.compensable.neto.valor).toBe("0.00");
+  expect(x.devoluciones.compraInvalida).toEqual([]); // fecha 07-25 cae en B
+  expect(m(c, c.B.id).devoluciones.compraInvalida).toEqual([dev]);
+  expect(m(c, c.B.id).compras.devoluciones.valor).toBe("0.00");
+  expect(m(c, c.B.id).compensable.devoluciones.valor).toBe("0.00");
+  expect(count()).toBe(n);
+  c.db.close();
+});
+
+test("F2B-09b (AC-D23): abono recibido dentro del mismo ciclo sí descuenta del operativo; GRE y recursos coinciden en ese caso", () => {
+  const c = setup();
+  const compra = add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe: "120",
+    saldo: c.ing.id,
+    partida: c.leisure.id,
+    concepto: "Compra compensable ficticia",
+    nota: "",
+    comida: { etiqueta: "Ocio" },
+  }).movimiento.id as string;
+  refund(c, compra, "30", {}, { fecha: "2026-07-10" });
+  const a = m(c, c.A.id);
+  expect(a.compensable.neto.valor).toBe("90.00");
+  expect(a.recursos.valor).toBe("4910.00"); // el abono ocurre en A: comportamiento previo conservado
+  expect(a.obligacion.cn).toBe("90.00");
+  c.db.close();
+});
+
+test("F2B-09c (AC-D23): dos abonos de la misma compra, uno en A y otro en B → GRE descuenta ambos; recursos de A solo el de A", () => {
+  const c = setup();
+  const compra = add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe: "120",
+    saldo: c.ing.id,
+    partida: c.leisure.id,
+    concepto: "Compra compensable ficticia",
+    nota: "",
+    comida: { etiqueta: "Ocio" },
+  }).movimiento.id as string;
+  refund(c, compra, "30", {}, { fecha: "2026-07-10" });
+  refund(c, compra, "20"); // 2026-07-25, ciclo B
+  const a = m(c, c.A.id);
+  expect(a.compensable.neto.valor).toBe("70.00"); // GRE: 120 − 30 − 20
+  expect(a.recursos.valor).toBe("4910.00"); // operativo: solo el abono de A
+  expect(a.obligacion.cn).toBe("90.00");
+  c.db.close();
+});
+
+test("F2B-10: descuento mayor que la compra → neto no verificable (null), sin max(0)", () => {
+  const c = setup();
+  const p = buy(c, "100");
+  refund(c, p, "60");
+  // Fixture SQL ficticio de histórico inconsistente: el abono supera la compra.
+  c.db.run("UPDATE movimientos SET importe=15000 WHERE tipo='Devolución de gasto'");
+  const a = m(c, c.A.id);
+  expect(a.compras.neto.valor).toBeNull();
+  expect(a.compras.neto.estado).toBe("Parcial");
+  expect(a.cobertura.motivos.join(" ")).toContain("Descuento superior a la compra");
+  c.db.close();
+});

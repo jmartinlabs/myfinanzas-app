@@ -2,6 +2,11 @@ import type { Database } from "bun:sqlite";
 import { cycleMaster, getCycle } from "./ciclos";
 import { financeRevision, ledgerRows, type LedgerRow } from "./movement-ledger";
 import { decimal, Problem } from "./saldos";
+import {
+  agregarDescuentos,
+  descuentoPorCompras,
+  proyectarDevoluciones,
+} from "./devoluciones";
 
 /**
  * E3.5/FIN_NETA — read model de agregación, atribución por ciclo y cobertura.
@@ -73,11 +78,6 @@ const metadataSelect = `SELECT movimiento,etiqueta,evidencia_bancaria evidenciaB
   evidencia_comercial evidenciaComercial,estado_revision estadoRevision,
   revision_movimiento revisionMovimiento,revision,creado,actualizado
   FROM movimiento_revision_comida`;
-const devolucionSelect = `SELECT movimiento,compra,partida,ciclo_origen cicloOrigen,
-  evidencia_relacion evidenciaRelacion,
-  evidencia_origen_temporal evidenciaOrigenTemporal,
-  elegibilidad,estado,revision_movimiento revisionMovimiento,revision,creado,actualizado
-  FROM movimiento_devolucion`;
 const rolSelect = `SELECT movimiento,rol,obligacion_ciclo obligacionCiclo,evidencia,
   revision_movimiento revisionMovimiento,revision,creado,actualizado
   FROM movimiento_rol_financiacion`;
@@ -205,11 +205,6 @@ export function e35Metrics(
         (r) => [r.movimiento, r],
       ),
     );
-    const devolutions = new Map(
-      (devOk ? (db.query(devolucionSelect).all() as ComidaDevolucion[]) : []).map(
-        (r) => [r.movimiento, r],
-      ),
-    );
     const roles = new Map(
       (rolesOk ? (db.query(rolSelect).all() as ComidaRolRow[]) : []).map((r) => [
         r.movimiento,
@@ -239,109 +234,134 @@ export function e35Metrics(
         !isFood(p.meta.etiqueta) &&
         !isCompensable(p.meta.etiqueta),
     );
-    const purchaseById = new Map(
-      purchases.map((p) => [p.row.id, p]),
-    );
+    // SPEC39 §8 (F2b): el descuento sigue a la COMPRA vigente de Comida. Una sola
+    // proyección; el abono no filtra por fecha ni por saldo receptor, y la
+    // clasificación sale de la compra (nunca d.partida/m.partida/ciclo_origen).
+    const projection = proyectarDevoluciones(db);
+    // Hechos bancarios por fecha de abono: solo `*Observado` (no son GRE).
     const devoluciones = rows.filter((r) => r.tipo === "Devolución de gasto");
-    const attributed = (r: LedgerRow) => {
-      const d = devolutions.get(r.id) ?? null;
-      if (!d) return null;
-      const purchase = d.compra ? purchaseById.get(d.compra) ?? null : null;
-      const external = d.compra && !purchase
-        ? (db
-            .query("SELECT partida FROM movimientos WHERE id=?")
-            .get(d.compra) as { partida: string | null } | null)
-        : null;
-      const partida =
-        d.partida ??
-        r.partida ??
-        purchase?.row.partida ??
-        external?.partida ??
-        null;
-      const label =
-        metadata.get(r.id)?.etiqueta ??
-        purchase?.meta?.etiqueta ??
-        (d.compra ? metadata.get(d.compra)?.etiqueta ?? null : null);
-      // A link in Revisar never proves eligibility by itself when a purchase is
-      // present; external accreditation without FK remains valid (P4).
-      const linkValid = !d.compra || d.estado === "Verificado";
-      const accredited =
-        d.elegibilidad === "Acreditada" &&
-        d.cicloOrigen !== null &&
-        partida !== null &&
-        linkValid;
-      const grouped = label !== null;
-      const eligible = accredited && grouped && d.cicloOrigen === ciclo.id;
-      return {
-        d,
-        purchase,
-        partida,
-        label,
-        eligible,
-        accredited,
-        grouped,
-        importe: r.importe,
-      };
+    const ids = (ps: { row: LedgerRow }[]) => ps.map((p) => p.row.id);
+    const scopeSet = new Set([...ids(food), ...ids(comp), ...ids(unclassified)]);
+    const foodSet = new Set(ids(food));
+    const compSet = new Set(ids(comp));
+    const scopeDiscounts = descuentoPorCompras(db, scopeSet, projection);
+    const discountOf = (set: Set<string>) =>
+      agregarDescuentos([...set].map((id) => scopeDiscounts.get(id)!));
+    const aggFood = discountOf(foodSet);
+    const aggComp = discountOf(compSet);
+    const aggScope = agregarDescuentos(scopeDiscounts.values());
+    const inWindow = (fecha: string) => fecha >= start && fecha <= corte;
+    const ofScope = projection.items.filter(
+      (i) => i.compra !== null && scopeSet.has(i.compra),
+    );
+    const eligibleFoodIds = ofScope
+      .filter((i) => i.elegible && foodSet.has(i.compra!))
+      .map((i) => i.id);
+    const eligibleCompIds = ofScope
+      .filter((i) => i.elegible && compSet.has(i.compra!))
+      .map((i) => i.id);
+    // Un abono sin compra válida no se atribuye a Comida ni por su saldo receptor ni
+    // por su declaración histórica (SPEC39 §3.3, AC-D21): se informa (integridad global
+    // R4) sin netear ni degradar la cobertura de Comida.
+    const abonosVentana = projection.items.filter((i) => inWindow(i.fecha));
+    const sinVinculo = abonosVentana
+      .filter((i) => i.causa === "sinVinculo")
+      .map((i) => i.id);
+    const compraInvalida = abonosVentana
+      .filter((i) => i.causa === "compraInvalida")
+      .map((i) => i.id);
+    const sinAcreditacion = ofScope
+      .filter((i) => i.causa === "sinAcreditacion")
+      .map((i) => i.id);
+    const revisar = ofScope.filter((i) => i.causa === "revisar").map((i) => i.id);
+    const comprasCon = (causa: string) =>
+      [...scopeDiscounts.values()]
+        .filter((d) => (d.causas as string[]).includes(causa))
+        .map((d) => d.compra);
+    const comprasSinClasificacion = comprasCon("sinClasificacion");
+    const comprasPeriodoNoResoluble = comprasCon("periodoNoResoluble");
+    // OTRO_CICLO es informativo: abono fuera de la ventana de una compra de este
+    // ciclo, o abono de la ventana cuya compra de Comida pertenece a otro ciclo.
+    const comidaPurchaseOutside = (compra: string) => {
+      const row = db
+        .query(
+          `SELECT m.origen,m.tipo,m.anulado,s.control FROM movimientos m
+           JOIN saldos s ON s.id=m.origen WHERE m.id=?`,
+        )
+        .get(compra) as
+        | { origen: string; tipo: string; anulado: number; control: string }
+        | null;
+      return (
+        !!row &&
+        row.tipo === "Gasto" &&
+        row.anulado === 0 &&
+        row.control !== "Terminal" &&
+        (saldo ? row.origen === saldo : metadata.has(compra))
+      );
     };
-    const eligibleFood = devoluciones
-      .map(attributed)
-      .filter(
-        (a): a is NonNullable<ReturnType<typeof attributed>> =>
-          !!a && a.eligible && isFood(a.label),
-      );
-    const eligibleComp = devoluciones
-      .map(attributed)
-      .filter(
-        (a): a is NonNullable<ReturnType<typeof attributed>> =>
-          !!a && a.eligible && isCompensable(a.label),
-      );
-    const devolucionesPorCausa = (() => {
-      const sinVinculo: string[] = [];
-      const sinAcreditacion: string[] = [];
-      const revisar: string[] = [];
-      const otroCiclo: string[] = [];
-      for (const r of devoluciones) {
-        const a = attributed(r);
-        if (a && a.accredited && a.grouped) {
-          if (!a.eligible) otroCiclo.push(r.id);
-          continue;
-        }
-        if (a?.d.estado === "Revisar" && a.d.compra) revisar.push(r.id);
-        else if (!a?.d.compra && !a?.accredited) sinVinculo.push(r.id);
-        else sinAcreditacion.push(r.id);
-      }
-      return { sinVinculo, sinAcreditacion, revisar, otroCiclo };
-    })();
-    const pendingDevIds = [
-      ...devolucionesPorCausa.sinVinculo,
-      ...devolucionesPorCausa.sinAcreditacion,
-      ...devolucionesPorCausa.revisar,
-    ];
+    const otroCiclo = projection.items
+      .filter((i) => {
+        if (!i.elegible || !i.compra) return false;
+        const own = scopeSet.has(i.compra);
+        const here = inWindow(i.fecha);
+        if (own) return !here;
+        return here && comidaPurchaseOutside(i.compra);
+      })
+      .map((i) => i.id);
+    const devolucionesPorCausa = {
+      sinVinculo,
+      sinAcreditacion,
+      revisar,
+      compraInvalida,
+      otroCiclo,
+    };
+    const pendingDevIds = [...sinAcreditacion, ...revisar];
     const pendingDev = pendingDevIds.map((id) => ({ id }));
+    const devGap =
+      pendingDev.length > 0 ||
+      aggScope.cobertura !== "Completa" ||
+      aggFood.exceso ||
+      aggComp.exceso;
     const foodBruto = sum(food.map((p) => BigInt(p.row.importe)));
-    const foodDev = sum(eligibleFood.map((a) => BigInt(a.importe)));
+    const foodDev = aggFood.descuento;
     const compBruto = sum(comp.map((p) => BigInt(p.row.importe)));
-    const compDev = sum(eligibleComp.map((a) => BigInt(a.importe)));
+    const compDev = aggComp.descuento;
     const netFood = foodBruto - foodDev;
     const netComp = compBruto - compDev;
+    // SPEC39 §7/§8, AC-D20/AC-D23: el GRE (netFood/netComp) se reduce retroactivamente,
+    // pero recursos, financiación y obligación de reposición son operativos y NO se
+    // recalculan desde GRE: solo descuentan el abono recibido dentro de este ciclo.
+    // Una devolución recibida en otro ciclo no altera sus recursos.
+    const compDevOp = sum(
+      ofScope
+        .filter((i) => i.elegible && compSet.has(i.compra!) && inWindow(i.fecha))
+        .map((i) => i.importe),
+    );
+    const netCompOp = compBruto - compDevOp;
     const pending = unclassified.map((p) => p.row.id);
     const coverageFood =
       !metaOk || !devOk
         ? "Fuente de Comida no legible; cobertura no disponible."
-        : pending.length === 0 && pendingDev.length === 0
+        : pending.length === 0 && !devGap
         ? null
         : [
             pending.length
               ? `Compras sin clasificar: ${pending.join(", ")}.`
               : null,
-            devolucionesPorCausa.sinVinculo.length
-              ? `Devoluciones sin vínculo acreditado: ${devolucionesPorCausa.sinVinculo.join(", ")}.`
+            sinAcreditacion.length
+              ? `Devoluciones sin acreditación suficiente: ${sinAcreditacion.join(", ")}.`
               : null,
-            devolucionesPorCausa.sinAcreditacion.length
-              ? `Devoluciones sin acreditación suficiente: ${devolucionesPorCausa.sinAcreditacion.join(", ")}.`
+            revisar.length
+              ? `Devoluciones en Revisar: ${revisar.join(", ")}.`
               : null,
-            devolucionesPorCausa.revisar.length
-              ? `Devoluciones en Revisar: ${devolucionesPorCausa.revisar.join(", ")}.`
+            comprasSinClasificacion.length
+              ? `Compras de Comida con devolución sin clasificación requerida (sinClasificacion): ${comprasSinClasificacion.join(", ")}.`
+              : null,
+            comprasPeriodoNoResoluble.length
+              ? `Compras de Comida con devolución sin periodo resoluble (periodoNoResoluble): ${comprasPeriodoNoResoluble.join(", ")}.`
+              : null,
+            aggFood.exceso || aggComp.exceso || aggScope.exceso
+              ? "Descuento superior a la compra: gasto neto no verificable."
               : null,
           ]
             .filter((v): v is string => !!v)
@@ -365,7 +385,7 @@ export function e35Metrics(
     const falta =
       coverageFood === null
         ? (() => {
-            const raw = netComp - rObl.total;
+            const raw = netCompOp - rObl.total;
             return raw > 0n ? raw : 0n;
           })()
         : null;
@@ -470,14 +490,14 @@ export function e35Metrics(
         };
       if (coverageFood !== null)
         return { estado: "No disponible" as const, motivo: coverageFood };
-      if (netComp === 0n)
+      if (netCompOp === 0n)
         return { estado: "Sin obligación acreditada" as const, motivo: "" };
-      if (netComp < 0n)
+      if (netCompOp < 0n)
         return {
           estado: "Parcial" as const,
           motivo: "C_n negativo: devoluciones elegibles superan el compensable bruto.",
         };
-      return rObl.total >= netComp
+      return rObl.total >= netCompOp
         ? { estado: "Completada" as const, motivo: "" }
         : {
             estado: "Parcial" as const,
@@ -487,7 +507,7 @@ export function e35Metrics(
 
     const s0 = cents(ciclo.saldoInicialComida);
     const resourcesSubtotal = financing.available
-      ? s0 + financing.f + financing.rCaja - netComp
+      ? s0 + financing.f + financing.rCaja - netCompOp
       : null;
     const resources =
       financing.available && coverageFood === null ? resourcesSubtotal : null;
@@ -567,7 +587,7 @@ export function e35Metrics(
               financing.d -
               (financing.f +
                 financing.rCaja -
-                netComp -
+                netCompOp -
                 netFood),
             close: analyticsClose,
           }
@@ -652,10 +672,31 @@ export function e35Metrics(
           ...(pendingDev.length
             ? [`Devoluciones sin atribución elegible: ${pendingDev.map((r) => r.id).join(", ")}.`]
             : []),
+          ...(comprasSinClasificacion.length
+            ? [`Compras de Comida con devolución sin clasificación requerida (sinClasificacion): ${comprasSinClasificacion.join(", ")}.`]
+            : []),
+          ...(comprasPeriodoNoResoluble.length
+            ? [`Compras de Comida con devolución sin periodo resoluble (periodoNoResoluble): ${comprasPeriodoNoResoluble.join(", ")}.`]
+            : []),
+          ...(aggFood.exceso || aggComp.exceso || aggScope.exceso
+            ? ["Descuento superior a la compra: gasto neto no verificable."]
+            : []),
           ...(!financing.available ? [financing.reason] : []),
         ],
         sinClasificar: pending,
         devolucionesPendientes: pendingDev.map((r) => r.id),
+      },
+      // Advertencia de integridad, separada de la cobertura económica (SPEC39 §3.3,
+      // AC-D21): un abono sin compra válida no netea ni degrada Comida, pero se avisa.
+      // Informativa: no bloquea precierre ni cierre; su tratamiento en precierre queda
+      // para F4 (sin nuevo bloqueo automático).
+      integridad: {
+        advertencia:
+          sinVinculo.length || compraInvalida.length
+            ? `Devoluciones sin compra válida, no atribuibles a Comida: ${[...sinVinculo, ...compraInvalida].join(", ")}. No netean ni degradan la cobertura económica de Comida; requieren revisión en Movimientos.`
+            : null,
+        ids: [...sinVinculo, ...compraInvalida],
+        bloquea: false as const,
       },
       compras: {
         bruto: metric(
@@ -665,10 +706,15 @@ export function e35Metrics(
         ),
         devoluciones: metric(
           foodDev,
-          pendingDev.length ? coverageFood : null,
-          eligibleFood.map((a) => a.d.movimiento),
+          devGap ? coverageFood : null,
+          eligibleFoodIds,
         ),
-        neto: metric(netFood, coverageFood, food.map((p) => p.row.id)),
+        neto: metric(
+          aggFood.exceso ? null : netFood,
+          coverageFood,
+          food.map((p) => p.row.id),
+          aggFood.exceso,
+        ),
       },
       compensable: {
         bruto: metric(
@@ -678,10 +724,15 @@ export function e35Metrics(
         ),
         devoluciones: metric(
           compDev,
-          pendingDev.length ? coverageFood : null,
-          eligibleComp.map((a) => a.d.movimiento),
+          devGap ? coverageFood : null,
+          eligibleCompIds,
         ),
-        neto: metric(netComp, coverageFood, comp.map((p) => p.row.id)),
+        neto: metric(
+          aggComp.exceso ? null : netComp,
+          coverageFood,
+          comp.map((p) => p.row.id),
+          aggComp.exceso,
+        ),
       },
       fueraPresupuesto: other.map((p) => p.row.id),
       reposiciones: { obligacion: decimal(rObl.total), ids: rObl.ids },
@@ -719,7 +770,7 @@ export function e35Metrics(
           },
       obligacion: {
         ...obligacionEstado,
-        cn: decimal(netComp),
+        cn: decimal(netCompOp),
         robl: decimal(rObl.total),
         falta: falta === null ? null : decimal(falta),
         ids: rObl.ids,
