@@ -123,8 +123,8 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
     ).toBeVisible();
     await expect(page.getByText("Individual", { exact: false }).first()).toBeVisible();
     await expect(page.getByText("Comida bruto", { exact: true })).toBeVisible();
-    await expect(page.getByText("Devoluciones de comida", { exact: true })).toBeVisible();
-    await expect(page.getByText("Compensable neto", { exact: true })).toBeVisible();
+    await expect(page.getByText("Devoluciones de comida (por compra de origen)", { exact: true })).toBeVisible();
+    await expect(page.getByText("Compensable · Gasto real económico (neto)", { exact: true })).toBeVisible();
     await expect(page.getByText("Cobertura:", { exact: false })).toBeVisible();
     await expect(
       page.locator(".metric", { hasText: "Comida bruto" }).locator("strong"),
@@ -135,10 +135,10 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
         .locator("strong"),
     ).toHaveText("15,00 €");
     await expect(
-      page.locator(".metric", { hasText: "Comida neto" }).locator("strong"),
+      page.locator(".metric", { hasText: "Comida · Gasto real económico (neto)" }).locator("strong"),
     ).toHaveText("50,00 €");
     await expect(
-      page.locator(".metric", { hasText: "Compensable neto" }).locator("strong"),
+      page.locator(".metric", { hasText: "Compensable · Gasto real económico (neto)" }).locator("strong"),
     ).toHaveText("35,00 €");
     await expect(
       page.locator(".metric", { hasText: "Falta por reponer" }),
