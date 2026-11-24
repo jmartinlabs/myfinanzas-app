@@ -589,7 +589,10 @@ test("E1/cobertura: compras sin etiqueta o devoluciones sin atribución presenta
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
   expect(metrics.cobertura.sinClasificar.length).toBe(1);
-  expect(metrics.cobertura.devolucionesPendientes.length).toBe(1);
+  // F2b (SPEC39 §3.3/§8): sin régimen activo una devolución sin compra no se asigna
+  // a Comida; se informa como no atribuible y no degrada la cobertura por sí sola.
+  expect(metrics.cobertura.devolucionesPendientes.length).toBe(0);
+  expect(metrics.devoluciones.noAtribuibles.length).toBe(1);
   expect(metrics.compensable.neto.estado).toBe("Parcial");
   expect(metrics.faltaPorReponer.valor).toBeNull();
   db.close();
@@ -763,7 +766,13 @@ test("AC-10/CU-14: una devolución de una compra de ciclo anterior no libera el 
   expect(receiver.netoObservado.valor).toBe("-40.00");
   const origin = comidaMetrics(db, "1", now);
   expect(origin.compras.bruto.valor).toBe("50.00");
-  expect(origin.compras.neto.valor).toBe("50.00");
+  // F2b (SPEC39 §8): la devolución netea el ciclo de su COMPRA (50 − 40), no el
+  // del abono; el ciclo receptor no se libera ni se duplica (sigue en 0 bruto).
+  expect(origin.compras.neto.valor).toBe("10.00");
+  expect(receiver.compras.neto.valor).toBe("0.00");
+  expect(receiver.devoluciones.otroCiclo).toContain(
+    (db.query("SELECT movimiento FROM movimiento_devolucion").get() as { movimiento: string }).movimiento,
+  );
   db.close();
 });
 
@@ -1541,7 +1550,9 @@ test("AC-09: devolución con Partida NULL y sin acreditación no asigna grupo", 
     [t, t],
   );
   const metrics = comidaMetrics(db, cycle1.id, now);
-  expect(metrics.devoluciones.sinVinculo).toContain("9001");
+  // F2b: sin régimen activo la huérfana no se asigna a Comida (SPEC39 §3.3).
+  expect(metrics.devoluciones.noAtribuibles).toContain("9001");
+  expect(metrics.devoluciones.sinVinculo).not.toContain("9001");
   expect(metrics.compras.neto.valor).toBe("0.00");
   db.close();
 });
@@ -1834,7 +1845,7 @@ test("H1: rectificar la devolución por encima de la compra la degrada a Revisar
   db.close();
 });
 
-test("H2: una devolución acreditada sin compra usa su etiqueta y reduce Compensable/Falta", () => {
+test("H2 (F2b): una devolución acreditada sin compra NO netea Compensable/Falta (SPEC39 §3.2)", () => {
   const { db, ing, leisure, cycle1 } = setup();
   purchase(db, ing, leisure.id, {
     importe: "50",
@@ -1854,9 +1865,12 @@ test("H2: una devolución acreditada sin compra usa su etiqueta y reduce Compens
   });
   expect(r.movimiento.tipo).toBe("Devolución de gasto");
   const metrics = comidaMetrics(db, cycle1.id, now);
-  expect(metrics.compensable.devoluciones.valor).toBe("15.00");
-  expect(metrics.compensable.neto.valor).toBe("35.00");
-  expect(metrics.faltaPorReponer.valor).toBe("35.00");
+  // Antes: 15/35/35 por etiqueta propia + d.partida. Ahora no hay compra: hecho
+  // bancario sin neteo (§3.2); la etiqueta de la devolución no clasifica.
+  expect(metrics.compensable.devoluciones.valor).toBe("0.00");
+  expect(metrics.compensable.neto.valor).toBe("50.00");
+  expect(metrics.faltaPorReponer.valor).toBe("50.00");
+  expect(metrics.devoluciones.noAtribuibles.length).toBe(1);
   expect(metrics.cobertura.estado).not.toBe("Verificable");
   db.close();
 });
@@ -2185,7 +2199,7 @@ test("H9/CU-24: Inicio 28/10, corte 30/10 ⇒ duración 34 y 3 transcurridos", (
   db.close();
 });
 
-test("H10: una devolución acreditada sin grupo deja la cobertura en Parcial", () => {
+test("H10 (F2b): una devolución acreditada sin compra no netea y se informa como no atribuible", () => {
   const { db, ing, leisure, cycle1 } = setup();
   purchase(db, ing, leisure.id, {
     importe: "50",
@@ -2204,9 +2218,8 @@ test("H10: una devolución acreditada sin grupo deja la cobertura en Parcial", (
   });
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
-  expect(metrics.cobertura.motivos.join(" ")).toContain("sin atribución elegible");
-  expect(metrics.faltaPorReponer.valor).toBeNull();
-  expect(metrics.compensable.devoluciones.valor).not.toBe("15.00");
+  expect(metrics.cobertura.motivos.join(" ")).toContain("no atribuibles a Comida");
+  expect(metrics.compensable.devoluciones.valor).toBe("0.00");
   db.close();
 });
 
