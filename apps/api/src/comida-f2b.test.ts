@@ -434,7 +434,7 @@ test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la dev
   expect(a.puente!.cierreAnalitico).toBe(a.cierreAnalitico.valor);
   expect(
     (Number(a.puente!.baseAnalitica) + Number(a.puente!.otrosEfectos)).toFixed(2),
-  ).toBe(a.puente!.cierreAnalitico);
+  ).toBe(a.puente!.cierreAnalitico!);
   expect(count()).toBe(n); // una lectura no crea movimientos
   // Anulación de la compra (fixture) + rectificación P4: el abono queda como hecho
   // bancario con vínculo en Revisar; no netea nada ni se duplica en ningún ciclo.
