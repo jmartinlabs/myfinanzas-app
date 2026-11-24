@@ -82,8 +82,10 @@ class ValidationTests(unittest.TestCase):
  def test_shipped_defaults_keep_the_automatic_codex_review(self):
   cfg=json.loads((ROOT/'.agents/external-agents.json').read_text()); codex=cfg['agents']['codex']
   self.assertTrue(codex['enabled']); self.assertEqual(codex['tasks']['review'],'automatic')
-  self.assertIsNone(codex['model']); self.assertIsNone(codex['effort'])
-  self.assertEqual(codex['tasks']['develop'],'disabled'); self.assertEqual(cfg['agents']['opencode']['tasks']['develop'],'disabled')
+  self.assertEqual(codex['model'],'gpt-6.2-sol'); self.assertEqual(codex['effort'],'low')
+  self.assertEqual(cfg['agents']['opencode']['model'],'alibaba-token-plan/deepseek-v4.1-flash-1017#high')
+  for agent in ('codex','opencode'): self.assertEqual(cfg['agents'][agent]['tasks']['develop'],'on_request'); self.assertEqual(cfg['agents'][agent]['tasks']['investigate'],'on_request')
+  self.assertEqual(cfg['agents']['opencode']['tasks']['review'],'on_request')
  def test_relay_skill_required(self):
   (self.root/'.agents/skills/relay/SKILL.md').unlink(); self.assertRule('structure')
  def test_relay_manifest(self):
