@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "agents": {
+    "codex": {
+      "enabled": true,
+      "transport": "cli",
+      "model": null,
+      "effort": null,
+      "tasks": { "review": "automatic", "investigate": "on_request", "develop": "disabled" }
+    },
+    "opencode": {
+      "enabled": true,
+      "transport": "cli",
+      "model": null,
+      "effort": null,
+      "tasks": { "review": "on_request", "investigate": "on_request", "develop": "disabled" }
+    }
+  }
+}
