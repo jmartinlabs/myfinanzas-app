@@ -12,6 +12,7 @@ import { resumenAnual } from "./resumen-anual";
 import {
   annualExecution,
   getAnnualPlan,
+  NOTA_TEMPORAL_GRE,
   type AnnualProvider,
   type AnnualSources,
 } from "./plan-anual";
@@ -298,4 +299,46 @@ test("F2A2-07: el mapa de descuentos es obligatorio; compras sin devoluciones da
   expect(missing.cobertura).toBe("Parcial");
   expect(missing.motivo).toContain("Descuento no calculado para 1 compra(s)");
   c.db.close();
+});
+
+test("F2A2-08 (AC-D01/D30 parcial): Resumen anual con devoluciones Revisar / No acreditada declara Parcial y causa; GRE correcto; neto 0 no es Cero verificado; nota temporal", () => {
+  const c = setup();
+  const x = buy(c, "100"), // Revisar: no netea
+    y = buy(c, "100", { partida: c.b.id }), // No acreditada: no netea
+    z = buy(c, "40", { partida: c.b.id }); // Verificada y acreditada total
+  refund(c, x, "12", { estado: "Revisar" });
+  refund(c, y, "30", { elegibilidad: "No acreditada", cicloOrigen: undefined, evidenciaOrigenTemporal: undefined });
+  refund(c, z, "40");
+  for (const [partida, presupuesto] of [[c.a.id, "200"], [c.b.id, "300"]] as const)
+    c.db.run(
+      "INSERT INTO annual_plan_lines(ejercicio,partida,presupuesto,periodo,esencial,revision) VALUES(2026,?,?,NULL,'No',1)",
+      [partida, presupuesto + "00"],
+    );
+  const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), now, { annualProvider: provider });
+  const pa = r.carriles.plan.items.find((i) => i.partidaId === c.a.id)!,
+    pb = r.carriles.plan.items.find((i) => i.partidaId === c.b.id)!;
+  expect([pa.ejecutado.valor, pa.ejecutado.estado, pa.cobertura.estado]).toEqual(["100.00", "Parcial", "Parcial"]);
+  expect(pa.ejecutado.motivo).toContain("revisar");
+  expect(pa.diferencia!.estado).toBe("Parcial");
+  // GRE de b: 100 + 40 - (0 + 40) = 100; parcial por sinAcreditacion, nunca «Cero verificado».
+  expect([pb.ejecutado.valor, pb.ejecutado.estado]).toEqual(["100.00", "Parcial"]);
+  expect(pb.ejecutado.motivo).toContain("sinAcreditacion");
+  expect(r.carriles.plan.estado).toBe("Parcial");
+  // Nota temporal visible en la métrica y en la API del Plan anual (la web la muestra).
+  expect(pa.ejecutado.motivo).toContain("devoluciones posteriores al corte");
+  expect(getAnnualPlan(c.db, 2026, now, provider).fuentes.notaTemporal).toBe(NOTA_TEMPORAL_GRE);
+  c.db.close();
+  // Neto 0 con hechos y devoluciones completas: «Verificado», no «Cero verificado».
+  const d = setup();
+  const k = buy(d, "40");
+  refund(d, k, "40");
+  d.db.run(
+    "INSERT INTO annual_plan_lines(ejercicio,partida,presupuesto,periodo,esencial,revision) VALUES(2026,?,'10000',NULL,'No',1)",
+    [d.a.id],
+  );
+  const r2 = resumenAnual(d.db, new URLSearchParams({ ejercicio: "2026" }), now, { annualProvider: provider });
+  const it = r2.carriles.plan.items.find((i) => i.partidaId === d.a.id)!;
+  expect([it.ejecutado.valor, it.ejecutado.estado]).toEqual(["0.00", "Verificado"]);
+  expect(it.ejecutado.motivo).toContain("devoluciones posteriores al corte");
+  d.db.close();
 });

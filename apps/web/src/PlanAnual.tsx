@@ -60,6 +60,7 @@ type Plan = {
     historico: boolean;
     cierres: boolean;
     control: { inicio: string; fin: string } | null;
+    notaTemporal?: string;
     motivo: string;
   };
   auditoria: {
@@ -400,6 +401,7 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
               Diferencia es desviación analítica frente al Presupuesto, no
               disponibilidad operativa.
             </p>
+            {plan.fuentes.notaTemporal && <p>{plan.fuentes.notaTemporal}</p>}
           </section>
           <section
             className="panel annual-essential"

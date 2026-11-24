@@ -133,6 +133,9 @@ const intervalValid = (i: Interval) =>
   validDate(i.inicio) && validDate(i.fin) && i.inicio <= i.fin;
 const overlaps = (a: Interval, b: Interval) =>
   a.inicio <= b.fin && b.inicio <= a.fin;
+/** SPEC39 §2.1/§2.2: aclaración temporal; no hay snapshot, el GRE es vivo. */
+export const NOTA_TEMPORAL_GRE =
+  "«Verificable al corte» acredita la cobertura de los hechos e intervalos originales. El Gasto real económico (neto) es vivo: puede reducirse por devoluciones posteriores al corte. El flujo bancario del año del abono no se traslada al año de la compra.";
 /**
  * SPEC39 §10 · descuento económico por ID de compra para los Gastos vigentes de
  * `rows` (el consumidor ya los ha seleccionado por Partida/REF). La pertenencia
@@ -372,6 +375,7 @@ function read(
       historico: sources.historicoDisponible,
       cierres: sources.cierresDisponibles,
       control: sources.control,
+      notaTemporal: NOTA_TEMPORAL_GRE,
       motivo: !sources.control
         ? "Inicio de control no verificado. Los hechos registrados no acreditan cobertura anual."
         : "Cobertura por Partida; verificable solo hasta el corte.",
