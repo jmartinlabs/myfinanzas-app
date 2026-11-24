@@ -11,6 +11,7 @@ import {
 } from "./nomina-mensual";
 import { debtPeriod } from "./deudas";
 import { D } from "./payroll-decimal";
+import { comidaInstalled } from "./comida";
 import {
   agregarDescuentos,
   causasCobertura,
@@ -120,9 +121,12 @@ function gastoRealEconomico(
   const orphanSet = new Set(
     projection.items.filter((d) => d.causa === "sinVinculo").map((d) => d.id),
   );
-  const sinVinculoEnIntervalo = refunds
-    .map((r) => r.id)
-    .filter((id) => orphanSet.has(id));
+  // Sin tabla de vínculos, un abono de CUALQUIER fecha pudo reducir estas compras y no es comprobable.
+  const sinTablaConAbonos =
+    !comidaInstalled(db, "movimiento_devolucion") && orphanSet.size > 0;
+  const sinVinculoEnIntervalo = sinTablaConAbonos
+    ? [...orphanSet]
+    : refunds.map((r) => r.id).filter((id) => orphanSet.has(id));
   const causas = new Set<CausaCobertura>(agg.causas);
   if (sinVinculoEnIntervalo.length) causas.add("sinVinculo");
   const cobertura: CoberturaDevoluciones =

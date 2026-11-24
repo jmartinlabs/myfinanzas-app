@@ -85,11 +85,16 @@ type CarrilPlan = {
   gastoRealEconomicoNatural: {
     estado: EstadoMetrica;
     motivo: string;
+    /** «Compras registradas» frente al «Ejecutado» de Plan anual: difieren por histórico conocido. */
+    nota: string;
     partidas: {
       partidaId: string;
       bruto: string;
       descuentoAtribuido: string;
       gastoRealEconomico: string | null;
+      historicoConocido: string;
+      ejecutadoPlanAnual: string | null;
+      equivaleAEjecutado: boolean;
       cobertura: string;
       causas: string[];
       exceso: boolean;
@@ -844,6 +849,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
             anual: no se suman Partidas ni Ciclos.
           </p>
           <p className="e47-note">{plan.gastoRealEconomicoNatural.motivo}</p>
+          <p className="e47-note">{plan.gastoRealEconomicoNatural.nota}</p>
           {plan.items.length === 0 ? (
             <p className="e47-empty">Sin plan ni ejecución para el filtro.</p>
           ) : (

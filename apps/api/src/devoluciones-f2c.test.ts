@@ -15,7 +15,7 @@ import { getCyclePlan } from "./planes-ciclo";
 import { monthlyFlow } from "./flujo-mensual";
 import { resumenInicio } from "./resumen-inicio";
 import { resumenAnual } from "./resumen-anual";
-import { getAnnualPlan, type AnnualProvider } from "./plan-anual";
+import { getAnnualPlan, type AnnualHistory, type AnnualProvider } from "./plan-anual";
 import {
   createCompartido,
   createParticipante,
@@ -607,7 +607,38 @@ test("F2C-16 (AC-D01): las lecturas son GET puros: no mutan filas, revisiones ni
   c.db.close();
 });
 
-test("F2C-17: sin tabla de vínculos (esquema anterior) Flujo, Inicio y Resumen no fallan y no netean", () => {
+test("F2C-17 (AC-D01): sin tabla de vínculos pero con abonos bancarios (también de OTRO ciclo) no hay cobertura Completa ni GRE verificado: Parcial con causa sinVinculo", () => {
+  const c = setup();
+  const compra = buy(c, "50");
+  buy(c, "10", { fecha: "2026-07-25" }); // compra del ciclo B, el actual para Inicio
+  // Abono bancario real cobrado en OTRO ciclo (B); luego el esquema pierde las tablas de vínculos.
+  refund(c, compra, "20");
+  c.db.run("DROP TABLE movimiento_devolucion_audit");
+  c.db.run("DROP TABLE movimiento_devolucion");
+  const f = flow(c, c.A.id);
+  // Sin tabla no se netea (el bruto no se inventa a la baja) pero tampoco se declara completo.
+  expect(f.gastoRealEconomico.subtotal).toBe("50.00");
+  expect(f.gastoRealEconomico.devoluciones.cobertura).toBe("Parcial");
+  expect(f.gastoRealEconomico.devoluciones.causas).toContain("sinVinculo");
+  expect(f.gastoRealEconomico.estado).toBe("Parcial");
+  expect(f.metrics.devolucionesCobradas.subtotal).toBeNull(); // el abono es de B, no de A
+  expect(flow(c, c.B.id).metrics.devolucionesCobradas.subtotal).toBe("20.00");
+  const ini = resumenInicio(c.db, c.at).secciones.ciclo.gastoRealEconomico;
+  expect(ini.subtotal).toBe("10.00");
+  expect(ini.cobertura.motivos.length).toBeGreaterThan(0);
+  expect(ini.motivo).toContain("sinVinculo");
+  const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at);
+  const cicloA = r.carriles.realidad.ciclos.find((x) => x.cicloId === c.A.id)!;
+  expect(cicloA.gastoRealEconomico.motivo).toContain("sinVinculo");
+  expect(cicloA.gastoRealEconomico.cobertura.motivos.length).toBeGreaterThan(0);
+  // El natural (E2.4) no puede leerse sin la tabla: nunca Verificado ni Completo.
+  const n = r.carriles.plan.gastoRealEconomicoNatural;
+  expect(n.estado).not.toBe("Verificado");
+  expect(n.cobertura.estado).not.toBe("Completa");
+  c.db.close();
+});
+
+test("F2C-17b: sin tabla y SIN abonos bancarios el esquema anterior no se rompe: cobertura Completa", () => {
   const c = setup();
   buy(c, "50");
   c.db.run("DROP TABLE movimiento_devolucion_audit");
@@ -616,5 +647,73 @@ test("F2C-17: sin tabla de vínculos (esquema anterior) Flujo, Inicio y Resumen 
   expect(f.gastoRealEconomico.subtotal).toBe("50.00");
   expect(f.gastoRealEconomico.devoluciones.cobertura).toBe("Completa");
   expect(resumenInicio(c.db, c.at).secciones.ciclo.gastoRealEconomico.subtotal).toBe("50.00");
+  const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at);
+  // E2.4 ya no lee sin la tabla de vínculos (comportamiento previo): el natural no inventa cifra.
+  expect(r.carriles.plan.gastoRealEconomicoNatural.estado).toBe("No disponible");
+  expect(r.carriles.plan.gastoRealEconomicoNatural.partidas).toEqual([]);
+  c.db.close();
+});
+
+const annualSources = (historico: AnnualHistory[], control = { inicio: "2026-03-01", fin: "2026-12-31" }): AnnualProvider => () => ({
+  revision: "fixture-f2c",
+  control,
+  historico,
+  historicoDisponible: true,
+  protecciones: [],
+  cierresDisponibles: true,
+});
+const hist = (c: Ctx, over: Partial<AnnualHistory>): AnnualHistory => ({
+  partida: c.food.id,
+  ejercicio: 2026,
+  importeCentimos: "5000",
+  fecha: null,
+  intervalo: { inicio: "2026-01-01", fin: "2026-02-28" },
+  procedencia: "Archivo ficticio",
+  verificado: true,
+  representadoEnMovimientos: false,
+  ...over,
+});
+
+test("F2C-23 (AC-D30): con histórico acreditado NO solapado, Ejecutado = registrado + histórico; el natural separa ambas magnitudes y no se declara equivalente ni completo", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  refund(c, compra, "30");
+  const provider = annualSources([hist(c, {})]);
+  const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at, { annualProvider: provider });
+  const anual = getAnnualPlan(c.db, 2026, c.at, provider);
+  const e = [...anual.items, ...anual.sinLinea].find((i) => i.partida.id === c.food.id)!;
+  expect([e.subtotalRegistrado, e.historicoConocido, e.ejecutado]).toEqual(["90.00", "50.00", "140.00"]);
+  const p = nat(r, c.food.id)!;
+  expect(p).toMatchObject({
+    gastoRealEconomico: "90.00", // reconcilia con subtotalRegistrado
+    historicoConocido: "50.00",
+    ejecutadoPlanAnual: "140.00",
+    equivaleAEjecutado: false,
+  });
+  expect(p.gastoRealEconomico).toBe(e.subtotalRegistrado);
+  expect(r.carriles.plan.items.find((i) => i.partidaId === c.food.id)!.ejecutado.valor).toBe("140.00");
+  const n = r.carriles.plan.gastoRealEconomicoNatural;
+  expect(n.estado).toBe("Parcial");
+  expect(n.cobertura.estado).not.toBe("Completa");
+  expect(n.nota).toContain("NO son comparables");
+  // Sin histórico, en cambio, ambas coinciden.
+  const sin = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at, { annualProvider: annualSources([], { inicio: "2026-01-01", fin: "2026-12-31" }) });
+  expect(nat(sin, c.food.id)).toMatchObject({ historicoConocido: "0.00", equivaleAEjecutado: true, ejecutadoPlanAnual: "90.00" });
+  c.db.close();
+});
+
+test("F2C-24 (AC-D30): histórico solapado con el control: Ejecutado null, el natural conserva solo compras registradas y sin falsa completitud", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  refund(c, compra, "30");
+  const provider = annualSources([hist(c, { intervalo: { inicio: "2026-01-01", fin: "2026-04-30" } })]);
+  const r = resumenAnual(c.db, new URLSearchParams({ ejercicio: "2026" }), c.at, { annualProvider: provider });
+  const p = nat(r, c.food.id)!;
+  expect(p.ejecutadoPlanAnual).toBeNull();
+  expect(p.equivaleAEjecutado).toBe(false);
+  expect(p.gastoRealEconomico).toBe("90.00");
+  const n = r.carriles.plan.gastoRealEconomicoNatural;
+  expect(n.estado).toBe("Parcial");
+  expect(n.cobertura.estado).toBe("Parcial");
   c.db.close();
 });

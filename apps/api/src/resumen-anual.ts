@@ -17,6 +17,8 @@ import {
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 import { decimal } from "./saldos";
+import { comidaInstalled } from "./comida";
+import { proyectarDevoluciones } from "./devoluciones";
 
 /**
  * E4.7 — resumen anual de solo lectura.
@@ -109,8 +111,14 @@ export type GastoRealEconomicoNaturalPartida = {
   /** Bruto de las compras de la Partida en el ejercicio natural. */
   bruto: string;
   descuentoAtribuido: string;
-  /** Bruto − descuento; null si una devolución supera su compra (sin max(0)). */
+  /** Magnitud «compras registradas»: bruto − descuento; null si una devolución supera su compra (sin max(0)). */
   gastoRealEconomico: string | null;
+  /** Histórico conocido que E2.4 suma al registrado para su «Ejecutado» (no son compras registradas). */
+  historicoConocido: string;
+  /** «Ejecutado» de Plan anual (E2.4) para esta Partida: registrado + histórico, o null si no es verificable. */
+  ejecutadoPlanAnual: string | null;
+  /** true solo si historicoConocido es 0.00 y el Ejecutado es verificable: entonces ambas magnitudes coinciden. */
+  equivaleAEjecutado: boolean;
   cobertura: string;
   causas: string[];
   exceso: boolean;
@@ -122,6 +130,8 @@ export type GastoRealEconomicoNatural = {
   estado: EstadoMetrica;
   motivo: string;
   total: { estado: "No aplica"; motivo: string };
+  /** Declara que «compras registradas» y el «Ejecutado» del plan son magnitudes distintas cuando hay histórico. */
+  nota: string;
   partidas: GastoRealEconomicoNaturalPartida[];
   cobertura: Cobertura;
   fuente: Fuente;
@@ -728,6 +738,14 @@ function planItemCoverage(
 }
 
 
+/** Sin tabla de vínculos y con abonos «Devolución de gasto»: su vinculación no es comprobable. */
+function vinculosNoVerificables(db: Database) {
+  return (
+    !comidaInstalled(db, "movimiento_devolucion") &&
+    proyectarDevoluciones(db).items.length > 0
+  );
+}
+
 /**
  * SPEC39 §2.2/§10: GRE del ejercicio natural por compras (fecha de compra 1 ene–31 dic),
  * derivado de la MISMA ejecución E2.4 que `items[].ejecutado` (reconcilia al céntimo por
@@ -741,6 +759,7 @@ function gastoRealEconomicoNatural(
   ejercicio: number,
   enlace: Enlace,
   revision: string,
+  vinculosNoVerificables: boolean,
 ): GastoRealEconomicoNatural {
   const year = String(ejercicio).padStart(4, "0");
   const withFacts = source.filter((i) => i.hechos.length > 0);
@@ -749,17 +768,33 @@ function gastoRealEconomicoNatural(
     bruto: i.brutoRegistrado,
     descuentoAtribuido: i.devoluciones.descuentoAtribuido,
     gastoRealEconomico: i.devoluciones.exceso ? null : i.subtotalRegistrado,
+    historicoConocido: i.historicoConocido,
+    ejecutadoPlanAnual: i.ejecutado,
+    equivaleAEjecutado:
+      !i.devoluciones.exceso &&
+      i.ejecutado !== null &&
+      i.historicoConocido === "0.00",
     cobertura: i.devoluciones.cobertura,
     causas: i.devoluciones.causas,
     exceso: i.devoluciones.exceso,
     compras: i.hechos.length,
   }));
-  const devParcial = withFacts.some((i) => i.devoluciones.cobertura !== "Completa");
+  const devParcial =
+    vinculosNoVerificables ||
+    withFacts.some((i) => i.devoluciones.cobertura !== "Completa");
   const exceso = withFacts.some((i) => i.devoluciones.exceso);
-  const causas = [...new Set(withFacts.flatMap((i) => i.devoluciones.causas))];
+  const causas = [
+    ...new Set([
+      ...withFacts.flatMap((i) => i.devoluciones.causas),
+      ...(vinculosNoVerificables ? ["sinVinculo"] : []),
+    ]),
+  ];
+  const conHistorico = partidas.some((p) => p.historicoConocido !== "0.00");
   const completo =
     withFacts.length > 0 &&
     !devParcial &&
+    !vinculosNoVerificables &&
+    !conHistorico &&
     !exceso &&
     withFacts.every((i) => i.ejecutado !== null) &&
     items.every((i) => i.cobertura.estado === "Completa");
@@ -787,6 +822,9 @@ function gastoRealEconomicoNatural(
       motivo:
         "E4.7 no publica total anual ni suma Partidas; cada importe pertenece a su Partida (SPEC25).",
     },
+    nota: conHistorico
+      ? "Magnitud «compras registradas» (bruto − descuento de las compras con fecha del ejercicio). El «Ejecutado» de Plan anual añade el histórico conocido, así que NO son comparables en las Partidas con histórico; no se declara reconciliación con items[].ejecutado."
+      : "Magnitud «compras registradas»; coincide con el «Ejecutado» de Plan anual solo donde historicoConocido es 0.00 y el Ejecutado es verificable (equivaleAEjecutado).",
     partidas,
     cobertura: cobertura({
       estado: !withFacts.length ? "NoDisponible" : completo ? "Completa" : "Parcial",
@@ -951,6 +989,7 @@ function planSection(
       ejercicio,
       enlace,
       plan.contextRevision,
+      vinculosNoVerificables(db),
     );
     const fuente: Fuente = {
       motor: MOTOR.plan,
@@ -1020,6 +1059,7 @@ function planSection(
         estado: "No disponible",
         motivo,
         total: { estado: "No aplica", motivo: "E4.7 no publica total anual." },
+        nota: "Sin lectura de E2.4.",
         partidas: [],
         cobertura: cobertura({
           estado: "NoDisponible",
