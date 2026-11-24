@@ -592,7 +592,7 @@ test("E1/cobertura: compras sin etiqueta o devoluciones sin atribución presenta
   // F2b (SPEC39 §3.3/§8): sin régimen activo una devolución sin compra no se asigna
   // a Comida; se informa como no atribuible y no degrada la cobertura por sí sola.
   expect(metrics.cobertura.devolucionesPendientes.length).toBe(0);
-  expect(metrics.devoluciones.noAtribuibles.length).toBe(1);
+  expect(metrics.devoluciones.sinVinculo.length).toBe(1);
   expect(metrics.compensable.neto.estado).toBe("Parcial");
   expect(metrics.faltaPorReponer.valor).toBeNull();
   db.close();
@@ -1550,10 +1550,9 @@ test("AC-09: devolución con Partida NULL y sin acreditación no asigna grupo", 
     [t, t],
   );
   const metrics = comidaMetrics(db, cycle1.id, now);
-  // F2b: sin régimen activo la huérfana no se asigna a Comida (SPEC39 §3.3).
-  expect(metrics.devoluciones.noAtribuibles).toContain("9001");
-  expect(metrics.devoluciones.sinVinculo).not.toContain("9001");
-  expect(metrics.compras.neto.valor).toBe("0.00");
+  // F2b: la huérfana no se asigna a Comida (SPEC39 §3.3, AC-D21): se informa, no degrada.
+  expect(metrics.devoluciones.sinVinculo).toContain("9001");
+    expect(metrics.compras.neto.valor).toBe("0.00");
   db.close();
 });
 
@@ -1870,7 +1869,7 @@ test("H2 (F2b): una devolución acreditada sin compra NO netea Compensable/Falta
   expect(metrics.compensable.devoluciones.valor).toBe("0.00");
   expect(metrics.compensable.neto.valor).toBe("50.00");
   expect(metrics.faltaPorReponer.valor).toBe("50.00");
-  expect(metrics.devoluciones.noAtribuibles.length).toBe(1);
+  expect(metrics.devoluciones.sinVinculo.length).toBe(1);
   expect(metrics.cobertura.estado).not.toBe("Verificable");
   db.close();
 });

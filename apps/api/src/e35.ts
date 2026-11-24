@@ -260,25 +260,15 @@ export function e35Metrics(
     const eligibleCompIds = ofScope
       .filter((i) => i.elegible && compSet.has(i.compra!))
       .map((i) => i.id);
-    // Un abono sin compra válida solo se atribuye al ámbito Comida por un hecho
-    // bancario demostrable (receptor = saldo ING con régimen activo); nunca por su
-    // declaración histórica (SPEC39 §3.3). Los demás son «no atribuibles»: se
-    // informan (integridad global R4) sin degradar la cobertura de Comida.
-    const receivedInComida = (i: { saldoReceptor: string }) =>
-      saldo !== null && i.saldoReceptor === saldo;
+    // Un abono sin compra válida no se atribuye a Comida ni por su saldo receptor ni
+    // por su declaración histórica (SPEC39 §3.3, AC-D21): se informa (integridad global
+    // R4) sin netear ni degradar la cobertura de Comida.
     const abonosVentana = projection.items.filter((i) => inWindow(i.fecha));
     const sinVinculo = abonosVentana
-      .filter((i) => i.causa === "sinVinculo" && receivedInComida(i))
+      .filter((i) => i.causa === "sinVinculo")
       .map((i) => i.id);
     const compraInvalida = abonosVentana
-      .filter((i) => i.causa === "compraInvalida" && receivedInComida(i))
-      .map((i) => i.id);
-    const noAtribuibles = abonosVentana
-      .filter(
-        (i) =>
-          (i.causa === "sinVinculo" || i.causa === "compraInvalida") &&
-          !receivedInComida(i),
-      )
+      .filter((i) => i.causa === "compraInvalida")
       .map((i) => i.id);
     const sinAcreditacion = ofScope
       .filter((i) => i.causa === "sinAcreditacion")
@@ -323,15 +313,9 @@ export function e35Metrics(
       sinAcreditacion,
       revisar,
       compraInvalida,
-      noAtribuibles,
       otroCiclo,
     };
-    const pendingDevIds = [
-      ...sinVinculo,
-      ...compraInvalida,
-      ...sinAcreditacion,
-      ...revisar,
-    ];
+    const pendingDevIds = [...sinAcreditacion, ...revisar];
     const pendingDev = pendingDevIds.map((id) => ({ id }));
     const devGap =
       pendingDev.length > 0 ||
@@ -353,12 +337,6 @@ export function e35Metrics(
         : [
             pending.length
               ? `Compras sin clasificar: ${pending.join(", ")}.`
-              : null,
-            sinVinculo.length
-              ? `Devoluciones sin vínculo acreditado: ${sinVinculo.join(", ")}.`
-              : null,
-            compraInvalida.length
-              ? `Devoluciones con compra vinculada no válida: ${compraInvalida.join(", ")}.`
               : null,
             sinAcreditacion.length
               ? `Devoluciones sin acreditación suficiente: ${sinAcreditacion.join(", ")}.`
@@ -684,8 +662,8 @@ export function e35Metrics(
           ...(pendingDev.length
             ? [`Devoluciones sin atribución elegible: ${pendingDev.map((r) => r.id).join(", ")}.`]
             : []),
-          ...(noAtribuibles.length
-            ? [`Devoluciones sin compra válida no atribuibles a Comida (no netean; ver integridad global): ${noAtribuibles.join(", ")}.`]
+          ...(sinVinculo.length || compraInvalida.length
+            ? [`Devoluciones sin compra válida no atribuibles a Comida (no netean ni degradan su cobertura; ver integridad global): ${[...sinVinculo, ...compraInvalida].join(", ")}.`]
             : []),
           ...(comprasSinClasificacion.length
             ? [`Compras de Comida con devolución sin clasificación requerida (sinClasificacion): ${comprasSinClasificacion.join(", ")}.`]
@@ -712,7 +690,12 @@ export function e35Metrics(
           devGap ? coverageFood : null,
           eligibleFoodIds,
         ),
-        neto: metric(netFood, coverageFood, food.map((p) => p.row.id)),
+        neto: metric(
+          aggFood.exceso ? null : netFood,
+          coverageFood,
+          food.map((p) => p.row.id),
+          aggFood.exceso,
+        ),
       },
       compensable: {
         bruto: metric(
@@ -725,7 +708,12 @@ export function e35Metrics(
           devGap ? coverageFood : null,
           eligibleCompIds,
         ),
-        neto: metric(netComp, coverageFood, comp.map((p) => p.row.id)),
+        neto: metric(
+          aggComp.exceso ? null : netComp,
+          coverageFood,
+          comp.map((p) => p.row.id),
+          aggComp.exceso,
+        ),
       },
       fueraPresupuesto: other.map((p) => p.row.id),
       reposiciones: { obligacion: decimal(rObl.total), ids: rObl.ids },

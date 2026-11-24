@@ -8,7 +8,13 @@ import { createCycle, cycleContext } from "./ciclos";
 import { previewMovement, writeMovement } from "./movimientos";
 import { confirmPartidaConfig, getPlanMensualDprima, previewPartidaConfig } from "./dprima";
 import { getCyclePlan } from "./planes-ciclo";
-import { activateRegimen, comidaMetrics, prepareRegimen, writeComidaMetadata } from "./comida";
+import {
+  activateRegimen,
+  comidaMetrics,
+  prepareRegimen,
+  revalidateDevolucionesCompra,
+  writeComidaMetadata,
+} from "./comida";
 import { descuentoPorCompras } from "./devoluciones";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
@@ -186,7 +192,7 @@ const plan = (c: Ctx, ciclo: string, p = "PRE900") =>
 const dprima = (c: Ctx, ciclo: string, raiz: string) =>
   getPlanMensualDprima(c.db, ciclo, now).items.find((i) => i.raiz === raiz)!;
 
-test("F2B-01 (AC-D20/AC-D18): compra 120 en A y abono 30 en B → neto A 90, B sin cambio; el abono no es financiación ni duplica", () => {
+test("F2B-01 (AC-D20/AC-D05): compra 120 en A y abono 30 en B → neto A 90, B sin cambio; el abono no es financiación ni duplica", () => {
   const c = setup();
   const before = m(c, c.A.id);
   const compra = buy(c, "120");
@@ -243,7 +249,7 @@ test("F2B-02 (AC-D21): compra de Comida frente a compra ajena; la devolución aj
   c.db.close();
 });
 
-test("F2B-03 (AC-D22): parciales 30+40, total, No acreditada, Revisar", () => {
+test("F2B-03 (AC-D08/AC-D09 aplicados a Comida): parciales 30+40 y total", () => {
   const c = setup();
   const p = buy(c, "120");
   refund(c, p, "30");
@@ -260,7 +266,7 @@ test("F2B-03 (AC-D22): parciales 30+40, total, No acreditada, Revisar", () => {
   c.db.close();
 });
 
-test("F2B-04 (AC-D22): No acreditada → descuento 0 y cobertura Parcial con causa visible; Revisar igual; ninguno es «verificado»", () => {
+test("F2B-04 (AC-D04/AC-D39): No acreditada → descuento 0 y cobertura Parcial con causa visible; Revisar igual; ninguno es «verificado»", () => {
   const c = setup();
   const p1 = buy(c, "120");
   const na = refund(c, p1, "30", sinAcreditar);
@@ -281,34 +287,30 @@ test("F2B-04 (AC-D22): No acreditada → descuento 0 y cobertura Parcial con cau
   c.db.close();
 });
 
-test("F2B-05 (AC-D23/AC-D04): sinVinculo no netea; en ING degrada la cobertura, en otro saldo solo se informa", () => {
+test("F2B-05 (AC-D21/AC-D04): sinVinculo no netea y un huérfano de ámbito desconocido no degrada Comida, ni en ING ni en otro saldo", () => {
   const c = setup();
   buy(c, "100");
-  const huerfanaIng = add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-07-10",
-    importe: "11",
-    saldo: c.ing.id,
-    partida: c.food.id,
-    concepto: "Huérfana ficticia",
-    nota: "",
-  }).movimiento.id as string;
-  let a = m(c, c.A.id);
+  const orphan = (saldo: string, fecha: string, importe: string) =>
+    add(c.db, {
+      tipo: "Devolución de gasto",
+      fecha,
+      importe,
+      saldo,
+      partida: c.food.id,
+      concepto: "Huérfana ficticia",
+      nota: "",
+    }).movimiento.id as string;
+  const huerfanaIng = orphan(c.ing.id, "2026-07-10", "11");
+  const huerfanaOtro = orphan(c.other.id, "2026-07-11", "7");
+  const a = m(c, c.A.id);
   expect(a.compras.devoluciones.valor).toBe("0.00");
   expect(a.compras.neto.valor).toBe("100.00");
-  expect(a.devoluciones.sinVinculo).toEqual([huerfanaIng]);
-  expect(a.cobertura.estado).toBe("Parcial");
-  const huerfanaOtro = add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-07-11",
-    importe: "7",
-    saldo: c.other.id,
-    concepto: "Huérfana ajena ficticia",
-    nota: "",
-  }).movimiento.id as string;
-  a = m(c, c.A.id);
-  expect(a.devoluciones.sinVinculo).toEqual([huerfanaIng]);
-  expect(a.devoluciones.noAtribuibles).toEqual([huerfanaOtro]);
+  expect(a.compras.neto.estado).toBe("Verificado");
+  expect(a.cobertura.estado).toBe("Verificable");
+  expect(a.cobertura.devolucionesPendientes).toEqual([]);
+  // Se informan (integridad global), sin atribuirse a Comida.
+  expect(a.devoluciones.sinVinculo).toEqual([huerfanaIng, huerfanaOtro]);
+  expect(a.cobertura.motivos.join(" ")).toContain("no atribuibles a Comida");
   c.db.close();
 });
 
@@ -347,7 +349,7 @@ test("F2B-06 (AC-D02/AC-D18): reclasificar la compra (etiqueta) mueve bruto y de
   c.db.close();
 });
 
-test("F2B-07: Comida sin clasificación requerida → sinClasificacion visible; sin descontar dos veces", () => {
+test("F2B-07 (AC-D22): compra Comida sin dimensión requerida → sinClasificacion y cobertura parcial, no sinAcreditacion ni cero completo", () => {
   const c = setup();
   const p = buy(c, "120");
   // Fixture SQL ficticio: la Partida pierde su Subcategoría (clasificación requerida ausente).
@@ -358,10 +360,12 @@ test("F2B-07: Comida sin clasificación requerida → sinClasificacion visible; 
   expect(a.compras.neto.valor).toBe("90.00");
   expect(a.compras.neto.estado).toBe("Parcial");
   expect(a.cobertura.motivos.join(" ")).toContain("sinClasificacion");
+  expect(a.devoluciones.sinAcreditacion).toEqual([]);
+  expect(a.cobertura.estado).toBe("Parcial");
   c.db.close();
 });
 
-test("F2B-08 (AC-D20/AC-D18): reconciliación al céntimo Plan = Dprima = Comida para el mismo conjunto de compras", () => {
+test("F2B-08 (AC-D02/AC-D18/AC-D27): reconciliación al céntimo Plan = Dprima = Comida para el mismo conjunto de compras", () => {
   const c = setup();
   const p1 = buy(c, "120.35");
   const p2 = buy(c, "80.10", { fecha: "2026-07-10" });
@@ -385,5 +389,57 @@ test("F2B-08 (AC-D20/AC-D18): reconciliación al céntimo Plan = Dprima = Comida
   expect([...d.values()].reduce((s, x) => s + x.descuentoEconomico, 0n)).toBe(15022n);
   // La no acreditada coincide en cobertura Parcial en las tres vistas.
   expect([a.cobertura.estado, pl.cobertura, dp.cobertura]).toEqual(["Parcial", "Parcial", "Parcial"]);
+  c.db.close();
+});
+
+test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la devolución; la anulación de la compra no duplica ni netea", () => {
+  const c = setup();
+  const compra = add(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-05",
+    importe: "120",
+    saldo: c.ing.id,
+    partida: c.leisure.id,
+    concepto: "Compra compensable ficticia",
+    nota: "",
+    comida: { etiqueta: "Ocio" },
+  }).movimiento.id as string;
+  const count = () =>
+    (c.db.query("SELECT COUNT(*) n FROM movimientos").get() as { n: number }).n;
+  const sin = m(c, c.A.id);
+  expect(sin.recursos.valor).toBe("4880.00"); // S0 5000 + F 0 + R 0 − C_n 120
+  const dev = refund(c, compra, "30");
+  const n = count();
+  const a = m(c, c.A.id);
+  expect(a.compensable.neto.valor).toBe("90.00");
+  expect(a.recursos.valor).toBe("4910.00"); // S0 + F + R − C_n(90)
+  expect(a.financiacion).toMatchObject({ f: sin.financiacion.f, reposicionesCaja: sin.financiacion.reposicionesCaja });
+  expect(count()).toBe(n); // una lectura no crea movimientos
+  // Anulación de la compra (fixture) + rectificación P4: el abono queda como hecho
+  // bancario con vínculo en Revisar; no netea nada ni se duplica en ningún ciclo.
+  c.db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [compra]);
+  revalidateDevolucionesCompra(c.db, compra, now);
+  const x = m(c, c.A.id);
+  expect(x.compensable.bruto.valor).toBe("0.00");
+  expect(x.compensable.devoluciones.valor).toBe("0.00");
+  expect(x.compensable.neto.valor).toBe("0.00");
+  expect(x.devoluciones.compraInvalida).toEqual([]); // fecha 07-25 cae en B
+  expect(m(c, c.B.id).devoluciones.compraInvalida).toEqual([dev]);
+  expect(m(c, c.B.id).compras.devoluciones.valor).toBe("0.00");
+  expect(m(c, c.B.id).compensable.devoluciones.valor).toBe("0.00");
+  expect(count()).toBe(n);
+  c.db.close();
+});
+
+test("F2B-10: descuento mayor que la compra → neto no verificable (null), sin max(0)", () => {
+  const c = setup();
+  const p = buy(c, "100");
+  refund(c, p, "60");
+  // Fixture SQL ficticio de histórico inconsistente: el abono supera la compra.
+  c.db.run("UPDATE movimientos SET importe=15000 WHERE tipo='Devolución de gasto'");
+  const a = m(c, c.A.id);
+  expect(a.compras.neto.valor).toBeNull();
+  expect(a.compras.neto.estado).toBe("Parcial");
+  expect(a.cobertura.motivos.join(" ")).toContain("Descuento superior a la compra");
   c.db.close();
 });
