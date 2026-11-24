@@ -59,6 +59,8 @@ type Annual = {
   totalAlCorte: string | null;
   totalAnual: string | null;
   ceroVerificado: boolean;
+  netoCeroConHechos?: boolean;
+  devoluciones?: { descuentoAtribuido: string; cobertura: string; causas: string[]; exceso: boolean };
   hechosConocidos: number;
   hechosFueraConocidos: number;
   importeFueraDeControlCorte: string;
@@ -251,6 +253,14 @@ function CoveragePanel({ annual }: { annual: Annual | null }) {
         {annual.coberturaMixta ? " · cobertura mixta por Partida" : ""}
       </p>
       {annual.motivo && <p className="help">{annual.motivo}</p>}
+      <p className="help">
+        Gasto real económico (neto): compras del año por su fecha de compra menos
+        el descuento atribuido a esas compras
+        {annual.devoluciones
+          ? ` (${eur(annual.devoluciones.descuentoAtribuido)}${annual.devoluciones.cobertura !== "Completa" ? `, devoluciones ${annual.devoluciones.cobertura.toLowerCase()}` : ""})`
+          : ""}
+        . El abono bancario se fecha aparte. {annual.netoCeroConHechos ? "Neto 0,00 con compras registradas: no es ausencia de gasto. " : ""}
+      </p>
       <div className="vehicle-summary">
         <div>
           <span>Subtotal registrado</span>

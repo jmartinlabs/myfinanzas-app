@@ -673,7 +673,7 @@ function planSection(
         const linea = item.linea;
         const ejecutadoEstado: EstadoMetrica =
           item.ejecutado !== null
-            ? item.ejecutado === "0.00"
+            ? item.ejecutado === "0.00" && !item.netoCeroConHechos
               ? "Cero verificado"
               : "Verificado"
             : item.subtotalRegistrado !== null

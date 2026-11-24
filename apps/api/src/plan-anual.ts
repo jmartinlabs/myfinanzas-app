@@ -8,6 +8,11 @@ import {
   type LedgerRow,
 } from "./movement-ledger";
 import { spanishToday } from "./movimientos";
+import {
+  agregarDescuentos,
+  descuentoPorCompras,
+  type DescuentoCompra,
+} from "./devoluciones";
 export type AnnualLine = {
   ejercicio: number;
   partida: string;
@@ -128,13 +133,33 @@ const intervalValid = (i: Interval) =>
   validDate(i.inicio) && validDate(i.fin) && i.inicio <= i.fin;
 const overlaps = (a: Interval, b: Interval) =>
   a.inicio <= b.fin && b.inicio <= a.fin;
-/** Annual attribution depends only on stable Partida and real date, never cycle/monthly source. */
+/**
+ * SPEC39 §10 · descuento económico por ID de compra para los Gastos vigentes de
+ * `rows` (el consumidor ya los ha seleccionado por Partida/REF). La pertenencia
+ * al ejercicio la decide `annualExecution` por la fecha de la COMPRA; el abono
+ * no mueve la compra de ejercicio. Sin `db`, no hay neteo.
+ */
+export function annualDiscounts(
+  db: Database,
+  rows: LedgerRow[],
+): Map<string, DescuentoCompra> {
+  return descuentoPorCompras(
+    db,
+    rows.filter((r) => !r.anulado && r.tipo === "Gasto").map((r) => r.id),
+  );
+}
+/**
+ * Annual attribution depends only on stable Partida and real date, never cycle/monthly source.
+ * Con `descuentos` (SPEC39) el Ejecutado es GRE: bruto de las compras del ejercicio natural
+ * menos SOLO el descuento atribuido a esos IDs. Sin `descuentos` se conserva el bruto.
+ */
 export function annualExecution(
   partida: string,
   year: number,
   rows: LedgerRow[],
   sources: AnnualSources,
   now = Date.now(),
+  descuentos?: ReadonlyMap<string, DescuentoCompra>,
 ) {
   const start = String(year).padStart(4, "0") + "-01-01",
     end = String(year).padStart(4, "0") + "-12-31",
@@ -160,7 +185,12 @@ export function annualExecution(
       (!cut || r.fecha <= cut) &&
       (!control || (r.fecha >= control.inicio && r.fecha <= control.fin)),
   );
-  const registered = facts.reduce((n, r) => n + BigInt(r.importe), 0n);
+  const gross = facts.reduce((n, r) => n + BigInt(r.importe), 0n);
+  const own = descuentos
+    ? facts.map((r) => descuentos.get(r.id)).filter((d): d is DescuentoCompra => !!d)
+    : [];
+  const discount = agregarDescuentos(own);
+  const registered = gross - discount.descuento;
   const histories = sources.historico.filter(
     (h) => h.partida === partida && h.ejercicio === year,
   );
@@ -196,6 +226,8 @@ export function annualExecution(
     valid.push(h);
   }
   if (future) reasons.push("Ejercicio futuro sin corte ejecutado");
+  if (discount.exceso)
+    reasons.push("Devolución superior a la compra: ejecución no verificable");
   if (!control || cut! < start)
     reasons.push("Intervalo de control/corte no verificable");
   // Coverage is proven only by a contiguous union of approved intervals, never by the first fact.
@@ -236,6 +268,16 @@ export function annualExecution(
     ejecutado: complete ? decimal(total) : null,
     subtotalRegistrado: decimal(registered)!,
     historicoConocido: decimal(total - registered)!,
+    /** Neto 0 con hechos NO es ausencia: hay compras en el ejercicio. */
+    netoCeroConHechos: complete && total === 0n && facts.length > 0,
+    brutoRegistrado: decimal(gross)!,
+    devoluciones: {
+      descuentoAtribuido: decimal(discount.descuento)!,
+      cobertura: discount.cobertura,
+      causas: discount.causas,
+      exceso: discount.exceso,
+      ids: own.flatMap((d) => d.devoluciones),
+    },
     fechaEjecutada: dates.at(-1) ?? null,
     cobertura: complete ? "Verificable al corte" : "Parcial",
     motivo: reasons.join(". ") || null,
@@ -255,7 +297,9 @@ export function annualExecution(
     hechos: facts.map((r) => ({
       id: r.id,
       fecha: r.fecha,
+      /** Importe BRUTO de la compra; el descuento atribuido va aparte. */
       importe: decimal(r.importe),
+      descuento: decimal(descuentos?.get(r.id)?.descuentoEconomico ?? 0n)!,
     })),
   };
 }
@@ -280,10 +324,11 @@ function read(
   const { sources, hash } = sourceContext(db, year, provider),
     lines = annualLines(db, year),
     parts = catalog(db),
-    rows = ledgerRows(db);
+    rows = ledgerRows(db),
+    descuentos = annualDiscounts(db, rows);
   const result = (p: ReturnType<typeof catalog>[number]) => {
     const line = lines.find((l) => l.partida === p.id),
-      execution = annualExecution(p.id, year, rows, sources, now);
+      execution = annualExecution(p.id, year, rows, sources, now, descuentos);
     return {
       partida: p,
       linea: line ? { ...line, presupuesto: decimal(line.presupuesto) } : null,
@@ -418,13 +463,15 @@ function proposal(
         },
       ]),
   );
-  const execution = annualExecution(
-    part.id,
-    year,
-    ledgerRows(db),
-    sources,
-    now,
-  );
+  const allRows = ledgerRows(db),
+    execution = annualExecution(
+      part.id,
+      year,
+      allRows,
+      sources,
+      now,
+      annualDiscounts(db, allRows),
+    );
   const derived = (line: AnnualLine | undefined) => ({
     ejecutado: execution.ejecutado,
     diferencia:
@@ -444,6 +491,8 @@ function proposal(
     cobertura: execution.cobertura,
     motivo: execution.motivo,
     subtotalRegistrado: execution.subtotalRegistrado,
+    devoluciones: execution.devoluciones,
+    netoCeroConHechos: execution.netoCeroConHechos,
     corte: execution.corte,
     control: execution.control,
     procedencia: execution.procedencia,

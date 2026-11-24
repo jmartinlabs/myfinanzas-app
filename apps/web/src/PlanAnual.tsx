@@ -30,7 +30,15 @@ type Item = {
   motivo: string | null;
   corte: string | null;
   control: { inicio: string; fin: string } | null;
-  hechos: { id: string; fecha: string; importe: string }[];
+  hechos: { id: string; fecha: string; importe: string; descuento?: string }[];
+  brutoRegistrado?: string;
+  netoCeroConHechos?: boolean;
+  devoluciones?: {
+    descuentoAtribuido: string;
+    cobertura: string;
+    causas: string[];
+    exceso: boolean;
+  };
   protecciones: { id: string; motivo: string; verificada: boolean }[];
 };
 type Plan = {
@@ -384,6 +392,13 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
             <p>
               El subtotal registrado y la última fecha conocida no acreditan un
               total anual completo. La cobertura se desglosa por Partida.
+            </p>
+            <p>
+              «Ejecutado» es Gasto real económico (neto): compras del año
+              natural por su fecha de compra menos el descuento atribuido a
+              esas compras, aunque el abono bancario llegue otro año. La
+              Diferencia es desviación analítica frente al Presupuesto, no
+              disponibilidad operativa.
             </p>
           </section>
           <section
@@ -763,6 +778,20 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
                 Histórico conocido: {eur(detail.historicoConocido)} · Corte:{" "}
                 {detail.corte ?? "No verificable"}
               </p>
+              {detail.devoluciones && (
+                <p>
+                  Gasto real económico (neto): bruto{" "}
+                  {eur(detail.brutoRegistrado ?? null)} − descuento atribuido a
+                  las compras del año {eur(detail.devoluciones.descuentoAtribuido)}
+                  {detail.netoCeroConHechos
+                    ? " · neto 0,00 con compras registradas (no es ausencia de gasto)"
+                    : ""}
+                  {detail.devoluciones.cobertura !== "Completa"
+                    ? ` · devoluciones ${detail.devoluciones.cobertura.toLowerCase()}: ${detail.devoluciones.causas.join(", ") || "exceso sobre la compra"}`
+                    : ""}
+                  . El abono bancario se fecha aparte en Movimientos.
+                </p>
+              )}
               <p>
                 La fecha es la más reciente conocida; no prueba cobertura
                 completa.
@@ -778,6 +807,9 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
                       }}
                     >
                       {h.fecha} · Gasto {h.id} · {eur(h.importe)}
+                      {h.descuento && h.descuento !== "0.00"
+                        ? ` (descuento atribuido ${eur(h.descuento)})`
+                        : ""}
                     </a>
                   </li>
                 ))}
