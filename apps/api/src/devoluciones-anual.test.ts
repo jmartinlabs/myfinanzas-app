@@ -165,11 +165,14 @@ test("F2A2-01 (AC-D07/D29): frontera - compra dic 2026 + abono ene 2027: natural
   expect(y27 === undefined || (y27.ejecutado === "0.00" && y27.hechos.length === 0)).toBe(true);
   // Sin pasar `descuentos`, el motor conserva el bruto (contrato pre-F2a-2 de la función pura).
   expect(annual(c, 2026).ejecutado).toBe("120.00");
-  // Ciclo financiado por el maestro: compra y abono caen en ciclos distintos, y el
-  // ejercicio natural NO se obtiene sumando ciclos ni por la fecha del abono.
-  const [cA, cB] = c.cycles;
-  expect(cA.inicio <= "2026-12-28" && "2026-12-28" < cB.inicio).toBe(true);
-  expect("2027-01-25" >= cB.inicio).toBe(true);
+  // Ciclo financiado por el maestro: el ciclo que empieza el 20-dic financia enero de 2027
+  // (mes del maestro, no el año del Inicio), y aun así la compra del 28-dic es natural 2026.
+  const dec = c.db
+    .query("SELECT mes_financiado m FROM ciclos WHERE inicio='2026-12-20'")
+    .get() as { m: string };
+  expect(dec.m).toBe("2027-01-01");
+  expect(y26.hechos[0].fecha).toBe("2026-12-28");
+  expect(y27 === undefined || y27.hechos.length === 0).toBe(true);
   c.db.close();
 });
 
