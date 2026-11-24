@@ -1,7 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { cycleContext, cycleMaster, type Cycle } from "./ciclos";
 import { monthlyFlow, type Metric } from "./flujo-mensual";
-import { annualYear, getAnnualPlan, type AnnualProvider } from "./plan-anual";
+import {
+  annualYear,
+  getAnnualPlan,
+  NOTA_TEMPORAL_GRE,
+  type AnnualProvider,
+} from "./plan-anual";
 import { e43Corte } from "./e43";
 import { getDeudaCompleta } from "./deuda-completa";
 import {
@@ -642,10 +647,13 @@ function planItemCoverage(
     ejecutado: string | null;
     cobertura: string;
     corte: string | null;
+    devoluciones: { cobertura: string };
   },
   year: number,
 ): EstadoCobertura {
   if (item.ejecutado === null) return "Parcial";
+  // Devoluciones en Revisar / sin acreditar: el GRE no es una verificación integral.
+  if (item.devoluciones.cobertura !== "Completa") return "Parcial";
   if (item.cobertura === "Verificable al corte")
     return item.corte === `${String(year).padStart(4, "0")}-12-31`
       ? "Completa"
@@ -671,9 +679,13 @@ function planSection(
     const items = raw
       .map((item): CarrilPlanItem => {
         const linea = item.linea;
+        const devParcial = item.devoluciones.cobertura !== "Completa";
+        const causasDev = item.devoluciones.causas.join(", ");
         const ejecutadoEstado: EstadoMetrica =
           item.ejecutado !== null
-            ? item.ejecutado === "0.00"
+            ? devParcial
+              ? "Parcial"
+              : item.ejecutado === "0.00" && !item.netoCeroConHechos
               ? "Cero verificado"
               : "Verificado"
             : item.subtotalRegistrado !== null
@@ -681,7 +693,9 @@ function planSection(
               : "No disponible";
         const motivoEjecutado = item.motivo
           ? `Ejecutado parcial: ${item.motivo}`
-          : "Ejecutado verificado hasta el corte; no es total anual.";
+          : devParcial
+            ? `Gasto real económico (neto) parcial: devoluciones ${causasDev || "con exceso"} sin descuento acreditado. ${NOTA_TEMPORAL_GRE}`
+            : `Ejecutado verificado hasta el corte; no es total anual. ${NOTA_TEMPORAL_GRE}`;
         const itemCoberturaEstado = planItemCoverage(item, ejercicio);
         const yearEnd = `${String(ejercicio).padStart(4, "0")}-12-31`;
         const itemCobertura = cobertura({
@@ -699,7 +713,9 @@ function planSection(
               ? []
               : item.motivo
                 ? [item.motivo]
-                : [
+                : devParcial
+                  ? [`Devoluciones ${causasDev || "con exceso"}: GRE no verificado integralmente.`]
+                  : [
                     "Cobertura anual no acreditada; el Ejecutado no es total anual.",
                   ],
         });
@@ -747,6 +763,8 @@ function planSection(
                 estado:
                   item.diferencia === null
                     ? ("No disponible" as const)
+                    : devParcial
+                      ? ("Parcial" as const)
                     : item.diferencia === "0.00"
                       ? ("Cero verificado" as const)
                       : ("Verificado" as const),
@@ -755,7 +773,9 @@ function planSection(
                   item.diferencia === null
                     ? item.motivo ??
                       "Diferencia no verificable sin un Ejecutado completo."
-                    : "Diferencia = Presupuesto − Ejecutado verificado.",
+                    : devParcial
+                      ? "Diferencia = Presupuesto − Ejecutado provisional: la cobertura de devoluciones es parcial."
+                      : "Diferencia = Presupuesto − Ejecutado verificado.",
                 cobertura: itemCobertura,
                 fuente: ejecutado.fuente,
                 contexto: ejecutado.contexto,

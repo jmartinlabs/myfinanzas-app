@@ -3,6 +3,7 @@ import { Problem, decimal } from "./saldos";
 import { getReference, type Reference } from "./reference-rules";
 import { vehicleFicha, type Vehicle } from "./vehicle-rules";
 import {
+  annualDiscounts,
   annualExecution,
   annualYear,
   type AnnualProvider,
@@ -99,14 +100,17 @@ function annualFor(
         r.fecha <= `${String(year).padStart(4, "0")}-12-31`,
     ),
     partidas = catalog(db),
+    // SPEC39: descuento solo de las compras de ESTA REF y ejercicio; otra REF de la
+    // misma Partida no entra en `eligible` y por tanto no contamina el neto.
+    descuentos = annualDiscounts(db, eligible),
     grouped = new Map<string, LedgerRow[]>();
   for (const row of eligible)
     grouped.set(row.partida!, [...(grouped.get(row.partida!) ?? []), row]);
-  const base = annualExecution("__sin_partida__", year, [], sources, now),
+  const base = annualExecution("__sin_partida__", year, [], sources, now, new Map()),
     rows = [...grouped.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([id, rows]) => {
-        const execution = annualExecution(id, year, rows, sources, now),
+        const execution = annualExecution(id, year, rows, sources, now, descuentos),
           annual = annualCoverage(execution, year, now),
           partida = partidas.get(id);
         return {
@@ -123,10 +127,13 @@ function annualFor(
           ceroVerificado:
             execution.cobertura === "Verificable al corte" &&
             execution.hechos.length === 0,
+          netoCeroConHechos: execution.netoCeroConHechos,
+          subtotalBruto: execution.brutoRegistrado,
+          devoluciones: execution.devoluciones,
           procedencia: execution.procedencia,
           hechos: execution.hechos.map((h) => {
             const fact = eligible.find((r) => r.id === h.id)!;
-            return factDto(fact, partida);
+            return { ...factDto(fact, partida), descuento: h.descuento };
           }),
           motivo: execution.motivo,
         };
@@ -190,6 +197,20 @@ function annualFor(
       coverageAlCorte === "Verificable al corte" &&
       hechos.length === 0 &&
       outside.length === 0,
+    netoCeroConHechos:
+      totalAlCorte === "0.00" && hechos.length > 0 && rows.every((r) => r.totalAlCorte !== null),
+    devoluciones: {
+      descuentoAtribuido: decimal(
+        rows.reduce((n, r) => n + cents(r.devoluciones.descuentoAtribuido), 0n),
+      )!,
+      cobertura: rows.some((r) => r.devoluciones.exceso)
+        ? ("Parcial" as const)
+        : rows.every((r) => r.devoluciones.cobertura === "Completa")
+          ? ("Completa" as const)
+          : ("Parcial" as const),
+      causas: [...new Set(rows.flatMap((r) => r.devoluciones.causas))],
+      exceso: rows.some((r) => r.devoluciones.exceso),
+    },
     hechosConocidos: hechos.length,
     hechosFueraConocidos: outside.length,
     importeFueraDeControlCorte: importeFuera,
@@ -362,9 +383,9 @@ export function listVehicles(
     let base;
     try {
       const sources = (provider ?? (() => emptySources))(db, year);
-      base = annualExecution("__sin_partida__", year, [], sources, now);
+      base = annualExecution("__sin_partida__", year, [], sources, now, new Map());
     } catch {
-      base = annualExecution("__sin_partida__", year, [], emptySources, now);
+      base = annualExecution("__sin_partida__", year, [], emptySources, now, new Map());
     }
     return {
       ejercicio: year,
@@ -474,9 +495,10 @@ export function vehicleIntegrity(
         [],
         emptySourcesFor(provider, db, year),
         now,
+        new Map(),
       );
     } catch {
-      base = annualExecution("__sin_partida__", year, [], emptySources, now);
+      base = annualExecution("__sin_partida__", year, [], emptySources, now, new Map());
     }
     const summary = {
         ejercicio: year,

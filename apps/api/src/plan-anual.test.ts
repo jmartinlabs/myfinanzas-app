@@ -19,6 +19,34 @@ import {
 } from "./plan-anual";
 import type { LedgerRow } from "./movement-ledger";
 import { previewClassification, updateClassification } from "./clasificacion";
+
+import type { DescuentoCompra } from "./devoluciones";
+/** Descuento cero EXPLÍCITO para cada compra (SPEC39: nunca un bruto implícito). */
+const zeroDiscount = (id: string): DescuentoCompra => ({
+  compra: id,
+  descuentoEconomico: 0n,
+  devueltoVerificado: 0n,
+  pendienteRevision: 0n,
+  exceso: false,
+  cobertura: "Completa",
+  causas: [],
+  devoluciones: [],
+});
+const exec = (
+  partida: string,
+  year: number,
+  rows: LedgerRow[],
+  s: AnnualSources,
+  at: number,
+) =>
+  annualExecution(
+    partida,
+    year,
+    rows,
+    s,
+    at,
+    new Map(rows.map((r) => [r.id, zeroDiscount(r.id)])),
+  );
 const now = Date.parse("2026-10-24T12:00:00Z");
 function setup(path = ":memory:") {
   const db = new Database(path);
@@ -168,14 +196,14 @@ test("AC01–07/16/18/21: stable year/Partida, explicit null/zero, partial PATCH
 test("AC08–15/20/25–29: exact annual actual-date ledger, known subtotal, verified intervals/history and dates", () => {
   const s = sources();
   s.historico = [historical()];
-  let r = annualExecution("PAR900", 2026, [fact()], s, now);
+  let r = exec("PAR900", 2026, [fact()], s, now);
   expect(r).toMatchObject({
     ejecutado: "140.00",
     fechaEjecutada: "2026-06-15",
     subtotalRegistrado: "40.00",
   });
   s.historico = [historical({ fecha: "2026-03-30" })];
-  r = annualExecution("PAR900", 2026, [fact({ fecha: "2026-04-01" })], s, now);
+  r = exec("PAR900", 2026, [fact({ fecha: "2026-04-01" })], s, now);
   expect(r.fechaEjecutada).toBe("2026-04-01");
   // The verified cutoff and control interval are separate: a valid later historical interval retains its date.
   const later = sources();
@@ -188,7 +216,7 @@ test("AC08–15/20/25–29: exact annual actual-date ledger, known subtotal, ver
     }),
   ];
   expect(
-    annualExecution(
+    exec(
       "PAR900",
       2026,
       [fact({ fecha: "2026-03-10" })],
@@ -201,7 +229,7 @@ test("AC08–15/20/25–29: exact annual actual-date ledger, known subtotal, ver
   s.control = { inicio: "2026-01-01", fin: "2026-12-31" };
   s.historico = [];
   expect(
-    annualExecution("PAR900", 2026, [fact({ fecha: "2026-12-31" })], s, now)
+    exec("PAR900", 2026, [fact({ fecha: "2026-12-31" })], s, now)
       .ejecutado,
   ).toBe("40.00");
   const rows = [
@@ -214,13 +242,13 @@ test("AC08–15/20/25–29: exact annual actual-date ledger, known subtotal, ver
     fact({ fecha: "2027-01-01" }),
   ];
   expect(
-    annualExecution("PAR900", 2026, rows, s, Date.parse("2027-01-02T12:00:00Z"))
+    exec("PAR900", 2026, rows, s, Date.parse("2027-01-02T12:00:00Z"))
       .ejecutado,
   ).toBe("40.00");
-  expect(annualExecution("PAR900", 2027, rows, s, now).ejecutado).toBeNull();
+  expect(exec("PAR900", 2027, rows, s, now).ejecutado).toBeNull();
   const partial = sources();
   partial.historicoDisponible = false;
-  expect(annualExecution("PAR900", 2026, [fact()], partial, now)).toMatchObject(
+  expect(exec("PAR900", 2026, [fact()], partial, now)).toMatchObject(
     {
       ejecutado: null,
       subtotalRegistrado: "40.00",
@@ -228,33 +256,33 @@ test("AC08–15/20/25–29: exact annual actual-date ledger, known subtotal, ver
     },
   );
   const noControl = { ...partial, control: null };
-  expect(annualExecution("PAR900", 2026, [], noControl, now)).toMatchObject({
+  expect(exec("PAR900", 2026, [], noControl, now)).toMatchObject({
     ejecutado: null,
     subtotalRegistrado: "0.00",
     fechaEjecutada: null,
   });
   const full = sources();
   full.control = { inicio: "2026-01-01", fin: "2026-06-30" };
-  expect(annualExecution("PAR900", 2026, [], full, now).ejecutado).toBe("0.00");
+  expect(exec("PAR900", 2026, [], full, now).ejecutado).toBe("0.00");
   full.historico = [historical()];
-  expect(annualExecution("PAR900", 2026, [fact()], full, now)).toMatchObject({
+  expect(exec("PAR900", 2026, [fact()], full, now)).toMatchObject({
     ejecutado: null,
     subtotalRegistrado: "40.00",
     historicoConocido: "0.00",
   });
   full.historico = [historical({ representadoEnMovimientos: true })];
-  expect(annualExecution("PAR900", 2026, [fact()], full, now).ejecutado).toBe(
+  expect(exec("PAR900", 2026, [fact()], full, now).ejecutado).toBe(
     "40.00",
   );
   const emptyDate = sources();
   emptyDate.historico = [historical({ fecha: null })];
-  expect(annualExecution("PAR900", 2026, [], emptyDate, now)).toMatchObject({
+  expect(exec("PAR900", 2026, [], emptyDate, now)).toMatchObject({
     ejecutado: "100.00",
     fechaEjecutada: null,
   });
   emptyDate.historico = [historical({ fecha: "2025-12-01" })];
   expect(
-    annualExecution("PAR900", 2026, [], emptyDate, now).ejecutado,
+    exec("PAR900", 2026, [], emptyDate, now).ejecutado,
   ).toBeNull();
   const db = setup();
   try {
