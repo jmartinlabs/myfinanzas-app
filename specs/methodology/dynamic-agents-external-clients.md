@@ -66,9 +66,10 @@ writers need separate checkouts and disjoint files. Delegates never use `work-is
   the delegate edits files only and the coordinator reviews the diff and commits. Before relying on the run check that the worktree and branch are the
   authorized ones, that the CLI header shows `sandbox: workspace-write` and `approval: never`, and that the diff stays
   inside the declared files; never `--dangerously-bypass-approvals-and-sandbox`. The delegate does not push or merge.
-- The brief states it acts read-only, names the risks and paths and carries no conversation.
-- Before relying on the run, check that `git rev-parse HEAD` equals the candidate SHA and that the CLI
-  header shows `sandbox: read-only` and `approval: never`; otherwise the run did not meet the
+- For `review` and `investigate`, the brief states it acts read-only, names the risks and paths and carries no
+  conversation; a `develop` brief states its declared files and the prohibition to push, open PRs or merge.
+- Before relying on a `review` or `investigate` run, check that `git rev-parse HEAD` equals the candidate SHA and
+  that the CLI header shows `sandbox: read-only` and `approval: never`; otherwise the run did not meet the
   authorization. The header also prints `model`, `provider` and `reasoning effort` (step 5). If HEAD
   differs, stop: never switch branch or checkout in a tree that may hold other agents' work. If the tree
   holds unrelated changes, review the committed state (`--base` or `--commit`), never `--uncommitted`.
@@ -76,7 +77,7 @@ writers need separate checkouts and disjoint files. Delegates never use `work-is
   extra evidence: it does not approve and never replaces independent QA.
 - If a usage limit is reached, report it and stop; never switch to paid API, credits, another plan or
   another provider.
-- The read-only sandbox limits local shell writes, not remote writes through connectors the user's Codex
+- For `review` and `investigate`, the read-only sandbox limits local shell writes, not remote writes through connectors the user's Codex
   exposes; the instruction not to write remotely is not a technical guarantee.
 
 ## OpenCode CLI
