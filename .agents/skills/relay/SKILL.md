@@ -7,8 +7,8 @@ description: Exchange substantive messages between two agents through one Git br
 
 Optional, user-triggered transport for a two-participant conversation. It is not a work
 queue, a controller, an approval channel or a second source of truth. The canonical packet
-and return contracts remain in [the work packet](../../../templates/agent-work-packet.md)
-and [external clients](../../../specs/methodology/dynamic-agents-external-clients.md).
+and return contracts remain in [the work packet](../../../templates/agent-work-packet.md);
+CLI delegation is in [external delegation](../../../specs/methodology/dynamic-agents-external-clients.md).
 
 Clients without Git/Python can use the [GitHub API transport procedure](GITHUB_API.md)
 with an already-connected GitHub tool. This is the same relay format and semantics,
