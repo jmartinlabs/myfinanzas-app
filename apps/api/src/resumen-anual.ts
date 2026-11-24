@@ -16,6 +16,7 @@ import {
 } from "./deuda-no-hipotecaria";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
+import { decimal } from "./saldos";
 
 /**
  * E4.7 — resumen anual de solo lectura.
@@ -107,6 +108,12 @@ export type CarrilPlan = {
   estado: EstadoMetrica;
   motivo: string;
   items: CarrilPlanItem[];
+  /**
+   * Gasto real económico (neto) del ejercicio NATURAL: compras con fecha 1 ene–31 dic,
+   * menos solo sus devoluciones elegibles (misma fuente que `items[].ejecutado`). No es
+   * la suma de Ciclos financiados, ni flujo bancario, ni Disponibilidad operativa.
+   */
+  gastoRealEconomicoNatural: Metrica;
   cobertura: Cobertura;
   fuente: Fuente;
   enlace: Enlace;
@@ -131,7 +138,12 @@ export type AjusteCompartidos = {
 
 export type CicloRealidad = CicloRef & {
   ingresos: Metrica;
+  /** Flujo bancario bruto del ciclo (clave `gasto` conservada, fórmula bruta). */
   gasto: Metrica;
+  /** Gasto real económico (neto) de las compras del ciclo, retroactivo por la compra de origen. */
+  gastoRealEconomico: Metrica;
+  /** Devoluciones comerciales cobradas por fecha real del abono; separadas, no restan en `gasto`. */
+  devolucionesCobradas: Metrica;
   extraordinaria: Metrica;
   nomina: Metrica;
   operativo: Metrica;
@@ -444,8 +456,11 @@ function metricFromFlow(
   clave: string,
   etiqueta: string,
   clase: Metrica["clase"],
+  source: Metric & { devoluciones?: { cobertura: string } } = flow.metrics[clave],
 ): Metrica {
-  const source: Metric = flow.metrics[clave];
+  const devParcial =
+    source.devoluciones !== undefined &&
+    source.devoluciones.cobertura !== "Completa";
   const estado = normalizarEstado(source.estado);
   return {
     clave,
@@ -462,7 +477,7 @@ function metricFromFlow(
       detalle: source.cobertura,
       incluidos: source.ids.length,
       motivos:
-        estado === "No disponible" || estado === "Parcial"
+        estado === "No disponible" || estado === "Parcial" || devParcial
           ? [source.motivo]
           : [],
     }),
@@ -525,7 +540,17 @@ function realidadCiclo(db: Database, cycle: Cycle, now: number): CicloRealidad {
     return {
       ...ref,
       ingresos: metrica("ingresos", "Ingresos", "real"),
-      gasto: metrica("gasto", "Gasto bruto", "real"),
+      gasto: metrica("gasto", "Flujo bancario bruto", "real"),
+      gastoRealEconomico: metrica(
+        "gastoRealEconomico",
+        "Gasto real económico (neto)",
+        "real",
+      ),
+      devolucionesCobradas: metrica(
+        "devolucionesCobradas",
+        "Devoluciones comerciales cobradas",
+        "real",
+      ),
       extraordinaria: metrica(
         "extraordinaria",
         "Amortización extraordinaria",
@@ -567,7 +592,22 @@ function realidadCiclo(db: Database, cycle: Cycle, now: number): CicloRealidad {
   return {
     ...ref,
     ingresos: metricFromFlow(cycle, flow, "ingresos", "Ingresos", "real"),
-    gasto: metricFromFlow(cycle, flow, "gasto", "Gasto bruto", "real"),
+    gasto: metricFromFlow(cycle, flow, "gasto", "Flujo bancario bruto", "real"),
+    gastoRealEconomico: metricFromFlow(
+      cycle,
+      flow,
+      "gastoRealEconomico",
+      "Gasto real económico (neto)",
+      "real",
+      flow.gastoRealEconomico,
+    ),
+    devolucionesCobradas: metricFromFlow(
+      cycle,
+      flow,
+      "devolucionesCobradas",
+      "Devoluciones comerciales cobradas",
+      "real",
+    ),
     extraordinaria: metricFromFlow(
       cycle,
       flow,
@@ -659,6 +699,80 @@ function planItemCoverage(
       ? "Completa"
       : "Parcial";
   return "Parcial";
+}
+
+
+/**
+ * SPEC39 §2.2/§10: GRE del ejercicio natural por compras (fecha de compra 1 ene–31 dic),
+ * derivado de la MISMA ejecución E2.4 que `items[].ejecutado` (reconcilia al céntimo por
+ * construcción). Solo suma una magnitud (GRE de compras con Partida); no suma Ciclos ni
+ * mezcla flujo bancario. Las compras sin Partida no entran en E2.4 y quedan fuera: se declara.
+ */
+function gastoRealEconomicoNatural(
+  source: ReturnType<typeof getAnnualPlan>["items"],
+  items: CarrilPlanItem[],
+  ejercicio: number,
+  enlace: Enlace,
+  revision: string,
+): Metrica {
+  const year = String(ejercicio).padStart(4, "0");
+  const cents = (v: string) => BigInt(v.replace(".", ""));
+  const hechos = source.flatMap((i) => i.hechos);
+  const base = {
+    clave: "gastoRealEconomicoNatural",
+    etiqueta: "Gasto real económico (neto) · ejercicio natural",
+    clase: "real" as const,
+    unidad: "EUR" as const,
+    contexto: { tipo: "ejercicio" as const, ejercicio, corte: null },
+    alcance: "Ejercicio" as const,
+    enlace,
+  };
+  if (!source.length || !hechos.length) {
+    return ndMetric({
+      ...base,
+      motivo:
+        "Sin compras con Partida en el ejercicio natural: no hay GRE que publicar (no es cero verificado).",
+      motor: MOTOR.plan,
+    });
+  }
+  const registrado = source.reduce((n, i) => n + cents(i.subtotalRegistrado), 0n);
+  const bruto = source.reduce((n, i) => n + cents(i.brutoRegistrado), 0n);
+  const descuento = source.reduce(
+    (n, i) => n + cents(i.devoluciones.descuentoAtribuido),
+    0n,
+  );
+  const ejecutadoCompleto = source.every((i) => i.ejecutado !== null);
+  const devParcial = source.some((i) => i.devoluciones.cobertura !== "Completa");
+  const exceso = source.some((i) => i.devoluciones.exceso);
+  const coberturaItems = items.every((i) => i.cobertura.estado === "Completa");
+  const causas = [...new Set(source.flatMap((i) => i.devoluciones.causas))];
+  const completo = ejecutadoCompleto && !devParcial && coberturaItems && !exceso;
+  const estado: EstadoMetrica = completo ? "Verificado" : "Parcial";
+  const motivo = `Gasto real económico (neto) del año natural: bruto ${decimal(bruto)} − descuento ${decimal(descuento)} de las compras con Partida del 1 de enero al 31 de diciembre ${year}${
+    exceso ? ". Una devolución supera su compra: no verificable" : ""
+  }${
+    devParcial ? `. Devoluciones ${causas.join(", ") || "con exceso"} sin descuento acreditado: cobertura parcial` : ""
+  }. No es la suma de Ciclos financiados (frontera diciembre/enero sin conciliar), ni flujo bancario, ni Disponibilidad operativa; las compras sin Partida no entran. ${NOTA_TEMPORAL_GRE}`;
+  return {
+    ...base,
+    valor: completo ? decimal(registrado)! : null,
+    subtotal: decimal(registrado)!,
+    estado,
+    motivo,
+    cobertura: cobertura({
+      estado: completo ? "Completa" : "Parcial",
+      fuente: MOTOR.plan,
+      detalle: `E2.4: GRE por compras del ejercicio natural ${year}; bruto ${decimal(bruto)}, descuento ${decimal(descuento)}.`,
+      incluidos: hechos.length,
+      motivos: completo ? [] : [motivo],
+    }),
+    fuente: {
+      motor: MOTOR.plan,
+      ids: hechos.map((h) => h.id),
+      revision,
+      intervalo: { desde: `${year}-01-01`, hasta: `${year}-12-31` },
+    },
+  };
 }
 
 function planSection(
@@ -798,6 +912,14 @@ function planSection(
           (filtros.cobertura === null ||
             item.cobertura.estado === filtros.cobertura),
       );
+    const rawBy = new Map(raw.map((r) => [r.partida.id, r]));
+    const natural = gastoRealEconomicoNatural(
+      items.map((i) => rawBy.get(i.partidaId)!),
+      items,
+      ejercicio,
+      enlace,
+      plan.contextRevision,
+    );
     const fuente: Fuente = {
       motor: MOTOR.plan,
       ids: items.map((item) => item.partidaId),
@@ -825,6 +947,7 @@ function planSection(
               ? "Plan y Ejecutado se leen de E2.4; hay Partidas con ejecución sin presupuesto de plan."
               : "Plan y Ejecutado se leen de E2.4; no se suman Partidas ni se crea un total anual.",
       items,
+      gastoRealEconomicoNatural: natural,
       cobertura: cobertura({
         estado:
           items.length === 0 ? "Sin datos" : completa ? "Completa" : "Parcial",
@@ -847,6 +970,7 @@ function planSection(
                       ]
                     : []),
                   "El Ejecutado se verifica, si procede, solo hasta el corte.",
+                  ...(natural.estado === "Parcial" ? [NOTA_TEMPORAL_GRE] : []),
                 ],
       }),
       fuente,
@@ -858,6 +982,16 @@ function planSection(
       estado: "No disponible",
       motivo,
       items: [],
+      gastoRealEconomicoNatural: ndMetric({
+        clave: "gastoRealEconomicoNatural",
+        etiqueta: "Gasto real económico (neto) · ejercicio natural",
+        clase: "real",
+        motivo,
+        motor: MOTOR.plan,
+        contexto: { tipo: "ejercicio", ejercicio, corte: null },
+        enlace,
+        alcance: "Ejercicio",
+      }),
       cobertura: cobertura({
         estado: "NoDisponible",
         fuente: MOTOR.plan,
@@ -1232,6 +1366,10 @@ export function resumenAnual(
     filtros,
     cicloRefs(delEjercicio),
     plan.fuente,
+    {
+      natural: plan.gastoRealEconomicoNatural.subtotal,
+      naturalEstado: plan.gastoRealEconomicoNatural.estado,
+    },
     plan.items.map((item) => ({
       partidaId: item.partidaId,
       ejecutado: item.ejecutado.valor,
@@ -1242,6 +1380,8 @@ export function resumenAnual(
       cicloId: ciclo.cicloId,
       ingresos: ciclo.ingresos.fuente.revision,
       gasto: ciclo.gasto.subtotal,
+      gre: ciclo.gastoRealEconomico.subtotal,
+      devolucionesCobradas: ciclo.devolucionesCobradas.subtotal,
       extraordinaria: ciclo.extraordinaria.subtotal,
       nomina: ciclo.nomina.subtotal,
       ajuste: ciclo.ajusteCompartidos.fuente.revision,

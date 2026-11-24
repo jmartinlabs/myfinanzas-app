@@ -121,6 +121,19 @@ export type MonthlyFlowDTO = {
   corteEfectivo: string | null;
   consulta: string;
   metrics: Record<string, FlowMetric>;
+  /** SPEC39: Gasto real económico (neto) del ciclo, bloque distinto del flujo bancario bruto. */
+  gastoRealEconomico?: FlowMetric & {
+    bruto: string | null;
+    descuentoEconomico: string | null;
+    devoluciones: {
+      cobertura: string;
+      causas: string[];
+      exceso: boolean;
+      ids: string[];
+      sinVinculoEnIntervalo: string[];
+    };
+  };
+  exclusionesDevoluciones?: string[];
   erroresFuente: string[];
   alcance: string;
   procedencia: string;

@@ -410,6 +410,10 @@ function cicloMetric(
   flow: MonthlyFlow | null,
   cycle: Cycle | null,
   flowError: string | null,
+  /** SPEC39: bloque distinto de `flow.metrics` (p. ej. Gasto real económico (neto)). */
+  fuente: (flow: MonthlyFlow) => Metric & {
+    devoluciones?: { cobertura: string; causas: string[] };
+  } = (f) => f.metrics[clave],
 ): MetricaDto {
   const context: ContextoDto = {
     tipo: "ciclo",
@@ -428,9 +432,12 @@ function cicloMetric(
       contexto: context,
       enlace: null,
     });
-  const source: Metric = flow.metrics[clave];
+  const source = fuente(flow);
   const estado = source.estado as EstadoMetrica;
   const ids = source.ids;
+  const devParcial =
+    source.devoluciones !== undefined &&
+    source.devoluciones.cobertura !== "Completa";
   return metric({
     clave,
     etiqueta,
@@ -444,7 +451,7 @@ function cicloMetric(
       estado,
       ids.length,
       0,
-      estado === "No disponible" ? [source.motivo] : [],
+      estado === "No disponible" || devParcial ? [source.motivo] : [],
     ),
     fuente: {
       motor: MOTOR.ciclo,
@@ -1200,6 +1207,7 @@ function revisionOf(input: {
         },
     input.flow?.revision ?? null,
     input.flow?.metrics ?? null,
+    input.flow?.gastoRealEconomico ?? null,
     input.exercise,
     input.annual,
     input.annualRevision,
@@ -1330,9 +1338,29 @@ export function resumenInicio(
           cycle,
           flowError,
         ),
+        // SPEC39 §10: «gasto» conserva el valor bruto bancario (clave y fórmula intactas;
+        // `operativo` = Ingresos − gasto bruto − extraordinaria); solo cambia el rótulo.
         gasto: cicloMetric(
           "gasto",
-          "Gasto bruto",
+          "Flujo bancario bruto",
+          "real",
+          flow,
+          cycle,
+          flowError,
+        ),
+        // KPI de gasto del ciclo = GRE (compras del ciclo menos sus devoluciones elegibles).
+        gastoRealEconomico: cicloMetric(
+          "gastoRealEconomico",
+          "Gasto real económico (neto)",
+          "real",
+          flow,
+          cycle,
+          flowError,
+          (f) => f.gastoRealEconomico,
+        ),
+        devolucionesCobradas: cicloMetric(
+          "devolucionesCobradas",
+          "Devoluciones comerciales cobradas",
           "real",
           flow,
           cycle,

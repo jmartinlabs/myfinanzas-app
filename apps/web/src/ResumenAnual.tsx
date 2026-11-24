@@ -81,6 +81,8 @@ type CarrilPlan = {
   estado: EstadoMetrica;
   motivo: string;
   items: CarrilPlanItem[];
+  /** Gasto real económico (neto) del ejercicio natural por compras (SPEC39); no suma Ciclos. */
+  gastoRealEconomicoNatural: Metrica;
   cobertura: Cobertura;
   fuente: Fuente;
   enlace: Enlace;
@@ -105,7 +107,10 @@ type AjusteCompartidos = {
 
 type CicloRealidad = CicloRef & {
   ingresos: Metrica;
+  /** Flujo bancario bruto (clave conservada). */
   gasto: Metrica;
+  gastoRealEconomico: Metrica;
+  devolucionesCobradas: Metrica;
   extraordinaria: Metrica;
   nomina: Metrica;
   operativo: Metrica;
@@ -820,6 +825,11 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
       <div className="e47-grid-2">
         <section className="panel e47-lane" aria-labelledby="e47-plan">
           <LaneHead title="Plan" motor="E2.4 · plan anual" lane={plan} />
+          <MetricCard metrica={plan.gastoRealEconomicoNatural} go={go} />
+          <p className="e47-note">
+            El Ejecutado de cada Partida es Gasto real económico (neto): compras
+            del ejercicio natural menos sus devoluciones elegibles.
+          </p>
           {plan.items.length === 0 ? (
             <p className="e47-empty">Sin plan ni ejecución para el filtro.</p>
           ) : (
@@ -1023,6 +1033,8 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                     {[
                       ciclo.ingresos,
                       ciclo.gasto,
+                      ciclo.gastoRealEconomico,
+                      ciclo.devolucionesCobradas,
                       ciclo.extraordinaria,
                       ciclo.nomina,
                       ciclo.operativo,
@@ -1032,7 +1044,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <MetricTableRow key={metrica.clave} metrica={metrica} />
                     ))}
                     <tr>
-                      <th scope="row">Ajuste G_n</th>
+                      <th scope="row">Ajuste G_n (gasto ajustado por participantes, no GRE)</th>
                       <td>
                         {ciclo.ajusteCompartidos.gNeto === null ? (
                           <Amount value={null} state="No disponible" showNote={false} />
@@ -1094,6 +1106,8 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                 {[
                   ciclo.ingresos,
                   ciclo.gasto,
+                  ciclo.gastoRealEconomico,
+                  ciclo.devolucionesCobradas,
                   ciclo.extraordinaria,
                   ciclo.nomina,
                   ciclo.operativo,

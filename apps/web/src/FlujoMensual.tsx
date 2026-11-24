@@ -226,7 +226,7 @@ function AjusteCompartidosPanel({
             cobertura: ajuste.gastoNeto.cobertura,
             motivo: ajuste.gastoNeto.motivo,
           }}
-          note="El gasto neto es el gasto bruto del plan menos el ajuste por Recuperado. No es coste propio, pendiente ni exceso."
+          note="El gasto neto es el gasto bruto del plan menos el ajuste por Recuperado: ajuste por participantes, no el Gasto real económico (neto) ni caja pura. No es coste propio, pendiente ni exceso."
         />
         <AjusteIndicator
           name="S bruto del plan"
@@ -630,10 +630,52 @@ export function FlujoMensual({
               )}
               {draw("ingresos", "Total ingresos")}
               {draw("gasto", "Gasto bruto registrado", bankLink)}
+              {draw(
+                "devolucionesCobradas",
+                "Devoluciones comerciales cobradas (fecha real del abono)",
+                bankLink,
+              )}
               {draw("extraordinaria", "Amortización extraordinaria")}
               {draw("operativo", "Saldo operativo bruto observado")}
             </div>
           </section>
+          {data.gastoRealEconomico && (
+            <section className="panel" aria-labelledby="flow-gre">
+              <h2 id="flow-gre">Gasto real económico (neto)</h2>
+              <p>
+                Compras del ciclo menos sus devoluciones económicamente
+                elegibles, aunque el abono llegue en otro ciclo. Es analítico:
+                no es flujo bancario, ni disponibilidad operativa, ni la
+                diferencia presupuesto − gasto. El Gasto bruto registrado de
+                arriba no cambia.
+              </p>
+              <div className="flow-grid">
+                <Indicator
+                  name="Gasto real económico (neto) del ciclo"
+                  value={data.gastoRealEconomico}
+                />
+              </div>
+              <p className="muted">
+                Bruto {data.gastoRealEconomico.bruto ?? "No disponible"} ·
+                Descuento económico{" "}
+                {data.gastoRealEconomico.descuentoEconomico ?? "No disponible"}{" "}
+                · Cobertura de devoluciones{" "}
+                {data.gastoRealEconomico.devoluciones.cobertura}
+                {data.gastoRealEconomico.devoluciones.causas.length > 0 &&
+                  ` (${data.gastoRealEconomico.devoluciones.causas.join(", ")})`}
+              </p>
+              {!!data.exclusionesDevoluciones?.length && (
+                <details>
+                  <summary>Ver exclusiones del flujo base</summary>
+                  <ul>
+                    {data.exclusionesDevoluciones.map((texto) => (
+                      <li key={texto}>{texto}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </section>
+          )}
           {data.ajusteCompartidos ? (
             <AjusteCompartidosPanel
               ajuste={data.ajusteCompartidos}

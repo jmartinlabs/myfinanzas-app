@@ -211,7 +211,11 @@ type ResumenInicio = {
     };
     ciclo: Record<string, Metrica | string | undefined> & {
       ingresos: Metrica;
+      /** Flujo bancario bruto (clave conservada). */
       gasto: Metrica;
+      /** Gasto real económico (neto) del ciclo (SPEC39): compras del ciclo menos sus devoluciones elegibles. */
+      gastoRealEconomico: Metrica;
+      devolucionesCobradas: Metrica;
       extraordinaria: Metrica;
       operativo: Metrica;
       margenReal: Metrica;
@@ -520,6 +524,7 @@ function buildInicioOverview(secciones: ResumenInicio["secciones"]) {
     cycle: {
       ingresos: secciones.ciclo.ingresos,
       gasto: secciones.ciclo.gasto,
+      gastoRealEconomico: secciones.ciclo.gastoRealEconomico,
       extraordinaria: secciones.ciclo.extraordinaria,
       operativo: secciones.ciclo.operativo,
       delMes: secciones.ciclo.delMes,
@@ -529,7 +534,7 @@ function buildInicioOverview(secciones: ResumenInicio["secciones"]) {
     },
     kpis: {
       ingresos: secciones.ciclo.ingresos,
-      gasto: secciones.ciclo.gasto,
+      gasto: secciones.ciclo.gastoRealEconomico,
       inversion: secciones.inversion.agregado,
       inversionCoverage: secciones.inversion.cobertura,
       deuda: secciones.deudaNoHipotecaria.total,
@@ -587,15 +592,15 @@ function GraphiteHero({
         <p className="graphite-kicker">Gasto y plan</p>
         <div className="graphite-plan-pair">
           <div className="graphite-plan-item">
-            <span>Gasto bruto</span>
+            <span>Gasto real económico (neto)</span>
             <Amount
-              value={cycle.gasto.valor}
-              subtotal={cycle.gasto.subtotal ?? null}
-              state={cycle.gasto.estado}
-              unit={cycle.gasto.unidad}
+              value={cycle.gastoRealEconomico.valor}
+              subtotal={cycle.gastoRealEconomico.subtotal ?? null}
+              state={cycle.gastoRealEconomico.estado}
+              unit={cycle.gastoRealEconomico.unidad}
               showNote={false}
             />
-            <EstadoBadge estado={cycle.gasto.estado} />
+            <EstadoBadge estado={cycle.gastoRealEconomico.estado} />
           </div>
           <div className="graphite-plan-item">
             <span>Del mes planificado</span>
@@ -610,7 +615,9 @@ function GraphiteHero({
           </div>
         </div>
         <p className="graphite-control-note">
-          Lecturas publicadas por separado; sin porcentaje derivado.
+          Lecturas publicadas por separado; sin porcentaje derivado. El gasto
+          real económico es analítico: no es disponibilidad operativa ni saldo
+          bancario.
         </p>
       </div>
 
@@ -644,7 +651,7 @@ function GraphiteHero({
             </dd>
           </div>
           <div>
-            <dt>Gasto bruto</dt>
+            <dt>Flujo bancario bruto</dt>
             <dd>
               <Amount
                 value={cycle.gasto.valor}
@@ -709,7 +716,7 @@ function GraphiteKpis({ overview }: { overview: InicioOverview }) {
       </article>
 
       <article className="graphite-kpi">
-        <h3 className="graphite-kicker">Gasto bruto</h3>
+        <h3 className="graphite-kicker">Gasto real económico (neto)</h3>
         <div className="graphite-kpi-value">
           <Amount
             value={overview.kpis.gasto.valor}
@@ -763,6 +770,7 @@ function GraphiteCycleTable({ overview }: { overview: InicioOverview }) {
   const metrics = [
     overview.cycle.ingresos,
     overview.cycle.gasto,
+    overview.cycle.gastoRealEconomico,
     overview.cycle.extraordinaria,
     overview.cycle.nomina,
     overview.cycle.operativo,
@@ -1552,6 +1560,8 @@ export function Inicio({ go }: { go: (path: string) => void }) {
             {[
               cicloSeccion.ingresos,
               cicloSeccion.gasto,
+              cicloSeccion.gastoRealEconomico,
+              cicloSeccion.devolucionesCobradas,
               cicloSeccion.extraordinaria,
               cicloSeccion.nomina,
               cicloSeccion.operativo,
