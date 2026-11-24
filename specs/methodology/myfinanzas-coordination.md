@@ -23,9 +23,8 @@ El coordinador conserva su modelo. Cada cliente configura manualmente sus modelo
 
 Aprobado por el usuario el 2026-11-03. Sustituye el reparto anterior sin eliminar los
 gates de [approvals](approvals.md): desarrollo nuevo, cambios financieros, merges
-funcionales y operaciones reales conservan autorización expresa. La designación vigente del
-coordinador es **Hermes** por decisión del usuario (2026-11-12); el rol no queda atado a ese
-proveedor.
+funcionales y operaciones reales conservan autorización expresa. El coordinador lo designa
+el usuario para cada periodo de trabajo; el rol no queda atado a ningún cliente o proveedor.
 
 - **Coordinador técnico (rol, no proveedor).** Un único coordinador activo por proyecto y
   periodo de trabajo, designado explícitamente por el usuario. Asume de forma autónoma la
@@ -48,8 +47,8 @@ proveedor.
   merges funcionales, operaciones reales, datos reales, despliegues y cambios de alcance
   o visibilidad.
 
-La designación no ata el rol a un proveedor: cualquier cliente compatible (Hermes, OpenCode,
-Codex u otro) puede ejercerlo, y el relevo exige el handoff de
+La designación no ata el rol a un proveedor: cualquier cliente compatible (Claude Code, Codex,
+OpenCode, Hermes u otro) puede ejercerlo, y el relevo exige el handoff de
 [Cambio de coordinador](#cambio-de-coordinador). OpenCode sigue disponible como ejecutor o
 como coordinador sustituto por decisión del usuario; no se presupone que un proveedor pueda
 lanzar sesiones de otro, y sin despachador acreditado el trabajo no se declara iniciado.
@@ -86,7 +85,7 @@ curso con rama/SHA/PR, QA disponible, dependencias abiertas, bloqueos con su con
 salida, decisiones vigentes y la siguiente acción verificable.
 
 Se reutilizan `$handoff` y `$work-issue`; no se crea otra base de estado, servicio, bot, cron ni
-campo nuevo del Project. La designación se registra en esta regla y en el handoff o comentario de
+campo nuevo del Project. La designación vigente se registra en el handoff o en un comentario de
 la Issue; el Status sigue expresando la fase autorizada de cada trabajo, nunca la identidad de
 quien coordina. El relevo se comunica a los agentes implicados.
 

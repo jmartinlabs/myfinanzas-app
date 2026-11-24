@@ -292,6 +292,7 @@ actualizar su PR; el merge conserva aprobación explícita y nunca se auto-fusio
 El protocolo de [clientes externos](specs/methodology/dynamic-agents-external-clients.md)
 define los retornos manuales; el cierre con responsable, acción humana y motivo de espera lo fija `$orchestrate`.
 Clientes adicionales: Hermes reutiliza las mismas Skills canónicas de `.agents/skills/` tras
-`hermes skills trust` por checkout y ejerce hoy como coordinador designado; OpenCode sigue
-disponible como ejecutor ([adaptador Hermes](docs/HERMES_ADAPTER.md)).
+`hermes skills trust` por checkout; el rol de coordinador lo designa el usuario y puede ejercerlo
+cualquier cliente compatible; OpenCode sigue disponible como ejecutor
+([adaptador Hermes](docs/HERMES_ADAPTER.md)).
 Esta adopción no reabre epics ni autoriza desarrollo.
