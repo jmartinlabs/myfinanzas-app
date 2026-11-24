@@ -11,6 +11,15 @@ import {
 } from "./nomina-mensual";
 import { debtPeriod } from "./deudas";
 import { D } from "./payroll-decimal";
+import { comidaInstalled } from "./comida";
+import {
+  agregarDescuentos,
+  causasCobertura,
+  descuentoPorCompras,
+  proyectarDevoluciones,
+  type CausaCobertura,
+  type Cobertura as CoberturaDevoluciones,
+} from "./devoluciones";
 export type Metric = {
   valor: string | null;
   subtotal: string | null;
@@ -48,6 +57,118 @@ const absent = (motivo: string, fuente = "Motor no instalado") =>
   metric(null, fuente, motivo);
 const sum = (rows: { importe: string }[]) =>
   decimal(rows.reduce((s, r) => s + BigInt(r.importe), 0n))!;
+/**
+ * SPEC39 §2/§10 (#538 F2c) · Gasto real económico (neto) del intervalo: Gastos
+ * vigentes del intervalo bancario MENOS las devoluciones económicamente elegibles
+ * de ESAS MISMAS compras (retroactivo por la compra de origen, aunque el abono
+ * llegue en otro ciclo). Bloque distinto de `metrics.gasto` (Flujo bancario bruto,
+ * fórmula base intacta). Vivo, sin foto; no es flujo bancario, ni Disponibilidad
+ * operativa, ni presupuesto − GRE.
+ */
+export type GastoRealEconomico = Metric & {
+  /** Σ importes brutos de las compras del intervalo; null si el periodo no es verificable. */
+  bruto: string | null;
+  /** Σ descuento económico de esas compras; null si el periodo no es verificable. */
+  descuentoEconomico: string | null;
+  devoluciones: {
+    cobertura: CoberturaDevoluciones;
+    causas: CausaCobertura[];
+    exceso: boolean;
+    /** Devoluciones elegibles que reducen este GRE (pueden tener fecha de abono posterior). */
+    ids: string[];
+    /** Abonos del intervalo sin compra: hecho bancario, no atribuibles a ningún GRE. */
+    sinVinculoEnIntervalo: string[];
+  };
+};
+function gastoRealEconomico(
+  db: Database,
+  valid: boolean,
+  expenses: { id: string; importe: string }[],
+  refunds: { id: string }[],
+  projection: ReturnType<typeof proyectarDevoluciones>,
+): GastoRealEconomico {
+  const fuente = "Movimientos vigentes + proyección única de devoluciones (SPEC39)";
+  if (!valid || !expenses.length) {
+    const base = metric(
+      null,
+      fuente,
+      valid
+        ? "Sin compras en el intervalo: no hay GRE que publicar (no es cero verificado)."
+        : "Periodo/corte central o fuente no verificable",
+    );
+    return {
+      ...base,
+      bruto: null,
+      descuentoEconomico: null,
+      devoluciones: {
+        cobertura: "No disponible",
+        causas: [],
+        exceso: false,
+        ids: [],
+        sinVinculoEnIntervalo: valid
+          ? refunds
+              .map((r) => r.id)
+              .filter((id) =>
+                projection.items.some((d) => d.id === id && d.causa === "sinVinculo"),
+              )
+          : [],
+      },
+    };
+  }
+  const ids = expenses.map((r) => r.id);
+  const discounts = descuentoPorCompras(db, ids, projection);
+  const agg = agregarDescuentos(discounts.values());
+  const orphanSet = new Set(
+    projection.items.filter((d) => d.causa === "sinVinculo").map((d) => d.id),
+  );
+  // Sin tabla de vínculos, un abono de CUALQUIER fecha pudo reducir estas compras y no es comprobable.
+  const sinTablaConAbonos =
+    !comidaInstalled(db, "movimiento_devolucion") && orphanSet.size > 0;
+  const sinVinculoEnIntervalo = sinTablaConAbonos
+    ? [...orphanSet]
+    : refunds.map((r) => r.id).filter((id) => orphanSet.has(id));
+  const causas = new Set<CausaCobertura>(agg.causas);
+  if (sinVinculoEnIntervalo.length) causas.add("sinVinculo");
+  const cobertura: CoberturaDevoluciones =
+    agg.cobertura === "Completa" && !sinVinculoEnIntervalo.length
+      ? "Completa"
+      : "Parcial";
+  const brutoCents = expenses.reduce((n, r) => n + BigInt(r.importe), 0n);
+  const gre = brutoCents - agg.descuento;
+  const eligible = [...discounts.values()].flatMap((d) => d.devoluciones);
+  const eligibleIds = projection.items
+    .filter((d) => d.elegible && eligible.includes(d.id))
+    .map((d) => d.id);
+  const exceso = agg.exceso;
+  const motivo =
+    "Gasto real económico (neto) = Gastos vigentes del intervalo − devoluciones económicamente elegibles de esas mismas compras, aunque el abono llegue en otro ciclo. Cálculo vivo; no es flujo bancario, ni Disponibilidad operativa, ni presupuesto − GRE" +
+    (exceso
+      ? ". No disponible: una devolución supera su compra (sin max(0))"
+      : cobertura === "Parcial"
+        ? `. Cobertura de devoluciones parcial (${causasCobertura.filter((x) => causas.has(x)).join(", ") || "exceso"}): las no elegibles no se netean`
+        : "") +
+    ". Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo";
+  const base = metric(
+    null,
+    fuente,
+    motivo,
+    ids,
+    true,
+    exceso ? null : decimal(gre),
+  );
+  return {
+    ...base,
+    bruto: decimal(brutoCents),
+    descuentoEconomico: decimal(agg.descuento),
+    devoluciones: {
+      cobertura: exceso ? "Parcial" : cobertura,
+      causas: causasCobertura.filter((x) => causas.has(x)),
+      exceso,
+      ids: eligibleIds,
+      sinVinculoEnIntervalo,
+    },
+  };
+}
 /** Only recorded arithmetic; the caller must separately establish interval coverage. */
 export function observedOperating(
   income: string | null,
@@ -457,6 +578,8 @@ function ajusteCompartidos(
       "S_aj es un resultado ajustado por Recuperado; no es ahorro real, caja total ni flujo completo.",
       "Comida no se resta de G_n ni de S_aj: su bloque analítico es independiente.",
       "Las aportaciones de la memoria de caja no son Ingresos.",
+      "El descuento comercial de devoluciones de compras no entra en R_adj ni se resta de G_n: la base sigue bruta. G_n/S_aj es un ajuste por participantes; no es el Gasto real económico (neto) ni caja pura.",
+      "La regularización o salida acreditada de Compartidos queda pendiente (F6): no se incluye ni se infiere aquí.",
     ],
   };
 
@@ -533,6 +656,7 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
         };
       }
 
+      const projection = proyectarDevoluciones(db);
       const metrics: Record<string, Metric> = {
         nomina: bankMetric(
           salary,
@@ -554,7 +678,11 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
         ),
         gasto: bankMetric(
           expenses,
-          "Todos los Gastos brutos registrados, incluidas cuotas/compartidos/terminal/sin plan. Difiere de H física; sin netos E3",
+          "Flujo bancario bruto: todos los Gastos brutos registrados, incluidas cuotas/compartidos/terminal/sin plan. Difiere de H física; sin netos E3 ni devoluciones comerciales (se publican aparte)",
+        ),
+        devolucionesCobradas: bankMetric(
+          rows.filter((r) => r.tipo === "Devolución de gasto"),
+          "Devoluciones comerciales cobradas por fecha real del abono (hecho bancario del receptor, vinculadas o no). No son Ingreso, no restan en Gasto ni en S y no se trasladan al ciclo de la compra",
         ),
         cuotas: bankMetric(
           debt.cuotas,
@@ -602,6 +730,13 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
         "No disponible sin los tres componentes completos. Cuando sea calculable será PARCIAL por definición; no representa ahorro real ni variación patrimonial completa",
         rows.map((r) => r.id),
         true,
+      );
+      const gastoReal = gastoRealEconomico(
+        db,
+        valid,
+        expenses,
+        rows.filter((r) => r.tipo === "Devolución de gasto"),
+        projection,
       );
       let lines: ReturnType<typeof planLines> = [];
       let plan: ReturnType<typeof getCyclePlan> | null = null;
@@ -762,6 +897,13 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
         contexto,
         consulta: new Date(now).toISOString(),
         metrics,
+        gastoRealEconomico: gastoReal,
+        exclusionesDevoluciones: [
+          "Gasto (flujo bancario bruto) y S conservan la fórmula bruta: las devoluciones comerciales no restan ni suman en ellos.",
+          "Las devoluciones comerciales cobradas se publican aparte por fecha real del abono; no son Ingreso ni Nómina.",
+          "S no es Disponibilidad operativa ni saldo real completo; el saldo real vive en Saldos.",
+          "El Gasto real económico (neto) es un bloque distinto, retroactivo por la compra de origen, no flujo bancario.",
+        ],
         mensual: monthly,
         liquidez: {
           fechaValoracion: null,
@@ -824,6 +966,16 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
           saldoErrors,
           plan?.contextRevision,
           erroresFuente,
+          // El GRE vivo cambia con el vínculo/elegibilidad aunque la fila bancaria no cambie.
+          projection.items.map((d) => [
+            d.id,
+            d.compra,
+            d.causa,
+            d.vinculo?.estado ?? null,
+            d.vinculo?.elegibilidad ?? null,
+            d.vinculo?.revision ?? null,
+          ]),
+          gastoReal.subtotal,
         ]),
         ciclos: cycleMaster(db),
       };

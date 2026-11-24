@@ -33,6 +33,7 @@ const EMPTY = fixtureContext("resumen-anual-vacio");
 const ERROR = fixtureContext("resumen-anual-error");
 const FILTERS = fixtureContext("resumen-anual-filtros");
 const CONCURRENCY = fixtureContext("resumen-anual-concurrencia");
+const NATURAL = fixtureContext("resumen-anual-natural");
 
 type OwnedFixture = {
   fixture: Fixture;
@@ -109,6 +110,7 @@ test.beforeAll(async ({ request }) => {
   served.push(startFixture(ERROR));
   served.push(startFixture(FILTERS));
   served.push(startFixture(CONCURRENCY));
+  served.push(startFixture(NATURAL));
   for (const owned of served) await waitForApi(request, owned);
 });
 
@@ -855,4 +857,82 @@ test("AC25: descarta la respuesta antigua de una consulta retenida", async ({
   await expect(
     page.locator("section[aria-labelledby='e47-plan']"),
   ).not.toContainText("18.000,00 €");
+});
+
+test("F2C-W1: Ejecutado (Plan anual), GRE de compras registradas e histórico conocido se muestran por separado y no comparables, sin total anual (1440/390)", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await routeApi(page, NATURAL.port);
+  await login(page, NATURAL.dir);
+  await page.route("**/api/resumen-anual*", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(NATURAL.port);
+    const response = await route.fetch({ url: url.toString() });
+    const json: any = await response.json();
+    const item = json.carriles.plan.items[0];
+    item.ejecutado.valor = "140.00";
+    item.ejecutado.subtotal = "90.00";
+    item.ejecutado.estado = "Verificado";
+    json.carriles.plan.gastoRealEconomicoNatural.partidas = [
+      {
+        partidaId: item.partidaId,
+        bruto: "120.00",
+        descuentoAtribuido: "30.00",
+        gastoRealEconomico: "90.00",
+        historicoConocido: "50.00",
+        ejecutadoPlanAnual: "140.00",
+        equivaleAEjecutado: false,
+        cobertura: "Completa",
+        causas: [],
+        exceso: false,
+        compras: 1,
+      },
+    ];
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json,
+    });
+  });
+  for (const [width, height, scope] of [
+    [1440, 1000, ".e47-table-wrap"],
+    [390, 844, ".e47-cards"],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/resumen-anual?ejercicio=2026");
+    const plan = page.locator("section[aria-labelledby='e47-plan']");
+    await expect(plan).toContainText(
+      "El Ejecutado del Plan anual puede incluir histórico conocido",
+    );
+    await expect(plan).not.toContainText(
+      "El Ejecutado de cada Partida es Gasto real económico",
+    );
+    const zona = plan.locator(scope).first();
+    await expect(zona).toBeVisible();
+    await expect(zona).toContainText("Ejecutado (Plan anual)");
+    await expect(zona).toContainText("140,00 €");
+    const detalle = zona.locator("[data-natural-partida]").first();
+    await expect(detalle).toContainText(
+      "Gasto real económico (neto), compras registradas",
+    );
+    await expect(detalle.locator("[data-natural-gre]")).toContainText("90,00 €");
+    await expect(detalle).toContainText("Histórico conocido");
+    await expect(detalle.locator("[data-natural-historico]")).toContainText(
+      "50,00 €",
+    );
+    await expect(detalle.locator("[data-natural-equivale]")).toContainText(
+      "no son comparables",
+    );
+    await expect(page.locator("[data-total-anual]")).toHaveCount(0);
+    await expect(
+      page.locator(".e47-page").getByRole("heading", { name: /total anual/i }),
+    ).toHaveCount(0);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(overflow).toBe(false);
+  }
+  expect(errors).toEqual([]);
 });

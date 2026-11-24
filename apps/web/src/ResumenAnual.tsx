@@ -81,6 +81,26 @@ type CarrilPlan = {
   estado: EstadoMetrica;
   motivo: string;
   items: CarrilPlanItem[];
+  /** GRE del ejercicio natural por compras (SPEC39), por Partida y sin total anual (SPEC25). */
+  gastoRealEconomicoNatural: {
+    estado: EstadoMetrica;
+    motivo: string;
+    /** «Compras registradas» frente al «Ejecutado» de Plan anual: difieren por histórico conocido. */
+    nota: string;
+    partidas: {
+      partidaId: string;
+      bruto: string;
+      descuentoAtribuido: string;
+      gastoRealEconomico: string | null;
+      historicoConocido: string;
+      ejecutadoPlanAnual: string | null;
+      equivaleAEjecutado: boolean;
+      cobertura: string;
+      causas: string[];
+      exceso: boolean;
+      compras: number;
+    }[];
+  };
   cobertura: Cobertura;
   fuente: Fuente;
   enlace: Enlace;
@@ -105,7 +125,10 @@ type AjusteCompartidos = {
 
 type CicloRealidad = CicloRef & {
   ingresos: Metrica;
+  /** Flujo bancario bruto (clave conservada). */
   gasto: Metrica;
+  gastoRealEconomico: Metrica;
+  devolucionesCobradas: Metrica;
   extraordinaria: Metrica;
   nomina: Metrica;
   operativo: Metrica;
@@ -454,6 +477,40 @@ function LaneHead({
       </div>
       <p className="e47-lane-motivo">{lane.motivo}</p>
     </header>
+  );
+}
+
+type NaturalPartida = CarrilPlan["gastoRealEconomicoNatural"]["partidas"][number];
+
+/** Magnitudes por Partida SEPARADAS y rotuladas, tal como las publica la API (sin recalcular ni sumar). */
+function NaturalPartidaDetalle({ natural }: { natural: NaturalPartida | undefined }) {
+  const importe = (v: string | null | undefined) =>
+    v === null || v === undefined ? (
+      <Amount value={null} state="No disponible" showNote={false} />
+    ) : (
+      formatDecimal(v, "EUR")
+    );
+  return (
+    <dl className="e47-card-facts" data-natural-partida>
+      <div>
+        <dt>Gasto real económico (neto), compras registradas</dt>
+        <dd data-natural-gre>{importe(natural?.gastoRealEconomico)}</dd>
+      </div>
+      <div>
+        <dt>Histórico conocido</dt>
+        <dd data-natural-historico>{importe(natural?.historicoConocido)}</dd>
+      </div>
+      <div>
+        <dt>¿Equivale al Ejecutado?</dt>
+        <dd data-natural-equivale>
+          {natural === undefined
+            ? "No disponible"
+            : natural.equivaleAEjecutado
+              ? "Sí: sin histórico conocido, coinciden"
+              : "No: no son comparables (el Ejecutado del Plan anual puede incluir histórico conocido o no ser verificable)"}
+        </dd>
+      </div>
+    </dl>
   );
 }
 
@@ -820,6 +877,13 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
       <div className="e47-grid-2">
         <section className="panel e47-lane" aria-labelledby="e47-plan">
           <LaneHead title="Plan" motor="E2.4 · plan anual" lane={plan} />
+          <p className="e47-note">
+            El Ejecutado del Plan anual puede incluir histórico conocido; el
+            Gasto real económico (neto) por compras registradas se muestra
+            aparte por Partida; no se suman Partidas ni ciclos.
+          </p>
+          <p className="e47-note">{plan.gastoRealEconomicoNatural.motivo}</p>
+          <p className="e47-note">{plan.gastoRealEconomicoNatural.nota}</p>
           {plan.items.length === 0 ? (
             <p className="e47-empty">Sin plan ni ejecución para el filtro.</p>
           ) : (
@@ -834,7 +898,8 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <th scope="col">Partida</th>
                       <th scope="col">Presupuesto</th>
                       <th scope="col">Esencial</th>
-                      <th scope="col">Ejecutado</th>
+                      <th scope="col">Ejecutado (Plan anual)</th>
+                      <th scope="col">Compras registradas e histórico</th>
                       <th scope="col">Diferencia</th>
                       <th scope="col">Estado</th>
                       <th scope="col">Cobertura</th>
@@ -858,6 +923,13 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                               item.ejecutado.contexto,
                             )}
                           </small>
+                        </td>
+                        <td>
+                          <NaturalPartidaDetalle
+                            natural={plan.gastoRealEconomicoNatural.partidas.find(
+                              (p) => p.partidaId === item.partidaId,
+                            )}
+                          />
                         </td>
                         <td>
                           {item.diferencia === null ? (
@@ -921,7 +993,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         <dd>{item.esencial ?? "Sin clasificar"}</dd>
                       </div>
                       <div>
-                        <dt>Ejecutado</dt>
+                        <dt>Ejecutado (Plan anual)</dt>
                         <dd>
                           <MetricAmount metrica={item.ejecutado} />
                         </dd>
@@ -945,6 +1017,11 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         </dd>
                       </div>
                     </dl>
+                    <NaturalPartidaDetalle
+                      natural={plan.gastoRealEconomicoNatural.partidas.find(
+                        (p) => p.partidaId === item.partidaId,
+                      )}
+                    />
                     <p className="e47-card-motivo">{item.ejecutado.motivo}</p>
                     <CoverageLine cobertura={item.cobertura} />
                     <FuenteLinea
@@ -1023,6 +1100,8 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                     {[
                       ciclo.ingresos,
                       ciclo.gasto,
+                      ciclo.gastoRealEconomico,
+                      ciclo.devolucionesCobradas,
                       ciclo.extraordinaria,
                       ciclo.nomina,
                       ciclo.operativo,
@@ -1032,7 +1111,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <MetricTableRow key={metrica.clave} metrica={metrica} />
                     ))}
                     <tr>
-                      <th scope="row">Ajuste G_n</th>
+                      <th scope="row">Ajuste G_n (gasto ajustado por participantes, no GRE)</th>
                       <td>
                         {ciclo.ajusteCompartidos.gNeto === null ? (
                           <Amount value={null} state="No disponible" showNote={false} />
@@ -1094,6 +1173,8 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                 {[
                   ciclo.ingresos,
                   ciclo.gasto,
+                  ciclo.gastoRealEconomico,
+                  ciclo.devolucionesCobradas,
                   ciclo.extraordinaria,
                   ciclo.nomina,
                   ciclo.operativo,

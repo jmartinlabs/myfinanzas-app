@@ -387,3 +387,16 @@ test("F13 AC14/16–19/26: exact conditional formulas with verified operands, ab
   ).toHaveLength(0);
   db.close();
 });
+test("F2C-18 (AC-D32): sin devoluciones, GRE = gasto bruto, cobros comerciales ausentes (no cero) y exclusiones declaradas", () => {
+  const db = setup(),
+    r = monthlyFlow(db, "1", now);
+  expect(r.metrics.gasto.subtotal).toBe("1800.00");
+  expect(r.gastoRealEconomico.subtotal).toBe("1800.00");
+  expect(r.gastoRealEconomico.devoluciones.cobertura).toBe("Completa");
+  expect(r.metrics.devolucionesCobradas.subtotal).toBeNull();
+  expect(r.metrics.devolucionesCobradas.estado).toBe("No disponible");
+  expect(r.exclusionesDevoluciones.join(" ")).toContain("fórmula bruta");
+  // Ciclo sin corte verificable: el GRE tampoco se inventa.
+  expect(monthlyFlow(db, "3", now).gastoRealEconomico.subtotal).toBeNull();
+  db.close();
+});
