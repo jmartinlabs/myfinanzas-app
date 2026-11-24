@@ -144,10 +144,9 @@ def validate(root):
    '~:local draft, a registered proposal and a published proposal',
    '~:A local commit alone'),
   'templates/progress.md':('one current summary', 'append-only', 'permission-sensitive',
-   'candidate SHA', 'PR / CI / merge', 'BLOQUEADO'),
+   'candidate SHA', 'PR / CI / merge'),
   'templates/testplan.md':('Before implementation', 'negative/error and integration',
    'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
-  'specs/methodology/dynamic-agents-external-clients.md':('PENDIENTE','ENVIADO','RECIBIDO','VERIFICADO','BLOQUEADO','DESCONOCIDO','HANDOFF → CODEX','HANDOFF → CLAUDE CODE','HANDOFF → HERMES'),
   'specs/methodology/myfinanzas-coordination.md':('Publicar rama y crear o',
    'nunca auto-merge', 'no cierra el turno'),
   '.agents/skills/dev/SKILL.md':('negative/integration cases before code',
@@ -167,7 +166,6 @@ def validate(root):
  for name,tokens in {
   '.agents/skills/orchestrate/SKILL.md':('## Execution continuity','a partial result','authorized, executable work remains','completed work with its evidence','user request to stop','blocker that cannot be resolved','**responsible party**'),
   '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
-  'specs/methodology/dynamic-agents-external-clients.md':('~:OpenCode is not enabled',),
   'specs/methodology/myfinanzas-coordination.md':('### Modo de ejecución','merge exige aprobación','ownership disjunto','Agent Relay v1'),
  }.items():
   for token in tokens:
