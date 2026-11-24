@@ -21,10 +21,6 @@ Risk matters more than code size. Auth, payments, production configuration, migr
 - Brainstorming is for unresolved requirements; preserve decisions and open questions. Do not force it for straightforward changes.
 - Walking skeleton is a real minimal end-to-end executable slice, not a planning interview. Use bootstrap only when initializing a project or validating a meaningful new architectural path.
 
-## Model and reasoning recommendation
-
-When model advice materially helps (normally Standard / Full), consult [Adaptive model selection](model-selection.md) on demand and recommend a capability tier and reasoning effort. Tier advice does not switch models; the native client configuration the user sets manually and the quota dispatch gate (including QA) remain mandatory. Omit redundant advice for straightforward Quick; never replace testing, review or required authorization.
-
 ## Approval gates
 Require confirmation of classification except the authorized Quick case or existing explicit workflow authorization. Material financial/product/architecture choices, a revised roadmap, Full specifications, new development scope, significant escalation and PR merges retain separate protected approvals under [MyFinanzas coordination](myfinanzas-coordination.md). Ordinary changes/tests inside valid scope need no new approval, and authorized code or documentation work includes branch/PR publication under [approvals](approvals.md#publicación-de-rama-y-pr); merge still needs explicit approval. Approved specs remain authoritative but never grant development permission by themselves.
 

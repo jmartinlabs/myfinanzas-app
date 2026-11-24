@@ -54,5 +54,5 @@ summary, not a new operational tracker.
 | --- | --- | --- | --- |
 | Standard/Full and Skill order | Candidate for upstream #54, not applied here | [implementation role](../.agents/roles/implementation.md), [task](../.agents/skills/task/SKILL.md) | [adapter](HERMES_ADAPTER.md); `/task` versus `/dev` |
 | Ownership, dispatch, runtime and recovery | Portable policy proposal, not template state | [dynamic agents](../specs/methodology/dynamic-agents.md) | Capability checks per recorded version; no invented persistence |
-| Technical critical review | Capability independent of provider | [local coordination](../specs/methodology/myfinanzas-coordination.md), [models/quota](../specs/methodology/model-selection.md) | Verified route via existing check-delegation-route; external profile unchanged |
+| Technical critical review | Capability independent of provider | [local coordination](../specs/methodology/myfinanzas-coordination.md), [models](../.agents/skills/orchestrate/SKILL.md#procedure) | Verified route via existing check-delegation-route; external profile unchanged |
 | Evidence and transport | Native compact/manual complete distinction | [QA](../.agents/roles/qa-review.md), [packet](../templates/agent-work-packet.md) | Native metadata checked; manual Agent Relay HANDOFF unchanged |

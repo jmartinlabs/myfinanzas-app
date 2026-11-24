@@ -1,99 +1,15 @@
 # Agent work packet (template)
 
-> Copy into the coordinator's task context per delegate. This is NOT an agent-registration format or an instruction to create a worker when the environment cannot support it.
+> Copy into the coordinator's task context per delegate. This is NOT an agent-registration format or an instruction to create a worker when the environment cannot support it. A Quick task the coordinator does itself needs no packet; add a field only when it applies.
 
-## Native packet — required core
-- **Packet ID:** TASK-UNSET
-- **Objective and done criteria:** bounded outcome and acceptance checks
-- **Workflow / authorization:** Quick/tweak | Standard/task authorized scope | Full/dev approved spec AND separate DEV authorization; source/date
-- **Profile / role + phase Skill:** responsible actor loads both before phase work
-- **Write files and sole ownership:** allowed paths, exclusions and read-only inputs
-- **Working branch / isolated checkout:** verified base/candidate, dirty state and ownership
-- **Applicable rules / prohibited actions / stop conditions:** scope, gates and relevant safety rules
-- **Verification commands / expected evidence:** candidate/environment, raw logs, PASS/FAIL/UNRUN
-- **Return schema:** compact structured candidate/files/checks/risks/next action
-
-## Conditional details
-Add only applicable details below; no irrelevant placeholders are required. Never omit a
-relevant safety gate, external control route or model/quota restriction. Reuse the same packet.
-
-- **Packet ID:** TASK-UNSET
-- **Workflow / authorization:** Quick/tweak | Standard/task with scope authorization | Full/dev with approved spec AND separate development authorization
-- **Epic / stream:** UNSET when applicable
-- **Profile:** Functional | Implementation | QA | Infrastructure | bounded custom
-- **Client / version / session ID:** verified client/version or UNVERIFIED; runtime-controlled | external. Technical session ID only if known; otherwise stable functional session reference. Never invent an ID; corrections preserve Task ID and session.
-- **Start/stop owner and permitted communication route:** UNSET; Agent Relay v1 conversation ID (explicit); no automatic conversation
-- **Instruction entry points / capability check:** UNVERIFIED; confirm canonical rules are readable
-- **Context:** fresh bounded context by default | inherited with concrete reason | unsupported/disclosed
-- **Execution mode:** direct coordinator | foreground subagent | background subagent | manual external; verified client support, reason and coordinator availability
+- **Packet ID and profile:** `TASK-UNSET` until assigned; Functional | Implementation | QA | Infrastructure | bounded custom. The responsible actor loads its role and the phase Skill before working.
 - **Objective and done criteria:** UNSET
-- **Source documents / links:** UNSET
-- **Spec approval:** approved with source and date | draft (documentary editing within the authorized packet; no approval, no code) | not applicable
-- **Hard dependencies:** UNSET; note whether each is satisfied
-- **Read files:** UNSET
-- **Write files and sole ownership:** UNSET
-- **Working branch / isolated checkout:** UNSET or read-only
-- **Preflight / operation owners:** checkout/access, runtimes, dependencies, platform; owner of permission-sensitive steps
-- **Shared test resources:** separate ports, databases and temporary directories | not applicable
-- **Other active conflicting packets:** NONE / LIST
-- **Permitted actions:** UNSET
-- **Applicable rules:** UNSET — copy the 3–6 rules this task needs, one line each with its source link (for example approval gates touched, worktree/isolation, security or financial constraints, project-specific restrictions). The delegate reads applicable canonical role and phase Skill before acting; excerpts support scope-sized policy loading.
-- **Prohibited actions:** approvals, merge, production deployment, destructive operations unless separately authorized
-- **Verification commands / expected evidence:** UNSET
-- **Verification environment / candidate:** local versus CI platform; SHA plus pending changes; full gate and focal delta checks
-- **Evidence destination:** reachable commit/diff or existing progress/testplan section; no duplicate board
-- **Blocking notice:** notify operation, reason and owner before a potentially suspending escalation when permitted; follow runtime restrictions and use justification for mandatory direct retries; preserve native approval
-- **Review milestones:** candidate | blocker | decision | final delta; no reminders without new information
-- **User decisions to request:** NONE / LIST
-- **Model selection:** requested model/effort; runtime assurance; observed model/effort and evidence or unverified; follow [model policy](../specs/methodology/model-selection.md)
-- **Quota gate:** source/time, five-hour and weekly remaining or unavailable; restrictive value; task-specific authorization and warning if required
-- **Return schema:** native: compact structured candidate/files/checks/raw evidence/risks/next action; manual Agent Relay: complete `HANDOFF → CODEX` block on every interaction, including corrections, blockers and decisions; task/session, COMPLETED / PARTIAL / BLOCKED / CANCELLED, changes/files, branch/SHA/PR, tests PASS / FAIL / UNRUN with command/environment/candidate/evidence, risks/blockers, decisions and next action; see [coordinator communication](../specs/methodology/coordinator-communication.md)
-- **Usage evidence:** client source and coverage | unavailable; never infer consumption or control of external workers
+- **Workflow and authorization:** Quick/tweak | Standard/task with scope authorization | Full/dev with an approved spec AND separate MyFinanzas development authorization; source and date (approved spec, or draft: documentary editing only, no code); hard dependencies and whether each is satisfied.
+- **Files and isolation:** files to read; files written under sole ownership; working branch or isolated checkout (or read-only); other active packets that could conflict.
+- **Prohibited actions:** approvals, merge, production deployment and destructive operations; running `work-issue`, claiming Issues or writing Project `Status`; delegating further. Publication (push, PR) only when the authorized scope includes it.
+- **Applicable rules:** the 3–6 rules this task needs, one line each with its source link (approval gates touched, isolation, security or financial constraints, project-specific restrictions). The delegate reads this list instead of the full policies.
+- **Verification:** commands and expected evidence; environment and candidate (SHA plus pending changes); where the evidence is kept (a reachable commit/diff or the existing progress/test-plan section, never a second board).
+- **Return:** packet ID; status COMPLETED / PARTIAL / BLOCKED / CANCELLED; candidate and changed files; each check PASS / FAIL / UNRUN with command, environment and evidence; risks, decisions needed and next action. Questions and approvals go to the coordinator, never directly to the user.
+- **Only if it applies:** requested model/effort and, afterwards, the observed values or `unverified`; inherited context and its reason; client, version and session for an external client, and the Agent Relay v1 conversation ID that owns start/stop; shared test resources (separate ports, databases, temporary directories); who owns an operation that may need a permission; review milestones.
 
-Coordinator updates the Issue's `Status` and report only after verifying the returned evidence and current canonical documents.
-
-## Copyable packet content for Agent Relay v1
-Fill every relevant placeholder before publishing the relay message. Include the applicable
-rules themselves; local source links alone are insufficient if the worker cannot read them.
-Use the packet above as the single source of scope and authorization, not a second board.
-The coordinator publishes this content through Agent Relay v1; the recipient reads it on
-`Lee` and returns through the same conversation.
-
-```text
-Task ID and name: <packet ID> — <functional name>
-Session reference: <known technical ID or stable functional reference; never invent>
-Client: OpenCode <verified version or UNVERIFIED>; external, user-controlled start/stop.
-Repository, branch or worktree, base SHA, PR: <verified values or absent/unknown; PR none unless the authorized scope includes publication>.
-Recommended model: <verified available model with rationale> | UNVERIFIED: catalog not checked; request before assigning.
-Objective and minimum context: <task, relevant decisions, source paths and instruction entry points>.
-Authorized scope: <approval source/date, allowed actions, editable paths and exclusions>.
-Isolation: <repo, branch, base SHA, separate checkout, ownership and test resources>.
-Shared test resources: <separate ports, databases and temporary directories or not applicable; serialize when isolation is absent>.
-Applicable rules: <copy the task's required rules and source links; preserve approvals>.
-Deliverable and acceptance: <concrete checks and expected behavior>.
-Tests: <commands, environment, expected evidence; report PASS/FAIL/UNRUN>.
-Stop on missing permissions, conflicting requirements, ownership collisions or scope expansion.
-Implement, test and commit only when covered by the stated authorization. Push and create
-or update the PR only when the authorized scope includes publication; respect local-only instructions.
-Never merge, deploy, self-approve QA, expand scope or start other workers.
-Return exactly one complete final copyable message, also when blocked, partial or needing a decision, with this heading and all fields:
-HANDOFF → CODEX
-Task ID and origin session: ...
-Final status (COMPLETED / PARTIAL / BLOCKED / CANCELLED): ...
-Summary and changes: ...
-Relevant files and pending changes: ...
-Branch, commit SHA, PR (or absent / unknown): ...
-Tests (PASS / FAIL / UNRUN for each command; command, environment, candidate SHA plus pending changes, evidence): ...
-Risks, blockers and open problems: ...
-Decisions needed (or NONE): ...
-Recommended next action: ...
-END HANDOFF → CODEX
-```
-
-Corrections and queries retain this task/session and require the complete return again;
-use [the follow-up shape](../specs/methodology/coordinator-communication.md#5-corrections-queries-and-follow-ups).
-Coordinator replies explicitly state the human next action and whether to relay anything.
-A final or stopped reply names the responsible party, exact human action (or none) and
-reason for waiting under [the closure contract](../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).
-
-Ownership transfer requires finish/stop acknowledgement and checkpoint before parent writes.
+Agent Relay and other external clients use the copyable content and `HANDOFF` return in [external clients](../specs/methodology/dynamic-agents-external-clients.md). The coordinator updates the Issue's `Status` and report only after verifying the returned evidence and current canonical documents.
