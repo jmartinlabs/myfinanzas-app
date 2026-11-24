@@ -47,16 +47,25 @@ edits it.
    and real diff; required independent QA and merge approval stay with their owners. Record usage only
    from attributed client telemetry; never assume it is zero.
 
-Task types: `review` and `investigate` are read-only. `develop` stays `disabled` until writing is
-validated in an isolated worktree; afterwards it also needs DEV authorization, file ownership and an
-isolated checkout, and keeps QA and human merge. Concurrent writers need separate checkouts and disjoint
-files. Delegates never use `work-issue`, claim Issues, write Project `Status`, delegate further or merge.
+Task types: `review` and `investigate` are read-only. `develop` writes code, so it is `on_request` only and
+needs, besides the explicit owner request, DEV authorization for the exact scope (`$work-issue` Status or the
+phase's approval), declared file ownership, an isolated worktree on its own branch cut from the base
+(never the shared checkout, `main` or `test`) and the delegate's own packet. It keeps independent QA, a PR
+to `test` and human merge; the coordinator verifies source, revision and real diff before accepting. Concurrent
+writers need separate checkouts and disjoint files. Delegates never use `work-issue`, claim Issues, write Project
+`Status`, delegate further, push, open PRs or merge: only the coordinator integrates.
 
 ## Codex CLI
 
 - Review: `codex review -c 'sandbox_mode="read-only"' -c 'approval_policy="never"' --base <base>`.
   Targeted review or investigation: `codex exec --sandbox read-only -c 'approval_policy="never"'
   --ephemeral -C <repo> -o <out> "<brief>"`. Add `-m <model>` only if the configuration sets `model`.
+- Develop (only under the `develop` rules above): `codex exec --sandbox workspace-write -c 'approval_policy="never"'
+  --ephemeral -C <isolated worktree> [-m <model>] [-c model_reasoning_effort=<effort>] "<brief>"`; the bracketed
+  options only if the configuration sets them. The workspace-write sandbox may not reach the worktree's `.git`:
+  the delegate edits files only and the coordinator reviews the diff and commits. Before relying on the run check that the worktree and branch are the
+  authorized ones, that the CLI header shows `sandbox: workspace-write` and `approval: never`, and that the diff stays
+  inside the declared files; never `--dangerously-bypass-approvals-and-sandbox`. The delegate does not push or merge.
 - The brief states it acts read-only, names the risks and paths and carries no conversation.
 - Before relying on the run, check that `git rev-parse HEAD` equals the candidate SHA and that the CLI
   header shows `sandbox: read-only` and `approval: never`; otherwise the run did not meet the
@@ -76,6 +85,12 @@ files. Delegates never use `work-issue`, claim Issues, write Project `Status`, d
   `opencode run --agent review --title <task> "<brief>"`, adding `--model '<model>'` only if the
   configuration sets `model`. `review` and `investigate` use the read-only `review` agent. Never use
   `--auto`.
+- Develop (only under the `develop` rules above): from the root of the isolated worktree (the CLI has no
+  directory option) `opencode run --title <task> "<brief>"`, adding `--model '<model>'` only if the configuration
+  sets `model`; it uses the CLI's default agent, so check from the output line (`<agent> · <model>`) that it is a writing agent and
+  not the read-only `review` one, and never use `--auto`. If the run stops at a permission request,
+  report it and stop: do not widen permissions. Check the diff stays inside the declared files; the delegate does
+  not push or merge.
 - The effective model appears in the output line `review · <model>`; the reasoning variant is not shown
   and is not required to be verified. Sessions are not archived or supervised.
 
