@@ -16,6 +16,7 @@ import {
   type AnnualSources,
 } from "./plan-anual";
 import { ledgerRows } from "./movement-ledger";
+import { descuentoPorCompras } from "./devoluciones";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
 /**
@@ -144,8 +145,6 @@ const item = (c: Ctx, year: number, partida: string) => {
   const p = getAnnualPlan(c.db, year, now, provider);
   return [...p.items, ...p.sinLinea].find((i) => i.partida.id === partida);
 };
-const annual = (c: Ctx, year: number, partida = c.a.id) =>
-  annualExecution(partida, year, ledgerRows(c.db), sources(), now, undefined);
 
 test("F2A2-01 (AC-D07/D29): frontera - compra dic 2026 + abono ene 2027: natural 2026 netea, 2027 no; ciclo por maestro; sin suma de ciclos", () => {
   const c = setup();
@@ -163,8 +162,6 @@ test("F2A2-01 (AC-D07/D29): frontera - compra dic 2026 + abono ene 2027: natural
   // El abono de enero NO mueve la compra de ejercicio: 2027 no ve compra ni descuento.
   const y27 = item(c, 2027, c.a.id);
   expect(y27 === undefined || (y27.ejecutado === "0.00" && y27.hechos.length === 0)).toBe(true);
-  // Sin pasar `descuentos`, el motor conserva el bruto (contrato pre-F2a-2 de la función pura).
-  expect(annual(c, 2026).ejecutado).toBe("120.00");
   // Ciclo financiado por el maestro: el ciclo que empieza el 20-dic financia enero de 2027
   // (mes del maestro, no el año del Inicio), y aun así la compra del 28-dic es natural 2026.
   const dec = c.db
@@ -205,7 +202,7 @@ test("F2A2-03 (AC-D29): neto 0 con hechos es distinto de ausencia (Plan anual y 
   refund(c, x, "40");
   const withFacts = item(c, 2026, c.a.id)!;
   expect([withFacts.ejecutado, withFacts.hechos.length, withFacts.netoCeroConHechos]).toEqual(["0.00", 1, true]);
-  const absent = annualExecution(c.b.id, 2026, ledgerRows(c.db), sources(), now, undefined);
+  const absent = annualExecution(c.b.id, 2026, ledgerRows(c.db), sources(), now, new Map());
   expect([absent.ejecutado, absent.hechos.length, absent.netoCeroConHechos]).toEqual(["0.00", 0, false]);
   const v = getVehicle(c.db, r1.id, "2026", now, provider).gastoAnual!;
   expect([v.totalAlCorte, v.hechosConocidos, v.netoCeroConHechos, v.ceroVerificado]).toEqual(["0.00", 1, true, false]);
@@ -277,5 +274,28 @@ test("F2A2-06 (AC-D01/D30 parcial): Resumen anual consume el neto y neto 0 con h
     pb = r.carriles.plan.items.find((i) => i.partidaId === c.b.id)!;
   expect([pa.ejecutado.valor, pa.ejecutado.estado]).toEqual(["90.00", "Verificado"]);
   expect([pb.ejecutado.valor, pb.ejecutado.estado]).toEqual(["0.00", "Verificado"]);
+  c.db.close();
+});
+
+test("F2A2-07: el mapa de descuentos es obligatorio; compras sin devoluciones dan bruto con descuento cero explicito; mapa incompleto no es verificable", () => {
+  const c = setup();
+  const compra = buy(c, "120");
+  const rows = ledgerRows(c.db);
+  // @ts-expect-error omitir `descuentos` no compila: no hay fallback silencioso a bruto.
+  const omitted = () => annualExecution(c.a.id, 2026, rows, sources(), now);
+  expect(typeof omitted).toBe("function");
+  // Cero explicito calculado por la pieza comun: bruto, cobertura completa.
+  const zero = annualExecution(c.a.id, 2026, rows, sources(), now, descuentoPorCompras(c.db, [compra]));
+  expect([zero.ejecutado, zero.brutoRegistrado, zero.devoluciones.descuentoAtribuido, zero.devoluciones.cobertura]).toEqual([
+    "120.00",
+    "120.00",
+    "0.00",
+    "Completa",
+  ]);
+  // Mapa incompleto: la ausencia NO se lee como descuento cero ni cobertura completa.
+  const missing = annualExecution(c.a.id, 2026, rows, sources(), now, new Map());
+  expect(missing.ejecutado).toBeNull();
+  expect(missing.cobertura).toBe("Parcial");
+  expect(missing.motivo).toContain("Descuento no calculado para 1 compra(s)");
   c.db.close();
 });

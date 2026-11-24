@@ -106,7 +106,7 @@ function annualFor(
     grouped = new Map<string, LedgerRow[]>();
   for (const row of eligible)
     grouped.set(row.partida!, [...(grouped.get(row.partida!) ?? []), row]);
-  const base = annualExecution("__sin_partida__", year, [], sources, now),
+  const base = annualExecution("__sin_partida__", year, [], sources, now, new Map()),
     rows = [...grouped.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([id, rows]) => {
@@ -383,9 +383,9 @@ export function listVehicles(
     let base;
     try {
       const sources = (provider ?? (() => emptySources))(db, year);
-      base = annualExecution("__sin_partida__", year, [], sources, now);
+      base = annualExecution("__sin_partida__", year, [], sources, now, new Map());
     } catch {
-      base = annualExecution("__sin_partida__", year, [], emptySources, now);
+      base = annualExecution("__sin_partida__", year, [], emptySources, now, new Map());
     }
     return {
       ejercicio: year,
@@ -495,9 +495,10 @@ export function vehicleIntegrity(
         [],
         emptySourcesFor(provider, db, year),
         now,
+        new Map(),
       );
     } catch {
-      base = annualExecution("__sin_partida__", year, [], emptySources, now);
+      base = annualExecution("__sin_partida__", year, [], emptySources, now, new Map());
     }
     const summary = {
         ejercicio: year,

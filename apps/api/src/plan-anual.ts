@@ -150,16 +150,18 @@ export function annualDiscounts(
 }
 /**
  * Annual attribution depends only on stable Partida and real date, never cycle/monthly source.
- * Con `descuentos` (SPEC39) el Ejecutado es GRE: bruto de las compras del ejercicio natural
- * menos SOLO el descuento atribuido a esos IDs. Sin `descuentos` se conserva el bruto.
+ * `descuentos` es OBLIGATORIO (SPEC39): el Ejecutado es GRE, bruto de las compras del ejercicio
+ * natural menos SOLO el descuento atribuido a esos IDs. Un mapa vacío es válido solo si no hay
+ * compras; si algún hecho del ejercicio no tiene entrada, la ejecución NO es verificable (nunca
+ * se interpreta la ausencia como descuento cero ni como cobertura completa).
  */
 export function annualExecution(
   partida: string,
   year: number,
   rows: LedgerRow[],
   sources: AnnualSources,
-  now = Date.now(),
-  descuentos?: ReadonlyMap<string, DescuentoCompra>,
+  now: number,
+  descuentos: ReadonlyMap<string, DescuentoCompra>,
 ) {
   const start = String(year).padStart(4, "0") + "-01-01",
     end = String(year).padStart(4, "0") + "-12-31",
@@ -186,9 +188,10 @@ export function annualExecution(
       (!control || (r.fecha >= control.inicio && r.fecha <= control.fin)),
   );
   const gross = facts.reduce((n, r) => n + BigInt(r.importe), 0n);
-  const own = descuentos
-    ? facts.map((r) => descuentos.get(r.id)).filter((d): d is DescuentoCompra => !!d)
-    : [];
+  const own = facts
+    .map((r) => descuentos.get(r.id))
+    .filter((d): d is DescuentoCompra => !!d);
+  const sinDescuento = facts.length - own.length;
   const discount = agregarDescuentos(own);
   const registered = gross - discount.descuento;
   const histories = sources.historico.filter(
@@ -226,6 +229,10 @@ export function annualExecution(
     valid.push(h);
   }
   if (future) reasons.push("Ejercicio futuro sin corte ejecutado");
+  if (sinDescuento)
+    reasons.push(
+      `Descuento no calculado para ${sinDescuento} compra(s): ejecución no verificable`,
+    );
   if (discount.exceso)
     reasons.push("Devolución superior a la compra: ejecución no verificable");
   if (!control || cut! < start)
@@ -299,7 +306,7 @@ export function annualExecution(
       fecha: r.fecha,
       /** Importe BRUTO de la compra; el descuento atribuido va aparte. */
       importe: decimal(r.importe),
-      descuento: decimal(descuentos?.get(r.id)?.descuentoEconomico ?? 0n)!,
+      descuento: decimal(descuentos.get(r.id)?.descuentoEconomico ?? 0n)!,
     })),
   };
 }
