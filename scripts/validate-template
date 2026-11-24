@@ -10,7 +10,7 @@ SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev', 'relay')
 # Contracts split into a core plus an on-demand part are checked as one contract, so a rule is
 # enforced wherever it lives.
 CONTRACT_PARTS = {'specs/methodology/dynamic-agents.md': ('specs/methodology/dynamic-agents-external-clients.md',)}
-REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md','specs/methodology/dynamic-agents-external-clients.md',
+REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md','specs/methodology/dynamic-agents-external-clients.md','.agents/external-agents.json',
  *(f'specs/guidelines/{n}.md' for n in ('architecture','ui','quality','security')),
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
  *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
@@ -36,6 +36,32 @@ def satisfied(text,token):
  if token.startswith('~:'): return norm(token[2:]) in norm(text)
  return token in text
 
+EXTERNAL_TASKS = ('review', 'investigate', 'develop')
+EXTERNAL_MODES = ('automatic', 'on_request', 'disabled')
+EXTERNAL_TRANSPORTS = ('cli',)
+def check_external_agents(cfg):
+ # Structure only, never a closed list of clients: an entry without a documented procedure is simply not run.
+ if not isinstance(cfg,dict) or cfg.get('version')!=1: return ['version must be 1']
+ agents=cfg.get('agents')
+ if not isinstance(agents,dict) or not agents: return ['agents must be a non-empty object']
+ problems=[]
+ for name,agent in agents.items():
+  if not isinstance(agent,dict): problems.append(f'{name}: must be an object'); continue
+  for key in agent:
+   if key not in ('enabled','transport','model','effort','tasks'): problems.append(f'{name}: unknown field {key}')
+  if not isinstance(agent.get('enabled'),bool): problems.append(f'{name}: enabled must be true or false')
+  if agent.get('transport') not in EXTERNAL_TRANSPORTS: problems.append(f'{name}: transport must be one of {EXTERNAL_TRANSPORTS}')
+  for key in ('model','effort'):
+   value=agent.get(key)
+   if value is not None and not (isinstance(value,str) and value.strip()): problems.append(f'{name}: {key} must be null or a non-empty string')
+  tasks=agent.get('tasks')
+  if not isinstance(tasks,dict): problems.append(f'{name}: tasks must be an object'); continue
+  for task,mode in tasks.items():
+   if task not in EXTERNAL_TASKS: problems.append(f'{name}: unknown task {task}')
+   elif mode not in EXTERNAL_MODES: problems.append(f'{name}: {task} must be one of {EXTERNAL_MODES}')
+   elif mode=='automatic' and task!='review': problems.append(f'{name}: automatic is valid only for review')
+ return problems
+
 def validate(root):
  root=Path(root).resolve(); errors=[]
  def fail(rule,msg): errors.append(f'{rule}: {msg}')
@@ -50,6 +76,12 @@ def validate(root):
   return cache[key]
  for name in REQUIRED:
   if not (root/name).is_file() or not (root/name).stat().st_size: fail('structure',f'missing or empty {name}')
+ cfg_path=root/'.agents/external-agents.json'
+ if cfg_path.is_file():
+  try: cfg=json.loads(cfg_path.read_text(encoding='utf-8'))
+  except ValueError as exc: cfg=None; fail('external-agents',f'invalid JSON: {exc}')
+  if cfg is not None:
+   for problem in check_external_agents(cfg): fail('external-agents',problem)
  docs=[root/n for n in ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md') if (root/n).is_file()]
  for folder in ('specs','templates','.agents/skills'):
   docs.extend((root/folder).rglob('*.md'))
