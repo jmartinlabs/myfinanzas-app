@@ -1552,7 +1552,7 @@ test("AC-09: devolución con Partida NULL y sin acreditación no asigna grupo", 
   const metrics = comidaMetrics(db, cycle1.id, now);
   // F2b: la huérfana no se asigna a Comida (SPEC39 §3.3, AC-D21): se informa, no degrada.
   expect(metrics.devoluciones.sinVinculo).toContain("9001");
-    expect(metrics.compras.neto.valor).toBe("0.00");
+  expect(metrics.compras.neto.valor).toBe("0.00");
   db.close();
 });
 
@@ -2215,6 +2215,7 @@ test("H10 (F2b): una devolución acreditada sin compra no netea y se informa com
       evidenciaOrigenTemporal: "Documento de compra ficticio",
     },
   });
+  // Nota QA: el Parcial ya no prueba la devolución huérfana (no degrada, AC-D21); lo prueba el motivo informativo siguiente.
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
   expect(metrics.cobertura.motivos.join(" ")).toContain("no atribuibles a Comida");
