@@ -480,6 +480,40 @@ function LaneHead({
   );
 }
 
+type NaturalPartida = CarrilPlan["gastoRealEconomicoNatural"]["partidas"][number];
+
+/** Magnitudes por Partida SEPARADAS y rotuladas, tal como las publica la API (sin recalcular ni sumar). */
+function NaturalPartidaDetalle({ natural }: { natural: NaturalPartida | undefined }) {
+  const importe = (v: string | null | undefined) =>
+    v === null || v === undefined ? (
+      <Amount value={null} state="No disponible" showNote={false} />
+    ) : (
+      formatDecimal(v, "EUR")
+    );
+  return (
+    <dl className="e47-card-facts" data-natural-partida>
+      <div>
+        <dt>Gasto real económico (neto), compras registradas</dt>
+        <dd data-natural-gre>{importe(natural?.gastoRealEconomico)}</dd>
+      </div>
+      <div>
+        <dt>Histórico conocido</dt>
+        <dd data-natural-historico>{importe(natural?.historicoConocido)}</dd>
+      </div>
+      <div>
+        <dt>¿Equivale al Ejecutado?</dt>
+        <dd data-natural-equivale>
+          {natural === undefined
+            ? "No disponible"
+            : natural.equivaleAEjecutado
+              ? "Sí: sin histórico conocido, coinciden"
+              : "No: no son comparables (el Ejecutado del Plan anual puede incluir histórico conocido o no ser verificable)"}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 function MetricCard({ metrica, go }: { metrica: Metrica; go: (path: string) => void }) {
   return (
     <Metric
@@ -844,9 +878,9 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
         <section className="panel e47-lane" aria-labelledby="e47-plan">
           <LaneHead title="Plan" motor="E2.4 · plan anual" lane={plan} />
           <p className="e47-note">
-            El Ejecutado de cada Partida es Gasto real económico (neto): compras
-            del ejercicio natural menos sus devoluciones elegibles. Sin total
-            anual: no se suman Partidas ni Ciclos.
+            El Ejecutado del Plan anual puede incluir histórico conocido; el
+            Gasto real económico (neto) por compras registradas se muestra
+            aparte por Partida; no se suman Partidas ni ciclos.
           </p>
           <p className="e47-note">{plan.gastoRealEconomicoNatural.motivo}</p>
           <p className="e47-note">{plan.gastoRealEconomicoNatural.nota}</p>
@@ -864,7 +898,8 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <th scope="col">Partida</th>
                       <th scope="col">Presupuesto</th>
                       <th scope="col">Esencial</th>
-                      <th scope="col">Ejecutado</th>
+                      <th scope="col">Ejecutado (Plan anual)</th>
+                      <th scope="col">Compras registradas e histórico</th>
                       <th scope="col">Diferencia</th>
                       <th scope="col">Estado</th>
                       <th scope="col">Cobertura</th>
@@ -888,6 +923,13 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                               item.ejecutado.contexto,
                             )}
                           </small>
+                        </td>
+                        <td>
+                          <NaturalPartidaDetalle
+                            natural={plan.gastoRealEconomicoNatural.partidas.find(
+                              (p) => p.partidaId === item.partidaId,
+                            )}
+                          />
                         </td>
                         <td>
                           {item.diferencia === null ? (
@@ -951,7 +993,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         <dd>{item.esencial ?? "Sin clasificar"}</dd>
                       </div>
                       <div>
-                        <dt>Ejecutado</dt>
+                        <dt>Ejecutado (Plan anual)</dt>
                         <dd>
                           <MetricAmount metrica={item.ejecutado} />
                         </dd>
@@ -975,6 +1017,11 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         </dd>
                       </div>
                     </dl>
+                    <NaturalPartidaDetalle
+                      natural={plan.gastoRealEconomicoNatural.partidas.find(
+                        (p) => p.partidaId === item.partidaId,
+                      )}
+                    />
                     <p className="e47-card-motivo">{item.ejecutado.motivo}</p>
                     <CoverageLine cobertura={item.cobertura} />
                     <FuenteLinea
