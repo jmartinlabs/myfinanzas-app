@@ -810,3 +810,19 @@ test("M2: la revisión cambia al cambiar la deuda del patrimonio", () => {
   expect(after.contexto.revision).not.toBe(before.contexto.revision);
   expect(after.patrimonio!.deuda.subtotal).toBe("1120.00");
 });
+
+test("F2C-20 (AC-D30): cada ciclo publica Flujo bancario bruto, GRE y cobros por separado, iguales a E2.6; el natural conserva etiqueta y no es un total de Ciclos", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(fixture.db, new URLSearchParams({ ejercicio: "2026" }), NOW);
+  for (const ciclo of dto.carriles.realidad.ciclos) {
+    const flow = monthlyFlow(fixture.db, ciclo.cicloId, NOW);
+    expect(ciclo.gasto.etiqueta).toBe("Flujo bancario bruto");
+    expect(ciclo.gastoRealEconomico.etiqueta).toBe("Gasto real económico (neto)");
+    expect(ciclo.gastoRealEconomico.subtotal).toBe(flow.gastoRealEconomico.subtotal);
+    expect(ciclo.devolucionesCobradas.subtotal).toBe(flow.metrics.devolucionesCobradas.subtotal);
+  }
+  expect(dto.carriles.plan.gastoRealEconomicoNatural.etiqueta).toBe(
+    "Gasto real económico (neto) · ejercicio natural",
+  );
+  expect(JSON.stringify(dto)).not.toContain("totalAnual");
+});
