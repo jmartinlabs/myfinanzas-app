@@ -902,7 +902,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
   await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
   await expect(page.locator(".graphite-cycle-cards .ui-data-list-item")).toHaveCount(
-    8,
+    9,
   );
   await expectNoOverflow();
   await expectInicioContrast(page);
