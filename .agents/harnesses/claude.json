@@ -1,19 +1,27 @@
 {
-  "version": 1,
-  "agents": {
+  "version": 2,
+  "external": {
     "codex": {
       "enabled": true,
       "transport": "cli",
       "model": "gpt-6.2-sol",
       "effort": "low",
-      "tasks": { "review": "automatic", "investigate": "on_request", "develop": "on_request" }
+      "tasks": {
+        "review": "automatic",
+        "investigate": "on_request",
+        "develop": "on_request"
+      }
     },
     "opencode": {
       "enabled": true,
       "transport": "cli",
       "model": "alibaba-token-plan/deepseek-v4.1-flash-1017#high",
       "effort": null,
-      "tasks": { "review": "on_request", "investigate": "on_request", "develop": "on_request" }
+      "tasks": {
+        "review": "on_request",
+        "investigate": "on_request",
+        "develop": "on_request"
+      }
     }
   }
 }

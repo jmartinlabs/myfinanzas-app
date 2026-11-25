@@ -9,7 +9,8 @@ never approval, state or a second source of truth; no parallel or alternative re
 
 ## Configuration
 
-`.agents/external-agents.json` lists per client `enabled`, `transport` (only `cli`), `model`, `effort`
+The [coordinator configuration](dynamic-agents.md#coordinator-configuration) selects the active
+file. For example, `.agents/harnesses/claude.json` lists under `external` per client `enabled`, `transport` (only `cli`), `model`, `effort`
 and `tasks`: `review`, `investigate` and `develop`, each `automatic`, `on_request` or `disabled`. It is
 eligibility, never authorization: the effective permission is policy ∩ configuration, and only the owner
 edits it.
@@ -22,11 +23,12 @@ edits it.
   empty value. A set model is passed as written; if it is unavailable, report and stop, never substitute
   a model or provider. `effort` goes to Codex as `-c model_reasoning_effort=…`; OpenCode carries it in
   the model (`provider/model#variant`); setting it where it is unsupported is reported as "not requestable".
-- A missing file is an error in the template and in new projects. An existing project without it keeps
-  only the automatic Codex review of a Claude Code coordinator and no other external delegation until the
-  owner adds it. Invalid JSON, a `version` other than 1 or an unknown value: stop and report.
-- A client runs only if this document has a section with its verified connection procedure. Otherwise
-  report "no verified procedure" and stop.
+- Missing coordinator file, absent client or absent task grants no external eligibility. Invalid JSON,
+  a `version` other than 2 or an unknown field/value: stop and report. There is no legacy fallback.
+  A client entry applies exclusively to the current coordinator. External entries have no profiles.
+- The existing external routes originate in Claude Code. An entry for any other direction remains
+  ineligible until that direction and task have a verified connection procedure. Otherwise report
+  "no verified procedure" and stop.
 
 ## Procedure
 
