@@ -1,5 +1,45 @@
 {
   "version": 2,
+  "local": {
+    "model": "sonnet",
+    "effort": "medium",
+    "profiles": {
+      "functional": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "opus",
+          "effort": "high"
+        }
+      },
+      "implementation": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "effort": "high"
+        }
+      },
+      "qa-review": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "opus",
+          "effort": "high"
+        }
+      },
+      "infrastructure": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "effort": "high"
+        }
+      }
+    }
+  },
   "external": {
     "codex": {
       "enabled": true,
