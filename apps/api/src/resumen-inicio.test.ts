@@ -1715,3 +1715,15 @@ test("AC-28: el ejercicio del coste esencial sale de mesFinanciado (Q4=A)", () =
     db.close();
   }
 });
+
+test("F2C-21 (AC-D31): el KPI de gasto del ciclo es GRE, 'gasto' conserva el flujo bancario bruto y ambos coinciden sin devoluciones", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const dto = resumenInicio(db, NOW);
+    expect(dto.secciones.ciclo.gasto.etiqueta).toBe("Flujo bancario bruto");
+    expect(dto.secciones.ciclo.gastoRealEconomico.etiqueta).toBe("Gasto real económico (neto)");
+    expect(dto.secciones.ciclo.devolucionesCobradas.etiqueta).toBe("Devoluciones comerciales cobradas");
+  } finally {
+    db.close();
+  }
+});

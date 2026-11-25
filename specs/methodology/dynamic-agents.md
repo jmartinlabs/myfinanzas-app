@@ -57,6 +57,52 @@ cannot be supplied compactly. Evidence identifies the commit plus dirty or untra
 command, the environment and the result; after a delta repeat the affected checks, and run the full
 verification for uncertain impact, mandatory gates or financial/security risk.
 
+## Coordinator configuration
+
+At dispatch, only the coordinator consults its repository's
+`.agents/harnesses/<coordinator>.json` (version 2). Use the active client's canonical name:
+`claude`, `codex`, `opencode`, or `hermes`. The coordinator receives the owner's request or
+applies standing authorization and prepares the work packet. A worker, including an external
+root session executing a packet, acts within that packet and does not read a coordinator policy
+or delegate. Use the existing client and task role context. If either is unclear, stop dispatch
+before reading. A reported model or the presence of a tool does not establish the role.
+
+Read one file on demand, with no startup scan or sibling lookup. Missing file leaves native
+delegation under its existing rules and enables no external clients. An unreadable or invalid
+active file stops dispatch. Require strict JSON with unique keys and the v2 schema checked by `scripts/validate-template`.
+CI checks all files separately. Reject paths outside the checkout.
+There is no v1 reader or fallback. `external` is covered by the
+[external procedure](dynamic-agents-external-clients.md).
+
+### Native role profiles
+
+`local.model` and `local.effort` are defaults for delegates. Under `local.profiles.<role>`,
+`standard` and `complex` are optional for `functional`, `implementation`, `qa-review` and
+`infrastructure`. Use the canonical role assigned in the packet, never a client-specific alias.
+Each configured profile sets at least one of `model` and `effort`. Resolve each field
+separately: an authorized explicit owner selection for the task, a concrete profile value, a concrete local default, then native inheritance.
+An omitted or null value passes through to the next source. Never borrow a value from another
+role. A suggested profile that is absent uses the defaults without a profile label. An explicitly required profile that is absent, invalid or
+unsupported stops dispatch. Use the existing complexity analysis: standard suits bounded work
+with known contracts, while complex can fit interacting state, high uncertainty or significant
+risk. Record a short reason only when selecting a profile. The selected level preserves the
+coordinator's settings, the role's permissions and QA independence.
+
+Native v2 selections are **unsupported** until the corresponding client surface and version pass a
+functional check. Verify both profiles on the same model with distinct efforts, and both on distinct
+models if that capability is claimed. Reuse evidence across roles only when they share the same
+verified dispatch path and guarantees and role-to-profile selection is checked separately.
+Correlate each child with its actual model and effort in host evidence and record the requested
+values before dispatch. An accepted argument, worker text or
+fixture score cannot establish effective selection. Unobservable or mismatched selections do not
+qualify. Existing native inheritance remains available under its current rules when no explicit
+selection is required. Never silently discard a configured or explicitly selected value. A configured default or profile is a request, not a precondition: where the host cannot accept or confirm it, delegate with native inheritance and report the value as not applied or unverified; only an explicitly required selection that cannot be honored stops dispatch. A valid `local` block never blocks native delegation.
+
+For Claude Code, correlate the native child ID with task details showing both effective fields.
+For Codex, explicit overrides need fresh bounded context and an attributable child execution
+record with both fields. These are verification candidates. This template ships no verified
+native profile route. Record the tested client surface and version before documenting support.
+
 ## Models and background work
 
 The core states the model and limit gates (steps 3–4). Detail: model choice never replaces verification,
@@ -81,8 +127,8 @@ approval.
 
 A **Claude Code coordinator only** may use the local Codex CLI as an additional **read-only** reviewer
 when justified (a financial, security, persistence or data-integrity risk, or an explicit owner request)
-without asking each time, unless `.agents/external-agents.json`, when present, sets `codex.tasks.review`
-to something other than `automatic`. It is the only automatic client launch; every other external launch
+without asking each time, while `external.codex.tasks.review` is `automatic` in
+[`.agents/harnesses/claude.json`](../../.agents/harnesses/claude.json). It is the only automatic client launch; every other external launch
 needs an explicit owner request. It is neither independent QA nor an approval. Procedure:
 [external delegation](dynamic-agents-external-clients.md#codex-cli).
 

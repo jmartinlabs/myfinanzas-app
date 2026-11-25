@@ -1,0 +1,67 @@
+{
+  "version": 2,
+  "local": {
+    "model": "sonnet",
+    "effort": "medium",
+    "profiles": {
+      "functional": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "opus",
+          "effort": "high"
+        }
+      },
+      "implementation": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "effort": "high"
+        }
+      },
+      "qa-review": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "opus",
+          "effort": "high"
+        }
+      },
+      "infrastructure": {
+        "standard": {
+          "effort": "medium"
+        },
+        "complex": {
+          "effort": "high"
+        }
+      }
+    }
+  },
+  "external": {
+    "codex": {
+      "enabled": true,
+      "transport": "cli",
+      "model": "gpt-6.2-sol",
+      "effort": "low",
+      "tasks": {
+        "review": "automatic",
+        "investigate": "on_request",
+        "develop": "on_request"
+      }
+    },
+    "opencode": {
+      "enabled": true,
+      "transport": "cli",
+      "model": "alibaba-token-plan/deepseek-v4.1-flash-1017#high",
+      "effort": null,
+      "tasks": {
+        "review": "on_request",
+        "investigate": "on_request",
+        "develop": "on_request"
+      }
+    }
+  }
+}

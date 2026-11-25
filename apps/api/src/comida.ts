@@ -1406,49 +1406,5 @@ export function revalidateDevolucionPropia(
   return true;
 }
 
-/** Devolution cents per effective Partida for a cycle, for P5 net execution. */
-export function eligibleDevolutionCents(
-  db: Database,
-  cicloId: string,
-): Map<string, { cents: bigint; ids: string[] }> {
-  const start = (
-    db.query("SELECT inicio FROM ciclos WHERE id=?").get(cicloId) as {
-      inicio: string;
-    } | null
-  )?.inicio;
-  if (!start) throw new Problem(404, "NOT_FOUND", "Ciclo no encontrado.");
-  const cycle = cycleMaster(db).find((c) => c.id === cicloId)!;
-  const end = cycle.fin ?? cycle.corte;
-  if (!end) return new Map();
-  const result = new Map<string, { cents: bigint; ids: string[] }>();
-  const rows = db
-    .query(
-      `SELECT d.movimiento,m.importe,d.partida,m.partida movimientoPartida,
-         c.partida compraPartida
-       FROM movimiento_devolucion d
-       JOIN movimientos m ON m.id=d.movimiento
-       LEFT JOIN movimientos c ON c.id=d.compra
-       WHERE d.elegibilidad='Acreditada' AND d.ciclo_origen=?
-         AND m.anulado=0 AND m.fecha>=? AND m.fecha<=?
-         AND (d.compra IS NULL OR (d.estado='Verificado' AND c.anulado=0 AND c.tipo='Gasto'))`,
-    )
-    .all(cicloId, start, end) as {
-    movimiento: string;
-    importe: number;
-    partida: string | null;
-    movimientoPartida: string | null;
-    compraPartida: string | null;
-  }[];
-  for (const r of rows) {
-    const partida = r.partida ?? r.movimientoPartida ?? r.compraPartida;
-    if (!partida) continue;
-    const current = result.get(partida) ?? { cents: 0n, ids: [] };
-    current.cents += BigInt(r.importe);
-    current.ids.push(r.movimiento);
-    result.set(partida, current);
-  }
-  return result;
-}
-
 /* E3.5 owns the read model; alias kept for existing importers. */
 export const comidaMetrics = e35Metrics;

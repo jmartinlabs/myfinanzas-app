@@ -293,18 +293,18 @@ async function expectGraphiteComposition(page: Page) {
   );
   const planItem = (label: string) =>
     hero.locator(".graphite-plan-item").filter({ hasText: label });
-  await expect(planItem("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(planItem("Gasto real económico (neto)")).toContainText("1.800,00 €");
   await expect(planItem("Del mes planificado")).toContainText("1.900,00 €");
   const kpi = (label: string) =>
     kpis.locator(".graphite-kpi").filter({ hasText: label });
   await expect(kpi("Ingresos del ciclo")).toContainText("2.250,00 €");
-  await expect(kpi("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(kpi("Gasto real económico (neto)")).toContainText("1.800,00 €");
   await expect(kpi("Inversión valorada")).toContainText("1.197,50 €");
   await expect(kpi("Deuda no hipotecaria")).toContainText("1.020,00 €");
   const fact = (label: string) =>
     hero.locator(".graphite-facts > div").filter({ hasText: label });
   await expect(fact("Ingresos")).toContainText("2.250,00 €");
-  await expect(fact("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(fact("Flujo bancario bruto")).toContainText("1.800,00 €");
   await expect(fact("Nómina")).toContainText("2.000,00 €");
   await expect(fact("Ingresos")).toContainText("PARCIAL");
 
@@ -316,11 +316,12 @@ async function expectGraphiteComposition(page: Page) {
     page.locator("section[aria-labelledby='inicio-ciclo']"),
   ).toHaveCount(1);
   const cycleRows = cycle.locator(".graphite-cycle-desktop tbody tr");
-  await expect(cycleRows).toHaveCount(8);
+  await expect(cycleRows).toHaveCount(9);
   const row = (label: string) => cycleRows.filter({ hasText: label });
   await expect(row("Ingresos")).toContainText("2.250,00 €");
   await expect(row("Ingresos")).toContainText("PARCIAL");
-  await expect(row("Gasto bruto")).toContainText("1.800,00 €");
+  await expect(row("Flujo bancario bruto")).toContainText("1.800,00 €");
+  await expect(row("Gasto real económico (neto)")).toContainText("1.800,00 €");
   await expect(row("Amortización extraordinaria")).toContainText("100,00 €");
   await expect(row("Nómina cobrada")).toContainText("2.000,00 €");
   await expect(row("Saldo operativo bruto observado")).toContainText("ND");
@@ -571,7 +572,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   await expect(ingresos).toContainText("2.250,00 €");
   await expect(ingresos).toContainText("Subtotal conocido");
   await expect(ingresos).toContainText("PARCIAL");
-  const gasto = ciclo.getByRole("article", { name: "Gasto bruto", exact: true });
+  const gasto = ciclo.getByRole("article", { name: "Flujo bancario bruto", exact: true });
   await expect(gasto).toContainText("1.800,00 €");
   await expect(gasto).toContainText("PARCIAL");
   const extraordinaria = ciclo.getByRole("article", {
@@ -901,7 +902,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   await expect(page.locator(".graphite-cycle-cards")).toBeVisible();
   await expect(page.locator(".graphite-cycle-desktop")).toBeHidden();
   await expect(page.locator(".graphite-cycle-cards .ui-data-list-item")).toHaveCount(
-    8,
+    9,
   );
   await expectNoOverflow();
   await expectInicioContrast(page);

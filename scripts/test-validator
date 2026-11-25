@@ -60,30 +60,73 @@ class ValidationTests(unittest.TestCase):
   self.change('AGENTS.md','# Agent','# Agent'+'\n'*70); self.assertRule('agents')
  def test_manifest(self):
   self.change('.agents/skills/spec/SKILL.md','name: spec','name: wrong'); self.assertRule('manifest')
- def external_config(self): return json.loads((self.root/'.agents/external-agents.json').read_text())
- def write_external_config(self,cfg): (self.root/'.agents/external-agents.json').write_text(json.dumps(cfg))
+ def external_config(self): return json.loads((self.root/'.agents/harnesses/claude.json').read_text())
+ def write_external_config(self,cfg): (self.root/'.agents/harnesses/claude.json').write_text(json.dumps(cfg))
  def test_external_agents_file_is_required(self):
-  (self.root/'.agents/external-agents.json').unlink(); self.assertRule('structure')
+  (self.root/'.agents/harnesses/claude.json').unlink(); self.assertRule('structure')
  def test_external_agents_rejects_invalid_values(self):
   def broken(mutate):
-   cfg=self.external_config(); mutate(cfg); self.write_external_config(cfg); self.assertRule('external-agents')
-  broken(lambda c: c.update(version=2))
-  broken(lambda c: c['agents']['codex'].update(transport='mcp'))
-  broken(lambda c: c['agents']['codex']['tasks'].update(investigate='automatic'))
-  broken(lambda c: c['agents']['codex']['tasks'].update(develop='automatic'))
-  broken(lambda c: c['agents']['codex']['tasks'].update(review='sometimes'))
-  broken(lambda c: c['agents']['codex']['tasks'].update(refactor='on_request'))
-  broken(lambda c: c['agents']['codex'].update(model=''))
-  broken(lambda c: c['agents']['codex'].update(provider='openai'))
-  (self.root/'.agents/external-agents.json').write_text('{not json'); self.assertRule('external-agents')
+   cfg=self.external_config(); mutate(cfg); self.write_external_config(cfg); self.assertRule('harness-config')
+  broken(lambda c: c.update(version=1))
+  broken(lambda c: c['external']['codex'].update(transport='mcp'))
+  broken(lambda c: c['external']['codex']['tasks'].update(investigate='automatic'))
+  broken(lambda c: c['external']['codex']['tasks'].update(develop='automatic'))
+  broken(lambda c: c['external']['codex']['tasks'].update(review='sometimes'))
+  broken(lambda c: c['external']['codex']['tasks'].update(refactor='on_request'))
+  broken(lambda c: c['external']['codex'].update(model=''))
+  broken(lambda c: c['external']['codex'].update(provider='openai'))
+  (self.root/'.agents/harnesses/claude.json').write_text('{not json'); self.assertRule('harness-config')
  def test_external_agents_has_no_closed_client_list(self):
-  cfg=self.external_config(); cfg['agents']['newclient']={'enabled':False,'transport':'cli','model':None,'effort':None,'tasks':{'review':'on_request'}}
+  cfg=self.external_config(); cfg['external']['newclient']={'enabled':False,'transport':'cli','model':None,'effort':None,'tasks':{'review':'on_request'}}
   self.write_external_config(cfg); self.assertEqual(validate(self.root),[])
  def test_shipped_defaults_keep_the_automatic_codex_review(self):
-  cfg=json.loads((ROOT/'.agents/external-agents.json').read_text()); codex=cfg['agents']['codex']
+  cfg=json.loads((ROOT/'.agents/harnesses/claude.json').read_text()); codex=cfg['external']['codex']
   self.assertTrue(codex['enabled']); self.assertEqual(codex['tasks']['review'],'automatic')
-  self.assertIsNone(codex['model']); self.assertIsNone(codex['effort'])
-  self.assertEqual(codex['tasks']['develop'],'disabled'); self.assertEqual(cfg['agents']['opencode']['tasks']['develop'],'disabled')
+  self.assertEqual(codex['model'],'gpt-6.2-sol'); self.assertEqual(codex['effort'],'low')
+  self.assertEqual(cfg['external']['opencode']['model'],'alibaba-token-plan/deepseek-v4.1-flash-1017#high')
+  for agent in ('codex','opencode'): self.assertEqual(cfg['external'][agent]['tasks']['develop'],'on_request'); self.assertEqual(cfg['external'][agent]['tasks']['investigate'],'on_request')
+  self.assertEqual(cfg['external']['opencode']['tasks']['review'],'on_request')
+ def test_v2_harness_rejects_legacy_and_checks_all_files(self):
+  legacy=self.root/'.agents/external-agents.json'
+  legacy.write_text('{}')
+  self.assertRule('harness-config')
+  legacy.unlink()
+  other=self.root/'.agents/harnesses/codex.json'
+  other.write_text(json.dumps(self.external_config()))
+  self.assertRule('harness-config')  # Claude's standing permission cannot travel.
+  other.write_text('{"version":2}')
+  self.assertEqual(validate(self.root),[])
+  other.rename(other.with_name('unknown.json'))
+  self.assertRule('harness-config')
+ def test_v2_harness_checks_native_profiles_and_duplicate_keys(self):
+  cfg=self.external_config()
+  profiles={
+   'functional': {'standard': {'effort':'low'}, 'complex': {'effort':'high'}},
+   'implementation': {'standard': {'effort':'low'}, 'complex': {'model':None,'effort':'high'}},
+   'qa-review': {'standard': {'model':'review-model'}, 'complex': {'effort':'high'}},
+   'infrastructure': {'standard': {'effort':'low'}, 'complex': {'effort':'high'}},
+  }
+  cfg['local']={'model':'example','profiles':profiles}
+  self.write_external_config(cfg)
+  self.assertEqual(validate(self.root),[])
+  del profiles['functional']
+  del profiles['qa-review']['complex']
+  self.write_external_config(cfg)
+  self.assertEqual(validate(self.root),[])
+  for role, level, profile in (
+    ('review', 'standard', {'effort':'low'}),
+    ('qa-review', 'urgent', {'effort':'high'}),
+    ('implementation', 'complex', {'model':None,'effort':None}),
+    ('infrastructure', 'standard', {}),
+  ):
+   with self.subTest(role=role, level=level):
+    invalid={**cfg,'local':{**cfg['local'],'profiles':{role:{level:profile}}}}
+    self.write_external_config(invalid)
+    self.assertRule('harness-config')
+  for raw in ('{"version":2,"version":2}', 'null', '{"version":2.0}'):
+   with self.subTest(raw=raw):
+    (self.root/'.agents/harnesses/claude.json').write_text(raw)
+    self.assertRule('harness-config')
  def test_relay_skill_required(self):
   (self.root/'.agents/skills/relay/SKILL.md').unlink(); self.assertRule('structure')
  def test_relay_manifest(self):

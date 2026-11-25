@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "local": {
+    "model": "gpt-6.2-sol",
+    "effort": "low",
+    "profiles": {
+      "functional": {
+        "standard": { "effort": "low" },
+        "complex": { "effort": "high" }
+      },
+      "implementation": {
+        "standard": { "effort": "low" },
+        "complex": { "effort": "medium" }
+      },
+      "qa-review": {
+        "standard": { "effort": "low" },
+        "complex": { "effort": "high" }
+      },
+      "infrastructure": {
+        "standard": { "effort": "low" },
+        "complex": { "effort": "medium" }
+      }
+    }
+  },
+  "external": {}
+}

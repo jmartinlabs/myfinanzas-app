@@ -9,7 +9,8 @@ never approval, state or a second source of truth; no parallel or alternative re
 
 ## Configuration
 
-`.agents/external-agents.json` lists per client `enabled`, `transport` (only `cli`), `model`, `effort`
+The [coordinator configuration](dynamic-agents.md#coordinator-configuration) selects the active
+file. For example, `.agents/harnesses/claude.json` lists under `external` per client `enabled`, `transport` (only `cli`), `model`, `effort`
 and `tasks`: `review`, `investigate` and `develop`, each `automatic`, `on_request` or `disabled`. It is
 eligibility, never authorization: the effective permission is policy ∩ configuration, and only the owner
 edits it.
@@ -22,11 +23,12 @@ edits it.
   empty value. A set model is passed as written; if it is unavailable, report and stop, never substitute
   a model or provider. `effort` goes to Codex as `-c model_reasoning_effort=…`; OpenCode carries it in
   the model (`provider/model#variant`); setting it where it is unsupported is reported as "not requestable".
-- A missing file is an error in the template and in new projects. An existing project without it keeps
-  only the automatic Codex review of a Claude Code coordinator and no other external delegation until the
-  owner adds it. Invalid JSON, a `version` other than 1 or an unknown value: stop and report.
-- A client runs only if this document has a section with its verified connection procedure. Otherwise
-  report "no verified procedure" and stop.
+- Missing coordinator file, absent client or absent task grants no external eligibility. Invalid JSON,
+  a `version` other than 2 or an unknown field/value: stop and report. There is no legacy fallback.
+  A client entry applies exclusively to the current coordinator. External entries have no profiles.
+- The existing external routes originate in Claude Code. An entry for any other direction remains
+  ineligible until that direction and task have a verified connection procedure. Otherwise report
+  "no verified procedure" and stop.
 
 ## Procedure
 
@@ -47,19 +49,29 @@ edits it.
    and real diff; required independent QA and merge approval stay with their owners. Record usage only
    from attributed client telemetry; never assume it is zero.
 
-Task types: `review` and `investigate` are read-only. `develop` stays `disabled` until writing is
-validated in an isolated worktree; afterwards it also needs DEV authorization, file ownership and an
-isolated checkout, and keeps QA and human merge. Concurrent writers need separate checkouts and disjoint
-files. Delegates never use `work-issue`, claim Issues, write Project `Status`, delegate further or merge.
+Task types: `review` and `investigate` are read-only. `develop` writes code, so it is `on_request` only and
+needs, besides the explicit owner request, DEV authorization for the exact scope (`$work-issue` Status or the
+phase's approval), declared file ownership, an isolated worktree on its own branch cut from the base
+(never the shared checkout, `main` or `test`) and the delegate's own packet. It keeps independent QA, a PR
+to `test` and human merge; the coordinator verifies source, revision and real diff before accepting. Concurrent
+writers need separate checkouts and disjoint files. Delegates never use `work-issue`, claim Issues, write Project
+`Status`, delegate further, push, open PRs or merge: only the coordinator integrates.
 
 ## Codex CLI
 
 - Review: `codex review -c 'sandbox_mode="read-only"' -c 'approval_policy="never"' --base <base>`.
   Targeted review or investigation: `codex exec --sandbox read-only -c 'approval_policy="never"'
   --ephemeral -C <repo> -o <out> "<brief>"`. Add `-m <model>` only if the configuration sets `model`.
-- The brief states it acts read-only, names the risks and paths and carries no conversation.
-- Before relying on the run, check that `git rev-parse HEAD` equals the candidate SHA and that the CLI
-  header shows `sandbox: read-only` and `approval: never`; otherwise the run did not meet the
+- Develop (only under the `develop` rules above): `codex exec --sandbox workspace-write -c 'approval_policy="never"'
+  --ephemeral -C <isolated worktree> [-m <model>] [-c model_reasoning_effort=<effort>] "<brief>"`; the bracketed
+  options only if the configuration sets them. The workspace-write sandbox may not reach the worktree's `.git`:
+  the delegate edits files only and the coordinator reviews the diff and commits. Before relying on the run check that the worktree and branch are the
+  authorized ones, that the CLI header shows `sandbox: workspace-write` and `approval: never`, and that the diff stays
+  inside the declared files; never `--dangerously-bypass-approvals-and-sandbox`. The delegate does not push or merge.
+- For `review` and `investigate`, the brief states it acts read-only, names the risks and paths and carries no
+  conversation; a `develop` brief states its declared files and the prohibition to push, open PRs or merge.
+- Before relying on a `review` or `investigate` run, check that `git rev-parse HEAD` equals the candidate SHA and
+  that the CLI header shows `sandbox: read-only` and `approval: never`; otherwise the run did not meet the
   authorization. The header also prints `model`, `provider` and `reasoning effort` (step 5). If HEAD
   differs, stop: never switch branch or checkout in a tree that may hold other agents' work. If the tree
   holds unrelated changes, review the committed state (`--base` or `--commit`), never `--uncommitted`.
@@ -67,7 +79,7 @@ files. Delegates never use `work-issue`, claim Issues, write Project `Status`, d
   extra evidence: it does not approve and never replaces independent QA.
 - If a usage limit is reached, report it and stop; never switch to paid API, credits, another plan or
   another provider.
-- The read-only sandbox limits local shell writes, not remote writes through connectors the user's Codex
+- For `review` and `investigate`, the read-only sandbox limits local shell writes, not remote writes through connectors the user's Codex
   exposes; the instruction not to write remotely is not a technical guarantee.
 
 ## OpenCode CLI
@@ -76,6 +88,12 @@ files. Delegates never use `work-issue`, claim Issues, write Project `Status`, d
   `opencode run --agent review --title <task> "<brief>"`, adding `--model '<model>'` only if the
   configuration sets `model`. `review` and `investigate` use the read-only `review` agent. Never use
   `--auto`.
+- Develop (only under the `develop` rules above): from the root of the isolated worktree (the CLI has no
+  directory option) `opencode run --title <task> "<brief>"`, adding `--model '<model>'` only if the configuration
+  sets `model`; it uses the CLI's default agent, so check from the output line (`<agent> · <model>`) that it is a writing agent and
+  not the read-only `review` one, and never use `--auto`. If the run stops at a permission request,
+  report it and stop: do not widen permissions. Check the diff stays inside the declared files; the delegate does
+  not push or merge.
 - The effective model appears in the output line `review · <model>`; the reasoning variant is not shown
   and is not required to be verified. Sessions are not archived or supervised.
 

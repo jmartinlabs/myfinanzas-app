@@ -597,3 +597,20 @@ test("F17: el cálculo es vivo: nueva recuperación cambia R_adj sin tocar E2.6"
     f.db.close();
   }
 });
+
+test("F2C-19 (AC-D32): la fórmula, las claves y las advertencias del ajuste por participantes conservan el contrato y declaran que no es GRE", () => {
+  const f = fixture();
+  try {
+    const r = monthlyFlow(f.db, f.c1.id, now);
+    expect(Object.keys(r.flujoAjustado.ajuste)).toEqual(
+      expect.arrayContaining(["rAdj", "gNeto", "sAjustado"]),
+    );
+    expect(r.ajusteCompartidos.formula).toContain("G_n = G_b − R_adj");
+    expect(r.ajusteCompartidos.gastoNeto.importe).toBe("200.00");
+    // El GRE es un bloque distinto del gasto neto por participantes y no los mezcla.
+    expect(r.gastoRealEconomico.subtotal).toBe("500.00");
+    expect(r.flujoAjustado.advertencias.join(" ")).toContain("no es el Gasto real económico (neto)");
+  } finally {
+    f.db.close();
+  }
+});
