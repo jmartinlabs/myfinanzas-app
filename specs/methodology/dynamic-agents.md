@@ -96,7 +96,7 @@ Correlate each child with its actual model and effort in host evidence and recor
 values before dispatch. An accepted argument, worker text or
 fixture score cannot establish effective selection. Unobservable or mismatched selections do not
 qualify. Existing native inheritance remains available under its current rules when no explicit
-selection is required. Never silently discard a configured or explicitly selected value.
+selection is required. Never silently discard a configured or explicitly selected value. A configured default or profile is a request, not a precondition: where the host cannot accept or confirm it, delegate with native inheritance and report the value as not applied or unverified; only an explicitly required selection that cannot be honored stops dispatch. A valid `local` block never blocks native delegation.
 
 For Claude Code, correlate the native child ID with task details showing both effective fields.
 For Codex, explicit overrides need fresh bounded context and an attributable child execution

@@ -168,7 +168,7 @@ flowchart TD
     M --> V
 ```
 
-La selección respeta la [regla de modelos de `$orchestrate`](../.agents/skills/orchestrate/SKILL.md#procedure) y las capacidades verificadas del cliente. Los subagentes usan la configuración nativa que el usuario fija manualmente en cada cliente, sin techo predeterminado; el coordinador conserva su modelo. Si no puede garantizarse la selección permitida, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
+La selección respeta la [regla de modelos de `$orchestrate`](../.agents/skills/orchestrate/SKILL.md#procedure) y las capacidades verificadas del cliente. El usuario fija en cada cliente el modelo del coordinador, que se conserva; los defaults y perfiles de los subagentes nativos, sin techo predeterminado, los fija el propietario en `.agents/harnesses/<coordinador>.json`. Un default o perfil configurado es una petición: si no puede aplicarse o confirmarse, se delega con la herencia nativa y se informa. Si no puede garantizarse una selección exigida expresamente, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
 
 ## 9. ¿Qué instala realmente esta template?
 
