@@ -22,7 +22,7 @@ from pathlib import Path
 
 # Default agent catalogue. A checkout may replace it with `agents:` in the local, uncommitted
 # `.agents/tracker.local.yaml`. It is a list mutated in place so every default argument sees it.
-DEFAULT_AGENTS = ("opencode", "hermes", "codex", "claude")
+DEFAULT_AGENTS = ("opencode", "hermes", "codex", "claude", "antigravity")
 AGENTS = list(DEFAULT_AGENTS)
 AGENT_NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 TRACKER_LOCAL = Path(".agents") / "tracker.local.yaml"

@@ -2266,7 +2266,7 @@ class ContractTests(unittest.TestCase):
                 self.assertIsNotNone(validate_transition(status, target), (status, target))
 
     def test_agents_catalogue_is_the_documented_one(self):
-        self.assertEqual(MODULE["AGENTS"], ["opencode", "hermes", "codex", "claude"])
+        self.assertEqual(MODULE["AGENTS"], ["opencode", "hermes", "codex", "claude", "antigravity"])
 
     def test_tool_has_no_project_repository_or_owner_defaults(self):
         source = SCRIPT.read_text(encoding="utf-8")
@@ -2329,6 +2329,18 @@ class ContractTests(unittest.TestCase):
         self.assertIn("generate the executable Issues derived from the approved", spec)
         self.assertTrue((ROOT / "templates" / "issue.md").is_file())
         self.assertTrue((ROOT / ".claude" / "skills" / "work-issue" / "SKILL.md").is_file())
+
+    def test_antigravity_is_enabled_in_default_agents(self):
+        self.assertIn("antigravity", DEFAULT_AGENTS)
+        item = normalise({
+            "status": "Ready Development",
+            "labels": ["agent:antigravity"],
+            "assignees": [],
+            "content": {"number": 999, "title": "Antigravity routing test", "body": ""},
+        })
+        decision = classify(item, "antigravity", {999: item})
+        self.assertTrue(decision.eligible)
+        self.assertEqual(decision.route, "antigravity")
 
 
 if __name__ == "__main__":

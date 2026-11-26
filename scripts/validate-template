@@ -40,7 +40,7 @@ def satisfied(text,token):
 EXTERNAL_TASKS = ('review', 'investigate', 'develop')
 EXTERNAL_MODES = ('automatic', 'on_request', 'disabled')
 EXTERNAL_TRANSPORTS = ('cli',)
-HARNESS_NAMES = ('claude', 'codex', 'opencode', 'hermes')
+HARNESS_NAMES = ('claude', 'codex', 'opencode', 'hermes', 'antigravity')
 
 def unique_json_object(pairs):
  result = {}
