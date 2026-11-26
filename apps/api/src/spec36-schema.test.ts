@@ -26,6 +26,7 @@ const c27 = "C27-E411-FOTOS-PERIODO";
 const c28 = "C28-REPARTO-PENDIENTE-6A31C23";
 const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
+const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec36-"));
 const fp = "a".repeat(64);
 // Columnas de `transferencia_pendiente` tal como existen en v29: las comparaciones
@@ -497,7 +498,7 @@ test("SPEC36: C28 stays frozen and byte-identical", () => {
   );
 });
 
-test("SPEC36 v32: C29 sigue congelado y C32 es exacto y determinista", () => {
+test("SPEC36 v33: C29 y C32 siguen congelados y C33 es el contrato vigente", () => {
   const c = contract(c29);
   expect(c.id).toBe(c29);
   expect(c.schemaVersion).toBe(29);
@@ -506,7 +507,13 @@ test("SPEC36 v32: C29 sigue congelado y C32 es exacto y determinista", () => {
   expect(c.sha256).toBe(
     "be488dcc8809370096f76d0214712c731a1eacf661a59327e36e9705d20ea4cc",
   );
-  expect(contracts().at(-1)?.id).toBe(c32);
+  expect(contracts().at(-1)?.id).toBe(c33);
+  expect(contract(c33).schemaVersion).toBe(33);
+  expect(contract(c33).objects).toHaveLength(429);
+  expect(contracts().at(-2)?.id).toBe(c32);
+  expect(contract(c32).sha256).toBe(
+    "f73613f7de4b34846f6d58c7a4b8014e63b4449f4da40dfb34495a206795423e",
+  );
   const current = contract(c32);
   expect(current.schemaVersion).toBe(32);
   // Las dos guardas de §2.4 sobre la marca (`marca_sin_revision` y
@@ -518,14 +525,14 @@ test("SPEC36 v32: C29 sigue congelado y C32 es exacto y determinista", () => {
   );
 });
 
-test("SPEC36 v32: a fresh schema matches C32 exactly", () => {
+test("SPEC36 v33: a fresh schema matches C33 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 32,
+      version: 33,
     });
-    expect(manifest(db)).toEqual(contract(c32).objects);
-    expect(verifyContract(db, 32)).toBe(c32);
+    expect(manifest(db)).toEqual(contract(c33).objects);
+    expect(verifyContract(db, 33)).toBe(c33);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     for (const table of [
       "repartos",
@@ -562,7 +569,7 @@ test("SPEC36 v32: a fresh schema matches C32 exactly", () => {
   }
 });
 
-test("SPEC36 v32: v27→v32 is additive and preserves rows, IDs, audits and attempts", () => {
+test("SPEC36 v33: v27→v33 is additive and preserves rows, IDs, audits and attempts", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
@@ -583,7 +590,7 @@ test("SPEC36 v32: v27→v32 is additive and preserves rows, IDs, audits and atte
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect({
@@ -595,8 +602,8 @@ test("SPEC36 v32: v27→v32 is additive and preserves rows, IDs, audits and atte
         audit: db.query("SELECT * FROM audit ORDER BY id").all(),
         identity: db.query("SELECT * FROM database_origin").all(),
       }).toEqual(rows);
-      expect(manifest(db)).toEqual(contract(c32).objects);
-      expect(verifyContract(db, 32)).toBe(c32);
+      expect(manifest(db)).toEqual(contract(c33).objects);
+      expect(verifyContract(db, 33)).toBe(c33);
 
       const previous = new Map(
         contract(c27).objects.map((object) => [
@@ -632,7 +639,7 @@ test("SPEC36 v32: v27→v32 is additive and preserves rows, IDs, audits and atte
   }
 });
 
-test("SPEC36 v32: v28→v32 rebuild preserves every row, link and audit", () => {
+test("SPEC36 v33: v28→v33 rebuild preserves every row, link and audit", () => {
   const dir = root();
   try {
     const path = join(dir, "v28.sqlite");
@@ -672,7 +679,7 @@ test("SPEC36 v32: v28→v32 rebuild preserves every row, link and audit", () => 
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(
@@ -724,12 +731,12 @@ test("SPEC36 v32: v28→v32 rebuild preserves every row, link and audit", () => 
           .query("SELECT * FROM transferencia_pendiente_attempts ORDER BY key")
           .all(),
       ).toEqual(before.attempts);
-      expect(manifest(db)).toEqual(contract(c32).objects);
-      expect(verifyContract(db, 32)).toBe(c32);
+      expect(manifest(db)).toEqual(contract(c33).objects);
+      expect(verifyContract(db, 33)).toBe(c33);
       const fresh = store();
       try {
         expect(manifest(fresh)).toEqual(manifest(db));
-        expect(verifyContract(fresh, 32)).toBe(c32);
+        expect(verifyContract(fresh, 33)).toBe(c33);
       } finally {
         fresh.close();
       }
@@ -1541,20 +1548,20 @@ test("SPEC36 v28: attempts are keyed for idempotent generation and confirmation"
   }
 });
 
-test("SPEC36 v29: unknown v33 is rejected before mutating", () => {
+test("SPEC36 v29: unknown v34 is rejected before mutating", () => {
   const dir = root();
   try {
     const path = join(dir, "v27.sqlite");
     v27(path);
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=33");
-      expect(verifyContract(db, 33)).toBeNull();
+      db.exec("UPDATE schema_version SET version=34");
+      expect(verifyContract(db, 34)).toBeNull();
       expect(() => verifyAdmittedContract(db)).toThrow(
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 33,
+        version: 34,
       });
       expect(
         db
@@ -1615,7 +1622,7 @@ test.skipIf(process.platform !== "linux")(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 32,
+            version: 33,
           });
           expect(
             copy.query("SELECT fuente_plan FROM repartos").get(),

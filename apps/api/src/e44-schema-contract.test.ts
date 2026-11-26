@@ -21,7 +21,7 @@ import { Auth, provision, totp } from "./auth";
 const t = "2026-01-01T00:00:00.000Z";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e44-"));
 const c26 = "C26-E410-REAPERTURA-V26";
-const c32 = "C32-SPEC38-VALIDACION-CIERRE";
+const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const c22 = "C22-E35-FIN-NETA";
 
@@ -68,7 +68,7 @@ function v22(path: string) {
   });
 }
 
-test("E4.4 AC-24: C23 stays frozen and the v22→v32 upgrade exposes the exact C32 contract", () => {
+test("E4.4 AC-24: C23 stays frozen and the v22→v33 upgrade exposes the exact C33 contract", () => {
   const c23Contract = contract(c23);
   expect(c23Contract.schemaVersion).toBe(23);
   expect(c23Contract.objects).toHaveLength(270);
@@ -82,8 +82,8 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v32 upgrade exposes the exact C
   const fresh = new Database(":memory:");
   try {
     prepareSchema(fresh, { origin: "demo", key_hash: null });
-    expect(manifest(fresh)).toEqual(contract(c32).objects);
-    expect(verifyContract(fresh, 32)).toBe(c32);
+    expect(manifest(fresh)).toEqual(contract(c33).objects);
+    expect(verifyContract(fresh, 33)).toBe(c33);
   } finally {
     fresh.close();
   }
@@ -111,10 +111,10 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v32 upgrade exposes the exact C
     const upgraded = openDatabase(upgradedPath);
     try {
       expect(upgraded.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
-      expect(manifest(upgraded)).toEqual(contract(c32).objects);
-      expect(verifyContract(upgraded, 32)).toBe(c32);
+      expect(manifest(upgraded)).toEqual(contract(c33).objects);
+      expect(verifyContract(upgraded, 33)).toBe(c33);
     } finally {
       upgraded.close();
     }
@@ -177,8 +177,8 @@ test.skipIf(process.platform !== "linux")(
 
     const { bundle } = decryptBundle(identity, source);
     expect(bundle.manifest).toMatchObject({
-      app: "e38.1-v32",
-      schema: 32,
+      app: "e39.1-v33",
+      schema: 33,
       origin: "demo",
     });
 
@@ -186,7 +186,7 @@ test.skipIf(process.platform !== "linux")(
     const copy = openDatabase(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
       expect(
         copy
@@ -305,7 +305,7 @@ test.skipIf(process.platform !== "linux")(
     mkdirSync(corrupt, { mode: 0o700 });
     const plaintext = join(corrupt, "bundle.tmp");
     const altered = structuredClone(bundle);
-    altered.manifest.schema = 33;
+    altered.manifest.schema = 34;
     writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
     cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
     expect(

@@ -21,6 +21,7 @@ const c25 = "C25-E49-CIERRE-FINANCIERO";
 const c26 = "C26-E410-REAPERTURA-V26";
 const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
+const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e410-"));
 const fingerprint = "a".repeat(64);
 
@@ -158,20 +159,23 @@ test("E4.10 A: C26 is exact and deterministic", () => {
   expect(c26Contract.sha256).toBe(
     "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265",
   );
-  expect(contracts().at(-1)?.id).toBe(c32);
+  expect(contracts().at(-1)?.id).toBe(c33);
+  // C32 sigue registrado como contrato histórico inmediatamente anterior.
+  expect(contracts().at(-2)?.id).toBe(c32);
+  expect(contract(c32).schemaVersion).toBe(32);
   expect(contract(c25).sha256).toBe(
     "5b6b649b2708a35af1fe23dfd63804c18c92c6923cb35065177532f51f8fa140",
   );
 });
 
-test("E4.10 A: a fresh schema matches C32 exactly", () => {
+test("E4.10 A: a fresh schema matches C33 exactly", () => {
   const db = store();
   try {
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 32,
+      version: 33,
     });
-    expect(manifest(db)).toEqual(contract(c32).objects);
-    expect(verifyContract(db, 32)).toBe(c32);
+    expect(manifest(db)).toEqual(contract(c33).objects);
+    expect(verifyContract(db, 33)).toBe(c33);
     for (const table of [
       "reaperturas",
       "reapertura_activa",
@@ -190,7 +194,7 @@ test("E4.10 A: a fresh schema matches C32 exactly", () => {
   }
 });
 
-test("E4.10 A: v25→v32 is additive and rewrites no C25 object or row", () => {
+test("E4.10 A: v25→v33 is additive and rewrites no C25 object or row", () => {
   const dir = root();
   try {
     const path = join(dir, "v25.sqlite");
@@ -208,7 +212,7 @@ test("E4.10 A: v25→v32 is additive and rewrites no C25 object or row", () => {
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect({
@@ -499,16 +503,16 @@ test("E4.10 A: attempts are keyed per operation", () => {
   }
 });
 
-test("E4.10 A: unknown v33 is rejected without writes", () => {
+test("E4.10 A: unknown v34 is rejected without writes", () => {
   const db = store();
   try {
-    expect(verifyContract(db, 33)).toBe(null);
-    db.exec("UPDATE schema_version SET version=33");
+    expect(verifyContract(db, 34)).toBe(null);
+    db.exec("UPDATE schema_version SET version=34");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 33,
+      version: 34,
     });
   } finally {
     db.close();

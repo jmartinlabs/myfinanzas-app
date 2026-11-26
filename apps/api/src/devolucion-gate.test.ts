@@ -10,10 +10,10 @@ import { createClassification } from "./clasificacion";
 import { createCycle, cycleContext } from "./ciclos";
 import { previewMovement, writeMovement } from "./movimientos";
 import { writeComidaDevolucion } from "./comida";
-import { createRevisionComida } from "./revision-comida";
+import { createRevisionComida, getRevisionComida } from "./revision-comida";
 import { createApp } from "./app";
 import { provision, totp } from "./auth";
-import { financeRevision } from "./movement-ledger";
+import { financeRevision, fingerprint } from "./movement-ledger";
 import {
   DEVOLUCION_G1,
   devolucionIntegracionDisponible,
@@ -23,6 +23,7 @@ import {
 } from "./devolucion-gate";
 import { opcionesProduccion } from "./composicion-produccion";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionLegacy } from "../test-support/devoluciones-historicas";
 
 /**
  * #572 · F2g de #538 · gate de exposición 503 de las escrituras de devolución.
@@ -568,6 +569,30 @@ test("F2G-AC-04: clave completada reproduce su recibo con el gate cerrado; otro 
   expect(l1.status).toBe(422);
   expect(l1.data.code).toBe("DEVOLUTION_LEGACY_WRITE");
   es503(await cerrada.post("/api/revision-comida", legacy, k3));
+  // Recibo histórico (anterior a la retirada): sigue reproduciéndose con el gate cerrado.
+  const previa = sembrarDevolucionLegacy(
+    w.db,
+    {
+      fecha: legacy.fecha, concepto: legacy.concepto, importe: legacy.importe, clasificacion: legacy.clasificacion,
+      evidenciaBancaria: legacy.evidenciaBancaria, cuentaOrigen: legacy.cuentaOrigen,
+    },
+    now,
+  );
+  const k4 = randomUUID();
+  w.db.run("INSERT INTO revision_comida_attempts VALUES(?,?,?,?)", [
+    k4,
+    fingerprint(["alta", "Detalle", Object.entries(legacy).sort(([a], [b]) => a.localeCompare(b))]),
+    JSON.stringify({ ...getRevisionComida(w.db, previa), coincidencias: [] }),
+    now + 86400000,
+  ]);
+  const antesL = huella(w.db);
+  const l2 = await cerrada.post("/api/revision-comida", legacy, k4);
+  expect(l2.status).toBe(201);
+  expect(l2.data.operacion.id).toBe(previa);
+  const l3 = await cerrada.post("/api/revision-comida", { ...legacy, concepto: "Otro" }, k4);
+  expect(l3.status).toBe(409);
+  expect(l3.data.code).toBe("IDEMPOTENCY_CONFLICT");
+  expect(huella(w.db)).toBe(antesL);
   w.db.close();
 });
 
@@ -607,6 +632,9 @@ test("F2G-AC-05: un intento rechazado por el gate no deja recibo, intento, audit
   const abiertoL = await abierta.post("/api/revision-comida", legacy, k3);
   expect(abiertoL.status).toBe(422);
   expect(abiertoL.data.code).toBe("DEVOLUTION_LEGACY_WRITE");
+  // El rechazo por retirada tampoco deja escritura ni recibo.
+  expect(huella(w.db)).toBe(previoL);
+  expect(w.db.query("SELECT COUNT(*) n FROM revision_comida_attempts WHERE key=?").get(k3)).toEqual({ n: 0 });
   w.db.close();
 });
 

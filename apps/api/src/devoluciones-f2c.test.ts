@@ -22,6 +22,7 @@ import {
   getCompartido,
 } from "./compartidos";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 /**
  * #538 F2c · Flujo base, ajusteCompartidos/flujoAjustado, Resumen anual e Inicio
@@ -292,7 +293,7 @@ test("F2C-05 (AC-D01/D32): no acreditada, Revisar y sin vínculo no netean y dec
   const z = buy(c, "30");
   refund(c, x, "10", sinAcreditar);
   refund(c, y, "5", { estado: "Revisar" });
-  add(c, { tipo: "Devolución de gasto", fecha: "2026-07-12", importe: "7", saldo: c.other.id, concepto: "Huérfana ficticia", nota: "" });
+  sembrarDevolucionHuerfana(c.db, { fecha: "2026-07-12", importe: "7", saldo: c.other.id, concepto: "Huérfana ficticia" }, c.at);
   const f = flow(c, c.A.id);
   expect(f.gastoRealEconomico.subtotal).toBe("180.00");
   expect(f.gastoRealEconomico.descuentoEconomico).toBe("0.00");

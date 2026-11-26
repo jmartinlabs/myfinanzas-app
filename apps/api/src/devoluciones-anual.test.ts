@@ -19,6 +19,7 @@ import {
 import { ledgerRows } from "./movement-ledger";
 import { descuentoPorCompras } from "./devoluciones";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 /**
  * #538 F2a-2 · Plan anual y Vehículos netean SOLO el descuento de las compras
@@ -226,15 +227,11 @@ test("F2A2-04 (AC-D02/D18): reclasificar la compra mueve bruto y descuento de Pa
 test("F2A2-05 (AC-D04): sin vinculo no netea; Revisar y No acreditada declaran causa; descuento > compra no verificable", () => {
   const c = setup();
   const compra = buy(c, "100");
-  add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2027-01-25",
-    importe: "11",
-    saldo: c.other.id,
-    partida: c.a.id,
-    concepto: "Huérfana ficticia",
-    nota: "",
-  });
+  sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2027-01-25", importe: "11", saldo: c.other.id, partida: c.a.id, concepto: "Huérfana ficticia" },
+    now,
+  );
   let r = item(c, 2026, c.a.id)!;
   expect([r.ejecutado, r.devoluciones.descuentoAtribuido]).toEqual(["100.00", "0.00"]);
   refund(c, compra, "12", { estado: "Revisar" });

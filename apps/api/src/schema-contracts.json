@@ -31355,7 +31355,7 @@
   },
   {
     "id": "C33-SPEC39-DEVOLUCION-TRIGGER",
-    "sourceCommit": "feature/597-f3-escritura",
+    "sourceCommit": "7d9c8437",
     "schemaVersion": 33,
     "objects": [
       {

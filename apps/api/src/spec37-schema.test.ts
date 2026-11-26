@@ -7,7 +7,11 @@ import { randomBytes } from "node:crypto";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import { backup, restore } from "./backup";
-import { contract, manifest, verifyContract } from "./schema-contract";import { restaurarTriggerAperturaV31 } from "./cierre-validacion-test-support";
+import { contract, manifest, verifyContract } from "./schema-contract";
+import {
+  restaurarTriggerAperturaV31,
+  restaurarTriggerDevolucionV32,
+} from "./cierre-validacion-test-support";
 
 import { spec37SchemaV30 } from "./spec37-schema";
 
@@ -23,6 +27,7 @@ const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
 const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
+const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-"));
 
 function store() {
@@ -66,6 +71,7 @@ function revertToV29(db: Database) {
     DROP TABLE anticipo_apertura_evento;
     UPDATE schema_version SET version=29;`);
   restaurarTriggerAperturaV31(db);
+  restaurarTriggerDevolucionV32(db);
   expect(verifyContract(db, 29)).toBe(c29);
 }
 
@@ -248,7 +254,7 @@ const hasAge = (() => {
   }
 })();
 
-test("SPEC37 I1: v29 → v32 is additive and leaves the new columns null", () => {
+test("SPEC37 I1: v29 → v33 is additive and leaves the new columns null", () => {
   const dir = root();
   try {
     const path = join(dir, "v29.sqlite");
@@ -287,9 +293,9 @@ test("SPEC37 I1: v29 → v32 is additive and leaves the new columns null", () =>
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
-      expect(verifyContract(db, 32)).toBe(c32);
+      expect(verifyContract(db, 33)).toBe(c33);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Ningún objeto de C29 desaparece y el único que cambia de forma es la tabla
@@ -302,11 +308,13 @@ test("SPEC37 I1: v29 → v32 is additive and leaves the new columns null", () =>
         })
         .map((object) => `${object.type}:${object.name}`);
       // SPEC38 I2 sustituye el veto absoluto de `anticipo_cycle_photo` por el
-      // procedimiento autorizado de §4.3: es el único objeto previo que cambia
-      // de forma además de la tabla extendida por `ALTER TABLE`.
+      // procedimiento autorizado de §4.3, y v33 (SPEC39 §11.1) rehace el
+      // trigger de atribución de compra: son los únicos objetos previos que
+      // cambian de forma además de la tabla extendida por `ALTER TABLE`.
       expect(changed).toEqual([
         "table:transferencia_pendiente",
         "trigger:anticipo_cycle_photo",
+        "trigger:movimiento_devolucion_update_purchase",
       ]);
       for (const object of contract(c29).objects)
         expect(current.has(`${object.type}:${object.name}`)).toBe(true);
@@ -356,7 +364,7 @@ test("SPEC37 I1: v29 → v32 is additive and leaves the new columns null", () =>
   }
 });
 
-test("SPEC37 I1: a migrated v32 keeps Reparto pendientes working", () => {
+test("SPEC37 I1: a migrated v33 keeps Reparto pendientes working", () => {
   const dir = root();
   try {
     const path = join(dir, "v29.sqlite");
@@ -364,7 +372,7 @@ test("SPEC37 I1: a migrated v32 keeps Reparto pendientes working", () => {
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
       // El pendiente heredado se confirma con su Transferencia real.
       transferencia(db, "7", 10000);
@@ -576,20 +584,20 @@ test("SPEC37 I1: operacion_coordinada_attempts is keyed and JSON-validated", () 
   }
 });
 
-test("SPEC37 I1: v33 is rejected before mutating", () => {
+test("SPEC37 I1: v34 is rejected before mutating", () => {
   const dir = root();
   try {
-    const path = join(dir, "v33.sqlite");
+    const path = join(dir, "v34.sqlite");
     const seeded = openDatabase(path);
     cycle(seeded);
     const before = manifest(seeded);
     seeded.close();
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=33");
-      expect(verifyContract(db, 33)).toBeNull();
+      db.exec("UPDATE schema_version SET version=34");
+      expect(verifyContract(db, 34)).toBeNull();
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 33,
+        version: 34,
       });
       expect(() => prepareSchema(db, { origin: "demo", key_hash: null })).toThrow(
         "Esquema no compatible; no se modificará esta base.",
@@ -602,7 +610,7 @@ test("SPEC37 I1: v33 is rejected before mutating", () => {
     try {
       expect(manifest(check)).toEqual(before);
       expect(check.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 33,
+        version: 34,
       });
     } finally {
       check.close();
@@ -652,9 +660,9 @@ test.skipIf(!hasAge)(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 32,
+            version: 33,
           });
-          expect(verifyContract(copy, 32)).toBe(c32);
+          expect(verifyContract(copy, 33)).toBe(c33);
           expect(
             copy
               .query(
@@ -680,12 +688,17 @@ test.skipIf(!hasAge)(
   },
 );
 
-test("SPEC37 I1: the v32 manifest is deterministic", () => {
+test("SPEC37 I1: the current v33 manifest is deterministic and v32 stays verifiable", () => {
   const a = store();
   const b = store();
   try {
     expect(manifest(a)).toEqual(manifest(b));
-    expect(verifyContract(a, 32)).toBe(c32);
+    expect(verifyContract(a, 33)).toBe(c33);
+    // C32 sigue siendo exacto: una base v32 reconstruida lo cumple byte a byte.
+    restaurarTriggerDevolucionV32(b);
+    b.exec("UPDATE schema_version SET version=32");
+    expect(verifyContract(b, 32)).toBe(c32);
+    expect(contract(c32).objects).toHaveLength(429);
     // C30 y C31 siguen siendo evidencia histórica: ningún bump los reescribe.
     expect(contract(c31).objects).toHaveLength(384);
     expect(contract(c30).objects).toHaveLength(380);

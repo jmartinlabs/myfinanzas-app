@@ -13,6 +13,7 @@ import {
 } from "./devoluciones";
 import { financeRevision } from "./movement-ledger";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 /**
  * #538 F1 · lecturas de devoluciones de compras (SPEC39 §3-§5).
@@ -238,6 +239,8 @@ test("AC-D39: Verificada No acreditada de 30 sobre 120 deja capacidad 90, descue
     id,
     {
       revision: rev,
+      // SPEC39 §5.3: actualizar una atribución existente exige su revisión.
+      devolucionRevision: 1,
       compra,
       estado: "Verificado",
       elegibilidad: "Acreditada",
@@ -290,15 +293,11 @@ test("AC-D39: un histórico inconsistente publica capacidad no disponible y exce
 test("AC-D04: cada causa de cobertura de §3.3 se publica con ID, importe y causa, sin cero completo ni contaminación", () => {
   const c = setup();
   // sinVinculo: devolución huérfana, incluso Acreditada con Partida y ciclo declarados.
-  const orphan = add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-08-10",
-    importe: "11",
-    saldo: c.other.id,
-    partida: c.food.id,
-    concepto: "Huérfana ficticia",
-    nota: "",
-  }).movimiento.id as string;
+  const orphan = sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2026-08-10", importe: "11", saldo: c.other.id, partida: c.food.id, concepto: "Huérfana ficticia" },
+    now,
+  );
   // revisar
   const compraRev = buy(c, "100");
   const rev = refund(c, compraRev, "12", { estado: "Revisar" });
@@ -361,15 +360,11 @@ test("AC-D04: cada causa de cobertura de §3.3 se publica con ID, importe y caus
 test("AC-D19: un huérfano Acreditado con Partida y ciclo no netea en ninguna compra y se lee como sinVinculo", () => {
   const c = setup();
   const compra = buy(c, "120");
-  const orphan = add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-08-10",
-    importe: "50",
-    saldo: c.other.id,
-    partida: c.food.id,
-    concepto: "Huérfana ficticia",
-    nota: "",
-  }).movimiento.id as string;
+  const orphan = sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2026-08-10", importe: "50", saldo: c.other.id, partida: c.food.id, concepto: "Huérfana ficticia" },
+    now,
+  );
   writeComidaDevolucion(
     c.db,
     orphan,
@@ -434,7 +429,7 @@ test("AC-D33/AC-D02: R1 y R3 comparten proyección y resumen idéntico; GET no c
   refund(c, compra, "30");
   refund(c, compra, "40", { elegibilidad: "No acreditada", cicloOrigen: undefined, evidenciaOrigenTemporal: undefined });
   refund(c, compra, "5", { estado: "Revisar" });
-  add(c.db, { tipo: "Devolución de gasto", fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana", nota: "" });
+  sembrarDevolucionHuerfana(c.db, { fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana" }, now);
   const before = snapshot(c.db);
   const r1 = R1(c, compra);
   const r3 = getMovement(c.db, compra);
@@ -489,7 +484,7 @@ test("R1/R3 de una compra no dependen de otras compras ni de devoluciones ajenas
   const b = buy(c, "200", { partida: c.leisure.id });
   const e = refund(c, b, "50");
   refund(c, b, "60", { estado: "Revisar" });
-  add(c.db, { tipo: "Devolución de gasto", fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana", nota: "" });
+  sembrarDevolucionHuerfana(c.db, { fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana" }, now);
   c.db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [b]);
   expect(JSON.stringify([R1(c, a), getMovement(c.db, a).devolucionesResumen])).toBe(solo);
   const r = R1(c, a);

@@ -21,6 +21,7 @@ import {
 import { ledgerRows, movementSource } from "./movement-ledger";
 import { getSaldo, Problem } from "./saldos";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionLegacy } from "../test-support/devoluciones-historicas";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
 function setup() {
@@ -53,6 +54,24 @@ const create = (
   body: Record<string, unknown> = detail(),
   key = randomUUID(),
 ) => createRevisionComida(db, body, key, now, "Detalle", gateAbiertoParaPruebas);
+/** Devolución legacy ya existente: se lee, pero el alta está retirada (SPEC39 §5.1). */
+const historica = (db: Database, over: Record<string, unknown> = {}) => ({
+  operacion: getRevisionComida(
+    db,
+    sembrarDevolucionLegacy(
+      db,
+      {
+        fecha: "2026-10-10",
+        concepto: "Devolución ficticia",
+        importe: "42.10",
+        clasificacion: "Comida",
+        evidenciaBancaria: "banco-ficticio-1",
+        ...over,
+      },
+      now,
+    ),
+  ).operacion,
+});
 const createRepos = (
   db: Database,
   body: Record<string, unknown> = reposicion(),
@@ -146,18 +165,42 @@ test("AC09/10/11/37: importes exactos, matriz tipo/dirección/devolución, clasi
     expect(() => create(db, detail({ importe }))).toThrow();
   expect(fieldError(() => create(db, detail({ esDevolucion: undefined })), "esDevolucion")).toBeTruthy();
   expect(fieldError(() => create(db, detail({ direccion: "Entrada", esDevolucion: false })), "esDevolucion")).toBeTruthy();
-  expect(fieldError(() => create(db, detail({ direccion: "Salida", esDevolucion: true })), "esDevolucion")).toBeTruthy();
+  // SPEC39 §5.1: el alta legacy con esDevolucion:true está retirada y no escribe.
+  const antesLegacy = snapshot(db, ["revision_comida", "revision_comida_audit", "revision_comida_attempts", "counters"]);
+  for (const alta of [
+    () => create(db, detail({ direccion: "Salida", esDevolucion: true })),
+    () => createRepos(db, reposicion({ esDevolucion: true })),
+    () => create(db, detail({ direccion: "Entrada", esDevolucion: true })),
+  ]) {
+    let rechazo: unknown;
+    try {
+      alta();
+    } catch (e) {
+      rechazo = e;
+    }
+    expect(rechazo).toMatchObject({ status: 422, code: "DEVOLUTION_LEGACY_WRITE" });
+  }
+  expect(snapshot(db, ["revision_comida", "revision_comida_audit", "revision_comida_attempts", "counters"])).toEqual(antesLegacy);
   expect(fieldError(() => createRepos(db, reposicion({ direccion: "Salida" })), "direccion")).toBeTruthy();
-  expect(fieldError(() => createRepos(db, reposicion({ esDevolucion: true })), "esDevolucion")).toBeTruthy();
-  const devolution = create(
-    db,
-    detail({
-      direccion: "Entrada",
-      esDevolucion: true,
-      importe: "12.00",
-      concepto: "Devolución supermercado ficticia",
-    }),
-  );
+  // La matriz dirección/devolución sigue vigente al rectificar filas existentes.
+  const rectificar = (id: string, over: Record<string, unknown>, tipo: "Detalle" | "Reposicion") => () =>
+    rectificarRevisionComida(
+      db,
+      id,
+      { revision: 1, motivo: "matriz ficticia", ...over },
+      randomUUID(),
+      now,
+      tipo,
+      gateAbiertoParaPruebas,
+    );
+  const salida = create(db, detail({ concepto: "Salida matriz ficticia" })).operacion.id;
+  expect(fieldError(rectificar(salida, { esDevolucion: true }, "Detalle"), "esDevolucion")).toBeTruthy();
+  const repuesta = createRepos(db, reposicion({ evidenciaBancaria: "operacion-ficticia-matriz" })).operacion.id;
+  expect(fieldError(rectificar(repuesta, { esDevolucion: true }, "Reposicion"), "esDevolucion")).toBeTruthy();
+  const devolution = historica(db, {
+    importe: "12.00",
+    concepto: "Devolución supermercado ficticia",
+  });
   expect(devolution.operacion.tipo).toBe("Detalle");
   expect(devolution.operacion.esDevolucion).toBe(true);
   expect(devolution.operacion.clasificacion).toBe("Comida");
@@ -828,7 +871,7 @@ test("AC21: continuidad al cerrar y reabrir una base de archivo con vínculos y 
     expect(
       (reopened.query("SELECT version FROM schema_version").get() as { version: number })
         .version,
-    ).toBe(32);
+    ).toBe(33);
     const after = getRevisionComida(reopened, r.operacion.id);
     expect(after.operacion).toMatchObject({
       id: before.operacion.id,
@@ -860,7 +903,7 @@ test("AC21: migración v13→v18 conserva identidad y datos; reapertura verifica
   prepareSchema(migrated, { origin: "demo", key_hash: null });
   expect(
     migrated.query("SELECT version FROM schema_version").get(),
-  ).toEqual({ version: 32 });
+  ).toEqual({ version: 33 });
   expect(migrated.query("SELECT * FROM movimientos ORDER BY id").all()).toEqual(
     movements,
   );
@@ -1081,15 +1124,7 @@ test("AC32: ciclo abierto, fuera de ciclo, sin ciclo asignable y cobertura parci
 test("AC20/29: flujo completo de consulta, ficha, vínculo, rectificación y reposiciones vía modelos", () => {
   const db = setup();
   const a = create(db, detail());
-  const dev = create(
-    db,
-    detail({
-      direccion: "Entrada",
-      esDevolucion: true,
-      concepto: "Devolución ficticia",
-      fecha: "2026-10-11",
-    }),
-  );
+  const dev = historica(db, { fecha: "2026-10-11" });
   const r = createRepos(db);
   const linked = vincularRevisionComida(
     db,
