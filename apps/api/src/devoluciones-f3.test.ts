@@ -21,6 +21,7 @@ import { createRevisionComida } from "./revision-comida";
 import { createSaldo, getSaldo, previewSaldoChange, updateSaldo } from "./saldos";
 import { manifest } from "./schema-contract";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 const now = Date.parse("2026-10-15T12:00:00.000Z");
 
@@ -1077,5 +1078,93 @@ test("AC-D11 (anulación): conserva vínculo, importe y fecha; retira banco y de
   expect(() => updateMov(c.db, dev.id, { revision: 2, motivo: "Repetir" }, true)).toThrow();
   expect(hechosF3(c.db)).toEqual(antes);
   expect(banco()).toBe("500.00");
+  c.db.close();
+});
+
+test("§5.1: ningún Movimiento se convierte en devolución sin compra (preview, escritura y transacción), con rollback", () => {
+  const c = setup();
+  const hecho = (body: Record<string, unknown>) =>
+    createMov(c.db, { fecha: "2026-08-07", importe: "12", nota: "", ...body }).movimiento;
+  const origenes = [
+    hecho({ tipo: "Ingreso", subtipo: "Nómina", saldo: c.account.id, concepto: "Ingreso" }),
+    hecho({ tipo: "Gasto", saldo: c.account.id, partida: c.food.id, concepto: "Gasto sin abonos" }),
+    hecho({ tipo: "Transferencia", origen: c.account.id, destino: c.other.id, concepto: "Transferencia" }),
+  ];
+  const conversion = (concepto: string) => ({
+    revision: 1,
+    motivo: "Retipificación ficticia",
+    tipo: "Devolución de gasto",
+    fecha: "2026-08-07",
+    importe: "12",
+    saldo: c.account.id,
+    concepto,
+    nota: "",
+  });
+  for (const origen of origenes) {
+    const body = conversion("Conversión " + origen.id);
+    const antes = hechosF3(c.db);
+    const key = randomUUID();
+    expect(codeOf(() => previewMovement(c.db, body, origen.id, false, now))).toBe("DEVOLUTION_LINK_REQUIRED");
+    expect(
+      codeOf(() =>
+        writeMovement(c.db, body, key, origen.id, false, now, undefined, gateAbiertoParaPruebas),
+      ),
+    ).toBe("DEVOLUTION_LINK_REQUIRED");
+    expect(
+      codeOf(() =>
+        c.db
+          .transaction(() =>
+            writeMovementInTransaction(c.db, body, { now, id: origen.id, gate: gateAbiertoParaPruebas }),
+          )
+          .immediate(),
+      ),
+    ).toBe("DEVOLUTION_LINK_REQUIRED");
+    // Tampoco con un bloque de devolución: la rectificación no admite vínculo.
+    expect(
+      codeOf(() =>
+        previewMovement(c.db, { ...body, devolucion: { compra: origenes[1].id } }, origen.id, false, now),
+      ),
+    ).toBe("VALIDATION");
+    expect(hechosF3(c.db)).toEqual(antes);
+    expect(getMovement(c.db, origen.id).movimiento.tipo).toBe(origen.tipo);
+  }
+  // Una compra con abonos vigentes conserva su rechazo propio de §6.
+  const { compra } = compraYAbono(c);
+  expect(
+    codeOf(() => previewMovement(c.db, conversion("Compra enlazada"), compra.id, false, now)),
+  ).toBe("DEVOLUTION_LINKED");
+  c.db.close();
+});
+
+test("§5.1: las devoluciones ya existentes, incluida la huérfana histórica, conservan sus operaciones", () => {
+  const c = setup();
+  const huerfana = sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2026-08-07", importe: "12.00", saldo: c.other.id, concepto: "Huérfana" },
+    now,
+  );
+  const cuerpo = (revision: number, extra: Record<string, unknown>) => ({
+    revision,
+    motivo: "Rectificación ficticia",
+    tipo: "Devolución de gasto",
+    fecha: "2026-08-07",
+    importe: "12",
+    saldo: c.other.id,
+    concepto: "Huérfana corregida",
+    nota: "",
+    ...extra,
+  });
+  expect(updateMov(c.db, huerfana, cuerpo(1, { importe: "13" })).movimiento).toMatchObject({
+    tipo: "Devolución de gasto",
+    importe: "13.00",
+    revision: 2,
+  });
+  const { dev, alta } = compraYAbono(c);
+  expect(
+    updateMov(c.db, dev.id, cuerpo(1, { importe: "31", fecha: alta.fecha, concepto: "Abono corregido" }))
+      .movimiento.revision,
+  ).toBe(2);
+  expect(comidaDevolucion(c.db, dev.id)!.estado).toBe("Verificado");
+  expect(updateMov(c.db, huerfana, { revision: 2, motivo: "Anulación" }, true).movimiento.anulado).toBe(true);
   c.db.close();
 });

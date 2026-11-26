@@ -876,6 +876,15 @@ function plan(
         { tipo: "Conserva el Tipo Devolución de gasto." },
       );
   }
+  // SPEC39 §5.1: convertir otro Movimiento en devolución sería un alta sin compra
+  // (la rectificación no admite vínculo). Las devoluciones existentes no cambian.
+  if (old && next?.tipo === "Devolución de gasto" && old.tipo !== next.tipo)
+    throw new Problem(
+      422,
+      "DEVOLUTION_LINK_REQUIRED",
+      "Un Movimiento no puede convertirse en devolución. Regístrala desde la compra vinculada.",
+      { tipo: "Conserva el Tipo y registra la devolución desde su compra." },
+    );
   if (old && !annul && next && old.tipo === "Devolución de gasto" && next.tipo === "Devolución de gasto") {
     const hasLinkTable = !!db
       .query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='movimiento_devolucion'")
