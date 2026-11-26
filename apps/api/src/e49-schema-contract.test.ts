@@ -323,7 +323,7 @@ test.skipIf(process.platform !== "linux")(
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
         app: "e39.2-v34",
-        schema: 33,
+        schema: 34,
         origin: "demo",
       });
 
@@ -331,7 +331,7 @@ test.skipIf(process.platform !== "linux")(
       const copy = openDatabase(restored.database);
       try {
         expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 35,
+          version: 34,
         });
         expect(
           copy

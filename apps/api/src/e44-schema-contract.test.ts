@@ -178,7 +178,7 @@ test.skipIf(process.platform !== "linux")(
     const { bundle } = decryptBundle(identity, source);
     expect(bundle.manifest).toMatchObject({
       app: "e39.2-v34",
-      schema: 33,
+      schema: 34,
       origin: "demo",
     });
 

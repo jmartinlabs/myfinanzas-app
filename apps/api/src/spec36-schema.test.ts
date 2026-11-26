@@ -1561,7 +1561,7 @@ test("SPEC36 v29: unknown v35 is rejected before mutating", () => {
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 34,
+        version: 35,
       });
       expect(
         db
