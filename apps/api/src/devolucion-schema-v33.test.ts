@@ -352,7 +352,7 @@ for (const origen of [32, 33] as const)
       try {
         const path = join(dir, "origen.sqlite");
         const { db: antigua, inconsistente } = v32ConHechos(path);
-        if (origen === 33) prepareSchema(antigua, identidad);
+        if (origen === 33) devolucionTriggerV33(antigua);
         // `prepareSchema` fija el modo WAL; la copia parte de la base tal cual.
         const antes = conservadas(antigua);
         const { identity, recipient } = destinatario(dir);

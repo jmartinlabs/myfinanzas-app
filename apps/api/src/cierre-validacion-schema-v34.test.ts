@@ -220,22 +220,30 @@ test("v34: rechaza contrato C33 corrupto y versión desconocida 35", () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+function destinatario(dir: string) {
+  const identity = join(dir, "identity.txt");
+  const age = process.env.AGE_KEYGEN_BIN ?? "age-keygen";
+  expect(Bun.spawnSync([age, "-o", identity]).exitCode).toBe(0);
+  const recipient = Bun.spawnSync([age, "-y", identity], { stdout: "pipe" })
+    .stdout.toString()
+    .trim();
+  return { identity, recipient };
+}
+
 test.skipIf(process.platform !== "linux")(
   "v34: backup y restore preservan C34 y e39.2-v34",
-  async () => {
+  () => {
     const dir = raiz();
     const path = join(dir, "src.sqlite");
-    const dest = join(dir, "restored.sqlite");
     const db = nueva(path);
-    const key = randomBytes(32);
-    const pkg = join(dir, "backup.zip");
+    const { identity, recipient } = destinatario(dir);
     try {
-      await backup(db, key, pkg, key.toString("hex"));
+      backup(db, randomBytes(32), join(dir, "corte"), recipient);
     } finally {
       db.close();
     }
-    await restore(pkg, dest, key.toString("hex"));
-    const restored = openDatabase(dest);
+    const restaurada = restore(join(dir, "corte"), join(dir, "restored"), identity);
+    const restored = openDatabase(restaurada.database);
     try {
       expect(version(restored)).toBe(34);
       expect(verifyContract(restored, 34)).toBe(c34);

@@ -36,7 +36,7 @@ const artifacts = artifactDir("version-footer");
 const APP_VERSION = "0.2.0";
 const APP_SHA = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678";
 const SHORT_SHA = APP_SHA.slice(0, 7);
-const SCHEMA = 33;
+const SCHEMA = 34;
 let child: ChildProcess | undefined;
 
 /** Salida del fixture: el pipe se lee siempre y se muestra si algo falla. */

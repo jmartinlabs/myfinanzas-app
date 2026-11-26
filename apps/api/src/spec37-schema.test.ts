@@ -10,6 +10,7 @@ import { backup, restore } from "./backup";
 import { contract, manifest, verifyContract } from "./schema-contract";
 import {
   restaurarTriggerAperturaV31,
+  restaurarTriggerConfirmacionV33,
   restaurarTriggerDevolucionV32,
 } from "./cierre-validacion-test-support";
 
@@ -27,7 +28,7 @@ const c29 = "C29-REPARTO-ORIGEN-86DED4B";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
 const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
-const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
+const c33 = "C34-SPEC38-VALIDACION-VERSION-CONJUNTO";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-"));
 
 function store() {
@@ -293,9 +294,9 @@ test("SPEC37 I1: v29 → v33 is additive and leaves the new columns null", () =>
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 33,
+        version: 34,
       });
-      expect(verifyContract(db, 33)).toBe(c33);
+      expect(verifyContract(db, 34)).toBe(c33);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Ningún objeto de C29 desaparece y el único que cambia de forma es la tabla
@@ -372,7 +373,7 @@ test("SPEC37 I1: a migrated v33 keeps Reparto pendientes working", () => {
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 33,
+        version: 34,
       });
       // El pendiente heredado se confirma con su Transferencia real.
       transferencia(db, "7", 10000);
@@ -584,20 +585,20 @@ test("SPEC37 I1: operacion_coordinada_attempts is keyed and JSON-validated", () 
   }
 });
 
-test("SPEC37 I1: v34 is rejected before mutating", () => {
+test("SPEC37 I1: v35 is rejected before mutating", () => {
   const dir = root();
   try {
-    const path = join(dir, "v34.sqlite");
+    const path = join(dir, "v35.sqlite");
     const seeded = openDatabase(path);
     cycle(seeded);
     const before = manifest(seeded);
     seeded.close();
     const db = new Database(path);
     try {
-      db.exec("UPDATE schema_version SET version=34");
-      expect(verifyContract(db, 34)).toBeNull();
+      db.exec("UPDATE schema_version SET version=35");
+      expect(verifyContract(db, 35)).toBeNull();
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 34,
+        version: 35,
       });
       expect(() => prepareSchema(db, { origin: "demo", key_hash: null })).toThrow(
         "Esquema no compatible; no se modificará esta base.",
@@ -610,7 +611,7 @@ test("SPEC37 I1: v34 is rejected before mutating", () => {
     try {
       expect(manifest(check)).toEqual(before);
       expect(check.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 34,
+        version: 35,
       });
     } finally {
       check.close();
@@ -660,9 +661,9 @@ test.skipIf(!hasAge)(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 33,
+            version: 35,
           });
-          expect(verifyContract(copy, 33)).toBe(c33);
+          expect(verifyContract(copy, 34)).toBe(c33);
           expect(
             copy
               .query(
@@ -693,8 +694,9 @@ test("SPEC37 I1: the current v33 manifest is deterministic and v32 stays verifia
   const b = store();
   try {
     expect(manifest(a)).toEqual(manifest(b));
-    expect(verifyContract(a, 33)).toBe(c33);
+    expect(verifyContract(a, 34)).toBe(c33);
     // C32 sigue siendo exacto: una base v32 reconstruida lo cumple byte a byte.
+    restaurarTriggerConfirmacionV33(b);
     restaurarTriggerDevolucionV32(b);
     b.exec("UPDATE schema_version SET version=32");
     expect(verifyContract(b, 32)).toBe(c32);

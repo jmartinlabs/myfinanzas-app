@@ -20,7 +20,7 @@ import { Auth, provision, totp } from "./auth";
 
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
-const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
+const c33 = "C34-SPEC38-VALIDACION-VERSION-CONJUNTO";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-e43-contract-"));
 
@@ -109,10 +109,10 @@ test("E4.3 AC-24: a fresh schema matches C33 exactly", () => {
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 33,
+      version: 34,
     });
     expect(manifest(db)).toEqual(contract(c33).objects);
-    expect(verifyContract(db, 33)).toBe(c33);
+    expect(verifyContract(db, 34)).toBe(c33);
   } finally {
     db.close();
   }
@@ -126,7 +126,7 @@ test("E4.3 AC-24: the v23→v33 upgrade matches C33 exactly", () => {
     const db = openDatabase(path);
     try {
       expect(manifest(db)).toEqual(contract(c33).objects);
-      expect(verifyContract(db, 33)).toBe(c33);
+      expect(verifyContract(db, 34)).toBe(c33);
     } finally {
       db.close();
     }
@@ -187,17 +187,17 @@ test("E4.3 AC-24: C24 has no ciclo_id and does not touch E4.1/E4.2/E4.8", () => 
   }
 });
 
-test("E4.3 AC-24: unknown v34 contract is rejected without writes", () => {
+test("E4.3 AC-24: unknown v35 contract is rejected without writes", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
-    expect(verifyContract(db, 34)).toBe(null);
-    db.exec("UPDATE schema_version SET version=34");
+    expect(verifyContract(db, 35)).toBe(null);
+    db.exec("UPDATE schema_version SET version=35");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 34,
+      version: 35,
     });
   } finally {
     db.close();
@@ -256,7 +256,7 @@ test.skipIf(process.platform !== "linux")(
 
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
-        app: "e39.1-v33",
+        app: "e39.2-v35",
         schema: 33,
         origin: "demo",
       });
@@ -265,7 +265,7 @@ test.skipIf(process.platform !== "linux")(
       const copy = openDatabase(restored.database);
       try {
         expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 33,
+          version: 35,
         });
         expect(
           copy
@@ -379,7 +379,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.3 AC-24: restoring a v34 package fails without a destination",
+  "E4.3 AC-24: restoring a v35 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();
