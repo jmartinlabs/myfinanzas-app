@@ -364,13 +364,14 @@ export function validarOperacionDevolucion(
           : "";
     if (!destino) rechazo("saldo", "saldo receptor obligatorio");
 
-    // Validar tope de capacidad bancaria (ANEXO §1: DEVOLUTION_EXCESS).
+    // Validar tope de capacidad bancaria (SPEC39 §4 / AC-D10: ningún alta supera
+    // la capacidad bancaria restante, tampoco en «Revisar»).
     const proy = proyeccionDevolucionesCompra(db, compraId);
     const devueltoVerificado = money(proy.resumen.devueltoVerificado) ?? 0n;
     const bruto = BigInt(compra.importe);
     const estadoSolicitado =
       typeof dev?.estado === "string" ? dev.estado : "Verificado";
-    if (estadoSolicitado === "Verificado" && devueltoVerificado + importe > bruto)
+    if (devueltoVerificado + importe > bruto)
       throw new Problem(
         422,
         "DEVOLUTION_EXCESS",
@@ -528,10 +529,16 @@ export function validarOperacionDevolucion(
         : typeof body.destino === "string"
           ? body.destino.trim()
           : mov.destino;
-    if (vinculo?.estado === "Verificado" && mov.anulado === 0) {
+    // SPEC39 §4 / §6 / AC-D10 / AC-D14: ninguna rectificación de una devolución
+    // vinculada (tampoco en «Revisar») puede superar la capacidad restante.
+    if (
+      (vinculo?.estado === "Verificado" || vinculo?.estado === "Revisar") &&
+      mov.anulado === 0
+    ) {
       const proy = proyeccionDevolucionesCompra(db, compraId);
       const devueltoOtros =
-        (money(proy.resumen.devueltoVerificado) ?? 0n) - BigInt(mov.importe);
+        (money(proy.resumen.devueltoVerificado) ?? 0n) -
+        (vinculo.estado === "Verificado" ? BigInt(mov.importe) : 0n);
       if (devueltoOtros + nuevoImporte > BigInt(compra.importe))
         throw new Problem(
           422,
@@ -668,6 +675,9 @@ function contextRevisionDevolucion(
   plan: PlanDevolucion,
 ): string {
   const compraActual = leerCompra(db, plan.compraId);
+  const compraOrigenActual = plan.compraOrigenId
+    ? leerCompra(db, plan.compraOrigenId)
+    : null;
   const movActual = plan.id ? leerMovimiento(db, plan.id) : null;
   const vinculoActual = plan.id ? leerVinculo(db, plan.id) : null;
   const validaciones = plan.candidatos.map((c) => {
@@ -677,6 +687,7 @@ function contextRevisionDevolucion(
   return huellaDe({
     accion: plan.accion,
     compra: compraActual,
+    compraOrigen: compraOrigenActual,
     movimiento: movActual,
     vinculo: vinculoActual,
     validaciones,
@@ -706,33 +717,20 @@ function construirCiclosAfectados(
   despues: ReadonlyMap<string, MedicionCiclo>,
 ): {
   ciclosAfectados: CicloAfectadoDevolucionDto[];
-  impactos: (ImpactoMedido & { materialEfectivo: boolean; motivosEfectivos: ImpactoMaterial[] })[];
+  impactos: ImpactoMedido[];
 } {
   const universosAntes = new Map<string, UniversoFinanciero>();
   const universosDespues = new Map<string, UniversoFinanciero>();
   for (const [c, m] of antes) universosAntes.set(c, m.universo);
   for (const [c, m] of despues) universosDespues.set(c, m.universo);
-  const baseImpactos = impactoDeCandidatos(universosAntes, universosDespues);
+  const impactos = impactoDeCandidatos(universosAntes, universosDespues);
 
   const ciclosAfectados: CicloAfectadoDevolucionDto[] = [];
-  const impactos: (ImpactoMedido & {
-    materialEfectivo: boolean;
-    motivosEfectivos: ImpactoMaterial[];
-  })[] = [];
 
-  for (const imp of baseImpactos) {
+  for (const imp of impactos) {
+    if (!imp.material) continue;
     const mAntes = antes.get(imp.ciclo)!;
     const mDespues = despues.get(imp.ciclo)!;
-    const greCambio =
-      mAntes.gre.gre !== mDespues.gre.gre ||
-      mAntes.gre.descuento !== mDespues.gre.descuento;
-    const motivosSet = new Set<ImpactoMaterial>(imp.motivos);
-    if (greCambio) motivosSet.add("FLUJO_CICLO");
-    const motivosEfectivos = [...motivosSet];
-    const materialEfectivo = motivosEfectivos.length > 0;
-    impactos.push({ ...imp, materialEfectivo, motivosEfectivos });
-
-    if (!materialEfectivo) continue;
     const validacion = proyectarValidacion(db, imp.ciclo);
     const signoGasto: "baja" | "sube" | "invariante" =
       mDespues.gre.gre < mAntes.gre.gre
@@ -743,7 +741,7 @@ function construirCiclosAfectados(
     ciclosAfectados.push({
       ciclo: imp.ciclo,
       rango: rangoDe(db, imp.ciclo),
-      motivo: motivosEfectivos,
+      motivo: imp.motivos,
       material: true,
       estadoValidacion: validacion.estado,
       validado: validacion.validado,
@@ -971,13 +969,13 @@ export function confirmarDevolucionImpacto(
       const auditIds: string[] = [];
 
       for (const imp of impactos) {
-        if (!imp.materialEfectivo) continue;
+        if (!imp.material) continue;
         const referencia = leerFilaValidacion(db, imp.ciclo);
         const cobertura: CoberturaValidada[] =
           universoFinanciero(db, imp.ciclo).cobertura;
         const auditId = marcarImpacto(db, {
           ciclo: imp.ciclo,
-          motivos: imp.motivosEfectivos,
+          motivos: imp.motivos,
           cobertura,
           actor,
           instante,

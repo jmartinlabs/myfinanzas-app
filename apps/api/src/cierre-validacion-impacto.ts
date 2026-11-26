@@ -7,11 +7,12 @@ import {
   type FuenteCobertura,
   type ImpactoMaterial,
 } from "./cierre-validacion-dto";
+import { descuentoPorCompras, type DescuentoCompra } from "./devoluciones";
 import { cashAt, investmentInstalled, positionsAtDate } from "./investment-engine";
 import { Problem } from "./problem";
 
 /**
- * SPEC38 · I2 — universo financiero canónico y materialidad medida (§3.1–§3.3).
+ * SPEC38 · I2 / SPEC39 (#538) — universo financiero canónico y materialidad medida (§3.1–§3.3).
  *
  * El contrato es deliberadamente estrecho:
  *
@@ -24,13 +25,12 @@ import { Problem } from "./problem";
  *   humana y es puramente diagnóstica: ni limpia, ni suprime el impacto, ni
  *   convierte un ciclo Pendiente en `SinValidar`.
  *
- * Este módulo **no** calcula informes ni netos reexpresados: el gasto real
- * económico (GRE), el neto por predicado de elegibilidad y la reexpresión de
- * atribución pertenecen a #538 y su SPEC no está aprobada. Esos componentes se
- * declaran en `noMedido` con su propietario en vez de aproximarse con una
- * semántica provisional: `flujo.gre`, `flujo.neto` y `flujo.devolucionElegible`
- * quedan fuera del universo mientras #538 no los fije, y por eso AC-15, AC-31,
- * AC-32 y AC-34 de SPEC38 siguen fuera del alcance de este incremento.
+ * En `VERSION_CONJUNTO = "3"` el universo incorpora el descuento económico
+ * atribuido por compra, el GRE y el neto por compra elegible desde la
+ * proyección única `descuentoPorCompras()` de `#538` (`devoluciones.ts`), sin
+ * `max(0)` (`null` en caso de exceso). Las referencias históricas en `"2"`
+ * pasan a `NoComparable` con `revalidacionSugerida = true` sin marcar `dirty`
+ * espontáneamente (§3.2, AC-07).
  */
 
 /**
@@ -39,7 +39,7 @@ import { Problem } from "./problem";
  * de algoritmo se ve como `NoComparable` y sugiere revalidar, en lugar de marcar
  * en masa por comparar universos distintos (§3.2).
  */
-export const VERSION_CONJUNTO = "2";
+export const VERSION_CONJUNTO = "3";
 
 /** Sin signo, sin ceros a la izquierda: el mismo decimal canónico del DTO. */
 const CERO = "0";
@@ -59,7 +59,8 @@ export type HechoUniverso = {
   destino: string;
   /** +1 entra, -1 sale del efectivo del hecho. */
   signo: "-1" | "1";
-  neto: string;
+  /** Neto del hecho en céntimos; `null` para compras con exceso (sin `max(0)`). */
+  neto: string | null;
   partida: string | null;
   subcategoria: string | null;
   categoria: string | null;
@@ -94,11 +95,11 @@ export type UniversoFinanciero = {
   flujo: {
     bruto: string | null;
     devolucion: string | null;
+    devolucionEconomica: string | null;
     ingreso: string | null;
     comidaNeta: string | null;
-    /** #538: sin predicado de neteo aprobado no se publica una cifra. */
-    gre: null;
-    neto: null;
+    gre: string | null;
+    neto: string | null;
   };
   stock: { efectivo: string | null; posiciones: PosicionUniverso[] };
   atribucion: HechoUniverso[];
@@ -175,9 +176,14 @@ function gruposMateriales(universo: UniversoFinanciero): Record<GrupoMaterial, u
   return {
     ventana: [universo.ventana.inicio, universo.ventana.fin],
     s0: universo.ventana.s0,
-    // `gre` y `neto` son `null` por contrato mientras #538 no fije el predicado
-    // de neteo: se excluyen como magnitudes, no se comparan como igualdad.
-    flujo: [universo.flujo.bruto, universo.flujo.devolucion, universo.flujo.ingreso],
+    flujo: [
+      universo.flujo.bruto,
+      universo.flujo.devolucion,
+      universo.flujo.devolucionEconomica,
+      universo.flujo.gre,
+      universo.flujo.ingreso,
+      universo.flujo.neto,
+    ],
     comida: universo.flujo.comidaNeta,
     balance: universo.stock.efectivo,
     posicion: universo.stock.posiciones,
@@ -265,6 +271,7 @@ type FilaHecho = {
   fecha: string;
   importe: string;
   origen: string;
+  origenControl: string | null;
   destino: string;
   partida: string | null;
   subcategoria: string | null;
@@ -274,45 +281,89 @@ type FilaHecho = {
   revision: number;
 };
 
+const esCompraElegible = (fila: FilaHecho): boolean =>
+  fila.tipo === "Gasto" && fila.origenControl !== "Terminal";
+
 /**
  * Hechos del ciclo, atribución incluida. La clasificación se resuelve por el
  * dominio instalado (Partida → Subcategoría → Categoría) y nunca por nombre ni
  * por texto libre: un cambio de Concepto sólo es material si mueve efectos.
+ * Para las compras elegibles (`Gasto` vigentes cuyo `origen` no es `Terminal`),
+ * `neto` refleja el descuento económico de `descuentoPorCompras()` o `null` si
+ * hay exceso (sin `max(0)`).
  */
-function hechos(db: Database, inicio: string, fin: string | null, ciclo: string): HechoUniverso[] {
+function hechos(
+  db: Database,
+  inicio: string,
+  fin: string | null,
+  ciclo: string,
+): {
+  hechosCiclo: HechoUniverso[];
+  comprasElegibles: FilaHecho[];
+  descuentos: Map<string, DescuentoCompra>;
+} {
   const filas = db
     .query(
-      `SELECT m.id,m.tipo,m.fecha,CAST(m.importe AS TEXT) importe,m.origen,m.destino,
+      `SELECT m.id,m.tipo,m.fecha,CAST(m.importe AS TEXT) importe,m.origen,
+              so.control origenControl,m.destino,
               m.partida,p.padre subcategoria,s.padre categoria,p.deuda,p.presupuesto,
               m.revision
          FROM movimientos m
+         LEFT JOIN saldos so ON so.id=m.origen
          LEFT JOIN partidas p ON p.id=m.partida
          LEFT JOIN subcategorias s ON s.id=p.padre
         WHERE m.anulado=0 AND m.fecha>=? AND (? IS NULL OR m.fecha<=?)
         ORDER BY length(m.id),m.id`,
     )
     .all(inicio, fin, fin) as FilaHecho[];
-  return filas.map((fila) => ({
-    id: fila.id,
-    tipo: fila.tipo,
-    fecha: fila.fecha,
-    importe: fila.importe,
-    origen: fila.origen,
-    destino: fila.destino,
-    signo: signoDe(fila.tipo),
-    neto: fila.importe,
-    partida: fila.partida,
-    subcategoria: fila.subcategoria,
-    categoria: fila.categoria,
-    deuda: fila.deuda,
-    presupuesto: fila.presupuesto,
-    cicloAtribuido: ciclo,
-    revision: String(fila.revision),
-  }));
+  const comprasElegibles = filas.filter(esCompraElegible);
+  const descuentos =
+    comprasElegibles.length > 0
+      ? descuentoPorCompras(
+          db,
+          comprasElegibles.map((f) => f.id),
+        )
+      : new Map<string, DescuentoCompra>();
+  const hechosCiclo = filas.map((fila) => {
+    let neto: string | null = fila.importe;
+    if (esCompraElegible(fila)) {
+      const descuento = descuentos.get(fila.id);
+      neto = descuento?.exceso
+        ? null
+        : (BigInt(fila.importe) - (descuento?.descuentoEconomico ?? 0n)).toString();
+    }
+    return {
+      id: fila.id,
+      tipo: fila.tipo,
+      fecha: fila.fecha,
+      importe: fila.importe,
+      origen: fila.origen,
+      destino: fila.destino,
+      signo: signoDe(fila.tipo),
+      neto,
+      partida: fila.partida,
+      subcategoria: fila.subcategoria,
+      categoria: fila.categoria,
+      deuda: fila.deuda,
+      presupuesto: fila.presupuesto,
+      cicloAtribuido: ciclo,
+      revision: String(fila.revision),
+    };
+  });
+  return { hechosCiclo, comprasElegibles, descuentos };
 }
 
-/** Flujo no reexpresado: bruto, devolución registrada, ingreso y comida neta. */
-function flujo(db: Database, hechosCiclo: readonly HechoUniverso[]) {
+/**
+ * Flujo del ciclo: bruto, devolución bancaria registrada, devolución económica
+ * atribuida por `#538`, GRE, ingreso, neto (`ingreso - gre`) y comida neta.
+ * Si alguna compra elegible tiene exceso, `gre` y `neto` son `null` (sin `max(0)`).
+ */
+function flujo(
+  db: Database,
+  hechosCiclo: readonly HechoUniverso[],
+  comprasElegibles: readonly FilaHecho[],
+  descuentos: ReadonlyMap<string, DescuentoCompra>,
+) {
   const bruto = suma(
     hechosCiclo.filter((h) => h.tipo === "Gasto").map((h) => h.importe),
   );
@@ -323,7 +374,30 @@ function flujo(db: Database, hechosCiclo: readonly HechoUniverso[]) {
     hechosCiclo.filter((h) => h.tipo === "Ingreso").map((h) => h.importe),
   );
   const comida = comidaNeta(db, hechosCiclo);
-  return { bruto, devolucion, ingreso, comidaNeta: comida };
+  let brutoElegible = 0n;
+  let descuentoTotal = 0n;
+  let hayExceso = false;
+  for (const compra of comprasElegibles) {
+    brutoElegible += BigInt(compra.importe);
+    const descuento = descuentos.get(compra.id);
+    descuentoTotal += descuento?.descuentoEconomico ?? 0n;
+    if (descuento?.exceso) hayExceso = true;
+  }
+  const devolucionEconomica = descuentoTotal.toString();
+  const gre = hayExceso ? null : (brutoElegible - descuentoTotal).toString();
+  const neto =
+    ingreso !== null && gre !== null
+      ? (BigInt(ingreso) - BigInt(gre)).toString()
+      : null;
+  return {
+    bruto,
+    devolucion,
+    devolucionEconomica,
+    ingreso,
+    comidaNeta: comida,
+    gre,
+    neto,
+  };
 }
 
 /**
@@ -439,28 +513,11 @@ function reparto(db: Database, ciclo: string): RepartoUniverso[] | null {
 }
 
 /**
- * Componentes que este incremento **no** mide, con su propietario. Se publican
- * en el universo y en la cobertura para que ninguna lectura los confunda con
- * una igualdad demostrada.
+ * Componentes que este incremento **no** mide, con su propietario. En
+ * `VERSION_CONJUNTO = "3"`, `flujo.gre`, `flujo.neto` y el descuento económico
+ * atribuido ya se miden desde la proyección única de `#538`.
  */
-export const COMPONENTES_NO_MEDIDOS: readonly ComponenteNoMedido[] = [
-  {
-    componente: "flujo.gre",
-    propietario: "#538",
-    motivo:
-      "El gasto real económico depende del predicado único de neteo de #538, cuya SPEC no está aprobada.",
-  },
-  {
-    componente: "flujo.neto",
-    propietario: "#538",
-    motivo: "El neto por compra y su reexpresión pertenecen a #538; no se aproxima una semántica provisional.",
-  },
-  {
-    componente: "flujo.devolucionElegible",
-    propietario: "#538",
-    motivo: "La elegibilidad de la devolución que descuenta el gasto la fija #538.",
-  },
-];
+export const COMPONENTES_NO_MEDIDOS: readonly ComponenteNoMedido[] = [];
 
 /**
  * Lee el universo financiero de un ciclo. Es la única fuente de la huella: la
@@ -479,8 +536,8 @@ export function universoFinanciero(db: Database, ciclo: string): UniversoFinanci
     });
   const maestro = cycleMaster(db).find((entrada) => entrada.id === ciclo) ?? null;
   const fin = maestro?.fin ?? null;
-  const hechosCiclo = hechos(db, fila.inicio, fin, fila.id);
-  const flujoCiclo = flujo(db, hechosCiclo);
+  const { hechosCiclo, comprasElegibles, descuentos } = hechos(db, fila.inicio, fin, fila.id);
+  const flujoCiclo = flujo(db, hechosCiclo, comprasElegibles, descuentos);
   const stockCiclo = stock(db, fin);
   const repartoCiclo = reparto(db, ciclo);
   const cobertura: CoberturaValidada[] = [
@@ -510,7 +567,7 @@ export function universoFinanciero(db: Database, ciclo: string): UniversoFinanci
     versionConjunto: VERSION_CONJUNTO,
     ciclo: fila.id,
     ventana: { inicio: fila.inicio, fin, s0: fila.s0 },
-    flujo: { ...flujoCiclo, gre: null, neto: null },
+    flujo: flujoCiclo,
     stock: { efectivo: stockCiclo.efectivo, posiciones: stockCiclo.posiciones },
     atribucion: hechosCiclo,
     reparto: repartoCiclo ?? [],

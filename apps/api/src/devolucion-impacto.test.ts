@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { proyectarValidacion } from "./cierre-validacion-estado";
-import { huellaUniverso, universoFinanciero, VERSION_CONJUNTO } from "./cierre-validacion-impacto";
+import { huellaDe, huellaUniverso, universoFinanciero, VERSION_CONJUNTO } from "./cierre-validacion-impacto";
 import { createClassification } from "./clasificacion";
 import { openDatabase } from "./database";
 import {
@@ -634,5 +634,733 @@ describe("DEV #598 · F4 · Preview, impacto y cierres de devoluciones", () => {
 
     db2.close();
     db1.close();
+  });
+
+  test("SPEC38 §3.1/§3.2 · Reatribución entre ciclos sin cambio bancario marca ambos ciclos con huellas distintas y motivos coherentes", () => {
+    const { db, compraId, saldoId, partidaId } = setupDb();
+    // Añadir ciclo 3 para alojar la devolución y una segunda compra en ciclo 2
+    db.run(
+      `INSERT INTO ciclos(id,inicio,saldo_comida,creado)
+       VALUES('3','2026-03-01',0,'2026-03-01T00:00:00.000Z')`,
+    );
+    const pC2 = previewMovement(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-02-15",
+        importe: "100.00",
+        saldo: saldoId,
+        concepto: "Compra ciclo 2",
+        nota: "",
+        partida: partidaId,
+      },
+      null,
+      false,
+    );
+    const compra2 = writeMovement(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-02-15",
+        importe: "100.00",
+        saldo: saldoId,
+        concepto: "Compra ciclo 2",
+        nota: "",
+        partida: partidaId,
+        fingerprint: pC2.fingerprint,
+        contextRevision: pC2.contextRevision,
+      },
+      "setup-compra-c2-0001",
+    );
+
+    // Alta de devolución (en ciclo 3) inicialmente vinculada a compra del ciclo 1
+    const alta: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-03-05",
+        importe: "30.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución reatribuible",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const pAlta = previewDevolucionImpacto(db, alta);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...alta,
+        fingerprint: pAlta.fingerprint,
+        contextRevision: pAlta.contextRevision,
+        impactRevision: pAlta.impactRevision,
+        key: "confirm-reatrib-ciclos-alta-01",
+      },
+      GATE_ABIERTO,
+    );
+
+    // Validar ciclos 1 y 2 tras el alta
+    validarCiclo(db, "1");
+    validarCiclo(db, "2");
+    const h1Antes = huellaUniverso(universoFinanciero(db, "1"));
+    const h2Antes = huellaUniverso(universoFinanciero(db, "2"));
+
+    const dev = db
+      .query(
+        `SELECT m.id,m.revision,d.revision devRev
+           FROM movimientos m JOIN movimiento_devolucion d ON d.movimiento=m.id
+          WHERE m.tipo='Devolución de gasto'`,
+      )
+      .get() as { id: string; revision: number; devRev: number };
+
+    // Reatribuir de compra en ciclo 1 a compra en ciclo 2 (sin cambio bancario)
+    const reatrib: EntradaDevolucionImpacto = {
+      accion: "atribuir",
+      id: dev.id,
+      body: {
+        revision: dev.revision,
+        devolucionRevision: dev.devRev,
+        compraAnterior: compraId,
+        compra: compra2.movimiento.id,
+        estado: "Verificado",
+        elegibilidad: "Acreditada",
+        cicloOrigen: "2",
+        evidenciaRelacion: "Ticket #2 corregido",
+        evidenciaOrigenTemporal: "Factura febrero",
+        motivo: "Reatribución entre ciclos",
+      },
+    };
+    const pReatrib = previewDevolucionImpacto(db, reatrib);
+    expect(pReatrib.devolucionImpacto.magnitudes.flujoBancarioImporte).toBe("0.00");
+
+    const c1 = pReatrib.devolucionImpacto.ciclosAfectados.find((c) => c.ciclo === "1");
+    const c2 = pReatrib.devolucionImpacto.ciclosAfectados.find((c) => c.ciclo === "2");
+    expect(c1).toBeDefined();
+    expect(c2).toBeDefined();
+    expect(c1!.motivo).toEqual(["FLUJO_CICLO", "ATRIBUCION"]);
+    expect(c2!.motivo).toEqual(["FLUJO_CICLO", "ATRIBUCION"]);
+    expect(c1!.signoGasto).toBe("sube");
+    expect(c2!.signoGasto).toBe("baja");
+
+    const recibo = confirmarDevolucionImpacto(
+      db,
+      {
+        ...reatrib,
+        fingerprint: pReatrib.fingerprint,
+        contextRevision: pReatrib.contextRevision,
+        impactRevision: pReatrib.impactRevision,
+        key: "confirm-reatrib-ciclos-01",
+      },
+      GATE_ABIERTO,
+    );
+
+    const h1Despues = huellaUniverso(universoFinanciero(db, "1"));
+    const h2Despues = huellaUniverso(universoFinanciero(db, "2"));
+    expect(h1Despues).not.toBe(h1Antes);
+    expect(h2Despues).not.toBe(h2Antes);
+    expect(proyectarValidacion(db, "1").estado).toBe("Pendiente");
+    expect(proyectarValidacion(db, "2").estado).toBe("Pendiente");
+    expect(recibo.cierresDirty.map((c) => c.ciclo)).toEqual(["1", "2"]);
+
+    // Coherencia auditoría ↔ huellas y motivos de #547
+    const audits = db
+      .query(
+        `SELECT ciclo,accion,huella_anterior,huella_posterior
+           FROM cierre_validacion_audit
+          WHERE accion='dirty_marcado'
+          ORDER BY ciclo`,
+      )
+      .all() as {
+      ciclo: string;
+      accion: string;
+      huella_anterior: string;
+      huella_posterior: string;
+    }[];
+    expect(audits).toEqual([
+      {
+        ciclo: "1",
+        accion: "dirty_marcado",
+        huella_anterior: h1Antes,
+        huella_posterior: h1Despues,
+      },
+      {
+        ciclo: "2",
+        accion: "dirty_marcado",
+        huella_anterior: h2Antes,
+        huella_posterior: h2Despues,
+      },
+    ]);
+    expect(proyectarValidacion(db, "1").motivos).toEqual(["FLUJO_CICLO", "ATRIBUCION"]);
+    expect(proyectarValidacion(db, "2").motivos).toEqual(["FLUJO_CICLO", "ATRIBUCION"]);
+    db.close();
+  });
+
+  test("SPEC38 §3.1 · Reatribución entre Partidas del mismo ciclo sin cambio de GRE agregado marca solo ATRIBUCION", () => {
+    const { db, compraId, saldoId } = setupDb();
+    // Crear segunda partida bajo la misma subcategoría
+    const sub = db
+      .query("SELECT id FROM subcategorias LIMIT 1")
+      .get() as { id: string };
+    const partida2 = createClassification(
+      db,
+      "partidas",
+      { nombre: "Partida F4 B", padre: sub.id },
+      "setup-par-f4-0002",
+    );
+
+    // Segunda compra en el MISMO ciclo 1 con distinta Partida
+    const pC2 = previewMovement(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-01-20",
+        importe: "100.00",
+        saldo: saldoId,
+        concepto: "Compra misma ventana distinta partida",
+        nota: "",
+        partida: partida2.id,
+      },
+      null,
+      false,
+    );
+    const compra2 = writeMovement(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-01-20",
+        importe: "100.00",
+        saldo: saldoId,
+        concepto: "Compra misma ventana distinta partida",
+        nota: "",
+        partida: partida2.id,
+        fingerprint: pC2.fingerprint,
+        contextRevision: pC2.contextRevision,
+      },
+      "setup-compra-mismo-ciclo-01",
+    );
+
+    // Alta de devolución vinculada a compra 1 (en ciclo 2 para que no toque banco del ciclo 1)
+    const alta: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución misma ventana",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const pAlta = previewDevolucionImpacto(db, alta);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...alta,
+        fingerprint: pAlta.fingerprint,
+        contextRevision: pAlta.contextRevision,
+        impactRevision: pAlta.impactRevision,
+        key: "confirm-mismo-ciclo-alta-01",
+      },
+      GATE_ABIERTO,
+    );
+
+    // Validar ciclo 1 tras el alta
+    validarCiclo(db, "1");
+    const uAntes = universoFinanciero(db, "1");
+    const hAntes = huellaUniverso(uAntes);
+    expect(uAntes.flujo.gre).toBe("19000");
+    expect(uAntes.atribucion.find((h) => h.id === compraId)?.neto).toBe("9000");
+    expect(uAntes.atribucion.find((h) => h.id === compra2.movimiento.id)?.neto).toBe("10000");
+
+    const dev = db
+      .query(
+        `SELECT m.id,m.revision,d.revision devRev
+           FROM movimientos m JOIN movimiento_devolucion d ON d.movimiento=m.id
+          WHERE m.tipo='Devolución de gasto'`,
+      )
+      .get() as { id: string; revision: number; devRev: number };
+
+    // Reatribuir a compra2 (mismo ciclo 1, distinta Partida, mismo GRE agregado = 190.00)
+    const reatrib: EntradaDevolucionImpacto = {
+      accion: "atribuir",
+      id: dev.id,
+      body: {
+        revision: dev.revision,
+        devolucionRevision: dev.devRev,
+        compraAnterior: compraId,
+        compra: compra2.movimiento.id,
+        estado: "Verificado",
+        elegibilidad: "Acreditada",
+        cicloOrigen: "1",
+        evidenciaRelacion: "Ticket #2",
+        evidenciaOrigenTemporal: "Factura enero",
+        motivo: "Reatribución entre partidas del mismo ciclo",
+      },
+    };
+    const pReatrib = previewDevolucionImpacto(db, reatrib);
+    expect(pReatrib.devolucionImpacto.ciclosAfectados.length).toBe(1);
+    const c1 = pReatrib.devolucionImpacto.ciclosAfectados[0]!;
+    expect(c1.ciclo).toBe("1");
+    expect(c1.motivo).toEqual(["ATRIBUCION"]);
+    expect(c1.signoGasto).toBe("invariante");
+    expect(c1.cifrasAntes.gastoRealEconomico).toBe("190.00");
+    expect(c1.cifrasDespues.gastoRealEconomico).toBe("190.00");
+
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...reatrib,
+        fingerprint: pReatrib.fingerprint,
+        contextRevision: pReatrib.contextRevision,
+        impactRevision: pReatrib.impactRevision,
+        key: "confirm-mismo-ciclo-reatrib-01",
+      },
+      GATE_ABIERTO,
+    );
+
+    const uDespues = universoFinanciero(db, "1");
+    const hDespues = huellaUniverso(uDespues);
+    expect(uDespues.flujo.gre).toBe("19000");
+    expect(uDespues.atribucion.find((h) => h.id === compraId)?.neto).toBe("12000");
+    expect(uDespues.atribucion.find((h) => h.id === compra2.movimiento.id)?.neto).toBe("7000");
+    expect(hDespues).not.toBe(hAntes);
+
+    const val = proyectarValidacion(db, "1");
+    expect(val.estado).toBe("Pendiente");
+    expect(val.motivos).toEqual(["ATRIBUCION"]);
+
+    const audit = db
+      .query(
+        `SELECT accion,huella_anterior,huella_posterior
+           FROM cierre_validacion_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1`,
+      )
+      .get() as { accion: string; huella_anterior: string; huella_posterior: string };
+    expect(audit).toEqual({
+      accion: "dirty_marcado",
+      huella_anterior: hAntes,
+      huella_posterior: hDespues,
+    });
+    db.close();
+  });
+
+  test("SPEC38 §3.2 · Reversión vuelve byte a byte a referenciaHumana, registra accion='reversion' y no limpia dirty", () => {
+    const { db, compraId, saldoId } = setupDb();
+    validarCiclo(db, "1");
+    const hReferencia = huellaUniverso(universoFinanciero(db, "1"));
+
+    // 1. Alta material → dirty_marcado (hReferencia → hConDev)
+    const alta: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución reversible",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const pAlta = previewDevolucionImpacto(db, alta);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...alta,
+        fingerprint: pAlta.fingerprint,
+        contextRevision: pAlta.contextRevision,
+        impactRevision: pAlta.impactRevision,
+        key: "confirm-rev-alta-0001",
+      },
+      GATE_ABIERTO,
+    );
+    const hConDev = huellaUniverso(universoFinanciero(db, "1"));
+    expect(hConDev).not.toBe(hReferencia);
+
+    // 2. Anulación → vuelve byte a byte a hReferencia, registra 'reversion', dirty sigue 1
+    const dev = db
+      .query("SELECT id,revision FROM movimientos WHERE tipo='Devolución de gasto'")
+      .get() as { id: string; revision: number };
+    const anular: EntradaDevolucionImpacto = {
+      accion: "anular",
+      id: dev.id,
+      body: { revision: dev.revision, motivo: "Deshacer devolución" },
+    };
+    const pAnular = previewDevolucionImpacto(db, anular);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...anular,
+        fingerprint: pAnular.fingerprint,
+        contextRevision: pAnular.contextRevision,
+        impactRevision: pAnular.impactRevision,
+        key: "confirm-rev-anular-0001",
+      },
+      GATE_ABIERTO,
+    );
+
+    const hTrasAnular = huellaUniverso(universoFinanciero(db, "1"));
+    expect(hTrasAnular).toBe(hReferencia);
+
+    const val = proyectarValidacion(db, "1");
+    expect(val.estado).toBe("Pendiente");
+    expect(val.dirty).toBe(true);
+    expect(val.divergenciaValidacion).toBe("Igual");
+    expect(val.pendienteSinDelta).toBe(true);
+
+    const eventos = db
+      .query(
+        `SELECT accion,huella_anterior,huella_posterior
+           FROM cierre_validacion_audit WHERE ciclo='1' ORDER BY id`,
+      )
+      .all() as { accion: string; huella_anterior: string; huella_posterior: string }[];
+    expect(eventos).toEqual([
+      {
+        accion: "dirty_marcado",
+        huella_anterior: hReferencia,
+        huella_posterior: hConDev,
+      },
+      {
+        accion: "reversion",
+        huella_anterior: hConDev,
+        huella_posterior: hReferencia,
+      },
+    ]);
+    db.close();
+  });
+
+  test("Compatibilidad F3 (#620) · Guardas DEVOLUTION_LINK_REQUIRED, ATTRIBUTION_REVISION_CONFLICT, DEVOLUTION_EXCESS (en Revisar), DEVOLUTION_LINKED y PURCHASE_BELOW_REFUNDED", () => {
+    const { db, compraId, saldoId, partidaId } = setupDb();
+    const dummyToken = "0".repeat(64);
+    const expectAmbosRechazan = (
+      entrada: EntradaDevolucionImpacto,
+      status: number,
+      code: string,
+      key: string,
+    ) => {
+      expect(() => previewDevolucionImpacto(db, entrada)).toThrow(
+        expect.objectContaining({ status, code }),
+      );
+      const fp = huellaDe({
+        familia: `devolucion:${entrada.accion}`,
+        id: entrada.id ?? null,
+        body: entrada.body,
+      });
+      expect(() =>
+        confirmarDevolucionImpacto(
+          db,
+          {
+            ...entrada,
+            fingerprint: fp,
+            contextRevision: dummyToken,
+            impactRevision: dummyToken,
+            key,
+          },
+          GATE_ABIERTO,
+        ),
+      ).toThrow(expect.objectContaining({ status, code }));
+    };
+
+    // 1. Alta en Revisar excediendo capacidad → DEVOLUTION_EXCESS en preview y confirmación
+    const altaRevisarExceso: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "130.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Exceso en Revisar",
+        devolucion: {
+          compra: compraId,
+          estado: "Revisar",
+          elegibilidad: "No acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket",
+        },
+      },
+    };
+    expectAmbosRechazan(altaRevisarExceso, 422, "DEVOLUTION_EXCESS", "confirm-f3-exceso-rev-alta-01");
+
+    // 2. Alta válida en Verificado (80 EUR) y otra en Revisar (30 EUR)
+    const altaVer: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "80.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución verificada 80",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const pVer = previewDevolucionImpacto(db, altaVer);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...altaVer,
+        fingerprint: pVer.fingerprint,
+        contextRevision: pVer.contextRevision,
+        impactRevision: pVer.impactRevision,
+        key: "confirm-f3-ver-0001",
+      },
+      GATE_ABIERTO,
+    );
+
+    const altaRev: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-11",
+        importe: "30.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución en Revisar 30",
+        devolucion: {
+          compra: compraId,
+          estado: "Revisar",
+          elegibilidad: "No acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket pendiente",
+        },
+      },
+    };
+    const pRev = previewDevolucionImpacto(db, altaRev);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...altaRev,
+        fingerprint: pRev.fingerprint,
+        contextRevision: pRev.contextRevision,
+        impactRevision: pRev.impactRevision,
+        key: "confirm-f3-rev-0001",
+      },
+      GATE_ABIERTO,
+    );
+
+    const devRev = db
+      .query(
+        `SELECT m.id,m.revision,d.revision devRev
+           FROM movimientos m JOIN movimiento_devolucion d ON d.movimiento=m.id
+          WHERE d.estado='Revisar'`,
+      )
+      .get() as { id: string; revision: number; devRev: number };
+
+    // 3. Rectificación en Revisar que supera la capacidad restante (80 + 50 > 120) → DEVOLUTION_EXCESS
+    const rectRevisarExceso: EntradaDevolucionImpacto = {
+      accion: "rectificar",
+      id: devRev.id,
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-11",
+        importe: "50.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución en Revisar 50",
+        revision: devRev.revision,
+        motivo: "Subir importe en Revisar",
+      },
+    };
+    expectAmbosRechazan(rectRevisarExceso, 422, "DEVOLUTION_EXCESS", "confirm-f3-exceso-rev-rect-01");
+
+    // 4. Atribución con devolucionRevision obsoleta → ATTRIBUTION_REVISION_CONFLICT
+    const atribObsoleta: EntradaDevolucionImpacto = {
+      accion: "atribuir",
+      id: devRev.id,
+      body: {
+        revision: devRev.revision,
+        devolucionRevision: devRev.devRev + 5,
+        compra: compraId,
+        estado: "Verificado",
+        elegibilidad: "Acreditada",
+        cicloOrigen: "1",
+        evidenciaRelacion: "Ticket",
+        evidenciaOrigenTemporal: "Enero",
+        motivo: "Revisión obsoleta",
+      },
+    };
+    expectAmbosRechazan(atribObsoleta, 409, "ATTRIBUTION_REVISION_CONFLICT", "confirm-f3-rev-conflict-01");
+
+    // 5. Atribución sin compra sobre vínculo existente → DEVOLUTION_LINK_REQUIRED
+    const atribSinCompra: EntradaDevolucionImpacto = {
+      accion: "atribuir",
+      id: devRev.id,
+      body: {
+        revision: devRev.revision,
+        devolucionRevision: devRev.devRev,
+        compra: "",
+        estado: "Revisar",
+        motivo: "Intentar desvincular",
+      },
+    };
+    expectAmbosRechazan(atribSinCompra, 422, "DEVOLUTION_LINK_REQUIRED", "confirm-f3-link-req-01");
+
+    // 6. Guardas sobre la compra vinculada: DEVOLUTION_LINKED (anular) y PURCHASE_BELOW_REFUNDED (rebajar < 80)
+    const compraRow = db
+      .query("SELECT revision FROM movimientos WHERE id=?")
+      .get(compraId) as { revision: number };
+    const anularCompraBody = { revision: compraRow.revision, motivo: "Anular compra vinculada" };
+    expect(() => previewMovement(db, anularCompraBody, compraId, true)).toThrow(
+      expect.objectContaining({ status: 422, code: "DEVOLUTION_LINKED" }),
+    );
+    expect(() =>
+      writeMovement(
+        db,
+        { ...anularCompraBody, fingerprint: dummyToken },
+        "confirm-f3-dev-linked-01",
+        compraId,
+        true,
+        Date.now(),
+        undefined,
+        GATE_ABIERTO,
+      ),
+    ).toThrow(expect.objectContaining({ status: 422, code: "DEVOLUTION_LINKED" }));
+
+    const rebajarCompraBody = {
+      tipo: "Gasto",
+      fecha: "2026-01-15",
+      importe: "50.00",
+      saldo: saldoId,
+      concepto: "Rebajar por debajo de devuelto",
+      nota: "",
+      partida: partidaId,
+      revision: compraRow.revision,
+      motivo: "Rebaja inválida",
+    };
+    expect(() => previewMovement(db, rebajarCompraBody, compraId, false)).toThrow(
+      expect.objectContaining({ status: 422, code: "PURCHASE_BELOW_REFUNDED" }),
+    );
+    expect(() =>
+      writeMovement(
+        db,
+        { ...rebajarCompraBody, fingerprint: dummyToken },
+        "confirm-f3-below-ref-01",
+        compraId,
+        false,
+        Date.now(),
+        undefined,
+        GATE_ABIERTO,
+      ),
+    ).toThrow(expect.objectContaining({ status: 422, code: "PURCHASE_BELOW_REFUNDED" }));
+
+    db.close();
+  });
+
+  test("SPEC38 §3.2 / AC-07 · Fila histórica en version_conjunto='2' es NoComparable con revalidacionSugerida=true sin dirty espontáneo y se marca al recibir operación material en '3'", () => {
+    const { db, compraId, saldoId } = setupDb();
+    expect(VERSION_CONJUNTO).toBe("3");
+
+    // Sembrar fila histórica en version_conjunto = "2" con huella v2
+    const huellaHistoricaV2 = "a".repeat(64);
+    const cobertura = universoFinanciero(db, "1").cobertura;
+    db.run(
+      `INSERT INTO cierre_validacion(
+         ciclo,revision,revision_actor,revision_instante,huella_validacion,version_conjunto,cobertura,dirty
+       ) VALUES('1',1,'usuario-unico','2026-01-31T23:59:59.000Z',?,'2',?,0)`,
+      [huellaHistoricaV2, JSON.stringify(cobertura)],
+    );
+
+    // Sin operación: NoComparable + revalidacionSugerida=true, NO se marca dirty espontáneamente
+    const antes = proyectarValidacion(db, "1");
+    expect(antes.estado).toBe("Validada");
+    expect(antes.dirty).toBe(false);
+    expect(antes.divergenciaValidacion).toBe("NoComparable");
+    expect(antes.revalidacionSugerida).toBe(true);
+    expect(antes.validado).toBe(false);
+    expect(antes.versionConjunto).toBe("2");
+
+    // Operación material nueva: compara antes/después en "3", marca dirty=1 y preserva referencia "2"
+    const h3Antes = huellaUniverso(universoFinanciero(db, "1"));
+    const alta: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución sobre histórica v2",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const preview = previewDevolucionImpacto(db, alta);
+    const c1 = preview.devolucionImpacto.ciclosAfectados.find((c) => c.ciclo === "1");
+    expect(c1).toBeDefined();
+    expect(c1!.validado).toBe(false);
+    expect(c1!.motivo).toEqual(["FLUJO_CICLO", "ATRIBUCION"]);
+
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...alta,
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        key: "confirm-ac07-v2-a-v3-01",
+      },
+      GATE_ABIERTO,
+    );
+
+    const h3Despues = huellaUniverso(universoFinanciero(db, "1"));
+    expect(h3Despues).not.toBe(h3Antes);
+
+    const despues = proyectarValidacion(db, "1");
+    expect(despues.estado).toBe("Pendiente");
+    expect(despues.dirty).toBe(true);
+    expect(despues.divergenciaValidacion).toBe("NoComparable");
+    expect(despues.revalidacionSugerida).toBe(true);
+    expect(despues.validado).toBe(false);
+    // Referencia histórica en "2" preservada intacta
+    expect(despues.versionConjunto).toBe("2");
+    expect(despues.huellaValidacion).toBe(huellaHistoricaV2);
+
+    const audit = db
+      .query(
+        `SELECT accion,huella_anterior,huella_posterior
+           FROM cierre_validacion_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1`,
+      )
+      .get() as { accion: string; huella_anterior: string; huella_posterior: string };
+    expect(audit).toEqual({
+      accion: "dirty_marcado",
+      huella_anterior: h3Antes,
+      huella_posterior: h3Despues,
+    });
+    db.close();
   });
 });

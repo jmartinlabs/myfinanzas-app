@@ -985,7 +985,7 @@ test("AC-22 · confirmar la revisión pendiente es la única limpieza: revisión
     expect(limpia.dirty_ultimo).toBeNull();
     expect(limpia.dirty_motivos).toBeNull();
     expect(limpia.huella_validacion).toBe(huellaVigente);
-    expect(limpia.version_conjunto).toBe("2");
+    expect(limpia.version_conjunto).toBe("3");
     expect(limpia.revision_actor).toBe("humano");
     expect(limpia.revision_instante).toBe(T_CONFIRMAR);
     expect(recibo.ciclos).toEqual([{ id: "1", revision: "2", estado: "Validada" }]);
