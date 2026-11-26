@@ -7,6 +7,7 @@ import {
   type CoberturaValidada,
   type DetalleValidacion,
 } from "./cierre-validacion-dto";
+import { VERSION_CONJUNTO } from "./cierre-validacion-impacto";
 import { Problem } from "./problem";
 
 /**
@@ -146,8 +147,15 @@ export function exigirRevisionHumanaNueva(
         ? entrada.motivo
         : rechazo("motivo", "se esperaba un motivo humano acotado");
 
-  // (a) El conjunto vigente no se cambia al confirmar una revisión.
-  if (actual.versionConjunto !== null && versionConjunto !== actual.versionConjunto)
+  // (a) El conjunto vigente no retrocede ni cambia a una versión ajena al vigente.
+  if (
+    actual.versionConjunto !== null &&
+    !(
+      versionConjunto === actual.versionConjunto ||
+      (BigInt(versionConjunto) > BigInt(actual.versionConjunto) &&
+        versionConjunto === VERSION_CONJUNTO)
+    )
+  )
     rechazo(
       "versionConjunto",
       `la confirmación no reapunta la referencia: el conjunto vigente es ${actual.versionConjunto}`,
@@ -362,7 +370,14 @@ export function escribirReferenciaHumana(
   if (accion === "confirmar_revision" && !actual.dirty)
     conflicto("ciclo", "el ciclo no está pendiente de revisión", "VALIDATION_NOT_PENDING");
   // Evidencia nueva: la misma guarda para las tres acciones (§2.4).
-  if (actual.versionConjunto !== null && versionConjunto !== actual.versionConjunto)
+  if (
+    actual.versionConjunto !== null &&
+    !(
+      versionConjunto === actual.versionConjunto ||
+      (BigInt(versionConjunto) > BigInt(actual.versionConjunto) &&
+        versionConjunto === VERSION_CONJUNTO)
+    )
+  )
     rechazo(
       "versionConjunto",
       `la referencia no se reapunta: el conjunto vigente es ${actual.versionConjunto}`,

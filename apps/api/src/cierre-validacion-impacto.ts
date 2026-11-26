@@ -7,7 +7,11 @@ import {
   type FuenteCobertura,
   type ImpactoMaterial,
 } from "./cierre-validacion-dto";
-import { descuentoPorCompras, type DescuentoCompra } from "./devoluciones";
+import {
+  calcularGreIntervalo,
+  type DescuentoCompra,
+  type GreIntervalo,
+} from "./devoluciones";
 import { cashAt, investmentInstalled, positionsAtDate } from "./investment-engine";
 import { Problem } from "./problem";
 
@@ -299,8 +303,7 @@ function hechos(
   ciclo: string,
 ): {
   hechosCiclo: HechoUniverso[];
-  comprasElegibles: FilaHecho[];
-  descuentos: Map<string, DescuentoCompra>;
+  greIntervalo: GreIntervalo;
 } {
   const filas = db
     .query(
@@ -316,14 +319,10 @@ function hechos(
         ORDER BY length(m.id),m.id`,
     )
     .all(inicio, fin, fin) as FilaHecho[];
-  const comprasElegibles = filas.filter(esCompraElegible);
-  const descuentos =
-    comprasElegibles.length > 0
-      ? descuentoPorCompras(
-          db,
-          comprasElegibles.map((f) => f.id),
-        )
-      : new Map<string, DescuentoCompra>();
+  const gastosCiclo = filas.filter((f) => f.tipo === "Gasto");
+  const devolucionesCiclo = filas.filter((f) => f.tipo === "Devolución de gasto");
+  const greIntervalo = calcularGreIntervalo(db, gastosCiclo, devolucionesCiclo);
+  const descuentos = greIntervalo.descuentos;
   const hechosCiclo = filas.map((fila) => {
     let neto: string | null = fila.importe;
     if (esCompraElegible(fila)) {
@@ -350,19 +349,18 @@ function hechos(
       revision: String(fila.revision),
     };
   });
-  return { hechosCiclo, comprasElegibles, descuentos };
+  return { hechosCiclo, greIntervalo };
 }
 
 /**
  * Flujo del ciclo: bruto, devolución bancaria registrada, devolución económica
  * atribuida por `#538`, GRE, ingreso, neto (`ingreso - gre`) y comida neta.
- * Si alguna compra elegible tiene exceso, `gre` y `neto` son `null` (sin `max(0)`).
+ * Si no hay compras o alguna compra elegible tiene exceso, `gre` y `neto` son `null` (sin `max(0)`).
  */
 function flujo(
   db: Database,
   hechosCiclo: readonly HechoUniverso[],
-  comprasElegibles: readonly FilaHecho[],
-  descuentos: ReadonlyMap<string, DescuentoCompra>,
+  greIntervalo: GreIntervalo,
 ) {
   const bruto = suma(
     hechosCiclo.filter((h) => h.tipo === "Gasto").map((h) => h.importe),
@@ -374,17 +372,8 @@ function flujo(
     hechosCiclo.filter((h) => h.tipo === "Ingreso").map((h) => h.importe),
   );
   const comida = comidaNeta(db, hechosCiclo);
-  let brutoElegible = 0n;
-  let descuentoTotal = 0n;
-  let hayExceso = false;
-  for (const compra of comprasElegibles) {
-    brutoElegible += BigInt(compra.importe);
-    const descuento = descuentos.get(compra.id);
-    descuentoTotal += descuento?.descuentoEconomico ?? 0n;
-    if (descuento?.exceso) hayExceso = true;
-  }
-  const devolucionEconomica = descuentoTotal.toString();
-  const gre = hayExceso ? null : (brutoElegible - descuentoTotal).toString();
+  const devolucionEconomica = greIntervalo.descuentoEconomico.toString();
+  const gre = greIntervalo.gre === null ? null : greIntervalo.gre.toString();
   const neto =
     ingreso !== null && gre !== null
       ? (BigInt(ingreso) - BigInt(gre)).toString()
@@ -536,8 +525,8 @@ export function universoFinanciero(db: Database, ciclo: string): UniversoFinanci
     });
   const maestro = cycleMaster(db).find((entrada) => entrada.id === ciclo) ?? null;
   const fin = maestro?.fin ?? null;
-  const { hechosCiclo, comprasElegibles, descuentos } = hechos(db, fila.inicio, fin, fila.id);
-  const flujoCiclo = flujo(db, hechosCiclo, comprasElegibles, descuentos);
+  const { hechosCiclo, greIntervalo } = hechos(db, fila.inicio, fin, fila.id);
+  const flujoCiclo = flujo(db, hechosCiclo, greIntervalo);
   const stockCiclo = stock(db, fin);
   const repartoCiclo = reparto(db, ciclo);
   const cobertura: CoberturaValidada[] = [

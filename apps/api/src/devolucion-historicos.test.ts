@@ -9,7 +9,10 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { createCycle, cycleContext } from "./ciclos";
 import { createClassification } from "./clasificacion";
-import { restaurarTriggerDevolucionV32 } from "./cierre-validacion-test-support";
+import {
+  restaurarTriggerConfirmacionV33,
+  restaurarTriggerDevolucionV32,
+} from "./cierre-validacion-test-support";
 import { writeComidaDevolucion } from "./comida";
 import { prepareSchema } from "./database-schema";
 import { previewMovement, writeMovement } from "./movimientos";
@@ -165,6 +168,7 @@ function sembrar(path: string) {
   db.run("UPDATE movimientos SET importe=6000 WHERE id=?", [excedida]);
   db.run("UPDATE movimientos SET origen=? WHERE id=?", [agregado.id, terminal]);
   db.run("UPDATE movimientos SET tipo='Transferencia',destino=?,partida=NULL WHERE id=?", [receptor.id, retipada]);
+  restaurarTriggerConfirmacionV33(db);
   restaurarTriggerDevolucionV32(db);
   db.exec("UPDATE schema_version SET version=32");
   expect(verifyContract(db, 32)).not.toBeNull();
@@ -225,7 +229,7 @@ test("§3.2/§6/§11: histórico incoherente intacto tras migrar, abrir, consult
     for (let apertura = 0; apertura < 2; apertura++) {
       const abierta = new Database(path, { strict: true });
       prepareSchema(abierta, identidad);
-      expect(verifyContract(abierta, 33)).toBe("C33-SPEC39-DEVOLUCION-TRIGGER");
+      expect(verifyContract(abierta, 34)).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
       expect(filas(abierta)).toEqual(w.antes);
       abierta.close();
     }

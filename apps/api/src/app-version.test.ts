@@ -187,7 +187,7 @@ describe("GET /api/version", () => {
       environment: "TEST",
       schema: schemaVersion,
     });
-    expect(schemaVersion).toBe(33);
+    expect(schemaVersion).toBe(34);
   });
 
   test("con artefacto de release expone versión, SHA corto y entorno", async () => {

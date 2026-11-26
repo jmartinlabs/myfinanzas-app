@@ -5,7 +5,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { backup, restore } from "./backup";
-import { restaurarTriggerDevolucionV32 } from "./cierre-validacion-test-support";
+import {
+  restaurarTriggerConfirmacionV33,
+  restaurarTriggerDevolucionV32,
+} from "./cierre-validacion-test-support";
 import { devolucionTriggerV33 } from "./comida-schema";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
@@ -104,6 +107,7 @@ function v32ConHechos(path: string) {
     { fecha: "2026-01-11", importe: "1.00", saldo: "S001", concepto: "Huérfana ficticia" },
     Date.parse(t),
   );
+  restaurarTriggerConfirmacionV33(db);
   restaurarTriggerDevolucionV32(db);
   db.exec("UPDATE schema_version SET version=32");
   expect(verifyContract(db, 32)).toBe(c32);
@@ -113,10 +117,10 @@ function v32ConHechos(path: string) {
 test("v33: la base nueva cumple C33 y solo difiere de C32 en el trigger de compra", () => {
   const db = nueva();
   try {
-    expect(schemaVersion).toBe(33);
-    expect(version(db)).toBe(33);
-    expect(manifest(db)).toEqual(contract(c33).objects);
-    expect(verifyContract(db, 33)).toBe(c33);
+    expect(schemaVersion).toBe(34);
+    expect(version(db)).toBe(34);
+    expect(manifest(db)).toEqual(contract("C34-SPEC38-VALIDACION-VERSION-CONJUNTO").objects);
+    expect(verifyContract(db, 34)).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
     const clave = (o: { type: string; name: string }) => `${o.type}:${o.name}`;
     const previos = new Map(contract(c32).objects.map((o) => [clave(o), o.sql]));
     expect(contract(c33).objects.map(clave)).toEqual([...previos.keys()]);
@@ -144,9 +148,9 @@ for (const [origen, id] of Object.entries(admitted).filter(
       expect(verifyContract(db, Number(origen))).toBe(id);
       prepareSchema(db, identidad);
       const fresca = nueva();
-      expect(version(db)).toBe(33);
+      expect(version(db)).toBe(34);
       expect(manifest(db)).toEqual(manifest(fresca));
-      expect(verifyContract(db, 33)).toBe(c33);
+      expect(verifyContract(db, 34)).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       fresca.close();
       db.close();
@@ -165,8 +169,8 @@ test("v33: v32→v33 preserva filas y auditoría, no degrada el histórico y es 
 
     const db = new Database(path, { strict: true });
     prepareSchema(db, identidad);
-    expect(version(db)).toBe(33);
-    expect(verifyContract(db, 33)).toBe(c33);
+    expect(version(db)).toBe(34);
+    expect(verifyContract(db, 34)).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
     expect(filas(db)).toEqual(antes);
     expect(db.query("PRAGMA integrity_check").get()).toEqual({
       integrity_check: "ok",
@@ -191,9 +195,9 @@ test("v33: v32→v33 preserva filas y auditoría, no degrada el histórico y es 
 
     const reabierta = new Database(path, { strict: true });
     prepareSchema(reabierta, identidad);
-    expect(version(reabierta)).toBe(33);
+    expect(version(reabierta)).toBe(34);
     expect(filas(reabierta)).toEqual(despues);
-    expect(manifest(reabierta)).toEqual(contract(c33).objects);
+    expect(manifest(reabierta)).toEqual(contract("C34-SPEC38-VALIDACION-VERSION-CONJUNTO").objects);
     reabierta.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -243,7 +247,7 @@ for (const punto of ["drop", "bloque"] as const)
       expect(filas(tras)).toEqual(antes.filas);
       // La misma base migra después sin intervención.
       prepareSchema(tras, identidad);
-      expect(verifyContract(tras, 33)).toBe(c33);
+      expect(verifyContract(tras, 34)).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
       expect(filas(tras)).toEqual(antes.filas);
       tras.close();
     } finally {
@@ -295,11 +299,11 @@ test("v33: contratos inesperados o versión desconocida se rechazan antes de esc
     [
       "v33 con el trigger anterior",
       (db) => restaurarTriggerDevolucionV32(db),
-      "Contrato de esquema v33 desconocido o incompleto; no se modificará esta base.",
+      "Contrato de esquema v34 desconocido o incompleto; no se modificará esta base.",
     ],
     [
       "v34",
-      (db) => db.exec("UPDATE schema_version SET version=34"),
+      (db) => db.exec("UPDATE schema_version SET version=35"),
       "Esquema no compatible; no se modificará esta base.",
     ],
   ];
@@ -364,8 +368,8 @@ for (const origen of [32, 33] as const)
 
         for (let apertura = 0; apertura < 2; apertura++) {
           const abierta = openDatabase(restaurada.database);
-          expect(version(abierta)).toBe(33);
-          expect(verifyContract(abierta, 33)).toBe(c33);
+          expect(version(abierta)).toBe(34);
+          expect(verifyContract(abierta, 34)).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
           expect(conservadas(abierta)).toEqual(antes);
           expect(
             abierta

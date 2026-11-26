@@ -74,7 +74,7 @@ export type EntradaConfirmacionDevolucion = EntradaDevolucionImpacto & {
 export type CifrasCicloDevolucion = {
   bruto: string;
   descuentoEconomico: string;
-  gastoRealEconomico: string;
+  gastoRealEconomico: string | null;
   devolucionBancaria: string;
   efectivo: string | null;
 };
@@ -255,45 +255,6 @@ function saldoBancarioAFecha(
     .get(saldoId, fecha) as { total: number | bigint };
   const total = inicial + BigInt(entradas.total) - BigInt(salidas.total);
   return { nombre: saldo.nombre, valor: decimal(total) };
-}
-
-/**
- * Métricas GRE del ciclo calculadas con la proyección única `descuentoPorCompras`.
- */
-function greDeCiclo(
-  db: Database,
-  ciclo: string,
-): { bruto: bigint; descuento: bigint; gre: bigint; devolucionBancaria: bigint } {
-  const maestro = cycleMaster(db).find((entrada) => entrada.id === ciclo);
-  if (!maestro)
-    return { bruto: 0n, descuento: 0n, gre: 0n, devolucionBancaria: 0n };
-  const comprasCiclo = db
-    .query(
-      `SELECT m.id,CAST(m.importe AS TEXT) importe
-         FROM movimientos m
-         JOIN saldos s ON s.id=m.origen
-        WHERE m.anulado=0 AND m.tipo='Gasto' AND s.control!='Terminal'
-          AND m.fecha>=? AND (? IS NULL OR m.fecha<=?)`,
-    )
-    .all(maestro.inicio, maestro.fin, maestro.fin) as { id: string; importe: string }[];
-  const ids = comprasCiclo.map((c) => c.id);
-  const bruto = comprasCiclo.reduce((acc, c) => acc + BigInt(c.importe), 0n);
-  const descuentos = descuentoPorCompras(db, ids);
-  let descuento = 0n;
-  for (const id of ids) descuento += descuentos.get(id)?.descuentoEconomico ?? 0n;
-  const devRow = db
-    .query(
-      `SELECT COALESCE(SUM(importe),0) total FROM movimientos
-        WHERE anulado=0 AND tipo='Devolución de gasto'
-          AND fecha>=? AND (? IS NULL OR fecha<=?)`,
-    )
-    .get(maestro.inicio, maestro.fin, maestro.fin) as { total: number | bigint };
-  return {
-    bruto,
-    descuento,
-    gre: bruto - descuento,
-    devolucionBancaria: BigInt(devRow.total),
-  };
 }
 
 type PlanDevolucion = {
@@ -694,50 +655,56 @@ function contextRevisionDevolucion(
   });
 }
 
-type MedicionCiclo = {
-  universo: UniversoFinanciero;
-  gre: ReturnType<typeof greDeCiclo>;
-};
-
 function medirEstadoCiclos(
   db: Database,
   candidatos: readonly string[],
-): Map<string, MedicionCiclo> {
-  const universos = medirCandidatos(db, candidatos);
-  const salida = new Map<string, MedicionCiclo>();
-  for (const [ciclo, universo] of universos) {
-    salida.set(ciclo, { universo, gre: greDeCiclo(db, ciclo) });
-  }
-  return salida;
+): Map<string, UniversoFinanciero> {
+  return medirCandidatos(db, candidatos);
+}
+
+function cifrasDeUniverso(u: UniversoFinanciero): CifrasCicloDevolucion {
+  return {
+    bruto: u.flujo.bruto !== null ? (decimal(BigInt(u.flujo.bruto)) ?? "0.00") : "0.00",
+    descuentoEconomico:
+      u.flujo.devolucionEconomica !== null
+        ? (decimal(BigInt(u.flujo.devolucionEconomica)) ?? "0.00")
+        : "0.00",
+    gastoRealEconomico:
+      u.flujo.gre !== null ? (decimal(BigInt(u.flujo.gre)) ?? null) : null,
+    devolucionBancaria:
+      u.flujo.devolucion !== null
+        ? (decimal(BigInt(u.flujo.devolucion)) ?? "0.00")
+        : "0.00",
+    efectivo: u.stock.efectivo,
+  };
 }
 
 function construirCiclosAfectados(
   db: Database,
-  antes: ReadonlyMap<string, MedicionCiclo>,
-  despues: ReadonlyMap<string, MedicionCiclo>,
+  antes: ReadonlyMap<string, UniversoFinanciero>,
+  despues: ReadonlyMap<string, UniversoFinanciero>,
 ): {
   ciclosAfectados: CicloAfectadoDevolucionDto[];
   impactos: ImpactoMedido[];
 } {
-  const universosAntes = new Map<string, UniversoFinanciero>();
-  const universosDespues = new Map<string, UniversoFinanciero>();
-  for (const [c, m] of antes) universosAntes.set(c, m.universo);
-  for (const [c, m] of despues) universosDespues.set(c, m.universo);
-  const impactos = impactoDeCandidatos(universosAntes, universosDespues);
-
+  const impactos = impactoDeCandidatos(antes, despues);
   const ciclosAfectados: CicloAfectadoDevolucionDto[] = [];
 
   for (const imp of impactos) {
     if (!imp.material) continue;
-    const mAntes = antes.get(imp.ciclo)!;
-    const mDespues = despues.get(imp.ciclo)!;
+    const uAntes = antes.get(imp.ciclo)!;
+    const uDespues = despues.get(imp.ciclo)!;
     const validacion = proyectarValidacion(db, imp.ciclo);
+    const greAntes = uAntes.flujo.gre !== null ? BigInt(uAntes.flujo.gre) : null;
+    const greDespues = uDespues.flujo.gre !== null ? BigInt(uDespues.flujo.gre) : null;
     const signoGasto: "baja" | "sube" | "invariante" =
-      mDespues.gre.gre < mAntes.gre.gre
-        ? "baja"
-        : mDespues.gre.gre > mAntes.gre.gre
-          ? "sube"
-          : "invariante";
+      greAntes !== null && greDespues !== null
+        ? greDespues < greAntes
+          ? "baja"
+          : greDespues > greAntes
+            ? "sube"
+            : "invariante"
+        : "invariante";
     ciclosAfectados.push({
       ciclo: imp.ciclo,
       rango: rangoDe(db, imp.ciclo),
@@ -747,20 +714,8 @@ function construirCiclosAfectados(
       validado: validacion.validado,
       dirtyPrevio: validacion.estado === "Pendiente",
       signoGasto,
-      cifrasAntes: {
-        bruto: decimal(mAntes.gre.bruto) ?? "0.00",
-        descuentoEconomico: decimal(mAntes.gre.descuento) ?? "0.00",
-        gastoRealEconomico: decimal(mAntes.gre.gre) ?? "0.00",
-        devolucionBancaria: decimal(mAntes.gre.devolucionBancaria) ?? "0.00",
-        efectivo: mAntes.universo.stock.efectivo,
-      },
-      cifrasDespues: {
-        bruto: decimal(mDespues.gre.bruto) ?? "0.00",
-        descuentoEconomico: decimal(mDespues.gre.descuento) ?? "0.00",
-        gastoRealEconomico: decimal(mDespues.gre.gre) ?? "0.00",
-        devolucionBancaria: decimal(mDespues.gre.devolucionBancaria) ?? "0.00",
-        efectivo: mDespues.universo.stock.efectivo,
-      },
+      cifrasAntes: cifrasDeUniverso(uAntes),
+      cifrasDespues: cifrasDeUniverso(uDespues),
     });
   }
 
@@ -780,7 +735,7 @@ function medirDryRunDevolucion(
   db.run(`SAVEPOINT ${SAVEPOINT}`);
   let proyDespues: ReturnType<typeof proyeccionDevolucionesCompra>;
   let receptorDespues: ReturnType<typeof saldoBancarioAFecha>;
-  let ciclosDespues: Map<string, MedicionCiclo>;
+  let ciclosDespues: Map<string, UniversoFinanciero>;
   try {
     aplicarEnTransaccion(db, entrada, now);
     proyDespues = proyeccionDevolucionesCompra(db, plan.compraId);

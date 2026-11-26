@@ -34,3 +34,19 @@ export function restaurarTriggerDevolucionV32(db: Database): void {
   db.exec("DROP TRIGGER movimiento_devolucion_update_purchase");
   db.exec(sql);
 }
+
+/**
+ * Apoyo de pruebas: devuelve `cierre_validacion_confirmacion` a su forma
+ * anterior a v34 (#598), con el SQL exacto del contrato congelado C33. No
+ * cambia `schema_version`: lo fija quien reconstruye la base antigua.
+ *
+ * No lo importa ningún módulo de producción.
+ */
+export function restaurarTriggerConfirmacionV33(db: Database): void {
+  const sql = contract("C33-SPEC39-DEVOLUCION-TRIGGER").objects.find(
+    (object) => object.name === "cierre_validacion_confirmacion",
+  )?.sql;
+  if (!sql) throw new Error("C33 no contiene cierre_validacion_confirmacion");
+  db.exec("DROP TRIGGER cierre_validacion_confirmacion");
+  db.exec(sql);
+}

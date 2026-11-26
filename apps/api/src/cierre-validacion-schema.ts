@@ -1219,3 +1219,34 @@ export function cierreValidacionSchemaV32(db: Database) {
   if (db.query("PRAGMA foreign_key_check").all().length)
     throw new Error("Migración v32 rechazada: claves foráneas inconsistentes.");
 }
+
+/**
+ * v33 -> v34 (SPEC38 / #598): permite avanzar `version_conjunto` al confirmar
+ * o revalidar hacia el conjunto vigente, rechazando `NULL` o retrocesos.
+ */
+export function cierreValidacionTriggerV34(db: Database) {
+  const version = (
+    db.query("SELECT version FROM schema_version").get() as {
+      version: number;
+    } | null
+  )?.version;
+  if (version !== 33)
+    throw new Error("Esquema previo inesperado para migración Validación v34.");
+
+  db.exec(`
+    DROP TRIGGER IF EXISTS cierre_validacion_confirmacion;
+    CREATE TRIGGER cierre_validacion_confirmacion
+      BEFORE UPDATE ON cierre_validacion
+      WHEN OLD.dirty=1 AND NEW.dirty=0
+       AND (
+         NEW.revision<>OLD.revision+1
+         OR NEW.revision_instante IS NULL
+         OR (OLD.dirty_ultimo IS NOT NULL AND NEW.revision_instante<=OLD.dirty_ultimo)
+         OR (OLD.dirty_desde IS NOT NULL AND NEW.revision_instante<=OLD.dirty_desde)
+         OR NEW.version_conjunto IS NULL
+         OR (OLD.version_conjunto IS NOT NULL
+             AND CAST(NEW.version_conjunto AS INTEGER) < CAST(OLD.version_conjunto AS INTEGER)))
+      BEGIN SELECT RAISE(ABORT,'confirmar la revision exige referencia nueva del conjunto actual'); END;
+    UPDATE schema_version SET version=34;
+  `);
+}

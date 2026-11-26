@@ -680,3 +680,80 @@ export function agregarDescuentos(
     causas: causasCobertura.filter((c) => causas.has(c)),
   };
 }
+
+export type GreIntervalo = {
+  bruto: bigint;
+  descuentoEconomico: bigint;
+  gre: bigint | null;
+  exceso: boolean;
+  cobertura: "Completa" | "Parcial" | "No disponible";
+  causas: CausaCobertura[];
+  eligibleIds: string[];
+  sinVinculoEnIntervalo: string[];
+  descuentos: Map<string, DescuentoCompra>;
+};
+
+/**
+ * Cálculo único y compartido de GRE y cobertura de devoluciones sobre un
+ * intervalo de compras (`Gasto`, incluidos `Terminal`) y abonos
+ * (`Devolución de gasto`). Sin `max(0)`: si no hay compras o hay exceso
+ * histórico, `gre` es `null`.
+ */
+export function calcularGreIntervalo(
+  db: Database,
+  gastos: readonly { id: string; importe: string | number | bigint }[],
+  devoluciones: readonly { id: string }[],
+  projection: ReturnType<typeof proyectarDevoluciones> = proyectarDevoluciones(db),
+): GreIntervalo {
+  const orphanSet = new Set(
+    projection.items.filter((d) => d.causa === "sinVinculo").map((d) => d.id),
+  );
+  if (!gastos.length) {
+    const sinVinculoEnIntervalo = devoluciones
+      .map((r) => r.id)
+      .filter((id) => orphanSet.has(id));
+    return {
+      bruto: 0n,
+      descuentoEconomico: 0n,
+      gre: null,
+      exceso: false,
+      cobertura: "No disponible",
+      causas: [],
+      eligibleIds: [],
+      sinVinculoEnIntervalo,
+      descuentos: new Map(),
+    };
+  }
+  const ids = gastos.map((r) => r.id);
+  const descuentos = descuentoPorCompras(db, ids, projection);
+  const agg = agregarDescuentos(descuentos.values());
+  const sinTablaConAbonos =
+    !comidaInstalled(db, "movimiento_devolucion") && orphanSet.size > 0;
+  const sinVinculoEnIntervalo = sinTablaConAbonos
+    ? [...orphanSet]
+    : devoluciones.map((r) => r.id).filter((id) => orphanSet.has(id));
+  const causas = new Set<CausaCobertura>(agg.causas);
+  if (sinVinculoEnIntervalo.length) causas.add("sinVinculo");
+  const cobertura: "Completa" | "Parcial" | "No disponible" =
+    agg.exceso
+      ? "Parcial"
+      : agg.cobertura === "Completa" && !sinVinculoEnIntervalo.length
+        ? "Completa"
+        : "Parcial";
+  const bruto = gastos.reduce((n, r) => n + BigInt(r.importe), 0n);
+  const eligible = [...descuentos.values()].flatMap((d) => d.devoluciones);
+  const eligibleIds = projection.items
+    .filter((d) => d.elegible && eligible.includes(d.id))
+    .map((d) => d.id);
+  return {
+    bruto,
+    descuentoEconomico: agg.descuento,
+    gre: agg.exceso ? null : bruto - agg.descuento,
+    exceso: agg.exceso,
+    cobertura,
+    causas: causasCobertura.filter((x) => causas.has(x)),
+    eligibleIds,
+    sinVinculoEnIntervalo,
+    descuentos,
+  };
+}

@@ -9,6 +9,7 @@ import { contract, manifest, verifyContract } from "./schema-contract";
 import {
   restaurarTriggerAperturaV31,
   restaurarTriggerDevolucionV32,
+  restaurarTriggerConfirmacionV33,
 } from "./cierre-validacion-test-support";
 
 import { importarCierresLegados } from "./cierre-validacion-migracion";
@@ -31,7 +32,7 @@ const t2 = "2026-01-02T00:00:00.000Z";
 const t3 = "2030-01-01T00:00:00.000Z";
 const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
-const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
+const c34 = "C34-SPEC38-VALIDACION-VERSION-CONJUNTO";
 const ORIGEN = "MIGRACION:cierres:1";
 
 function store(): Database {
@@ -161,12 +162,13 @@ test("v32: contrato C32 verificado, C31 congelado y manifiesto determinista", ()
   expect(
     (uno.query("SELECT version FROM schema_version").get() as { version: number })
       .version,
-  ).toBe(33);
-  expect(verifyContract(uno, 33)).toBe(c33);
+  ).toBe(34);
+  expect(verifyContract(uno, 34)).toBe(c34);
   const otro = store();
   expect(JSON.stringify(manifest(uno))).toBe(JSON.stringify(manifest(otro)));
   expect(uno.query("PRAGMA foreign_key_check").all()).toEqual([]);
-  // Contrato histórico: la base v32 (trigger anterior a v33) cumple C32 exacto.
+  // Contrato histórico: la base v32 (triggers anteriores a v33 y v34) cumple C32 exacto.
+  restaurarTriggerConfirmacionV33(uno);
   restaurarTriggerDevolucionV32(uno);
   uno.exec("UPDATE schema_version SET version=32");
   expect(verifyContract(uno, 32)).toBe(c32);
@@ -207,8 +209,8 @@ test("migración v31→v33 en copia: importa todo cierre legado como Pendiente",
     expect(
       (db.query("SELECT version FROM schema_version").get() as { version: number })
         .version,
-    ).toBe(33);
-    expect(verifyContract(db, 33)).toBe(c33);
+    ).toBe(34);
+    expect(verifyContract(db, 34)).toBe(c34);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     expect(
       (db.query("PRAGMA integrity_check").get() as { integrity_check: string })

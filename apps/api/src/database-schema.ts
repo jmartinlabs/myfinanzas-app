@@ -25,7 +25,10 @@ import {
 } from "./spec36-schema";
 import { spec37SchemaV30 } from "./spec37-schema";
 import { spec37SchemaV31 } from "./spec37-schema-v31";
-import { cierreValidacionSchemaV32 } from "./cierre-validacion-schema";
+import {
+  cierreValidacionSchemaV32,
+  cierreValidacionTriggerV34,
+} from "./cierre-validacion-schema";
 import { importarCierresLegados } from "./cierre-validacion-migracion";
 import { migrarMetadatosLegados } from "./cierre-validacion-metadatos";
 import { Database } from "bun:sqlite";
@@ -164,6 +167,7 @@ export function prepareSchema(db: Database, identity: Identity) {
           migrarMetadatosLegados(db);
         }
         if (versions[0].version < 33) devolucionTriggerV33(db);
+        if (versions[0].version < 34) cierreValidacionTriggerV34(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -299,6 +303,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         migrarMetadatosLegados(db);
       }
       if (schemaVersion >= 33) devolucionTriggerV33(db);
+      if (schemaVersion >= 34) cierreValidacionTriggerV34(db);
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {
