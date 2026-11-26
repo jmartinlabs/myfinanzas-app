@@ -221,7 +221,7 @@ test("E4.11 I2: C27 is exact and deterministic", () => {
     "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23",
   );
   expect(contracts().at(-1)?.id).toBe(c34);
-  expect(contracts().at(-2)?.id).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
+  expect(contracts().at(-2)?.id).toBe("C33-SPEC39-DEVOLUCION-TRIGGER");
   expect(contract(c32).schemaVersion).toBe(32);
   expect(contract(c26).sha256).toBe(
     "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265",

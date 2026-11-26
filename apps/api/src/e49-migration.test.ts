@@ -459,7 +459,7 @@ test("E4.9 A: a failure inside the v25 DDL rolls back the created tables", () =>
   }
 });
 
-for (const unknown of [34, 999]) {
+for (const unknown of [35, 999]) {
   test(`E4.9 A: unknown schema version ${unknown} stays intact`, () => {
     const dir = root();
     try {

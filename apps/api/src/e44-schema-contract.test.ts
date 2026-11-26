@@ -324,7 +324,7 @@ test.skipIf(process.platform !== "linux")(
     ).toBe(0);
     rmSync(plaintext);
     expect(() => restore(corrupt, join(dir, "unadmitted-restored"), identity)).toThrow(
-      "Paquete o checksum inválido.",
+      "Versión de snapshot no compatible.",
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });

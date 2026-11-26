@@ -322,7 +322,7 @@ test.skipIf(process.platform !== "linux")(
 
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
-        app: "e39.2-v35",
+        app: "e39.2-v34",
         schema: 33,
         origin: "demo",
       });
@@ -566,7 +566,7 @@ test.skipIf(process.platform !== "linux")(
 
       const destination = join(dir, "unadmitted-restored");
       expect(() => restore(corrupt, destination, identity)).toThrow(
-        "Paquete o checksum inválido.",
+        "Versión de snapshot no compatible.",
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });

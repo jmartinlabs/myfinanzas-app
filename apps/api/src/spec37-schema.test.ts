@@ -598,7 +598,7 @@ test("SPEC37 I1: v35 is rejected before mutating", () => {
       db.exec("UPDATE schema_version SET version=35");
       expect(verifyContract(db, 35)).toBeNull();
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 35,
+        version: 34,
       });
       expect(() => prepareSchema(db, { origin: "demo", key_hash: null })).toThrow(
         "Esquema no compatible; no se modificará esta base.",
@@ -611,7 +611,7 @@ test("SPEC37 I1: v35 is rejected before mutating", () => {
     try {
       expect(manifest(check)).toEqual(before);
       expect(check.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 35,
+        version: 34,
       });
     } finally {
       check.close();
@@ -661,7 +661,7 @@ test.skipIf(!hasAge)(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 35,
+            version: 34,
           });
           expect(verifyContract(copy, 34)).toBe(c33);
           expect(

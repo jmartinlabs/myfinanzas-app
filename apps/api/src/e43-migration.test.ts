@@ -422,7 +422,7 @@ test("E4.3 AC-24: a failure inside the v24 DDL rolls back the created tables", (
     rmSync(dir, { recursive: true, force: true });
   }
 });
-for (const unknown of [34, 999]) {
+for (const unknown of [35, 999]) {
   test(`E4.3 AC-24: unknown schema version ${unknown} stays intact`, () => {
     const dir = root();
     try {

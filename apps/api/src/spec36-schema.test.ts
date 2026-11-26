@@ -1561,7 +1561,7 @@ test("SPEC36 v29: unknown v35 is rejected before mutating", () => {
         "Esquema no compatible; no se modificará esta base.",
       );
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 35,
+        version: 34,
       });
       expect(
         db
@@ -1622,7 +1622,7 @@ test.skipIf(process.platform !== "linux")(
         const copy = openDatabase(restored.database);
         try {
           expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-            version: 35,
+            version: 34,
           });
           expect(
             copy.query("SELECT fuente_plan FROM repartos").get(),

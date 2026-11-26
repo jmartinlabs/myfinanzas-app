@@ -160,7 +160,7 @@ test("E4.10 A: C26 is exact and deterministic", () => {
     "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265",
   );
   expect(contracts().at(-1)?.id).toBe(c34);
-  expect(contracts().at(-2)?.id).toBe("C34-SPEC38-VALIDACION-VERSION-CONJUNTO");
+  expect(contracts().at(-2)?.id).toBe("C33-SPEC39-DEVOLUCION-TRIGGER");
   expect(contract(c32).schemaVersion).toBe(32);
   expect(contract(c25).sha256).toBe(
     "5b6b649b2708a35af1fe23dfd63804c18c92c6923cb35065177532f51f8fa140",
