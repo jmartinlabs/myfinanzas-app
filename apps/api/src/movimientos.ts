@@ -893,7 +893,13 @@ function plan(
       const link = db
         .query("SELECT compra,estado FROM movimiento_devolucion WHERE movimiento=?")
         .get(old.id) as { compra: string | null; estado: string } | null;
-      if (link && link.estado === "Verificado" && link.compra) {
+      // SPEC39 §4 / §6 / AC-D10 / AC-D14: ninguna rectificación de una devolución
+      // vinculada (tampoco en «Revisar») puede superar la capacidad restante de la compra.
+      if (
+        link &&
+        link.compra &&
+        (link.estado === "Verificado" || link.estado === "Revisar")
+      ) {
         const purchase = find(db, link.compra);
         const others = db
           .query(

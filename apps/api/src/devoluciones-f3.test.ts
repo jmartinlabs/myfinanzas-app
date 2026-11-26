@@ -1272,3 +1272,129 @@ test("§6: una huérfana histórica sin compra previa conserva todas sus atribuc
   expect(comidaDevolucion(c.db, huerfana)).toMatchObject({ compra: compra.id, estado: "Verificado", revision: 4 });
   c.db.close();
 });
+
+test("AC-D10/AC-D14: rectificar al alza una devolución vinculada en Revisar por encima de la capacidad se rechaza (DEVOLUTION_EXCESS) con rollback íntegro", () => {
+  const c = setup();
+  const compra = createMov(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-10",
+    importe: "120",
+    saldo: c.account.id,
+    partida: c.food.id,
+    concepto: "Compra 120",
+    nota: "",
+  }).movimiento;
+  createMov(c.db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-08-05",
+    importe: "70",
+    saldo: c.other.id,
+    concepto: "Dev verificada 70",
+    nota: "",
+    devolucion: {
+      compra: compra.id,
+      estado: "Verificado",
+      elegibilidad: "Acreditada",
+      evidenciaRelacion: "Ev 1",
+      evidenciaOrigenTemporal: "Fac 1",
+    },
+  });
+  // Capacidad restante = 120 - 70 = 50; alta en Revisar de 20 permitida.
+  const devRev = createMov(c.db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-08-06",
+    importe: "20",
+    saldo: c.other.id,
+    concepto: "Dev revisar 20",
+    nota: "",
+    devolucion: {
+      compra: compra.id,
+      estado: "Revisar",
+      elegibilidad: "No acreditada",
+      evidenciaRelacion: "Ev revisar",
+    },
+  }).movimiento;
+  expect(comidaDevolucion(c.db, devRev.id)).toMatchObject({
+    compra: compra.id,
+    estado: "Revisar",
+    revision: 1,
+  });
+
+  const rectificar = (revision: number, importe: string, concepto = "Dev revisar rectificada", nota = "") => ({
+    revision,
+    motivo: "Ajuste devolución en Revisar",
+    tipo: "Devolución de gasto",
+    fecha: "2026-08-06",
+    importe,
+    saldo: c.other.id,
+    concepto,
+    nota,
+  });
+
+  // 70 + 51 = 121 > 120 → DEVOLUTION_EXCESS en preview, escritura y transacción IMMEDIATE, con rollback íntegro.
+  const exceso = rectificar(1, "51");
+  const antes = hechosF3(c.db);
+  const key = randomUUID();
+  expect(codeOf(() => previewMovement(c.db, exceso, devRev.id, false, now))).toBe("DEVOLUTION_EXCESS");
+  expect(
+    codeOf(() =>
+      writeMovement(c.db, exceso, key, devRev.id, false, now, undefined, gateAbiertoParaPruebas),
+    ),
+  ).toBe("DEVOLUTION_EXCESS");
+  expect(
+    codeOf(() =>
+      c.db
+        .transaction(() =>
+          writeMovementInTransaction(c.db, exceso, { now, id: devRev.id, gate: gateAbiertoParaPruebas }),
+        )
+        .immediate(),
+    ),
+  ).toBe("DEVOLUTION_EXCESS");
+  expect(hechosF3(c.db)).toEqual(antes);
+  expect(getMovement(c.db, devRev.id).movimiento).toMatchObject({ importe: "20.00", revision: 1 });
+  expect(comidaDevolucion(c.db, devRev.id)).toMatchObject({
+    compra: compra.id,
+    estado: "Revisar",
+    revision: 1,
+  });
+
+  // Defensa en profundidad: revalidateDevolucionPropia también rechaza el exceso en Revisar.
+  expect(revalidateDevolucionPropia(c.db, devRev.id, now)).toBe(false);
+  expect(
+    codeOf(() => {
+      c.db.transaction(() => {
+        c.db.run("UPDATE movimientos SET importe=5100 WHERE id=?", [devRev.id]);
+        revalidateDevolucionPropia(c.db, devRev.id, now);
+      }).immediate();
+    }),
+  ).toBe("DEVOLUTION_EXCESS");
+  expect(hechosF3(c.db)).toEqual(antes);
+
+  // Caso positivo 1: rectificación al alza dentro de capacidad (50 <= 50), reutilizando la clave rechazada.
+  const enLimite = updateMov(c.db, devRev.id, rectificar(1, "50"), false, key).movimiento;
+  expect(enLimite).toMatchObject({ importe: "50.00", revision: 2 });
+  expect(comidaDevolucion(c.db, devRev.id)).toMatchObject({
+    compra: compra.id,
+    estado: "Revisar",
+    revision: 1,
+  });
+
+  // Caso positivo 2: cambio no económico en Revisar dentro de capacidad.
+  const noEconomico = updateMov(
+    c.db,
+    devRev.id,
+    rectificar(2, "50", "Dev revisar aclarada", "Nota actualizada"),
+  ).movimiento;
+  expect(noEconomico).toMatchObject({
+    importe: "50.00",
+    concepto: "Dev revisar aclarada",
+    nota: "Nota actualizada",
+    revision: 3,
+  });
+  expect(comidaDevolucion(c.db, devRev.id)).toMatchObject({
+    compra: compra.id,
+    estado: "Revisar",
+    revision: 1,
+  });
+  c.db.close();
+});

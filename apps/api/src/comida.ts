@@ -1417,7 +1417,12 @@ export function revalidateDevolucionPropia(
   const own = movement(db, movimientoId);
   if (own.anulado) return false;
   const link = comidaDevolucion(db, movimientoId);
-  if (!link || link.estado !== "Verificado" || !link.compra) return false;
+  if (
+    !link ||
+    !link.compra ||
+    (link.estado !== "Verificado" && link.estado !== "Revisar")
+  )
+    return false;
   const purchase = movement(db, link.compra);
   if (purchase.anulado || purchase.tipo !== "Gasto")
     throw new Problem(
