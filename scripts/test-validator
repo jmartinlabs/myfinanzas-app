@@ -98,6 +98,13 @@ class ValidationTests(unittest.TestCase):
   self.assertEqual(validate(self.root),[])
   other.rename(other.with_name('unknown.json'))
   self.assertRule('harness-config')
+ def test_antigravity_harness_is_valid(self):
+  cfg=json.loads((ROOT/'.agents/harnesses/antigravity.json').read_text())
+  self.assertEqual(cfg['version'],2)
+  self.assertIsNone(cfg['local']['model'])
+  self.assertIsNone(cfg['local']['effort'])
+  self.assertEqual(cfg['external'],{})
+  self.assertEqual(validate(self.root),[])
  def test_v2_harness_checks_native_profiles_and_duplicate_keys(self):
   cfg=self.external_config()
   profiles={
