@@ -1,8 +1,50 @@
 {
   "version": 2,
   "local": {
-    "model": null,
-    "effort": null
+    "model": "hydrogen",
+    "effort": "medium",
+    "profiles": {
+      "functional": {
+        "standard": {
+          "model": "neon",
+          "effort": "low"
+        },
+        "complex": {
+          "model": "neon",
+          "effort": "high"
+        }
+      },
+      "implementation": {
+        "standard": {
+          "model": "hydrogen",
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "neon",
+          "effort": "medium"
+        }
+      },
+      "qa-review": {
+        "standard": {
+          "model": "hydrogen",
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "neon",
+          "effort": "high"
+        }
+      },
+      "infrastructure": {
+        "standard": {
+          "model": "hydrogen",
+          "effort": "medium"
+        },
+        "complex": {
+          "model": "neon",
+          "effort": "high"
+        }
+      }
+    }
   },
   "external": {}
 }
