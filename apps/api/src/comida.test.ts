@@ -316,9 +316,16 @@ test("CU-06/P4: la devolución es entrada bancaria real, sin Ingreso artificial,
       ).get() as { n: number }
     ).n,
   ).toBe(0);
-  const second = refund(db, ing, {
-    importe: "13",
+  // SPEC39 §4 / AC-D10: quedan 8 de capacidad; un alta de 13 en «Revisar» no es
+  // un bypass. Ni movimiento, vínculo, auditoría, contadores ni recibo.
+  const revisar = (importe: string) => ({
+    tipo: "Devolución de gasto",
+    fecha: "2026-07-10",
+    importe,
+    saldo: ing.id,
     partida: food.id,
+    concepto: "Devolución ficticia",
+    nota: "",
     devolucion: {
       estado: "Revisar",
       compra: buy.movimiento.id,
@@ -327,6 +334,35 @@ test("CU-06/P4: la devolución es entrada bancaria real, sin Ingreso artificial,
       cicloOrigen: cycle1.id,
       evidenciaOrigenTemporal: "Documento de compra ficticio",
     },
+  });
+  const intacto = hechos(db);
+  const key = randomUUID();
+  const escribir = (importe: string) =>
+    writeMovement(
+      db,
+      revisar(importe),
+      key,
+      null,
+      false,
+      now,
+      undefined,
+      gateAbiertoParaPruebas,
+    );
+  for (const importe of ["13", "8.01"]) {
+    expect(
+      rechazo(() => previewMovement(db, revisar(importe), null, false, now)),
+    ).toBe("DEVOLUTION_EXCESS");
+    expect(rechazo(() => escribir(importe))).toBe("DEVOLUTION_EXCESS");
+    expect(hechos(db)).toEqual(intacto);
+  }
+  expect(
+    db.query("SELECT COUNT(*) n FROM movement_attempts WHERE key=?").get(key),
+  ).toEqual({ n: 0 });
+  // Dentro de la capacidad (límite exacto) sigue admitiéndose «Revisar».
+  const second = refund(db, ing, {
+    importe: "8",
+    partida: food.id,
+    devolucion: revisar("8").devolucion,
   });
   expect(getComidaMovement(db, second.movimiento.id).devolucion?.estado).toBe(
     "Revisar",

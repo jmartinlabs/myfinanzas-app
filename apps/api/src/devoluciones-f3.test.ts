@@ -15,10 +15,10 @@ import { devolucionTriggerV33 } from "./comida-schema";
 import { createCycle, cycleContext } from "./ciclos";
 import { prepareSchema } from "./database-schema";
 import { devolucionIntegracionDisponible } from "./devolucion-gate";
-import { previewMovement, writeMovement } from "./movimientos";
+import { getMovement, previewMovement, writeMovement, writeMovementInTransaction } from "./movimientos";
 import { Problem } from "./problem";
 import { createRevisionComida } from "./revision-comida";
-import { createSaldo } from "./saldos";
+import { createSaldo, getSaldo, previewSaldoChange, updateSaldo } from "./saldos";
 import { manifest } from "./schema-contract";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
 
@@ -814,11 +814,11 @@ test("AC-D43: migración v32→v33 paridad exacta con base nueva y trigger UPDAT
   c.db.close();
 });
 
-function compraYAbono(c: ReturnType<typeof setup>) {
+function compraYAbono(c: ReturnType<typeof setup>, bruto = "100") {
   const compra = createMov(c.db, {
     tipo: "Gasto",
     fecha: "2026-07-10",
-    importe: "100",
+    importe: bruto,
     saldo: c.account.id,
     partida: c.food.id,
     concepto: "Compra con abono",
@@ -863,5 +863,219 @@ test("AC-D38: un abono previo con copia legacy de Partida sigue detectándose co
       ),
     ),
   ).toBe("DUPLICATE_REVIEW");
+  c.db.close();
+});
+
+/** Huella de todo lo que una escritura rechazada no puede tocar. */
+function hechosF3(db: Database) {
+  return [
+    "movimientos",
+    "movement_audit",
+    "movement_attempts",
+    "movimiento_devolucion",
+    "movimiento_devolucion_audit",
+    "comida_devolucion_attempts",
+    "movimiento_anticipo",
+    "movimiento_compartido",
+    "audit",
+    "counters",
+    "cierre_validacion",
+    "cierre_validacion_audit",
+  ].map((t) => [t, db.query(`SELECT * FROM "${t}"`).all()]);
+}
+
+test("AC-D10: D08 más 51 no entra en Verificado ni en Revisar, sin escritura ni recibo; el saneamiento individual no cambia", () => {
+  const c = setup();
+  const { compra, alta, dev } = compraYAbono(c, "120");
+  const abono = (importe: string, estado: string, concepto = "Segundo abono") => ({
+    ...alta,
+    importe,
+    concepto,
+    devolucion: { ...alta.devolucion, estado },
+  });
+  createMov(c.db, abono("40", "Verificado"));
+  // D08: capacidad restante 120 − 30 − 40 = 50.
+  const antes = hechosF3(c.db);
+  const key = randomUUID();
+  for (const estado of ["Verificado", "Revisar"]) {
+    expect(codeOf(() => previewMovement(c.db, abono("51", estado), null, false, now))).toBe("DEVOLUTION_EXCESS");
+    expect(
+      codeOf(() =>
+        writeMovement(c.db, abono("51", estado), key, null, false, now, undefined, gateAbiertoParaPruebas),
+      ),
+    ).toBe("DEVOLUTION_EXCESS");
+  }
+  expect(hechosF3(c.db)).toEqual(antes);
+  // La clave rechazada no dejó recibo: sirve para un alta válida distinta.
+  const enRevision = createMov(c.db, abono("50", "Revisar", "Abono dentro de capacidad"), key).movimiento;
+  expect(comidaDevolucion(c.db, enRevision.id)).toMatchObject({ estado: "Revisar", compra: compra.id });
+  // Degradación individual explícita: sigue permitida y libera capacidad.
+  writeComidaDevolucion(
+    c.db,
+    dev.id,
+    {
+      revision: 1,
+      devolucionRevision: 1,
+      compra: compra.id,
+      estado: "Revisar",
+      evidenciaRelacion: "Ev",
+      evidenciaOrigenTemporal: "Fac",
+      motivo: "Degradación individual ficticia",
+    },
+    randomUUID(),
+    now,
+    gateAbiertoParaPruebas,
+  );
+  expect(comidaDevolucion(c.db, dev.id)).toMatchObject({ estado: "Revisar", revision: 2 });
+  c.db.close();
+});
+
+function terminal(c: ReturnType<typeof setup>) {
+  return createSaldo(
+    c.db,
+    {
+      nombre: "Terminal F3",
+      tipo: "Efectivo",
+      control: "Terminal",
+      saldoApertura: "0",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    },
+    randomUUID(),
+    now,
+  );
+}
+const rectificacionCompra = (saldo: string, extra: Record<string, unknown> = {}) => ({
+  revision: 1,
+  motivo: "Cambio de origen ficticio",
+  tipo: "Gasto",
+  fecha: "2026-07-10",
+  importe: "100",
+  saldo,
+  concepto: "Compra con abono",
+  nota: "",
+  ...extra,
+});
+
+for (const estado of ["Verificado", "Revisar"])
+  test(`§6: una compra con devolución vigente (${estado}) no puede pasar a un origen Terminal; rollback íntegro`, () => {
+    const c = setup();
+    const t = terminal(c);
+    const { compra, alta } = compraYAbono(c);
+    c.db.run("UPDATE movimiento_devolucion SET estado=?", [estado]);
+    expect(alta.devolucion.compra).toBe(compra.id);
+    const cambio = rectificacionCompra(t.id, { partida: c.food.id });
+    const antes = hechosF3(c.db);
+    const key = randomUUID();
+    expect(codeOf(() => previewMovement(c.db, cambio, compra.id, false, now))).toBe("DEVOLUTION_LINKED");
+    expect(
+      codeOf(() =>
+        writeMovement(c.db, cambio, key, compra.id, false, now, undefined, gateAbiertoParaPruebas),
+      ),
+    ).toBe("DEVOLUTION_LINKED");
+    expect(
+      codeOf(() =>
+        c.db
+          .transaction(() =>
+            writeMovementInTransaction(c.db, cambio, { now, id: compra.id, gate: gateAbiertoParaPruebas }),
+          )
+          .immediate(),
+      ),
+    ).toBe("DEVOLUTION_LINKED");
+    expect(hechosF3(c.db)).toEqual(antes);
+    // Otro origen no Terminal sigue permitido.
+    expect(
+      updateMov(c.db, compra.id, rectificacionCompra(c.other.id, { partida: c.food.id })).movimiento.revision,
+    ).toBe(2);
+    c.db.close();
+  });
+
+test("§6: sin devoluciones vigentes (ninguna o solo anuladas) la compra puede pasar a un origen Terminal", () => {
+  const c = setup();
+  const t = terminal(c);
+  const { compra, dev } = compraYAbono(c);
+  updateMov(c.db, dev.id, { revision: 1, motivo: "Anular abono" }, true);
+  const movida = updateMov(c.db, compra.id, rectificacionCompra(t.id, { partida: c.food.id })).movimiento;
+  expect(movida.origen.id).toBe(t.id);
+  const libre = createMov(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-10",
+    importe: "100",
+    saldo: c.other.id,
+    partida: c.food.id,
+    concepto: "Compra libre",
+    nota: "",
+  }).movimiento;
+  expect(
+    updateMov(c.db, libre.id, rectificacionCompra(t.id, { partida: c.food.id, importe: "101" })).movimiento.origen.id,
+  ).toBe(t.id);
+  c.db.close();
+});
+
+test("§6: el Saldo de origen no puede volverse Terminal mientras sostenga compras con devoluciones vigentes", () => {
+  const c = setup();
+  const { dev } = compraYAbono(c);
+  const cambio = (id: string) => ({ revision: getSaldo(c.db, id).revision, control: "Terminal" });
+  const confirmar = (id: string) => {
+    const preview = previewSaldoChange(c.db, id, cambio(id));
+    return updateSaldo(c.db, id, cambio(id), () => false, now, {
+      fingerprint: preview.fingerprint,
+      motivo: "Cambio ficticio",
+    });
+  };
+  const estado = () => [
+    c.db.query("SELECT * FROM saldos").all(),
+    c.db.query("SELECT * FROM audit").all(),
+    hechosF3(c.db),
+  ];
+  const antes = estado();
+  expect(codeOf(() => previewSaldoChange(c.db, c.account.id, cambio(c.account.id)))).toBe("DEVOLUTION_LINKED");
+  expect(
+    codeOf(() =>
+      updateSaldo(c.db, c.account.id, cambio(c.account.id), () => false, now, {
+        fingerprint: "0".repeat(64),
+        motivo: "Cambio ficticio",
+      }),
+    ),
+  ).toBe("DEVOLUTION_LINKED");
+  expect(estado()).toEqual(antes);
+  // El Saldo receptor del abono no sostiene compras: no le afecta.
+  expect(confirmar(c.other.id).control).toBe("Terminal");
+  // Resuelta la devolución, el cambio vuelve a estar permitido.
+  updateMov(c.db, dev.id, { revision: 1, motivo: "Anular abono" }, true);
+  expect(confirmar(c.account.id).control).toBe("Terminal");
+  c.db.close();
+});
+
+test("AC-D11 (anulación): conserva vínculo, importe y fecha; retira banco y descuento una sola vez y libera capacidad", () => {
+  const c = setup();
+  const { compra, alta, dev } = compraYAbono(c);
+  const resumen = () => getMovement(c.db, compra.id).devolucionesResumen!;
+  const banco = () => getSaldo(c.db, c.other.id).posicion.importe;
+  const vinculo = () => [
+    c.db.query("SELECT * FROM movimiento_devolucion WHERE movimiento=?").get(dev.id),
+    c.db.query("SELECT * FROM movimiento_devolucion_audit ORDER BY id").all(),
+  ];
+  const previo = vinculo();
+  expect(banco()).toBe("530.00");
+  expect(resumen()).toMatchObject({ descuentoEconomico: "30.00", capacidadBancariaRestante: "70.00" });
+  updateMov(c.db, dev.id, { revision: 1, motivo: "Anular abono" }, true);
+  expect(banco()).toBe("500.00");
+  expect(resumen()).toMatchObject({
+    count: 0,
+    descuentoEconomico: "0.00",
+    capacidadBancariaRestante: "100.00",
+    gastoRealEconomico: "100.00",
+  });
+  expect(vinculo()).toEqual(previo);
+  expect(getMovement(c.db, dev.id).movimiento).toMatchObject({ anulado: true, importe: "30.00", fecha: alta.fecha });
+  expect(
+    c.db.query("SELECT accion FROM movement_audit WHERE id=? ORDER BY revision").all(dev.id),
+  ).toEqual([{ accion: "alta" }, { accion: "anulación" }]);
+  // Una segunda anulación no vuelve a retirar nada.
+  const antes = hechosF3(c.db);
+  expect(() => updateMov(c.db, dev.id, { revision: 2, motivo: "Repetir" }, true)).toThrow();
+  expect(hechosF3(c.db)).toEqual(antes);
+  expect(banco()).toBe("500.00");
   c.db.close();
 });

@@ -505,6 +505,15 @@ function esDevolucionLegacy(
   });
 }
 
+/** Alta de devoluciones por Revisión Comida retirada (SPEC39 §5.1). */
+function rechazarDevolucionLegacy(): never {
+  throw new Problem(
+    422,
+    "DEVOLUTION_LEGACY_WRITE",
+    "La escritura legacy de devoluciones en Revisión Comida está retirada. Usa el flujo canónico de devoluciones.",
+  );
+}
+
 export function createRevisionComida(
   db: Database,
   body: Record<string, unknown>,
@@ -531,12 +540,7 @@ export function createRevisionComida(
   return attempt(db, key, hash, now, () => {
     exigirGateLegacy(db, gate, body, null);
     if (clasificada) estructura();
-    if (body.esDevolucion === true)
-      throw new Problem(
-        422,
-        "DEVOLUTION_LEGACY_WRITE",
-        "La escritura legacy de devoluciones en Revisión Comida está retirada. Usa el flujo canónico de devoluciones.",
-      );
+    if (body.esDevolucion === true) rechazarDevolucionLegacy();
     const candidate = validated(body, null, now, tipo),
       motivo = motive(body, false),
       time = new Date(now).toISOString(),
@@ -789,6 +793,10 @@ export function rectificarRevisionComida(
         "Una operación anulada no se rectifica; conserva su historia.",
       );
     revisionFrom(body, old);
+    // SPEC39 §5.1: rectificar tampoco crea una devolución por la vía legacy. Las
+    // filas que ya eran devolución conservan su rectificación.
+    if (body.esDevolucion === true && old.esDevolucion !== 1)
+      rechazarDevolucionLegacy();
     const motivo = motive(body)!,
       candidate = validated(body, old, now, tipo),
       time = new Date(now).toISOString();

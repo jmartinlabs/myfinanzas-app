@@ -786,22 +786,22 @@ function plan(
           { cicloOrigen: `Debe coincidir con el ciclo ${derivedCiclo} de la compra.` },
         );
     }
-    const devEstado = dev?.estado ?? "Sin vínculo";
-    if (devEstado === "Verificado") {
-      const others = db
-        .query(
-          `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
-           JOIN movimientos m ON m.id=d.movimiento
-           WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0`,
-        )
-        .get(purchase.id) as { n: number };
-      if (BigInt(others.n) + money(next.importe)! > BigInt(purchase.importe))
-        throw new Problem(
-          422,
-          "DEVOLUTION_EXCESS",
-          "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
-        );
-    }
+    // SPEC39 §4 / AC-D10: ningún alta cabe por encima de la capacidad bancaria
+    // restante de la compra, tampoco en «Revisar». La capacidad solo la consumen
+    // los vínculos Verificados vigentes.
+    const others = db
+      .query(
+        `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
+         JOIN movimientos m ON m.id=d.movimiento
+         WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0`,
+      )
+      .get(purchase.id) as { n: number };
+    if (BigInt(others.n) + money(next.importe)! > BigInt(purchase.importe))
+      throw new Problem(
+        422,
+        "DEVOLUTION_EXCESS",
+        "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
+      );
   }
   // SPEC39 §6: guardas previas de transición sobre compra y devolución (preview y escritura idénticos).
   if (old && old.tipo === "Gasto") {
@@ -826,6 +826,25 @@ function plan(
             { tipo: "Resuelve antes las devoluciones vigentes vinculadas." },
           );
       } else if (next && next.tipo === "Gasto") {
+        // §6: el origen de una compra con devoluciones vigentes no puede pasar a
+        // Terminal, porque dejaría de ser una compra individual (§3.1).
+        if (
+          next.origen !== old.origen &&
+          getSaldo(db, next.origen).control === "Terminal" &&
+          db
+            .query(
+              `SELECT 1 FROM movimiento_devolucion d
+               JOIN movimientos m ON m.id=d.movimiento
+               WHERE d.compra=? AND m.anulado=0 LIMIT 1`,
+            )
+            .get(old.id)
+        )
+          throw new Problem(
+            422,
+            "DEVOLUTION_LINKED",
+            "Una compra con devoluciones vinculadas vigentes no puede cambiar a un Saldo de origen Terminal.",
+            { saldo: "Resuelve antes las devoluciones vigentes vinculadas." },
+          );
         const verified = db
           .query(
             `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d

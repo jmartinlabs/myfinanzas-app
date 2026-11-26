@@ -182,7 +182,7 @@ test("AC09/10/11/37: importes exactos, matriz tipo/dirección/devolución, clasi
   }
   expect(snapshot(db, ["revision_comida", "revision_comida_audit", "revision_comida_attempts", "counters"])).toEqual(antesLegacy);
   expect(fieldError(() => createRepos(db, reposicion({ direccion: "Salida" })), "direccion")).toBeTruthy();
-  // La matriz dirección/devolución sigue vigente al rectificar filas existentes.
+  // Tampoco rectificando: una fila sin devolución no se convierte en una.
   const rectificar = (id: string, over: Record<string, unknown>, tipo: "Detalle" | "Reposicion") => () =>
     rectificarRevisionComida(
       db,
@@ -194,9 +194,29 @@ test("AC09/10/11/37: importes exactos, matriz tipo/dirección/devolución, clasi
       gateAbiertoParaPruebas,
     );
   const salida = create(db, detail({ concepto: "Salida matriz ficticia" })).operacion.id;
-  expect(fieldError(rectificar(salida, { esDevolucion: true }, "Detalle"), "esDevolucion")).toBeTruthy();
   const repuesta = createRepos(db, reposicion({ evidenciaBancaria: "operacion-ficticia-matriz" })).operacion.id;
-  expect(fieldError(rectificar(repuesta, { esDevolucion: true }, "Reposicion"), "esDevolucion")).toBeTruthy();
+  const antesConversion = snapshot(db, ["revision_comida", "revision_comida_audit", "revision_comida_attempts", "counters"]);
+  for (const conversion of [
+    rectificar(salida, { esDevolucion: true }, "Detalle"),
+    rectificar(salida, { esDevolucion: true, direccion: "Entrada" }, "Detalle"),
+    rectificar(repuesta, { esDevolucion: true }, "Reposicion"),
+  ]) {
+    let rechazo: unknown;
+    try {
+      conversion();
+    } catch (e) {
+      rechazo = e;
+    }
+    expect(rechazo).toMatchObject({ status: 422, code: "DEVOLUTION_LEGACY_WRITE" });
+  }
+  expect(snapshot(db, ["revision_comida", "revision_comida_audit", "revision_comida_attempts", "counters"])).toEqual(antesConversion);
+  // Sin marcar devolución, una Entrada de detalle sigue incumpliendo la matriz.
+  expect(fieldError(rectificar(salida, { direccion: "Entrada" }, "Detalle"), "esDevolucion")).toBeTruthy();
+  // La matriz dirección/devolución sigue vigente sobre una devolución existente.
+  const vieja = historica(db, { concepto: "Devolución matriz ficticia" }).operacion.id;
+  expect(fieldError(rectificar(vieja, { direccion: "Salida", esDevolucion: true }, "Detalle"), "esDevolucion")).toBeTruthy();
+  const corregida = rectificar(vieja, { esDevolucion: true, concepto: "Devolución matriz corregida" }, "Detalle")();
+  expect(corregida.operacion).toMatchObject({ esDevolucion: true, revision: 2, concepto: "Devolución matriz corregida" });
   const devolution = historica(db, {
     importe: "12.00",
     concepto: "Devolución supermercado ficticia",
