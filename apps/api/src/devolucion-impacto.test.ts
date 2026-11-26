@@ -1517,6 +1517,12 @@ describe("DEV #598 · F4 · Preview, impacto y cierres de devoluciones", () => {
       ),
     ).toEqual({ n: 1 });
     expect(snapCounts(db).movimientos).toBe(antes.movimientos);
+    // Tras el saneamiento, la cobertura deja de ser NoDisponible (puede seguir
+    // Parcial por el abono huérfano de la fixture, pero ya es medible).
+    const devoluciones = universoFinanciero(db, "1").cobertura.find(
+      (entrada) => entrada.fuente === "devoluciones",
+    );
+    expect(devoluciones?.estado).not.toBe("NoDisponible");
     db.close();
   });
 

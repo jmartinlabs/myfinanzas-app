@@ -333,6 +333,17 @@ function procedimientoConfirmarRevision(
       dirty: filaActual(db, ciclo).dirty,
     }),
     guardas: () => {
+      // La confirmación es una validación humana: los bloqueos financieros de
+      // §5 —incluido `DEVOLUCIONES_NO_DISPONIBLE` por exceso histórico— impiden
+      // limpiar una fila Pendiente. El saneamiento individual se hace sobre la
+      // devolución causante, no confirmando la revisión.
+      if (requisitos.bloqueos.length)
+        throw new Problem(
+          422,
+          "VALIDATION",
+          "No se puede validar: " + requisitos.bloqueos.map((b) => b.code).join(", ") + ".",
+          Object.fromEntries(requisitos.bloqueos.map((b) => [b.code, b.message])),
+        );
       const actual = filaActual(db, ciclo);
       if (!actual.dirty)
         throw new Problem(

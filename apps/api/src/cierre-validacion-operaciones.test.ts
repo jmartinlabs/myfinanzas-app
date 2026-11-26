@@ -1429,6 +1429,80 @@ test("§4 · un exceso histórico bloquea la validación con DEVOLUCIONES_NO_DIS
   }
 });
 
+test("§4 · confirmar una revisión Pendiente con exceso de devoluciones se bloquea y no limpia", () => {
+  const db = base();
+  try {
+    // 1. Ciclo validado con una devolución elegible.
+    devolucion(db, "9", "2026-01-20", 300);
+    validar(db, "1", "clave-validar-exceso-pend-01", T_VALIDAR, "Cobertura completa revisada");
+
+    // 2. Cambio material -> Pendiente.
+    const material = escritura(db, {
+      payload: { sube: 2500 },
+      aplicar: () => db.run("UPDATE movimientos SET importe=2500,revision=revision+1 WHERE id='1'"),
+    });
+    const previewMaterial = previsualizarOperacion(db, material);
+    confirmarOperacion(db, material, {
+      key: "clave-material-exceso-pend-01",
+      fingerprint: previewMaterial.fingerprint,
+      contextRevision: previewMaterial.contextRevision,
+      impactRevision: previewMaterial.impactRevision,
+      actor: "humano",
+      instante: T_IMPACTO,
+    });
+    expect(fila(db, "1")!.dirty).toBe(1);
+
+    // 3. Preview de confirmación todavía válido (cobertura medible), para
+    //    obtener tokens reales antes de provocar el exceso histórico.
+    const preview = previewValidacion(db, "1");
+    expect(preview.requiereMotivo).toBe(false);
+    const antes = {
+      fila: fila(db, "1"),
+      eventos: eventos(db).length,
+      recibos: recibos(db).length,
+    };
+
+    // 4. Descuento 300 > compra 200: `devoluciones` pasa a NoDisponible.
+    db.run("UPDATE movimientos SET importe=200 WHERE id='1'");
+    const requisitos = requisitosDeValidacion(db, "1");
+    expect(requisitos.bloqueos.map((bloqueo) => bloqueo.code)).toContain(
+      "DEVOLUCIONES_NO_DISPONIBLE",
+    );
+    expect(requisitos.requiereMotivo).toBe(false);
+
+    // El preview de confirmación no se ofrece: propaga el mismo bloqueo 422.
+    const previewFallo = codigoDe(() => previewValidacion(db, "1"));
+    expect(previewFallo.status).toBe(422);
+    expect(previewFallo.code).toBe("VALIDATION");
+    expect(previewFallo.message).toContain("DEVOLUCIONES_NO_DISPONIBLE");
+
+    // Confirmar con los tokens vigentes tampoco limpia: el bloqueo precede a
+    // cualquier escritura de referencia, auditoría o recibo.
+    const confirmarFallo = codigoDe(() =>
+      confirmarRevisionCiclo(db, "1", {
+        key: "clave-confirmar-exceso-pend-01",
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        actor: "humano",
+        instante: T_CONFIRMAR,
+        motivo: "Intento de limpieza con exceso",
+      }),
+    );
+    expect(confirmarFallo.status).toBe(422);
+    expect(confirmarFallo.code).toBe("VALIDATION");
+    expect(confirmarFallo.message).toContain("DEVOLUCIONES_NO_DISPONIBLE");
+
+    expect(fila(db, "1")).toEqual(antes.fila);
+    expect(fila(db, "1")!.dirty).toBe(1);
+    expect(fila(db, "1")!.revision).toBe(antes.fila!.revision);
+    expect(eventos(db).length).toBe(antes.eventos);
+    expect(recibos(db).length).toBe(antes.recibos);
+  } finally {
+    db.close();
+  }
+});
+
 test("§5 · una operación genérica con flujo no disponible falla 409 IMPACTO_NO_VERIFICABLE sin escritura", () => {
   const db = base();
   try {
