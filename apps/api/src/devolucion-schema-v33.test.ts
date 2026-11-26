@@ -1,10 +1,13 @@
 import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import { randomBytes } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { backup, restore } from "./backup";
 import { restaurarTriggerDevolucionV32 } from "./cierre-validacion-test-support";
 import { devolucionTriggerV33 } from "./comida-schema";
+import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import { admitted, schemaVersion } from "./schema-catalog";
 import { contract, manifest, verifyContract } from "./schema-contract";
@@ -318,3 +321,62 @@ test("v33: contratos inesperados o versión desconocida se rechazan antes de esc
     }
   }
 });
+
+/** Tablas que la restauración vacía a propósito (sesiones e intentos). */
+const revocada = (tabla: string) =>
+  tabla.endsWith("_attempts") ||
+  ["sessions", "challenges", "bootstrap", "recovery", "auth_limits", "idempotency"].includes(tabla);
+const conservadas = (db: Database) =>
+  filas(db).filter(([tabla]) => !revocada(tabla as string));
+
+function destinatario(dir: string) {
+  const identity = join(dir, "identity.txt");
+  const age = process.env.AGE_KEYGEN_BIN ?? "age-keygen";
+  expect(Bun.spawnSync([age, "-o", identity]).exitCode).toBe(0);
+  const recipient = Bun.spawnSync([age, "-y", identity], { stdout: "pipe" })
+    .stdout.toString()
+    .trim();
+  return { identity, recipient };
+}
+
+// `publishNewDirectory` es específico de Linux (libc.so.6/renameat2).
+for (const origen of [32, 33] as const)
+  test.skipIf(process.platform !== "linux")(
+    `v33: backup/restore cifrado de un snapshot v${origen} abre en v33 con los mismos hechos`,
+    () => {
+      const dir = raiz();
+      try {
+        const path = join(dir, "origen.sqlite");
+        const { db: antigua, inconsistente } = v32ConHechos(path);
+        if (origen === 33) prepareSchema(antigua, identidad);
+        // `prepareSchema` fija el modo WAL; la copia parte de la base tal cual.
+        const antes = conservadas(antigua);
+        const { identity, recipient } = destinatario(dir);
+        backup(antigua, randomBytes(32), join(dir, "corte"), recipient);
+        antigua.close();
+
+        const restaurada = restore(join(dir, "corte"), join(dir, "restaurada"), identity);
+        const copia = new Database(restaurada.database, { strict: true });
+        expect(version(copia)).toBe(origen);
+        expect(verifyContract(copia, origen)).toBe(origen === 32 ? c32 : c33);
+        expect(conservadas(copia)).toEqual(antes);
+        copia.close();
+
+        for (let apertura = 0; apertura < 2; apertura++) {
+          const abierta = openDatabase(restaurada.database);
+          expect(version(abierta)).toBe(33);
+          expect(verifyContract(abierta, 33)).toBe(c33);
+          expect(conservadas(abierta)).toEqual(antes);
+          expect(
+            abierta
+              .query("SELECT compra,estado,revision FROM movimiento_devolucion WHERE movimiento=?")
+              .get(inconsistente),
+          ).toEqual({ compra: "902", estado: "Verificado", revision: 1 });
+          expect(abierta.query("PRAGMA foreign_key_check").all()).toEqual([]);
+          abierta.close();
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
