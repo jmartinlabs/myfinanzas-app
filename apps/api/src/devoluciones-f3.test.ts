@@ -813,3 +813,55 @@ test("AC-D43: migración v32→v33 paridad exacta con base nueva y trigger UPDAT
   migrated.close();
   c.db.close();
 });
+
+function compraYAbono(c: ReturnType<typeof setup>) {
+  const compra = createMov(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-10",
+    importe: "100",
+    saldo: c.account.id,
+    partida: c.food.id,
+    concepto: "Compra con abono",
+    nota: "",
+  }).movimiento;
+  const alta = {
+    tipo: "Devolución de gasto",
+    fecha: "2026-08-05",
+    importe: "30",
+    saldo: c.other.id,
+    concepto: "Abono",
+    nota: "",
+    devolucion: {
+      compra: compra.id,
+      estado: "Verificado",
+      elegibilidad: "Acreditada",
+      evidenciaRelacion: "Ev",
+      evidenciaOrigenTemporal: "Fac",
+    },
+  };
+  return { compra, alta, dev: createMov(c.db, alta).movimiento };
+}
+
+test("AC-D38: un abono previo con copia legacy de Partida sigue detectándose como coincidencia de la misma compra", () => {
+  const c = setup();
+  const { alta, dev } = compraYAbono(c);
+  // Alta anterior a F3 (fixture SQL ficticio): el movimiento técnico copiaba la Partida.
+  c.db.run("UPDATE movimientos SET partida=? WHERE id=?", [c.food.id, dev.id]);
+  const plan = previewMovement(c.db, alta, null, false, now);
+  expect(plan.duplicados.map((d) => d.id)).toEqual([dev.id]);
+  expect(
+    codeOf(() =>
+      writeMovement(
+        c.db,
+        { ...alta, fingerprint: plan.fingerprint, contextRevision: plan.contextRevision },
+        randomUUID(),
+        null,
+        false,
+        now,
+        undefined,
+        gateAbiertoParaPruebas,
+      ),
+    ),
+  ).toBe("DUPLICATE_REVIEW");
+  c.db.close();
+});

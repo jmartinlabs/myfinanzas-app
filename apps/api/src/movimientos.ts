@@ -944,7 +944,10 @@ function plan(
               r.destino === next.destino &&
               decimal(r.importe) === next.importe &&
               r.subtipo === next.subtipo &&
-              r.partida === next.partida &&
+              // SPEC39 §3.1/§5.4: en una devolución vinculada la relación es la
+              // compra y el estado; la copia legacy de Partida no distingue.
+              ((next.tipo === "Devolución de gasto" && nextDevCompra !== null) ||
+                r.partida === next.partida) &&
               (r.referencia ?? null) === next.referencia &&
               (next.tipo !== "Devolución de gasto" ||
                 ((devLinks?.get(r.id)?.compra ?? null) === nextDevCompra &&
