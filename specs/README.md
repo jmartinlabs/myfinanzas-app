@@ -2,8 +2,8 @@
 
 Adaptación local Standard autorizada hasta tag v2.14.0/`98b5351`, sin reinicializar la aplicación ni afirmar una adopción íntegra.
 [Procedencia y comprobaciones](methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26). Modelos, cuota, Agent Relay v1 como transporte operativo, publicación autorizada de rama/PR, continuidad y cierre se integran en los contratos existentes; evidencia estructural no acredita comportamiento real. Merge y desarrollo conservan sus gates separados.
-Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
-[contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
+Trabajo entre clientes usa el paquete de trabajo (`agent-work-packet.md`) y
+el contrato central (`dynamic-agents.md`) provistos por el plugin global `agentic-harness-plugin`; no implica
 launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
 El estado operativo y el gate de fase viven en GitHub Issues + Project #4; los progresos documentan el trabajo y el histórico [tablero](epic-board.md) no refleja el estado actual.
 Entrada de verificación v2.7.0 conservada, sin cambiar CI. Los estados inferiores son historia.
@@ -16,8 +16,8 @@ Spec07 E2.1 y wireframes aprobados e integrados PR37/c04dc07; dev07 autorizado.
 Implementación y verificaciones en [progress07](07-ciclos-operacion-progress.md),
 con gate global API pendiente; sin merge de implementación ni despliegue.
 Referencia única v5.11(7) candidata, no estable. La cronología inferior es histórica.
-Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$orchestrate](../.agents/skills/orchestrate/SKILL.md),
-[contrato local](methodology/myfinanzas-coordination.md), [tablero histórico](epic-board.md),
+Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: `$orchestrate` (en `agentic-harness-plugin`),
+[contrato local](methodology/myfinanzas-coordination.md), [reglas del proyecto](project-rules.md), [tablero histórico](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 
 Contrato CI vigente: [local-first](methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27),
@@ -77,7 +77,7 @@ in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 Use two-digit identifiers (01–99) and lowercase hyphenated slugs. Allocate the next
 unused number; never overwrite a document belonging to another feature. Beyond 99,
 ask for an agreed migration rather than silently changing the naming scheme.
-Templates live in [templates](../templates); copy them without overwriting existing work.
+Templates live in the global `agentic-harness-plugin` (`templates/`); copy them without overwriting existing work.
 Recommendations are proposals, not approvals. Record approval source/date at its canonical
 location. Setup progress links to decisions instead of duplicating their text.
 

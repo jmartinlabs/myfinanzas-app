@@ -10,7 +10,7 @@ Convención: [identifier-convention](methodology/identifier-convention.md); equi
 funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como historia.
 
 Estados de relay vigentes: PENDIENTE, ENVIADO, RECIBIDO, VERIFICADO y BLOQUEADO
-([external clients](methodology/dynamic-agents-external-clients.md)). Las entradas históricas
+(external clients (`methodology/dynamic-agents-external-clients.md` en `agentic-harness-plugin`)). Las entradas históricas
 conservan las etiquetas con las que se escribieron; no se reescriben.
 
 | Funcional | SPEC | DEV | QA | MERGE | Aceptación | Evidencia / siguiente |
@@ -1144,7 +1144,7 @@ PR, merge, despliegue ni nuevas asignaciones durante esta parada.
   No reset/stash/borrado ni sustitución de autoría OpenCode.
 - Política: identidad estable Task ID+sesión, estados manuales con procedencia,
   retorno completo en cada seguimiento y acción humana explícita según
-  [clientes externos](methodology/dynamic-agents-external-clients.md). No inventar modelo
+  clientes externos (`methodology/dynamic-agents-external-clients.md` en `agentic-harness-plugin`). No inventar modelo
   OpenCode (catálogo no recibido), cuota o IDs. Techo Codexgpt-6.1-sol/low y
   gates25%/5% vigentes; cuota de próxima sesión requiere lectura actual.
   B3/Dev32, datos reales, Excel, VPS/deploy fuera; no approvals nuevos por handoff.

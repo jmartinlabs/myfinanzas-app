@@ -1,7 +1,7 @@
 # MyFinanzas — coordinación y precedencia local
 
 Contrato local adaptado incrementalmente de agent-project-template hasta v2.14.0 (`98b5351a72eae1df985819c01a47954e6a1a0836`), preservando coordinación ligera,
-gates financieros y Skill `$handoff`. Contrato portable en [agentes dinámicos](dynamic-agents.md);
+gates financieros y Skill `$handoff`. Contrato portable en agentes dinámicos (`dynamic-agents.md` en `agentic-harness-plugin`);
 el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora causal. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
 
@@ -12,12 +12,12 @@ el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora caus
 3. Contratos de coordinación de esta carpeta y perfiles reutilizables. El estado operativo
    es el `Status` del Project #4; el tablero Markdown es histórico y no prueba aprobación.
 
-$orchestrate usa [Quick/Standard/Full por riesgo](workflows.md) sin volver a inicializar el proyecto; una petición Quick no autoriza decisiones financieras, desarrollo nuevo ni operaciones protegidas.
+$orchestrate usa Quick/Standard/Full por riesgo (`workflows.md` en `agentic-harness-plugin`) sin volver a inicializar el proyecto; una petición Quick no autoriza decisiones financieras, desarrollo nuevo ni operaciones protegidas.
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
 La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
 v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
 autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. El usuario configura en cada cliente el modelo y las rutas del coordinador; los defaults y perfiles de los delegados nativos y los clientes externos se fijan en `.agents/harnesses/<coordinador>.json` (solo el propietario lo edita). Un default o perfil configurado es una petición, no un requisito: si no puede aplicarse o confirmarse, se delega con la herencia nativa y se informa; en delegación nativa solo una selección exigida expresamente que no pueda garantizarse detiene el despacho (un modelo fijado de un cliente externo no disponible se informa y se para). Los subagentes respetan esa configuración y la verificación de selección y de límites del proveedor de [`$orchestrate`](../../.agents/skills/orchestrate/SKILL.md#procedure) (paso 4); nunca se activa pago, créditos ni otro proveedor sin consentimiento expreso. Los recursos nunca eximen de los gates financieros, de seguridad, de QA independiente ni de desarrollo/merge. Codex y OpenCode se delegan localmente por CLI según [`.agents/harnesses/claude.json`](../../.agents/harnesses/claude.json) y la [delegación externa](dynamic-agents-external-clients.md) (`develop` solo `on_request`, con autorización de DEV, worktree aislado, QA independiente y merge humano); Agent Relay v1 queda para conversaciones externas que el propietario abre expresamente y transporta el paquete existente sin implicar control directo.
+El coordinador conserva su modelo. El usuario configura en cada cliente el modelo y las rutas del coordinador; los defaults y perfiles de los delegados nativos y los clientes externos se fijan en `.agents/harnesses/<coordinador>.json` (solo el propietario lo edita). Un default o perfil configurado es una petición, no un requisito: si no puede aplicarse o confirmarse, se delega con la herencia nativa y se informa; en delegación nativa solo una selección exigida expresamente que no pueda garantizarse detiene el despacho (un modelo fijado de un cliente externo no disponible se informa y se para). Los subagentes respetan esa configuración y la verificación de selección y de límites del proveedor de `$orchestrate` (`../../.agents/skills/orchestrate/SKILL.md#procedure` en `agentic-harness-plugin`) (paso 4); nunca se activa pago, créditos ni otro proveedor sin consentimiento expreso. Los recursos nunca eximen de los gates financieros, de seguridad, de QA independiente ni de desarrollo/merge. Codex y OpenCode se delegan localmente por CLI según [`.agents/harnesses/claude.json`](../../.agents/harnesses/claude.json) y la delegación externa (`dynamic-agents-external-clients.md` en `agentic-harness-plugin`) (`develop` solo `on_request`, con autorización de DEV, worktree aislado, QA independiente y merge humano); Agent Relay v1 queda para conversaciones externas que el propietario abre expresamente y transporta el paquete existente sin implicar control directo.
 
 ## Reparto de responsabilidades — rol de coordinador, asesor y usuario
 
@@ -156,7 +156,7 @@ implementación, QA y infraestructura son perfiles; no procesos residentes.
 
 La elección directo/foreground/background y sus condiciones de soporte, aislamiento y aviso
 inicial se rigen por la política canónica de
-[agentes dinámicos](../../.agents/skills/orchestrate/SKILL.md#procedure). Aquí solo
+agentes dinámicos (`../../.agents/skills/orchestrate/SKILL.md#procedure` en `agentic-harness-plugin`). Aquí solo
 constan las particularidades locales:
 
 - El modo no altera los gates: especificación y desarrollo se aprueban por separado, las
@@ -178,13 +178,13 @@ del coordinador. Los delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff. Un informe
 intermedio o un check corregible no cierra el turno mientras quede trabajo autorizado:
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción
-humana exacta y estado/motivo de espera conforme al [cierre de `$orchestrate`](../../.agents/skills/orchestrate/SKILL.md#execution-continuity).
+humana exacta y estado/motivo de espera conforme al cierre de `$orchestrate` (`../../.agents/skills/orchestrate/SKILL.md#execution-continuity` en `agentic-harness-plugin`).
 
 ## Comunicación Agent Relay v1 — adaptación focal v2.10.0/v2.14.0
 
 Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, revisada contra
 v2.14.0/`98b5351`, sobre harness local v2.9.0, sin sustituir sus contratos.
-El [paquete de trabajo](../../templates/agent-work-packet.md) exige Task ID y sesión
+El paquete de trabajo (`../../templates/agent-work-packet.md` en `agentic-harness-plugin`) exige Task ID y sesión
 funcional estables, retorno completo en cada seguimiento (también bloqueos), procedencia del estado, acción humana exacta y motivo de espera al cerrar.
 El usuario activa `Lee`; Agent Relay v1 no controla chats ni cambia gates de cuota/modelo,
 finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
@@ -211,7 +211,7 @@ específica de spec10 y, únicamente tras spec/wireframes aprobados y autorizaci
 separada, a su desarrollo. No autoriza desarrollo, cambios financieros ni merges.
 No se modifica agent-project-template, Skills, hooks, scripts o workflows por este piloto.
 
-Se reutilizan el paquete de [delegación](../../templates/agent-work-packet.md),
+Se reutilizan el paquete de delegación (`../../templates/agent-work-packet.md` en `agentic-harness-plugin`),
 la QA independiente, los gates de [aprobación](approvals.md) y la entrada canónica
 [de calidad](../guidelines/quality.md#entrada-compartida-v270--vigente).
 No se crean formularios, Skills, workflows ni herramientas de medición paralelos.
@@ -318,14 +318,14 @@ al riesgo. Evaluar conservar/ajustar/revertir al cierre; traslado reutilizable a
 plantilla requiere evidencia y autorización propias.
 
 ### Revisión técnica crítica
-La capacidad y sus controles viven en [dynamic agents](dynamic-agents.md#critical-technical-review).
+La capacidad y sus controles viven en dynamic agents (`dynamic-agents.md#critical-technical-review` en `agentic-harness-plugin`).
 Hermes puede usar advisor verificado; una alternativa competente o relevo manual explícito no
 cambia gates. Álex mantiene solo asesoría financiera/funcional. La ausencia de revisor bloquea
 trabajo material/inseguro y QA obligatoria; no autoriza operaciones excluidas.
 
 ## Reglas locales de `$work-issue`
 
-Se suman al [protocolo canónico](issue-workflow.md) y a la [Skill](../../.agents/skills/work-issue/SKILL.md); no lo relajan.
+Se suman al protocolo canónico (`issue-workflow.md` en `agentic-harness-plugin`) y a la Skill (`../../.agents/skills/work-issue/SKILL.md` en `agentic-harness-plugin`); no lo relajan.
 
 - **This Skill never runs alone.** A client injects only the Skill that was invoked, so
   `orchestrate` is loaded explicitly with each client's own mechanism (Hermes: `/orchestrate` or
@@ -359,7 +359,7 @@ Se suman al [protocolo canónico](issue-workflow.md) y a la [Skill](../../.agent
 
 ## Reglas locales de la revisión Codex
 
-El procedimiento es el de la [delegación externa](dynamic-agents-external-clients.md#codex-cli); esto
+El procedimiento es el de la delegación externa (`dynamic-agents-external-clients.md#codex-cli` en `agentic-harness-plugin`); esto
 se suma sin relajarlo. Riesgos que justifican una revisión: además de seguridad y
 persistencia/migración, la **lógica financiera** y la **integridad histórica**. La línea
 `Revisión externa: codex` escrita por el propietario en el cuerpo de una Issue cuenta como petición

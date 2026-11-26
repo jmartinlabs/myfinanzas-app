@@ -279,7 +279,7 @@ con imagen de ensayo se conserva como histórica. Ver [runbook](infra/RUNBOOK.md
 [estado 32](specs/32-ejecucion-rootless-progress.md).
 
 ## Coordinación — adaptación selectiva v2.14.0
-La aplicación no se reinicializa. [$orchestrate](.agents/skills/orchestrate/SKILL.md)
+La aplicación no se reinicializa. $orchestrate (`.agents/skills/orchestrate/SKILL.md` en `agentic-harness-plugin`)
 ruta trabajo autorizado hacia las Skills existentes, prefiere especialistas para el trabajo
 autónomo sustancial, usa segundo plano cuando permite avanzar trabajo independiente autorizado
 y mantiene [el tablero](specs/epic-board.md). No es un servicio residente ni un framework
@@ -289,7 +289,7 @@ misma cola secuencialmente. [Reglas locales](specs/methodology/myfinanzas-coordi
 [fuente/pruebas de adopción](specs/methodology/orchestration-adoption.md).
 El trabajo autorizado de código o documentación incluye publicar su rama y crear o
 actualizar su PR; el merge conserva aprobación explícita y nunca se auto-fusiona.
-La [delegación externa](specs/methodology/dynamic-agents-external-clients.md)
+La delegación externa (`specs/methodology/dynamic-agents-external-clients.md` en `agentic-harness-plugin`)
 lanza Codex y OpenCode por CLI (sin protocolo manual); el cierre con responsable, acción humana y motivo de espera lo fija `$orchestrate`.
 Clientes adicionales: Hermes reutiliza las mismas Skills canónicas de `.agents/skills/` tras
 `hermes skills trust` por checkout; el rol de coordinador lo designa el usuario y puede ejercerlo

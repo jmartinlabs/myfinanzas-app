@@ -2,11 +2,12 @@
 
 ## Qué se conserva y qué cambia
 
-Codex y Claude Code comparten el **mismo repositorio** y las mismas
-decisiones: `AGENTS.md`, `specs/project.md`, especificaciones aprobadas,
-roadmap, `specs/epic-board.md`, `.agents/skills/` y `.agents/roles/`.
-Claude utiliza `CLAUDE.md`, `.claude/skills/` y `.claude/agents/` como
-adaptadores. No duplicar reglas financieras ni mantener dos tableros.
+Codex, Claude Code y Antigravity comparten el **mismo repositorio** y las mismas
+decisiones: `AGENTS.md`, `specs/project-rules.md`, `specs/project.md`, especificaciones aprobadas,
+roadmap y `specs/methodology/myfinanzas-coordination.md`. El núcleo común (skills, roles,
+plantillas y metodología base) proviene del plugin global `agentic-harness-plugin`.
+Claude utiliza `CLAUDE.md` como punto de entrada ligero y `.claude/settings.json` para
+confirmaciones `ask`. No duplicar reglas financieras ni mantener dos tableros.
 
 El historial de conversaciones, permisos de sesión, subagentes vivos y cambios
 sin commit/push en worktrees de Codex **no se transfieren automáticamente**.
