@@ -12,6 +12,7 @@ import {
 import {
   confirmarRevisionCiclo,
   previewValidacion,
+  requisitosDeValidacion,
   validarCiclo,
 } from "./cierre-validacion-servicio";
 import { Problem } from "./problem";
@@ -92,6 +93,32 @@ function gasto(db: Database, id: string, fecha: string, importe = 1000, partida 
        nota,anulado,revision,creado,actualizado)
      VALUES(?,?,'Gasto',?,'S001','S000',NULL,?,'Ficticio','',0,1,?,?)`,
     [id, fecha, importe, partida, T, T],
+  );
+}
+
+/** Abono de SPEC39, con o sin vínculo, para ejercer la cobertura `devoluciones`. */
+function devolucion(
+  db: Database,
+  id: string,
+  fecha: string,
+  importe = 300,
+  opciones: { compra?: string | null; estado?: "Verificado" | "Revisar" | "Sin vínculo" } = {},
+) {
+  const compra = opciones.compra === undefined ? "1" : opciones.compra;
+  const estado = opciones.estado ?? "Verificado";
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,
+       nota,anulado,revision,creado,actualizado)
+     VALUES(?,?,'Devolución de gasto',?,'S000','S001',NULL,NULL,'Abono ficticio','',0,1,?,?)`,
+    [id, fecha, importe, T, T],
+  );
+  if (estado === "Sin vínculo") return;
+  db.run(
+    `INSERT INTO movimiento_devolucion(movimiento,compra,partida,ciclo_origen,
+       evidencia_relacion,evidencia_origen_temporal,elegibilidad,estado,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,?,'PAR0001','1','Evidencia ficticia','Documento ficticio','Acreditada',?,1,1,?,?)`,
+    [id, compra, estado, T, T],
   );
 }
 
@@ -213,7 +240,13 @@ function codigoDe(fn: () => unknown): { status?: number; code?: string; message:
 }
 
 /** Preview + confirmación de validación, como los encadena la ruta (§6.1). */
-function validar(db: Database, cicloId: string, key: string, instante: string) {
+function validar(
+  db: Database,
+  cicloId: string,
+  key: string,
+  instante: string,
+  motivo?: string,
+) {
   const preview = previewValidacion(db, cicloId);
   return validarCiclo(db, cicloId, {
     key,
@@ -222,6 +255,7 @@ function validar(db: Database, cicloId: string, key: string, instante: string) {
     impactRevision: preview.impactRevision,
     actor: "humano",
     instante,
+    motivo,
   });
 }
 
@@ -1315,6 +1349,195 @@ test("G9 · la confirmación exige clave de intento y tokens con formato de huel
     }
     expect(recibos(db)).toHaveLength(0);
     expect(eventos(db)).toHaveLength(0);
+  } finally {
+    db.close();
+  }
+});
+
+/* ================================================================== *
+ * SPEC39 §3.3/§4 · cobertura `devoluciones`, motivo y 409 de impacto
+ * ================================================================== */
+
+test("AC-09/§5 · la cobertura parcial por devoluciones exige motivo y se persiste", () => {
+  const db = base();
+  try {
+    devolucion(db, "9", "2026-01-20", 300, { estado: "Sin vínculo" });
+    const preview = previewValidacion(db, "1");
+    expect(preview.requiereMotivo).toBe(true);
+    expect(
+      preview.cobertura.find((entrada) => entrada.fuente === "devoluciones"),
+    ).toEqual({ fuente: "devoluciones", estado: "Parcial", causas: ["SIN_VINCULO"] });
+
+    const sinMotivo = codigoDe(() =>
+      validarCiclo(db, "1", {
+        key: "clave-parcial-sin-motivo-01",
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        actor: "humano",
+        instante: T_VALIDAR,
+      }),
+    );
+    expect(sinMotivo.status).toBe(422);
+    expect(sinMotivo.code).toBe("VALIDATION");
+    expect(sinMotivo.message).toContain("motivo");
+    expect(fila(db, "1")).toBeNull();
+    expect(eventos(db)).toHaveLength(0);
+    expect(recibos(db)).toHaveLength(0);
+
+    const recibo = validar(db, "1", "clave-parcial-con-motivo-01", T_VALIDAR, "Abono huérfano revisado");
+    expect(recibo.ciclos).toEqual([{ id: "1", revision: "1", estado: "Validada" }]);
+    const persistida = JSON.parse(
+      (
+        db.query("SELECT cobertura FROM cierre_validacion WHERE ciclo='1'").get() as {
+          cobertura: string;
+        }
+      ).cobertura,
+    ) as { fuente: string; estado: string; causas: string[] }[];
+    expect(persistida.find((entrada) => entrada.fuente === "devoluciones")).toEqual({
+      fuente: "devoluciones",
+      estado: "Parcial",
+      causas: ["SIN_VINCULO"],
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("§4 · un exceso histórico bloquea la validación con DEVOLUCIONES_NO_DISPONIBLE", () => {
+  const db = base();
+  try {
+    devolucion(db, "9", "2026-01-20", 300);
+    // Descuento 300 > compra 200: el GRE no es medible.
+    db.run("UPDATE movimientos SET importe=200 WHERE id='1'");
+
+    const requisitos = requisitosDeValidacion(db, "1");
+    expect(requisitos.bloqueos.map((bloqueo) => bloqueo.code)).toContain(
+      "DEVOLUCIONES_NO_DISPONIBLE",
+    );
+    expect(
+      requisitos.cobertura.find((entrada) => entrada.fuente === "devoluciones"),
+    ).toEqual({ fuente: "devoluciones", estado: "NoDisponible", causas: ["EXCESO"] });
+
+    const fallo = codigoDe(() => previewValidacion(db, "1"));
+    expect(fallo.status).toBe(422);
+    expect(fallo.code).toBe("VALIDATION");
+    expect(fallo.message).toContain("DEVOLUCIONES_NO_DISPONIBLE");
+    expect(fila(db, "1")).toBeNull();
+  } finally {
+    db.close();
+  }
+});
+
+test("§5 · una operación genérica con flujo no disponible falla 409 IMPACTO_NO_VERIFICABLE sin escritura", () => {
+  const db = base();
+  try {
+    devolucion(db, "9", "2026-01-20", 300);
+    db.run("UPDATE movimientos SET importe=200 WHERE id='1'");
+    const antes = estadoCompleto(db);
+
+    const procedimiento = escritura(db, {
+      payload: { toca: "2" },
+      aplicar: () =>
+        db.run("UPDATE movimientos SET nota='tocado',revision=revision+1 WHERE id='2'"),
+    });
+    const fallo = codigoDe(() => previsualizarOperacion(db, procedimiento));
+    expect(fallo.status).toBe(409);
+    expect(fallo.code).toBe("IMPACTO_NO_VERIFICABLE");
+    expect(estadoCompleto(db)).toEqual(antes);
+    expect(db.query("SELECT nota,revision FROM movimientos WHERE id='2'").get()).toEqual({
+      nota: "",
+      revision: 1,
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-55/§3.1 · un cambio sólo de cobertura entre preview y confirmación da IMPACT_CHANGED sin dirty", () => {
+  const db = base();
+  try {
+    validar(db, "1", "clave-validar-cobertura-01", T_VALIDAR);
+    const referencia = fila(db, "1")!;
+    const procedimiento = escritura(db, {
+      payload: { noop: true },
+      aplicar: () => {},
+    });
+    const preview = previsualizarOperacion(db, procedimiento);
+    expect(preview.material).toBe(false);
+
+    // Una fuente deja de estar instalada: cambia la cobertura/universo, no una
+    // magnitud material ni la huella validada.
+    db.run("DROP TABLE operaciones_inversion");
+    const antesDelIntento = estadoCompleto(db);
+    const fallo = codigoDe(() =>
+      confirmarOperacion(db, procedimiento, {
+        key: "clave-cobertura-ac55-01",
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        actor: "humano",
+        instante: T_IMPACTO,
+      }),
+    );
+    expect(fallo.status).toBe(409);
+    expect(fallo.code).toBe("IMPACT_CHANGED");
+    expect(estadoCompleto(db)).toEqual(antesDelIntento);
+    expect(fila(db, "1")).toEqual(referencia);
+  } finally {
+    db.close();
+  }
+});
+
+test("§5 · confirmar una revisión pendiente con cobertura parcial exige motivo", () => {
+  const db = base();
+  try {
+    devolucion(db, "9", "2026-01-20", 300, { estado: "Sin vínculo" });
+    validar(db, "1", "clave-validar-parcial-conf-01", T_VALIDAR, "Cobertura parcial revisada");
+
+    const material = escritura(db, {
+      payload: { sube: 2500 },
+      aplicar: () => db.run("UPDATE movimientos SET importe=2500,revision=revision+1 WHERE id='1'"),
+    });
+    const previewMaterial = previsualizarOperacion(db, material);
+    confirmarOperacion(db, material, {
+      key: "clave-material-parcial-conf-01",
+      fingerprint: previewMaterial.fingerprint,
+      contextRevision: previewMaterial.contextRevision,
+      impactRevision: previewMaterial.impactRevision,
+      actor: "humano",
+      instante: T_IMPACTO,
+    });
+    expect(fila(db, "1")!.dirty).toBe(1);
+
+    const preview = previewValidacion(db, "1");
+    expect(preview.requiereMotivo).toBe(true);
+    const sinMotivo = codigoDe(() =>
+      confirmarRevisionCiclo(db, "1", {
+        key: "clave-confirmar-sin-motivo-01",
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        actor: "humano",
+        instante: T_CONFIRMAR,
+      }),
+    );
+    expect(sinMotivo.status).toBe(422);
+    expect(sinMotivo.code).toBe("VALIDATION");
+    expect(sinMotivo.message).toContain("motivo");
+    expect(fila(db, "1")!.dirty).toBe(1);
+
+    const recibo = confirmarRevisionCiclo(db, "1", {
+      key: "clave-confirmar-con-motivo-01",
+      fingerprint: preview.fingerprint,
+      contextRevision: preview.contextRevision,
+      impactRevision: preview.impactRevision,
+      actor: "humano",
+      instante: T_CONFIRMAR,
+      motivo: "Cambio revisado con abono huérfano",
+    });
+    expect(recibo.ciclos).toEqual([{ id: "1", revision: "2", estado: "Validada" }]);
+    expect(fila(db, "1")!.dirty).toBe(0);
   } finally {
     db.close();
   }

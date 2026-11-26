@@ -8,6 +8,7 @@ import { backup, restore } from "./backup";
 import {
   restaurarTriggerConfirmacionV33,
   restaurarTriggerDevolucionV32,
+  restaurarTriggersCoberturaV32,
 } from "./cierre-validacion-test-support";
 import { devolucionTriggerV33 } from "./comida-schema";
 import { openDatabase } from "./database";
@@ -108,6 +109,7 @@ function v32ConHechos(path: string) {
     Date.parse(t),
   );
   restaurarTriggerConfirmacionV33(db);
+  restaurarTriggersCoberturaV32(db);
   restaurarTriggerDevolucionV32(db);
   db.exec("UPDATE schema_version SET version=32");
   expect(verifyContract(db, 32)).toBe(c32);

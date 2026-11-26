@@ -12,6 +12,7 @@ import {
   restaurarTriggerAperturaV31,
   restaurarTriggerConfirmacionV33,
   restaurarTriggerDevolucionV32,
+  restaurarTriggersCoberturaV32,
 } from "./cierre-validacion-test-support";
 
 import { spec37SchemaV30 } from "./spec37-schema";
@@ -697,6 +698,7 @@ test("SPEC37 I1: the current v33 manifest is deterministic and v32 stays verifia
     expect(verifyContract(a, 34)).toBe(c33);
     // C32 sigue siendo exacto: una base v32 reconstruida lo cumple byte a byte.
     restaurarTriggerConfirmacionV33(b);
+    restaurarTriggersCoberturaV32(b);
     restaurarTriggerDevolucionV32(b);
     b.exec("UPDATE schema_version SET version=32");
     expect(verifyContract(b, 32)).toBe(c32);

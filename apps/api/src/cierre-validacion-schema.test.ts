@@ -10,6 +10,7 @@ import {
   restaurarTriggerAperturaV31,
   restaurarTriggerDevolucionV32,
   restaurarTriggerConfirmacionV33,
+  restaurarTriggersCoberturaV32,
 } from "./cierre-validacion-test-support";
 
 import { importarCierresLegados } from "./cierre-validacion-migracion";
@@ -169,6 +170,7 @@ test("v32: contrato C32 verificado, C31 congelado y manifiesto determinista", ()
   expect(uno.query("PRAGMA foreign_key_check").all()).toEqual([]);
   // Contrato histórico: la base v32 (triggers anteriores a v33 y v34) cumple C32 exacto.
   restaurarTriggerConfirmacionV33(uno);
+  restaurarTriggersCoberturaV32(uno);
   restaurarTriggerDevolucionV32(uno);
   uno.exec("UPDATE schema_version SET version=32");
   expect(verifyContract(uno, 32)).toBe(c32);
@@ -493,6 +495,18 @@ test("estado: cobertura por nombres de fuente, estado y código cerrados", () =>
       cobertura: '[{"fuente":"movimientos","estado":"Parcial","causas":["S0_AUSENTE"]}]',
     }),
   ).not.toThrow();
+  // v34: la fuente propia `devoluciones` y sus causas de SPEC39 son válidas.
+  ciclo(db, "2", "2026-02-01");
+  expect(() =>
+    validacion(db, "2", {
+      cobertura: '[{"fuente":"devoluciones","estado":"Parcial","causas":["EXCESO","REVISAR"]}]',
+    }),
+  ).not.toThrow();
+  expect(() =>
+    validacion(db, "2", {
+      cobertura: '[{"fuente":"devoluciones","estado":"Parcial","causas":["SIN_VINCULO_X"]}]',
+    }),
+  ).toThrow("cobertura de validacion invalida");
   db.close();
 });
 

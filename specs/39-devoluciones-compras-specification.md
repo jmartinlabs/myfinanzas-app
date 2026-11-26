@@ -94,6 +94,11 @@ Una única proyección deriva elegibilidad, dimensiones, importe, periodo, cober
 
 Causas: `sinVinculo`, `revisar`, `sinAcreditacion`, `sinClasificacion`, `compraInvalida`, `periodoNoResoluble`. La cobertura se limita al ámbito demostrable: no asignar un huérfano a Comida por su mera declaración histórica; los huérfanos desconocidos se muestran en integridad global, con advertencia de cobertura no atribuible. Una compra ajena a Comida no degrada Comida. `OTRO_CICLO` es información bancaria, no causa de inelegibilidad ni de cobertura parcial.
 
+Estas causas se exponen 1:1 en la fuente propia `devoluciones` de la cobertura de cierres de SPEC38:
+`SIN_VINCULO`, `REVISAR`, `SIN_ACREDITACION`, `SIN_CLASIFICACION`, `COMPRA_INVALIDA` y
+`PERIODO_NO_RESOLUBLE`; `EXCESO` (ya diagnóstico) se admite como causa de `NoDisponible` cuando el
+descuento supera la compra. Esta exposición no cambia la elegibilidad ni los cálculos de esta SPEC.
+
 ## 4. Tope bancario y descuento económico
 
 Para cada compra:

@@ -93,6 +93,15 @@ export type Procedimiento = {
   aplicar: () => void;
   /** Cobertura declarada por la lectura que hizo el procedimiento. */
   cobertura?: () => CoberturaValidada[];
+  /**
+   * `false` sólo en los procedimientos cuyo bloqueo financiero específico debe
+   * prevalecer (validar/confirmar revisión). Por defecto, una operación exige
+   * poder medir el impacto material y falla con `409 IMPACTO_NO_VERIFICABLE`
+   * si `flujo` no es medible.
+   */
+  requiereImpactoMedible?: boolean;
+  /** La cobertura parcial exige un motivo humano en la confirmación. */
+  requiereMotivo?: () => boolean;
 };
 
 export type AfectadoDto = {
@@ -153,6 +162,26 @@ function rechazo(campo: string, motivo: string, code = "VALIDATION"): never {
 
 function conflicto(code: string, mensaje: string, detalle?: Record<string, string>): never {
   throw new Problem(409, code, mensaje, detalle);
+}
+
+/**
+ * Una operación que necesita medir impacto no puede declarar igualdad cuando el
+ * grupo `flujo` no es medible (p. ej. exceso histórico en devoluciones). Falla
+ * de forma explícita antes de escribir; el saneamiento individual de la
+ * devolución causante no pasa por este envoltorio.
+ */
+function exigirImpactoMedible(
+  procedimiento: Procedimiento,
+  impactos: readonly ImpactoMedido[],
+): void {
+  if (procedimiento.requiereImpactoMedible === false) return;
+  if (impactos.some((impacto) => impacto.noDisponible.includes("flujo")))
+    throw new Problem(
+      409,
+      "IMPACTO_NO_VERIFICABLE",
+      "No se puede medir el impacto requerido: el flujo del ciclo no está disponible.",
+      { flujo: "Sanea la cobertura de devoluciones antes de confirmar la operación." },
+    );
 }
 
 /** Rango del ciclo para el recibo; un ciclo sin Fin no se valida, pero el
@@ -267,6 +296,7 @@ export function previsualizarOperacion(
   const contextRevision = contextRevisionDe(procedimiento);
   const { antes, despues } = medirEnDryRun(db, procedimiento);
   const impactos = impactoDeCandidatos(antes, despues);
+  exigirImpactoMedible(procedimiento, impactos);
   const impactRevision = impactRevisionDe(fingerprint, antes, despues, impactos);
   const afectados = afectadosDe(db, impactos);
   const cobertura = procedimiento.cobertura?.() ?? [];
@@ -279,7 +309,8 @@ export function previsualizarOperacion(
     material: afectados.length ? true : noMedible ? null : false,
     afectados,
     cobertura,
-    requiereMotivo: afectados.length > 0,
+    requiereMotivo:
+      afectados.length > 0 || procedimiento.requiereMotivo?.() === true,
     noStore: true,
   };
 }
@@ -461,6 +492,7 @@ export function confirmarOperacion(
       const contextRevision = contextRevisionDe(procedimiento);
       const { antes, despues } = medirEnDryRun(db, procedimiento);
       const impactos = impactoDeCandidatos(antes, despues);
+      exigirImpactoMedible(procedimiento, impactos);
       const impactRevision = impactRevisionDe(
         entrada.fingerprint,
         antes,
@@ -475,6 +507,13 @@ export function confirmarOperacion(
           "IMPACT_CHANGED",
           "Cambió el contexto, la validación o el impacto desde la previsualización; vuelve a previsualizar.",
           { revisar: "El borrador se conserva; hace falta un preview nuevo." },
+        );
+      // §5: una cobertura parcial no bloquea, pero la validación humana exige
+      // motivo explícito. Se evalúa sobre el estado vigente de esta confirmación.
+      if (procedimiento.requiereMotivo?.() === true && !entrada.motivo?.trim())
+        rechazo(
+          "motivo",
+          "la cobertura parcial exige un motivo humano antes de confirmar",
         );
       // 6 · Aplicación real, medición real, marcas y recibo.
       // `dirtyPrevio` describe el estado **anterior** de cada ciclo: un ciclo

@@ -124,6 +124,75 @@ function snapCounts(db: Database) {
   };
 }
 
+function codigoDe(fn: () => unknown): { status?: number; code?: string; message: string } {
+  try {
+    fn();
+  } catch (error) {
+    const problema = error as Partial<Problem> & { message?: string };
+    return {
+      status: problema.status,
+      code: problema.code,
+      message: String(problema.message ?? ""),
+    };
+  }
+  return { message: "" };
+}
+
+/** Compra adicional por SQL, para separar la compra con exceso de la destino válida. */
+function sembrarCompra(db: Database, id: string, importe: number, partida: string) {
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,
+       concepto,nota,anulado,revision,creado,actualizado)
+     VALUES(?,'2026-01-20','Gasto',?,'S001','S000',NULL,?,'Compra ficticia','',0,1,?,?)`,
+    [id, importe, partida, "2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z"],
+  );
+}
+
+/** Devolución por SQL: con vínculo Verificado/Acreditado, u huérfana si `compra` es null. */
+function sembrarDevolucion(
+  db: Database,
+  id: string,
+  opciones: { compra: string | null; importe: number; partida: string },
+) {
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,
+       concepto,nota,anulado,revision,creado,actualizado)
+     VALUES(?,'2026-01-20','Devolución de gasto',?,'S000','S001',NULL,NULL,'Abono ficticio','',0,1,?,?)`,
+    [id, opciones.importe, t, t],
+  );
+  if (opciones.compra === null) return;
+  db.run(
+    `INSERT INTO movimiento_devolucion(movimiento,compra,partida,ciclo_origen,
+       evidencia_relacion,evidencia_origen_temporal,elegibilidad,estado,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,?,?,'1','Evidencia ficticia','Documento ficticio','Acreditada','Verificado',1,1,?,?)`,
+    [id, opciones.compra, opciones.partida, t, t],
+  );
+}
+
+/**
+ * Compra A con exceso histórico (descuento 30 > compra 1.00) y compra B con
+ * capacidad suficiente en el mismo ciclo. La cobertura `devoluciones` del ciclo
+ * 1 queda `NoDisponible` aunque la operación sobre B sea bancariamente válida.
+ */
+function conExcesoEnCiclo() {
+  const base = setupDb();
+  sembrarCompra(base.db, "90", 12000, base.partidaId);
+  sembrarDevolucion(base.db, "91", {
+    compra: base.compraId,
+    importe: 3000,
+    partida: base.partidaId,
+  });
+  sembrarDevolucion(base.db, "92", {
+    compra: null,
+    importe: 3000,
+    partida: base.partidaId,
+  });
+  base.db.run("UPDATE movimientos SET importe=100 WHERE id=?", [base.compraId]);
+  return { ...base, compraB: "90", devolucionConExceso: "91", huerfana: "92" };
+}
+
 describe("DEV #598 · F4 · Preview, impacto y cierres de devoluciones", () => {
   test("Gate #572 permanece cerrado por defecto: preview disponible, confirmación 503", () => {
     expect(devolucionIntegracionDisponible).toBe(false);
@@ -1361,6 +1430,179 @@ describe("DEV #598 · F4 · Preview, impacto y cierres de devoluciones", () => {
       huella_anterior: h3Antes,
       huella_posterior: h3Despues,
     });
+    db.close();
+  });
+
+  test("SPEC39 §4 · alta y atribuir con flujo no disponible dan 409 IMPACTO_NO_VERIFICABLE sin escritura", () => {
+    const { db, compraB, huerfana } = conExcesoEnCiclo();
+
+    const alta: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Alta sobre compra con capacidad",
+        devolucion: {
+          compra: compraB,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket B",
+          evidenciaOrigenTemporal: "Factura B",
+        },
+      },
+    };
+    const antes = snapCounts(db);
+    const altaFallo = codigoDe(() => previewDevolucionImpacto(db, alta));
+    expect(altaFallo.status).toBe(409);
+    expect(altaFallo.code).toBe("IMPACTO_NO_VERIFICABLE");
+    expect(snapCounts(db)).toEqual(antes);
+
+    const rev = db
+      .query("SELECT revision FROM movimientos WHERE id=?")
+      .get(huerfana) as { revision: number };
+    const atribuir: EntradaDevolucionImpacto = {
+      accion: "atribuir",
+      id: huerfana,
+      body: {
+        revision: rev.revision,
+        compra: compraB,
+        estado: "Verificado",
+        elegibilidad: "Acreditada",
+        evidenciaRelacion: "Evidencia huérfana",
+        evidenciaOrigenTemporal: "Documento huérfano",
+        cicloOrigen: "1",
+      },
+    };
+    const atribuirFallo = codigoDe(() => previewDevolucionImpacto(db, atribuir));
+    expect(atribuirFallo.status).toBe(409);
+    expect(atribuirFallo.code).toBe("IMPACTO_NO_VERIFICABLE");
+    expect(snapCounts(db)).toEqual(antes);
+    db.close();
+  });
+
+  test("SPEC39 §4/§6 · anular una devolución causante del exceso sigue permitido (saneamiento)", () => {
+    const { db, devolucionConExceso } = conExcesoEnCiclo();
+    const mov = db
+      .query("SELECT revision FROM movimientos WHERE id=?")
+      .get(devolucionConExceso) as { revision: number };
+    const antes = snapCounts(db);
+    const entrada: EntradaDevolucionImpacto = {
+      accion: "anular",
+      id: devolucionConExceso,
+      body: { revision: mov.revision, motivo: "Saneamiento del exceso histórico" },
+    };
+    const preview = previewDevolucionImpacto(db, entrada);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...entrada,
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        key: "confirm-anular-exceso-0001",
+      },
+      GATE_ABIERTO,
+    );
+    expect(
+      db.query("SELECT anulado FROM movimientos WHERE id=?").get(devolucionConExceso),
+    ).toEqual({ anulado: 1 });
+    // El vínculo se conserva para trazabilidad; no se borra ni se inventa banco.
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimiento_devolucion WHERE movimiento=?").get(
+        devolucionConExceso,
+      ),
+    ).toEqual({ n: 1 });
+    expect(snapCounts(db).movimientos).toBe(antes.movimientos);
+    db.close();
+  });
+
+  test("SPEC39 §4/§6 · rectificar a la capacidad real sigue permitido aunque el flujo no sea medible", () => {
+    const { db, devolucionConExceso } = conExcesoEnCiclo();
+    const mov = db
+      .query("SELECT revision FROM movimientos WHERE id=?")
+      .get(devolucionConExceso) as { revision: number };
+    const entrada: EntradaDevolucionImpacto = {
+      accion: "rectificar",
+      id: devolucionConExceso,
+      body: {
+        tipo: "Devolución de gasto",
+        revision: mov.revision,
+        importe: "0.01",
+        fecha: "2026-01-20",
+        saldo: "S001",
+        nota: "",
+        concepto: "Abono ficticio",
+        motivo: "Ajuste individual del importe",
+      },
+    };
+    const preview = previewDevolucionImpacto(db, entrada);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...entrada,
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        key: "confirm-rectificar-exceso-0001",
+      },
+      GATE_ABIERTO,
+    );
+    expect(
+      db.query("SELECT importe,revision FROM movimientos WHERE id=?").get(
+        devolucionConExceso,
+      ),
+    ).toEqual({ importe: 1, revision: mov.revision + 1 });
+    db.close();
+  });
+
+  test("SPEC38/SPEC39 · un cambio sólo de cobertura entre preview y confirmación da IMPACT_CHANGED sin dirty", () => {
+    const { db, compraId } = setupDb();
+    const entrada: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución con cobertura cambiada",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket C",
+          evidenciaOrigenTemporal: "Factura C",
+        },
+      },
+    };
+    const preview = previewDevolucionImpacto(db, entrada);
+    // Sólo cambia la cobertura: una fuente deja de estar instalada.
+    db.run("DROP TABLE operaciones_inversion");
+    const antes = snapCounts(db);
+    const fallo = codigoDe(() =>
+      confirmarDevolucionImpacto(
+        db,
+        {
+          ...entrada,
+          fingerprint: preview.fingerprint,
+          contextRevision: preview.contextRevision,
+          impactRevision: preview.impactRevision,
+          key: "confirm-cobertura-cambiada-0001",
+        },
+        GATE_ABIERTO,
+      ),
+    );
+    expect(fallo.status).toBe(409);
+    expect(fallo.code).toBe("IMPACT_CHANGED");
+    expect(snapCounts(db)).toEqual(antes);
+    expect(
+      db.query("SELECT COUNT(*) n FROM cierre_validacion_audit").get(),
+    ).toEqual({ n: 0 });
     db.close();
   });
 });

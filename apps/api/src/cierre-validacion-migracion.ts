@@ -10,7 +10,6 @@ import {
   type EstadoCobertura,
   type ProcedenciaValidada,
 } from "./cierre-validacion-dto";
-import { FUENTES_COBERTURA } from "./cierre-validacion-dto";
 
 /**
  * SPEC38 · I1 — importación conservadora E1b (§7.2).
@@ -81,6 +80,22 @@ const ESTADO_LEGADO: Record<string, EstadoCobertura> = {
 };
 
 /**
+ * Fuentes del bloque E4.9 legado. Se congelan aquí para que la migración no
+ * invente una entrada para fuentes nuevas (`devoluciones`, SPEC39): la foto
+ * histórica no las declara y su ausencia no es una incidencia de esa foto.
+ */
+const FUENTES_COBERTURA_LEGADO = [
+  "movimientos",
+  "efectivo",
+  "posiciones",
+  "plan",
+  "e35",
+  "deuda",
+  "valoracion",
+  "anticipos",
+] as const;
+
+/**
  * Traduce el bloque `cobertura` de la foto E4.9 a códigos. Es una lectura
  * mecánica de nombres y estados ya persistidos: no recalcula ninguna magnitud,
  * no compara foto con vivo y no convierte una ausencia en cero.
@@ -105,7 +120,7 @@ export function coberturaLegada(crudo: string | null): CoberturaValidada[] {
       causaFoto = "FOTO_ILEGIBLE";
     }
   }
-  const cobertura = FUENTES_COBERTURA.map((fuente) => {
+  const cobertura = FUENTES_COBERTURA_LEGADO.map((fuente) => {
     if (causaFoto) {
       return { fuente, estado: "NoDisponible" as EstadoCobertura, causas: [causaFoto] };
     }

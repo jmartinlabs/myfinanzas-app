@@ -631,6 +631,50 @@ function huellaPayloadDevolucion(entrada: EntradaDevolucionImpacto): string {
   });
 }
 
+/**
+ * `alta`/`atribuir` necesitan medir el impacto material del ciclo. Si el flujo
+ * no es medible (exceso histórico en devoluciones), fallan con
+ * `409 IMPACTO_NO_VERIFICABLE` sin escribir. `rectificar`/`anular` son el
+ * saneamiento individual autorizado y siguen permitidos aunque el flujo no se
+ * pueda medir: no inventan impacto ni dirty.
+ */
+function exigirImpactoDevolucion(
+  accion: AccionDevolucionImpacto,
+  impactos: readonly ImpactoMedido[],
+): void {
+  if (accion !== "alta" && accion !== "atribuir") return;
+  if (impactos.some((impacto) => impacto.noDisponible.includes("flujo")))
+    throw new Problem(
+      409,
+      "IMPACTO_NO_VERIFICABLE",
+      "No se puede medir el impacto requerido: el flujo del ciclo no está disponible.",
+      { flujo: "Sanea la cobertura de devoluciones antes de confirmar la operación." },
+    );
+}
+
+/**
+ * `impactRevision` cubre el resultado medido **y** la cobertura/universo completo
+ * de los candidatos, igual que el envoltorio genérico. Así un cambio sólo de
+ * cobertura entre preview y confirmación da `IMPACT_CHANGED` sin marcar dirty.
+ */
+function impactRevisionDevolucion(
+  fingerprint: string,
+  antes: ReadonlyMap<string, UniversoFinanciero>,
+  despues: ReadonlyMap<string, UniversoFinanciero>,
+  devolucionImpacto: DevolucionImpactoDto,
+): string {
+  const ordenado = (mapa: ReadonlyMap<string, UniversoFinanciero>) =>
+    [...mapa.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([ciclo, lectura]) => [ciclo, huellaDe(lectura)]);
+  return huellaDe({
+    fingerprint,
+    devolucionImpacto,
+    antes: ordenado(antes),
+    despues: ordenado(despues),
+  });
+}
+
 function contextRevisionDevolucion(
   db: Database,
   plan: PlanDevolucion,
@@ -803,8 +847,15 @@ export function previewDevolucionImpacto(
   const plan = validarOperacionDevolucion(db, entrada);
   const fingerprint = huellaPayloadDevolucion(entrada);
   const contextRevision = contextRevisionDevolucion(db, plan);
-  const { devolucionImpacto } = medirDryRunDevolucion(db, entrada, plan, now);
-  const impactRevision = huellaDe({ fingerprint, devolucionImpacto });
+  const { devolucionImpacto, ciclosAntes, ciclosDespues, impactos } =
+    medirDryRunDevolucion(db, entrada, plan, now);
+  exigirImpactoDevolucion(entrada.accion, impactos);
+  const impactRevision = impactRevisionDevolucion(
+    fingerprint,
+    ciclosAntes,
+    ciclosDespues,
+    devolucionImpacto,
+  );
   return {
     fingerprint,
     contextRevision,
@@ -890,11 +941,15 @@ export function confirmarDevolucionImpacto(
 
       // 6 · Revalidación de contexto e impacto en la misma transacción IMMEDIATE.
       const contextRevision = contextRevisionDevolucion(db, plan);
-      const { devolucionImpacto } = medirDryRunDevolucion(db, entrada, plan, now);
-      const impactRevision = huellaDe({
-        fingerprint: entrada.fingerprint,
+      const { devolucionImpacto, ciclosAntes, ciclosDespues, impactos: impactosMedidos } =
+        medirDryRunDevolucion(db, entrada, plan, now);
+      exigirImpactoDevolucion(entrada.accion, impactosMedidos);
+      const impactRevision = impactRevisionDevolucion(
+        entrada.fingerprint,
+        ciclosAntes,
+        ciclosDespues,
         devolucionImpacto,
-      });
+      );
 
       if (
         contextRevision !== entrada.contextRevision ||

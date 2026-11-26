@@ -12,6 +12,7 @@ import { createClassification } from "./clasificacion";
 import {
   restaurarTriggerConfirmacionV33,
   restaurarTriggerDevolucionV32,
+  restaurarTriggersCoberturaV32,
 } from "./cierre-validacion-test-support";
 import { writeComidaDevolucion } from "./comida";
 import { prepareSchema } from "./database-schema";
@@ -169,6 +170,7 @@ function sembrar(path: string) {
   db.run("UPDATE movimientos SET origen=? WHERE id=?", [agregado.id, terminal]);
   db.run("UPDATE movimientos SET tipo='Transferencia',destino=?,partida=NULL WHERE id=?", [receptor.id, retipada]);
   restaurarTriggerConfirmacionV33(db);
+  restaurarTriggersCoberturaV32(db);
   restaurarTriggerDevolucionV32(db);
   db.exec("UPDATE schema_version SET version=32");
   expect(verifyContract(db, 32)).not.toBeNull();

@@ -6,7 +6,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { backup, restore } from "./backup";
 import { cierreValidacionTriggerV34 } from "./cierre-validacion-schema";
-import { restaurarTriggerConfirmacionV33 } from "./cierre-validacion-test-support";
+import {
+  restaurarTriggerConfirmacionV33,
+  restaurarTriggersCoberturaV33,
+} from "./cierre-validacion-test-support";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import { admitted, schemaVersion } from "./schema-catalog";
@@ -69,12 +72,13 @@ function v33ConFilas(path: string) {
     [HUELLA_A, t0],
   );
   restaurarTriggerConfirmacionV33(db);
+  restaurarTriggersCoberturaV33(db);
   db.exec("UPDATE schema_version SET version=33");
   expect(verifyContract(db, 33)).toBe(c33);
   return db;
 }
 
-test("v34: la base nueva cumple C34 y solo difiere de C33 en el trigger de confirmación", () => {
+test("v34: la base nueva cumple C34 y difiere de C33 en cuatro guardas", () => {
   const db = nueva();
   try {
     expect(schemaVersion).toBe(34);
@@ -85,12 +89,117 @@ test("v34: la base nueva cumple C34 y solo difiere de C33 en el trigger de confi
     const prev = new Map(contract(c33).objects.map((o) => [clave(o), o]));
     const curr = new Map(contract(c34).objects.map((o) => [clave(o), o]));
     expect([...curr.keys()]).toEqual([...prev.keys()]);
-    const distintas = [...curr.keys()].filter(
-      (k) => JSON.stringify(curr.get(k)) !== JSON.stringify(prev.get(k)),
+    const distintas = [...curr.keys()]
+      .filter((k) => JSON.stringify(curr.get(k)) !== JSON.stringify(prev.get(k)))
+      .sort();
+    expect(distintas).toEqual(
+      [
+        "trigger:cierre_validacion_audit_detalle_cobertura",
+        "trigger:cierre_validacion_cobertura_insert",
+        "trigger:cierre_validacion_cobertura_update",
+        "trigger:cierre_validacion_confirmacion",
+      ].sort(),
     );
-    expect(distintas).toEqual([`trigger:${TRIGGER}`]);
   } finally {
     db.close();
+  }
+});
+
+test("v34: las guardas de cobertura aceptan `devoluciones` y las 7 causas de SPEC39", () => {
+  const db = nueva();
+  try {
+    db.run(
+      `INSERT INTO ciclos(id,inicio,saldo_comida,creado)
+       VALUES('1','2026-01-01',0,?)`,
+      [t0],
+    );
+    const causas =
+      '["SIN_VINCULO","REVISAR","SIN_ACREDITACION","SIN_CLASIFICACION","COMPRA_INVALIDA","PERIODO_NO_RESOLUBLE","EXCESO"]';
+    db.run(
+      `INSERT INTO cierre_validacion(ciclo,huella_validacion,version_conjunto,revision,revision_actor,revision_instante,dirty,cobertura)
+       VALUES('1',?,'3',1,'usuario',?,0,?)`,
+      [HUELLA_A, t0, '[{"fuente":"devoluciones","estado":"NoDisponible","causas":["EXCESO"]}]'],
+    );
+    db.run(
+      `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='1'`,
+      [`[{"fuente":"devoluciones","estado":"Parcial","causas":${causas}}]`],
+    );
+
+    const rechaza = (sql: string, ...params: string[]) =>
+      expect(() => db.run(sql, params)).toThrow("cobertura de validacion invalida");
+    rechaza(
+      `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='1'`,
+      '[{"fuente":"devolucionesX","estado":"Disponible","causas":[]}]',
+    );
+    rechaza(
+      `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='1'`,
+      '[{"fuente":"devoluciones","estado":"Parcial","causas":["OTRA"]}]',
+    );
+    rechaza(
+      `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='1'`,
+      '[{"fuente":"devoluciones","estado":"Parcial","causas":[]}]',
+    );
+    rechaza(
+      `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='1'`,
+      '[{"fuente":"devoluciones","estado":"NoDisponible","causas":[]}]',
+    );
+    rechaza(
+      `INSERT INTO cierre_validacion(ciclo,huella_validacion,version_conjunto,revision,revision_actor,revision_instante,dirty,cobertura)
+       VALUES('1',?,'3',1,'usuario',?,0,?)`,
+      HUELLA_A,
+      t0,
+      '[{"fuente":"devoluciones","estado":"Parcial","causas":["OTRA"]}]',
+    );
+
+    const detalle = JSON.stringify({
+      hechos: [],
+      ciclos: [{ id: "1", impactos: [] }],
+      cobertura: [
+        { fuente: "devoluciones", estado: "Parcial", causas: JSON.parse(causas) },
+      ],
+      procedencia: null,
+    });
+    db.run(
+      `INSERT INTO cierre_validacion_audit(ciclo,revision,accion,actor,instante,detalle)
+       VALUES('1',1,'dirty_marcado','usuario',?,?)`,
+      [t0, detalle],
+    );
+    expect(
+      () =>
+        db.run(
+          `INSERT INTO cierre_validacion_audit(ciclo,revision,accion,actor,instante,detalle)
+           VALUES('1',1,'dirty_marcado','usuario',?,?)`,
+          [t0, detalle.replace('"devoluciones"', '"desconocida"')],
+        ),
+    ).toThrow("detalle de validacion: cobertura invalida");
+  } finally {
+    db.close();
+  }
+});
+
+test("v34: la migración v33→v34 recrea las guardas de cobertura con las listas nuevas", () => {
+  const dir = raiz();
+  const path = join(dir, "v33-cobertura.sqlite");
+  v33ConFilas(path).close();
+
+  const db = openDatabase(path);
+  try {
+    expect(version(db)).toBe(34);
+    expect(verifyContract(db, 34)).toBe(c34);
+    db.run(
+      `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='2026-01'`,
+      ['[{"fuente":"devoluciones","estado":"Parcial","causas":["SIN_VINCULO"]}]'],
+    );
+    expect(() =>
+      db.run(
+        `UPDATE cierre_validacion SET cobertura=? WHERE ciclo='2026-01'`,
+        ['[{"fuente":"devoluciones","estado":"Parcial","causas":["OTRA"]}]'],
+      ),
+    ).toThrow("cobertura de validacion invalida");
+    expect(verifyContract(db, 34)).toBe(c34);
+  } finally {
+    db.close();
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 

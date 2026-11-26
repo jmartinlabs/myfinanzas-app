@@ -105,6 +105,11 @@ Un ciclo migrado puede estar Pendiente con referencia histórica, sin haber vali
 `dirty=0` exige referencia humana del conjunto y metadatos completos; fila migrada sin referencia nueva exige `dirty=1`.
 `dirty_desde` es primera marca pendiente, `dirty_ultimo` última operación material; migración/restore tienen origen explícito.
 Cobertura usa nombres de fuentes y enums Disponible/Parcial/NoDisponible con códigos; nunca texto financiero ni cantidades.
+La cobertura incorpora una fuente propia `devoluciones`, independiente de `movimientos`, que describe
+la cobertura del GRE del intervalo (`calcularGreIntervalo`, SPEC39 §3.3). `Disponible` exige compras y
+abonos atribuibles, acreditados y clasificados, o un ciclo sin compras sin incidencias; `Parcial`
+declara una causa específica aunque el GRE/subtotal siga siendo medible; `NoDisponible` corresponde al
+exceso (descuento superior a la compra) con `gre`/`neto` nulos, sin inventar cifra.
 
 ### 2.2 Tres estados visibles y dos atributos derivados
 | Estado UI / DTO | Condición | Acción |
@@ -179,6 +184,11 @@ JSON canónico ordena claves y conjuntos, usa céntimos enteros en cadenas, cant
 | Stock | Efectivo total a Fin excluyendo Exterior/S000; posiciones por instrumento | Composición por cuenta como total validado |
 | Atribución | ID hecho, IDs Partida/categoría/subcategoría/deuda/presupuesto, signo, neto y ciclo atribuido; reparto aplicable | Nombres y texto literal |
 
+`flujo` depende de `movimientos` **y** de `devoluciones`: la primera acredita el ledger bancario y la
+segunda la cobertura del GRE del intervalo. Si una de las dos está `NoDisponible`, el grupo no se mide,
+no se declara igualdad y la operación que exige esa comprobación falla (`409 IMPACTO_NO_VERIFICABLE`).
+Un exceso de devoluciones deja `gre`/`neto` nulos y la fuente en `NoDisponible` con causa `EXCESO`.
+
 Las funciones de dominio existentes determinan cada componente; #538 es dueño del predicado elegible de neteo.
 `Concepto` se compara por efectos en atribución/flujo, nunca se declara inerte por nombre. Un cambio coordinado de Concepto y Partida puede ser material; una errata sin efecto no.
 No se afirma que texto libre cree automáticamente clasificación: no se reabre SPEC02/04.
@@ -225,6 +235,11 @@ Para stock: ciclos cuyo Fin sea posterior o igual al mínimo de fechas afectadas
 Para Inicio: **ciclo corregido y predecesor** por sus ventanas; sucesor permanece frontera fija, no se cruza y su ventana no cambia.
 Puede haber otros candidatos indirectos por saldo, atribución, financiación o dependencias; cada uno requiere antes/después y motivo medido.
 Una devolución tardía atribuida a una compra de un ciclo anterior puede afectar ese ciclo económico aunque no cambie su ventana.
+La fuente `devoluciones` expone 1:1 las causas de SPEC39 §3.3 —`SIN_VINCULO`, `REVISAR`,
+`SIN_ACREDITACION`, `SIN_CLASIFICACION`, `COMPRA_INVALIDA`, `PERIODO_NO_RESOLUBLE`— y `EXCESO` como
+causa de `NoDisponible`. No se sustituyen por códigos genéricos. Un ciclo sin compras no es exceso:
+`Disponible` si no hay incidencias o `Parcial` + `SIN_VINCULO` si contiene abonos huérfanos; en ambos
+casos `GRE=null` por ausencia legítima de compras.
 Se recalculan periodos dependientes; periodos no tienen estado de validación/dirty propio.
 
 ### 3.4 Secuencia preview/confirmación
@@ -278,6 +293,12 @@ Backup ausente y E3.5/FIN_NETA no disponible **no bloquean validación financier
 Precierre conserva ventana/S0, movimientos, plan, inversión, E3.5, E3.6, duplicados, integridad, cobertura y avisos; solo lectura.
 Se retiran contraste con fotos posteriores, bloqueo por cierre fuera de orden y `e4_9Bloqueado` como autoridad. Si hay campo legacy informativo, no gobierna ni presenta bloqueo funcional.
 Validar/revalidar usa preview+confirmación; confirmar revisión pendiente es acción humana explícita con referencia actual y motivo cuando la cobertura lo exige.
+
+Con una fuente requerida en `Parcial` —incluida `devoluciones`—, validar/revalidar/confirmar exige
+motivo humano explícito y no bloquea. `NoDisponible` por exceso de devoluciones sí bloquea la
+validación financiera (`DEVOLUCIONES_NO_DISPONIBLE`), sin impedir el saneamiento individual autorizado
+(rectificar o anular la devolución causante). Las operaciones que exigen medir impacto y no pueden
+hacerlo fallan `409 IMPACTO_NO_VERIFICABLE`; nunca se presenta una ausencia como igualdad.
 
 ```text
 Ciclo [ID] · Ventana [Inicio — Fin] · [Sin validar | Validada | Pendiente]
@@ -345,6 +366,11 @@ El presupuesto se declara **antes** de medir y se cumple o no se cumple como **m
 | I4 · Documentación | SPECs propietarias, contratos API, runbook y evidencia aprobada, sin duplicación | Historial documental, sin revertir reglas económicas |
 
 I1/I2 son unidades de entrega compatibles, no autorización de DEV. Sin doble escritura ni generación de fotos de transición.
+**v34 (2026-11-26):** incremento de guardas SQL sobre v33 que recrea los triggers de cobertura
+(`cierre_validacion_cobertura_insert`, `cierre_validacion_cobertura_update` y
+`cierre_validacion_audit_detalle_cobertura`) con las listas de 9 fuentes y 19 causas, además de la
+guardia de confirmación. C14–C33 permanecen congelados; no se abre v35 ni se reescriben filas
+históricas, que siguen siendo válidas por superconjunto.
 No exponer C31 junto a v32 ni la vieja UI consumiendo rutas de estado anteriores. La versión posterior a retirada se denomina v33 en esta propuesta, su número definitivo se coordina con #548 sin colisionar migraciones.
 
 ### 7.2 Migración conservadora: decisión explícita
@@ -510,7 +536,7 @@ IDs contiguos tras reconciliación; el mapeo final conserva trazabilidad de la v
 | **AC-06** | Revalidar voluntariamente ciclo Validada | Revisión exactamente +1 y nueva referencia; eventos anteriores intactos, sin foto. |
 | **AC-07** | Cambiar version_conjunto y luego aplicar una operación material | Cambio solo de conjunto sugiere revalidar; operación compara antes/después con versión vigente y marca aunque referencia antigua sea NoComparable. |
 | **AC-08** | Restore/import de hechos fuera de banda | Referencia humana preservada y ciclo Pendiente **por transición** (`accion`/`origen` de restauración, `motivo=null`, nunca un motivo material inventado); recuperación restringida hasta reconciliación; no confundir con round-trip del mismo dataset. |
-| **AC-09** | Validar con cobertura parcial y probar escritores adversariales de auditoría | Parcial visible con motivo; DTO exacto de G3 rechaza claves extra/números/strings financieros en posiciones técnicas por servicio y SQL; no fugas en otros escritores. |
+| **AC-09** | Validar con cobertura parcial y probar escritores adversariales de auditoría | Parcial visible con motivo; DTO exacto de G3 rechaza claves extra/números/strings financieros en posiciones técnicas por servicio y SQL; no fugas en otros escritores. Incluye `devoluciones` en `Parcial` con su causa exacta, sin motivo no valida y con motivo persiste la cobertura. |
 | **AC-10** | Reintentar validar/revisar con misma clave+payload y después distinto | Mismo recibo sin nueva revisión/evento aunque preview previo esté obsoleto; distinto hash 409; tombstone evita reutilizar clave. |
 | **AC-11** | Editar texto sin efecto sobre ciclo ya Pendiente, repetir no-op y después cambiar importe | Primeros casos conservan dirty_desde/ultimo/motivos sin dirty_reiterado; cambio real actualiza último y agrega evento; materialidad no consulta huella humana para marcar. |
 | **AC-12** | Corregir errata de Concepto sin alterar clasificación/flujo | Preview material=false, sin marca ni reiteración; no exención por nombre de campo. |
@@ -518,7 +544,7 @@ IDs contiguos tras reconciliación; el mapeo final conserva trazabilidad de la v
 | **AC-14** | Renombrar cuenta/Partida/Instrumento con ID estable y cambiar nota | No marca si universo material no cambia; informes reflejan nombre vigente. |
 | **AC-15** | Abono tardío vinculado a compra anterior | GRE del ciclo de compra y stock a Fin afectados exactamente según oráculo; no gasto negativo del cobro ni DO ficticia; contrato #538. |
 | **AC-16** | Traspaso entre cuentas propias con mismo total/atribución/posiciones | Sin marca por composición; detalle por cuenta cambia y se mantiene visible. |
-| **AC-17** | Fuente pasa a Parcial/NoDisponible sin cambio de cifra | Cambia cobertura, no marca; nunca se publica completa. Si no puede medirse impacto requerido, error explícito, no falsa igualdad. |
+| **AC-17** | Fuente pasa a Parcial/NoDisponible sin cambio de cifra | Cambia cobertura, no marca; nunca se publica completa. Si no puede medirse impacto requerido, error explícito, no falsa igualdad. Un cambio sólo de cobertura de `devoluciones` mantiene `material=false` y `motivos=[]` pero altera `impactRevision`; un exceso deja `gre`/`neto` nulos y bloquea validar con `DEVOLUCIONES_NO_DISPONIBLE`, mientras rectificar/anular la devolución causante sigue permitido. |
 | **AC-18** | Cambio de saldo a Fin que alcanza varios ciclos | Marca exactamente digests antes/después distintos, motivos BALANCE_FIN y preview concordante. |
 | **AC-19** | Confirmar escritura sin efecto material en ciclos limpios y pendientes | Ninguna marca/reiteración ni nuevos motivos; las marcas previas permanecen intactas. |
 | **AC-20** | Operación material sobre Validada | dirty=1, primer/último instante y motivos; revisión y referencia humana invariantes. |
@@ -529,7 +555,7 @@ IDs contiguos tras reconciliación; el mapeo final conserva trazabilidad de la v
 | **AC-25** | UPDATE/DELETE de auditoría y revisiones  r-1, r, r+1, r+2 | Auditoría inmutable; marcar mantiene r; revisión humana exige exactamente r+1; disminución y salto r+2 fallan en triggers nuevos, no en el antiguo trigger de monotonía. |
 | **AC-26** | Validar sin siguiente Inicio, sin S0, sin backup y con E3.5 ausente | Primeras dos condiciones bloquean; backup no es criterio financiero pero G5 permanece gate; E3.5 parcial requiere motivo y no bloquea por sí sola. |
 | **AC-27** | Abrir precontrol y contrastar todos sus bloques | Mantiene ventana/S0/movimientos/plan/inversión/E3.5/E3.6/integridad/cobertura; solo lectura, sin autoridad de backup/fotos para validar. |
-| **AC-28** | Periodo con fuentes parciales y magnitud sin regla aditiva | COBERTURA_PARCIAL, total null donde no haya regla, nunca completa ni suma de stock. |
+| **AC-28** | Periodo con fuentes parciales y magnitud sin regla aditiva | COBERTURA_PARCIAL, total null donde no haya regla, nunca completa ni suma de stock. La fuente `devoluciones` en `Parcial` mantiene su causa y tampoco completa el periodo. |
 | **AC-29** | Fuente caída, periodo vacío y cero real acreditado | Distingue NoDisponible, SIN_CICLOS_EN_PERIODO y cero real; no rellena ausencias. |
 | **AC-30** | Ciclo/trimestre/año del ámbito financiado | Mismo conjunto de hechos por pertenencia; flujos reconcilian, stock NO_ADITIVO con corte explícito. |
 | **AC-31** | Fixture §6.3: compra diciembre en ciclo financiado enero | q pertenece a GRE natural 2026 y financiado 2027; etiquetas/DTO distinguen informes; no igualdad entre ejercicios ni tercer informe anual. |

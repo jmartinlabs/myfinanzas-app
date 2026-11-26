@@ -2,13 +2,16 @@ import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { cycleForDate, cycleMaster } from "./ciclos";
 import {
+  CAUSAS_COBERTURA,
   IMPACTOS_MATERIALES,
+  type CausaCobertura,
   type CoberturaValidada,
   type FuenteCobertura,
   type ImpactoMaterial,
 } from "./cierre-validacion-dto";
 import {
   calcularGreIntervalo,
+  type CausaCobertura as CausaDevolucion,
   type DescuentoCompra,
   type GreIntervalo,
 } from "./devoluciones";
@@ -206,26 +209,86 @@ function gruposMateriales(universo: UniversoFinanciero): Record<GrupoMaterial, u
   };
 }
 
-/** Fuente de cobertura que debe estar disponible para medir cada grupo. */
-const FUENTE_POR_GRUPO: Partial<Record<GrupoMaterial, FuenteCobertura>> = {
-  flujo: "movimientos",
-  comida: "movimientos",
-  atribucion: "movimientos",
-  balance: "efectivo",
-  posicion: "posiciones",
-  reparto: "plan",
+/**
+ * Fuentes de cobertura que deben estar disponibles para medir cada grupo. Un
+ * grupo puede depender de varias fuentes: el flujo necesita el ledger bancario
+ * (`movimientos`) **y** la proyección económica de devoluciones
+ * (`devoluciones`), que describe la cobertura del GRE del intervalo.
+ */
+const FUENTE_POR_GRUPO: Partial<Record<GrupoMaterial, readonly FuenteCobertura[]>> = {
+  flujo: ["movimientos", "devoluciones"],
+  comida: ["movimientos"],
+  atribucion: ["movimientos"],
+  balance: ["efectivo"],
+  posicion: ["posiciones"],
+  reparto: ["plan"],
 };
 
-/** Grupos cuya fuente está `NoDisponible` en esa lectura. */
+/** Grupos que no pueden medirse porque alguna de sus fuentes está `NoDisponible`. */
 function gruposNoDisponibles(universo: UniversoFinanciero): Set<GrupoMaterial> {
   const estados = new Map(universo.cobertura.map((entrada) => [entrada.fuente, entrada.estado]));
   const salida = new Set<GrupoMaterial>();
-  for (const [grupo, fuente] of Object.entries(FUENTE_POR_GRUPO) as [
+  for (const [grupo, fuentes] of Object.entries(FUENTE_POR_GRUPO) as [
     GrupoMaterial,
-    FuenteCobertura,
+    readonly FuenteCobertura[],
   ][])
-    if (estados.get(fuente) === "NoDisponible") salida.add(grupo);
+    if (fuentes.some((fuente) => estados.get(fuente) === "NoDisponible"))
+      salida.add(grupo);
   return salida;
+}
+
+/**
+ * SPEC39 §3.3 — cada causa de la proyección de devoluciones se expone 1:1 en la
+ * fuente `devoluciones`; no hay código genérico que oculte la causa real.
+ */
+const CAUSA_DEVOLUCION_A_COBERTURA: Record<CausaDevolucion, CausaCobertura> = {
+  sinVinculo: "SIN_VINCULO",
+  revisar: "REVISAR",
+  sinAcreditacion: "SIN_ACREDITACION",
+  sinClasificacion: "SIN_CLASIFICACION",
+  compraInvalida: "COMPRA_INVALIDA",
+  periodoNoResoluble: "PERIODO_NO_RESOLUBLE",
+};
+
+function causasOrdenadas(causas: Iterable<CausaCobertura>): CausaCobertura[] {
+  const conjunto = new Set(causas);
+  return CAUSAS_COBERTURA.filter((causa) => conjunto.has(causa));
+}
+
+/**
+ * Deriva la fuente propia `devoluciones` desde `calcularGreIntervalo` y el
+ * número de compras del ciclo:
+ *
+ * - exceso (descuento > compra) → `NoDisponible` + `EXCESO`; `gre`/`neto` son
+ *   `null` y no se inventa cifra.
+ * - ciclo sin compras sin incidencias → `Disponible` (GRE `null` legítimo).
+ * - ciclo sin compras con abonos huérfanos → `Parcial` + `SIN_VINCULO`.
+ * - cobertura `Completa` → `Disponible`; `Parcial` → `Parcial` con sus causas.
+ */
+export function coberturaDevoluciones(
+  greIntervalo: GreIntervalo,
+  compras: number,
+): CoberturaValidada {
+  const aplicables = greIntervalo.causas.map(
+    (causa) => CAUSA_DEVOLUCION_A_COBERTURA[causa],
+  );
+  if (greIntervalo.exceso)
+    return {
+      fuente: "devoluciones",
+      estado: "NoDisponible",
+      causas: causasOrdenadas(["EXCESO", ...aplicables]),
+    };
+  if (compras === 0)
+    return greIntervalo.sinVinculoEnIntervalo.length
+      ? { fuente: "devoluciones", estado: "Parcial", causas: ["SIN_VINCULO"] }
+      : { fuente: "devoluciones", estado: "Disponible", causas: [] };
+  if (greIntervalo.cobertura === "Completa")
+    return { fuente: "devoluciones", estado: "Disponible", causas: [] };
+  return {
+    fuente: "devoluciones",
+    estado: "Parcial",
+    causas: causasOrdenadas(aplicables),
+  };
 }
 
 /**
@@ -529,8 +592,10 @@ export function universoFinanciero(db: Database, ciclo: string): UniversoFinanci
   const flujoCiclo = flujo(db, hechosCiclo, greIntervalo);
   const stockCiclo = stock(db, fin);
   const repartoCiclo = reparto(db, ciclo);
+  const comprasCiclo = hechosCiclo.filter((hecho) => hecho.tipo === "Gasto").length;
   const cobertura: CoberturaValidada[] = [
     { fuente: "movimientos", estado: "Disponible", causas: [] },
+    coberturaDevoluciones(greIntervalo, comprasCiclo),
     {
       fuente: "efectivo",
       estado: stockCiclo.disponible ? "Disponible" : "NoDisponible",
