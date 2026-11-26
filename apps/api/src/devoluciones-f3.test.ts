@@ -1168,3 +1168,107 @@ test("§5.1: las devoluciones ya existentes, incluida la huérfana histórica, c
   expect(updateMov(c.db, huerfana, { revision: 2, motivo: "Anulación" }, true).movimiento.anulado).toBe(true);
   c.db.close();
 });
+
+function otraCompra(c: ReturnType<typeof setup>) {
+  return createMov(c.db, {
+    tipo: "Gasto",
+    fecha: "2026-07-12",
+    importe: "90",
+    saldo: c.account.id,
+    partida: c.food.id,
+    concepto: "Otra compra",
+    nota: "",
+  }).movimiento;
+}
+function atribuirF3(
+  c: ReturnType<typeof setup>,
+  id: string,
+  body: Record<string, unknown>,
+  key: string = randomUUID(),
+) {
+  return writeComidaDevolucion(c.db, id, { revision: 1, ...body }, key, now, gateAbiertoParaPruebas);
+}
+
+for (const previo of ["Verificado", "Revisar"])
+  test(`§6: una atribución con compra (${previo}) no puede quedar sin ella; rollback y la compra sigue bloqueada`, () => {
+    const c = setup();
+    const { compra, dev } = compraYAbono(c);
+    let revision = 1;
+    if (previo === "Revisar") {
+      atribuirF3(c, dev.id, {
+        devolucionRevision: 1,
+        compra: compra.id,
+        estado: "Revisar",
+        evidenciaRelacion: "Ev",
+        evidenciaOrigenTemporal: "Fac",
+        motivo: "Degradación individual ficticia",
+      });
+      revision = 2;
+    }
+    const base = { devolucionRevision: revision, motivo: "Desvincular", elegibilidad: "No acreditada" };
+    const antes = hechosF3(c.db);
+    const key = randomUUID();
+    for (const intento of [
+      { estado: "Sin vínculo", compra: null },
+      { estado: "Sin vínculo" },
+      { estado: "Revisar", compra: null, evidenciaRelacion: "Ev" },
+      { estado: "Revisar", compra: "", evidenciaRelacion: "Ev" },
+      { evidenciaRelacion: "Ev" },
+    ]) {
+      expect(codeOf(() => atribuirF3(c, dev.id, { ...base, ...intento }, key))).toBe("DEVOLUTION_LINK_REQUIRED");
+      expect(hechosF3(c.db)).toEqual(antes);
+    }
+    // La vinculación se mantiene: la compra sigue sin poder anularse.
+    expect(
+      codeOf(() => updateMov(c.db, compra.id, { revision: 1, motivo: "Anular" }, true)),
+    ).toBe("DEVOLUTION_LINKED");
+    expect(comidaDevolucion(c.db, dev.id)).toMatchObject({ compra: compra.id, estado: previo, revision });
+
+    // Reatribuir a otra compra válida sigue permitido con la misma clave rechazada.
+    const otra = otraCompra(c);
+    atribuirF3(
+      c,
+      dev.id,
+      {
+        devolucionRevision: revision,
+        compraAnterior: compra.id,
+        compra: otra.id,
+        estado: "Verificado",
+        elegibilidad: "Acreditada",
+        evidenciaRelacion: "Ev",
+        evidenciaOrigenTemporal: "Fac",
+        motivo: "Reatribución",
+      },
+      key,
+    );
+    expect(comidaDevolucion(c.db, dev.id)).toMatchObject({ compra: otra.id, estado: "Verificado" });
+    expect(
+      codeOf(() => updateMov(c.db, otra.id, { revision: 1, motivo: "Anular" }, true)),
+    ).toBe("DEVOLUTION_LINKED");
+    expect(updateMov(c.db, compra.id, { revision: 1, motivo: "Ya sin abonos" }, true).movimiento.anulado).toBe(true);
+    c.db.close();
+  });
+
+test("§6: una huérfana histórica sin compra previa conserva todas sus atribuciones permitidas", () => {
+  const c = setup();
+  const huerfana = sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2026-08-07", importe: "12.00", saldo: c.other.id, concepto: "Huérfana" },
+    now,
+  );
+  // Alta de atribución sin compra, cambio a «Sin vínculo», vuelta a «Revisar» y saneamiento.
+  atribuirF3(c, huerfana, { estado: "Revisar", evidenciaRelacion: "Ev" });
+  atribuirF3(c, huerfana, { devolucionRevision: 1, estado: "Sin vínculo", motivo: "Retirar datos" });
+  atribuirF3(c, huerfana, { devolucionRevision: 2, estado: "Revisar", evidenciaRelacion: "Ev", motivo: "Revisar" });
+  expect(comidaDevolucion(c.db, huerfana)).toMatchObject({ compra: null, estado: "Revisar", revision: 3 });
+  const compra = otraCompra(c);
+  atribuirF3(c, huerfana, {
+    devolucionRevision: 3,
+    compra: compra.id,
+    estado: "Verificado",
+    evidenciaRelacion: "Ev",
+    motivo: "Saneamiento",
+  });
+  expect(comidaDevolucion(c.db, huerfana)).toMatchObject({ compra: compra.id, estado: "Verificado", revision: 4 });
+  c.db.close();
+});

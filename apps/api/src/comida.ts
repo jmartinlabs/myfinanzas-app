@@ -737,6 +737,15 @@ export function applyComidaDevolucion(
   }
   const compra =
     typeof input.compra === "string" && input.compra ? input.compra : null;
+  // SPEC39 §6: una atribución con compra no se resuelve desvinculándola. Se
+  // conserva (también en «Revisar») o se reatribuye a otra compra válida.
+  if (before?.compra && !compra)
+    throw new Problem(
+      422,
+      "DEVOLUTION_LINK_REQUIRED",
+      "Una devolución vinculada no puede quedar sin compra. Conserva la compra o reatribúyela a otra compra válida.",
+      { compra: "Indica la compra vinculada." },
+    );
   let partida =
     typeof input.partida === "string" && input.partida ? input.partida : null;
   let cicloOrigen =
