@@ -55,6 +55,11 @@ import {
   confirmarRectificacion,
   previewRectificacion,
 } from "./cierre-validacion-rectificaciones";
+import {
+  confirmarDevolucionImpacto,
+  previewDevolucionImpacto,
+  type AccionDevolucionImpacto,
+} from "./devolucion-impacto";
 import { rutaFotograficaRetirada } from "./cierre-validacion-retirada";
 import {
   getRevisionComida,
@@ -1464,10 +1469,22 @@ const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
       if (path === "/api/impacto/preview" && req.method === "POST") {
         const cuerpo = await jsonBody(req);
         const tipo = cuerpo.tipo;
+        if (tipo === "devolucion") {
+          const accion = cuerpo.accion as AccionDevolucionImpacto;
+          const id = typeof cuerpo.id === "string" ? cuerpo.id : null;
+          const body =
+            cuerpo.body && typeof cuerpo.body === "object"
+              ? (cuerpo.body as Record<string, unknown>)
+              : {};
+          headers.set("cache-control", "no-store");
+          return reply(
+            previewDevolucionImpacto(db, { accion, id, body }, now()),
+          );
+        }
         const ciclo = cuerpo.ciclo;
         if (tipo !== "ciclo")
           throw new Problem(422, "VALIDATION", "Tipo de impacto no admitido.", {
-            tipo: "Este incremento previsualiza correcciones del maestro de ciclos.",
+            tipo: "Tipos admitidos: ciclo, devolucion.",
           });
         if (typeof ciclo !== "string" || !/^\d+$/.test(ciclo))
           throw new Problem(422, "VALIDATION", "ID Ciclo inválido.", {
@@ -1478,9 +1495,35 @@ const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
       }
       if (path === "/api/impacto/confirmar" && req.method === "POST") {
         const cuerpo = await jsonBody(req);
+        if (cuerpo.tipo === "devolucion") {
+          const accion = cuerpo.accion as AccionDevolucionImpacto;
+          const id = typeof cuerpo.id === "string" ? cuerpo.id : null;
+          const body =
+            cuerpo.body && typeof cuerpo.body === "object"
+              ? (cuerpo.body as Record<string, unknown>)
+              : {};
+          return reply(
+            confirmarDevolucionImpacto(
+              db,
+              {
+                accion,
+                id,
+                body,
+                fingerprint: String(cuerpo.fingerprint ?? ""),
+                contextRevision: String(cuerpo.contextRevision ?? ""),
+                impactRevision: String(cuerpo.impactRevision ?? ""),
+                key: req.headers.get("idempotency-key") ?? "",
+                actor: options.cierre?.actor ?? "usuario-unico",
+                instante: new Date(now()).toISOString(),
+              },
+              devolucionGate,
+              now(),
+            ),
+          );
+        }
         if (cuerpo.tipo !== "ciclo")
           throw new Problem(422, "VALIDATION", "Tipo de impacto no admitido.", {
-            tipo: "Este incremento confirma correcciones del maestro de ciclos.",
+            tipo: "Tipos admitidos: ciclo, devolucion.",
           });
         if (typeof cuerpo.ciclo !== "string" || !/^\d+$/.test(cuerpo.ciclo))
           throw new Problem(422, "VALIDATION", "ID Ciclo inválido.", {

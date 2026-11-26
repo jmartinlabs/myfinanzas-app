@@ -1,0 +1,638 @@
+import { Database } from "bun:sqlite";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { proyectarValidacion } from "./cierre-validacion-estado";
+import { huellaUniverso, universoFinanciero, VERSION_CONJUNTO } from "./cierre-validacion-impacto";
+import { createClassification } from "./clasificacion";
+import { openDatabase } from "./database";
+import {
+  devolucionIntegracionDisponible,
+  gateProduccion,
+  type DevolucionGate,
+} from "./devolucion-gate";
+import {
+  confirmarDevolucionImpacto,
+  previewDevolucionImpacto,
+  type EntradaDevolucionImpacto,
+} from "./devolucion-impacto";
+import { previewMovement, writeMovement } from "./movimientos";
+import { Problem } from "./problem";
+import { createSaldo } from "./saldos";
+
+const GATE_ABIERTO: DevolucionGate = Object.freeze({ disponible: true });
+const temps: string[] = [];
+
+afterEach(() => {
+  while (temps.length) {
+    const dir = temps.pop()!;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function setupDb(filePath?: string) {
+  const db = openDatabase(filePath ?? ":memory:");
+  const cat = createClassification(
+    db,
+    "categorias",
+    { nombre: "Gastos F4", anual: "Gasto", mensual: "Gasto", referencia: false },
+    "setup-cat-f4-0001",
+  );
+  const sub = createClassification(
+    db,
+    "subcategorias",
+    { nombre: "Sub F4", padre: cat.id },
+    "setup-sub-f4-0001",
+  );
+  const partida = createClassification(
+    db,
+    "partidas",
+    { nombre: "Partida F4", padre: sub.id },
+    "setup-par-f4-0001",
+  );
+
+  // Saldo operativo (S000 ya viene sembrado como Terminal por el esquema)
+  const s1 = createSaldo(
+    db,
+    {
+      nombre: "Cuenta Principal",
+      tipo: "Efectivo",
+      control: "Movimientos",
+      saldoApertura: "500.00",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    },
+    "setup-saldo-s001-0001",
+  );
+  const saldoId = s1.id;
+
+  // Dos ciclos: ciclo 1 (2026-01-01..2026-01-31) y ciclo 2 (2026-02-01..)
+  db.run(
+    `INSERT INTO ciclos(id,inicio,saldo_comida,creado)
+     VALUES('1','2026-01-01',0,'2026-01-01T00:00:00.000Z'),
+           ('2','2026-02-01',0,'2026-02-01T00:00:00.000Z')`,
+  );
+
+  function addMov(body: Record<string, unknown>, key: string) {
+    const p = previewMovement(db, body, null, false);
+    return writeMovement(
+      db,
+      { ...body, fingerprint: p.fingerprint, contextRevision: p.contextRevision },
+      key,
+    );
+  }
+
+  // Compra de 120.00 EUR en ciclo 1
+  const compra = addMov(
+    {
+      tipo: "Gasto",
+      fecha: "2026-01-15",
+      importe: "120.00",
+      saldo: saldoId,
+      concepto: "Compra prueba F4",
+      nota: "",
+      partida: partida.id,
+    },
+    "setup-compra-f4-0001",
+  );
+
+  return { db, compraId: compra.movimiento.id, saldoId, partidaId: partida.id };
+}
+
+function validarCiclo(db: Database, ciclo: string) {
+  const universo = universoFinanciero(db, ciclo);
+  const huella = huellaUniverso(universo);
+  const now = "2026-01-31T23:59:59.000Z";
+  db.run(
+    `INSERT INTO cierre_validacion(
+       ciclo,revision,revision_actor,revision_instante,huella_validacion,version_conjunto,cobertura,dirty
+     ) VALUES(?,1,'usuario-unico',?,?,?,?,0)`,
+    [ciclo, now, huella, VERSION_CONJUNTO, JSON.stringify(universo.cobertura)],
+  );
+}
+
+function snapCounts(db: Database) {
+  const count = (table: string) =>
+    (db.query(`SELECT COUNT(*) n FROM ${table}`).get() as { n: number }).n;
+  return {
+    movimientos: count("movimientos"),
+    devoluciones: count("movimiento_devolucion"),
+    audit: count("cierre_validacion_audit"),
+    attemptsMov: count("movement_attempts"),
+    attemptsDev: count("comida_devolucion_attempts"),
+  };
+}
+
+describe("DEV #598 · F4 · Preview, impacto y cierres de devoluciones", () => {
+  test("Gate #572 permanece cerrado por defecto: preview disponible, confirmación 503", () => {
+    expect(devolucionIntegracionDisponible).toBe(false);
+    expect(gateProduccion.disponible).toBe(false);
+
+    const { db, compraId } = setupDb();
+    const entrada: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución parcial",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+
+    const preview = previewDevolucionImpacto(db, entrada);
+    expect(preview.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+    expect(preview.contextRevision).toMatch(/^[a-f0-9]{64}$/);
+    expect(preview.impactRevision).toMatch(/^[a-f0-9]{64}$/);
+
+    expect(() =>
+      confirmarDevolucionImpacto(
+        db,
+        {
+          ...entrada,
+          fingerprint: preview.fingerprint,
+          contextRevision: preview.contextRevision,
+          impactRevision: preview.impactRevision,
+          key: "confirm-gate-cerrado-0001",
+        },
+        gateProduccion,
+      ),
+    ).toThrow(Problem);
+
+    try {
+      confirmarDevolucionImpacto(
+        db,
+        {
+          ...entrada,
+          fingerprint: preview.fingerprint,
+          contextRevision: preview.contextRevision,
+          impactRevision: preview.impactRevision,
+          key: "confirm-gate-cerrado-0001",
+        },
+        gateProduccion,
+      );
+    } catch (err) {
+      const p = err as Problem;
+      expect(p.status).toBe(503);
+      expect(p.code).toBe("DEVOLUTION_INTEGRATION_UNAVAILABLE");
+    }
+    db.close();
+  });
+
+  test("AC-D06 / AC-D35 · Preview sin escritura; confirmar sobre ciclo A validado marca dirty sin HISTORY_LOCKED", () => {
+    const { db, compraId, saldoId } = setupDb();
+    validarCiclo(db, "1");
+    const antes = snapCounts(db);
+
+    const entrada: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Devolución parcial",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+
+    // Preview no escribe nada (cancelar = sin efectos)
+    const preview = previewDevolucionImpacto(db, entrada);
+    expect(snapCounts(db)).toEqual(antes);
+    expect(proyectarValidacion(db, "1").estado).toBe("Validada");
+
+    // Shape completo de devolucionImpacto (ANEXO §2)
+    const imp = preview.devolucionImpacto;
+    expect(imp.compra).toBe(compraId);
+    expect(imp.compraFecha).toBe("2026-01-15");
+    expect(imp.cicloAtribucion).toBe("1");
+    expect(imp.anioAtribucion).toBe("2026");
+    expect(imp.bruto).toBe("120.00");
+    expect(imp.devueltoAntes).toBe("0.00");
+    expect(imp.devueltoDespues).toBe("30.00");
+    expect(imp.restanteAntes).toBe("120.00");
+    expect(imp.restanteDespues).toBe("90.00");
+    expect(imp.receptor.saldo).toBe(saldoId);
+    expect(imp.receptor.saldoAntes).toBe("380.00");
+    expect(imp.receptor.saldoDespues).toBe("410.00");
+    expect(imp.magnitudes.gastoRealEconomicoAntes).toBe("120.00");
+    expect(imp.magnitudes.gastoRealEconomicoDespues).toBe("90.00");
+    expect(imp.magnitudes.descuentoEconomicoAntes).toBe("0.00");
+    expect(imp.magnitudes.descuentoEconomicoDespues).toBe("30.00");
+    expect(imp.magnitudes.flujoBancarioImporte).toBe("30.00");
+    expect(imp.magnitudes.flujoBancarioFecha).toBe("2026-02-10");
+
+    const ciclo1Afectado = imp.ciclosAfectados.find((c) => c.ciclo === "1");
+    expect(ciclo1Afectado).toBeDefined();
+    expect(ciclo1Afectado!.material).toBe(true);
+    expect(ciclo1Afectado!.signoGasto).toBe("baja");
+    expect(ciclo1Afectado!.estadoValidacion).toBe("Validada");
+    expect(ciclo1Afectado!.validado).toBe(true);
+    expect(ciclo1Afectado!.dirtyPrevio).toBe(false);
+
+    // Confirmación con gate abierto (sin HISTORY_LOCKED)
+    const recibo = confirmarDevolucionImpacto(
+      db,
+      {
+        ...entrada,
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        key: "confirm-acd06-0001",
+      },
+      GATE_ABIERTO,
+    );
+
+    expect(recibo.operacionId).toMatch(/^OP-/);
+    expect(recibo.auditIds.length).toBeGreaterThan(0);
+    expect(recibo.cierresDirty).toEqual([
+      {
+        ciclo: "1",
+        rango: { desde: "2026-01-01", hasta: "2026-01-31" },
+        estadoValidacion: "Pendiente",
+        validado: true,
+        dirtyPrevio: false,
+      },
+    ]);
+    expect(proyectarValidacion(db, "1").estado).toBe("Pendiente");
+
+    // Idempotencia: misma clave y mismo payload reproduce el recibo incluso con gate cerrado
+    const repetido = confirmarDevolucionImpacto(
+      db,
+      {
+        ...entrada,
+        fingerprint: preview.fingerprint,
+        contextRevision: preview.contextRevision,
+        impactRevision: preview.impactRevision,
+        key: "confirm-acd06-0001",
+      },
+      gateProduccion,
+    );
+    expect(repetido).toEqual(recibo);
+    db.close();
+  });
+
+  test("AC-D36 · Confirmación con huella/contexto/impacto cambiado devuelve 409 IMPACT_CHANGED sin escritura", () => {
+    const { db, compraId, saldoId, partidaId } = setupDb();
+    validarCiclo(db, "1");
+
+    const entrada: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución parcial",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+
+    const preview = previewDevolucionImpacto(db, entrada);
+
+    // Mutación concurrente entre preview y confirmación: otro gasto en ciclo 1
+    const pConc = previewMovement(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-01-20",
+        importe: "10.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Otro gasto concurrente",
+        partida: partidaId,
+      },
+      null,
+      false,
+    );
+    writeMovement(
+      db,
+      {
+        tipo: "Gasto",
+        fecha: "2026-01-20",
+        importe: "10.00",
+        saldo: saldoId,
+        nota: "",
+        concepto: "Otro gasto concurrente",
+        partida: partidaId,
+        fingerprint: pConc.fingerprint,
+        contextRevision: pConc.contextRevision,
+      },
+      "setup-concurrente-0001",
+    );
+
+    const antesConfirm = snapCounts(db);
+    let caught: Problem | null = null;
+    try {
+      confirmarDevolucionImpacto(
+        db,
+        {
+          ...entrada,
+          fingerprint: preview.fingerprint,
+          contextRevision: preview.contextRevision,
+          impactRevision: preview.impactRevision,
+          key: "confirm-impact-changed-0001",
+        },
+        GATE_ABIERTO,
+      );
+    } catch (err) {
+      caught = err as Problem;
+    }
+
+    expect(caught).toBeInstanceOf(Problem);
+    expect(caught!.status).toBe(409);
+    expect(caught!.code).toBe("IMPACT_CHANGED");
+    expect(snapCounts(db)).toEqual(antesConfirm);
+    db.close();
+  });
+
+  test("AC-D35 · Validador común: mismos códigos de error en preview y confirmación", () => {
+    const { db, compraId } = setupDb();
+
+    // 1. Falta compra → DEVOLUTION_LINK_REQUIRED
+    const sinCompra: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Sin compra",
+      },
+    };
+    try {
+      previewDevolucionImpacto(db, sinCompra);
+      expect.unreachable();
+    } catch (err) {
+      expect((err as Problem).status).toBe(422);
+      expect((err as Problem).code).toBe("DEVOLUTION_LINK_REQUIRED");
+    }
+
+    // 2. Exceso sobre capacidad → DEVOLUTION_EXCESS
+    const exceso: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "121.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Exceso",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket",
+          evidenciaOrigenTemporal: "Enero",
+        },
+      },
+    };
+    try {
+      previewDevolucionImpacto(db, exceso);
+      expect.unreachable();
+    } catch (err) {
+      expect((err as Problem).status).toBe(422);
+      expect((err as Problem).code).toBe("DEVOLUTION_EXCESS");
+    }
+    db.close();
+  });
+
+  test("AC-D36 / AC-D45 · Dirty solo por materialidad: edición textual no marca dirty; reversión no limpia", () => {
+    const { db, compraId } = setupDb();
+    validarCiclo(db, "1");
+
+    // 1. Alta de devolución de 30 EUR (material → marca dirty en ciclo 1)
+    const alta: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución inicial",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #1",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const pAlta = previewDevolucionImpacto(db, alta);
+    confirmarDevolucionImpacto(
+      db,
+      {
+        ...alta,
+        fingerprint: pAlta.fingerprint,
+        contextRevision: pAlta.contextRevision,
+        impactRevision: pAlta.impactRevision,
+        key: "confirm-mat-alta-0001",
+      },
+      GATE_ABIERTO,
+    );
+
+    const devMov = db
+      .query("SELECT id,revision FROM movimientos WHERE tipo='Devolución de gasto'")
+      .get() as { id: string; revision: number };
+    const auditAntesTexto = (
+      db.query("SELECT COUNT(*) n FROM cierre_validacion_audit").get() as { n: number }
+    ).n;
+
+    // 2. Rectificación puramente textual (cambia solo concepto) → no material, no reitera dirty
+    const rectTexto: EntradaDevolucionImpacto = {
+      accion: "rectificar",
+      id: devMov.id,
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "30.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución inicial corregida en texto",
+        revision: devMov.revision,
+        motivo: "Corrección ortográfica",
+      },
+    };
+    const pTexto = previewDevolucionImpacto(db, rectTexto);
+    expect(pTexto.devolucionImpacto.ciclosAfectados).toEqual([]);
+
+    const rTexto = confirmarDevolucionImpacto(
+      db,
+      {
+        ...rectTexto,
+        fingerprint: pTexto.fingerprint,
+        contextRevision: pTexto.contextRevision,
+        impactRevision: pTexto.impactRevision,
+        key: "confirm-mat-texto-0001",
+      },
+      GATE_ABIERTO,
+    );
+    expect(rTexto.auditIds).toEqual([]);
+    const auditDespuesTexto = (
+      db.query("SELECT COUNT(*) n FROM cierre_validacion_audit").get() as { n: number }
+    ).n;
+    expect(auditDespuesTexto).toBe(auditAntesTexto);
+
+    // 3. Reversión (anular la devolución) → ciclo 1 sigue Pendiente (nunca se limpia automáticamente)
+    const devMov2 = db
+      .query("SELECT id,revision FROM movimientos WHERE id=?")
+      .get(devMov.id) as { id: string; revision: number };
+    const anular: EntradaDevolucionImpacto = {
+      accion: "anular",
+      id: devMov2.id,
+      body: {
+        revision: devMov2.revision,
+        motivo: "Reversión de prueba",
+      },
+    };
+    const pAnular = previewDevolucionImpacto(db, anular);
+    const c1Anular = pAnular.devolucionImpacto.ciclosAfectados.find((c) => c.ciclo === "1");
+    expect(c1Anular?.signoGasto).toBe("sube");
+
+    const rAnular = confirmarDevolucionImpacto(
+      db,
+      {
+        ...anular,
+        fingerprint: pAnular.fingerprint,
+        contextRevision: pAnular.contextRevision,
+        impactRevision: pAnular.impactRevision,
+        key: "confirm-mat-anular-0001",
+      },
+      GATE_ABIERTO,
+    );
+    expect(proyectarValidacion(db, "1").estado).toBe("Pendiente");
+    expect(rAnular.cierresDirty[0]?.dirtyPrevio).toBe(true);
+    db.close();
+  });
+
+  test("Concurrencia · Dos conexiones simultáneas excediendo capacidad: una gana, la otra falla sin superar tope", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mf-f4-conc-"));
+    temps.push(dir);
+    const dbPath = join(dir, "test.sqlite");
+    const { db: db1, compraId } = setupDb(dbPath);
+    const db2 = openDatabase(dbPath);
+
+    const entrada1: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-10",
+        importe: "80.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución concurrente 1",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #A",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+    const entrada2: EntradaDevolucionImpacto = {
+      accion: "alta",
+      body: {
+        tipo: "Devolución de gasto",
+        fecha: "2026-02-11",
+        importe: "80.00",
+        saldo: "S001",
+        nota: "",
+        concepto: "Devolución concurrente 2",
+        devolucion: {
+          compra: compraId,
+          estado: "Verificado",
+          elegibilidad: "Acreditada",
+          cicloOrigen: "1",
+          evidenciaRelacion: "Ticket #B",
+          evidenciaOrigenTemporal: "Factura enero",
+        },
+      },
+    };
+
+    // Ambos previsualizan sobre el mismo snapshot inicial (capacidad 120)
+    const p1 = previewDevolucionImpacto(db1, entrada1);
+    const p2 = previewDevolucionImpacto(db2, entrada2);
+
+    // Conexión 1 confirma primero (80 <= 120)
+    confirmarDevolucionImpacto(
+      db1,
+      {
+        ...entrada1,
+        fingerprint: p1.fingerprint,
+        contextRevision: p1.contextRevision,
+        impactRevision: p1.impactRevision,
+        key: "confirm-conc-0001",
+      },
+      GATE_ABIERTO,
+    );
+
+    // Conexión 2 intenta confirmar con su preview ahora obsoleto (80 + 80 > 120)
+    let err2: Problem | null = null;
+    try {
+      confirmarDevolucionImpacto(
+        db2,
+        {
+          ...entrada2,
+          fingerprint: p2.fingerprint,
+          contextRevision: p2.contextRevision,
+          impactRevision: p2.impactRevision,
+          key: "confirm-conc-0002",
+        },
+        GATE_ABIERTO,
+      );
+    } catch (err) {
+      err2 = err as Problem;
+    }
+
+    expect(err2).toBeInstanceOf(Problem);
+    expect([409, 422]).toContain(err2!.status);
+    expect(["IMPACT_CHANGED", "DEVOLUTION_EXCESS"]).toContain(err2!.code);
+
+    // Suma total verificada nunca supera la compra (12000 céntimos)
+    const suma = db1
+      .query(
+        `SELECT COALESCE(SUM(m.importe),0) total
+           FROM movimientos m
+           JOIN movimiento_devolucion d ON d.movimiento=m.id
+          WHERE m.anulado=0 AND d.compra=? AND d.estado='Verificado'`,
+      )
+      .get(compraId) as { total: number };
+    expect(suma.total).toBe(8000);
+
+    db2.close();
+    db1.close();
+  });
+});
