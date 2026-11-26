@@ -17,3 +17,20 @@ export function restaurarTriggerAperturaV31(db: Database): void {
   if (!sql) throw new Error("C31 no contiene anticipo_cycle_photo");
   db.exec(sql);
 }
+
+/**
+ * Apoyo de pruebas: devuelve el trigger de atribución de compra a su forma
+ * anterior a v33 (#597), con el SQL exacto del contrato congelado C32. No
+ * cambia `schema_version`: lo fija quien reconstruye la base antigua.
+ *
+ * No lo importa ningún módulo de producción.
+ */
+export function restaurarTriggerDevolucionV32(db: Database): void {
+  const sql = contract("C32-SPEC38-VALIDACION-CIERRE").objects.find(
+    (object) => object.name === "movimiento_devolucion_update_purchase",
+  )?.sql;
+  if (!sql)
+    throw new Error("C32 no contiene movimiento_devolucion_update_purchase");
+  db.exec("DROP TRIGGER movimiento_devolucion_update_purchase");
+  db.exec(sql);
+}

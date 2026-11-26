@@ -24,6 +24,7 @@ import {
 } from "./comida";
 import { getCyclePlan, planConfigurationImpact } from "./planes-ciclo";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 const now = Date.parse("2026-10-21T12:00:00Z");
 process.env.NODE_ENV = "test";
@@ -173,6 +174,63 @@ function refund(
     ...over,
   });
 }
+/** Devolución histórica sin compra (§3.2): el alta API ya no la admite. */
+function huerfana(
+  db: Database,
+  ing: { id: string },
+  partida: string,
+  importe = "15",
+) {
+  return sembrarDevolucionHuerfana(
+    db,
+    {
+      fecha: "2026-07-10",
+      importe,
+      saldo: ing.id,
+      partida,
+      concepto: "Devolución ficticia",
+    },
+    now,
+  );
+}
+/** Código de dominio del rechazo; falla si la operación no se rechaza. */
+function rechazo(run: () => unknown) {
+  try {
+    run();
+  } catch (error) {
+    return (error as { code?: string }).code;
+  }
+  throw new Error("Se esperaba un rechazo.");
+}
+/** Escritura directa: el plan interno repite las guardas bajo bloqueo. */
+function escribirSinPreview(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string,
+  annul = false,
+) {
+  return writeMovement(
+    db,
+    body,
+    randomUUID(),
+    id,
+    annul,
+    now,
+    undefined,
+    gateAbiertoParaPruebas,
+  );
+}
+function hechos(db: Database) {
+  return [
+    "movimientos",
+    "movement_audit",
+    "movement_attempts",
+    "movimiento_devolucion",
+    "movimiento_devolucion_audit",
+    "audit",
+    "counters",
+  ].map((t) => db.query(`SELECT * FROM "${t}"`).all());
+}
 function transfer(
   db: Database,
   from: { id: string },
@@ -258,9 +316,16 @@ test("CU-06/P4: la devolución es entrada bancaria real, sin Ingreso artificial,
       ).get() as { n: number }
     ).n,
   ).toBe(0);
-  const second = refund(db, ing, {
-    importe: "13",
+  // SPEC39 §4 / AC-D10: quedan 8 de capacidad; un alta de 13 en «Revisar» no es
+  // un bypass. Ni movimiento, vínculo, auditoría, contadores ni recibo.
+  const revisar = (importe: string) => ({
+    tipo: "Devolución de gasto",
+    fecha: "2026-07-10",
+    importe,
+    saldo: ing.id,
     partida: food.id,
+    concepto: "Devolución ficticia",
+    nota: "",
     devolucion: {
       estado: "Revisar",
       compra: buy.movimiento.id,
@@ -269,6 +334,35 @@ test("CU-06/P4: la devolución es entrada bancaria real, sin Ingreso artificial,
       cicloOrigen: cycle1.id,
       evidenciaOrigenTemporal: "Documento de compra ficticio",
     },
+  });
+  const intacto = hechos(db);
+  const key = randomUUID();
+  const escribir = (importe: string) =>
+    writeMovement(
+      db,
+      revisar(importe),
+      key,
+      null,
+      false,
+      now,
+      undefined,
+      gateAbiertoParaPruebas,
+    );
+  for (const importe of ["13", "8.01"]) {
+    expect(
+      rechazo(() => previewMovement(db, revisar(importe), null, false, now)),
+    ).toBe("DEVOLUTION_EXCESS");
+    expect(rechazo(() => escribir(importe))).toBe("DEVOLUTION_EXCESS");
+    expect(hechos(db)).toEqual(intacto);
+  }
+  expect(
+    db.query("SELECT COUNT(*) n FROM movement_attempts WHERE key=?").get(key),
+  ).toEqual({ n: 0 });
+  // Dentro de la capacidad (límite exacto) sigue admitiéndose «Revisar».
+  const second = refund(db, ing, {
+    importe: "8",
+    partida: food.id,
+    devolucion: revisar("8").devolucion,
   });
   expect(getComidaMovement(db, second.movimiento.id).devolucion?.estado).toBe(
     "Revisar",
@@ -279,7 +373,7 @@ test("CU-06/P4: la devolución es entrada bancaria real, sin Ingreso artificial,
   const before = db.query("SELECT COUNT(*) n FROM movimientos").get() as {
     n: number;
   };
-  expect(() =>
+  const exceso = () =>
     refund(db, ing, {
       importe: "9",
       partida: food.id,
@@ -291,13 +385,17 @@ test("CU-06/P4: la devolución es entrada bancaria real, sin Ingreso artificial,
         cicloOrigen: cycle1.id,
         evidenciaOrigenTemporal: "Documento de compra ficticio",
       },
-    }),
-  ).toThrow("superan el importe de la compra");
+    });
+  expect(rechazo(exceso)).toBe("DEVOLUTION_EXCESS");
+  // SPEC39 §4, texto M-1.
+  expect(exceso).toThrow(
+    "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
+  );
   expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
   db.close();
 });
 
-test("P4: al anular la compra, la devolución verificada pasa a Revisar y conserva el hecho", () => {
+test("P4: anular una compra con devolución vigente se rechaza (DEVOLUTION_LINKED) sin degradar el vínculo", () => {
   const { db, ing, food, cycle1 } = setup();
   const buy = purchase(db, ing, food.id, { importe: "20" });
   const r = refund(db, ing, {
@@ -312,46 +410,41 @@ test("P4: al anular la compra, la devolución verificada pasa a Revisar y conser
       evidenciaOrigenTemporal: "Documento de compra ficticio",
     },
   });
-  const plan = previewMovement(
-    db,
-    { revision: 1, motivo: "Anulación ficticia" },
-    buy.movimiento.id,
-    true,
-    now,
-  );
-  writeMovement(
-    db,
-    {
-      revision: 1,
-      motivo: "Anulación ficticia",
-      fingerprint: plan.fingerprint,
-      contextRevision: plan.contextRevision,
-    },
-    randomUUID(),
-    buy.movimiento.id,
-    true,
-    now,
-    undefined,
-    gateAbiertoParaPruebas,
-  );
+  const anular = { revision: 1, motivo: "Anulación ficticia" };
+  const before = hechos(db);
+  expect(
+    rechazo(() => previewMovement(db, anular, buy.movimiento.id, true, now)),
+  ).toBe("DEVOLUTION_LINKED");
+  expect(
+    rechazo(() => escribirSinPreview(db, anular, buy.movimiento.id, true)),
+  ).toBe("DEVOLUTION_LINKED");
+  expect(hechos(db)).toEqual(before);
   const view = getComidaMovement(db, r.movimiento.id);
-  expect(view.devolucion?.estado).toBe("Revisar");
+  expect(view.devolucion?.estado).toBe("Verificado");
   expect(view.movimiento.estado).toBe("Vigente");
-  expect((view.auditoria.devolucion.at(-1) as any)?.accion).toBe(
-    "rectificación",
+  expect((view.auditoria.devolucion.at(-1) as any)?.accion).toBe("alta");
+  expect(getComidaMovement(db, buy.movimiento.id).movimiento.estado).toBe(
+    "Vigente",
   );
   db.close();
 });
 
 test("AC: un alta con bloque de devolución inválido revierte el Movimiento completo", () => {
-  const { db, ing } = setup();
-  const before = db.query("SELECT COUNT(*) n FROM movimientos").get();
+  const { db, ing, food } = setup();
+  const buy = purchase(db, ing, food.id, { importe: "20" });
+  const before = hechos(db);
+  // Sin compra: el alta canónica se rechaza antes de escribir.
+  expect(
+    rechazo(() => refund(db, ing, { devolucion: { estado: "Verificado" } })),
+  ).toBe("DEVOLUTION_LINK_REQUIRED");
+  expect(hechos(db)).toEqual(before);
+  // Con compra pero sin evidencia: falla tras insertar el Movimiento y revierte todo.
   expect(() =>
     refund(db, ing, {
-      devolucion: { estado: "Verificado" },
+      devolucion: { estado: "Verificado", compra: buy.movimiento.id },
     }),
-  ).toThrow("Verificado exige compra");
-  expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
+  ).toThrow("Verificado exige evidencia de relación");
+  expect(hechos(db)).toEqual(before);
   db.close();
 });
 
@@ -585,7 +678,7 @@ test("AC: sin régimen activo, las métricas que dependen de ING quedan No dispo
 test("E1/cobertura: compras sin etiqueta o devoluciones sin atribución presentan Parcial con IDs", () => {
   const { db, ing, food, cycle1 } = setup();
   purchase(db, ing, food.id, { importe: "50", comida: {} });
-  refund(db, ing, { importe: "10", partida: food.id });
+  huerfana(db, ing, food.id, "10");
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
   expect(metrics.cobertura.sinClasificar.length).toBe(1);
@@ -1665,7 +1758,7 @@ test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el con
   const { prepareSchema } = require("./database-schema");
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 32,
+    version: 33,
   });
   expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
   expect(
@@ -1778,7 +1871,7 @@ test("AC-19: las rutas de Comida heredan MFA, Origin/CSRF y errores seguros", as
   db.close();
 });
 
-test("H1: rectificar la devolución por encima de la compra la degrada a Revisar sin borrar el hecho", () => {
+test("H1: rectificar la devolución por encima de la compra se rechaza (DEVOLUTION_EXCESS) sin degradar ni escribir", () => {
   const { db, ing, food, cycle1 } = setup();
   const buy = purchase(db, ing, food.id, { importe: "20" });
   const r = refund(db, ing, {
@@ -1794,50 +1887,30 @@ test("H1: rectificar la devolución por encima de la compra la degrada a Revisar
     },
   });
   const current = getComidaMovement(db, r.movimiento.id).movimiento as any;
-  const plan = previewMovement(
-    db,
-    {
-      tipo: "Devolución de gasto",
-      fecha: "2026-07-10",
-      importe: "25",
-      saldo: ing.id,
-      partida: food.id,
-      concepto: "Devolución ficticia",
-      nota: "",
-      revision: current.revision,
-      motivo: "Rectificación ficticia",
-    },
-    r.movimiento.id,
-    false,
-    now,
+  const alza = {
+    tipo: "Devolución de gasto",
+    fecha: "2026-07-10",
+    importe: "25",
+    saldo: ing.id,
+    partida: food.id,
+    concepto: "Devolución ficticia",
+    nota: "",
+    revision: current.revision,
+    motivo: "Rectificación ficticia",
+  };
+  const before = hechos(db);
+  expect(
+    rechazo(() => previewMovement(db, alza, r.movimiento.id, false, now)),
+  ).toBe("DEVOLUTION_EXCESS");
+  expect(rechazo(() => escribirSinPreview(db, alza, r.movimiento.id))).toBe(
+    "DEVOLUTION_EXCESS",
   );
-  writeMovement(
-    db,
-    {
-      tipo: "Devolución de gasto",
-      fecha: "2026-07-10",
-      importe: "25",
-      saldo: ing.id,
-      partida: food.id,
-      concepto: "Devolución ficticia",
-      nota: "",
-      revision: current.revision,
-      motivo: "Rectificación ficticia",
-      fingerprint: plan.fingerprint,
-      contextRevision: plan.contextRevision,
-    },
-    randomUUID(),
-    r.movimiento.id,
-    false,
-    now,
-    undefined,
-    gateAbiertoParaPruebas,
-  );
+  expect(hechos(db)).toEqual(before);
   expect(getComidaMovement(db, r.movimiento.id).devolucion?.estado).toBe(
-    "Revisar",
+    "Verificado",
   );
   expect(getComidaMovement(db, r.movimiento.id).movimiento.importe).toBe(
-    "25.00",
+    "12.00",
   );
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
@@ -1850,19 +1923,30 @@ test("H2 (F2b): una devolución acreditada sin compra NO netea Compensable/Falta
     importe: "50",
     comida: { etiqueta: "Ocio" },
   });
-  const r = refund(db, ing, {
-    importe: "15",
-    partida: leisure.id,
-    comida: { etiqueta: "Ocio" },
-    devolucion: {
+  const id = huerfana(db, ing, leisure.id);
+  writeComidaMetadata(
+    db,
+    id,
+    { revision: 1, etiqueta: "Ocio" },
+    randomUUID(),
+    now,
+  );
+  writeComidaDevolucion(
+    db,
+    id,
+    {
+      revision: 1,
       estado: "Revisar",
       partida: leisure.id,
       elegibilidad: "Acreditada",
       cicloOrigen: cycle1.id,
       evidenciaOrigenTemporal: "Documento de compra ficticio",
     },
-  });
-  expect(r.movimiento.tipo).toBe("Devolución de gasto");
+    randomUUID(),
+    now,
+    gateAbiertoParaPruebas,
+  );
+  expect(getMovement(db, id).movimiento.tipo).toBe("Devolución de gasto");
   const metrics = comidaMetrics(db, cycle1.id, now);
   // Antes: 15/35/35 por etiqueta propia + d.partida. Ahora no hay compra: hecho
   // bancario sin neteo (§3.2); la etiqueta de la devolución no clasifica.
@@ -1900,28 +1984,18 @@ test("H3: al anular la compra, el plan deja de netear una devolución no verific
     null,
     "10000",
   ]);
-  const plan = previewMovement(
-    db,
-    { revision: 1, motivo: "Anulación ficticia" },
-    buy.movimiento.id,
-    true,
-    now,
-  );
-  writeMovement(
-    db,
-    {
-      revision: 1,
-      motivo: "Anulación ficticia",
-      fingerprint: plan.fingerprint,
-      contextRevision: plan.contextRevision,
-    },
-    randomUUID(),
-    buy.movimiento.id,
-    true,
-    now,
-    undefined,
-    gateAbiertoParaPruebas,
-  );
+  const anular = { revision: 1, motivo: "Anulación ficticia" };
+  const before = hechos(db);
+  // SPEC39 §6: la escritura ya no puede producir ese estado.
+  expect(
+    rechazo(() => previewMovement(db, anular, buy.movimiento.id, true, now)),
+  ).toBe("DEVOLUTION_LINKED");
+  expect(
+    rechazo(() => escribirSinPreview(db, anular, buy.movimiento.id, true)),
+  ).toBe("DEVOLUTION_LINKED");
+  expect(hechos(db)).toEqual(before);
+  // Histórico inconsistente (fixture SQL ficticio): se lee sin netear ni degradar.
+  db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [buy.movimiento.id]);
   const executed = getCyclePlan(db, cycle1.id, now).items.find(
     (i) => i.presupuesto.id === budget.id,
   )!;
@@ -2204,17 +2278,22 @@ test("H10 (F2b): una devolución acreditada sin compra no netea y se informa com
     importe: "50",
     comida: { etiqueta: "Ocio" },
   });
-  refund(db, ing, {
-    importe: "15",
-    partida: leisure.id,
-    devolucion: {
+  const id = huerfana(db, ing, leisure.id);
+  writeComidaDevolucion(
+    db,
+    id,
+    {
+      revision: 1,
       estado: "Revisar",
       partida: leisure.id,
       elegibilidad: "Acreditada",
       cicloOrigen: cycle1.id,
       evidenciaOrigenTemporal: "Documento de compra ficticio",
     },
-  });
+    randomUUID(),
+    now,
+    gateAbiertoParaPruebas,
+  );
   // Nota QA: el Parcial ya no prueba la devolución huérfana (no degrada, AC-D21); lo prueba el motivo informativo siguiente.
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
@@ -2270,7 +2349,14 @@ test("H11: no se retipifica una devolución con atribución ni una compra con v�
   };
   expect(() =>
     previewMovement(db, buyBody, buy.movimiento.id, false, now),
-  ).toThrow("devoluciones verificadas");
+  ).toThrow(
+    "Una compra con devoluciones vinculadas vigentes no puede anularse, eliminarse ni retipificarse.",
+  );
+  expect(
+    rechazo(() =>
+      previewMovement(db, buyBody, buy.movimiento.id, false, now),
+    ),
+  ).toBe("DEVOLUTION_LINKED");
   const reviewBuy = purchase(db, ing, food.id, {
     importe: "31",
     comida: { etiqueta: "Comida" },
@@ -2302,6 +2388,13 @@ test("H11: no se retipifica una devolución con atribución ni una compra con v�
   };
   expect(() =>
     previewMovement(db, reviewBody, reviewBuy.movimiento.id, false, now),
-  ).toThrow("devoluciones verificadas");
+  ).toThrow(
+    "Una compra con devoluciones vinculadas vigentes no puede anularse, eliminarse ni retipificarse.",
+  );
+  expect(
+    rechazo(() =>
+      previewMovement(db, reviewBody, reviewBuy.movimiento.id, false, now),
+    ),
+  ).toBe("DEVOLUTION_LINKED");
   db.close();
 });

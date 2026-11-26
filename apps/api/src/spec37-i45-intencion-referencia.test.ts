@@ -6,7 +6,11 @@ import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
-import { contract, manifest, verifyContract } from "./schema-contract";import { restaurarTriggerAperturaV31 } from "./cierre-validacion-test-support";
+import { contract, manifest, verifyContract } from "./schema-contract";
+import {
+  restaurarTriggerAperturaV31,
+  restaurarTriggerDevolucionV32,
+} from "./cierre-validacion-test-support";
 
 import { createCycle, cycleContext } from "./ciclos";
 import { createClassification } from "./clasificacion";
@@ -44,7 +48,7 @@ import {
 const now = Date.parse("2026-10-25T12:00:00Z");
 const stamp = "2026-01-01T00:00:00.000Z";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
-const c32 = "C32-SPEC38-VALIDACION-CIERRE";
+const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-i45-"));
 
 type Fixture = {
@@ -360,10 +364,11 @@ function revertToV30(db: Database) {
     DROP TABLE anticipo_apertura_evento;
     UPDATE schema_version SET version=30;`);
   restaurarTriggerAperturaV31(db);
+  restaurarTriggerDevolucionV32(db);
   expect(verifyContract(db, 30)).toBe(c30);
 }
 
-test("SPEC37-I4.5 G-v32: v30 → v32 es aditiva y conserva filas e identidad", () => {
+test("SPEC37-I4.5 G-v33: v30 → v33 es aditiva y conserva filas e identidad", () => {
   const dir = root();
   try {
     const path = join(dir, "v30.sqlite");
@@ -396,9 +401,9 @@ test("SPEC37-I4.5 G-v32: v30 → v32 es aditiva y conserva filas e identidad", (
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 32,
+        version: 33,
       });
-      expect(verifyContract(db, 32)).toBe(c32);
+      expect(verifyContract(db, 33)).toBe(c33);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Aditividad: ningún objeto de C30 desaparece y el único que cambia de
@@ -411,11 +416,13 @@ test("SPEC37-I4.5 G-v32: v30 → v32 es aditiva y conserva filas e identidad", (
         })
         .map((object) => `${object.type}:${object.name}`);
       // SPEC38 I2 sustituye el veto absoluto de `anticipo_cycle_photo` por el
-      // procedimiento autorizado de §4.3: es el único objeto previo que cambia
-      // de forma además de la tabla extendida por `ALTER TABLE`.
+      // procedimiento autorizado de §4.3, y v33 (SPEC39 §11.1) rehace el
+      // trigger de atribución de compra: son los únicos objetos previos que
+      // cambian de forma además de la tabla extendida por `ALTER TABLE`.
       expect(changed).toEqual([
         "table:transferencia_pendiente",
         "trigger:anticipo_cycle_photo",
+        "trigger:movimiento_devolucion_update_purchase",
       ]);
       for (const object of contract(c30).objects)
         expect(current.has(`${object.type}:${object.name}`)).toBe(true);
@@ -468,7 +475,7 @@ test("SPEC37-I4.5 G-v32: v30 → v32 es aditiva y conserva filas e identidad", (
   }
 });
 
-test("SPEC37-I4.5 G-v32: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
+test("SPEC37-I4.5 G-v33: el preflight rechaza pendientes v30 incoherentes sin escribir nada", () => {
   const dir = root();
   try {
     const path = join(dir, "v30-incoherente.sqlite");
@@ -517,7 +524,7 @@ test("SPEC37-I4.5 G-v32: el preflight rechaza pendientes v30 incoherentes sin es
   }
 });
 
-test("SPEC37-I4.5 G-v32: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
+test("SPEC37-I4.5 G-v33: una base v30 genuina migra y sigue confirmando su Referencia prevista", () => {
   const dir = root();
   try {
     const path = join(dir, "v30.sqlite");
@@ -534,7 +541,7 @@ test("SPEC37-I4.5 G-v32: una base v30 genuina migra y sigue confirmando su Refer
     }
     const migrated = openDatabase(path);
     try {
-      expect(verifyContract(migrated, 32)).toBe(c32);
+      expect(verifyContract(migrated, 33)).toBe(c33);
       // El trigger de v30 sigue vigente y la columna nueva no lo altera.
       expect(() =>
         migrated.run(

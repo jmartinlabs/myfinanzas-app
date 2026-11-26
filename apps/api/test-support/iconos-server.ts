@@ -18,6 +18,7 @@ import { createDebt } from "../src/deudas";
 import { previewMovement, writeMovement } from "../src/movimientos";
 import { getSaldo, updateSaldo } from "../src/saldos";
 import { gateAbiertoParaPruebas } from "./devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "./devoluciones-historicas";
 
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
@@ -144,13 +145,18 @@ saveMovement(db, {
   importe: "50.00",
   concepto: "Amortización ficticia 448",
 });
-saveMovement(db, {
-  tipo: "Devolución de gasto",
-  fecha: "2026-07-05",
-  saldo: "S001",
-  importe: "25.00",
-  concepto: "Devolución ficticia 448",
-});
+// Devolución histórica sin compra: el alta API la exige desde #597 y aquí solo
+// se necesita el hecho para los glifos.
+sembrarDevolucionHuerfana(
+  db,
+  {
+    fecha: "2026-07-05",
+    saldo: "S001",
+    importe: "25.00",
+    concepto: "Devolución ficticia 448",
+  },
+  NOW,
+);
 
 const key = loadKey(db, dir + "/auth.key");
 // Bootstrap con reloj real para que la ventana MFA siga siendo válida.

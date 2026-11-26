@@ -12,6 +12,7 @@ import {
 } from "../src/revision-comida";
 import { revisionComidaFixture } from "./revision-comida-fixture";
 import { gateAbiertoParaPruebas } from "./devolucion-gate-abierto";
+import { sembrarDevolucionLegacy } from "./devoluciones-historicas";
 if (process.env.NODE_ENV !== "test") throw Error("Test process only");
 // Puerto y estado del contexto de la ejecución (#508); los valores históricos
 // se conservan para arrancarlo a mano.
@@ -67,14 +68,19 @@ const created = [
     importe: "10.00",
     evidenciaBancaria: null,
   }),
-  detail({
+];
+// Devolución legacy histórica: el alta está retirada (SPEC39 §5.1, #597).
+sembrarDevolucionLegacy(
+  db,
+  {
     fecha: "2026-10-08",
     concepto: "Devolución supermercado ficticia",
     importe: "12.00",
-    direccion: "Entrada",
-    esDevolucion: true,
-  }),
-];
+    clasificacion: "Comida",
+    evidenciaBancaria: "operación ficticia",
+  },
+  now,
+);
 const repos = createRevisionComida(
   db,
   {
