@@ -9,6 +9,7 @@ import { getMovement, previewMovement, writeMovement } from "./movimientos";
 import { activateRegimen, getComidaMovement, listComida, listComprasR5, prepareRegimen } from "./comida";
 import { financeRevision } from "./movement-ledger";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 /**
  * #538 F1b (#571) · R5 selector de compras y devolucionRevision en la ficha (specs/38 §2/§6).
@@ -294,7 +295,7 @@ test("AC-D33 R5: GET no cambia filas, revisiones, auditoría ni dirty", () => {
   const c = setup();
   const compra = buy(c, "120");
   refund(c, compra, "30");
-  add(c.db, { tipo: "Devolución de gasto", fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana", nota: "" });
+  sembrarDevolucionHuerfana(c.db, { fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana" }, now);
   const before = snapshot(c.db);
   R5(c, `${base}&${rng}&importeMin=1&importeMax=500`);
   listComida(c.db, new URLSearchParams("estado="));
@@ -346,7 +347,7 @@ test("AC-U29/AC-U33 lectura: devolucionRevision con vínculo, null explícito si
   const c = setup();
   const compra = buy(c, "120");
   const linked = refund(c, compra, "30");
-  const orphan = add(c.db, { tipo: "Devolución de gasto", fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana", nota: "" }).movimiento.id as string;
+  const orphan = sembrarDevolucionHuerfana(c.db, { fecha: "2026-08-10", importe: "9", saldo: c.other.id, concepto: "Huérfana" }, now);
   const before = snapshot(c.db);
   const fl = getMovement(c.db, linked),
     fo = getMovement(c.db, orphan),

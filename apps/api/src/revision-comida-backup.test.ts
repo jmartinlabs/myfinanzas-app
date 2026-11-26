@@ -13,6 +13,7 @@ import {
   vincularRevisionComida,
 } from "./revision-comida";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionLegacy } from "../test-support/devoluciones-historicas";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
 test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones, vínculos, evidencias y auditoría", () => {
@@ -40,22 +41,21 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
         "Detalle",
         gateAbiertoParaPruebas,
       ).operacion,
-      devolution = createRevisionComida(
+      // Devolución legacy histórica: el alta está retirada (SPEC39 §5.1).
+      devolution = getRevisionComida(
         db,
-        {
-          fecha: "2026-10-11",
-          concepto: "Devolución restaurable ficticia",
-          importe: "12.00",
-          direccion: "Entrada",
-          esDevolucion: true,
-          clasificacion: "Comida",
-          evidenciaBancaria: "evidencia devolución ficticia",
-          evidenciaRelacionCompra: "compra original ficticia",
-        },
-        randomUUID(),
-        now,
-        "Detalle",
-        gateAbiertoParaPruebas,
+        sembrarDevolucionLegacy(
+          db,
+          {
+            fecha: "2026-10-11",
+            concepto: "Devolución restaurable ficticia",
+            importe: "12.00",
+            clasificacion: "Comida",
+            evidenciaBancaria: "evidencia devolución ficticia",
+            evidenciaRelacionCompra: "compra original ficticia",
+          },
+          now,
+        ),
       ).operacion,
       reposicion = createRevisionComida(
         db,
@@ -126,7 +126,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
     try {
       expect(
         copy.query("SELECT version FROM schema_version").get(),
-      ).toEqual({ version: 32 });
+      ).toEqual({ version: 33 });
       const after = getRevisionComida(copy, detail.id);
       expect(after.operacion).toMatchObject({
         id: detail.id,

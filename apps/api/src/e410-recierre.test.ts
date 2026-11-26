@@ -581,7 +581,7 @@ test("E4.10 I4: v1 → reapertura → corrección → v2 con foto completa, vín
     });
     expect(result.foto.version).toBe(2);
     expect(result.foto.appVersion).toBe("0.0.0-fixture-i4");
-    expect(result.foto.schemaVersion).toBe(32);
+    expect(result.foto.schemaVersion).toBe(33);
     expect(result.foto.ventana).toMatchObject({
       inicio: "2026-01-01",
       fin: "2026-01-31",
