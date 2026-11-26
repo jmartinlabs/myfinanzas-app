@@ -11,7 +11,7 @@
 /** Todas las versiones que esta compilación puede abrir, en orden de migración. */
 export const SUPPORTED = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-  23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+  23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
 ] as const;
 
 export type Supported = (typeof SUPPORTED)[number];
@@ -43,6 +43,7 @@ export const admitted = {
   30: "C30-SPEC37-COORDINADO-0E1F34D",
   31: "C31-SPEC37-INTENCION-91C32F5",
   32: "C32-SPEC38-VALIDACION-CIERRE",
+  33: "C33-SPEC39-DEVOLUCION-TRIGGER",
 } as const;
 
 /** Evidencia histórica del contrato v14: nunca un origen de migración. */
@@ -85,6 +86,7 @@ export const appLabels: Record<Supported, string> = {
   30: "e37.1-v30",
   31: "e37.2-v31",
   32: "e38.1-v32",
+  33: "e39.1-v33",
 };
 
 /** Predicado único de admisión: entero dentro del rango soportado. */

@@ -728,21 +728,122 @@ function plan(
       "Una fuente instalada ha fallado. No puede confirmarse el impacto.",
     );
   const next = annul ? null : validated(db, payload(body), old, now);
-  if (old && next && old.tipo !== next.tipo) {
-    if (
-      old.tipo === "Gasto" &&
-      db
-        .query(
-          "SELECT 1 FROM movimiento_devolucion WHERE compra=? LIMIT 1",
-        )
-        .get(old.id)
-    )
+  // SPEC39 §5.1: alta canónica de devolución exige `devolucion.compra` y no copia clasificación.
+  if (!old && next && next.tipo === "Devolución de gasto") {
+    const dev =
+      body.devolucion && typeof body.devolucion === "object"
+        ? (body.devolucion as Record<string, unknown>)
+        : null;
+    const compraId =
+      dev && typeof dev.compra === "string" && dev.compra ? dev.compra : null;
+    if (!compraId)
       throw new Problem(
         422,
-        "DEVOLUTION_LINKED",
-        "La compra tiene devoluciones verificadas. Rectifica o desancla esos vínculos antes de cambiar el Tipo; no se reasigna automáticamente.",
-        { tipo: "Cambia primero los vínculos afectados." },
+        "DEVOLUTION_LINK_REQUIRED",
+        "El alta de una devolución exige vincularla a una compra vigente.",
+        { compra: "Selecciona la compra vinculada." },
       );
+    const purchase = find(db, compraId);
+    if (purchase.anulado || purchase.tipo !== "Gasto")
+      throw new Problem(422, "VALIDATION", "La compra no es elegible.", {
+        compra: "Debe ser un Gasto vigente.",
+      });
+    const source = getSaldo(db, purchase.origen);
+    if (source.control === "Terminal")
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Un agregado de Terminal no se trata como compra individual.",
+        { compra: "Selecciona una compra individual real." },
+      );
+    if (next.partida && purchase.partida && next.partida !== purchase.partida)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Clasificación contradictoria con la compra vinculada.",
+        { partida: "No contradigas la Partida de la compra vinculada." },
+      );
+    if (next.referencia && purchase.referencia && next.referencia !== purchase.referencia)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Referencia contradictoria con la compra vinculada.",
+        { referencia: "No contradigas la Referencia de la compra vinculada." },
+      );
+    // ANEXO §5 / AC-D17: no copiar Partida/REF al movimiento técnico en alta.
+    next.partida = null;
+    next.referencia = null;
+    if (dev && typeof dev.cicloOrigen === "string" && dev.cicloOrigen) {
+      const derivedCiclo =
+        cycleMaster(db).find(
+          (c) => c.inicio <= purchase.fecha && (c.fin === null || purchase.fecha <= c.fin),
+        )?.id ?? null;
+      if (derivedCiclo && dev.cicloOrigen !== derivedCiclo)
+        throw new Problem(
+          422,
+          "DEVOLUTION_ORIGIN_MISMATCH",
+          "El ciclo de origen enviado contradice el ciclo de la compra vinculada.",
+          { cicloOrigen: `Debe coincidir con el ciclo ${derivedCiclo} de la compra.` },
+        );
+    }
+    const devEstado = dev?.estado ?? "Sin vínculo";
+    if (devEstado === "Verificado") {
+      const others = db
+        .query(
+          `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
+           JOIN movimientos m ON m.id=d.movimiento
+           WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0`,
+        )
+        .get(purchase.id) as { n: number };
+      if (BigInt(others.n) + money(next.importe)! > BigInt(purchase.importe))
+        throw new Problem(
+          422,
+          "DEVOLUTION_EXCESS",
+          "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
+        );
+    }
+  }
+  // SPEC39 §6: guardas previas de transición sobre compra y devolución (preview y escritura idénticos).
+  if (old && old.tipo === "Gasto") {
+    const hasLinkTable = !!db
+      .query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='movimiento_devolucion'")
+      .get();
+    if (hasLinkTable) {
+      if (annul || (next && next.tipo !== "Gasto")) {
+        if (
+          db
+            .query(
+              `SELECT 1 FROM movimiento_devolucion d
+               JOIN movimientos m ON m.id=d.movimiento
+               WHERE d.compra=? AND m.anulado=0 LIMIT 1`,
+            )
+            .get(old.id)
+        )
+          throw new Problem(
+            422,
+            "DEVOLUTION_LINKED",
+            "Una compra con devoluciones vinculadas vigentes no puede anularse, eliminarse ni retipificarse.",
+            { tipo: "Resuelve antes las devoluciones vigentes vinculadas." },
+          );
+      } else if (next && next.tipo === "Gasto") {
+        const verified = db
+          .query(
+            `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
+             JOIN movimientos m ON m.id=d.movimiento
+             WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0`,
+          )
+          .get(old.id) as { n: number };
+        if (money(next.importe)! < BigInt(verified.n))
+          throw new Problem(
+            422,
+            "PURCHASE_BELOW_REFUNDED",
+            "El importe de la compra no puede quedar por debajo del acumulado de devoluciones vigentes verificadas.",
+            { importe: "Aumenta el importe o resuelve antes las devoluciones verificadas." },
+          );
+      }
+    }
+  }
+  if (old && next && old.tipo !== next.tipo) {
     if (
       old.tipo === "Devolución de gasto" &&
       db
@@ -755,6 +856,32 @@ function plan(
         "La devolución tiene atribución registrada. No puede retipificarse sin revisar su vínculo.",
         { tipo: "Conserva el Tipo Devolución de gasto." },
       );
+  }
+  if (old && !annul && next && old.tipo === "Devolución de gasto" && next.tipo === "Devolución de gasto") {
+    const hasLinkTable = !!db
+      .query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='movimiento_devolucion'")
+      .get();
+    if (hasLinkTable) {
+      const link = db
+        .query("SELECT compra,estado FROM movimiento_devolucion WHERE movimiento=?")
+        .get(old.id) as { compra: string | null; estado: string } | null;
+      if (link && link.estado === "Verificado" && link.compra) {
+        const purchase = find(db, link.compra);
+        const others = db
+          .query(
+            `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
+             JOIN movimientos m ON m.id=d.movimiento
+             WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0 AND d.movimiento<>?`,
+          )
+          .get(link.compra, old.id) as { n: number };
+        if (BigInt(others.n) + money(next.importe)! > BigInt(purchase.importe))
+          throw new Problem(
+            422,
+            "DEVOLUTION_EXCESS",
+            "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
+          );
+      }
+    }
   }
   protectAnticipoChange(db, old, next, next?.anticipo ?? null);
   if (old) {
@@ -776,6 +903,35 @@ function plan(
   protect(db, guard, action, old, next);
   const all = ledgerRows(db),
     cycles = cycleMaster(db),
+    devLinks =
+      next?.tipo === "Devolución de gasto" &&
+      !!db
+        .query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='movimiento_devolucion'")
+        .get()
+        ? new Map(
+            (
+              db
+                .query("SELECT movimiento,compra,estado FROM movimiento_devolucion")
+                .all() as { movimiento: string; compra: string | null; estado: string }[]
+            ).map((d) => [d.movimiento, d]),
+          )
+        : null,
+    nextDevCompra =
+      next?.tipo === "Devolución de gasto"
+        ? old
+          ? (devLinks?.get(old.id)?.compra ?? null)
+          : typeof (body.devolucion as Record<string, unknown> | undefined)?.compra === "string"
+            ? ((body.devolucion as Record<string, unknown>).compra as string)
+            : null
+        : null,
+    nextDevEstado =
+      next?.tipo === "Devolución de gasto"
+        ? old
+          ? (devLinks?.get(old.id)?.estado ?? null)
+          : typeof (body.devolucion as Record<string, unknown> | undefined)?.estado === "string"
+            ? ((body.devolucion as Record<string, unknown>).estado as string)
+            : "Sin vínculo"
+        : null,
     duplicates = next
       ? all
           .filter(
@@ -789,7 +945,10 @@ function plan(
               decimal(r.importe) === next.importe &&
               r.subtipo === next.subtipo &&
               r.partida === next.partida &&
-              (r.referencia ?? null) === next.referencia,
+              (r.referencia ?? null) === next.referencia &&
+              (next.tipo !== "Devolución de gasto" ||
+                ((devLinks?.get(r.id)?.compra ?? null) === nextDevCompra &&
+                  (devLinks?.get(r.id)?.estado ?? null) === nextDevEstado)),
           )
           .map((r) => ({
             id: r.id,
@@ -1126,16 +1285,38 @@ function writeMovementCore(
       JSON.stringify(auditValue(after)),
     ],
   );
+  const coincidenceEvidence =
+    p.duplicados.length > 0 && body.aceptarCoincidencia === true
+      ? JSON.stringify({
+          coincidenciaAceptada: true,
+          huella: p.fingerprint,
+          coincidencias: p.duplicados.map((d) => ({
+            id: d.id,
+            fecha: d.fecha,
+            tipo: d.tipo,
+            importe: d.importe,
+          })),
+          ...(old ? { motivo: (body.motivo as string).trim() } : {}),
+        })
+      : old
+        ? (body.motivo as string).trim()
+        : null;
   db.run(
     "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
     [
       "movimiento:" + id,
       p.accion,
       after.revision,
-      JSON.stringify(annul ? ["anulado"] : inputs),
+      JSON.stringify(
+        p.duplicados.length > 0 && body.aceptarCoincidencia === true
+          ? [...(annul ? ["anulado"] : inputs), "aceptarCoincidencia"]
+          : annul
+            ? ["anulado"]
+            : inputs,
+      ),
       time,
       old?.revision ?? 0,
-      old ? (body.motivo as string).trim() : null,
+      coincidenceEvidence,
     ],
   );
   const response = getMovement(db, id);

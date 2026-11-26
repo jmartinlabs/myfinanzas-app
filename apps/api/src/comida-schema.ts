@@ -354,3 +354,29 @@ export function comidaRolV22(db: Database) {
     UPDATE schema_version SET version=22;
   `);
 }
+
+/**
+ * v32 -> v33 (SPEC39 §11.1 / #597): añade `c.anulado=0` al trigger UPDATE
+ * `movimiento_devolucion_update_purchase` para impedir atribuir o reatribuir
+ * una devolución a una compra anulada.
+ */
+export function devolucionTriggerV33(db: Database) {
+  const version = (
+    db.query("SELECT version FROM schema_version").get() as {
+      version: number;
+    } | null
+  )?.version;
+  if (version !== 32)
+    throw new Error("Esquema previo inesperado para migración Devoluciones v33.");
+
+  db.exec(`
+    DROP TRIGGER IF EXISTS movimiento_devolucion_update_purchase;
+    CREATE TRIGGER movimiento_devolucion_update_purchase BEFORE UPDATE ON movimiento_devolucion
+      WHEN NEW.compra IS NOT NULL AND NOT EXISTS(
+        SELECT 1 FROM movimientos c JOIN saldos s ON s.id=c.origen
+        WHERE c.id=NEW.compra AND c.anulado=0 AND c.tipo='Gasto'
+          AND s.control<>'Terminal'
+      ) BEGIN SELECT RAISE(ABORT,'invalid purchase attribution'); END;
+    UPDATE schema_version SET version=33;
+  `);
+}

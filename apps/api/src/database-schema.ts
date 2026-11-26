@@ -5,7 +5,7 @@ import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema"
 import { vehicleSchema } from "./vehicle-schema";
 import { investmentSchema } from "./instrumento-schema";
 import { ventaSchema } from "./venta-schema";
-import { comidaRolV22, comidaSchema } from "./comida-schema";
+import { comidaRolV22, comidaSchema, devolucionTriggerV33 } from "./comida-schema";
 import { dprimaSchema } from "./dprima-schema";
 import { verifyAdmittedContract } from "./schema-contract";
 import { payrollSchema } from "./payroll-schema";
@@ -163,6 +163,7 @@ export function prepareSchema(db: Database, identity: Identity) {
           // misma transacción, después de que exista la fila de cada ciclo.
           migrarMetadatosLegados(db);
         }
+        if (versions[0].version < 33) devolucionTriggerV33(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -297,6 +298,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         importarCierresLegados(db);
         migrarMetadatosLegados(db);
       }
+      if (schemaVersion >= 33) devolucionTriggerV33(db);
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {

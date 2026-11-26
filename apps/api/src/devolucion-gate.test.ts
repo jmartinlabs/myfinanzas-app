@@ -142,14 +142,17 @@ function world() {
   const compraVinculada = gasto(c, "120");
   const dev = seed(c.db, devolucionBody(c, compraVinculada.id)).movimiento;
   const compraLibre = gasto(c, "50", { concepto: "Compra libre ficticia" });
-  const huerfana = seed(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-08-11",
-    importe: "9",
-    saldo: c.other.id,
-    concepto: "Huérfana ficticia",
-    nota: "",
-  }).movimiento;
+  // Huérfana histórica sembrada en SQLite (el alta API exige compra desde F3).
+  const nH = c.db
+    .query("UPDATE counters SET next=next+1 WHERE name='movimientos' RETURNING CAST(next-1 AS TEXT) n")
+    .get() as { n: string };
+  const ts = new Date(now).toISOString();
+  c.db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,capital,intereses,revision,creado,actualizado)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)`,
+    [nH.n, "2026-08-11", "Devolución de gasto", 900, "S000", c.other.id, null, null, null, "Huérfana ficticia", "", null, null, ts, ts],
+  );
+  const huerfana = { id: nH.n, revision: 1 };
   return { ...c, compraVinculada, dev, compraLibre, huerfana };
 }
 type World = ReturnType<typeof world>;
@@ -448,9 +451,14 @@ test("F2G-AC-03: cada clasificación de escritura de devolución devuelve 503 si
     esDevolucion: true, clasificacion: "Pendiente revisar", evidenciaBancaria: "op ficticia", cuentaOrigen: "Cuenta ficticia",
   };
   await sinEfectos(h, () => cerrada.post("/api/revision-comida", legacy));
-  const fila = createRevisionComida(
-    w.db, { ...legacy, evidenciaRelacionCompra: null }, randomUUID(), now, "Detalle", gateAbiertoParaPruebas,
-  ).operacion;
+  const ts = new Date(now).toISOString();
+  const filaId = (w.db.query("UPDATE counters SET next=next+1 WHERE name='revision_comida' RETURNING CAST(next-1 AS TEXT) n").get() as { n: string }).n;
+  w.db.run(
+    `INSERT INTO revision_comida(id,tipo,fecha,concepto,importe,direccion,es_devolucion,clasificacion,fuera_presupuesto_historico,evidencia_bancaria,evidencia_relacion_compra,cuenta_origen,tipo_vinculo,estado_vinculo,evidencia_vinculo,movimiento,revision_movimiento,estado_registro,estado_trazabilidad,revision,creado,actualizado)
+     VALUES(?,'Detalle','2026-10-08','Devolución legacy ficticia',1200,'Entrada',1,'Pendiente revisar',NULL,'op ficticia',NULL,'Cuenta ficticia',NULL,'Sin vínculo',NULL,NULL,NULL,'Vigente','Sin asignación',1,?,?)`,
+    [filaId, ts, ts],
+  );
+  const fila = { id: filaId };
   await sinEfectos(h, () =>
     cerrada.post(`/api/revision-comida/${fila.id}/rectificar`, { revision: 1, motivo: "x", concepto: "otro" }),
   );
@@ -550,17 +558,16 @@ test("F2G-AC-04: clave completada reproduce su recibo con el gate cerrado; otro 
   expect((await cerrada.post(`/api/comida/${w.huerfana.id}/devolucion`, { ...atrib, evidenciaRelacion: "Otra evidencia" }, k2)).data.code).toBe(
     "IDEMPOTENCY_CONFLICT",
   );
-  // Legacy: misma regla.
+  // Legacy: retirada en F3 con 422 DEVOLUTION_LEGACY_WRITE cuando el gate está abierto (503 cerrado).
   const k3 = randomUUID();
   const legacy = {
     fecha: "2026-10-08", concepto: "Devolución legacy ficticia", importe: "12.00", direccion: "Entrada",
     esDevolucion: true, clasificacion: "Pendiente revisar", evidenciaBancaria: "op ficticia", cuentaOrigen: "Cuenta ficticia",
   };
   const l1 = await abierta.post("/api/revision-comida", legacy, k3);
-  expect(l1.status).toBe(201);
-  const l2 = await cerrada.post("/api/revision-comida", legacy, k3);
-  expect(l2.status).toBe(201);
-  expect(l2.data.operacion.id).toBe(l1.data.operacion.id);
+  expect(l1.status).toBe(422);
+  expect(l1.data.code).toBe("DEVOLUTION_LEGACY_WRITE");
+  es503(await cerrada.post("/api/revision-comida", legacy, k3));
   w.db.close();
 });
 
@@ -597,7 +604,9 @@ test("F2G-AC-05: un intento rechazado por el gate no deja recibo, intento, audit
   es503(await cerrada.post("/api/revision-comida", legacy, k3));
   expect(huella(w.db)).toBe(previoL);
   expect(w.db.query("SELECT COUNT(*) n FROM revision_comida_attempts WHERE key=?").get(k3)).toEqual({ n: 0 });
-  expect((await abierta.post("/api/revision-comida", legacy, k3)).status).toBe(201);
+  const abiertoL = await abierta.post("/api/revision-comida", legacy, k3);
+  expect(abiertoL.status).toBe(422);
+  expect(abiertoL.data.code).toBe("DEVOLUTION_LEGACY_WRITE");
   w.db.close();
 });
 
@@ -712,10 +721,14 @@ test("F2G-AC-14: el gate precede a la estructura: un campo desconocido en una ru
     esDevolucion: true, clasificacion: "Pendiente revisar", evidenciaBancaria: "op ficticia", cuentaOrigen: "Cuenta ficticia",
     campoInventado: 1,
   };
-  const { campoInventado: _ignorado, ...valido } = legacy;
-  const fila = createRevisionComida(
-    w.db, { ...valido, evidenciaRelacionCompra: null }, randomUUID(), now, "Detalle", gateAbiertoParaPruebas,
-  ).operacion;
+  const ts = new Date(now).toISOString();
+  const filaId = (w.db.query("UPDATE counters SET next=next+1 WHERE name='revision_comida' RETURNING CAST(next-1 AS TEXT) n").get() as { n: string }).n;
+  w.db.run(
+    `INSERT INTO revision_comida(id,tipo,fecha,concepto,importe,direccion,es_devolucion,clasificacion,fuera_presupuesto_historico,evidencia_bancaria,evidencia_relacion_compra,cuenta_origen,tipo_vinculo,estado_vinculo,evidencia_vinculo,movimiento,revision_movimiento,estado_registro,estado_trazabilidad,revision,creado,actualizado)
+     VALUES(?,'Detalle','2026-10-08','Devolución legacy ficticia',1200,'Entrada',1,'Pendiente revisar',NULL,'op ficticia',NULL,'Cuenta ficticia',NULL,'Sin vínculo',NULL,NULL,NULL,'Vigente','Sin asignación',1,?,?)`,
+    [filaId, ts, ts],
+  );
+  const fila = { id: filaId };
   const casos: [string, unknown][] = [
     [`/api/comida/${w.dev.id}/devolucion`, { campoInventado: 1 }],
     ["/api/revision-comida", legacy],

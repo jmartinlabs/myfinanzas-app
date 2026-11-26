@@ -531,6 +531,12 @@ export function createRevisionComida(
   return attempt(db, key, hash, now, () => {
     exigirGateLegacy(db, gate, body, null);
     if (clasificada) estructura();
+    if (body.esDevolucion === true)
+      throw new Problem(
+        422,
+        "DEVOLUTION_LEGACY_WRITE",
+        "La escritura legacy de devoluciones en Revisión Comida está retirada. Usa el flujo canónico de devoluciones.",
+      );
     const candidate = validated(body, null, now, tipo),
       motivo = motive(body, false),
       time = new Date(now).toISOString(),
