@@ -59,6 +59,7 @@ type Item = {
     evidenciaOrigenTemporal: string | null;
     elegibilidad: "Acreditada" | "No acreditada";
     estado: "Sin vínculo" | "Verificado" | "Revisar";
+    revision: number;
   };
 };
 type ListDto = {
@@ -565,6 +566,8 @@ export function Comida({ go }: { go: (p: string) => void }) {
               onSubmit={(body) =>
                 call(`/comida/${selected.id}/devolucion`, {
                   revision: selected.revision,
+                  // SPEC39 §5.3: revisión propia de la atribución; null si no existe.
+                  devolucionRevision: selected.devolucion?.revision ?? null,
                   ...body,
                 })
               }
