@@ -236,7 +236,13 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
       <dt>Esencial</dt>
       <dd>{i.linea?.esencial ?? "Sin línea"}</dd>
       <dt>Ejecutado</dt>
-      <dd>{i.ejecutado === null ? "—" : eur(i.ejecutado)}</dd>
+      <dd data-detail-ejecutado>
+        {i.ejecutado === null ? "—" : eur(i.ejecutado)}
+      </dd>
+      <dt>GRE compras registradas</dt>
+      <dd data-detail-gre>{eur(i.subtotalRegistrado)}</dd>
+      <dt>Histórico conocido</dt>
+      <dd data-detail-historico>{eur(i.historicoConocido)}</dd>
       <dt>Diferencia</dt>
       <dd>{i.diferencia === null ? "—" : eur(i.diferencia)}</dd>
       <dt>Fecha ejecutada</dt>
@@ -311,7 +317,19 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
       id: "ejecutado",
       header: "Ejecutado",
       kind: "amount",
-      cell: (item) => (item.ejecutado === null ? "—" : eur(item.ejecutado)),
+      cell: (item) => (
+        <>
+          <span data-plan-ejecutado>
+            {item.ejecutado === null ? "—" : eur(item.ejecutado)}
+          </span>
+          {item.historicoConocido !== "0.00" && (
+            <small className="table-id" data-plan-desglose>
+              GRE compras registradas: {eur(item.subtotalRegistrado)} · Histórico
+              conocido: {eur(item.historicoConocido)}
+            </small>
+          )}
+        </>
+      ),
     },
     {
       id: "diferencia",
@@ -395,11 +413,15 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
               total anual completo. La cobertura se desglosa por Partida.
             </p>
             <p>
-              «Ejecutado» es Gasto real económico (neto): compras del año
-              natural por su fecha de compra menos el descuento atribuido a
-              esas compras, aunque el abono bancario llegue otro año. La
-              Diferencia es desviación analítica frente al Presupuesto, no
-              disponibilidad operativa.
+              «Ejecutado» combina el Gasto real económico (neto) de las compras
+              registradas del año natural y el histórico conocido cuando la
+              cobertura es verificable; puede incluir histórico conocido y no
+              equivale por sí solo al Gasto real económico (neto) de compras
+              registradas. El Gasto real económico (neto) de compras registradas
+              calcula las compras del año natural por su fecha de compra menos
+              el descuento atribuido a esas compras, aunque el abono bancario
+              llegue otro año. La Diferencia es desviación analítica frente al
+              Presupuesto, no disponibilidad operativa.
             </p>
             {plan.fuentes.notaTemporal && <p>{plan.fuentes.notaTemporal}</p>}
           </section>
@@ -653,11 +675,13 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
                       </dd>
                     </dl>
                     <p>
-                      Subtotal registrado:{" "}
+                      Subtotal registrado (GRE compras registradas):{" "}
                       {eur(review.derivadosAntes.subtotalRegistrado)} →{" "}
                       {eur(review.derivadosDespues.subtotalRegistrado)}. Corte:{" "}
-                      {review.derivadosDespues.corte ?? "No verificable"}. Una
-                      fecha conocida no acredita cobertura completa.
+                      {review.derivadosDespues.corte ?? "No verificable"}.
+                      Ejecutado incluye además el histórico conocido cuando la
+                      cobertura es verificable; una fecha conocida no acredita
+                      cobertura completa.
                     </p>
                   </section>
                   <section aria-label="Cambios del equivalente esencial">
@@ -776,13 +800,15 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
               <dl className="annual-values">{fields(detail)}</dl>
               <p>{detail.motivo ?? "Verificable únicamente hasta el corte"}</p>
               <p>
-                Subtotal registrado: {eur(detail.subtotalRegistrado)} ·
-                Histórico conocido: {eur(detail.historicoConocido)} · Corte:{" "}
+                Subtotal registrado: {eur(detail.subtotalRegistrado)} (GRE
+                compras registradas) · Histórico conocido:{" "}
+                {eur(detail.historicoConocido)} · Corte:{" "}
                 {detail.corte ?? "No verificable"}
               </p>
               {detail.devoluciones && (
                 <p>
-                  Gasto real económico (neto): bruto{" "}
+                  Gasto real económico (neto) de compras registradas (sin
+                  histórico conocido): bruto{" "}
                   {eur(detail.brutoRegistrado ?? null)} − descuento atribuido a
                   las compras del año {eur(detail.devoluciones.descuentoAtribuido)}
                   {detail.netoCeroConHechos
