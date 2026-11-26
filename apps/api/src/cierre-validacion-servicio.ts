@@ -50,6 +50,8 @@ export type RequisitosValidacion = {
   bloqueos: RequisitoValidacion[];
   avisos: RequisitoValidacion[];
   cobertura: CoberturaValidada[];
+  /** Cobertura parcial: validar/confirmar exige un motivo humano explícito. */
+  requiereMotivo: boolean;
 };
 
 const CAUSAS = new Set<string>(CAUSAS_COBERTURA);
@@ -83,6 +85,18 @@ export function requisitosDeValidacion(
     });
   if (universo.ventana.s0 === null)
     bloqueos.push({ code: "S0_AUSENTE", message: "Falta el Saldo inicial manual del ciclo." });
+  const cobertura = coberturaDe(universo);
+  const devoluciones = cobertura.find((entrada) => entrada.fuente === "devoluciones");
+  // SPEC39 §3.3/§4: el exceso histórico (descuento > compra) impide medir el
+  // GRE, así que bloquea la validación financiera; el saneamiento individual
+  // (rectificar/anular la devolución causante) sigue su propio procedimiento.
+  if (devoluciones?.estado === "NoDisponible")
+    bloqueos.push({
+      code: "DEVOLUCIONES_NO_DISPONIBLE",
+      message:
+        "Las devoluciones tienen un exceso histórico: no se puede medir el GRE del ciclo. Sanea individualmente la devolución causante antes de validar.",
+    });
+  const requiereMotivo = cobertura.some((entrada) => entrada.estado === "Parcial");
   const plan = db.query("SELECT revision FROM cycle_plans WHERE ciclo=?").get(ciclo) as
     | { revision: number }
     | null;
@@ -112,7 +126,7 @@ export function requisitosDeValidacion(
       code: "CICLO_SIN_HECHOS_VERIFICADOS",
       message: "El ciclo no tiene hechos verificados; no se declara cero.",
     });
-  return { bloqueos, avisos, cobertura: coberturaDe(universo) };
+  return { bloqueos, avisos, cobertura, requiereMotivo };
 }
 
 function filaActual(db: Database, ciclo: string): EstadoValidacionActual {
@@ -210,6 +224,11 @@ function procedimientoValidar(
     huella,
     versionConjunto: VERSION_CONJUNTO,
     coberturaVigente: cobertura,
+    // Validar no requiere medir impacto material: su bloqueo financiero propio
+    // (`DEVOLUCIONES_NO_DISPONIBLE` y el resto de §5) prevalece sobre el 409
+    // genérico de impacto no verificable.
+    requiereImpactoMedible: false,
+    requiereMotivo: () => requisitos.requiereMotivo,
   };
 }
 
@@ -314,6 +333,17 @@ function procedimientoConfirmarRevision(
       dirty: filaActual(db, ciclo).dirty,
     }),
     guardas: () => {
+      // La confirmación es una validación humana: los bloqueos financieros de
+      // §5 —incluido `DEVOLUCIONES_NO_DISPONIBLE` por exceso histórico— impiden
+      // limpiar una fila Pendiente. El saneamiento individual se hace sobre la
+      // devolución causante, no confirmando la revisión.
+      if (requisitos.bloqueos.length)
+        throw new Problem(
+          422,
+          "VALIDATION",
+          "No se puede validar: " + requisitos.bloqueos.map((b) => b.code).join(", ") + ".",
+          Object.fromEntries(requisitos.bloqueos.map((b) => [b.code, b.message])),
+        );
       const actual = filaActual(db, ciclo);
       if (!actual.dirty)
         throw new Problem(
@@ -338,6 +368,8 @@ function procedimientoConfirmarRevision(
       );
     },
     cobertura: () => requisitos.cobertura,
+    requiereImpactoMedible: false,
+    requiereMotivo: () => requisitos.requiereMotivo,
   };
 }
 

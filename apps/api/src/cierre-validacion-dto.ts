@@ -28,9 +28,15 @@ import { Problem } from "./problem";
 export const ENTIDADES_PERMITIDAS = ["movimiento", "referencia"] as const;
 export type EntidadPermitida = (typeof ENTIDADES_PERMITIDAS)[number];
 
-/** Nombres de fuente de la cobertura: los del bloque E4.9 ya instalado. */
+/**
+ * Nombres de fuente de la cobertura: los del bloque E4.9 ya instalado más la
+ * proyección de devoluciones de compras (`calcularGreIntervalo`, SPEC39).
+ * `devoluciones` es independiente de `movimientos`: describe la cobertura del
+ * GRE del intervalo, no la presencia del ledger bancario.
+ */
 export const FUENTES_COBERTURA = [
   "movimientos",
+  "devoluciones",
   "efectivo",
   "posiciones",
   "plan",
@@ -50,8 +56,10 @@ export type EstadoCobertura = (typeof ESTADOS_COBERTURA)[number];
 
 /**
  * Códigos de causa. Los siete primeros son los que la SPEC nombra en §4.2 y §5;
- * los `FOTO_*` son la evidencia de legibilidad de §7.2/AC-46 y el último es la
- * causa genérica de E1b cuando la foto legada no acredita una fuente.
+ * los `FOTO_*` son la evidencia de legibilidad de §7.2/AC-46, el penúltimo es la
+ * causa genérica de E1b y los siete últimos exponen 1:1 las causas de la
+ * proyección de devoluciones de SPEC39 §3.3 (`EXCESO` es el diagnóstico de
+ * descuento superior a la compra). No hay códigos genéricos para esa fuente.
  */
 export const CAUSAS_COBERTURA = [
   "SIN_SIGUIENTE_INICIO",
@@ -66,6 +74,13 @@ export const CAUSAS_COBERTURA = [
   "FOTO_INCOMPLETA",
   "FOTO_DIVERGENTE",
   "MIGRACION_FUENTE_NO_ACREDITADA",
+  "SIN_VINCULO",
+  "REVISAR",
+  "SIN_ACREDITACION",
+  "SIN_CLASIFICACION",
+  "COMPRA_INVALIDA",
+  "PERIODO_NO_RESOLUBLE",
+  "EXCESO",
 ] as const;
 export type CausaCobertura = (typeof CAUSAS_COBERTURA)[number];
 

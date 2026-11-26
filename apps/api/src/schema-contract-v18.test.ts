@@ -18,7 +18,7 @@ import { openDatabaseV17 } from "../test-support/database-v17";
 
 const contract18 = "C18-INVERSION-306BBC5";
 const contract19 = "C19-COMIDA-UNICO-01";
-const contractCurrent = "C33-SPEC39-DEVOLUCION-TRIGGER";
+const contractCurrent = "C34-SPEC38-VALIDACION-VERSION-CONJUNTO";
 const contract21 = "C21-VENTAS-E42";
 
 function files(dir: string) {
@@ -57,27 +57,27 @@ test("C18/C21: fresh and v16/v17 upgrades produce the frozen v33 manifest", () =
     const fresh = new Database(join(dir, "fresh.sqlite"));
     prepareSchema(fresh, { origin: "demo", key_hash: null });
     const expected = manifest(fresh);
-    expect(verifyContract(fresh, 33)).toBe(contractCurrent);
+    expect(verifyContract(fresh, 34)).toBe(contractCurrent);
     fresh.close();
 
     const v17path = join(dir, "v17.sqlite");
     openDatabaseV17(v17path).close();
     const v17 = openDatabase(v17path);
     expect(v17.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 33,
+      version: 34,
     });
     expect(manifest(v17)).toEqual(expected);
-    expect(verifyContract(v17, 33)).toBe(contractCurrent);
+    expect(verifyContract(v17, 34)).toBe(contractCurrent);
     v17.close();
 
     const v16path = join(dir, "v16.sqlite");
     openDatabaseV16(v16path).close();
     const v16 = openDatabase(v16path);
     expect(v16.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 33,
+      version: 34,
     });
     expect(manifest(v16)).toEqual(expected);
-    expect(verifyContract(v16, 33)).toBe(contractCurrent);
+    expect(verifyContract(v16, 34)).toBe(contractCurrent);
     v16.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -138,7 +138,7 @@ for (const journal of ["DELETE", "WAL"] as const) {
       seed.close();
       chmodSync(valid, 0o600);
       const db = openDatabase(valid);
-      expect(verifyContract(db, 33)).toBe(contractCurrent);
+      expect(verifyContract(db, 34)).toBe(contractCurrent);
       db.close();
 
       const extra = join(dir, "extra.sqlite");

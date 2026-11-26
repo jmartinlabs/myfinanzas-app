@@ -344,7 +344,7 @@ test("E4.11 I3: trimestre y año componen varios ciclos sin escribir E4.9", () =
     identidad: {
       versionAgregado: "A1",
       versionApp: "0.0.0-fixture",
-      versionEsquema: 33,
+      versionEsquema: 34,
       actor: "usuario-unico",
       motivo: null,
     },

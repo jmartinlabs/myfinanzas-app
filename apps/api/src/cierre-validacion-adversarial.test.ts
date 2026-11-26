@@ -369,7 +369,7 @@ test("adversarial · la guarda rechaza salto de revisión, conjunto distinto y e
   expect(() =>
     db.run(
       `UPDATE cierre_validacion SET revision=3,dirty=0,dirty_desde=NULL,dirty_ultimo=NULL,
-         dirty_origen=NULL,dirty_motivos=NULL,version_conjunto='2',
+         dirty_origen=NULL,dirty_motivos=NULL,version_conjunto='0',
          revision_actor='humano',revision_instante=? WHERE ciclo='1'`,
       [t4],
     ),

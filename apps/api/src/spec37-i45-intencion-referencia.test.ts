@@ -48,7 +48,7 @@ import {
 const now = Date.parse("2026-10-25T12:00:00Z");
 const stamp = "2026-01-01T00:00:00.000Z";
 const c30 = "C30-SPEC37-COORDINADO-0E1F34D";
-const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
+const c33 = "C34-SPEC38-VALIDACION-VERSION-CONJUNTO";
 const root = () => mkdtempSync(join(tmpdir(), ".tmp-spec37-i45-"));
 
 type Fixture = {
@@ -401,9 +401,9 @@ test("SPEC37-I4.5 G-v33: v30 → v33 es aditiva y conserva filas e identidad", (
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 33,
+        version: 34,
       });
-      expect(verifyContract(db, 33)).toBe(c33);
+      expect(verifyContract(db, 34)).toBe(c33);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
 
       // Aditividad: ningún objeto de C30 desaparece y el único que cambia de
@@ -541,7 +541,7 @@ test("SPEC37-I4.5 G-v33: una base v30 genuina migra y sigue confirmando su Refer
     }
     const migrated = openDatabase(path);
     try {
-      expect(verifyContract(migrated, 33)).toBe(c33);
+      expect(verifyContract(migrated, 34)).toBe(c33);
       // El trigger de v30 sigue vigente y la columna nueva no lo altera.
       expect(() =>
         migrated.run(

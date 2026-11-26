@@ -217,7 +217,20 @@ test("DTO: enums cerrados de los dominios instalados", () => {
     "valor no admitido «cierre_validacion»",
   );
   expect(ENTIDADES_PERMITIDAS).toEqual(["movimiento", "referencia"]);
-  expect(FUENTES_COBERTURA.length).toBe(8);
+  expect(FUENTES_COBERTURA.length).toBe(9);
+  expect(CAUSAS_COBERTURA.length).toBe(19);
+  expect(FUENTES_COBERTURA).toContain("devoluciones");
+  expect(CAUSAS_COBERTURA).toEqual(
+    expect.arrayContaining([
+      "SIN_VINCULO",
+      "REVISAR",
+      "SIN_ACREDITACION",
+      "SIN_CLASIFICACION",
+      "COMPRA_INVALIDA",
+      "PERIODO_NO_RESOLUBLE",
+      "EXCESO",
+    ]),
+  );
   expect(CAUSAS_COBERTURA).toContain("MIGRACION_FUENTE_NO_ACREDITADA");
 });
 

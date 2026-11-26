@@ -236,22 +236,61 @@ const CLAVES_PROCEDENCIA = [
   "correlacion",
 ] as const;
 
+/**
+ * Listas **congeladas** de v32. La cobertura está embebida en triggers creados
+ * en C32; ampliarlas en sitio reescribiría ese contrato histórico. La versión
+ * vigente (v34) añade `devoluciones` y las causas de SPEC39 mediante triggers
+ * recreados, sin tocar C14–C33.
+ */
+const FUENTES_COBERTURA_V32 = [
+  "movimientos",
+  "efectivo",
+  "posiciones",
+  "plan",
+  "e35",
+  "deuda",
+  "valoracion",
+  "anticipos",
+] as const;
+const CAUSAS_COBERTURA_V32 = [
+  "SIN_SIGUIENTE_INICIO",
+  "S0_AUSENTE",
+  "CICLO_SIN_HECHOS_VERIFICADOS",
+  "PLAN_NO_VERIFICABLE",
+  "FIN_NETA_NO_DISPONIBLE",
+  "E36_NO_DISPONIBLE",
+  "ANTICIPO_APERTURA_INCOHERENTE",
+  "FOTO_AUSENTE",
+  "FOTO_ILEGIBLE",
+  "FOTO_INCOMPLETA",
+  "FOTO_DIVERGENTE",
+  "MIGRACION_FUENTE_NO_ACREDITADA",
+] as const;
+const LIMITE_COBERTURA_V32 = 8;
+const LIMITE_CAUSAS_V32 = 12;
+
 /** Guarda reutilizable de un array de cobertura (`detalle.cobertura` o la columna). */
-const coberturaValida = (alias: string) => `
+const coberturaValidaCon = (
+  alias: string,
+  fuentes: readonly string[],
+  causas: readonly string[],
+  limiteFuentes: number,
+  limiteCausas: number,
+) => `
   json_type(${alias})='array'
-  AND json_array_length(${alias})<=${LIMITES_DETALLE.cobertura}
+  AND json_array_length(${alias})<=${limiteFuentes}
   AND NOT EXISTS (
     SELECT 1 FROM json_each(${alias}) b WHERE NOT (
       json_type(b.value)='object'
       AND ${clavesExactas("b.value", CLAVES_COBERTURA, 3)}
-      AND json_extract(b.value,'$.fuente') IN (${lista(FUENTES_COBERTURA)})
+      AND json_extract(b.value,'$.fuente') IN (${lista(fuentes)})
       AND json_extract(b.value,'$.estado') IN (${lista(ESTADOS_COBERTURA)})
       AND json_type(b.value,'$.causas')='array'
-      AND json_array_length(b.value,'$.causas')<=${LIMITES_DETALLE.causas}
+      AND json_array_length(b.value,'$.causas')<=${limiteCausas}
       AND NOT EXISTS (
         SELECT 1 FROM json_each(b.value,'$.causas') c
          WHERE typeof(c.value)<>'text'
-            OR c.value NOT IN (${lista(CAUSAS_COBERTURA)}))
+            OR c.value NOT IN (${lista(causas)}))
       AND NOT (
         json_extract(b.value,'$.estado')='Disponible'
         AND json_array_length(b.value,'$.causas')>0)
@@ -259,6 +298,26 @@ const coberturaValida = (alias: string) => `
         json_extract(b.value,'$.estado')<>'Disponible'
         AND json_array_length(b.value,'$.causas')=0)
     ))`;
+
+/** Guarda de C32, con las listas de v32 congeladas. */
+const coberturaValidaV32 = (alias: string) =>
+  coberturaValidaCon(
+    alias,
+    FUENTES_COBERTURA_V32,
+    CAUSAS_COBERTURA_V32,
+    LIMITE_COBERTURA_V32,
+    LIMITE_CAUSAS_V32,
+  );
+
+/** Guarda vigente (v34): incluye `devoluciones` y las causas de SPEC39. */
+const coberturaValidaV34 = (alias: string) =>
+  coberturaValidaCon(
+    alias,
+    FUENTES_COBERTURA,
+    CAUSAS_COBERTURA,
+    LIMITES_DETALLE.cobertura,
+    LIMITES_DETALLE.causas,
+  );
 
 const SIN_ID = lista(TABLAS_LEGADAS_SIN_ID);
 
@@ -907,12 +966,12 @@ export function cierreValidacionDdl(): string {
 
     CREATE TRIGGER cierre_validacion_cobertura_insert
       BEFORE INSERT ON cierre_validacion
-      WHEN NOT (${coberturaValida("NEW.cobertura")})
+      WHEN NOT (${coberturaValidaV32("NEW.cobertura")})
       BEGIN SELECT RAISE(ABORT,'cobertura de validacion invalida'); END;
 
     CREATE TRIGGER cierre_validacion_cobertura_update
       BEFORE UPDATE ON cierre_validacion
-      WHEN NOT (${coberturaValida("NEW.cobertura")})
+      WHEN NOT (${coberturaValidaV32("NEW.cobertura")})
       BEGIN SELECT RAISE(ABORT,'cobertura de validacion invalida'); END;
 
     /* §2.4: la rama se decide por columnas que cambian, nunca por un parámetro. */
@@ -1092,7 +1151,7 @@ export function cierreValidacionDdl(): string {
     CREATE TRIGGER cierre_validacion_audit_detalle_cobertura
       BEFORE INSERT ON cierre_validacion_audit
       WHEN json_valid(NEW.detalle) AND ${ARBOL_SIN_NUMEROS} AND (${SOBRE_EXACTO})
-       AND NOT (${coberturaValida("json_extract(NEW.detalle,'$.cobertura')")})
+       AND NOT (${coberturaValidaV32("json_extract(NEW.detalle,'$.cobertura')")})
       BEGIN SELECT RAISE(ABORT,'detalle de validacion: cobertura invalida'); END;
 
     CREATE TRIGGER cierre_validacion_audit_detalle_procedencia
@@ -1218,4 +1277,55 @@ export function cierreValidacionSchemaV32(db: Database) {
   db.exec(cierreValidacionDdl());
   if (db.query("PRAGMA foreign_key_check").all().length)
     throw new Error("Migración v32 rechazada: claves foráneas inconsistentes.");
+}
+
+/**
+ * v33 -> v34 (SPEC38 / #598): permite avanzar `version_conjunto` al confirmar
+ * o revalidar hacia el conjunto vigente, rechazando `NULL` o retrocesos.
+ */
+export function cierreValidacionTriggerV34(db: Database) {
+  const version = (
+    db.query("SELECT version FROM schema_version").get() as {
+      version: number;
+    } | null
+  )?.version;
+  if (version !== 33)
+    throw new Error("Esquema previo inesperado para migración Validación v34.");
+
+  db.exec(`
+    DROP TRIGGER IF EXISTS cierre_validacion_confirmacion;
+    CREATE TRIGGER cierre_validacion_confirmacion
+      BEFORE UPDATE ON cierre_validacion
+      WHEN OLD.dirty=1 AND NEW.dirty=0
+       AND (
+         NEW.revision<>OLD.revision+1
+         OR NEW.revision_instante IS NULL
+         OR (OLD.dirty_ultimo IS NOT NULL AND NEW.revision_instante<=OLD.dirty_ultimo)
+         OR (OLD.dirty_desde IS NOT NULL AND NEW.revision_instante<=OLD.dirty_desde)
+         OR NEW.version_conjunto IS NULL
+         OR (OLD.version_conjunto IS NOT NULL
+             AND CAST(NEW.version_conjunto AS INTEGER) < CAST(OLD.version_conjunto AS INTEGER)))
+      BEGIN SELECT RAISE(ABORT,'confirmar la revision exige referencia nueva del conjunto actual'); END;
+
+    DROP TRIGGER IF EXISTS cierre_validacion_cobertura_insert;
+    CREATE TRIGGER cierre_validacion_cobertura_insert
+      BEFORE INSERT ON cierre_validacion
+      WHEN NOT (${coberturaValidaV34("NEW.cobertura")})
+      BEGIN SELECT RAISE(ABORT,'cobertura de validacion invalida'); END;
+
+    DROP TRIGGER IF EXISTS cierre_validacion_cobertura_update;
+    CREATE TRIGGER cierre_validacion_cobertura_update
+      BEFORE UPDATE ON cierre_validacion
+      WHEN NOT (${coberturaValidaV34("NEW.cobertura")})
+      BEGIN SELECT RAISE(ABORT,'cobertura de validacion invalida'); END;
+
+    DROP TRIGGER IF EXISTS cierre_validacion_audit_detalle_cobertura;
+    CREATE TRIGGER cierre_validacion_audit_detalle_cobertura
+      BEFORE INSERT ON cierre_validacion_audit
+      WHEN json_valid(NEW.detalle) AND ${ARBOL_SIN_NUMEROS} AND (${SOBRE_EXACTO})
+       AND NOT (${coberturaValidaV34("json_extract(NEW.detalle,'$.cobertura')")})
+      BEGIN SELECT RAISE(ABORT,'detalle de validacion: cobertura invalida'); END;
+
+    UPDATE schema_version SET version=34;
+  `);
 }

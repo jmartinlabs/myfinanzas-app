@@ -2,13 +2,16 @@ import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { prepareSchema } from "./database-schema";
 import {
+  coberturaDevoluciones,
   compararUniverso,
+  huellaDe,
   huellaUniverso,
   impactoDeCandidatos,
   medirCandidatos,
   universoFinanciero,
   type UniversoFinanciero,
 } from "./cierre-validacion-impacto";
+import type { GreIntervalo } from "./devoluciones";
 
 /**
  * SPEC38 · I2 — materialidad medida (§3.1–§3.3).
@@ -51,12 +54,57 @@ function ciclos(db: Database) {
   db.run("INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('2','2026-02-01',0,?)", [t]);
 }
 
-function gasto(db: Database, id = "1", importe = 1000) {
+function gasto(
+  db: Database,
+  id = "1",
+  importe = 1000,
+  partida: string | null = "PAR0001",
+) {
   db.run(
     `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,
        concepto,nota,anulado,revision,creado,actualizado)
-     VALUES(?, '2026-01-04','Gasto',?,'S001','S000',NULL,'PAR0001','Ficticio','',0,1,?,?)`,
-    [id, importe, t, t],
+     VALUES(?, '2026-01-04','Gasto',?,'S001','S000',NULL,?,'Ficticio','',0,1,?,?)`,
+    [id, importe, partida, t, t],
+  );
+}
+
+/**
+ * Abono de SPEC39: movimiento `Devolución de gasto` y, salvo huérfano, su fila
+ * de atribución. La compra se crea con tope suficiente salvo que la prueba lo
+ * reduzca después para representar un histórico excedido.
+ */
+function devolucion(
+  db: Database,
+  id: string,
+  importe: number,
+  opciones: {
+    compra?: string | null;
+    estado?: "Verificado" | "Revisar" | "Sin vínculo";
+    elegibilidad?: "Acreditada" | "No acreditada";
+    ciclo?: string | null;
+    partida?: string | null;
+    fecha?: string;
+  } = {},
+) {
+  const compra = opciones.compra === undefined ? "1" : opciones.compra;
+  const estado = opciones.estado ?? "Verificado";
+  const elegibilidad = opciones.elegibilidad ?? "Acreditada";
+  const ciclo = opciones.ciclo === undefined ? "1" : opciones.ciclo;
+  const partida = opciones.partida === undefined ? "PAR0001" : opciones.partida;
+  const fecha = opciones.fecha ?? "2026-01-10";
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,
+       concepto,nota,anulado,revision,creado,actualizado)
+     VALUES(?,?,'Devolución de gasto',?,'S000','S001',NULL,NULL,'Abono ficticio','',0,1,?,?)`,
+    [id, fecha, importe, t, t],
+  );
+  if (estado === "Sin vínculo") return;
+  db.run(
+    `INSERT INTO movimiento_devolucion(movimiento,compra,partida,ciclo_origen,
+       evidencia_relacion,evidencia_origen_temporal,elegibilidad,estado,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,?,?,?,'Evidencia ficticia','Documento ficticio',?,?,1,1,?,?)`,
+    [id, compra, partida, ciclo, elegibilidad, estado, t, t],
   );
 }
 
@@ -239,6 +287,196 @@ test("I2 impacto: material y motivos nunca divergen", () => {
       expect(impacto.material).toBe(impacto.motivos.length > 0);
       expect(impacto.material).toBe(impacto.huellaAntes !== impacto.huellaDespues);
     }
+  } finally {
+    db.close();
+  }
+});
+
+/* ================================================================== *
+ * SPEC39 §3.3 · fuente propia `devoluciones` en la cobertura
+ * ================================================================== */
+
+const fuenteDevoluciones = (universo: UniversoFinanciero) =>
+  universo.cobertura.find((entrada) => entrada.fuente === "devoluciones")!;
+
+const casosDeCausa: {
+  codigo: string;
+  crear: () => Database;
+  gre: string;
+}[] = [
+  {
+    codigo: "SIN_VINCULO",
+    crear: () => {
+      const db = base();
+      devolucion(db, "9", 300, { estado: "Sin vínculo" });
+      return db;
+    },
+    gre: "1000",
+  },
+  {
+    codigo: "REVISAR",
+    crear: () => {
+      const db = base();
+      devolucion(db, "9", 300, { estado: "Revisar" });
+      return db;
+    },
+    gre: "1000",
+  },
+  {
+    codigo: "SIN_ACREDITACION",
+    crear: () => {
+      const db = base();
+      devolucion(db, "9", 300, { elegibilidad: "No acreditada" });
+      return db;
+    },
+    gre: "1000",
+  },
+  {
+    codigo: "SIN_CLASIFICACION",
+    crear: () => {
+      const db = base();
+      devolucion(db, "9", 300);
+      // Histórico incoherente: la compra pierde la Partida que exige hoy el
+      // CHECK del ledger. Se simula con la comprobación de CHECK desactivada,
+      // nunca por una vía de escritura soportada.
+      db.run("PRAGMA ignore_check_constraints=ON");
+      db.run("UPDATE movimientos SET partida=NULL WHERE id='1'");
+      db.run("PRAGMA ignore_check_constraints=OFF");
+      return db;
+    },
+    gre: "700",
+  },
+  {
+    codigo: "COMPRA_INVALIDA",
+    crear: () => {
+      const db = base();
+      devolucion(db, "9", 300);
+      // Histórico incoherente: la compra vinculada pasa a ser Terminal.
+      db.run("UPDATE movimientos SET origen='S002' WHERE id='1'");
+      return db;
+    },
+    gre: "1000",
+  },
+];
+
+for (const caso of casosDeCausa)
+  test(`devoluciones: causa ${caso.codigo} → Parcial con su código exacto y GRE medible`, () => {
+    const db = caso.crear();
+    try {
+      const universo = universoFinanciero(db, "1");
+      expect(fuenteDevoluciones(universo)).toEqual({
+        fuente: "devoluciones",
+        estado: "Parcial",
+        causas: [caso.codigo as never],
+      });
+      expect(universo.flujo.gre).toBe(caso.gre);
+      expect(
+        universo.cobertura.find((entrada) => entrada.fuente === "movimientos"),
+      ).toEqual({ fuente: "movimientos", estado: "Disponible", causas: [] });
+    } finally {
+      db.close();
+    }
+  });
+
+test("devoluciones: PERIODO_NO_RESOLUBLE se expone 1:1 (defensivo de la proyección)", () => {
+  // Una compra de la ventana siempre resuelve ciclo en un maestro contiguo; la
+  // causa se ejerce en la derivación pura para fijar que no se sustituye por un
+  // código genérico si la proyección la devuelve.
+  const gre: GreIntervalo = {
+    bruto: 1000n,
+    descuentoEconomico: 0n,
+    gre: 1000n,
+    exceso: false,
+    cobertura: "Parcial",
+    causas: ["periodoNoResoluble"],
+    eligibleIds: [],
+    sinVinculoEnIntervalo: [],
+    descuentos: new Map(),
+  };
+  expect(coberturaDevoluciones(gre, 1)).toEqual({
+    fuente: "devoluciones",
+    estado: "Parcial",
+    causas: ["PERIODO_NO_RESOLUBLE"],
+  });
+});
+
+test("devoluciones: EXCESO histórico → NoDisponible, gre/neto null y flujo no medible", () => {
+  const db = base();
+  try {
+    devolucion(db, "9", 300);
+    // Descuento (300) > compra (200): histórico incoherente, sin max(0).
+    db.run("UPDATE movimientos SET importe=200 WHERE id='1'");
+    const universo = universoFinanciero(db, "1");
+    expect(fuenteDevoluciones(universo)).toEqual({
+      fuente: "devoluciones",
+      estado: "NoDisponible",
+      causas: ["EXCESO"],
+    });
+    expect(universo.flujo.gre).toBeNull();
+    expect(universo.flujo.neto).toBeNull();
+    // Un grupo con fuente NoDisponible no se declara igual ni material.
+    const { motivos, noDisponible } = compararUniverso(universo, universo);
+    expect(motivos).toEqual([]);
+    expect(noDisponible).toContain("flujo");
+  } finally {
+    db.close();
+  }
+});
+
+test("devoluciones: ciclo sin compras sin incidencias → Disponible con GRE null", () => {
+  const db = base();
+  try {
+    const universo = universoFinanciero(db, "2");
+    expect(fuenteDevoluciones(universo)).toEqual({
+      fuente: "devoluciones",
+      estado: "Disponible",
+      causas: [],
+    });
+    expect(universo.flujo.gre).toBeNull();
+    expect(universo.flujo.neto).toBeNull();
+  } finally {
+    db.close();
+  }
+});
+
+test("devoluciones: ciclo sin compras con abono huérfano → Parcial SIN_VINCULO y GRE null", () => {
+  const db = base();
+  try {
+    devolucion(db, "9", 300, { estado: "Sin vínculo", fecha: "2026-02-10" });
+    const universo = universoFinanciero(db, "2");
+    expect(fuenteDevoluciones(universo)).toEqual({
+      fuente: "devoluciones",
+      estado: "Parcial",
+      causas: ["SIN_VINCULO"],
+    });
+    expect(universo.flujo.gre).toBeNull();
+    expect(universo.flujo.neto).toBeNull();
+  } finally {
+    db.close();
+  }
+});
+
+test("devoluciones: un cambio sólo de cobertura no marca ni mueve la huella material, pero sí el token estructural", () => {
+  const db = base();
+  try {
+    const antes = universoFinanciero(db, "1");
+    const despues = clonar(antes);
+    despues.cobertura = despues.cobertura.map((entrada) =>
+      entrada.fuente === "devoluciones"
+        ? { fuente: "devoluciones", estado: "NoDisponible", causas: ["EXCESO" as const] }
+        : entrada,
+    );
+    expect(compararUniverso(antes, despues).motivos).toEqual([]);
+    expect(compararUniverso(antes, despues).noDisponible).toContain("flujo");
+    expect(huellaUniverso(despues)).toBe(huellaUniverso(antes));
+    // La huella de estado completo es la que alimenta `impactRevision`: sí cambia.
+    expect(huellaDe(despues)).not.toBe(huellaDe(antes));
+    const [impacto] = impactoDeCandidatos(
+      new Map([["1", antes]]),
+      new Map([["1", despues]]),
+    );
+    expect(impacto?.material).toBe(false);
+    expect(impacto?.motivos).toEqual([]);
   } finally {
     db.close();
   }

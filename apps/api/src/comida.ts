@@ -951,6 +951,38 @@ export function applyComidaDevolucion(
   return after;
 }
 
+export function writeComidaDevolucionInTransaction(
+  db: Database,
+  id: string,
+  body: Record<string, unknown>,
+  now = Date.now(),
+  gate?: DevolucionGate,
+) {
+  exigirEscrituraDevolucion(db, gate, { origen: "comida-devolucion" });
+  only(body, [
+    "revision",
+    "devolucionRevision",
+    "compraAnterior",
+    "compra",
+    "partida",
+    "cicloOrigen",
+    "evidenciaRelacion",
+    "evidenciaOrigenTemporal",
+    "elegibilidad",
+    "estado",
+    "motivo",
+  ]);
+  const row = movement(db, id);
+  if (revision(body.revision) !== row.revision)
+    throw new Problem(
+      409,
+      "REVISION_CONFLICT",
+      "El Movimiento ha cambiado. Revisa su ficha.",
+    );
+  const devolucion = applyComidaDevolucion(db, id, row, body, now);
+  return { devolucion, movimientos: getComidaMovement(db, id) };
+}
+
 export function writeComidaDevolucion(
   db: Database,
   id: string,

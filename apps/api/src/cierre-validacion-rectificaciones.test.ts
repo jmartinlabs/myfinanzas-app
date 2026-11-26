@@ -202,6 +202,9 @@ function validar(db: Database, cicloId: string) {
     impactRevision: preview.impactRevision,
     actor: "humano",
     instante: T_VALIDAR,
+    // La fixture §6.3 tiene un abono huérfano en la ventana de C: la cobertura
+    // de devoluciones es parcial y validar exige motivo humano (SPEC38 §5).
+    motivo: "Cobertura parcial revisada",
   });
 }
 

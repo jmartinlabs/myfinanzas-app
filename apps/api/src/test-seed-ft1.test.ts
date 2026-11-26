@@ -165,11 +165,11 @@ describe("FT-1 minimal v30", () => {
     const manifest = readManifest(root);
     expect(manifest.dataset.id).toBe("FT-1");
     expect(manifest.dataset.version).toBe(1);
-    expect(manifest.source.schema).toBe(33);
+    expect(manifest.source.schema).toBe(34);
     expect(manifest.source.schema_contract).toBe(
-      "C33-SPEC39-DEVOLUCION-TRIGGER",
+      "C34-SPEC38-VALIDACION-VERSION-CONJUNTO",
     );
-    expect(manifest.source.data_contract).toBe("e39.1-v33");
+    expect(manifest.source.data_contract).toBe("e39.2-v34");
     expect(manifest.source.commit).toBe(COMMIT);
     expect(manifest.counts.saldos).toBe(6);
     expect(manifest.counts.movimientos).toBe(6);

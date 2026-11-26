@@ -14,6 +14,7 @@ import { D } from "./payroll-decimal";
 import { comidaInstalled } from "./comida";
 import {
   agregarDescuentos,
+  calcularGreIntervalo,
   causasCobertura,
   descuentoPorCompras,
   proyectarDevoluciones,
@@ -88,6 +89,7 @@ function gastoRealEconomico(
   projection: ReturnType<typeof proyectarDevoluciones>,
 ): GastoRealEconomico {
   const fuente = "Movimientos vigentes + proyección única de devoluciones (SPEC39)";
+  const calc = calcularGreIntervalo(db, expenses, refunds, projection);
   if (!valid || !expenses.length) {
     const base = metric(
       null,
@@ -105,47 +107,18 @@ function gastoRealEconomico(
         causas: [],
         exceso: false,
         ids: [],
-        sinVinculoEnIntervalo: valid
-          ? refunds
-              .map((r) => r.id)
-              .filter((id) =>
-                projection.items.some((d) => d.id === id && d.causa === "sinVinculo"),
-              )
-          : [],
+        sinVinculoEnIntervalo: valid ? calc.sinVinculoEnIntervalo : [],
       },
     };
   }
   const ids = expenses.map((r) => r.id);
-  const discounts = descuentoPorCompras(db, ids, projection);
-  const agg = agregarDescuentos(discounts.values());
-  const orphanSet = new Set(
-    projection.items.filter((d) => d.causa === "sinVinculo").map((d) => d.id),
-  );
-  // Sin tabla de vínculos, un abono de CUALQUIER fecha pudo reducir estas compras y no es comprobable.
-  const sinTablaConAbonos =
-    !comidaInstalled(db, "movimiento_devolucion") && orphanSet.size > 0;
-  const sinVinculoEnIntervalo = sinTablaConAbonos
-    ? [...orphanSet]
-    : refunds.map((r) => r.id).filter((id) => orphanSet.has(id));
-  const causas = new Set<CausaCobertura>(agg.causas);
-  if (sinVinculoEnIntervalo.length) causas.add("sinVinculo");
-  const cobertura: CoberturaDevoluciones =
-    agg.cobertura === "Completa" && !sinVinculoEnIntervalo.length
-      ? "Completa"
-      : "Parcial";
-  const brutoCents = expenses.reduce((n, r) => n + BigInt(r.importe), 0n);
-  const gre = brutoCents - agg.descuento;
-  const eligible = [...discounts.values()].flatMap((d) => d.devoluciones);
-  const eligibleIds = projection.items
-    .filter((d) => d.elegible && eligible.includes(d.id))
-    .map((d) => d.id);
-  const exceso = agg.exceso;
+  const { exceso, cobertura, causas } = calc;
   const motivo =
     "Gasto real económico (neto) = Gastos vigentes del intervalo − devoluciones económicamente elegibles de esas mismas compras, aunque el abono llegue en otro ciclo. Cálculo vivo; no es flujo bancario, ni Disponibilidad operativa, ni presupuesto − GRE" +
     (exceso
       ? ". No disponible: una devolución supera su compra (sin max(0))"
       : cobertura === "Parcial"
-        ? `. Cobertura de devoluciones parcial (${causasCobertura.filter((x) => causas.has(x)).join(", ") || "exceso"}): las no elegibles no se netean`
+        ? `. Cobertura de devoluciones parcial (${causas.join(", ") || "exceso"}): las no elegibles no se netean`
         : "") +
     ". Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo";
   const base = metric(
@@ -154,18 +127,18 @@ function gastoRealEconomico(
     motivo,
     ids,
     true,
-    exceso ? null : decimal(gre),
+    calc.gre === null ? null : decimal(calc.gre),
   );
   return {
     ...base,
-    bruto: decimal(brutoCents),
-    descuentoEconomico: decimal(agg.descuento),
+    bruto: decimal(calc.bruto),
+    descuentoEconomico: decimal(calc.descuentoEconomico),
     devoluciones: {
-      cobertura: exceso ? "Parcial" : cobertura,
-      causas: causasCobertura.filter((x) => causas.has(x)),
+      cobertura,
+      causas,
       exceso,
-      ids: eligibleIds,
-      sinVinculoEnIntervalo,
+      ids: calc.eligibleIds,
+      sinVinculoEnIntervalo: calc.sinVinculoEnIntervalo,
     },
   };
 }
