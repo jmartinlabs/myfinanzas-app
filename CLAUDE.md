@@ -1,30 +1,20 @@
 @AGENTS.md
 
-# MyFinanzas · Claude Code adapter (adopción v2.5.0)
+# MyFinanzas · Claude Code entrypoint
 
-Las decisiones financieras, arquitectura, roadmap, permisos y estado del proyecto
-se mantienen en los documentos canónicos del repositorio. Este adaptador NO
-sustituye ni reinterpreta `AGENTS.md` ni las Skills existentes.
+Este archivo es un punto de entrada ligero para Claude Code. Las decisiones financieras,
+arquitectura, roadmap, permisos y estado del proyecto viven en el repositorio; el núcleo
+común (skills, roles, plantillas y metodología base) proviene del plugin global
+`agentic-harness-plugin`.
 
-- Verificar al inicio `AGENTS.md`, las normas locales en
-  `specs/methodology/myfinanzas-coordination.md`, Git/GitHub y el checkpoint relevante.
-  Consultar `specs/project.md`, `specs/setup-progress.md` y las especificaciones aprobadas
-  según la tarea, su riesgo y las decisiones necesarias. El estado operativo y el gate de fase
-  están en GitHub Issues + Project #4; el histórico `specs/epic-board.md` no refleja el estado
-  actual ni prueba autorización o CI.
-- Invocar `/orchestrate` en Claude Code; su contrato canónico sigue siendo
-  `.agents/skills/orchestrate/SKILL.md`. Los otros comandos `/spec`, `/dev`,
-  etc. delegan en las Skills equivalentes existentes.
-- En MyFinanzas la aprobación de especificación NO autoriza desarrollo:
-  exige autorización de alcance adicional conforme a reglas locales.
-- Decisiones protegidas: aplicar `specs/methodology/approvals.md` (fuente única;
-  por ejemplo «Apruebo PR #N»). `.claude/settings.json` solo añade confirmaciones
-  `ask` en Claude Code; no concede ni sustituye aprobaciones.
-- No implementar E2.1, desplegar, modificar datos financieros reales ni
-  reactivar infraestructura en pausa por el mero cambio de herramienta.
-- Los perfiles `.claude/agents/` son contratos reutilizables, no trabajadores
-  permanentes. Solo delegar con packet y herramientas reales verificadas.
-- No inventar conocimiento de chats Codex, worktrees no publicados, CI, hooks,
-  herramientas, permisos, costes o evaluaciones que no se hayan verificado.
+- Lee al inicio `AGENTS.md`, `specs/project-rules.md`,
+  `specs/methodology/myfinanzas-coordination.md` y el estado real en Git/GitHub + Project #4.
+- Las reglas de aprobación viven en `specs/methodology/approvals.md` y `specs/project-rules.md`.
+  `.claude/settings.json` solo añade confirmaciones `ask` en Claude Code; no concede ni
+  sustituye aprobaciones.
+- En MyFinanzas la aprobación de especificación **no** autoriza desarrollo y el permiso de
+  push **no** autoriza merge.
+- No reactives Dev32/PR30, VPS, despliegues ni datos financieros reales sin autorización
+  específica.
 
 Para puesta en marcha segura: `docs/CLAUDE_CODE.md`.

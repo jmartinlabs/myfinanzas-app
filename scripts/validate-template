@@ -1,336 +1,334 @@
 #!/usr/bin/env python3
-"""Portable structural validation, not a complete security or semantic audit."""
+"""Portable structural validation for MyFinanzas project-owned harness files."""
 from pathlib import Path
 import json
 import re
 import runpy
 import sys
 from urllib.parse import unquote, urlsplit
-SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev', 'relay')
-# Contracts split into a core plus an on-demand part are checked as one contract, so a rule is
-# enforced wherever it lives.
-CONTRACT_PARTS = {'specs/methodology/dynamic-agents.md': ('specs/methodology/dynamic-agents-external-clients.md',)}
-CANONICAL_ROLES = ('functional','implementation','qa-review','infrastructure')
-REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md','specs/methodology/dynamic-agents-external-clients.md','.agents/harnesses/claude.json',
- *(f'specs/guidelines/{n}.md' for n in ('architecture','ui','quality','security')),
- *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
- *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
- 'scripts/verify','scripts/test-verification','scripts/agent-relay','scripts/test-agent-relay','scripts/report-agent-usage','scripts/auto-agent-usage',
- 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md')
-# --- Requirement matching policy -----------------------------------------------------------
-# A contract is the rule, not the sentence that carries it. Three matching modes:
-#   exact     labels, field names, identifiers, commands, approval wording (the default)
-#   '~:'      a sentence that may be reworded: case and whitespace runs are ignored
-#   're:'     a rule with declared synonyms, written as a regular expression
-# Code, JSON, YAML and permission checks keep exact matching: those are not prose.
-WHITESPACE=re.compile(r'\s+')
-LINKS=re.compile(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)')
-HEADING=re.compile(r'^#{1,6}\s+(.+)$',re.M)
-# Every credential rule needs one of these literals. A document without them cannot
-# match, so the expensive expressions are skipped; the expressions stay
-# authoritative and test-validator proves each shape is still detected.
-SECRET_LITERALS=('-----begin ','gh','github_pat_','akia','sk-','password','api_key','access_token','secret')
-PORTABILITY_LITERALS=('/users/','/home/','/workspace/','\\users\\')
-def norm(text): return WHITESPACE.sub(' ',text).strip().casefold()
-def satisfied(text,token):
- if token.startswith('re:'): return re.search(token[3:],norm(text),re.I) is not None
- if token.startswith('~:'): return norm(token[2:]) in norm(text)
- return token in text
+
+CANONICAL_ROLES = ('functional', 'implementation', 'qa-review', 'infrastructure')
+REQUIRED = (
+    'AGENTS.md', 'CLAUDE.md', 'README.md', 'NEW_PROJECT_PROMPT.md', '.gitignore',
+    '.github/workflows/validate.yml', 'specs/README.md', 'specs/project-rules.md',
+    'specs/methodology/myfinanzas-coordination.md', 'specs/methodology/approvals.md',
+    'specs/methodology/ci-policy.md', '.agents/harnesses/claude.json', '.claude/settings.json',
+    *(f'specs/guidelines/{n}.md' for n in ('architecture', 'ui', 'quality', 'security')),
+    'scripts/validate-template', 'scripts/test-validator',
+    'scripts/verify', 'scripts/test-verification',
+)
+WHITESPACE = re.compile(r'\s+')
+LINKS = re.compile(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)')
+HEADING = re.compile(r'^#{1,6}\s+(.+)$', re.M)
+SECRET_LITERALS = ('-----begin ', 'gh', 'github_pat_', 'akia', 'sk-', 'password', 'api_key', 'access_token', 'secret')
+PORTABILITY_LITERALS = ('/users/', '/home/', '/workspace/', '\\users\\')
+
+
+def norm(text):
+    return WHITESPACE.sub(' ', text).strip().casefold()
+
+
+def satisfied(text, token):
+    if token.startswith('re:'):
+        return re.search(token[3:], norm(text), re.I) is not None
+    if token.startswith('~:'):
+        return norm(token[2:]) in norm(text)
+    return token in text
+
 
 EXTERNAL_TASKS = ('review', 'investigate', 'develop')
 EXTERNAL_MODES = ('automatic', 'on_request', 'disabled')
 EXTERNAL_TRANSPORTS = ('cli',)
 HARNESS_NAMES = ('claude', 'codex', 'opencode', 'hermes', 'antigravity')
 
+
 def unique_json_object(pairs):
- result = {}
- for key, value in pairs:
-  if key in result:
-   raise ValueError(f'duplicate key: {key}')
-  result[key] = value
- return result
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f'duplicate key: {key}')
+        result[key] = value
+    return result
+
 
 def reject_json_constant(value):
- raise ValueError(f'invalid JSON constant: {value}')
+    raise ValueError(f'invalid JSON constant: {value}')
+
 
 def check_harness(config, coordinator):
- # Closed schema, never a closed list of clients or models: an entry without a documented procedure is simply not run.
- problems = []
+    # Closed schema, never a closed list of clients or models: an entry without a documented procedure is simply not run.
+    problems = []
 
- def fields(value, allowed, location):
-  if not isinstance(value, dict):
-   problems.append(f'{location}: must be an object')
-   return False
-  for key in sorted(value.keys() - set(allowed)):
-   problems.append(f'{location}: unknown field {key}')
-  return True
+    def fields(value, allowed, location):
+        if not isinstance(value, dict):
+            problems.append(f'{location}: must be an object')
+            return False
+        for key in sorted(value.keys() - set(allowed)):
+            problems.append(f'{location}: unknown field {key}')
+        return True
 
- def selection(value, location):
-  for key in ('model', 'effort'):
-   setting = value.get(key)
-   if setting is not None and not (isinstance(setting, str) and setting.strip()):
-    problems.append(f'{location}.{key}: must be null or a non-empty string')
+    def selection(value, location):
+        for key in ('model', 'effort'):
+            setting = value.get(key)
+            if setting is not None and not (isinstance(setting, str) and setting.strip()):
+                problems.append(f'{location}.{key}: must be null or a non-empty string')
 
- if not fields(config, ('version', 'local', 'external'), 'config'):
-  return problems
- if type(config.get('version')) is not int or config['version'] != 2:
-  problems.append('version must be integer 2')
- local = config.get('local', {})
- if fields(local, ('model', 'effort', 'profiles'), 'local'):
-  selection(local, 'local')
-  profiles = local.get('profiles', {})
-  if fields(profiles, CANONICAL_ROLES, 'local.profiles'):
-   for role in CANONICAL_ROLES:
-    if role not in profiles:
-     continue
-    levels = profiles[role]
-    location = f'local.profiles.{role}'
-    if not fields(levels, ('standard', 'complex'), location):
-     continue
-    for name in ('standard', 'complex'):
-     if name not in levels:
-      continue
-     profile = levels[name]
-     level = f'{location}.{name}'
-     if fields(profile, ('model', 'effort'), level):
-      selection(profile, level)
-      if all(profile.get(key) is None for key in ('model', 'effort')):
-       problems.append(f'{level}: must set model or effort')
+    if not fields(config, ('version', 'local', 'external'), 'config'):
+        return problems
+    if type(config.get('version')) is not int or config['version'] != 2:
+        problems.append('version must be integer 2')
+    local = config.get('local', {})
+    if fields(local, ('model', 'effort', 'profiles'), 'local'):
+        selection(local, 'local')
+        profiles = local.get('profiles', {})
+        if fields(profiles, CANONICAL_ROLES, 'local.profiles'):
+            for role in CANONICAL_ROLES:
+                if role not in profiles:
+                    continue
+                levels = profiles[role]
+                location = f'local.profiles.{role}'
+                if not fields(levels, ('standard', 'complex'), location):
+                    continue
+                for name in ('standard', 'complex'):
+                    if name not in levels:
+                        continue
+                    profile = levels[name]
+                    level = f'{location}.{name}'
+                    if fields(profile, ('model', 'effort'), level):
+                        selection(profile, level)
+                        if all(profile.get(key) is None for key in ('model', 'effort')):
+                            problems.append(f'{level}: must set model or effort')
 
- external = config.get('external', {})
- if not isinstance(external, dict):
-  return problems + ['external: must be an object']
- for client, entry in external.items():
-  location = f'external.{client}'
-  if not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*', client):
-   problems.append(f'{location}: invalid client name')
-  if not fields(entry, ('enabled', 'transport', 'model', 'effort', 'tasks'), location):
-   continue
-  if not isinstance(entry.get('enabled'), bool):
-   problems.append(f'{location}.enabled: must be boolean')
-  if entry.get('transport') not in EXTERNAL_TRANSPORTS:
-   problems.append(f'{location}.transport: must be cli')
-  selection(entry, location)
-  tasks = entry.get('tasks')
-  if not fields(tasks, EXTERNAL_TASKS, f'{location}.tasks'):
-   continue
-  for task, mode in tasks.items():
-   if mode not in EXTERNAL_MODES:
-    problems.append(f'{location}.{task}: invalid mode')
-   elif mode == 'automatic' and (coordinator, client, task) != ('claude', 'codex', 'review'):
-    problems.append(f'{location}.{task}: automatic is only for Claude Code to Codex review')
- return problems
+    external = config.get('external', {})
+    if not isinstance(external, dict):
+        return problems + ['external: must be an object']
+    for client, entry in external.items():
+        location = f'external.{client}'
+        if not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*', client):
+            problems.append(f'{location}: invalid client name')
+        if not fields(entry, ('enabled', 'transport', 'model', 'effort', 'tasks'), location):
+            continue
+        if not isinstance(entry.get('enabled'), bool):
+            problems.append(f'{location}.enabled: must be boolean')
+        if entry.get('transport') not in EXTERNAL_TRANSPORTS:
+            problems.append(f'{location}.transport: must be cli')
+        selection(entry, location)
+        tasks = entry.get('tasks')
+        if not fields(tasks, EXTERNAL_TASKS, f'{location}.tasks'):
+            continue
+        for task, mode in tasks.items():
+            if mode not in EXTERNAL_MODES:
+                problems.append(f'{location}.{task}: invalid mode')
+            elif mode == 'automatic' and (coordinator, client, task) != ('claude', 'codex', 'review'):
+                problems.append(f'{location}.{task}: automatic is only for Claude Code to Codex review')
+    return problems
+
 
 def validate(root):
- root=Path(root).resolve(); errors=[]
- def fail(rule,msg): errors.append(f'{rule}: {msg}')
- cache={}
- def read(name):
-  parts=[root/name,*(root/extra for extra in CONTRACT_PARTS.get(name,()))]
-  return '\n'.join(text(q) for q in parts if q.is_file()) if (root/name).is_file() else ''
- def text(p):
-  # Several rules inspect the same document; read each one once per run.
-  key=str(p)
-  if key not in cache: cache[key]=p.read_text(encoding='utf-8') if p.is_file() else ''
-  return cache[key]
- for name in REQUIRED:
-  if not (root/name).is_file() or not (root/name).stat().st_size: fail('structure',f'missing or empty {name}')
- legacy = root/'.agents/external-agents.json'
- if legacy.exists() or legacy.is_symlink():
-  fail('harness-config', 'remove obsolete .agents/external-agents.json')
- harness_dir = root/'.agents/harnesses'
- if not harness_dir.resolve().is_relative_to(root):
-  fail('harness-config', 'harness directory must stay inside the checkout')
- elif harness_dir.is_dir():
-  for path in sorted(harness_dir.iterdir()):
-   if path.suffix != '.json' or path.stem not in HARNESS_NAMES:
-    fail('harness-config', f'invalid coordinator filename: {path.name}')
-    continue
-   if not path.is_file() or not path.resolve().is_relative_to(root):
-    fail('harness-config', f'invalid coordinator file: {path.name}')
-    continue
-   try:
-    config = json.loads(path.read_text(encoding='utf-8'), object_pairs_hook=unique_json_object,
-                        parse_constant=reject_json_constant)
-   except (OSError, ValueError) as exc:
-    fail('harness-config', f'{path.name}: {exc}')
-    continue
-   for problem in check_harness(config, path.stem):
-    fail('harness-config', f'{path.name}: {problem}')
- docs=[root/n for n in ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md') if (root/n).is_file()]
- for folder in ('specs','templates','.agents/skills'):
-  docs.extend((root/folder).rglob('*.md'))
- for p in docs:
-  s=text(p)
-  for dest in LINKS.findall(s):
-   dest=dest.strip().split(' "',1)[0].strip('<>'); u=urlsplit(dest)
-   if u.scheme or dest.startswith('#'): continue
-   target=(p.parent/unquote(u.path)).resolve()
-   if not target.is_relative_to(root) or not target.exists(): fail('links',f'{p.relative_to(root)} -> {dest}')
- # Cross-file fragments in portable instructions must resolve to a real heading.
- def heading_slug(value):
-  value=re.sub(r'\[([^\]]+)\]\([^)]+\)',r'\1',value).replace('`','').strip().lower()
-  value=re.sub(r'[^\w\s-]','',value,flags=re.UNICODE)
-  return value.replace(' ','-')
- anchors={}
- for p in root.rglob('*.md'):
-  seen={}
-  values=set()
-  for heading in HEADING.findall(text(p)):
-   base=heading_slug(heading); count=seen.get(base,0)
-   values.add(base if count==0 else f'{base}-{count}'); seen[base]=count+1
-  anchors[p.resolve()]=values
- fragment_docs=[root/n for n in ('AGENTS.md','README.md') if (root/n).is_file()]
- for folder in ('docs','specs/methodology','specs/guidelines','templates','.agents'):
-  fragment_docs.extend((root/folder).rglob('*.md'))
- for p in fragment_docs:
-  for dest in LINKS.findall(text(p)):
-   dest=dest.strip().split(' "',1)[0].strip('<>'); u=urlsplit(dest)
-   if u.scheme or not u.fragment or not u.path: continue
-   target=(p.parent/unquote(u.path)).resolve()
-   if target.suffix!='.md' or not target.is_file(): continue
-   if unquote(u.fragment) not in anchors.get(target,set()):
-    fail('fragments',f'{p.relative_to(root)} -> {dest}')
- agents=read('AGENTS.md')
- for n in ('architecture','ui','quality','security'):
-  if f'(specs/guidelines/{n}.md)' not in agents: fail('agents',f'missing guideline {n}')
- if len(agents.splitlines())>65: fail('agents','AGENTS.md exceeds 65 lines')
- for name in SKILLS:
-  s=read(f'.agents/skills/{name}/SKILL.md')
-  m=re.match(r'\A---\nname: ([a-z0-9-]+)\ndescription: ([^\n]+)\n---\n',s)
-  if not m or m[1]!=name or not 1<=len(m[2])<=1024: fail('manifest',f'{name}: invalid name/description')
-  elif any(c in m[2] for c in (': ',' #','{','}','[',']')): fail('manifest',f'{name}: use plain scalar description')
-  for h in ('## Inputs','## Outputs','## Procedure','## Stop conditions'):
-   if h not in s: fail('contracts',f'{name}: missing {h}')
- s=read('.agents/skills/init-project/SKILL.md')
- for token in ('specs/setup-progress.md','### Resume protocol','## Pending decisions','## Confirmed decisions','## Next action','awaiting-approval',*(f'### Stage {i} —' for i in range(1,8))):
-  if not satisfied(s,token): fail('resume',f'init-project missing {token}')
- s=read('NEW_PROJECT_PROMPT.md'); m=re.search(r'```text\n(.*?)\n```',s,re.S)
- tokens=('[PROJECT_NAME]','[SHORT_DESCRIPTION]','https://github.com/','independent','AGENTS.md','$init-project','specs/setup-progress.md','owner','visibility','authorization','planning','$spec','$dev')
- if not m or any(t.lower() not in m[1].lower() for t in tokens): fail('prompt','incomplete copyable prompt')
- safety=docs+[root/n for n in ('PROMPT_BACKUP.md','PROMPT_BACKUP_COMPLETE.md','.gitignore','.github/workflows/validate.yml','scripts/validate-template','scripts/test-validator','scripts/agent-relay','scripts/test-agent-relay') if (root/n).is_file()]
- patterns=(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',r'\bgh[pousr]_[A-Za-z0-9]{30,}\b',r'\bgithub_pat_[A-Za-z0-9_]{30,}\b',r'\bAKIA[A-Z0-9]{16}\b',r'\bsk-[A-Za-z0-9]{32,}\b',r'(?im)^\s*(?:password|api_key|access_token|secret)\s*[:=]\s*["\']?[A-Za-z0-9+/=_-]{20,}')
- for p in safety:
-  s=text(p); lower=s.lower()
-  if any(literal in lower for literal in SECRET_LITERALS) and any(re.search(pat,s) for pat in patterns): fail('secrets',f'credential-like content in {p.relative_to(root)} (value withheld)')
-  if any(literal in lower for literal in PORTABILITY_LITERALS) and re.search(r'/(?:Users|home|workspace)/[A-Za-z0-9_.-]+|[A-Z]:\\Users\\',s): fail('portability',f'machine-specific path in {p.relative_to(root)}')
- for p in [root/'AGENTS.md',*(root/'.agents/skills').rglob('SKILL.md')]:
-  if p.is_file() and re.search(r'(?i)(?:all projects|every project|all applications) must (?:use|install|run)\b',p.read_text()): fail('neutrality',f'universal stack mandate in {p.relative_to(root)}')
- # The project workflow contract checks parsed structure/conditions, not token presence.
- try:
-  policy=runpy.run_path(str(root/'scripts/ci_workflow.py'))
-  errors.extend(policy['validate_workflow'](root/'.github/workflows/validate.yml'))
- except (OSError,ValueError): fail('ci','workflow policy unavailable')
- # Preserve the contract, while behavioral tests exercise the real verification entry.
- for name,tokens in {
-  'specs/methodology/ci-policy.md':('## Canonical verification entry point',
-   'Reuse an existing command','each required suite once','nonzero exit status',
-   'missing prerequisite','invalid mode','unexpectedly zero discovered tests',
-   'must not install dependencies','local/CI selection parity'),
-  '.agents/skills/bootstrap/SKILL.md':('one canonical verification command',
-   'Reuse an adequate existing command','forced full mode'),
-  'AGENTS.md':('python3 scripts/verify','--full','--base SHA --head SHA'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('verification-entry',f'{name}: missing {token}')
- # Optional reporting stays advisory/local; never trust or activate hooks here.
- try:
-  config=json.loads(read('.codex/hooks.json'))
-  command='python3 "$(git rev-parse --show-toplevel)/scripts/auto-agent-usage"'
-  hook={'type':'command','command':command,'timeout':3}
-  expected={event:[{'hooks':[hook]}] for event in ('Stop','SubagentStop','SessionEnd')}
-  if (not isinstance(config,dict) or set(config)-{'description','hooks'} or
-      json.dumps(config.get('hooks'),sort_keys=True)!=json.dumps(expected,sort_keys=True)):
-   fail('usage-hooks','unexpected local reporting hook scope or command')
- except (ValueError,TypeError): fail('usage-hooks','invalid reporting hook configuration')
- # Preserve portable coordination obligations; live behavior is evaluated separately.
- for name,tokens in {
-  'specs/methodology/approvals.md':('Publicación de rama y PR',
-   'No se necesita otra aprobación de', 'Nunca activar auto-merge'),
-  'specs/methodology/epic-orchestration.md':('Branch/PR publication is ordinary inside the authorized scope',
-   '~:local draft, a registered proposal and a published proposal',
-   '~:A local commit alone'),
-  'templates/progress.md':('one current summary', 'append-only', 'permission-sensitive',
-   'candidate SHA', 'PR / CI / merge'),
-  'templates/testplan.md':('Before implementation', 'negative/error and integration',
-   'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
-  'specs/methodology/myfinanzas-coordination.md':('Publicar rama y crear o',
-   'nunca auto-merge', 'no cierra el turno'),
-  '.agents/skills/dev/SKILL.md':('negative/integration cases before code',
-   'advance', 'escalation notices', 'Incompatible local runs never replace CI gates',
-   'one current checkpoint', 'authorized scope includes branch/PR publication'),
-  '.agents/skills/task/SKILL.md':('execution platform and operation owners before code',
-   '~:Inspect `git status` including untracked files',
-   '~:never overwrite, discard, stage or claim them',
-   'dynamic-agents.md', 'preserve independent QA', 'branch/PR publication follows',
-   'A required check that fails and can be corrected'),
-  '.agents/skills/tweak/SKILL.md':('Branch/PR publication follows',),
-  '.agents/skills/handoff/SKILL.md':('external client', 'uncontrolled workers'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('coordination',f'{name}: missing {token}')
- # Rules that survive the simplification stay guarded where they now live.
- for name,tokens in {
-  '.agents/skills/orchestrate/SKILL.md':('## Execution continuity','a partial result','authorized, executable work remains','completed work with its evidence','user request to stop','blocker that cannot be resolved','**responsible party**'),
-  '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
-  'specs/methodology/myfinanzas-coordination.md':('### Modo de ejecución','merge exige aprobación','ownership disjunto','Agent Relay v1'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('coordination',f'{name}: missing {token}')
- # Post-merge cleanup and checkpoint retirement stay canonical in approvals/handoff.
- for name,tokens in {
-  'specs/methodology/approvals.md':('## Limpieza local posterior al merge','cierre ordinario',
-   'la PR está `MERGED`','git worktree remove <worktree-de-la-tarea>',
-   'git branch -d <rama-de-la-tarea>','sin `--force`','sin `-D`',
-   'No exigir que cada commit','preservar la rama','git reset --hard','git clean -fd',
-   'ramas remotas','otra tarea'),
-  '.agents/skills/handoff/SKILL.md':('## Next session and checkpoint retirement',
-   'successful restoration','tracked by Git','standalone PR','preserve',
-   'never remove permanent'),
-  'specs/README.md':('se retira tras restaurar y consolidar','mismo cambio de la tarea',
-   'nunca en una PR creada solo para borrarlo'),
-  '.agents/skills/orchestrate/SKILL.md':('limpieza-local-posterior-al-merge',
-   'next-session-and-checkpoint-retirement','Preserve dirty, unknown or other-task resources.'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('lifecycle',f'{name}: missing {token}')
- # Active policy has no fixed model ceiling; models are configured in each client.
- active_model_policy = ('AGENTS.md', '.agents/skills/orchestrate/SKILL.md',
-  'specs/methodology/workflows.md',
-  'specs/methodology/myfinanzas-coordination.md', 'docs/HERMES_ADAPTER.md',
-  'docs/GUIA_VISUAL_ORQUESTACION.md')
- for name in active_model_policy:
-  if re.search(r'(?i)(maximum permitted combination is|absolute Codex subagent ceiling|techo absoluto de|never automatically escalate.{0,80}above this ceiling)', read(name)):
-   fail('resource-policy', f'{name}: fixed model ceiling contradicts the no-ceiling policy')
+    root = Path(root).resolve()
+    errors = []
 
- # Effective delegation contracts: reject missing or contradictory safety rules.
- for name,tokens in {
-  '.agents/roles/implementation.md':('~:Standard uses `$task`','~:Full uses `$dev` only with approved spec AND separate development authorization','~:before acting'),
-  '.agents/roles/qa-review.md':('reused raw evidence','UNRUN','do not automatically rerun'),
- }.items():
-  for token in tokens:
-   if not satisfied(read(name),token): fail('effective-delegation',f'{name}: missing {token}')
- for name in ('.agents/roles/implementation.md','.claude/agents/implementation.md','.opencode/agents/implementation.md'):
-  if 'approved-spec-only' in read(name) or 'Necesita aprobación de spec Y' in read(name):
-   fail('effective-delegation',f'{name}: Standard route incorrectly requires Full spec')
- # Delegation preference, functional DRAFT scope and packet execution mode are canonical.
- # Orchestrator only: the instruction exists and the Claude profiles cannot spawn agents themselves.
- if 'The user talks only to the orchestrator' not in read('AGENTS.md'): fail('orchestrator-only','AGENTS.md must state that the user talks only to the orchestrator')
- for profile in ('functional','implementation','qa-review','infrastructure'):
-  tools=re.search(r'(?m)^tools:\s*(.*)$',read(f'.claude/agents/{profile}.md'))
-  if not tools or re.search(r'\bAgent\b',tools[1]): fail('orchestrator-only',f'.claude/agents/{profile}.md must not declare the Agent tool')
- if 'one executor per task' not in read('specs/methodology/epic-orchestration.md'): fail('delegation-preference','epic scheduler missing one executor per task')
- functional_role=read('.agents/roles/functional.md').lower()
- for token in ('create and append','draft specifications','acceptance criteria'):
-  if token not in functional_role: fail('functional-scope',f'functional role missing {token}')
- spec_skill=read('.agents/skills/spec/SKILL.md')
- for token in ('delegate may create and append','A functional delegate may write draft specification sections','Only the user approves'):
-  if token not in spec_skill: fail('functional-scope',f'spec skill missing {token}')
- return errors
-if __name__=='__main__':
- if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')
- try: errors=validate(sys.argv[1] if len(sys.argv)==2 else Path(__file__).resolve().parents[1])
- except (OSError,UnicodeError,ValueError) as e: sys.exit(f'Validation could not complete: {e}')
- for e in errors: print(e,file=sys.stderr)
- if errors: sys.exit(1)
- print('Template validation passed: structure, links, manifests, contracts, resume, prompt, safety heuristics and CI.')
+    def fail(rule, msg):
+        errors.append(f'{rule}: {msg}')
+
+    cache = {}
+
+    def text(p):
+        key = str(p)
+        if key not in cache:
+            cache[key] = p.read_text(encoding='utf-8') if p.is_file() else ''
+        return cache[key]
+
+    def read(name):
+        return text(root / name)
+
+    for name in REQUIRED:
+        if not (root / name).is_file() or not (root / name).stat().st_size:
+            fail('structure', f'missing or empty {name}')
+
+    legacy = root / '.agents/external-agents.json'
+    if legacy.exists() or legacy.is_symlink():
+        fail('harness-config', 'remove obsolete .agents/external-agents.json')
+
+    harness_dir = root / '.agents/harnesses'
+    if not harness_dir.resolve().is_relative_to(root):
+        fail('harness-config', 'harness directory must stay inside the checkout')
+    elif harness_dir.is_dir():
+        for path in sorted(harness_dir.iterdir()):
+            if path.suffix != '.json' or path.stem not in HARNESS_NAMES:
+                fail('harness-config', f'invalid coordinator filename: {path.name}')
+                continue
+            if not path.is_file() or not path.resolve().is_relative_to(root):
+                fail('harness-config', f'invalid coordinator file: {path.name}')
+                continue
+            try:
+                config = json.loads(path.read_text(encoding='utf-8'), object_pairs_hook=unique_json_object,
+                                    parse_constant=reject_json_constant)
+            except (OSError, ValueError) as exc:
+                fail('harness-config', f'{path.name}: {exc}')
+                continue
+            for problem in check_harness(config, path.stem):
+                fail('harness-config', f'{path.name}: {problem}')
+
+    docs = [root / n for n in ('AGENTS.md', 'CLAUDE.md', 'README.md', 'NEW_PROJECT_PROMPT.md') if (root / n).is_file()]
+    docs.extend((root / 'specs').rglob('*.md'))
+    for p in docs:
+        s = text(p)
+        for dest in LINKS.findall(s):
+            dest = dest.strip().split(' "', 1)[0].strip('<>')
+            u = urlsplit(dest)
+            if u.scheme or dest.startswith('#'):
+                continue
+            target = (p.parent / unquote(u.path)).resolve()
+            if not target.is_relative_to(root) or not target.exists():
+                fail('links', f'{p.relative_to(root)} -> {dest}')
+
+    def heading_slug(value):
+        value = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', value).replace('`', '').strip().lower()
+        value = re.sub(r'[^\w\s-]', '', value, flags=re.UNICODE)
+        return value.replace(' ', '-')
+
+    anchors = {}
+    for p in root.rglob('*.md'):
+        seen = {}
+        values = set()
+        for heading in HEADING.findall(text(p)):
+            base = heading_slug(heading)
+            count = seen.get(base, 0)
+            values.add(base if count == 0 else f'{base}-{count}')
+            seen[base] = count + 1
+        anchors[p.resolve()] = values
+
+    fragment_docs = [root / n for n in ('AGENTS.md', 'CLAUDE.md', 'README.md', 'specs/README.md') if (root / n).is_file()]
+    for folder in ('docs', 'specs/methodology', 'specs/guidelines'):
+        fragment_docs.extend((root / folder).rglob('*.md'))
+    for p in fragment_docs:
+        for dest in LINKS.findall(text(p)):
+            dest = dest.strip().split(' "', 1)[0].strip('<>')
+            u = urlsplit(dest)
+            if u.scheme or not u.fragment or not u.path:
+                continue
+            target = (p.parent / unquote(u.path)).resolve()
+            if target.suffix != '.md' or not target.is_file():
+                continue
+            if unquote(u.fragment) not in anchors.get(target, set()):
+                fail('fragments', f'{p.relative_to(root)} -> {dest}')
+
+    agents = read('AGENTS.md')
+    for n in ('architecture', 'ui', 'quality', 'security'):
+        if f'(specs/guidelines/{n}.md)' not in agents:
+            fail('agents', f'missing guideline {n}')
+    if '(specs/project-rules.md)' not in agents:
+        fail('agents', 'missing specs/project-rules.md link')
+    if len(agents.splitlines()) > 65:
+        fail('agents', 'AGENTS.md exceeds 65 lines')
+    if 'The user talks only to the orchestrator' not in agents:
+        fail('orchestrator-only', 'AGENTS.md must state that the user talks only to the orchestrator')
+
+    s = read('NEW_PROJECT_PROMPT.md')
+    m = re.search(r'```text\n(.*?)\n```', s, re.S)
+    tokens = ('[PROJECT_NAME]', '[SHORT_DESCRIPTION]', 'https://github.com/', 'independent', 'AGENTS.md',
+              '$init-project', 'specs/setup-progress.md', 'owner', 'visibility', 'authorization', 'planning',
+              '$spec', '$dev')
+    if not m or any(t.lower() not in m[1].lower() for t in tokens):
+        fail('prompt', 'incomplete copyable prompt')
+
+    safety = docs + [root / n for n in ('PROMPT_BACKUP.md', 'PROMPT_BACKUP_COMPLETE.md', '.gitignore',
+                                        '.github/workflows/validate.yml', 'scripts/validate-template',
+                                        'scripts/test-validator') if (root / n).is_file()]
+    patterns = (
+        r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
+        r'\bgh[pousr]_[A-Za-z0-9]{30,}\b',
+        r'\bgithub_pat_[A-Za-z0-9_]{30,}\b',
+        r'\bAKIA[A-Z0-9]{16}\b',
+        r'\bsk-[A-Za-z0-9]{32,}\b',
+        r'(?im)^\s*(?:password|api_key|access_token|secret)\s*[:=]\s*["\']?[A-Za-z0-9+/=_-]{20,}',
+    )
+    for p in safety:
+        s = text(p)
+        lower = s.lower()
+        if any(literal in lower for literal in SECRET_LITERALS) and any(re.search(pat, s) for pat in patterns):
+            fail('secrets', f'credential-like content in {p.relative_to(root)} (value withheld)')
+        if any(literal in lower for literal in PORTABILITY_LITERALS) and re.search(
+                r'/(?:Users|home|workspace)/[A-Za-z0-9_.-]+|[A-Z]:\\Users\\', s):
+            fail('portability', f'machine-specific path in {p.relative_to(root)}')
+
+    if re.search(r'(?i)(?:all projects|every project|all applications) must (?:use|install|run)\b', agents):
+        fail('neutrality', 'universal stack mandate in AGENTS.md')
+
+    try:
+        policy = runpy.run_path(str(root / 'scripts/ci_workflow.py'))
+        errors.extend(policy['validate_workflow'](root / '.github/workflows/validate.yml'))
+    except (OSError, ValueError):
+        fail('ci', 'workflow policy unavailable')
+
+    for name, req_tokens in {
+        'specs/methodology/ci-policy.md': (
+            '## Canonical verification entry point',
+            'Reuse an existing command', 'each required suite once', 'nonzero exit status',
+            'missing prerequisite', 'invalid mode', 'unexpectedly zero discovered tests',
+            'must not install dependencies', 'local/CI selection parity',
+        ),
+        'AGENTS.md': ('python3 scripts/verify', '--full', '--base SHA --head SHA'),
+    }.items():
+        for token in req_tokens:
+            if not satisfied(read(name), token):
+                fail('verification-entry', f'{name}: missing {token}')
+
+    for name, req_tokens in {
+        'specs/project-rules.md': (
+            'revisión técnica independiente', 'tweak', 'UNRUN', 'qa-review',
+            'invoke_subagent', 'Dev32/PR30', 'auto-merge',
+        ),
+        'specs/methodology/approvals.md': (
+            'Publicación de rama y PR', 'No se necesita otra aprobación de', 'Nunca activar auto-merge',
+        ),
+        'specs/methodology/myfinanzas-coordination.md': (
+            'Publicar rama y crear o', 'nunca auto-merge', 'no cierra el turno',
+            '### Modo de ejecución', 'merge exige aprobación', 'ownership disjunto', 'Agent Relay v1',
+        ),
+    }.items():
+        for token in req_tokens:
+            if not satisfied(read(name), token):
+                fail('coordination', f'{name}: missing {token}')
+
+    for name, req_tokens in {
+        'specs/methodology/approvals.md': (
+            '## Limpieza local posterior al merge', 'cierre ordinario',
+            'la PR está `MERGED`', 'git worktree remove <worktree-de-la-tarea>',
+            'git branch -d <rama-de-la-tarea>', 'sin `--force`', 'sin `-D`',
+            'No exigir que cada commit', 'preservar la rama', 'git reset --hard', 'git clean -fd',
+            'ramas remotas', 'otra tarea',
+        ),
+        'specs/README.md': (
+            'se retira tras restaurar y consolidar', 'mismo cambio de la tarea',
+            'nunca en una PR creada solo para borrarlo',
+        ),
+    }.items():
+        for token in req_tokens:
+            if not satisfied(read(name), token):
+                fail('lifecycle', f'{name}: missing {token}')
+
+    active_model_policy = (
+        'AGENTS.md', 'specs/project-rules.md', 'specs/methodology/myfinanzas-coordination.md',
+        'docs/HERMES_ADAPTER.md', 'docs/GUIA_VISUAL_ORQUESTACION.md',
+    )
+    for name in active_model_policy:
+        if re.search(r'(?i)(maximum permitted combination is|absolute Codex subagent ceiling|techo absoluto de|never automatically escalate.{0,80}above this ceiling)', read(name)):
+            fail('resource-policy', f'{name}: fixed model ceiling contradicts the no-ceiling policy')
+
+    return errors
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 2:
+        sys.exit('Usage: validate-template [repository-root]')
+    try:
+        errors = validate(sys.argv[1] if len(sys.argv) == 2 else Path(__file__).resolve().parents[1])
+    except (OSError, UnicodeError, ValueError) as e:
+        sys.exit(f'Validation could not complete: {e}')
+    for e in errors:
+        print(e, file=sys.stderr)
+    if errors:
+        sys.exit(1)
+    print('Template validation passed: structure, links, project-rules, harnesses, prompt, safety heuristics and CI.')

@@ -2,7 +2,7 @@
 
 Estado: STEP 8 completado e integrado mediante PR #8; ocho etapas iniciales cerradas.
 Autorización del usuario: 2026-10-21. Base main `5f1e27b`, PR #7 MERGED.
-Se reutiliza [.agents/skills/dev/SKILL.md](../.agents/skills/dev/SKILL.md); no se crea otra
+Se reutiliza .agents/skills/dev/SKILL.md (`../.agents/skills/dev/SKILL.md` en `agentic-harness-plugin`); no se crea otra
 Skill ni se cambia la metodología de ocho etapas. E1.1 permanece completada e integrada.
 
 ## Contraste con experiencia real
@@ -42,7 +42,7 @@ Identity–Handoff del walkthrough init-project en setup-progress.
 | 3 Enforceable rules | Controles/CI y regresiones | Integrado; [automated checks](automated-checks.md), PR #3 |
 | 4 Roadmap | Cuatro épicas, 30 entregas funcionales | Aprobado e integrado; [roadmap](roadmap.md), PR #5 |
 | 5 Specification | E1.1 y diseño aprobados, 43 AC | Integrado; [specification](01-saldos-control-specification.md), PR #6 |
-| 6 Reusable spec Skill | Skill spec existente revisada/reutilizada | Cubierto; [spec Skill](../.agents/skills/spec/SKILL.md), Handoff |
+| 6 Reusable spec Skill | Skill spec existente revisada/reutilizada | Cubierto; spec Skill (`../.agents/skills/spec/SKILL.md` en `agentic-harness-plugin`), Handoff |
 | 7 Build | E1.1 local/ficticia implementada y verificada | Integrado; PR #7/main 5f1e27b; motores posteriores pendientes |
 | 8 Reusable dev Skill | Skill dev existente consolidada con experiencia real | Completado e integrado mediante PR #8, aprobada sobre f4ff3e2 |
 

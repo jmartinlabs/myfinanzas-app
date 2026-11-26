@@ -213,8 +213,8 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
                     self.assertIn('FAIL prerequisites',result.stdout); self.assertNotIn('PASS api',result.stdout)
                 finally: moved.rename(path)
     def test_missing_required_script_fails(self):
-        (self.root/'scripts/test-agent-usage').unlink()
-        result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL test-agent-usage',result.stdout)
+        (self.root/'scripts/test-release').unlink()
+        result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL test-release',result.stdout)
     def test_invalid_modes_and_phase_flags_fail_without_checks(self):
         for args in (['invalid'],['baseline','--full'],['application','--base',self.base],['result','--pull-request']):
             self.clear(); result=self.run_entry(*args); self.assertNotEqual(result.returncode,0); self.assertEqual(self.calls(),[])

@@ -26,6 +26,7 @@ PROTECTED_NAMES = {
 }
 PROTECTED_PATHS = {
     'specs/readme.md',
+    'specs/project-rules.md',
     'docs/claude_code.md',
     'docs/guia_visual_orquestacion.md',
 }
@@ -72,20 +73,15 @@ APPLICATION_ONLY = ('apps/', 'tests/')
 # Harness contract inputs owned by no single suite: instructions, templates,
 # methodology and the harness scripts themselves always select every suite.
 CONTRACT_INPUTS = ('templates/', '.agents/', 'specs/methodology/', 'specs/guidelines/',
-                   'AGENTS.md', 'CLAUDE.md', 'scripts/', '.claude/', '.opencode/', '.gitignore')
+                   'specs/project-rules.md', 'AGENTS.md', 'CLAUDE.md', 'scripts/', '.claude/', '.opencode/', '.gitignore')
 HARNESS_INPUTS = (
     ('test-validator', ('README.md', 'NEW_PROJECT_PROMPT.md', 'docs/', '.codex/',
                         '.github/workflows/', 'specs/README.md')),
     ('test-checks', ('package.json', 'bun.lock', 'apps/api/package.json',
                      'apps/web/package.json', '.github/workflows/', 'specs/methodology/ci-policy.md')),
     ('test-verification', ('.github/workflows/',)),
-    ('test-agent-relay', ()),
     ('test-evidence', ()),
     ('test-release', ('infra/', 'package.json', 'bun.lock', '.github/workflows/')),
-    ('test-work-issue', ()),
-    ('test-delegation-route', ()),
-    ('test-agent-usage', ('.codex/', 'docs/USAGE_REPORTS.md')),
-    ('test-auto-agent-usage', ('.codex/',)),
 )
 
 
