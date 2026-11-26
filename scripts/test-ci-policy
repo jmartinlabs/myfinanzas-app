@@ -844,8 +844,9 @@ class CiHarnessSelectionTests(unittest.TestCase):
                                  ENTRY['baseline_checks']('docs'))
 
     def test_contract_inputs_select_every_suite(self):
+        self.assertFalse(POLICY['docs_path']('specs/project-rules.md'))
         for path in ('templates/specification.md', '.agents/skills/relay/SKILL.md', 'AGENTS.md',
-                     'CLAUDE.md', 'scripts/verify', 'scripts/ci_policy.py',
+                     'CLAUDE.md', 'specs/project-rules.md', 'scripts/verify', 'scripts/ci_policy.py',
                      'specs/methodology/ci-policy.md', 'specs/guidelines/quality.md'):
             with self.subTest(path=path):
                 self.assertEqual(POLICY['harness_suites']((path,)), self.all_suites())
@@ -854,7 +855,7 @@ class CiHarnessSelectionTests(unittest.TestCase):
         cases = {
             'infra/release.py': ('test-release',),
             'README.md': ('test-validator',),
-            'docs/USAGE_REPORTS.md': ('test-validator', 'test-agent-usage'),
+            'docs/USAGE_REPORTS.md': ('test-validator',),
             'package.json': ('test-checks', 'test-release'),
             '.github/workflows/validate.yml': ('test-validator', 'test-checks',
                                                'test-verification', 'test-release'),

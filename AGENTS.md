@@ -5,15 +5,22 @@ Excel preservando su semántica económica, identificadores y controles. Referen
 candidata vigente: `MyFinanzas2026_v5.11(7).xlsx` ([contexto](specs/project.md)), no estable
 ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad hasta el traspaso.
 
+## Núcleo común y reglas locales
+- El núcleo común (skills `orchestrate`, `spec`, `dev`, `task`, `tweak`, `handoff`, `relay`,
+  `work-issue`, roles, plantillas y metodología base) proviene del plugin global
+  `agentic-harness-plugin`.
+- Reglas locales vinculantes (prevalece la más estricta): [project-rules](specs/project-rules.md),
+  [coordinación local](specs/methodology/myfinanzas-coordination.md) y
+  [aprobaciones](specs/methodology/approvals.md).
+
 ## Antes de actuar
 - Contrasta Git/PR y el `Status` del Project **MyFinanzas · Development** (#4): es el único
-  seguimiento operativo y el gate de fase. El [tablero](specs/epic-board.md) es **histórico**:
-  conserva decisiones y checkpoints, puede estar desactualizado y no es permiso vigente.
+  seguimiento operativo y el gate de fase. El [tablero](specs/epic-board.md) es **histórico**
+  y no es permiso vigente.
 - Carga solo lo aplicable: [contexto](specs/project.md), [roadmap](specs/roadmap.md),
   [referencia funcional](specs/functional-reference-v5.11.md) y las guías
   [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
   [quality](specs/guidelines/quality.md) y [security](specs/guidelines/security.md).
-  `project.md` y `setup-progress.md` son contexto histórico: contrástalos.
 - Decisiones financieras y funcionales: solo en su spec propietaria (`specs/NN-*`); no las
   reabras, dupliques ni infieras.
 
@@ -23,30 +30,23 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   `--base SHA --head SHA [--pull-request]`; [CI](specs/methodology/ci-policy.md) para perfiles.
 
 ## Coordinación
-- [$orchestrate](.agents/skills/orchestrate/SKILL.md), [reglas locales](specs/methodology/myfinanzas-coordination.md)
-  y [aprobaciones](specs/methodology/approvals.md). Reparto: un coordinador técnico activo
-  designado por el usuario para cada periodo de trabajo (cualquier cliente compatible); Álex asesora y el usuario aprueba ([detalle](specs/methodology/myfinanzas-coordination.md#reparto-de-responsabilidades--rol-de-coordinador-asesor-y-usuario)).
-- El coordinador mantiene identificados los siguientes trabajos del roadmap y sus dependencias; mientras algo avanza o espera, prepara SPEC, investigación, paquete DEV ya autorizado o diseño QA sin cruzar gates. Replanifica ante resultados o bloqueos y deja una siguiente acción verificable; no crees trabajo artificial ni un segundo scheduler.
-- Transportes: Codex y OpenCode se delegan localmente por CLI ([delegación externa](specs/methodology/dynamic-agents-external-clients.md); `.agents/harnesses/<coordinador>.json` (v2; Claude Code usa `claude.json`, leído bajo demanda al delegar) fija por proyecto elegibilidad, modelo, esfuerzo y tareas; `model: null` y `effort: null` heredan la configuración nativa del cliente; las credenciales quedan fuera del repositorio). [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte para conversaciones externas que el propietario abre expresamente (solo bajo petición; no crea conversaciones); ninguno concede aprobación ni sustituye a `handoff`. [$work-issue](.agents/skills/work-issue/SKILL.md) (protocolo: [issue-workflow](specs/methodology/issue-workflow.md)) recoge trabajo ya autorizado en Issues/Projects: el Status del Project es el gate de fase, la etiqueta `agent:X` (el nombre suelto es un alias) solo enruta y reservar exige un recibo de contexto vigente; una invocación con agente (`work-issue` con el agente nombrado; en Hermes, `/work-issue hermes`, porque `@` es mención de archivo) es una sesión que agota la cola elegible de ese agente, una Issue a la vez, hasta que no queda trabajo o aparece un bloqueo real. Toda sesión de `$work-issue` carga `$orchestrate` antes de leer la cola.
-- [Flujos](specs/methodology/workflows.md) para clasificar; [agentes](specs/methodology/dynamic-agents.md) (su parte de [delegación externa](specs/methodology/dynamic-agents-external-clients.md), con los procedimientos de Codex y OpenCode por CLI, solo si interviene otro cliente)
-  y [roles](.agents/roles/README.md) al delegar (las reglas de modelo y límites del proveedor están en `$orchestrate`).
-- The user talks only to the orchestrator. Roles and auxiliary workers act solely on a coordinator's work packet: they never run `work-issue`, claim Issues, write Project `Status` or delegate further. This is an instruction, and a technical control only where a client enforces it, never a guarantee.
-- **Modelos y esfuerzo**: el modelo del coordinador lo configura el usuario en su cliente y nunca se cambia. Los defaults y perfiles `standard`/`complex` de los delegados nativos (`local`) y la elegibilidad, modelo y esfuerzo de los clientes externos (`external`) viven en `.agents/harnesses/<coordinador>.json`, que solo edita el propietario; el harness no genera agentes. Un default o perfil configurado es una petición, no un requisito: si el cliente no puede aplicarlo o confirmarlo, se delega con la herencia nativa y se informa; en delegación nativa solo una selección exigida expresamente que no pueda garantizarse detiene el despacho (un modelo fijado de un cliente externo no disponible sí se informa y se para). Hermes (sin fichero de coordinador) conserva la delegación nativa `model_map` y despacha con `option: <rol>` cuando la ruta está configurada.
-- El estado operativo vive en GitHub Issues + Project con las transiciones de `$work-issue` (usuario: `Backlog → Ready`, revisión, `Done`, desbloqueo; agente: reserva, `{Phase} In Review` y `Blocked` solo desde su fase en curso); sin tablero paralelo.
-- Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
-  Aprobar una spec no autoriza desarrollo.
-- Un ejecutor por tarea: delegar lo sustancial, segundo plano si permite avanzar en paralelo y QA
-  independiente siempre; sin agentes artificiales.
-- [$handoff](.agents/skills/handoff/SKILL.md) consolida y para; continúa el alcance autorizado hasta
-  completarlo o un bloqueo real, indicando responsable, acción humana y estado ([cierre](.agents/skills/orchestrate/SKILL.md#execution-continuity)).
+- Reparto: un coordinador técnico activo designado por el usuario (cualquier cliente
+  compatible); Álex asesora y el usuario aprueba.
+- The user talks only to the orchestrator. Roles and auxiliary workers act solely on a
+  coordinator's work packet: they never run `work-issue`, claim Issues, write Project `Status`
+  or delegate further.
+- Configuración por coordinador en `.agents/harnesses/<coordinador>.json` (solo la edita el
+  propietario). Un perfil configurado es una petición con herencia nativa si el cliente no
+  puede aplicarlo o confirmarlo.
+- Un ejecutor por tarea, QA independiente en subagente limpio de solo lectura y sin agentes
+  artificiales. Aprobar una spec no autoriza desarrollo.
 
 ## Integridad y límites
 - Rigor en lógica financiera, integridad histórica, seguridad y persistencia; sin reglas
   nuevas ni supuestos sobre extremos no demostrados. No reinicialices el proyecto.
 - Datos financieros reales solo con autorización específica; nunca publiques información
-  privada, bases reales, credenciales ni secretos en Git. Sin despliegue, VPS ni cambios de
-  permisos o visibilidad sin autorización específica.
-- Evita documentación redundante; resuelve lo técnico ordinario dentro del alcance.
+  privada, bases reales, credenciales ni secretos en Git. Sin despliegue, VPS, Dev32/PR30 ni
+  cambios de permisos o visibilidad sin autorización específica.
 
 ## Política permanente de Git y GitHub
 - Aprobada el 2026-10-20. Gestiona Git/GitHub de forma autónoma; repositorio público
@@ -57,5 +57,4 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   Publica rama y PR con resumen, cambios, pruebas y limitaciones; declara dependencias.
 - Espera aprobación explícita antes del merge; el permiso de push no la sustituye. Tras el
   merge verifica el commit y deja el checkout limpio. Ante seguridad, conflictos o validación
-  fallida, detente; no fuerces push ni desactives verificaciones. Sin operaciones destructivas
-  ni despliegues sin autorización específica.
+  fallida, detente; no fuerces push ni desactives verificaciones.
