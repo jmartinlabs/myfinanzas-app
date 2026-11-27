@@ -290,6 +290,52 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         # --profile flag must not exist.
         bad_flag = self.run_entry('--profile', 'instructions')
         self.assertNotEqual(bad_flag.returncode, 0)
+
+    def test_stale_event_and_base_only_classification_fail_closed_in_verify(self):
+        # Push that only adds AGENTS.md, followed by a code commit.
+        (self.root / 'AGENTS.md').write_text('instructions\n')
+        inst_head = self.commit()
+        (self.root / 'apps/web/src/code.ts').parent.mkdir(parents=True, exist_ok=True)
+        (self.root / 'apps/web/src/code.ts').write_text('export const x = 1;\n')
+        self.commit()
+        event = self.home / 'stale-inst.json'
+        event.write_text(json.dumps({'ref': 'refs/heads/main', 'before': self.head, 'after': inst_head}))
+        for checkout_ref in (inst_head, None):
+            extra = {'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event)}
+            if checkout_ref is not None:
+                extra['CI_CHECKOUT_REF'] = checkout_ref
+            res = self.run_entry('classify', extra=extra)
+            self.assertEqual(res.returncode, 0, res.stdout)
+            self.assertEqual(res.stdout.strip(), 'full')
+        # Passing --base without --head passes HEAD to the classifier.
+        base_only = self.run_entry('classify', '--base', self.head)
+        self.assertEqual(base_only.returncode, 0, base_only.stdout)
+        self.assertEqual(base_only.stdout.strip(), 'full')
+
+    def test_preflight_fast_skips_playwright_and_age_and_requires_git(self):
+        # In fast (PR) mode, missing playwright and age still passes preflight and runs typecheck/build/web.
+        extra = self.integration_event('apps/web/src/fast.ts', branch='fixture-fast-preflight')
+        pw_path = self.bin / 'playwright'; pw_moved = self.bin / 'playwright.disabled'
+        age_path = self.bin / 'age'; age_moved = self.bin / 'age.disabled'
+        pw_path.rename(pw_moved); age_path.rename(age_moved)
+        try:
+            self.clear()
+            fast_res = self.run_entry('ci', extra=extra)
+            self.assertEqual(fast_res.returncode, 0, fast_res.stdout)
+            self.assertEqual(self.calls(), ['typecheck', 'build', 'web'])
+        finally:
+            pw_moved.rename(pw_path); age_moved.rename(age_path)
+        # Missing git in application/ci mode fails preflight with UNRUN and runs no application checks.
+        git_path = self.bin / 'git'; git_moved = self.bin / 'git.disabled'; git_path.rename(git_moved)
+        try:
+            for mode_args in (['application'], ['ci']):
+                self.clear()
+                res = self.run_entry(*mode_args, extra=extra if mode_args == ['ci'] else None)
+                self.assertNotEqual(res.returncode, 0, res.stdout)
+                self.assertIn('UNRUN application checks: prerequisite git unavailable', res.stdout)
+                self.assertEqual(self.calls(), [])
+        finally:
+            git_moved.rename(git_path)
     def test_missing_required_script_fails(self):
         (self.root/'scripts/test-release').unlink()
         result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL test-release',result.stdout)
@@ -332,11 +378,13 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
                 finally: policy.write_text(original)
 
     def test_result_rejects_missing_failed_and_unexpected_skips(self):
-        for classification,baseline,full in (('docs','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
+        for classification,baseline,full in (('docs','success','skipped'),('instructions','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
             result=self.run_entry('result',extra={'CI_CLASS':classification,'CI_BASELINE':baseline,'CI_FULL':full})
             self.assertEqual(result.returncode==0,(classification,baseline,full) in (('docs','success','skipped'),('full','success','success')))
-    def integration_event(self, path, text='fixture\n', branch='fixture-feature', base_ref='main'):
+    def integration_event(self, path, text=None, branch='fixture-feature', base_ref='main'):
         self.git('switch', '-qc', branch)
+        if text is None:
+            text = f'fixture {path} {branch}\n'
         target = self.root / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(text)
         head = self.commit()
         self.git('switch', '-q', 'main')

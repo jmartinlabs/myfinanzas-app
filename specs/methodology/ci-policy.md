@@ -199,7 +199,10 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   `.claude/`, `specs/methodology/`, `specs/guidelines/` en `.md`) ejecuta **todo** el
   baseline incluyendo todas las regresiones `test-*` y omite explícitamente la fase de
   aplicación (`INTENTIONALLY SKIPPED application checks: ...`); cualquier mezcla
-  `docs`+`instructions`, configuración/código no `.md`, ruta desconocida, comparación no
+  `docs`+`instructions`, configuración/código no `.md`, ruta desconocida que no sea
+  Markdown documental (cualquier `.md` no protegido y no funcional es `docs`), modos
+  distintos de blob regular (`120000`, `160000`, `T`), blobs binarios o con `NUL`,
+  copias desde orígenes no permitidos, comparación no
   verificable o `--full` selecciona `full` (baseline, tipos/build, API/SQLite y E2E).
   No existen banderas ni perfiles manuales nuevos (`--profile` no existe). El perfil de
   venue CI (`docs|fast|full`) no cambia: las PR hacia `main`/`test` siguen en `fast` para
@@ -207,8 +210,8 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   La excepción histórica AC23 sigue limitada a su rama.
 - **Preflight de dependencias de aplicación en `scripts/verify`:** antes de ejecutar la
   fase de aplicación (modos `all`, `application`, `ci`), `scripts/verify` comprueba en
-  segundos `bun`, `node`, `age` (en `full`), `playwright` (en `PATH` o
-  `node_modules/.bin`) y `node_modules` presente y no vacío. Si falta alguno, no ejecuta
+  segundos `git`, `bun`, `node` y `node_modules` (presente y no vacío) en `fast`, y añade
+  `age` y `playwright` (en `PATH` o `node_modules/.bin`) en `full`. Si falta alguno, no ejecuta
   `typecheck/build/web/api/e2e`, emite `UNRUN application checks: prerequisite <nombre>
   unavailable` (una línea por prerrequisito) y termina con código distinto de 0 cuando la
   cobertura exige aplicación, sin reportar PASS ni FAIL de tests y sin aprovisionar
@@ -405,8 +408,9 @@ relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `fu
   `docs/GUIA_VISUAL_ORQUESTACION.md` y cualquier Markdown funcional bajo `apps/`,
   `packages/`, `tests/`, `scripts/`, `.github/`, `specs/fixtures/`, `build/` o `dist/`.
   Mezclar documentación con código/configuración conserva el perfil de mayor riesgo;
-  renombrados y eliminaciones se evalúan en ambos extremos. Non-Markdown, rutas
-  desconocidas y clasificación incierta siguen siendo `full`. Limitación conocida
+  renombrados, copias (`--find-copies-harder`) y eliminaciones se evalúan en ambos extremos.
+  Rutas no Markdown, rutas desconocidas fuera de `.md` documental (cualquier `.md` no
+  protegido y no funcional es `docs`) y clasificación incierta siguen siendo `full`. Limitación conocida
   (2026-10-28): `validate-template` comprueba enlaces en `AGENTS.md`, `README.md`,
   `NEW_PROJECT_PROMPT.md`, `specs/**`, `templates/**` y `.agents/skills/**`; cualquier
   `.md` admitido fuera de esas rutas (por ejemplo `docs/`, `infra/` o un futuro
