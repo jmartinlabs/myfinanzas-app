@@ -1,11 +1,8 @@
-## Estado metodológico vigente — v2.14.0 (adaptación selectiva)
+## Estado metodológico vigente — v2.2.0
 
-Adaptación local Standard autorizada hasta tag v2.14.0/`98b5351`, sin reinicializar la aplicación ni afirmar una adopción íntegra.
-[Procedencia y comprobaciones](methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26). Modelos, cuota, Agent Relay v1 como transporte operativo, publicación autorizada de rama/PR, continuidad y cierre se integran en los contratos existentes; evidencia estructural no acredita comportamiento real. Merge y desarrollo conservan sus gates separados.
-Trabajo entre clientes usa el paquete de trabajo (`agent-work-packet.md`) y
-el contrato central (`dynamic-agents.md`) provistos por el plugin global `agentic-harness-plugin`; no implica
-launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
-El estado operativo y el gate de fase viven en GitHub Issues + Project #4; los progresos documentan el trabajo y el histórico [tablero](epic-board.md) no refleja el estado actual.
+Adopción de `agentic-harness-plugin` v2.2.0 (tag `v2.2.0`, SHA `6c97c30`), sin reinicializar la aplicación ni reabrir decisiones funcionales.
+La metodología común vive en el plugin global `agentic-harness-plugin`; este repositorio conserva únicamente sus deltas y reglas locales en [coordinación local](methodology/myfinanzas-coordination.md) y [reglas del proyecto](project-rules.md). Merge y desarrollo conservan sus gates separados.
+El estado operativo y el gate de fase viven en los **estados nativos de las Issues** en GitHub; Project #4 y el histórico [tablero](epic-board.md) son solo archivo histórico y no reflejan el estado actual ni autorizan fases.
 Entrada de verificación v2.7.0 conservada, sin cambiar CI. Los estados inferiores son historia.
 
 # Document ownership and workflow
@@ -16,7 +13,7 @@ Spec07 E2.1 y wireframes aprobados e integrados PR37/c04dc07; dev07 autorizado.
 Implementación y verificaciones en [progress07](07-ciclos-operacion-progress.md),
 con gate global API pendiente; sin merge de implementación ni despliegue.
 Referencia única v5.11(7) candidata, no estable. La cronología inferior es histórica.
-Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: `$orchestrate` (en `agentic-harness-plugin`),
+Coordinación vigente mediante el plugin global `agentic-harness-plugin` v2.2.0 (`$orchestrate` y `$work-issue` sobre estados nativos de GitHub),
 [contrato local](methodology/myfinanzas-coordination.md), [reglas del proyecto](project-rules.md), [tablero histórico](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 

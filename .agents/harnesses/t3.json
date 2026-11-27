@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "local": {
+    "provider": "antigravity",
+    "model": "gemini-4-hydrogen",
+    "effort": "medium",
+    "profiles": {
+      "qa-review": {
+        "provider": "opencode",
+        "model": "alibaba-token-plan/glm-5.3",
+        "effort": "low"
+      },
+      "review": {
+        "provider": "codex",
+        "model": "gpt-6.1-terra",
+        "effort": "low"
+      }
+    }
+  }
+}

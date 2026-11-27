@@ -8,7 +8,8 @@ común (skills, roles, plantillas y metodología base) proviene del plugin globa
 `agentic-harness-plugin`.
 
 - Lee al inicio `AGENTS.md`, `specs/project-rules.md`,
-  `specs/methodology/myfinanzas-coordination.md` y el estado real en Git/GitHub + Project #4.
+  `specs/methodology/myfinanzas-coordination.md` y el estado nativo de las Issues en Git/GitHub
+  (Project #4 es histórico).
 - Las reglas de aprobación viven en `specs/methodology/approvals.md` y `specs/project-rules.md`.
   `.claude/settings.json` solo añade confirmaciones `ask` en Claude Code; no concede ni
   sustituye aprobaciones.

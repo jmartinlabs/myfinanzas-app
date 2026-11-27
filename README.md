@@ -278,21 +278,23 @@ en el VPS. El incremento actual prueba la receta definitiva; la evidencia previa
 con imagen de ensayo se conserva como histórica. Ver [runbook](infra/RUNBOOK.md) y
 [estado 32](specs/32-ejecucion-rootless-progress.md).
 
-## Coordinación — adaptación selectiva v2.14.0
-La aplicación no se reinicializa. $orchestrate (`.agents/skills/orchestrate/SKILL.md` en `agentic-harness-plugin`)
-ruta trabajo autorizado hacia las Skills existentes, prefiere especialistas para el trabajo
-autónomo sustancial, usa segundo plano cuando permite avanzar trabajo independiente autorizado
-y mantiene [el tablero](specs/epic-board.md). No es un servicio residente ni un framework
-propio; un ejecutor por tarea y sin agentes artificiales. Sin herramientas de delegación usa la
-misma cola secuencialmente. [Reglas locales](specs/methodology/myfinanzas-coordination.md),
+## Coordinación — Agentic Harness v2.2.0
+La aplicación no se reinicializa. `$orchestrate` (Skill global de `agentic-harness-plugin`)
+ruta trabajo autorizado hacia las Skills del plugin, delega todo el trabajo técnico en
+trabajadores aislados (si no hay trabajador autorizado disponible se reporta el bloqueo; el
+coordinador no ejecuta técnicamente) y usa estados nativos de las Issues (Project #4 y
+[el tablero](specs/epic-board.md) son históricos). No es un servicio residente ni un framework
+propio; un ejecutor por tarea y sin agentes artificiales. En T3 los perfiles se resuelven desde
+`.agents/harnesses/t3.json` o `t3.local.json`, PR Watch sustituye el polling manual de CI y el
+checkout principal del coordinador permanece en `test`. [Reglas locales](specs/methodology/myfinanzas-coordination.md),
 [guía visual](docs/GUIA_VISUAL_ORQUESTACION.md) y
 [fuente/pruebas de adopción](specs/methodology/orchestration-adoption.md).
 El trabajo autorizado de código o documentación incluye publicar su rama y crear o
 actualizar su PR; el merge conserva aprobación explícita y nunca se auto-fusiona.
-La delegación externa (`specs/methodology/dynamic-agents-external-clients.md` en `agentic-harness-plugin`)
+La delegación externa (`dynamic-agents-external-clients.md` en `agentic-harness-plugin`)
 lanza Codex y OpenCode por CLI (sin protocolo manual); el cierre con responsable, acción humana y motivo de espera lo fija `$orchestrate`.
-Clientes adicionales: Hermes reutiliza las mismas Skills canónicas de `.agents/skills/` tras
-`hermes skills trust` por checkout; el rol de coordinador lo designa el usuario y puede ejercerlo
+Clientes adicionales: Hermes reutiliza las mismas Skills canónicas de la instalación global del
+plugin tras `hermes skills trust` por checkout; el rol de coordinador lo designa el usuario y puede ejercerlo
 cualquier cliente compatible; OpenCode sigue disponible como ejecutor
 ([adaptador Hermes](docs/HERMES_ADAPTER.md)).
 Esta adopción no reabre epics ni autoriza desarrollo.

@@ -126,6 +126,48 @@ class ValidationTests(unittest.TestCase):
    with self.subTest(raw=raw):
     (self.root/'.agents/harnesses/claude.json').write_text(raw)
     self.assertRule('harness-config')
+ def host_config(self): return json.loads((self.root/'.agents/harnesses/t3.json').read_text())
+ def write_host_config(self,cfg,name='t3.json'): (self.root/'.agents/harnesses'/name).write_text(json.dumps(cfg))
+ def test_t3_host_harness_is_valid(self):
+  cfg=json.loads((ROOT/'.agents/harnesses/t3.json').read_text())
+  self.assertEqual(cfg['version'],2)
+  self.assertEqual(cfg['local']['provider'],'antigravity')
+  self.assertEqual(cfg['local']['model'],'gemini-4-hydrogen')
+  self.assertEqual(cfg['local']['effort'],'medium')
+  self.assertEqual(cfg['local']['profiles'],{
+   'qa-review':{'provider':'opencode','model':'alibaba-token-plan/glm-5.3','effort':'low'},
+   'review':{'provider':'codex','model':'gpt-6.1-terra','effort':'low'},
+  })
+  self.assertEqual(validate(self.root),[])
+ def test_t3_host_harness_accepts_tiered_and_single_profiles_and_local_override(self):
+  cfg=self.host_config()
+  cfg['local']['profiles']['implementation']={
+   'standard':{'provider':'codex','model':'gpt-6.1-terra','effort':'low'},
+   'complex':{'provider':'codex','model':'gpt-6.2-sol','effort':'high'},
+  }
+  self.write_host_config(cfg,'t3.local.json')
+  self.assertEqual(validate(self.root),[])
+ def test_t3_host_harness_rejects_invalid_configs(self):
+  def broken(mutate):
+   cfg=self.host_config(); mutate(cfg); self.write_host_config(cfg); self.assertRule('harness-config')
+  broken(lambda c: c.update(version=1))
+  broken(lambda c: c.update(version='2'))
+  broken(lambda c: c.update(external={}))
+  broken(lambda c: c['local'].update(extra=True))
+  broken(lambda c: c['local'].pop('provider'))
+  broken(lambda c: c['local'].pop('model'))
+  broken(lambda c: c['local'].update(effort=123))
+  broken(lambda c: c['local'].update(effort=''))
+  broken(lambda c: c['local']['profiles']['qa-review'].pop('provider'))
+  broken(lambda c: c['local']['profiles']['qa-review'].pop('model'))
+  broken(lambda c: c['local']['profiles']['qa-review'].update(effort=False))
+  broken(lambda c: c['local']['profiles'].update(unknown={'provider':'codex','model':'gpt-6.1-terra'}))
+  broken(lambda c: c['local']['profiles'].update(review={'standard':{'provider':'codex','model':'gpt-6.1-terra','effort':'low'}}))
+  broken(lambda c: c['local']['profiles']['review'].update(extra='x'))
+  for raw in ('{"version":2,"version":2}', '{"version":NaN}'):
+   with self.subTest(raw=raw):
+    (self.root/'.agents/harnesses/t3.json').write_text(raw)
+    self.assertRule('harness-config')
  def test_prompt(self):
   self.change('NEW_PROJECT_PROMPT.md','[PROJECT_NAME]','Name'); self.assertRule('prompt')
  def test_secrets(self):
