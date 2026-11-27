@@ -168,34 +168,40 @@ class CiClassifierTests(unittest.TestCase):
                 self.assertEqual(self.classify(base=returned), 'docs')
 
     def test_protected_categories_git_lifecycle_alone_and_product_mixes(self):
-        protected = ['AGENTS.md', 'specs/backlog/AgEnTs.Md', '.agents/skills/demo/SKILL.md',
-                     '.claude/skills/demo/SKILL.md', 'specs/methodology/policy.md',
-                     'specs/guidelines/quality.md', 'specs/README.md',
-                     'docs/CLAUDE_CODE.md', 'templates/specification.md',
-                     'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP_COMPLETE.md',
-                     'apps/api/contract.md', 'tests/fixtures/expected.md',
-                     'scripts/guide.md', 'specs/fixtures/README.md',
-                     '.github/ISSUE_TEMPLATE/config.md',
-                     'scripts/verify', '.github/workflows/validate.yml',
-                     'config.json', 'schema.sql', 'package.json',
-                     'bun.lock', 'apps/api/code.ts']
+        operational_instructions = [
+            'AGENTS.md', 'specs/backlog/AgEnTs.Md', '.agents/skills/demo/SKILL.md',
+            '.claude/skills/demo/SKILL.md', 'specs/methodology/policy.md',
+            'specs/guidelines/quality.md', 'specs/README.md',
+            'docs/CLAUDE_CODE.md', 'templates/specification.md',
+            'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP_COMPLETE.md',
+        ]
+        other_protected = [
+            'apps/api/contract.md', 'tests/fixtures/expected.md',
+            'scripts/guide.md', 'specs/fixtures/README.md',
+            '.github/ISSUE_TEMPLATE/config.md',
+            'scripts/verify', '.github/workflows/validate.yml',
+            'config.json', 'schema.sql', 'package.json',
+            'bun.lock', 'apps/api/code.ts',
+            '.agents/harnesses/t3.json', '.claude/settings.json',
+        ]
         families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
                     'specs/09-plan-' + kind + '.md' for kind in
                     ('brainstorming', 'specification', 'progress', 'testplan')]
-        for path in protected:
+        for path, alone_expected in ([(p, 'instructions') for p in operational_instructions]
+                                     + [(p, 'full') for p in other_protected]):
             with self.subTest(path=path):
                 before = self.git('rev-parse', 'HEAD').decode().strip()
                 self.write(path, 'protected added'); added = self.commit()
-                self.assertEqual(self.classify(added, before), 'full')
+                self.assertEqual(self.classify(added, before), alone_expected)
                 self.write(path, 'protected changed'); changed = self.commit()
-                self.assertEqual(self.classify(changed, added), 'full')
+                self.assertEqual(self.classify(changed, added), alone_expected)
                 for index, family in enumerate(families):
                     base = self.git('rev-parse', 'HEAD').decode().strip()
                     self.write(path, 'protected mixed ' + str(index))
                     self.write(family, 'product mixed ' + path)
                     self.assertEqual(self.classify(base=base), 'full')
                 base = self.git('rev-parse', 'HEAD').decode().strip(); (self.root / path).unlink()
-                self.assertEqual(self.classify(base=base), 'full')
+                self.assertEqual(self.classify(base=base), alone_expected)
 
     def test_real_renames_both_directions_for_every_product_family(self):
         families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
@@ -237,25 +243,26 @@ class CiClassifierTests(unittest.TestCase):
         self.assertEqual(self.classify(base=deleted), 'docs')
 
     def test_functional_docs_do_not_allow_unknown_or_operational_markdown(self):
-        forbidden = ['specs/AGENTS.md', 'specs/CLAUDE.md', 'specs/SKILL.md',
-                     'specs/instructions.md', 'specs/methodology/09-policy-specification.md',
-                     'specs/guidelines/09-guide-specification.md',
-                     '.agents/skills/09-plan-specification.md',
-                     '.claude/skills/09-plan-specification.md',
-                     'templates/09-plan-specification.md',
-                     'specs/README.md', 'docs/CLAUDE_CODE.md',
-                     'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP.md',
-                     'apps/api/09-plan-specification.md',
+        operational = ['specs/AGENTS.md', 'specs/CLAUDE.md', 'specs/SKILL.md',
+                       'specs/instructions.md', 'specs/methodology/09-policy-specification.md',
+                       'specs/guidelines/09-guide-specification.md',
+                       '.agents/skills/09-plan-specification.md',
+                       '.claude/skills/09-plan-specification.md',
+                       'templates/09-plan-specification.md',
+                       'specs/README.md', 'docs/CLAUDE_CODE.md',
+                       'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP.md']
+        forbidden = ['apps/api/09-plan-specification.md',
                      'tests/fixtures/09-plan-specification.md',
                      'scripts/09-plan-specification.md',
                      'specs/fixtures/09-plan-specification.md',
                      '.github/09-plan-specification.md',
                      'unknown.txt', 'specs/backlog/config.yml']
-        for name in forbidden:
+        for name, expected in ([(n, 'instructions') for n in operational]
+                               + [(n, 'full') for n in forbidden]):
             with self.subTest(name=name):
                 for status in ('A', 'M', 'D'):
                     records = (status + '\0' + name + '\0').encode()
-                    self.assertEqual(POLICY['classify_records'](records), 'full')
+                    self.assertEqual(POLICY['classify_records'](records), expected)
                     mixed = b'A\0specs/09-plan-specification.md\0' + records
                     self.assertEqual(POLICY['classify_records'](mixed), 'full')
         for name in ('specs/unknown.md', 'README.md', 'docs/guide.md',
@@ -277,7 +284,30 @@ class CiClassifierTests(unittest.TestCase):
         self.write('AGENTS.md')
         before = self.commit()
         (self.root / 'AGENTS.md').unlink()
-        self.assertEqual(self.classify(base=before), 'full')
+        self.assertEqual(self.classify(base=before), 'instructions')
+        self.write('scripts/verify', 'exit 0')
+        before_script = self.commit()
+        (self.root / 'scripts/verify').unlink()
+        self.assertEqual(self.classify(base=before_script), 'full')
+
+    def test_instructions_renames_and_unverifiable_comparisons(self):
+        self.write('AGENTS.md', 'shared operational instructions')
+        start = self.commit()
+        self.git('mv', 'AGENTS.md', 'CLAUDE.md')
+        moved = self.commit()
+        self.assertEqual(self.classify(moved, start), 'instructions')
+        # Rename from instructions to docs or non-protected path is full.
+        (self.root / 'docs').mkdir(parents=True, exist_ok=True)
+        self.git('mv', 'CLAUDE.md', 'docs/guide.md')
+        to_docs = self.commit()
+        self.assertEqual(self.classify(to_docs, moved), 'full')
+        self.git('mv', 'docs/guide.md', 'CLAUDE.md')
+        back = self.commit()
+        self.assertEqual(self.classify(back, to_docs), 'full')
+        # Unknown/shallow comparisons stay full even if instructions were changed.
+        self.assertEqual(self.classify('f' * 40, back), 'full')
+        (self.root / '.git/shallow').write_text(start + '\n')
+        self.assertEqual(self.classify(moved, start), 'full')
 
     def test_local_git_config_cannot_hide_gitlink_mixed_with_docs(self):
         self.write('specs/backlog/demo.md')
@@ -928,17 +958,23 @@ class CiHarnessSelectionTests(unittest.TestCase):
 class CiResultTests(unittest.TestCase):
     def test_all_result_combinations(self):
         for classification, baseline, full in itertools.product(
-                ('docs', 'full', '', 'invalid'),
+                ('docs', 'instructions', 'full', '', 'invalid'),
                 ('success', 'failure', 'skipped', 'cancelled'),
                 ('success', 'failure', 'skipped', 'cancelled')):
             expected = (classification, baseline, full) in (
-                ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
+                ('docs', 'success', 'skipped'),
+                ('instructions', 'success', 'skipped'),
+                ('full', 'success', 'success'))
             self.assertEqual(POLICY['result_ok'](classification, baseline, full), expected)
 
     def test_final_cli_valid_paths_and_unexpected_skips_failures(self):
         command = ['python3', str(ROOT / 'scripts/ci_policy.py'), 'result']
         for classification, baseline, full in (
-                ('docs', 'success', 'skipped'), ('full', 'success', 'success'),
+                ('docs', 'success', 'skipped'),
+                ('instructions', 'success', 'skipped'),
+                ('instructions', 'success', 'success'),
+                ('instructions', 'failure', 'skipped'),
+                ('full', 'success', 'success'),
                 ('docs', 'failure', 'skipped'), ('full', 'success', 'skipped'),
                 ('full', 'success', 'failure'), ('docs', 'skipped', 'skipped'),
                 ('invalid', 'success', 'success'), ('', 'success', 'skipped'),
@@ -947,7 +983,9 @@ class CiResultTests(unittest.TestCase):
                 env = {**os.environ, 'CI_CLASS': classification, 'CI_BASELINE': baseline, 'CI_FULL': full}
                 r = subprocess.run(command, env=env, capture_output=True)
                 expected = (classification, baseline, full) in (
-                    ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
+                    ('docs', 'success', 'skipped'),
+                    ('instructions', 'success', 'skipped'),
+                    ('full', 'success', 'success'))
                 self.assertEqual(r.returncode == 0, expected)
 
     def test_single_job_result_matrix_rejects_every_missing_failed_skipped_cancelled_phase(self):

@@ -190,10 +190,30 @@ Esto **sustituye** para este repositorio la selección `critical` y la escalada 
 sensibles en PR descritas en el contrato portable: ninguna prueba se elimina ni se
 relaja, solo cambia *cuándo* se ejecuta. Perfiles vigentes: `docs`, `fast`, `full`.
 
-- `python3 scripts/verify` conserva la cobertura local completa cuando la comparación
-  no es `docs`; una comparación `docs` omite aplicación y regresiones del harness.
-  `--full` fuerza toda la cobertura local (baseline, tipos/build, API/SQLite y E2E).
+- `python3 scripts/verify` distingue tres clases de cobertura en su clasificador
+  compartido (`docs`, `instructions`, `full`): `docs` omite regresiones del harness y
+  aplicación; `instructions` (solo documentación operativa protegida: `AGENTS.md`,
+  `CLAUDE.md`, `SKILL.md`, `instructions.md`, `NEW_PROJECT_PROMPT.md`,
+  `PROMPT_BACKUP*.md`, `specs/project-rules.md`, `specs/README.md`,
+  `docs/CLAUDE_CODE.md`, `docs/guia_visual_orquestacion.md`, `templates/`, `.agents/`,
+  `.claude/`, `specs/methodology/`, `specs/guidelines/` en `.md`) ejecuta **todo** el
+  baseline incluyendo todas las regresiones `test-*` y omite explícitamente la fase de
+  aplicación (`INTENTIONALLY SKIPPED application checks: ...`); cualquier mezcla
+  `docs`+`instructions`, configuración/código no `.md`, ruta desconocida, comparación no
+  verificable o `--full` selecciona `full` (baseline, tipos/build, API/SQLite y E2E).
+  No existen banderas ni perfiles manuales nuevos (`--profile` no existe). El perfil de
+  venue CI (`docs|fast|full`) no cambia: las PR hacia `main`/`test` siguen en `fast` para
+  cambios de `instructions`.
   La excepción histórica AC23 sigue limitada a su rama.
+- **Preflight de dependencias de aplicación en `scripts/verify`:** antes de ejecutar la
+  fase de aplicación (modos `all`, `application`, `ci`), `scripts/verify` comprueba en
+  segundos `bun`, `node`, `age` (en `full`), `playwright` (en `PATH` o
+  `node_modules/.bin`) y `node_modules` presente y no vacío. Si falta alguno, no ejecuta
+  `typecheck/build/web/api/e2e`, emite `UNRUN application checks: prerequisite <nombre>
+  unavailable` (una línea por prerrequisito) y termina con código distinto de 0 cuando la
+  cobertura exige aplicación, sin reportar PASS ni FAIL de tests y sin aprovisionar
+  implícitamente; en `docs`/`instructions` la aplicación se omite sin fallar y el baseline
+  se ejecuta normalmente.
 - CI usa un único job de ejecución `required`: `ci-plan`, baseline, preparación y
   `ci`, más `ci-result` siempre. Un job adicional `profile` (solo metadatos, sin pasos
   de verificación) depende de `required` y publica el perfil en el nombre del check.

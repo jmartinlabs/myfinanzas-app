@@ -77,9 +77,9 @@ def classification(args):
     with contextlib.redirect_stdout(output):
         code = POLICY['main'](command)
     value = output.getvalue().strip()
-    if code != 0 or value not in ('docs', 'full'):
+    if code != 0 or value not in ('docs', 'instructions', 'full'):
         raise VerificationError('Shared classifier failed or returned an invalid result.')
-    if value == 'docs':
+    if value in ('docs', 'instructions'):
         # The comparison cannot authorize omission over a different local snapshot.
         status = subprocess.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
                                 cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -214,6 +214,31 @@ def run_checks(checks, prerequisites=(), jobs=1):
             ok = False
     return ok
 
+def missing_application_prerequisites(profile='full'):
+    """Diagnose missing application tooling/dependencies without provisioning."""
+    required = ('bun', 'node', 'playwright', 'node_modules') if profile == 'fast' else (
+        'bun', 'node', 'age', 'playwright', 'node_modules')
+    bin_path = os.pathsep.join(
+        p for p in (str(ROOT / 'node_modules/.bin'), os.environ.get('PATH', '')) if p)
+    missing = []
+    for name in required:
+        if name == 'node_modules':
+            nm = ROOT / 'node_modules'
+            if not nm.is_dir() or not any(nm.iterdir()):
+                missing.append(name)
+        elif name == 'playwright':
+            if shutil.which('playwright', path=bin_path) is None:
+                missing.append(name)
+        elif shutil.which(name) is None:
+            missing.append(name)
+    return missing
+
+def application_preflight(profile='full'):
+    missing = missing_application_prerequisites(profile)
+    for name in missing:
+        print(f'UNRUN application checks: prerequisite {name} unavailable', flush=True)
+    return not missing
+
 def harness_notice(profile, selection):
     """Declare a narrowed or omitted harness selection instead of implying a pass."""
     if selection is None or profile == 'docs':
@@ -256,9 +281,10 @@ def main(argv=None):
         if profile == 'docs':
             print('INTENTIONALLY SKIPPED application checks: docs profile; local QA evidence is separate.')
             return 0
+        if not application_preflight(profile):
+            return 1
         checks = application_checks(profile)
-        tools = ('bun', 'node', 'age', 'git') if profile == 'full' else ('bun', 'git')
-        ok = run_checks(checks, tools)
+        ok = run_checks(checks, ())
         print('CI profile ' + profile + ': ' + ('PASS' if ok else 'FAIL') + '; local full QA is a separate integration gate.')
         return 0 if ok else 1
     if args.mode == 'result':
@@ -273,7 +299,9 @@ def main(argv=None):
         print('Baseline phase: ' + ('PASS' if ok else 'FAIL') + '; application phase not included.')
         return 0 if ok else 1
     if args.mode == 'application':
-        ok = run_checks(application_checks('full'), ('bun', 'node', 'age', 'git'))
+        if not application_preflight('full'):
+            return 1
+        ok = run_checks(application_checks('full'), ())
         print('Application phase: ' + ('PASS' if ok else 'FAIL') + '; baseline phase not included.')
         return 0 if ok else 1
     selected = classification(args)
@@ -287,11 +315,14 @@ def main(argv=None):
     if not run_checks(baseline_checks(selected), ('git',), parallel_jobs()):
         print('UNRUN application checks')
         return 1
-    if selected == 'docs':
-        print('INTENTIONALLY SKIPPED application checks: documentation-only changes; not reported as passed.')
+    if selected in ('docs', 'instructions'):
+        reason = 'documentation-only changes' if selected == 'docs' else 'instructions-only changes'
+        print(f'INTENTIONALLY SKIPPED application checks: {reason}; not reported as passed.')
         app_status = 'skipped'
     else:
-        if not run_checks(application_checks('full'), ('bun', 'node', 'age', 'git')):
+        if not application_preflight('full'):
+            return 1
+        if not run_checks(application_checks('full'), ()):
             return 1
         app_status = 'success'
     ok = POLICY['result_ok'](selected, 'success', app_status)

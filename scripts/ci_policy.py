@@ -3,7 +3,7 @@
 
 Two questions are answered separately:
 
-* coverage (`classify`, docs/full) — may a comparison omit application checks entirely?
+* coverage (`classify`, docs/instructions/full) — may a comparison omit application checks entirely?
 * execution venue (`ci_profile`: docs/fast/full) — what does this event run?
 
 Pull requests to main/test always use the FAST profile (baseline, typecheck, build
@@ -45,24 +45,63 @@ DEPLOY_TAG = re.compile(
     r'refs/tags/deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
 
 
+def _valid_rel_parts(path):
+    if not isinstance(path, str) or not path or '\\' in path:
+        return None
+    parts = path.split('/')
+    if not all(p not in ('', '.', '..') for p in parts):
+        return None
+    return parts
+
+
+def _is_protected_operational_md(lower, name):
+    return (
+        name in PROTECTED_NAMES
+        or bool(PROMPT_BACKUP.fullmatch(name))
+        or lower in PROTECTED_PATHS
+        or any(lower.startswith(prefix) for prefix in PROTECTED_PREFIXES)
+    )
+
+
 def docs_path(path):
     # Documentation Markdown in any directory, except operational/harness files
     # and Markdown consumed by application/build paths. Non-Markdown is full.
-    if not isinstance(path, str) or not path or '\\' in path:
-        return False
-    parts = path.split('/')
-    if not all(p not in ('', '.', '..') for p in parts):
+    parts = _valid_rel_parts(path)
+    if parts is None:
         return False
     lower = path.lower()
     name = parts[-1].lower()
     if not lower.endswith('.md'):
         return False
-    if (name in PROTECTED_NAMES or PROMPT_BACKUP.fullmatch(name)
-            or lower in PROTECTED_PATHS
-            or any(lower.startswith(prefix) for prefix in PROTECTED_PREFIXES)
+    if (_is_protected_operational_md(lower, name)
             or any(lower.startswith(prefix) for prefix in FUNCTIONAL_PREFIXES)):
         return False
     return True
+
+
+def instructions_path(path):
+    # Operational Markdown already protected from docs_path (instructions, skills,
+    # methodology, guidelines, templates). Non-Markdown or functional paths stay full.
+    parts = _valid_rel_parts(path)
+    if parts is None:
+        return False
+    lower = path.lower()
+    name = parts[-1].lower()
+    if not lower.endswith('.md'):
+        return False
+    if any(lower.startswith(prefix) for prefix in FUNCTIONAL_PREFIXES):
+        return False
+    return _is_protected_operational_md(lower, name)
+
+
+def classify_paths(paths):
+    if not paths:
+        return 'full'
+    if all(docs_path(p) for p in paths):
+        return 'docs'
+    if all(instructions_path(p) for p in paths):
+        return 'instructions'
+    return 'full'
 
 
 # Path-derived harness selection for FAST. A regression suite reads a bounded set
@@ -140,8 +179,7 @@ def record_paths(data):
 
 
 def classify_records(data):
-    paths = record_paths(data)
-    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
+    return classify_paths(record_paths(data))
 
 
 def git(root, *args):
@@ -176,8 +214,7 @@ def changed_paths(root, base, head, *, pull_request=False):
 
 def classify_git(root, base, head, *, pull_request=False):
     """Only complete, verified commit comparisons may opt out of full checks."""
-    paths = changed_paths(root, base, head, pull_request=pull_request)
-    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
+    return classify_paths(changed_paths(root, base, head, pull_request=pull_request))
 
 
 def classify_event_range(root, event_name, event):
@@ -208,9 +245,10 @@ def classify_event(root, event_name, event, checkout_ref=None):
                 return 'full'
             base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
             accumulated = classify_git(root, base, expected, pull_request=True)
-            # A last docs-only push must not cancel the PR's full checks when
-            # earlier commits in the same PR changed application/harness code.
-            return 'docs' if original == accumulated == 'docs' else 'full'
+            # A last docs-only or instructions-only push must not cancel the PR's
+            # full checks when earlier commits in the same PR changed code or
+            # mixed docs with instructions.
+            return original if original == accumulated and original in ('docs', 'instructions') else 'full'
         if (not isinstance(checkout_ref, str) or not re.fullmatch(r'[0-9a-f]{40}', checkout_ref)
                 or (expected is not None and checkout_ref != expected)):
             return 'full'
@@ -318,7 +356,7 @@ def ci_result_ok(profile, states):
 
 def result_ok(classification, baseline, full):
     return baseline == 'success' and (
-        (classification == 'docs' and full == 'skipped')
+        (classification in ('docs', 'instructions') and full == 'skipped')
         or (classification == 'full' and full == 'success'))
 
 
