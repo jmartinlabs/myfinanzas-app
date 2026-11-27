@@ -168,34 +168,40 @@ class CiClassifierTests(unittest.TestCase):
                 self.assertEqual(self.classify(base=returned), 'docs')
 
     def test_protected_categories_git_lifecycle_alone_and_product_mixes(self):
-        protected = ['AGENTS.md', 'specs/backlog/AgEnTs.Md', '.agents/skills/demo/SKILL.md',
-                     '.claude/skills/demo/SKILL.md', 'specs/methodology/policy.md',
-                     'specs/guidelines/quality.md', 'specs/README.md',
-                     'docs/CLAUDE_CODE.md', 'templates/specification.md',
-                     'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP_COMPLETE.md',
-                     'apps/api/contract.md', 'tests/fixtures/expected.md',
-                     'scripts/guide.md', 'specs/fixtures/README.md',
-                     '.github/ISSUE_TEMPLATE/config.md',
-                     'scripts/verify', '.github/workflows/validate.yml',
-                     'config.json', 'schema.sql', 'package.json',
-                     'bun.lock', 'apps/api/code.ts']
+        operational_instructions = [
+            'AGENTS.md', 'specs/backlog/AgEnTs.Md', '.agents/skills/demo/SKILL.md',
+            '.claude/skills/demo/SKILL.md', 'specs/methodology/policy.md',
+            'specs/guidelines/quality.md', 'specs/README.md',
+            'docs/CLAUDE_CODE.md', 'templates/specification.md',
+            'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP_COMPLETE.md',
+        ]
+        other_protected = [
+            'apps/api/contract.md', 'tests/fixtures/expected.md',
+            'scripts/guide.md', 'specs/fixtures/README.md',
+            '.github/ISSUE_TEMPLATE/config.md',
+            'scripts/verify', '.github/workflows/validate.yml',
+            'config.json', 'schema.sql', 'package.json',
+            'bun.lock', 'apps/api/code.ts',
+            '.agents/harnesses/t3.json', '.claude/settings.json',
+        ]
         families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
                     'specs/09-plan-' + kind + '.md' for kind in
                     ('brainstorming', 'specification', 'progress', 'testplan')]
-        for path in protected:
+        for path, alone_expected in ([(p, 'instructions') for p in operational_instructions]
+                                     + [(p, 'full') for p in other_protected]):
             with self.subTest(path=path):
                 before = self.git('rev-parse', 'HEAD').decode().strip()
                 self.write(path, 'protected added'); added = self.commit()
-                self.assertEqual(self.classify(added, before), 'full')
+                self.assertEqual(self.classify(added, before), alone_expected)
                 self.write(path, 'protected changed'); changed = self.commit()
-                self.assertEqual(self.classify(changed, added), 'full')
+                self.assertEqual(self.classify(changed, added), alone_expected)
                 for index, family in enumerate(families):
                     base = self.git('rev-parse', 'HEAD').decode().strip()
                     self.write(path, 'protected mixed ' + str(index))
                     self.write(family, 'product mixed ' + path)
                     self.assertEqual(self.classify(base=base), 'full')
                 base = self.git('rev-parse', 'HEAD').decode().strip(); (self.root / path).unlink()
-                self.assertEqual(self.classify(base=base), 'full')
+                self.assertEqual(self.classify(base=base), alone_expected)
 
     def test_real_renames_both_directions_for_every_product_family(self):
         families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
@@ -237,31 +243,34 @@ class CiClassifierTests(unittest.TestCase):
         self.assertEqual(self.classify(base=deleted), 'docs')
 
     def test_functional_docs_do_not_allow_unknown_or_operational_markdown(self):
-        forbidden = ['specs/AGENTS.md', 'specs/CLAUDE.md', 'specs/SKILL.md',
-                     'specs/instructions.md', 'specs/methodology/09-policy-specification.md',
-                     'specs/guidelines/09-guide-specification.md',
-                     '.agents/skills/09-plan-specification.md',
-                     '.claude/skills/09-plan-specification.md',
-                     'templates/09-plan-specification.md',
-                     'specs/README.md', 'docs/CLAUDE_CODE.md',
-                     'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP.md',
-                     'apps/api/09-plan-specification.md',
+        operational = ['specs/AGENTS.md', 'specs/CLAUDE.md', 'specs/SKILL.md',
+                       'specs/instructions.md', 'specs/methodology/09-policy-specification.md',
+                       'specs/guidelines/09-guide-specification.md',
+                       '.agents/skills/09-plan-specification.md',
+                       '.claude/skills/09-plan-specification.md',
+                       'templates/09-plan-specification.md',
+                       'specs/README.md', 'docs/CLAUDE_CODE.md',
+                       'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP.md']
+        forbidden = ['apps/api/09-plan-specification.md',
                      'tests/fixtures/09-plan-specification.md',
                      'scripts/09-plan-specification.md',
                      'specs/fixtures/09-plan-specification.md',
                      '.github/09-plan-specification.md',
                      'unknown.txt', 'specs/backlog/config.yml']
-        for name in forbidden:
+        for name, expected in ([(n, 'instructions') for n in operational]
+                               + [(n, 'full') for n in forbidden]):
             with self.subTest(name=name):
                 for status in ('A', 'M', 'D'):
                     records = (status + '\0' + name + '\0').encode()
-                    self.assertEqual(POLICY['classify_records'](records), 'full')
+                    self.assertEqual(POLICY['classify_records'](records), expected)
                     mixed = b'A\0specs/09-plan-specification.md\0' + records
                     self.assertEqual(POLICY['classify_records'](mixed), 'full')
         for name in ('specs/unknown.md', 'README.md', 'docs/guide.md',
-                     'infra/README.md', 'specs/09-plan-ciclo/plan-specification.md'):
+                     'infra/README.md', 'specs/09-plan-ciclo/plan-specification.md',
+                     'templates-x/a.md', 'unknown/a.md'):
             with self.subTest(docs=name):
                 self.assertEqual(POLICY['classify_records'](('A\0' + name + '\0').encode()), 'docs')
+        self.assertEqual(POLICY['classify_records'](b'A\0templates/a.md\0'), 'instructions')
 
     def test_functional_rename_checks_both_endpoints(self):
         self.write('specs/guidelines/quality.md', 'identical fixture')
@@ -277,7 +286,30 @@ class CiClassifierTests(unittest.TestCase):
         self.write('AGENTS.md')
         before = self.commit()
         (self.root / 'AGENTS.md').unlink()
-        self.assertEqual(self.classify(base=before), 'full')
+        self.assertEqual(self.classify(base=before), 'instructions')
+        self.write('scripts/verify', 'exit 0')
+        before_script = self.commit()
+        (self.root / 'scripts/verify').unlink()
+        self.assertEqual(self.classify(base=before_script), 'full')
+
+    def test_instructions_renames_and_unverifiable_comparisons(self):
+        self.write('AGENTS.md', 'shared operational instructions')
+        start = self.commit()
+        self.git('mv', 'AGENTS.md', 'CLAUDE.md')
+        moved = self.commit()
+        self.assertEqual(self.classify(moved, start), 'instructions')
+        # Rename from instructions to docs or non-protected path is full.
+        (self.root / 'docs').mkdir(parents=True, exist_ok=True)
+        self.git('mv', 'CLAUDE.md', 'docs/guide.md')
+        to_docs = self.commit()
+        self.assertEqual(self.classify(to_docs, moved), 'full')
+        self.git('mv', 'docs/guide.md', 'CLAUDE.md')
+        back = self.commit()
+        self.assertEqual(self.classify(back, to_docs), 'full')
+        # Unknown/shallow comparisons stay full even if instructions were changed.
+        self.assertEqual(self.classify('f' * 40, back), 'full')
+        (self.root / '.git/shallow').write_text(start + '\n')
+        self.assertEqual(self.classify(moved, start), 'full')
 
     def test_local_git_config_cannot_hide_gitlink_mixed_with_docs(self):
         self.write('specs/backlog/demo.md')
@@ -329,11 +361,20 @@ class CiClassifierTests(unittest.TestCase):
         self.write('specs/backlog/demo.md')
         head = self.commit()
         self.assertEqual(POLICY['classify_event'](self.root, 'push',
-                         {'before': self.base, 'after': head}), 'docs')
+                         {'ref': 'refs/heads/main', 'before': self.base, 'after': head}, head), 'docs')
         self.assertEqual(POLICY['classify_event'](self.root, 'pull_request',
-                         {'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}}}), 'docs')
+                         {'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}}}, head), 'docs')
+        # Missing checkout_ref, missing/unsupported push ref or stale HEAD must fail closed.
+        self.assertEqual(POLICY['classify_event'](self.root, 'push',
+                         {'ref': 'refs/heads/main', 'before': self.base, 'after': head}), 'full')
+        self.assertEqual(POLICY['classify_event'](self.root, 'push',
+                         {'before': self.base, 'after': head}, head), 'full')
+        self.assertEqual(POLICY['classify_event'](self.root, 'push',
+                         {'ref': 'refs/tags/v1', 'before': self.base, 'after': head}, head), 'full')
+        self.assertEqual(POLICY['classify_event'](self.root, 'pull_request',
+                         {'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}}}), 'full')
         for event in ('workflow_dispatch', 'unknown', 'push', 'pull_request'):
-            self.assertEqual(POLICY['classify_event'](self.root, event, {}), 'full')
+            self.assertEqual(POLICY['classify_event'](self.root, event, {}, head), 'full')
 
     def test_pr_merge_base_excludes_base_branch_only_code(self):
         self.git('switch', '-qc', 'feature')
@@ -358,8 +399,8 @@ class CiClassifierTests(unittest.TestCase):
         snapshot = CONTEXT['snapshot'](self.root, 'push', event, 'refs/pull/7/merge')
         self.assertEqual(snapshot, self.git('rev-parse', 'HEAD').decode().strip())
         self.assertEqual(POLICY['classify_event'](self.root, 'push',
-                                               {'before': self.base, 'after': head},
-                                               'refs/pull/7/merge'), 'docs')
+                                               {'ref': 'refs/heads/feature', 'before': self.base, 'after': head},
+                                               'refs/pull/7/merge'), 'full')
         with self.assertRaises(ValueError):
             CONTEXT['snapshot'](self.root, 'push', {'after': self.base}, 'refs/pull/7/merge')
         with self.assertRaises(ValueError):
@@ -425,9 +466,10 @@ class CiClassifierTests(unittest.TestCase):
         base = self.commit()
         self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
                  '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'fixture integration', 'feature')
-        push = {'before': before, 'after': head}
+        push = {'ref': 'refs/heads/feature', 'before': before, 'after': head}
         pr = {'pull_request': {'base': {'sha': base}, 'head': {'sha': head}}}
-        self.assertEqual(POLICY['classify_event'](self.root, 'push', push), 'docs')
+        self.assertEqual(POLICY['classify_event'](self.root, 'push', push), 'full')
+        self.assertEqual(POLICY['classify_event'](self.root, 'push', push, head), 'full')
         self.assertEqual(POLICY['classify_event'](self.root, 'push', push, 'refs/pull/7/merge'), 'full')
         self.assertEqual(POLICY['classify_event'](self.root, 'pull_request', pr, 'refs/pull/7/merge'), 'full')
         self.assertEqual(POLICY['classify_event'](self.root, 'push', push, ''), 'full')
@@ -441,14 +483,15 @@ class CiClassifierTests(unittest.TestCase):
         script.parent.mkdir()
         shutil.copy2(ROOT / 'scripts/ci_policy.py', script)
         event = self.root / 'event.json'
-        event.write_text(json.dumps({'before': self.base, 'after': head}))
-        env = {**os.environ, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event)}
-        # The synthetic event must not inherit the CI step's verified integration ref.
-        env.pop('CI_CHECKOUT_REF', None)
+        event.write_text(json.dumps({'ref': 'refs/heads/main', 'before': self.base, 'after': head}))
+        env = {**os.environ, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event),
+               'CI_CHECKOUT_REF': head}
         command = ['python3', str(script), 'classify']
         self.assertEqual(subprocess.check_output(command, env=env).strip(), b'docs')
+        env_no_ref = {k: v for k, v in env.items() if k != 'CI_CHECKOUT_REF'}
+        self.assertEqual(subprocess.check_output(command, env=env_no_ref).strip(), b'full')
         self.assertEqual(subprocess.check_output(command + ['--base', self.base, '--head', head],
-                                                env=env).strip(), b'docs')
+                                                env=env_no_ref).strip(), b'docs')
         event.write_text('{incomplete')
         self.assertEqual(subprocess.check_output(command, env=env).strip(), b'full')
         event.unlink()
@@ -655,6 +698,88 @@ class CiClassifierTests(unittest.TestCase):
         code_event = {'pull_request': {'base': {'ref': 'main', 'sha': stale_code},
                                        'head': {'sha': code_head}}}
         self.assertEqual(select(self.root, 'pull_request', code_event, 'refs/pull/7/merge'), 'fast')
+
+    def test_stale_event_missing_ref_divergent_merge_and_pr_instructions_code_orders(self):
+        # 1. Old instructions push event evaluated on a newer HEAD with code -> full.
+        self.write('AGENTS.md', 'instructions v1\n')
+        inst_commit = self.commit()
+        self.write('apps/api/code.ts', 'export const x = 1;\n')
+        code_commit = self.commit()
+        old_push = {'ref': 'refs/heads/main', 'before': self.base, 'after': inst_commit}
+        self.assertEqual(POLICY['classify_event'](self.root, 'push', old_push, inst_commit), 'full')
+        self.assertEqual(POLICY['classify_event'](self.root, 'push', old_push), 'full')
+        # 2. Push without valid ref -> full even when HEAD == after.
+        self.write('AGENTS.md', 'instructions v2\n')
+        inst2 = self.commit()
+        self.assertEqual(POLICY['classify_event'](self.root, 'push', {'before': code_commit, 'after': inst2}, inst2), 'full')
+        self.assertEqual(POLICY['classify_event'](self.root, 'push', {'ref': 'refs/heads/', 'before': code_commit, 'after': inst2}, inst2), 'full')
+        # 3. PR merge-ref with divergent base (not ancestor of HEAD^1) -> full.
+        self.git('switch', '-qc', 'pr-div', code_commit)
+        self.write('CLAUDE.md', 'pr instructions\n')
+        pr_head = self.commit()
+        self.git('switch', '-q', 'main')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'merge div', 'pr-div')
+        self.git('switch', '-qc', 'divergent', self.base)
+        self.write('README.md', 'divergent base\n')
+        divergent_base = self.commit()
+        self.git('switch', '-q', 'main')
+        self.assertEqual(POLICY['classify_event'](self.root, 'pull_request',
+                         {'pull_request': {'base': {'sha': divergent_base}, 'head': {'sha': pr_head}}},
+                         'refs/pull/9/merge'), 'full')
+        # 4. PR with code + instructions in both commit orders -> full.
+        for order, first, second in (('code-then-inst', 'apps/api/a.ts', 'AGENTS.md'),
+                                     ('inst-then-code', 'CLAUDE.md', 'apps/api/b.ts')):
+            with self.subTest(order=order):
+                self.git('switch', '-q', 'main')
+                base = self.git('rev-parse', 'HEAD').decode().strip()
+                self.git('switch', '-qc', 'pr-' + order, base)
+                self.write(first, 'first\n')
+                self.commit()
+                self.write(second, 'second\n')
+                head = self.commit()
+                self.git('switch', '-q', 'main')
+                self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                         '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'merge ' + order, 'pr-' + order)
+                event = {'pull_request': {'base': {'sha': base}, 'head': {'sha': head}}}
+                self.assertEqual(POLICY['classify_event'](self.root, 'pull_request', event, 'refs/pull/10/merge'), 'full')
+                self.assertEqual(POLICY['classify_event'](self.root, 'pull_request', event), 'full')
+
+    def test_modes_binaries_symlinks_gitlinks_and_harder_copies(self):
+        # NUL byte in templates/example.md -> full.
+        nul_path = self.root / 'templates/example.md'
+        nul_path.parent.mkdir(parents=True, exist_ok=True)
+        nul_path.write_bytes(b'# heading\0binary\n')
+        nul_head = self.commit()
+        self.assertEqual(self.classify(nul_head), 'full')
+        # Symlink (120000) at templates/link.md -> full.
+        (self.root / 'templates/link.md').symlink_to('../README.md')
+        sym_head = self.commit()
+        self.assertEqual(self.classify(sym_head, nul_head), 'full')
+        # Type change (T) from regular file to symlink -> full.
+        self.write('templates/typechange.md', 'regular\n')
+        tc_base = self.commit()
+        (self.root / 'templates/typechange.md').unlink()
+        (self.root / 'templates/typechange.md').symlink_to('../README.md')
+        tc_head = self.commit()
+        self.assertEqual(self.classify(tc_head, tc_base), 'full')
+        # Gitlink (160000) at templates/sub.md -> full.
+        self.git('update-index', '--add', '--cacheinfo', '160000,' + self.base + ',templates/sub.md')
+        gitlink_head = self.commit(stage=False)
+        self.assertEqual(self.classify(gitlink_head, tc_head), 'full')
+        # Copy from intact source.json to templates/copied.md -> full (via --find-copies-harder).
+        content = '\n'.join(f'line {i} intact source content for copy detection' for i in range(20)) + '\n'
+        self.write('source.json', content)
+        copy_base = self.commit()
+        self.write('templates/copied.md', content)
+        copy_head = self.commit()
+        self.assertEqual(self.classify(copy_head, copy_base), 'full')
+        # Copy from intact docs file to templates/copied-doc.md -> full.
+        self.write('specs/backlog/source-doc.md', content)
+        doc_copy_base = self.commit()
+        self.write('templates/copied-doc.md', content)
+        doc_copy_head = self.commit()
+        self.assertEqual(self.classify(doc_copy_head, doc_copy_base), 'full')
 
 
 
@@ -928,17 +1053,23 @@ class CiHarnessSelectionTests(unittest.TestCase):
 class CiResultTests(unittest.TestCase):
     def test_all_result_combinations(self):
         for classification, baseline, full in itertools.product(
-                ('docs', 'full', '', 'invalid'),
+                ('docs', 'instructions', 'full', '', 'invalid'),
                 ('success', 'failure', 'skipped', 'cancelled'),
                 ('success', 'failure', 'skipped', 'cancelled')):
             expected = (classification, baseline, full) in (
-                ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
+                ('docs', 'success', 'skipped'),
+                ('instructions', 'success', 'skipped'),
+                ('full', 'success', 'success'))
             self.assertEqual(POLICY['result_ok'](classification, baseline, full), expected)
 
     def test_final_cli_valid_paths_and_unexpected_skips_failures(self):
         command = ['python3', str(ROOT / 'scripts/ci_policy.py'), 'result']
         for classification, baseline, full in (
-                ('docs', 'success', 'skipped'), ('full', 'success', 'success'),
+                ('docs', 'success', 'skipped'),
+                ('instructions', 'success', 'skipped'),
+                ('instructions', 'success', 'success'),
+                ('instructions', 'failure', 'skipped'),
+                ('full', 'success', 'success'),
                 ('docs', 'failure', 'skipped'), ('full', 'success', 'skipped'),
                 ('full', 'success', 'failure'), ('docs', 'skipped', 'skipped'),
                 ('invalid', 'success', 'success'), ('', 'success', 'skipped'),
@@ -947,7 +1078,8 @@ class CiResultTests(unittest.TestCase):
                 env = {**os.environ, 'CI_CLASS': classification, 'CI_BASELINE': baseline, 'CI_FULL': full}
                 r = subprocess.run(command, env=env, capture_output=True)
                 expected = (classification, baseline, full) in (
-                    ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
+                    ('docs', 'success', 'skipped'),
+                    ('full', 'success', 'success'))
                 self.assertEqual(r.returncode == 0, expected)
 
     def test_single_job_result_matrix_rejects_every_missing_failed_skipped_cancelled_phase(self):

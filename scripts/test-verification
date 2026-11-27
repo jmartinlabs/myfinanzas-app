@@ -52,13 +52,17 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
 '''
         (self.bin / 'bun').write_text(bun); (self.bin / 'bun').chmod(0o755)
         (self.bin / 'git').symlink_to(shutil.which('git'))
-        for name in ('node','age'):
+        for name in ('node','age','playwright'):
             (self.bin / name).write_text('#!/bin/sh\nexit 0\n'); (self.bin / name).chmod(0o755)
+        (self.root / 'node_modules').mkdir()
+        (self.root / 'node_modules/.keep').write_text('installed\n')
         self.env = {**os.environ, 'PATH': str(self.bin), 'VERIFY_FIXTURE_CALLS': str(self.record),
                     'GITHUB_HEAD_REF':'', 'GITHUB_REF_NAME':''}
         for name in ('GITHUB_EVENT_PATH','GITHUB_EVENT_NAME','CI_CHECKOUT_REF','VERIFY_FIXTURE_FAIL','VERIFY_FIXTURE_API_REPORT','VERIFY_FIXTURE_WEB_REPORT','VERIFY_FIXTURE_E2E_REPORT','VERIFY_FIXTURE_UNIT_REPORT'):
             self.env.pop(name, None)
-        self.git('init','-q','--initial-branch=main'); self.base = self.commit()
+        self.git('init','-q','--initial-branch=main')
+        (self.root / '.gitignore').write_text('node_modules/\n')
+        self.base = self.commit()
         (self.root / 'specs/backlog').mkdir(parents=True)
         (self.root / 'specs/backlog/fixture.md').write_text('product documentation\n')
         self.head = self.commit()
@@ -157,8 +161,10 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
     def test_baseline_selection_invariants_and_defaults(self):
         baseline={name for name,_,_ in ENTRY['BASELINE']}
         docs={name for name,_,_ in ENTRY['baseline_checks']('docs')}
+        instructions={name for name,_,_ in ENTRY['baseline_checks']('instructions')}
         full={name for name,_,_ in ENTRY['baseline_checks']('full')}
         self.assertEqual(full,baseline)
+        self.assertEqual(instructions,baseline)
         self.assertEqual(docs | ENTRY['HARNESS_SUITES'],baseline)
         self.assertTrue(docs.isdisjoint(ENTRY['HARNESS_SUITES']))
         for name in ('check-repository','check-project','validate-template','working-whitespace','commit-whitespace'):
@@ -205,13 +211,131 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
             self.assertIn('Baseline profile unavailable',result.stdout)
         finally: policy.write_text(original)
     def test_missing_tool_does_not_report_application_pass(self):
-        for tool in ('bun','node','age','git'):
+        path = self.bin / 'git'
+        moved = self.bin / 'git.disabled'
+        path.rename(moved)
+        try:
+            self.clear(); result = self.run_entry('--full')
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertIn('FAIL prerequisites', result.stdout)
+            self.assertNotIn('PASS api', result.stdout)
+        finally:
+            moved.rename(path)
+        for tool in ('bun', 'node', 'age', 'playwright'):
             with self.subTest(tool=tool):
-                path=self.bin/tool; moved=self.bin/(tool+'.disabled'); path.rename(moved)
+                path = self.bin / tool; moved = self.bin / (tool + '.disabled'); path.rename(moved)
                 try:
-                    self.clear(); result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout)
-                    self.assertIn('FAIL prerequisites',result.stdout); self.assertNotIn('PASS api',result.stdout)
-                finally: moved.rename(path)
+                    self.clear(); result = self.run_entry('--full')
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+                    self.assertIn(f'UNRUN application checks: prerequisite {tool} unavailable', result.stdout)
+                    self.assertRuns(BASELINE_NAMES)
+                    self.assertNotIn('Verification: PASS', result.stdout)
+                    self.assertNotIn('FAIL typecheck', result.stdout)
+                finally:
+                    moved.rename(path)
+        # Missing or empty node_modules triggers UNRUN without running application checks.
+        nm = self.root / 'node_modules'
+        (nm / '.keep').unlink()
+        self.clear(); result = self.run_entry('--full')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('UNRUN application checks: prerequisite node_modules unavailable', result.stdout)
+        self.assertRuns(BASELINE_NAMES)
+        nm.rmdir()
+        bun_path = self.bin / 'bun'; bun_moved = self.bin / 'bun.disabled'; bun_path.rename(bun_moved)
+        try:
+            self.clear(); result = self.run_entry('--full')
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertIn('UNRUN application checks: prerequisite bun unavailable', result.stdout)
+            self.assertIn('UNRUN application checks: prerequisite node_modules unavailable', result.stdout)
+            self.assertRuns(BASELINE_NAMES)
+            # docs and instructions still succeed when application prerequisites are absent.
+            self.clear(); docs_res = self.run_entry(*self.docs_args())
+            self.assertEqual(docs_res.returncode, 0, docs_res.stdout)
+            self.assertIn('INTENTIONALLY SKIPPED application checks', docs_res.stdout)
+        finally:
+            bun_moved.rename(bun_path)
+            nm.mkdir(); (nm / '.keep').write_text('installed\n')
+
+    def test_instructions_coverage_runs_all_baseline_and_skips_application(self):
+        (self.root / 'AGENTS.md').write_text('operational instructions\n')
+        inst_head = self.commit()
+        classified = self.run_entry('classify', '--base', self.head, '--head', inst_head)
+        self.assertEqual(classified.returncode, 0, classified.stdout)
+        self.assertEqual(classified.stdout.strip(), 'instructions')
+        self.clear()
+        result = self.run_entry('--base', self.head, '--head', inst_head)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertRuns(BASELINE_NAMES)
+        self.assertIn('INTENTIONALLY SKIPPED application checks: instructions-only changes', result.stdout)
+        self.assertNotIn('INTENTIONALLY SKIPPED harness regressions', result.stdout)
+        self.assertIn('Verification: PASS', result.stdout)
+        # Missing node_modules/bun does not fail instructions-only verification.
+        (self.root / 'node_modules/.keep').unlink(); (self.root / 'node_modules').rmdir()
+        bun_path = self.bin / 'bun'; bun_moved = self.bin / 'bun.disabled'; bun_path.rename(bun_moved)
+        try:
+            self.clear()
+            res_missing = self.run_entry('--base', self.head, '--head', inst_head)
+            self.assertEqual(res_missing.returncode, 0, res_missing.stdout)
+            self.assertRuns(BASELINE_NAMES)
+        finally:
+            bun_moved.rename(bun_path)
+            (self.root / 'node_modules').mkdir(); (self.root / 'node_modules/.keep').write_text('installed\n')
+        # Mixing instructions with code or docs escalates back to full.
+        (self.root / 'specs/backlog/mixed.md').write_text('product doc\n')
+        mixed_head = self.commit()
+        self.clear()
+        mixed_res = self.run_entry('--base', self.head, '--head', mixed_head)
+        self.assertEqual(mixed_res.returncode, 0, mixed_res.stdout)
+        self.assertRuns(BASELINE_NAMES + APP_NAMES)
+        # --profile flag must not exist.
+        bad_flag = self.run_entry('--profile', 'instructions')
+        self.assertNotEqual(bad_flag.returncode, 0)
+
+    def test_stale_event_and_base_only_classification_fail_closed_in_verify(self):
+        # Push that only adds AGENTS.md, followed by a code commit.
+        (self.root / 'AGENTS.md').write_text('instructions\n')
+        inst_head = self.commit()
+        (self.root / 'apps/web/src/code.ts').parent.mkdir(parents=True, exist_ok=True)
+        (self.root / 'apps/web/src/code.ts').write_text('export const x = 1;\n')
+        self.commit()
+        event = self.home / 'stale-inst.json'
+        event.write_text(json.dumps({'ref': 'refs/heads/main', 'before': self.head, 'after': inst_head}))
+        for checkout_ref in (inst_head, None):
+            extra = {'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event)}
+            if checkout_ref is not None:
+                extra['CI_CHECKOUT_REF'] = checkout_ref
+            res = self.run_entry('classify', extra=extra)
+            self.assertEqual(res.returncode, 0, res.stdout)
+            self.assertEqual(res.stdout.strip(), 'full')
+        # Passing --base without --head passes HEAD to the classifier.
+        base_only = self.run_entry('classify', '--base', self.head)
+        self.assertEqual(base_only.returncode, 0, base_only.stdout)
+        self.assertEqual(base_only.stdout.strip(), 'full')
+
+    def test_preflight_fast_skips_playwright_and_age_and_requires_git(self):
+        # In fast (PR) mode, missing playwright and age still passes preflight and runs typecheck/build/web.
+        extra = self.integration_event('apps/web/src/fast.ts', branch='fixture-fast-preflight')
+        pw_path = self.bin / 'playwright'; pw_moved = self.bin / 'playwright.disabled'
+        age_path = self.bin / 'age'; age_moved = self.bin / 'age.disabled'
+        pw_path.rename(pw_moved); age_path.rename(age_moved)
+        try:
+            self.clear()
+            fast_res = self.run_entry('ci', extra=extra)
+            self.assertEqual(fast_res.returncode, 0, fast_res.stdout)
+            self.assertEqual(self.calls(), ['typecheck', 'build', 'web'])
+        finally:
+            pw_moved.rename(pw_path); age_moved.rename(age_path)
+        # Missing git in application/ci mode fails preflight with UNRUN and runs no application checks.
+        git_path = self.bin / 'git'; git_moved = self.bin / 'git.disabled'; git_path.rename(git_moved)
+        try:
+            for mode_args in (['application'], ['ci']):
+                self.clear()
+                res = self.run_entry(*mode_args, extra=extra if mode_args == ['ci'] else None)
+                self.assertNotEqual(res.returncode, 0, res.stdout)
+                self.assertIn('UNRUN application checks: prerequisite git unavailable', res.stdout)
+                self.assertEqual(self.calls(), [])
+        finally:
+            git_moved.rename(git_path)
     def test_missing_required_script_fails(self):
         (self.root/'scripts/test-release').unlink()
         result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL test-release',result.stdout)
@@ -254,11 +378,13 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
                 finally: policy.write_text(original)
 
     def test_result_rejects_missing_failed_and_unexpected_skips(self):
-        for classification,baseline,full in (('docs','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
+        for classification,baseline,full in (('docs','success','skipped'),('instructions','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
             result=self.run_entry('result',extra={'CI_CLASS':classification,'CI_BASELINE':baseline,'CI_FULL':full})
             self.assertEqual(result.returncode==0,(classification,baseline,full) in (('docs','success','skipped'),('full','success','success')))
-    def integration_event(self, path, text='fixture\n', branch='fixture-feature', base_ref='main'):
+    def integration_event(self, path, text=None, branch='fixture-feature', base_ref='main'):
         self.git('switch', '-qc', branch)
+        if text is None:
+            text = f'fixture {path} {branch}\n'
         target = self.root / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text(text)
         head = self.commit()
         self.git('switch', '-q', 'main')

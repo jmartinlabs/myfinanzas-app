@@ -3,7 +3,7 @@
 
 Two questions are answered separately:
 
-* coverage (`classify`, docs/full) — may a comparison omit application checks entirely?
+* coverage (`classify`, docs/instructions/full) — may a comparison omit application checks entirely?
 * execution venue (`ci_profile`: docs/fast/full) — what does this event run?
 
 Pull requests to main/test always use the FAST profile (baseline, typecheck, build
@@ -45,24 +45,63 @@ DEPLOY_TAG = re.compile(
     r'refs/tags/deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
 
 
+def _valid_rel_parts(path):
+    if not isinstance(path, str) or not path or '\\' in path:
+        return None
+    parts = path.split('/')
+    if not all(p not in ('', '.', '..') for p in parts):
+        return None
+    return parts
+
+
+def _is_protected_operational_md(lower, name):
+    return (
+        name in PROTECTED_NAMES
+        or bool(PROMPT_BACKUP.fullmatch(name))
+        or lower in PROTECTED_PATHS
+        or any(lower.startswith(prefix) for prefix in PROTECTED_PREFIXES)
+    )
+
+
 def docs_path(path):
     # Documentation Markdown in any directory, except operational/harness files
     # and Markdown consumed by application/build paths. Non-Markdown is full.
-    if not isinstance(path, str) or not path or '\\' in path:
-        return False
-    parts = path.split('/')
-    if not all(p not in ('', '.', '..') for p in parts):
+    parts = _valid_rel_parts(path)
+    if parts is None:
         return False
     lower = path.lower()
     name = parts[-1].lower()
     if not lower.endswith('.md'):
         return False
-    if (name in PROTECTED_NAMES or PROMPT_BACKUP.fullmatch(name)
-            or lower in PROTECTED_PATHS
-            or any(lower.startswith(prefix) for prefix in PROTECTED_PREFIXES)
+    if (_is_protected_operational_md(lower, name)
             or any(lower.startswith(prefix) for prefix in FUNCTIONAL_PREFIXES)):
         return False
     return True
+
+
+def instructions_path(path):
+    # Operational Markdown already protected from docs_path (instructions, skills,
+    # methodology, guidelines, templates). Non-Markdown or functional paths stay full.
+    parts = _valid_rel_parts(path)
+    if parts is None:
+        return False
+    lower = path.lower()
+    name = parts[-1].lower()
+    if not lower.endswith('.md'):
+        return False
+    if any(lower.startswith(prefix) for prefix in FUNCTIONAL_PREFIXES):
+        return False
+    return _is_protected_operational_md(lower, name)
+
+
+def classify_paths(paths):
+    if not paths:
+        return 'full'
+    if all(docs_path(p) for p in paths):
+        return 'docs'
+    if all(instructions_path(p) for p in paths):
+        return 'instructions'
+    return 'full'
 
 
 # Path-derived harness selection for FAST. A regression suite reads a bounded set
@@ -113,6 +152,82 @@ def harness_suites(paths):
                  if any(within(path, inputs) for path in paths))
 
 
+ALLOWED_BLOB_MODES = frozenset(('100644', '100755'))
+
+
+def raw_record_paths_and_blobs(data):
+    """Consume Git --raw -z bytes; reject non-regular modes, type changes and bad records."""
+    try:
+        if not isinstance(data, bytes) or not data or not data.endswith(b'\0'):
+            return None, None
+        tokens = data[:-1].decode('utf-8', errors='strict').split('\0')
+        paths = []
+        blobs = set()
+        i = 0
+        while i < len(tokens):
+            meta = tokens[i]
+            i += 1
+            if not meta.startswith(':'):
+                return None, None
+            parts = meta[1:].split(' ')
+            if len(parts) != 5:
+                return None, None
+            src_mode, dst_mode, src_sha, dst_sha, status = parts
+            if status == 'A':
+                if src_mode != '000000' or dst_mode not in ALLOWED_BLOB_MODES:
+                    return None, None
+                count = 1
+            elif status == 'D':
+                if dst_mode != '000000' or src_mode not in ALLOWED_BLOB_MODES:
+                    return None, None
+                count = 1
+            elif status == 'M':
+                if src_mode not in ALLOWED_BLOB_MODES or dst_mode not in ALLOWED_BLOB_MODES:
+                    return None, None
+                count = 1
+            elif re.fullmatch(r'[RC](?:100|[1-9]?[0-9])', status):
+                if src_mode not in ALLOWED_BLOB_MODES or dst_mode not in ALLOWED_BLOB_MODES:
+                    return None, None
+                count = 2
+            else:
+                return None, None
+            if len(tokens) - i < count:
+                return None, None
+            paths.extend(tokens[i:i + count])
+            i += count
+            for sha in (src_sha, dst_sha):
+                if re.fullmatch(r'[0-9a-f]{40}', sha) and sha != '0' * 40:
+                    blobs.add(sha)
+        return (paths or None), blobs
+    except UnicodeError:
+        return None, None
+
+
+def numstat_has_binary(data):
+    """True if Git --numstat -z reports any binary diff ('-\\t-\\t') or is malformed."""
+    try:
+        if not isinstance(data, bytes) or not data or not data.endswith(b'\0'):
+            return True
+        tokens = data[:-1].decode('utf-8', errors='strict').split('\0')
+        i = 0
+        while i < len(tokens):
+            entry = tokens[i]
+            i += 1
+            parts = entry.split('\t', 2)
+            if len(parts) != 3:
+                return True
+            added, deleted, rest = parts
+            if added == '-' or deleted == '-':
+                return True
+            if rest == '':
+                if len(tokens) - i < 2:
+                    return True
+                i += 2
+        return False
+    except UnicodeError:
+        return True
+
+
 def record_paths(data):
     """Consume Git --name-status -z bytes, retaining both rename/copy endpoints."""
     try:
@@ -124,7 +239,7 @@ def record_paths(data):
         while i < len(tokens):
             status = tokens[i]
             i += 1
-            if status in ('A', 'M', 'D', 'T'):
+            if status in ('A', 'M', 'D'):
                 count = 1
             elif re.fullmatch(r'[RC](?:100|[1-9]?[0-9])', status):
                 count = 2
@@ -140,8 +255,7 @@ def record_paths(data):
 
 
 def classify_records(data):
-    paths = record_paths(data)
-    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
+    return classify_paths(record_paths(data))
 
 
 def git(root, *args):
@@ -167,17 +281,27 @@ def changed_paths(root, base, head, *, pull_request=False):
             git(root, 'cat-file', '-e', sha + '^{commit}')
         if pull_request:
             base = git(root, 'merge-base', base, head).decode().strip()
-        records = git(root, 'diff', '--name-status', '-z', '--find-renames',
-                      '--ignore-submodules=none', '--no-ext-diff', '--no-textconv', base, head, '--')
-        return record_paths(records)
+        diff_opts = ('--find-renames', '--find-copies', '--find-copies-harder',
+                     '--ignore-submodules=none', '--no-ext-diff', '--no-textconv')
+        raw = git(root, 'diff', '--raw', '-z', *diff_opts, base, head, '--')
+        paths, blobs = raw_record_paths_and_blobs(raw)
+        if not paths:
+            return None
+        numstat = git(root, 'diff', '--numstat', '-z', *diff_opts, base, head, '--')
+        if numstat_has_binary(numstat):
+            return None
+        if classify_paths(paths) in ('docs', 'instructions'):
+            for sha in blobs:
+                if b'\0' in git(root, 'cat-file', 'blob', sha):
+                    return None
+        return paths
     except (OSError, subprocess.SubprocessError, UnicodeError):
         return None
 
 
 def classify_git(root, base, head, *, pull_request=False):
     """Only complete, verified commit comparisons may opt out of full checks."""
-    paths = changed_paths(root, base, head, pull_request=pull_request)
-    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
+    return classify_paths(changed_paths(root, base, head, pull_request=pull_request))
 
 
 def classify_event_range(root, event_name, event):
@@ -196,27 +320,49 @@ def classify_event_range(root, event_name, event):
     return 'full'
 
 
+def _valid_push_ref(ref):
+    return isinstance(ref, str) and ref.startswith('refs/heads/') and len(ref) > len('refs/heads/')
+
+
 def classify_event(root, event_name, event, checkout_ref=None):
+    if not isinstance(checkout_ref, str) or not checkout_ref:
+        return 'full'
     original = classify_event_range(root, event_name, event)
-    if checkout_ref is None:
-        return original
+    if original not in ('docs', 'instructions'):
+        return 'full'
     try:
-        expected = (event['pull_request']['head']['sha'] if event_name == 'pull_request'
-                    else event['after'] if event_name == 'push' else None)
-        if isinstance(checkout_ref, str) and re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref):
-            if git(root, 'rev-parse', 'HEAD^2').decode().strip() != expected:
+        actual_head = git(root, 'rev-parse', 'HEAD').decode().strip()
+        if event_name == 'push':
+            if not _valid_push_ref(event.get('ref')):
                 return 'full'
-            base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
-            accumulated = classify_git(root, base, expected, pull_request=True)
-            # A last docs-only push must not cancel the PR's full checks when
-            # earlier commits in the same PR changed application/harness code.
-            return 'docs' if original == accumulated == 'docs' else 'full'
-        if (not isinstance(checkout_ref, str) or not re.fullmatch(r'[0-9a-f]{40}', checkout_ref)
-                or (expected is not None and checkout_ref != expected)):
+            expected = event['after']
+            if (not isinstance(expected, str) or not re.fullmatch(r'[0-9a-f]{40}', expected)
+                    or expected == '0' * 40):
+                return 'full'
+            if checkout_ref != expected or actual_head != expected:
+                return 'full'
+            return original
+        if event_name == 'pull_request':
+            pr = event['pull_request']
+            base = pr['base']['sha']
+            head = pr['head']['sha']
+            if re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref):
+                if git(root, 'rev-parse', 'HEAD^2').decode().strip() != head:
+                    return 'full'
+                tested_base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
+                if tested_base != base and not is_ancestor(root, base, tested_base):
+                    return 'full'
+                accumulated = classify_git(root, tested_base, head, pull_request=True)
+                # A last docs-only or instructions-only push must not cancel the PR's
+                # full checks when earlier commits in the same PR changed code or
+                # mixed docs with instructions.
+                return original if original == accumulated else 'full'
+            if re.fullmatch(r'[0-9a-f]{40}', checkout_ref) and checkout_ref == head and actual_head == head:
+                return original
             return 'full'
-        return original
     except (OSError, subprocess.SubprocessError, UnicodeError, KeyError, TypeError):
         return 'full'
+    return 'full'
 
 
 def ci_comparison(root, event_name, event, checkout_ref=None):
@@ -318,7 +464,7 @@ def ci_result_ok(profile, states):
 
 def result_ok(classification, baseline, full):
     return baseline == 'success' and (
-        (classification == 'docs' and full == 'skipped')
+        (classification in ('docs', 'instructions') and full == 'skipped')
         or (classification == 'full' and full == 'success'))
 
 
@@ -332,7 +478,8 @@ def main(argv=None):
     sub.add_parser('result')
     args = parser.parse_args(argv)
     if args.command == 'result':
-        ok = result_ok(os.getenv('CI_CLASS'), os.getenv('CI_BASELINE'), os.getenv('CI_FULL'))
+        ci_class = os.getenv('CI_CLASS')
+        ok = ci_class != 'instructions' and result_ok(ci_class, os.getenv('CI_BASELINE'), os.getenv('CI_FULL'))
         print('CI required result: ' + ('PASS' if ok else 'FAIL'))
         return 0 if ok else 1
     if args.base is not None or args.head is not None:
