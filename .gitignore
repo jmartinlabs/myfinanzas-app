@@ -39,3 +39,5 @@ test-results/
 .claude/settings.local.json
 # Declaración local del tracker; nunca se versiona
 .agents/*.local.*
+# Configuración host local de T3; nunca se versiona
+.agents/harnesses/t3.local.json

@@ -26,6 +26,7 @@ Reglas locales de MyFinanzas App, independientes del cliente. Se aplican sobre e
 ## 4. Modelos, esfuerzo y clientes
 - El modelo del coordinador lo configura el propietario en su cliente y nunca se cambia automáticamente.
 - Los defaults y perfiles (`standard`/`complex`) en `.agents/harnesses/<coordinador>.json` son una petición, no un requisito bloqueante en delegación nativa: si el cliente no puede aplicarlos o confirmarlos, se delega con herencia nativa y se informa.
+- **T3**: los perfiles se resuelven exclusivamente desde `.agents/harnesses/t3.json` o, si existe, `.agents/harnesses/t3.local.json` (sin herencia cruzada entre ambos); si el proveedor o modelo resuelto no está disponible, se detiene el despacho sin sustituirlo ni activar pago o créditos.
 - **Antigravity**: el Orchestrator nativo opera con la configuración del propietario (p. ej. Neon Low / Hydrogen Medium). Su herramienta `invoke_subagent` solo admite `Model` en `{inherit, flash_lite, flash, pro}`, no expone parámetro de `effort` y no permite verificar el modelo efectivo ejecutado; se documenta esta limitación y se delega con herencia nativa salvo indicación expresa.
 
 ## 5. Infraestructura, datos reales y límites
@@ -35,3 +36,4 @@ Reglas locales de MyFinanzas App, independientes del cliente. Se aplican sobre e
 ## 6. Handoff y merge
 - En cierres de sesión prevalece el protocolo de `handoff` para consolidar trabajo recuperable sin cruzar gates ni dejar trabajadores descontrolados.
 - El permiso de push/PR **no** autoriza merge: todo merge exige aprobación explícita del propietario (la regla más estricta prevalece; nunca activar auto-merge).
+- La promoción `test→main` exige aprobación independiente y nunca se infiere del merge a `test`.
