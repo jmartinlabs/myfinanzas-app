@@ -19,6 +19,7 @@ import {
   proyeccionDevolucionesCompra,
 } from "./devoluciones";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 /**
  * #538 F2a-1 · consumidores económicos de plan: Plan de ciclo y ejecución mensual
@@ -252,25 +253,17 @@ test("F2A1-05 (AC-D04): huérfano sinVinculo, con y sin fila de vínculo, no net
   const c = setup();
   const compra = buy(c, "100");
   // Sin fila de vínculo, con Partida declarada en el movimiento.
-  add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-08-10",
-    importe: "11",
-    saldo: c.other.id,
-    partida: c.food.id,
-    concepto: "Huérfana ficticia",
-    nota: "",
-  });
+  sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2026-08-10", importe: "11", saldo: c.other.id, partida: c.food.id, concepto: "Huérfana ficticia" },
+    now,
+  );
   // Revisar + Acreditada + Partida + sin compra: lo que el mapa por Partida antiguo neteaba.
-  const orphan = add(c.db, {
-    tipo: "Devolución de gasto",
-    fecha: "2026-08-11",
-    importe: "13",
-    saldo: c.other.id,
-    partida: c.food.id,
-    concepto: "Huérfana acreditada ficticia",
-    nota: "",
-  }).movimiento.id as string;
+  const orphan = sembrarDevolucionHuerfana(
+    c.db,
+    { fecha: "2026-08-11", importe: "13", saldo: c.other.id, partida: c.food.id, concepto: "Huérfana acreditada ficticia" },
+    now,
+  );
   c.db.run(
     `INSERT INTO movimiento_devolucion(movimiento,compra,partida,ciclo_origen,evidencia_relacion,
        evidencia_origen_temporal,elegibilidad,estado,revision_movimiento,revision,creado,actualizado)
@@ -308,7 +301,9 @@ test("F2A1-07 (AC-D18/AC-D02): reclasificar la compra mueve bruto y descuento al
   const compra = buy(c, "120");
   const dev = refund(c, compra, "30", {}, { partida: c.food.id });
   // Copias legacy (fixture SQL ficticio) que siguen diciendo «food» tras reclasificar.
+  // El alta canónica ya no copia la Partida (AC-D17): ambas copias se siembran.
   c.db.run("UPDATE movimiento_devolucion SET partida=? WHERE movimiento=?", [c.food.id, dev]);
+  c.db.run("UPDATE movimientos SET partida=? WHERE id=?", [c.food.id, dev]);
   expect(plan(c, c.A.id, "PRE900").ejecutado).toBe("90.00");
   // Reclasificación de la compra a Ocio (fixture SQL ficticio).
   c.db.run("UPDATE movimientos SET partida=? WHERE id=?", [c.leisure.id, compra]);

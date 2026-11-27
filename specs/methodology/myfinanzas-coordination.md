@@ -1,23 +1,19 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado incrementalmente de agent-project-template hasta v2.14.0 (`98b5351a72eae1df985819c01a47954e6a1a0836`), preservando coordinación ligera,
-gates financieros y Skill `$handoff`. Contrato portable en agentes dinámicos (`dynamic-agents.md` en `agentic-harness-plugin`);
-el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora causal. Historia y procedencia:
-[adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
+Reglas locales de MyFinanzas sobre el plugin global `agentic-harness-plugin` v2.2.0 (tag `v2.2.0`, SHA `6c97c30`). La metodología común vive en el plugin y no se reproduce aquí; este documento conserva únicamente los deltas locales, gates financieros y el Skill `$handoff`. Historia y procedencia: [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
 
 ## Autoridad y entradas
 1. Instrucciones y autorizaciones expresas del usuario; política Git/GitHub de AGENTS.md.
 2. Roadmap, especificaciones y decisiones aprobadas como fuentes canónicas. Referencia
    financiera única v5.11(7), candidata NO estable; jamás inventar reglas económicas.
 3. Contratos de coordinación de esta carpeta y perfiles reutilizables. El estado operativo
-   es el `Status` del Project #4; el tablero Markdown es histórico y no prueba aprobación.
+   es el **estado nativo de la Issue** en GitHub; Project #4 y el tablero Markdown son
+   históricos y no prueban aprobación.
 
 $orchestrate usa Quick/Standard/Full por riesgo (`workflows.md` en `agentic-harness-plugin`) sin volver a inicializar el proyecto; una petición Quick no autoriza decisiones financieras, desarrollo nuevo ni operaciones protegidas.
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
-La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
-v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
-autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. El usuario configura en cada cliente el modelo y las rutas del coordinador; los defaults y perfiles de los delegados nativos y los clientes externos se fijan en `.agents/harnesses/<coordinador>.json` (solo el propietario lo edita). Un default o perfil configurado es una petición, no un requisito: si no puede aplicarse o confirmarse, se delega con la herencia nativa y se informa; en delegación nativa solo una selección exigida expresamente que no pueda garantizarse detiene el despacho (un modelo fijado de un cliente externo no disponible se informa y se para). Los subagentes respetan esa configuración y la verificación de selección y de límites del proveedor de `$orchestrate` (`../../.agents/skills/orchestrate/SKILL.md#procedure` en `agentic-harness-plugin`) (paso 4); nunca se activa pago, créditos ni otro proveedor sin consentimiento expreso. Los recursos nunca eximen de los gates financieros, de seguridad, de QA independiente ni de desarrollo/merge. Codex y OpenCode se delegan localmente por CLI según [`.agents/harnesses/claude.json`](../../.agents/harnesses/claude.json) y la delegación externa (`dynamic-agents-external-clients.md` en `agentic-harness-plugin`) (`develop` solo `on_request`, con autorización de DEV, worktree aislado, QA independiente y merge humano); Agent Relay v1 queda para conversaciones externas que el propietario abre expresamente y transporta el paquete existente sin implicar control directo.
+La metodología común está delegada en el plugin global `agentic-harness-plugin` v2.2.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las autorizaciones de negocio.
+El coordinador conserva su modelo. El usuario configura en cada cliente el modelo y las rutas del coordinador; los defaults y perfiles de los delegados nativos y los clientes externos se fijan en `.agents/harnesses/<coordinador>.json` (solo el propietario lo edita), y en T3 rige exclusivamente `t3.json` o `t3.local.json`. Un default o perfil configurado es una petición en clientes independientes, mientras que en T3 un proveedor o modelo no disponible detiene el despacho sin sustitución. Los subagentes respetan esa configuración y la verificación de selección y de límites del proveedor de `$orchestrate` (`skills/orchestrate/SKILL.md#procedure` en `agentic-harness-plugin`) (paso 4); nunca se activa pago, créditos ni otro proveedor sin consentimiento expreso. Los recursos nunca eximen de los gates financieros, de seguridad, de QA independiente ni de desarrollo/merge. Codex y OpenCode se delegan localmente por CLI según [`.agents/harnesses/claude.json`](../../.agents/harnesses/claude.json) y la delegación externa (`dynamic-agents-external-clients.md` en `agentic-harness-plugin`) (`develop` solo `on_request`, con autorización de DEV, worktree aislado, QA independiente y merge humano); Agent Relay v1 queda para conversaciones externas que el propietario abre expresamente y transporta el paquete existente sin implicar control directo.
 
 ## Reparto de responsabilidades — rol de coordinador, asesor y usuario
 
@@ -27,13 +23,14 @@ funcionales y operaciones reales conservan autorización expresa. El coordinador
 el usuario para cada periodo de trabajo; el rol no queda atado a ningún cliente o proveedor.
 
 - **Coordinador técnico (rol, no proveedor).** Un único coordinador activo por proyecto y
-  periodo de trabajo, designado explícitamente por el usuario. Asume de forma autónoma la
-  planificación y el backlog, la coordinación de agentes, el desarrollo, la arquitectura,
-  la implementación, las pruebas, la QA independiente, la documentación, las ramas,
-  worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos (SPEC,
-  investigación, paquete DEV ya autorizado o diseño QA) sin esperar instrucciones innecesarias;
-  consolida resultados y decisiones pendientes y mantén el Project y su Issue con una siguiente
-  acción verificable. No crees un segundo scheduler ni trabajo artificial.
+  periodo de trabajo, designado explícitamente por el usuario. Delega **todo** el trabajo
+  técnico (incluido Quick) en trabajadores aislados, revisa la evidencia y no implementa por
+  su cuenta. Asume de forma autónoma la planificación y el backlog, la coordinación de agentes,
+  la arquitectura, la revisión de pruebas y QA independiente, la documentación de cierre, las
+  ramas, worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos
+  (SPEC, investigación, paquete DEV ya autorizado o diseño QA) sin esperar instrucciones
+  innecesarias; consolida resultados y decisiones pendientes y mantiene las Issues con una
+  siguiente acción verificable. No crees un segundo scheduler ni trabajo artificial.
   Puede fusionar PR **documentales no normativos** dentro de specs aprobadas tras CI,
   siempre que no cambien reglas financieras, alcance, estado de aprobación, roadmap,
   seguridad ni contratos generados. No fusiona PR funcionales.
@@ -117,12 +114,12 @@ registra qué falta y quién lo resuelve. Las tareas independientes ya autorizad
 En hitos significativos —inicio/cierre de entrega, handoff y antes de un lote intensivo de CI— el coordinador consulta una vez el consumo mensual; no hace polling. Avisa al superar **1.600 min** (referencia GitHub Free) y **2.400 min** (referencia GitHub Pro), indicando plan, restante y renovación cuando Billing los muestre. No repite el mismo umbral en el mismo ciclo sin un cambio relevante. Billing/Included usage es la fuente de cuota; el total de la API incluye minutos gratuitos de repos públicos y no se usa sin filtrar a repos privados. Las alertas son informativas: no bloquean trabajo, CI, PR ni merge, y no modifican planes, presupuestos ni suscripciones. Las alertas nativas 90/100 % se activan en Billing y no sustituyen estos umbrales.
 
 ## Scheduler, propiedad y ejecución
-El coordinador organiza, asigna ownership y reconcilia resultados; `specs/epic-board.md` es
-histórico y no se actualiza por rutina. El `Status` lo mueven el **usuario**
-(`Backlog → Ready {Phase}`, revisión/aceptación, `Done` y el desbloqueo) y el **agente autorizado**
-(`Ready → {Phase} In Progress`, entrega en `{Phase} In Review` y `Blocked` solo desde su propia
-fase en curso) según el protocolo vigente de `$work-issue`; el coordinador verifica el
-cumplimiento y no autoautoriza fases.
+El coordinador organiza, asigna ownership y reconcilia resultados; `specs/epic-board.md` y
+Project #4 son históricos y no se actualizan por rutina. El estado operativo sigue los
+estados nativos de la Issue y el protocolo `$work-issue` del plugin (`issue-workflow.md` y
+`skills/work-issue/SKILL.md` en `agentic-harness-plugin`): el propietario autoriza pasando a
+`Todo`, acepta en `Done` y gestiona desbloqueos; el coordinador reserva en `In progress` y
+entrega en `In review`, sin autoautorizar fases ni delegar transiciones a los trabajadores.
 Crear el menor pool útil para tareas independientes listas, no un número fijo por rol.
 Preferir un único ejecutor por entrega; añadir subagentes solo si son independientes
 y su valor supera el coste de coordinación. Comprobar las herramientas y límites reales antes
@@ -156,7 +153,7 @@ implementación, QA y infraestructura son perfiles; no procesos residentes.
 
 La elección directo/foreground/background y sus condiciones de soporte, aislamiento y aviso
 inicial se rigen por la política canónica de
-agentes dinámicos (`../../.agents/skills/orchestrate/SKILL.md#procedure` en `agentic-harness-plugin`). Aquí solo
+agentes dinámicos (`skills/orchestrate/SKILL.md#procedure` en `agentic-harness-plugin`). Aquí solo
 constan las particularidades locales:
 
 - El modo no altera los gates: especificación y desarrollo se aprueban por separado, las
@@ -178,13 +175,13 @@ del coordinador. Los delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff. Un informe
 intermedio o un check corregible no cierra el turno mientras quede trabajo autorizado:
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción
-humana exacta y estado/motivo de espera conforme al cierre de `$orchestrate` (`../../.agents/skills/orchestrate/SKILL.md#execution-continuity` en `agentic-harness-plugin`).
+humana exacta y estado/motivo de espera conforme al cierre de `$orchestrate` (`skills/orchestrate/SKILL.md#execution-continuity` en `agentic-harness-plugin`).
 
 ## Comunicación Agent Relay v1 — adaptación focal v2.10.0/v2.14.0
 
 Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, revisada contra
 v2.14.0/`98b5351`, sobre harness local v2.9.0, sin sustituir sus contratos.
-El paquete de trabajo (`../../templates/agent-work-packet.md` en `agentic-harness-plugin`) exige Task ID y sesión
+El paquete de trabajo (`templates/agent-work-packet.md` en `agentic-harness-plugin`) exige Task ID y sesión
 funcional estables, retorno completo en cada seguimiento (también bloqueos), procedencia del estado, acción humana exacta y motivo de espera al cerrar.
 El usuario activa `Lee`; Agent Relay v1 no controla chats ni cambia gates de cuota/modelo,
 finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
@@ -211,7 +208,7 @@ específica de spec10 y, únicamente tras spec/wireframes aprobados y autorizaci
 separada, a su desarrollo. No autoriza desarrollo, cambios financieros ni merges.
 No se modifica agent-project-template, Skills, hooks, scripts o workflows por este piloto.
 
-Se reutilizan el paquete de delegación (`../../templates/agent-work-packet.md` en `agentic-harness-plugin`),
+Se reutilizan el paquete de delegación (`templates/agent-work-packet.md` en `agentic-harness-plugin`),
 la QA independiente, los gates de [aprobación](approvals.md) y la entrada canónica
 [de calidad](../guidelines/quality.md#entrada-compartida-v270--vigente).
 No se crean formularios, Skills, workflows ni herramientas de medición paralelos.
@@ -239,7 +236,7 @@ No se crean formularios, Skills, workflows ni herramientas de medición paralelo
   pendiente. No mantener consultas/actualizaciones sin información nueva ni prometer
   supervisión después del turno. Ante fallo, analizar la evidencia antes de relanzar;
   mantener la distinción fallo/cancelación/cola y las aprobaciones por PR.
-- Registrar métricas por hito en la Issue del Project y, cuando existan, progress/testplan10:
+- Registrar métricas por hito en la Issue de seguimiento y, cuando existan, progress/testplan10:
   sesión/agente/modelo, intervalo, candidato, pruebas/resultado/motivo de repetición,
   bloqueo operativo con inicio/fin/causa conocida, y hallazgos QA/corrección.
   Usar JSONL e informes existentes, sin activar hooks ni publicar registros sensibles.
@@ -279,7 +276,7 @@ hooks, scripts ni workflows. No autoriza merge, Excel, despliegue o B3/Dev32.
    Un timeout no acredita fallo/progreso/aprobación. Consultar estado si resuelve una
    decisión o hay señal de bloqueo/control justificado; no encadenar dormir, releer
    estado y recordar sin información nueva. Mantener el espaciado CI del piloto previo.
-3. **Contexto vigente.** Un resumen compacto en la Issue y el `Status` del Project: autorización/alcance, SHA
+3. **Contexto vigente.** Un resumen compacto en la Issue y su estado nativo: autorización/alcance, SHA
    integrado y candidato, PR, enlace a evidencia y próxima acción/gate. Actualizar por
    hito y conservar historia debajo sin copiarla otra vez. Reanudar verificando deltas
    Git/PR y leyendo solo fuentes necesarias o modificadas. Progreso/testplan son dueños
@@ -325,7 +322,7 @@ trabajo material/inseguro y QA obligatoria; no autoriza operaciones excluidas.
 
 ## Reglas locales de `$work-issue`
 
-Se suman al protocolo canónico (`issue-workflow.md` en `agentic-harness-plugin`) y a la Skill (`../../.agents/skills/work-issue/SKILL.md` en `agentic-harness-plugin`); no lo relajan.
+Se suman al protocolo canónico (`issue-workflow.md` en `agentic-harness-plugin`) y a la Skill (`skills/work-issue/SKILL.md` en `agentic-harness-plugin`); no lo relajan.
 
 - **This Skill never runs alone.** A client injects only the Skill that was invoked, so
   `orchestrate` is loaded explicitly with each client's own mechanism (Hermes: `/orchestrate` or
@@ -335,27 +332,18 @@ Se suman al protocolo canónico (`issue-workflow.md` en `agentic-harness-plugin`
   loads the delegation, model and independent-QA rules are not in context and the session must not
   claim it applied them.
 - **Markers are not authenticated.** Every agent publishes with the same GitHub account, so
-  anyone with `gh` can write a comment carrying a claim or block marker. The tool checks
-  structure, recency and consistency, never authorship; a receipt copied verbatim is
+  anyone with `gh` can write a comment carrying a claim or reservation marker. The protocol checks
+  structure, recency and consistency, never authorship; a marker copied verbatim is
   indistinguishable from a real one. Cryptographic attribution would need a separate agent identity.
-- **A block record authorizes one restore.** `--restore` trusts only the most recent report; if a
-  human re-blocks the Issue without a new block record, the tool does not move it.
-- **Flujo.** Branches follow `feature/* → test → main` and merge needs the user's explicit approval.
-- **Parámetros del tracker.** La herramienta no fija valores por defecto: pasa siempre
-  `--repo jmartinlabs/myfinanzas-app --owner jmartinlabs --project 4` (o decláralos en el
-  `.agents/tracker.local.yaml` local, que no se versiona y solo aporta `agents:` al script). Los
-  valores por defecto de versiones anteriores se retiraron al adoptar la versión canónica.
-- **Asignado.** Decisión del usuario (2026-11-23): el asignado de GitHub es un campo humano que los
-  agentes no leen, escriben ni usan como puerta; solo enrutan las etiquetas y solo reserva el
-  comentario de toma. Una Issue asignada a una persona sigue siendo elegible.
-- **Enlace PR ↔ Issue.** Las palabras de cierre no enlazan una PR que apunta a `test`; el enlace se
-  crea con `addCloseIssueReferences` y se verifica en ambos sentidos. Nunca llames a
-  `removeCloseIssueReferences`. La automatización del Project cierra la Issue al pasar a `Done`, no
-  el merge. Pon el número de la PR en el informe de `In Review`. Tras cualquier merge relee la
-  Issue y reábrela si se cerró sin un `Done` humano registrado.
-- **Recibo de contexto.** Se publica solo en Ready, In Progress o Blocked (no en Backlog, Done ni
-  revisiones); `--dry-run` no lo necesita; los hallazgos mecánicos son pistas, no veredictos, y
-  `take`/`move` se niegan sin un recibo válido para la huella actual.
+- **Flujo.** Branches follow `feature/* → test → main`; every merge needs the user's explicit
+  approval, and promotion `test → main` requires independent approval (never inferred from merge
+  to `test`).
+- **Asignado.** El asignado de GitHub es un campo humano que los agentes no leen, escriben ni usan
+  como puerta; solo enrutan las etiquetas `agent:<cliente>` y solo reserva el comentario de toma.
+- **Enlace PR ↔ Issue.** En PR a `main` usa `Closes #N`. En PR a `test` usa `Refs #N` (nunca
+  `Closes`) y cierra la Issue solo tras la promoción/aceptación correspondiente.
+- **Sub-issues y dependencias.** Crea sub-issues en `Backlog` con `blocked_by` nativo únicamente
+  cuando el plan aprobado lo respalde; crear una sub-issue no autoriza su ejecución.
 
 ## Reglas locales de la revisión Codex
 

@@ -669,6 +669,7 @@ export function applyComidaDevolucion(
   row: LedgerRow,
   input: Record<string, unknown>,
   now = Date.now(),
+  options?: { requireRevision?: boolean },
 ) {
   if (row.anulado)
     throw new Problem(
@@ -683,11 +684,71 @@ export function applyComidaDevolucion(
       "Solo una Devolución de gasto admite atribución de compra.",
     );
   const before = comidaDevolucion(db, id);
+  if (options?.requireRevision) {
+    if (before) {
+      if (input.devolucionRevision === undefined || input.devolucionRevision === null)
+        throw new Problem(
+          422,
+          "VALIDATION",
+          "La revisión de la atribución es obligatoria.",
+          { devolucionRevision: "Envía la revisión actual de la atribución." },
+        );
+      if (
+        typeof input.devolucionRevision !== "number" ||
+        !Number.isInteger(input.devolucionRevision) ||
+        input.devolucionRevision < 1
+      )
+        throw new Problem(422, "VALIDATION", "Revisión de atribución inválida.", {
+          devolucionRevision: "Entero positivo.",
+        });
+      if (input.devolucionRevision !== before.revision)
+        throw new Problem(
+          409,
+          "ATTRIBUTION_REVISION_CONFLICT",
+          "La atribución ha cambiado. Recarga la ficha.",
+        );
+    } else if (input.devolucionRevision !== undefined && input.devolucionRevision !== null) {
+      if (
+        typeof input.devolucionRevision !== "number" ||
+        !Number.isInteger(input.devolucionRevision) ||
+        input.devolucionRevision < 1
+      )
+        throw new Problem(422, "VALIDATION", "Revisión de atribución inválida.", {
+          devolucionRevision: "Entero positivo o null.",
+        });
+      throw new Problem(
+        409,
+        "ATTRIBUTION_REVISION_CONFLICT",
+        "No existe atribución previa para esa revisión. Recarga la ficha.",
+      );
+    }
+  }
+  if (input.compraAnterior !== undefined && input.compraAnterior !== null) {
+    if (typeof input.compraAnterior !== "string")
+      throw new Problem(422, "VALIDATION", "Compra anterior inválida.", {
+        compraAnterior: "Identificador de compra.",
+      });
+    if ((before?.compra ?? null) !== input.compraAnterior)
+      throw new Problem(
+        409,
+        "ATTRIBUTION_REVISION_CONFLICT",
+        "La compra anterior de la atribución ha cambiado. Recarga la ficha.",
+      );
+  }
   const compra =
     typeof input.compra === "string" && input.compra ? input.compra : null;
-  const partida =
+  // SPEC39 §6: una atribución con compra no se resuelve desvinculándola. Se
+  // conserva (también en «Revisar») o se reatribuye a otra compra válida.
+  if (before?.compra && !compra)
+    throw new Problem(
+      422,
+      "DEVOLUTION_LINK_REQUIRED",
+      "Una devolución vinculada no puede quedar sin compra. Conserva la compra o reatribúyela a otra compra válida.",
+      { compra: "Indica la compra vinculada." },
+    );
+  let partida =
     typeof input.partida === "string" && input.partida ? input.partida : null;
-  const cicloOrigen =
+  let cicloOrigen =
     typeof input.cicloOrigen === "string" && input.cicloOrigen
       ? input.cicloOrigen
       : null;
@@ -779,6 +840,21 @@ export function applyComidaDevolucion(
       throw new Problem(422, "VALIDATION", "La Partida no se cambia por inferencia.", {
         partida: "No contradigas la Partida de la compra vinculada.",
       });
+    // ANEXO §5 / SPEC39 §3.1: no copiar Partida al vínculo; queda NULL.
+    partida = null;
+    // SPEC39 §3.1 / §5.4: derivar cicloOrigen de la compra; rechazar contradicción.
+    const derivedCiclo =
+      cycleMaster(db).find(
+        (c) => c.inicio <= purchase!.fecha && (c.fin === null || purchase!.fecha <= c.fin),
+      )?.id ?? null;
+    if (cicloOrigen && derivedCiclo && cicloOrigen !== derivedCiclo)
+      throw new Problem(
+        422,
+        "DEVOLUTION_ORIGIN_MISMATCH",
+        "El ciclo de origen enviado contradice el ciclo de la compra vinculada.",
+        { cicloOrigen: `Debe coincidir con el ciclo ${derivedCiclo} de la compra.` },
+      );
+    if (!cicloOrigen && derivedCiclo) cicloOrigen = derivedCiclo;
   }
   if (elegibilidad === "Acreditada") {
     if (!evidenciaOrigenTemporal?.trim() || !cicloOrigen)
@@ -808,8 +884,7 @@ export function applyComidaDevolucion(
       throw new Problem(
         422,
         "DEVOLUTION_EXCESS",
-        "Las devoluciones verificadas superan el importe de la compra. El vínculo no puede verificarse íntegramente.",
-        { estado: "Guarda el vínculo como Revisar o revisa las devoluciones." },
+        "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
       );
   }
   const motivo = text(input.motivo, "motivo", 2000);
@@ -894,7 +969,9 @@ export function writeComidaDevolucion(
         // La estructura va después del gate (`specs/38` §1).
         only(body, [
           "revision",
+          "devolucionRevision",
           "compra",
+          "compraAnterior",
           "partida",
           "cicloOrigen",
           "evidenciaRelacion",
@@ -910,7 +987,9 @@ export function writeComidaDevolucion(
             "REVISION_CONFLICT",
             "El Movimiento ha cambiado. Revisa su ficha.",
           );
-        const devolucion = applyComidaDevolucion(db, id, row, body, now);
+        const devolucion = applyComidaDevolucion(db, id, row, body, now, {
+          requireRevision: true,
+        });
         return { devolucion, movimientos: getComidaMovement(db, id) };
       });
     })
@@ -1281,88 +1360,76 @@ export function activateRegimen(
 
 
 /**
- * P4: rectifying/annulling a purchase revalidates the integral attribution of
- * every verified refund. A refund that no longer fits, or whose purchase is
- * annulled, stays as a real bank fact but its link becomes `Revisar`.
+ * SPEC39 §6 / #597: guarda dura sobre una compra con devoluciones vinculadas.
+ * Nunca degrada automáticamente a `Revisar`: rechaza y revierte la transacción.
  */
 export function revalidateDevolucionesCompra(
   db: Database,
   compraId: string,
-  now = Date.now(),
+  _now = Date.now(),
 ) {
   if (!comidaInstalled(db, "movimiento_devolucion")) return [];
   const purchase = movement(db, compraId);
-  const links = db
-    .query(
-      `SELECT movimiento,estado FROM movimiento_devolucion WHERE compra=? AND estado='Verificado'`,
-    )
-    .all(compraId) as { movimiento: string; estado: string }[];
-  if (!links.length) return [];
-  const time = new Date(now).toISOString();
-  const changed: string[] = [];
-  for (const link of links) {
-    const row = movement(db, link.movimiento);
-    const others = (
-      db
-        .query(
-          `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
-           JOIN movimientos m ON m.id=d.movimiento
-           WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0 AND d.movimiento<>?`,
-        )
-        .get(compraId, link.movimiento) as { n: number }
-    ).n;
-    const total =
-      BigInt(others) + (row.anulado ? 0n : BigInt(row.importe));
-    if (
-      !purchase.anulado &&
-      purchase.tipo === "Gasto" &&
-      total <= BigInt(purchase.importe)
-    )
-      continue;
-    const before = comidaDevolucion(db, link.movimiento)!;
-    db.run(
-      `UPDATE movimiento_devolucion SET estado='Revisar',revision=revision+1,
-       actualizado=? WHERE movimiento=?`,
-      [time, link.movimiento],
-    );
-    const after = comidaDevolucion(db, link.movimiento)!;
-    db.run(
-      `INSERT INTO movimiento_devolucion_audit(movimiento,accion,revision,anterior,
-       posterior,motivo,instante,actor) VALUES(?,?,?,?,?,?,?,'sistema-comida')`,
-      [
-        link.movimiento,
-        "rectificación",
-        after.revision,
-        JSON.stringify(before),
-        JSON.stringify(after),
-        purchase.anulado
-          ? "Compra vinculada anulada; el vínculo queda en revisión."
-          : purchase.tipo !== "Gasto"
-            ? "La compra vinculada ya no es un Gasto; el vínculo queda en revisión."
-            : "La compra ya no cubre íntegramente las devoluciones verificadas.",
-        time,
-      ],
-    );
-    changed.push(link.movimiento);
+  if (purchase.anulado || purchase.tipo !== "Gasto") {
+    const vigente = db
+      .query(
+        `SELECT 1 FROM movimiento_devolucion d
+         JOIN movimientos m ON m.id=d.movimiento
+         WHERE d.compra=? AND m.anulado=0 LIMIT 1`,
+      )
+      .get(compraId);
+    if (vigente)
+      throw new Problem(
+        422,
+        "DEVOLUTION_LINKED",
+        "Una compra con devoluciones vinculadas vigentes no puede anularse, eliminarse ni retipificarse.",
+        { tipo: "Resuelve antes las devoluciones vigentes vinculadas." },
+      );
+    return [];
   }
-  return changed;
+  const verified = db
+    .query(
+      `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
+       JOIN movimientos m ON m.id=d.movimiento
+       WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0`,
+    )
+    .get(compraId) as { n: number };
+  if (BigInt(verified.n) > BigInt(purchase.importe))
+    throw new Problem(
+      422,
+      "PURCHASE_BELOW_REFUNDED",
+      "El importe de la compra no puede quedar por debajo del acumulado de devoluciones vigentes verificadas.",
+      { importe: "Aumenta el importe o resuelve antes las devoluciones verificadas." },
+    );
+  return [];
 }
 
 /**
- * A refund rectified above the linked purchase, or whose purchase is no longer
- * valid, cannot remain `Verificado`: the bank fact is preserved and the link is
- * demoted to `Revisar` inside the same movement transaction.
+ * SPEC39 §6 / #597: guarda dura sobre la propia devolución al rectificarse.
+ * Nunca degrada automáticamente a `Revisar`: rechaza con DEVOLUTION_EXCESS.
  */
 export function revalidateDevolucionPropia(
   db: Database,
   movimientoId: string,
-  now = Date.now(),
+  _now = Date.now(),
 ) {
   if (!comidaInstalled(db, "movimiento_devolucion")) return false;
-  const link = comidaDevolucion(db, movimientoId);
-  if (!link || link.estado !== "Verificado" || !link.compra) return false;
-  const purchase = movement(db, link.compra);
   const own = movement(db, movimientoId);
+  if (own.anulado) return false;
+  const link = comidaDevolucion(db, movimientoId);
+  if (
+    !link ||
+    !link.compra ||
+    (link.estado !== "Verificado" && link.estado !== "Revisar")
+  )
+    return false;
+  const purchase = movement(db, link.compra);
+  if (purchase.anulado || purchase.tipo !== "Gasto")
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "La compra vinculada ya no es un Gasto vigente.",
+    );
   const others = (
     db
       .query(
@@ -1372,38 +1439,13 @@ export function revalidateDevolucionPropia(
       )
       .get(link.compra, movimientoId) as { n: number }
   ).n;
-  const total = BigInt(others) + BigInt(own.importe);
-  if (
-    !purchase.anulado &&
-    purchase.tipo === "Gasto" &&
-    total <= BigInt(purchase.importe)
-  )
-    return false;
-  const time = new Date(now).toISOString();
-  db.run(
-    `UPDATE movimiento_devolucion SET estado='Revisar',revision=revision+1,
-     actualizado=? WHERE movimiento=?`,
-    [time, movimientoId],
-  );
-  const after = comidaDevolucion(db, movimientoId)!;
-  db.run(
-    `INSERT INTO movimiento_devolucion_audit(movimiento,accion,revision,anterior,
-     posterior,motivo,instante,actor) VALUES(?,?,?,?,?,?,?,'sistema-comida')`,
-    [
-      movimientoId,
-      "rectificación",
-      after.revision,
-      JSON.stringify(link),
-      JSON.stringify(after),
-      purchase.anulado
-        ? "Compra vinculada anulada; el vínculo queda en revisión."
-        : purchase.tipo !== "Gasto"
-          ? "La compra vinculada ya no es un Gasto; el vínculo queda en revisión."
-          : "La devolución ya no cabe íntegramente en la compra vinculada.",
-      time,
-    ],
-  );
-  return true;
+  if (BigInt(others) + BigInt(own.importe) > BigInt(purchase.importe))
+    throw new Problem(
+      422,
+      "DEVOLUTION_EXCESS",
+      "El importe supera la capacidad restante de esta compra. Revisa sus devoluciones y la compra vinculada. No se puede registrar este exceso como devolución de esta compra; puede requerir aclarar el abono o corregir hechos existentes, y no se garantiza que sea resoluble por este flujo.",
+    );
+  return false;
 }
 
 /* E3.5 owns the read model; alias kept for existing importers. */

@@ -393,6 +393,24 @@ export function createSaldo(
     })
     .immediate();
 }
+function sostieneComprasConDevolucion(db: Database, saldo: string) {
+  if (
+    !db
+      .query(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='movimiento_devolucion'",
+      )
+      .get()
+  )
+    return false;
+  return !!db
+    .query(
+      `SELECT 1 FROM movimiento_devolucion d
+       JOIN movimientos m ON m.id=d.movimiento AND m.anulado=0
+       JOIN movimientos c ON c.id=d.compra AND c.anulado=0 AND c.tipo='Gasto'
+       WHERE c.origen=? LIMIT 1`,
+    )
+    .get(saldo);
+}
 function planSaldo(
   db: Database,
   id: string,
@@ -418,6 +436,19 @@ function planSaldo(
       JSON.stringify(value[f as keyof SaldoInput]) !==
       JSON.stringify(old[f as keyof SaldoInput]),
   );
+  // SPEC39 §6: volver Terminal el Saldo convertiría en agregado el origen de
+  // compras con devoluciones vigentes (preview y escritura, mismo error).
+  if (
+    changed.includes("control") &&
+    value.control === "Terminal" &&
+    sostieneComprasConDevolucion(db, id)
+  )
+    throw new Problem(
+      422,
+      "DEVOLUTION_LINKED",
+      "Una compra con devoluciones vinculadas vigentes no puede cambiar a un Saldo de origen Terminal.",
+      { control: "Resuelve antes las devoluciones vigentes vinculadas." },
+    );
   // §7.6: sin cierres fotográficos no existe el atributo «capturado por una
   // foto». Lo que sí se conserva es la guarda real del dominio: un Saldo con
   // uso económico exige revisión con motivo y huella, y nunca se bloquea por

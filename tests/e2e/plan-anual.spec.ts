@@ -368,3 +368,150 @@ test("E2.4 annual plan: real MFA, exact nullable manual lines, review/conflict/e
     child?.stderr?.destroy();
   }
 });
+
+test("DEV #610: Plan anual distingue Ejecutado, GRE de compras registradas e histórico conocido cuando historicoConocido != 0 (1440/390)", async ({
+  page,
+  request,
+}) => {
+  const histFixture = fixtureContext("annual-historico");
+  const histChild = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/annual-server.ts"],
+    { stdio: ["ignore", "pipe", "pipe"], env: histFixture.env },
+  );
+  let histOutput = "";
+  let histExit: { code: number | null; signal: NodeJS.Signals | null } | null =
+    null;
+  histChild.stdout?.on("data", (chunk: Buffer) => {
+    histOutput += chunk.toString();
+  });
+  histChild.stderr?.on("data", (chunk: Buffer) => {
+    histOutput += chunk.toString();
+  });
+  histChild.on("exit", (code, signal) => {
+    histExit = { code, signal };
+  });
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  try {
+    await expect
+      .poll(
+        async () => {
+          if (histExit)
+            throw new Error(
+              `El fixture annual-historico terminó antes de servir: ${histOutput.trim()}`,
+            );
+          try {
+            return (
+              await request.get(`${histFixture.baseURL}/api/health`)
+            ).status();
+          } catch {
+            return 0;
+          }
+        },
+        { timeout: 15000 },
+      )
+      .toBe(200);
+    await page.route("**/api/**", async (route) => {
+      const url = new URL(route.request().url());
+      url.port = String(histFixture.port);
+      const response = await route.fetch({ url: url.toString() });
+      if (url.pathname === "/api/plan-anual/2026" && response.status() === 200) {
+        const json: any = await response.json();
+        const item = json.items[0];
+        item.ejecutado = "140.00";
+        item.subtotalRegistrado = "90.00";
+        item.historicoConocido = "50.00";
+        item.brutoRegistrado = "120.00";
+        item.cobertura = "Verificable al corte";
+        item.motivo = null;
+        item.devoluciones = {
+          descuentoAtribuido: "30.00",
+          cobertura: "Completa",
+          causas: [],
+          exceso: false,
+        };
+        await route.fulfill({
+          status: response.status(),
+          headers: response.headers(),
+          json,
+        });
+        return;
+      }
+      await route.fulfill({ response });
+    });
+    await page.goto("/plan-anual");
+    await page
+      .getByLabel("Código de activación")
+      .fill(readFileSync(join(histFixture.dir, "bootstrap.txt"), "utf8"));
+    await page
+      .getByLabel("Contraseña", { exact: true })
+      .fill("Contraseña ficticia historico " + randomUUID());
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await expect(page.locator(".secret")).toBeVisible();
+    const secret = (await page.locator(".secret").textContent())!;
+    await page
+      .getByLabel("Código de la aplicación autenticadora")
+      .fill(totp(secret).generate());
+    await page
+      .getByRole("button", { name: "Verificar código", exact: true })
+      .click();
+    await page
+      .getByRole("button", {
+        name: "He guardado los códigos · Continuar",
+        exact: true,
+      })
+      .click();
+
+    for (const [width, height, scope] of [
+      [1440, 1000, ".annual-table"],
+      [390, 844, ".annual-cards"],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/plan-anual");
+      const coverage = page.getByLabel("Cobertura y procedencia");
+      await expect(coverage).toContainText(
+        "combina el Gasto real económico (neto) de las compras registradas del año natural y el histórico conocido",
+      );
+      await expect(coverage).not.toContainText(
+        "«Ejecutado» es Gasto real económico",
+      );
+      const zona = page.locator(scope).first();
+      await expect(zona).toBeVisible();
+      await expect(zona.locator("[data-plan-ejecutado]").first()).toContainText(
+        "140,00 €",
+      );
+      const desglose = zona.locator("[data-plan-desglose]").first();
+      await expect(desglose).toContainText("GRE compras registradas: 90,00 €");
+      await expect(desglose).toContainText("Histórico conocido: 50,00 €");
+
+      await zona
+        .getByRole("button", { name: /Detalle / })
+        .first()
+        .click();
+      const detalle = page.getByLabel("Detalle anual");
+      await expect(detalle.locator("[data-detail-ejecutado]")).toContainText(
+        "140,00 €",
+      );
+      await expect(detalle.locator("[data-detail-gre]")).toContainText(
+        "90,00 €",
+      );
+      await expect(detalle.locator("[data-detail-historico]")).toContainText(
+        "50,00 €",
+      );
+      await expect(detalle).toContainText(
+        "Gasto real económico (neto) de compras registradas (sin histórico conocido): bruto 120,00 € − descuento atribuido a las compras del año 30,00 €",
+      );
+      await page.getByRole("button", { name: "Cerrar detalle" }).click();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth + 1,
+      );
+      expect(overflow).toBe(false);
+    }
+    expect(errors).toEqual([]);
+  } finally {
+    histChild.kill();
+    histChild.stdout?.destroy();
+    histChild.stderr?.destroy();
+  }
+});

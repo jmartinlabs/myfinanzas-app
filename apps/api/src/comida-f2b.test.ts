@@ -17,6 +17,7 @@ import {
 } from "./comida";
 import { descuentoPorCompras } from "./devoluciones";
 import { gateAbiertoParaPruebas } from "../test-support/devolucion-gate-abierto";
+import { sembrarDevolucionHuerfana } from "../test-support/devoluciones-historicas";
 
 /**
  * #538 F2b · Comida y e35 con la proyección única (SPEC39 §3, §8, §10).
@@ -290,16 +291,13 @@ test("F2B-04 (AC-D04/AC-D39): No acreditada → descuento 0 y cobertura Parcial 
 test("F2B-05 (AC-D21/AC-D04): sinVinculo no netea y un huérfano de ámbito desconocido no degrada Comida, ni en ING ni en otro saldo", () => {
   const c = setup();
   buy(c, "100");
+  // Huérfanas históricas (§3.2): el alta API ya no las admite.
   const orphan = (saldo: string, fecha: string, importe: string) =>
-    add(c.db, {
-      tipo: "Devolución de gasto",
-      fecha,
-      importe,
-      saldo,
-      partida: c.food.id,
-      concepto: "Huérfana ficticia",
-      nota: "",
-    }).movimiento.id as string;
+    sembrarDevolucionHuerfana(
+      c.db,
+      { fecha, importe, saldo, partida: c.food.id, concepto: "Huérfana ficticia" },
+      now,
+    );
   const huerfanaIng = orphan(c.ing.id, "2026-07-10", "11");
   const huerfanaOtro = orphan(c.other.id, "2026-07-11", "7");
   const a = m(c, c.A.id);
@@ -436,10 +434,18 @@ test("F2B-09 (AC-D23): recursos/financiación y conteo de movimientos con la dev
     (Number(a.puente!.baseAnalitica) + Number(a.puente!.otrosEfectos)).toFixed(2),
   ).toBe(a.puente!.cierreAnalitico!);
   expect(count()).toBe(n); // una lectura no crea movimientos
-  // Anulación de la compra (fixture) + rectificación P4: el abono queda como hecho
-  // bancario con vínculo en Revisar; no netea nada ni se duplica en ningún ciclo.
+  // Histórico inconsistente: compra anulada (fixture SQL ficticio). SPEC39 §6: la
+  // guarda rechaza sin degradar; el abono queda como hecho bancario, no netea nada
+  // ni se duplica en ningún ciclo.
   c.db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [compra]);
-  revalidateDevolucionesCompra(c.db, compra, now);
+  const vinculo = () =>
+    c.db.query("SELECT * FROM movimiento_devolucion WHERE movimiento=?").get(dev);
+  const antes = vinculo();
+  expect(() => revalidateDevolucionesCompra(c.db, compra, now)).toThrow(
+    "Una compra con devoluciones vinculadas vigentes no puede anularse, eliminarse ni retipificarse.",
+  );
+  expect(vinculo()).toEqual(antes);
+  expect(antes).toMatchObject({ estado: "Verificado", compra, revision: 1 });
   const x = m(c, c.A.id);
   expect(x.compensable.bruto.valor).toBe("0.00");
   expect(x.recursos.valor).toBe("5000.00"); // sin compra vigente no hay C_n operativo

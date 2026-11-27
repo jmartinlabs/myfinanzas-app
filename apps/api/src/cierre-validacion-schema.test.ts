@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
-import { contract, manifest, verifyContract } from "./schema-contract";import { restaurarTriggerAperturaV31 } from "./cierre-validacion-test-support";
+import { contract, manifest, verifyContract } from "./schema-contract";
+import {
+  restaurarTriggerAperturaV31,
+  restaurarTriggerDevolucionV32,
+} from "./cierre-validacion-test-support";
 
 import { importarCierresLegados } from "./cierre-validacion-migracion";
 
@@ -27,6 +31,7 @@ const t2 = "2026-01-02T00:00:00.000Z";
 const t3 = "2030-01-01T00:00:00.000Z";
 const c31 = "C31-SPEC37-INTENCION-91C32F5";
 const c32 = "C32-SPEC38-VALIDACION-CIERRE";
+const c33 = "C33-SPEC39-DEVOLUCION-TRIGGER";
 const ORIGEN = "MIGRACION:cierres:1";
 
 function store(): Database {
@@ -50,6 +55,7 @@ function revertToV31(db: Database) {
     DROP TABLE anticipo_apertura_evento;
     UPDATE schema_version SET version=31;`);
   restaurarTriggerAperturaV31(db);
+  restaurarTriggerDevolucionV32(db);
   expect(verifyContract(db, 31)).toBe(c31);
 }
 
@@ -155,13 +161,17 @@ test("v32: contrato C32 verificado, C31 congelado y manifiesto determinista", ()
   expect(
     (uno.query("SELECT version FROM schema_version").get() as { version: number })
       .version,
-  ).toBe(32);
-  expect(verifyContract(uno, 32)).toBe(c32);
-  expect(contract(c32).objects.length).toBeGreaterThan(384);
-  expect(contract(c31).objects.length).toBe(384);
+  ).toBe(33);
+  expect(verifyContract(uno, 33)).toBe(c33);
   const otro = store();
   expect(JSON.stringify(manifest(uno))).toBe(JSON.stringify(manifest(otro)));
   expect(uno.query("PRAGMA foreign_key_check").all()).toEqual([]);
+  // Contrato histórico: la base v32 (trigger anterior a v33) cumple C32 exacto.
+  restaurarTriggerDevolucionV32(uno);
+  uno.exec("UPDATE schema_version SET version=32");
+  expect(verifyContract(uno, 32)).toBe(c32);
+  expect(contract(c32).objects.length).toBeGreaterThan(384);
+  expect(contract(c31).objects.length).toBe(384);
   uno.close();
   otro.close();
 });
@@ -190,15 +200,15 @@ test("v32: crea las tres tablas y sus guardas, sin tocar las legadas", () => {
   db.close();
 });
 
-test("migración v31→v32 en copia: importa todo cierre legado como Pendiente", () => {
+test("migración v31→v33 en copia: importa todo cierre legado como Pendiente", () => {
   const ruta = baseConLegado();
   try {
     const db = openDatabase(ruta);
     expect(
       (db.query("SELECT version FROM schema_version").get() as { version: number })
         .version,
-    ).toBe(32);
-    expect(verifyContract(db, 32)).toBe(c32);
+    ).toBe(33);
+    expect(verifyContract(db, 33)).toBe(c33);
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
     expect(
       (db.query("PRAGMA integrity_check").get() as { integrity_check: string })
@@ -304,7 +314,7 @@ test("migración v31→v32 en copia: importa todo cierre legado como Pendiente",
   }
 });
 
-test("migración v31→v32: repetir no duplica, no sobrescribe ni cambia la revisión", () => {
+test("migración v31→v33: repetir no duplica, no sobrescribe ni cambia la revisión", () => {
   const ruta = baseConLegado();
   try {
     const db = openDatabase(ruta);
