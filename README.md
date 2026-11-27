@@ -220,7 +220,7 @@ STEP 8 completado e integrado mediante PR #8: [cierre de las ocho etapas inicial
 Las Skills `$spec` y `$dev` quedan preparadas para reutilizarse, sin duplicados ni nueva
 inicialización. Esperar autorización antes de la próxima entrega.
 E1.1–E1.4 integradas; E1.5 implementada en rama para revisión, sin merge. Despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
-Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
+No reabrir decisiones confirmadas.
 
 ## Universal AI development template
 

@@ -236,7 +236,7 @@ No se crean formularios, Skills, workflows ni herramientas de medición paralelo
   pendiente. No mantener consultas/actualizaciones sin información nueva ni prometer
   supervisión después del turno. Ante fallo, analizar la evidencia antes de relanzar;
   mantener la distinción fallo/cancelación/cola y las aprobaciones por PR.
-- Registrar métricas por hito en la Issue del Project y, cuando existan, progress/testplan10:
+- Registrar métricas por hito en la Issue de seguimiento y, cuando existan, progress/testplan10:
   sesión/agente/modelo, intervalo, candidato, pruebas/resultado/motivo de repetición,
   bloqueo operativo con inicio/fin/causa conocida, y hallazgos QA/corrección.
   Usar JSONL e informes existentes, sin activar hooks ni publicar registros sensibles.
@@ -276,7 +276,7 @@ hooks, scripts ni workflows. No autoriza merge, Excel, despliegue o B3/Dev32.
    Un timeout no acredita fallo/progreso/aprobación. Consultar estado si resuelve una
    decisión o hay señal de bloqueo/control justificado; no encadenar dormir, releer
    estado y recordar sin información nueva. Mantener el espaciado CI del piloto previo.
-3. **Contexto vigente.** Un resumen compacto en la Issue y el `Status` del Project: autorización/alcance, SHA
+3. **Contexto vigente.** Un resumen compacto en la Issue y su estado nativo: autorización/alcance, SHA
    integrado y candidato, PR, enlace a evidencia y próxima acción/gate. Actualizar por
    hito y conservar historia debajo sin copiarla otra vez. Reanudar verificando deltas
    Git/PR y leyendo solo fuentes necesarias o modificadas. Progreso/testplan son dueños
